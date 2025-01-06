@@ -89,6 +89,7 @@ app_license = "mit"
 after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
       "sahayog.patches.fixtures.add_region.execute",
+      "sahayog.patches.fixtures.add_division.execute",
 ]
 # Uninstallation
 # ------------
