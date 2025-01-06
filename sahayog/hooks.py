@@ -83,7 +83,10 @@ app_license = "mit"
 # ------------
 
 # before_install = "sahayog.install.before_install"
-# after_install = "sahayog.install.after_install"
+after_install = [
+   "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
+
+]
 
 # Uninstallation
 # ------------
