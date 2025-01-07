@@ -43,7 +43,12 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+
+    "Workspace": "public/js/workspace.js",
+    "Task": "public/js/task.js",
+  
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -146,13 +151,36 @@ after_migrate = [
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+ "Employee": {
+        "after_insert": "sahayog.doc_events.create_user_from_employee.create_user",
+      
+
+        "before_save": [
+            "sahayog.doc_events.capital_emp_name.capital_emp_name",
+            
+        ],
+        "before_save": [
+             "sahayog.doc_events.employee.emp_enable_disable",
+            
+        ],
+    },
+    "User": {
+       
+        "before_save": [
+            
+            "sahayog.doc_events.user.user_enable_disable",   
+        ],
+    },
+    "Task": {
+       
+        "after_insert": [
+            "sahayog.doc_events.task.create_letter_of_intent",   
+        ],
+    },
+
+    
+}
 
 # Scheduled Tasks
 # ---------------
@@ -186,6 +214,12 @@ after_migrate = [
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "sahayog.event.get_events"
 # }
+
+
+override_whitelisted_methods = {
+    "frappe.model.naming.set_name_by_naming_series": "sahayog.override.employee_naming.set_name_by_naming_series_override",
+    "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive"
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
