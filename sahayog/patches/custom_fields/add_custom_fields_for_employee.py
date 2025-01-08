@@ -42,6 +42,13 @@ def execute():
                 "label": "Division",
                 "options":"Division",
             },
+
+            {
+                "fieldname": "custom_skip_auto_creation",
+                "fieldtype": "Check",
+                "insert_after": "erpnext_user",
+                "label": "Skip Auto Creation",
+            },
           
         ]
     }

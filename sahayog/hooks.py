@@ -94,9 +94,13 @@ doctype_js = {
 after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_designation.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
+    "sahayog.patches.fixtures.add_module_profile.execute",
+    "sahayog.patches.fixtures.add_role_profile.execute",
+
 
 ]
 # Uninstallation
@@ -168,8 +172,8 @@ doc_events = {
     "User": {
        
         "before_save": [
-            
-            "sahayog.doc_events.user.user_enable_disable",   
+            "sahayog.doc_events.user.user_enable_disable",
+            "sahayog.doc_events.user.capital_user_name",   
         ],
     },
     "Task": {
