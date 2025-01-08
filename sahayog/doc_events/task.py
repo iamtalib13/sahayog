@@ -6,11 +6,13 @@ from frappe import _
 def create_letter_of_intent(doc, method):
     project = doc.project
     subject = doc.subject
+    task = doc.name
 
-    if subject == 'Letter of Intent' and project:
+    if subject == 'Task 2 : Letter of Intent' and project:
         # Create a new Letter of Intent document
         letter_of_intent = frappe.new_doc('Letter of Intent')
         letter_of_intent.project = project
+        letter_of_intent.task = task
         letter_of_intent.docstatus = 0  # Draft status
 
         # Save the new document to the database
