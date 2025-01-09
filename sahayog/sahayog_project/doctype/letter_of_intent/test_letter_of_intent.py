@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestZone(FrappeTestCase):
+class TestLetterofIntent(FrappeTestCase):
 	pass

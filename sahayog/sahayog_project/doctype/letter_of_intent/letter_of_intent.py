@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class Zone(Document):
+class LetterofIntent(Document):
 	pass
