@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-09 10:20:21.269773",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project_settings_section",
+  "depends_on_previous_task"
+ ],
+ "fields": [
+  {
+   "fieldname": "project_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Project Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "depends_on_previous_task",
+   "fieldtype": "Check",
+   "label": "Depends on Previous Task"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-01-09 10:37:24.956576",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Sahayog Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

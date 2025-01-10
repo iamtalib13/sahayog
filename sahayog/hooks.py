@@ -97,6 +97,7 @@ after_migrate = [
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
+    "sahayog.patches.fixtures.create_task.create_tasks_and_project_template",
 
 ]
 # Uninstallation
@@ -173,6 +174,7 @@ doc_events = {
         ],
     },
     "Task": {
+
        
         "after_insert": [
             "sahayog.doc_events.task.create_letter_of_intent",   
