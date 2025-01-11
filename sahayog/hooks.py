@@ -91,6 +91,7 @@ doctype_js = {
 # after_install = [
 #    "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
 # ]
+
 after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_designation.execute",
@@ -101,6 +102,7 @@ after_migrate = [
     "sahayog.patches.fixtures.create_task.create_tasks_and_project_template",
     "sahayog.patches.fixtures.add_module_profile.execute",
     "sahayog.patches.fixtures.add_role_profile.execute",
+    "sahayog.patches.fixtures.hr_setting.execute",
 
 
 ]
@@ -179,7 +181,6 @@ doc_events = {
     },
     "Task": {
 
-       
         "after_insert": [
             "sahayog.doc_events.task.create_letter_of_intent",   
         ],

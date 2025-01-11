@@ -45,33 +45,39 @@ def create_tasks_and_project_template():
             task_list.append(task.name)
         else:
             print(f"Task '{task_name}' already exists and will not be created again.")
+            existing_task_name = frappe.db.get_value("Task", {"subject": task_name}, "name")
+            task_list.append(existing_task_name)
 
     frappe.db.commit()  # Commit changes to the database
 
     # Check if the project template already exists
-    existing_project_template = frappe.db.exists("Project Template", {"project_name": "New Branch Setup"})
+    existing_project_template = frappe.db.exists("Project Template", "New Branch Setup")
     
-    if existing_project_template:
-        print(f"Project Template 'New Branch Setup' already exists. Skipping creation.")
-        return  # Exit if the project template already exists
-
-    # Create a new Project template named "New Branch Setup"
-    project_template = frappe.get_doc({
-        "doctype": "Project Template",
-        "project_name": "New Branch Setup",  # The name of the template
-        "tasks": []  # Initialize the task list as empty
-    })
-     # Set the name explicitly to avoid 'Please set the document name' error
-    project_template.name = project_template.project_name  # Set the name to the project_name
-    
-    # Add the tasks as milestones or regular tasks to the project
-    for task_name in task_list:
-        project_template.append("tasks", {
-            "task": task_name  # Link the created task to the project
+    if not existing_project_template:
+        # Create a new Project template named "New Branch Setup"
+        project_template = frappe.get_doc({
+            "doctype": "Project Template",
+            "project_name": "New Branch Setup",  # The name of the template
+            "tasks": []  # Initialize the task list as empty
         })
+        # Set the name explicitly to avoid 'Please set the document name' error
+        project_template.name = project_template.project_name  # Set the name to the project_name
     
-    # Insert the project template into the database
-    project_template.insert()
-    print(f"Project Template 'New Branch Setup' created successfully.")
+        # Add the tasks as milestones or regular tasks to the project
+        for task_name in task_list:
+            project_template.append("tasks", {
+                "task": task_name  # Link the created task to the project
+            })
+    
+        # Insert the project template into the database
+        project_template.insert()
+        print(f"Project Template 'New Branch Setup' created successfully.")
+    
+        frappe.db.commit()  # Commit changes to the database
+    
+    else:
+        print(f"Project Template 'New Branch Setup' already exists. Skipping creation.")
 
-    frappe.db.commit()  # Commit changes to the database
+
+
+    
