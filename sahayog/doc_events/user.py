@@ -33,3 +33,23 @@ def user_enable_disable(doc, method):
             #     frappe.msgprint(f"Employee {employee_name} is already Inactive.")
     else:
         frappe.msgprint(f"No employee found for User {doc.name}.")
+
+
+
+def capital_user_name(doc, method):
+    try:
+        # Extract required fields from the passed 'doc' and convert them to uppercase
+        first_name = doc.first_name.upper() if doc.first_name else ''
+        middle_name = doc.middle_name.upper() if doc.middle_name else ''
+        last_name = doc.last_name.upper() if doc.last_name else ''
+        full_name = doc.full_name.upper() if doc.full_name else ''
+
+        # Update the 'doc' with the uppercase names
+        doc.first_name = first_name
+        doc.middle_name = middle_name
+        doc.last_name = last_name
+        doc.full_name = full_name
+
+    except Exception as e:
+        # Log the error if any exception occurs
+        frappe.log_error(message=str(e), title="Error in capital_user_name")
