@@ -96,6 +96,8 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_designation.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_file.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",

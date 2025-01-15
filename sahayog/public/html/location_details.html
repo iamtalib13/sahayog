@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Location Details Table</title>
+    <style>
+      .location-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .location-table th,
+      .location-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      .location-table th {
+        background-color: #f2f2f2;
+      }
+      /* Removing border from Location Name input field */
+      .location-table input[type="text"] {
+        border: none;
+        outline: none; /* To remove focus outline if needed */
+        background-color: transparent; /* Optional, if you want the background transparent */
+      }
+      .add-row-btn {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: var(--control-bg);
+        color: white;
+        border: none;
+        cursor: pointer;
+        color: var(--text-color);
+        border-radius: 8px;
+        font-size: 13px;
+        padding: 4px 8px;
+        font-size: var(--text-base);
+        font-weight: var(--weight-regular);
+        letter-spacing: 0.02em;
+      }
+      .add-row-btn:hover {
+        background-color: rgb(231, 231, 231);
+      }
+      .delete-row-btn {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #e03636;
+        color: white;
+        border: none;
+        cursor: pointer;
+
+        border-radius: 8px;
+        font-size: 13px;
+        padding: 4px 8px;
+        font-size: var(--text-base);
+        font-weight: var(--weight-regular);
+        letter-spacing: 0.02em;
+      }
+      .delete-row-btn:hover {
+        background-color: rgb(231, 231, 231);
+      }
+      .save-btn {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #171717;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+        font-size: 13px;
+        padding: 4px 8px;
+        font-size: var(--text-base);
+        font-weight: var(--weight-regular);
+        letter-spacing: 0.02em;
+      }
+      .save-btn:hover {
+        background-color: rgb(231, 231, 231);
+        color: #171717;
+      }
+      .checkbox-container {
+        align-items: center;
+      }
+      .checkbox-container input {
+        margin-right: 10px;
+      }
+
+      .table-heading {
+        color: var(--gray-600);
+        background-color: var(--subtle-fg);
+        font-size: var(--text-sm);
+        font-weight: var(--weight-regular);
+        letter-spacing: 0.02em;
+      }
+      .location-table th:first-child,
+      .location-table th:nth-child(2),
+      .location-table th:last-child,
+      .location-table td:first-child,
+      .location-table td:nth-child(2),
+      .location-table td:last-child {
+        text-align: center;
+        vertical-align: middle;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+    <script>
+      // Function to populate the table with data from the server
+      // Function to populate the table with data from the server
+      function fetchAndPopulateTable() {
+        const docname = cur_frm.doc.name;
+
+        frappe.call({
+          method: "sahayog.doc_events.task.get_custom_location_details",
+          args: {
+            docname: docname,
+          },
+          callback: function (response) {
+            if (response.message) {
+              console.log(response.message);
+              const locationDetails = response.message || [];
+              const tableBody = document.getElementById("locationTableBody");
+
+              // Clear existing rows
+              tableBody.innerHTML = "";
+
+              // Populate the table with fetched data
+              locationDetails.forEach((detail, index) => {
+                const newRow = document.createElement("tr");
+                const docname = cur_frm.doc.name;
+
+                // Fetch attachments for each location
+                frappe.call({
+                  method: "frappe.client.get_list",
+                  args: {
+                    doctype: "File",
+                    filters: {
+                      attached_to_doctype: "Task", // Filter by the "Task" doctype
+                      attached_to_name: docname,
+                      attached_to_field: detail.name, // Filter by the current location's docname
+                    },
+                    fields: ["file_url", "file_name", "is_private"], // Get the file details
+                  },
+                  callback: function (fileResponse) {
+                    const files = fileResponse.message || [];
+
+                    console.log(fileResponse);
+                    // Populate the table row with data and attachments
+                    newRow.innerHTML = `
+                                <td class="checkbox-container">
+                                    <input type="checkbox" />
+                                </td>
+                                <td class="sr-no">${index + 1}</td>
+                                <td><input type="text" value="${
+                                  detail.location_name
+                                }" /></td>
+                                <td>
+                                     <input type="file" multiple
+                                           onclick="handleFileUpload(event, '${
+                                             detail.name
+                                           }')"
+                                           data-name="${detail.name}" />
+    
+                                          
+                                    <ul>
+                                        ${files
+                                          .map(
+                                            (file) =>
+                                              `<li><a href="${file.file_url}" target="_blank">${file.file_name}</a></li>`
+                                          )
+                                          .join("")}
+                                    </ul>
+                               
+                                </td>
+                                <td>
+                                    <select>
+                                        <option value="Pending" ${
+                                          detail.status === "Pending"
+                                            ? "selected"
+                                            : ""
+                                        }>Pending</option>
+                                        <option value="Approved" ${
+                                          detail.status === "Approved"
+                                            ? "selected"
+                                            : ""
+                                        }>Approved</option>
+                                        <option value="Rejected" ${
+                                          detail.status === "Rejected"
+                                            ? "selected"
+                                            : ""
+                                        }>Rejected</option>
+                                    </select>
+                                </td>
+                                <td class="hidden" data-name="${detail.name}">${
+                      detail.name
+                    }</td>
+                                
+                            `;
+
+                    tableBody.appendChild(newRow);
+                  },
+                });
+              });
+            } else {
+              frappe.msgprint("No location details found.");
+            }
+          },
+        });
+      }
+
+      fetchAndPopulateTable();
+
+      // Function to trigger the hidden file input when the image is clicked
+      function triggerFileInput(docname) {
+        // Find the hidden file input based on the data-name attribute
+        const fileInput = document.querySelector(
+          `input[type="file"][data-name="${docname}"]`
+        );
+        if (fileInput) {
+          // Trigger the click event of the file input
+          fileInput.click();
+        }
+      }
+
+      // Function to update serial numbers
+      function updateSerialNumbers() {
+        const rows = document.querySelectorAll("#locationTableBody tr");
+        rows.forEach((row, index) => {
+          row.querySelector(".sr-no").textContent = index + 1;
+        });
+      }
+
+      // Add event listener after HTML is injected
+      document
+        .getElementById("addRowBtn")
+        .addEventListener("click", function () {
+          const tableBody = document.getElementById("locationTableBody");
+          const newRow = document.createElement("tr");
+          //newRow.classList.add("new-row"); // Mark new rows with a class
+
+          newRow.innerHTML = `
+                    <td class="checkbox-container">
+                        <input type="checkbox" />
+                    </td>
+                    <td class="sr-no"></td>
+                    <td><input type="text" placeholder="Location Name" /></td>
+                    <td><input type="file" multiple /></td>
+                    <td>
+                        <select>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </td>
+                     <td class="hidden" data-name=""></td>
+                `;
+
+          tableBody.appendChild(newRow);
+          updateSerialNumbers();
+          toggleRemoveButton();
+        });
+
+      // Function to handle showing and hiding the remove button
+      function toggleRemoveButton() {
+        const checkboxes = document.querySelectorAll(
+          "#locationTableBody input[type='checkbox']"
+        );
+        const removeButton = document.getElementById("removeRowBtn");
+
+        // Check if any checkbox is checked
+        const isAnyChecked = Array.from(checkboxes).some(
+          (checkbox) => checkbox.checked
+        );
+
+        // Add or remove the 'hidden' class based on the checkbox status
+        if (isAnyChecked) {
+          removeButton.classList.remove("hidden");
+        } else {
+          removeButton.classList.add("hidden");
+        }
+      }
+
+      // Add event listener to checkboxes
+      document
+        .getElementById("locationTableBody")
+        .addEventListener("change", function (event) {
+          if (event.target.type === "checkbox") {
+            toggleRemoveButton(); // Call function to check if any checkbox is checked
+          }
+        });
+
+      // Function to remove checked rows
+      // Function to remove checked rows
+      document
+        .getElementById("removeRowBtn")
+        .addEventListener("click", function () {
+          const tableBody = document.getElementById("locationTableBody");
+          const checkboxes = tableBody.querySelectorAll(
+            "input[type='checkbox']"
+          );
+          const rowsToDelete = [];
+
+          checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+              // Collect the name from the data-name attribute of the row
+              const row = checkbox.closest("tr");
+              const dataName = row
+                .querySelector("td[data-name]")
+                .getAttribute("data-name");
+
+              if (dataName) {
+                rowsToDelete.push(dataName);
+              }
+            }
+          });
+
+          console.log(rowsToDelete);
+
+          if (rowsToDelete.length > 0) {
+            // Call the server to delete the rows from the database
+            frappe.call({
+              method: "sahayog.doc_events.task.delete_location_details", // Update with your server-side method
+              args: {
+                names: rowsToDelete,
+              },
+              callback: function (response) {
+                if (response.message.message === "success") {
+                  console.log(response);
+                  // Remove the rows from the DOM after successful deletion
+                  checkboxes.forEach((checkbox) => {
+                    if (checkbox.checked) {
+                      const row = checkbox.closest("tr");
+                      tableBody.removeChild(row);
+                    }
+                  });
+
+                  // Update the serial numbers
+                  updateSerialNumbers();
+
+                  // Hide the remove button if no checkboxes are checked
+                  toggleRemoveButton();
+                  // Show a Frappe alert after successful deletion
+                  frappe.show_alert({
+                    message: "Selected row have been successfully deleted.",
+                    indicator: "green",
+                  });
+                } else {
+                  frappe.msgprint("Error deleting location details.");
+                }
+              },
+            });
+          } else {
+            frappe.msgprint("No rows selected for deletion.");
+          }
+        });
+
+      // Function to upload the files to the server
+      function uploadFile(file) {
+        return new Promise((resolve, reject) => {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          frappe.call({
+            method: "frappe.client.upload_file",
+            args: {
+              filedata: file,
+              filename: file.name,
+              folder: "Home", // Use the folder where you want to store the file
+            },
+            async: true, // We want it to be async for better performance
+            callback: function (response) {
+              if (response.message) {
+                resolve(response.message.file_url); // Resolve with the file URL
+              } else {
+                reject("Error uploading file"); // Reject in case of error
+              }
+            },
+          });
+        });
+      }
+
+      // Function to handle the update or addition of location details
+      function saveOrUpdateLocationDetails() {
+        const rows = document.querySelectorAll("#locationTableBody tr");
+        const locationData = [];
+
+        rows.forEach((row) => {
+          const locationName = row.querySelector("input[type='text']").value;
+          const status = row.querySelector("select").value;
+          const files = row.querySelector("input[type='file']").files;
+          const name =
+            row.querySelector("td[data-name]").getAttribute("data-name") || ""; // Initially empty
+
+          let fileInfo = [];
+
+          if (files.length > 0) {
+            Array.from(files).forEach((file) => {
+              fileInfo.push({
+                filename: file.name,
+                size: file.size,
+                type: file.type,
+              });
+            });
+          }
+
+          locationData.push({
+            location_name: locationName,
+            status: status,
+            name: name,
+            file_metadata: fileInfo, // Send only the metadata (filename, size, type)
+          });
+        });
+
+        console.log("locations to pass:", locationData);
+
+        const docname = cur_frm.doc.name;
+        frappe.call({
+          method: "sahayog.doc_events.task.save_or_update_location_details", // Your server method
+          args: {
+            location_data: locationData,
+            docname: docname,
+          },
+          callback: function (response) {
+            if (response) {
+              console.log(response);
+              frappe.show_alert({
+                message: "Location details saved or updated successfully.",
+                indicator: "green",
+              });
+            } else {
+              frappe.msgprint("Error saving or updating location details.");
+            }
+          },
+        });
+      }
+
+      // Add event listener for the save/update button
+      document
+        .getElementById("saveOrUpdateLocBtn")
+        .addEventListener("click", saveOrUpdateLocationDetails);
+
+      // document
+      //   .getElementById("fileInput")
+      //   .addEventListener("change", function (event) {
+      //     // Get the FileList object containing all selected files
+      //     const files = event.target.files;
+
+      //     // Create a new FormData object to hold the files and other data
+      //     const formData = new FormData();
+
+      //     // Append doctype and docname to the FormData object
+      //     formData.append("doctype", "Task"); // Replace with your doctype
+      //     formData.append("docname", "TASK-2025-00056"); // Replace with your docname
+
+      //     // Loop through the FileList and append each file to the FormData object
+      //     for (let i = 0; i < files.length; i++) {
+      //       formData.append("file", files[i]);
+      //     }
+      //     console.log(formData);
+      //     // Make a POST request to upload the files
+      //     fetch("/api/method/upload_file", {
+      //       method: "POST",
+      //       headers: {
+      //         "X-Frappe-CSRF-Token": frappe.csrf_token, // Ensure CSRF token is set
+      //       },
+      //       body: formData, // FormData containing the files and metadata
+      //     })
+      //       .then((response) => response.json())
+      //       .then((data) => {
+      //         console.log("Files uploaded successfully:", data);
+      //       })
+      //       .catch((error) => {
+      //         console.error("Error uploading files:", error);
+      //       });
+      //   });
+      function handleFileUpload(event, name) {
+        event.preventDefault(); // Prevent the default file picker
+
+        // Get the row's docname (this could be stored in a hidden field or data attribute)
+        const row = fileInput.closest("tr"); // Get the closest table row (assuming the <input> is inside a <tr>)
+        const fieldname = name;
+        // Fetch docname from hidden field or a data attribute
+        const docname = cur_frm.doc.name;
+        console.log(docname);
+        console.log(fieldname);
+        // Open Frappe's File Upload Dialog
+        new frappe.ui.FileUploader({
+          allow_multiple: true, // Allow multiple files to be uploaded
+          doctype: "Task", // The doctype (e.g., "Task")
+          docname: docname, // The dynamic docname from the row
+          fieldname: fieldname, // The dynamic fieldname from the row
+          on_success: function (file) {
+            console.log("File uploaded:", file);
+            // Perform additional actions, like attaching the file to a specific Doctype
+          },
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div class="table-container">
+      <table class="location-table" id="locationTable">
+        <thead class="table-heading">
+          <tr>
+            <th>Check</th>
+            <th>Sr. No</th>
+            <th>Location Name</th>
+            <th>Attachments</th>
+            <th>Status</th>
+            <th class="hidden">Name</th>
+          </tr>
+        </thead>
+        <tbody id="locationTableBody">
+          <!--Dynamically added row here-->
+        </tbody>
+      </table>
+      <input type="file" id="fileInput" multiple />
+
+      <button class="add-row-btn" id="addRowBtn">+ Add Location</button>
+      <button class="delete-row-btn hidden" id="removeRowBtn">
+        - Remove Location
+      </button>
+      <button class="save-btn" id="saveOrUpdateLocBtn">Save Location</button>
+    </div>
+  </body>
+</html>
