@@ -5,8 +5,13 @@ def create_tasks_and_project_template():
     task_subjects = [
         "Acquisition of Property",
         "Letter of Intent",
-        "Upload Agreement",
-        "Landlord Handover"
+        "Agreement and Handover",
+        "Vendor Allocation",
+        "Infra Work",
+        "IT Hardware Installation",
+        "IT Software Installation and Activation",
+        "Handover to Business Team",
+        "Ready for Inauguration",
     ]
 
     previous_task_name = None  # To track the previous task for dependency
