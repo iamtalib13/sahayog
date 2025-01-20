@@ -84,5 +84,13 @@ def create_tasks_and_project_template():
         print(f"Project Template 'New Branch Setup' already exists. Skipping creation.")
 
 
+@frappe.whitelist()
+def get_all_projects():
+    # Fetch all projects with relevant fields
+    projects = frappe.get_all(
+        "Project", 
+        fields=["name", "status", "region", "zone"]
+    )
+    return projects
 
     
