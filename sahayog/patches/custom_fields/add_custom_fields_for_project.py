@@ -57,6 +57,22 @@ def execute():
                 "reqd":1,
                
             },
+              {
+                "fieldname": "custom_branch_col_3",
+                "fieldtype": "Column Break",
+                "insert_after": "custom_region",
+                "label": "",
+               
+            },
+             {
+                "fieldname": "custom_division",
+                "fieldtype": "Link",
+                "insert_after": "custom_branch_col_3",
+                "label": "Division",
+                "options":"Division",
+                "reqd":1,
+               
+            },
             
             
             
