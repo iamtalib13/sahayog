@@ -19,34 +19,34 @@
   "email_address",
   "pan_number",
   "property_details_section",
-  "premises_address",
-  "builtup_area",
+  "premises_offered",
   "carpet_area",
   "column_break_byqk",
-  "parking_area",
-  "landlord_scope_of_work",
-  "nternet_and_installation_area",
-  "financial_terms_section",
   "rent_per_month",
   "municipal_taxes",
-  "maintenance_charges",
-  "security_deposit_in_months",
-  "column_break_x1rq",
-  "water_supply_charges",
+  "maintenance",
+  "security_deposit",
+  "financial_terms_section",
+  "lease_and_license",
+  "stamp_duty",
+  "lock_in_period",
+  "exit_clause",
   "escalations_or_increments",
-  "drainage_and_sanitation",
+  "rent_free_period",
+  "parking_area",
+  "water_supply",
+  "drainage_and_sewerage",
   "electricity_and_backup",
+  "payment_terms",
+  "column_break_x1rq",
+  "signage",
+  "arbitration_and_jurisdiction",
+  "landlord_scope_of_work",
+  "nternet_antina",
+  "split_ratio",
   "agreement_details_section",
   "type_of_agreement",
-  "lease_and_license",
-  "period_of_agreement",
-  "stamp_duty_and_registration",
   "column_break_4gzf",
-  "exit_clause",
-  "rent_free_period",
-  "arbitration_and_jurisdiction",
-  "miscellaneous_section",
-  "signage",
   "section_break_dffg",
   "amended_from"
  ],
@@ -77,7 +77,7 @@
   },
   {
    "fieldname": "mobile_number",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Mobile Number"
   },
   {
@@ -87,7 +87,7 @@
   },
   {
    "fieldname": "aadhar_number",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Aadhar Number"
   },
   {
@@ -96,39 +96,19 @@
    "label": " PAN Number"
   },
   {
-   "fieldname": "premises_address",
-   "fieldtype": "Small Text",
-   "label": " Premises Address"
-  },
-  {
-   "fieldname": "builtup_area",
-   "fieldtype": "Data",
-   "label": "Builtup Area"
-  },
-  {
    "fieldname": "carpet_area",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Carpet Area"
   },
   {
    "fieldname": "rent_per_month",
-   "fieldtype": "Currency",
+   "fieldtype": "Data",
    "label": "Rent per Month"
   },
   {
    "fieldname": "municipal_taxes",
-   "fieldtype": "Currency",
+   "fieldtype": "Data",
    "label": "Municipal Taxes"
-  },
-  {
-   "fieldname": "maintenance_charges",
-   "fieldtype": "Currency",
-   "label": "Maintenance Charges"
-  },
-  {
-   "fieldname": "security_deposit_in_months",
-   "fieldtype": "Int",
-   "label": "Security Deposit (in Months)"
   },
   {
    "fieldname": "type_of_agreement",
@@ -139,17 +119,7 @@
   {
    "fieldname": "lease_and_license",
    "fieldtype": "Data",
-   "label": "Lease and License"
-  },
-  {
-   "fieldname": "period_of_agreement",
-   "fieldtype": "Int",
-   "label": "Period of Agreement"
-  },
-  {
-   "fieldname": "stamp_duty_and_registration",
-   "fieldtype": "Currency",
-   "label": "Stamp Duty and Registration"
+   "label": "Leave and License Period"
   },
   {
    "fieldname": "exit_clause",
@@ -163,23 +133,13 @@
   },
   {
    "fieldname": "rent_free_period",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Rent Free Period"
   },
   {
    "fieldname": "parking_area",
    "fieldtype": "Data",
    "label": "Parking Area"
-  },
-  {
-   "fieldname": "water_supply_charges",
-   "fieldtype": "Currency",
-   "label": "Water Supply Charges"
-  },
-  {
-   "fieldname": "drainage_and_sanitation",
-   "fieldtype": "Data",
-   "label": "Drainage and Sanitation"
   },
   {
    "fieldname": "electricity_and_backup",
@@ -193,18 +153,13 @@
   },
   {
    "fieldname": "arbitration_and_jurisdiction",
-   "fieldtype": "Small Text",
+   "fieldtype": "Data",
    "label": "Arbitration and Jurisdiction"
   },
   {
    "fieldname": "landlord_scope_of_work",
    "fieldtype": "Small Text",
    "label": "Landlord Scope of Work"
-  },
-  {
-   "fieldname": "nternet_and_installation_area",
-   "fieldtype": "Data",
-   "label": "Internet and Installation Area"
   },
   {
    "fieldname": "personal_information_section",
@@ -239,11 +194,6 @@
    "label": "Agreement Details"
   },
   {
-   "fieldname": "miscellaneous_section",
-   "fieldtype": "Section Break",
-   "label": "Miscellaneous"
-  },
-  {
    "fieldname": "column_break_4gzf",
    "fieldtype": "Column Break"
   },
@@ -269,12 +219,62 @@
   {
    "fieldname": "column_break_c4sb",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "premises_offered",
+   "fieldtype": "Small Text",
+   "label": " Premises Offered"
+  },
+  {
+   "fieldname": "security_deposit",
+   "fieldtype": "Data",
+   "label": "Security Deposit"
+  },
+  {
+   "fieldname": "stamp_duty",
+   "fieldtype": "Data",
+   "label": "Stamp Duty and Registration"
+  },
+  {
+   "fieldname": "lock_in_period",
+   "fieldtype": "Data",
+   "label": "Lock in period"
+  },
+  {
+   "fieldname": "water_supply",
+   "fieldtype": "Data",
+   "label": "Water Supply"
+  },
+  {
+   "fieldname": "drainage_and_sewerage",
+   "fieldtype": "Data",
+   "label": "Drainage and Sewerage"
+  },
+  {
+   "fieldname": "payment_terms",
+   "fieldtype": "Small Text",
+   "label": "Payment terms of Security deposite"
+  },
+  {
+   "fieldname": "nternet_antina",
+   "fieldtype": "Small Text",
+   "label": "Internet Antina"
+  },
+  {
+   "fieldname": "split_ratio",
+   "fieldtype": "Small Text",
+   "label": "Split Ratio"
+  },
+  {
+   "fieldname": "maintenance",
+   "fieldtype": "Data",
+   "label": "Maintenance"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-07 17:14:19.573706",
+ "modified": "2025-01-20 14:21:56.924910",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Letter of Intent",
