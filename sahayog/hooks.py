@@ -294,3 +294,11 @@ override_whitelisted_methods = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+fixtures = [
+    {
+        "dt": "Print Format",
+        "filters": [
+            ["name", "=", "LOI"]
+        ]
+    }
+]

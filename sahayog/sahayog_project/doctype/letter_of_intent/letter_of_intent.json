@@ -8,9 +8,11 @@
  "field_order": [
   "project_section",
   "project",
+  "date",
   "column_break_c4sb",
   "task",
   "personal_information_section",
+  "salutation",
   "owner_name",
   "residential_address",
   "column_break_5djl",
@@ -68,7 +70,8 @@
   {
    "fieldname": "owner_name",
    "fieldtype": "Data",
-   "label": "Owner Name"
+   "label": "Owner Name",
+   "mandatory_depends_on": "eval:doc.docstatus == 1"
   },
   {
    "fieldname": "residential_address",
@@ -88,7 +91,8 @@
   {
    "fieldname": "aadhar_number",
    "fieldtype": "Data",
-   "label": "Aadhar Number"
+   "label": "Aadhar Number",
+   "mandatory_depends_on": "eval:doc.docstatus == 1"
   },
   {
    "fieldname": "pan_number",
@@ -269,12 +273,26 @@
    "fieldname": "maintenance",
    "fieldtype": "Data",
    "label": "Maintenance"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "salutation",
+   "fieldtype": "Link",
+   "label": "Salutation",
+   "mandatory_depends_on": "eval:doc.docstatus!=0",
+   "options": "Salutation"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-20 14:21:56.924910",
+ "modified": "2025-01-21 13:39:24.251330",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Letter of Intent",
