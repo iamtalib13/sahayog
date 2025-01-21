@@ -1,7 +1,7 @@
 import frappe
 
 def execute():
-    # List of divisions to create
+    # List of divisions to creates
     html = ""
     css = ""
     js = ""
