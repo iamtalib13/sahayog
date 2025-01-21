@@ -235,13 +235,58 @@ def delete_location_details(names):
 
 
 #fetch the location details to client side
+# @frappe.whitelist()
+# def get_custom_location_details(docname):
+#     task = frappe.get_doc("Task", docname)
+#     return task.custom_location_details
+
 @frappe.whitelist()
 def get_custom_location_details(docname):
-    task = frappe.get_doc("Task", docname)
-    return task.custom_location_details
+    query = """
+        SELECT
+            *
+        FROM
+            `tabLocation Details`
+        WHERE
+            parent = %s
+        ORDER BY
+            idx ASC
+    """
+    location_details = frappe.db.sql(query, (docname,), as_dict=True)
+    return location_details
+
+#to delete the file attached with location details 
+# @frappe.whitelist()
+# def delete_file(file_name, attached_to_field, attached_to_name, attached_to_doctype):
+#     try:
+#         # Fetch the file using the unique 'name' field
+#         file_doc = frappe.get_doc('File', file_name)
+#         # Debug: print the list of files
+#         frappe.log_error(f"Files found: {file_doc}")
+#         # if (file_doc.attached_to_field == "t8ug5r91eq" and
+#         #     file_doc.attached_to_name == "TASK-2025-00064" and
+#         #     file_doc.attached_to_doctype == "Task"):
+#             # Proceed to delete the file
+#             #frappe.delete_doc('File', file_doc)
+           
+#         return {"message": "success", "file_name": file_doc}
+#         # else:
+#         #     return {"error": "File does not match the provided details"}
+#     except frappe.DoesNotExistError:
+#         return {"error": "File not found"}
+#     except Exception as e:
+#         frappe.log_error(f"Error deleting file {file_name}: {str(e)}")
+#         return {"error": str(e)}
 
 
-
-
-
+@frappe.whitelist()
+def delete_file(file_name, attached_to_field, attached_to_name, attached_to_doctype):
+   
+    # Fetch the file using the unique 'name' field
+    file_doc = frappe.get_doc('File', file_name)
+    # Debug: print the list of files
+    frappe.log_error(f"Files found: {file_doc}")
+    
+    return {"message": "success", "file_name": file_doc}
+       
 

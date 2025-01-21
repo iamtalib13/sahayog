@@ -19,18 +19,22 @@ frappe.ui.form.on("Task", {
           if (response && response.message && response.message.name) {
             // Hide or disable the Create LOI button
             createButton.hide(); // Or use `createButton.disable();` if you prefer to disable instead of hide
-
-            // Add the View LOI button
-            frm.add_custom_button(__("View LOI: " + project), function () {
-              frappe.set_route(
-                "Form",
-                "Letter of Intent",
-                response.message.name
-              );
-            });
+            if (frm.doc.status != "Template") {
+              // Add the View LOI button
+              frm.add_custom_button(__("View LOI: " + project), function () {
+                frappe.set_route(
+                  "Form",
+                  "Letter of Intent",
+                  response.message.name
+                );
+              });
+            }
           }
         });
     }
+  },
+  onload: function (frm) {
+    frm.trigger("populate_summary_html");
   },
 
   async populate_summary_html(frm) {

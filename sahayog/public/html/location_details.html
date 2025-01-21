@@ -98,6 +98,7 @@
       .location-table th:last-child,
       .location-table td:first-child,
       .location-table td:nth-child(2),
+      .location-table td:nth-child(5),
       .location-table td:last-child {
         text-align: center;
         vertical-align: middle;
@@ -105,122 +106,147 @@
       .hidden {
         display: none;
       }
+      .no-bullets {
+        list-style-type: none;
+        padding-left: 0;
+      }
+      .delete-file-btn {
+        cursor: pointer;
+      }
+      .attachments {
+        align-items: center;
+      }
+      .file-list-row {
+        background: #f2f2f2;
+        border-radius: 5px;
+        padding: 0 3px;
+        margin: 3px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .file-name {
+        color: #2b60de;
+      }
+      .file-name:hover {
+        color: #2b60de;
+      }
+      .file-size {
+        font-size: 12px;
+      }
     </style>
     <script>
-      // Function to populate the table with data from the server
-      // Function to populate the table with data from the server
-      function fetchAndPopulateTable() {
-        const docname = cur_frm.doc.name;
+      let initialData = {}; // Initialize initialData as an empty object
 
-        frappe.call({
-          method: "sahayog.doc_events.task.get_custom_location_details",
-          args: {
-            docname: docname,
-          },
-          callback: function (response) {
-            if (response.message) {
-              console.log(response.message);
-              const locationDetails = response.message || [];
-              const tableBody = document.getElementById("locationTableBody");
-
-              // Clear existing rows
-              tableBody.innerHTML = "";
-
-              // Populate the table with fetched data
-              locationDetails.forEach((detail, index) => {
-                const newRow = document.createElement("tr");
-                const docname = cur_frm.doc.name;
-
-                // Fetch attachments for each location
-                frappe.call({
-                  method: "frappe.client.get_list",
-                  args: {
-                    doctype: "File",
-                    filters: {
-                      attached_to_doctype: "Task", // Filter by the "Task" doctype
-                      attached_to_name: docname,
-                      attached_to_field: detail.name, // Filter by the current location's docname
-                    },
-                    fields: ["file_url", "file_name", "is_private"], // Get the file details
-                  },
-                  callback: function (fileResponse) {
-                    const files = fileResponse.message || [];
-
-                    console.log(fileResponse);
-                    // Populate the table row with data and attachments
-                    newRow.innerHTML = `
-                                <td class="checkbox-container">
-                                    <input type="checkbox" />
-                                </td>
-                                <td class="sr-no">${index + 1}</td>
-                                <td><input type="text" value="${
-                                  detail.location_name
-                                }" /></td>
-                                <td>
-                                     <input type="file" multiple
-                                           onclick="handleFileUpload(event, '${
-                                             detail.name
-                                           }')"
-                                           data-name="${detail.name}" />
-    
-                                          
-                                    <ul>
-                                        ${files
-                                          .map(
-                                            (file) =>
-                                              `<li><a href="${file.file_url}" target="_blank">${file.file_name}</a></li>`
-                                          )
-                                          .join("")}
-                                    </ul>
-                               
-                                </td>
-                                <td>
-                                    <select>
-                                        <option value="Pending" ${
-                                          detail.status === "Pending"
-                                            ? "selected"
-                                            : ""
-                                        }>Pending</option>
-                                        <option value="Approved" ${
-                                          detail.status === "Approved"
-                                            ? "selected"
-                                            : ""
-                                        }>Approved</option>
-                                        <option value="Rejected" ${
-                                          detail.status === "Rejected"
-                                            ? "selected"
-                                            : ""
-                                        }>Rejected</option>
-                                    </select>
-                                </td>
-                                <td class="hidden" data-name="${detail.name}">${
-                      detail.name
-                    }</td>
-                                
-                            `;
-
-                    tableBody.appendChild(newRow);
-                  },
-                });
-              });
-            } else {
-              frappe.msgprint("No location details found.");
-            }
-          },
-        });
-      }
-
+      //fetch the prevous data for table of location details
       fetchAndPopulateTable();
 
-      // Function to trigger the hidden file input when the image is clicked
-      function triggerFileInput(docname) {
-        // Find the hidden file input based on the data-name attribute
-        const fileInput = document.querySelector(
-          `input[type="file"][data-name="${docname}"]`
-        );
-        if (fileInput) {
-          // Trigger the click event of the file input
-          fileInput.click();
+      async function fetchAndPopulateTable() {
+        const docname = cur_frm.doc.name;
+
+        try {
+          const response = await frappe.call({
+            method: "sahayog.doc_events.task.get_custom_location_details",
+            args: { docname: docname },
+          });
+
+          if (response.message) {
+            console.log("Fetchdata:", response.message);
+            const locationDetails = response.message || [];
+            const tableBody = document.getElementById("locationTableBody");
+
+            // Clear existing rows
+            tableBody.innerHTML = "";
+
+            // Reset initialData
+            initialData = {};
+
+            for (const [index, detail] of locationDetails.entries()) {
+              const newRow = document.createElement("tr");
+
+              try {
+                const files = await fetchAttachments(detail, docname);
+                console.log(files);
+                newRow.innerHTML = `
+            <td class="checkbox-container">
+              <input type="checkbox" />
+            </td>
+            <td class="sr-no">${index + 1}</td>
+            <td><input type="text" value="${detail.location_name}" /></td>
+            <td> <div class="attachments">
+              <input type="file" multiple style="display: none;"
+                onclick="handleFileUpload(this, '${detail.name}')"
+                data-name="${detail.name}" />
+              <img src="/assets/sahayog/images/add.png"
+                width="25" height="25" onclick="triggerFileInput('${
+                  detail.name
+                }')">
+              <ul class="no-bullets">
+                ${files
+                  .map(
+                    (file) =>
+                      `<li class="file-list-row"><div><a class="file-name" href="${
+                        file.file_url
+                      }" target="_blank">${file.file_name}</a>
+                        <span class="file-size">(${formatFileSize(
+                          file.file_size
+                        )})</span></div>
+                        <div>
+                        <img class="delete-file-btn" src="/assets/sahayog/images/close.png"
+                width="10"  onclick="deleteFile('${file.file_name}','${
+                        file.attached_to_field
+                      }','${file.attached_to_name}')">
+                       </div>
+                        </li>`
+                  )
+                  .join("")}
+              </ul>
+              </div>
+            </td>
+            <td>
+              <select>
+                <option value="Pending" ${
+                  detail.status === "Pending" ? "selected" : ""
+                }>Pending</option>
+                <option value="Approved" ${
+                  detail.status === "Approved" ? "selected" : ""
+                }>Approved</option>
+                <option value="Rejected" ${
+                  detail.status === "Rejected" ? "selected" : ""
+                }>Rejected</option>
+              </select>
+            </td>
+            <td class="hidden" data-name="${detail.name}">${detail.name}</td>
+          `;
+
+                tableBody.appendChild(newRow);
+
+                // Initialize initialData with fetched details
+                initialData[detail.name] = {
+                  location_name: detail.location_name,
+                  status: detail.status,
+                };
+              } catch (error) {
+                console.error(error);
+              }
+            }
+          } else {
+            frappe.msgprint("No location details found.");
+          }
+        } catch (error) {
+          console.error("Error fetching location details:", error);
+        }
+      }
+
+      function formatFileSize(sizeInBytes) {
+        if (sizeInBytes < 1024) {
+          return sizeInBytes + " B"; // Bytes
+        } else if (sizeInBytes < 1024 * 1024) {
+          return (sizeInBytes / 1024).toFixed(2) + " KB"; // Kilobytes
+        } else if (sizeInBytes < 1024 * 1024 * 1024) {
+          return (sizeInBytes / (1024 * 1024)).toFixed(2) + " MB"; // Megabytes
+        } else {
+          return (sizeInBytes / (1024 * 1024 * 1024)).toFixed(2) + " GB"; // Gigabytes
         }
       }
 
@@ -232,35 +258,57 @@
         });
       }
 
-      // Add event listener after HTML is injected
-      document
-        .getElementById("addRowBtn")
-        .addEventListener("click", function () {
-          const tableBody = document.getElementById("locationTableBody");
-          const newRow = document.createElement("tr");
-          //newRow.classList.add("new-row"); // Mark new rows with a class
-
-          newRow.innerHTML = `
-                    <td class="checkbox-container">
-                        <input type="checkbox" />
-                    </td>
-                    <td class="sr-no"></td>
-                    <td><input type="text" placeholder="Location Name" /></td>
-                    <td><input type="file" multiple /></td>
-                    <td>
-                        <select>
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                        </select>
-                    </td>
-                     <td class="hidden" data-name=""></td>
-                `;
-
-          tableBody.appendChild(newRow);
-          updateSerialNumbers();
-          toggleRemoveButton();
+      async function fetchAttachments(detail, docname) {
+        return new Promise((resolve, reject) => {
+          frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "File",
+              filters: {
+                attached_to_doctype: "Task",
+                attached_to_name: docname,
+                attached_to_field: detail.name,
+              },
+              fields: ["*"],
+            },
+            callback: function (fileResponse) {
+              if (fileResponse.message) {
+                resolve(fileResponse.message);
+              } else {
+                reject("Failed to fetch attachments");
+              }
+            },
+          });
         });
+      }
+
+      // Add event listener after HTML is injected
+      function addRow() {
+        const tableBody = document.getElementById("locationTableBody");
+        const newRow = document.createElement("tr");
+        //newRow.classList.add("new-row"); // Mark new rows with a class
+
+        newRow.innerHTML = `
+                       <td class="checkbox-container">
+                           <input type="checkbox" />
+                       </td>
+                       <td class="sr-no"></td>
+                       <td><input type="text" placeholder="Location Name" /></td>
+                        <td><input type="file" multiple  class="hidden" /></td>
+                       <td>
+                           <select>
+                               <option value="Pending">Pending</option>
+                               <option value="Approved">Approved</option>
+                               <option value="Rejected">Rejected</option>
+                           </select>
+                       </td>
+                        <td class="hidden" data-name=""></td>
+                   `;
+
+        tableBody.appendChild(newRow);
+        updateSerialNumbers();
+        toggleRemoveButton();
+      }
 
       // Function to handle showing and hiding the remove button
       function toggleRemoveButton() {
@@ -292,102 +340,80 @@
         });
 
       // Function to remove checked rows
-      // Function to remove checked rows
-      document
-        .getElementById("removeRowBtn")
-        .addEventListener("click", function () {
-          const tableBody = document.getElementById("locationTableBody");
-          const checkboxes = tableBody.querySelectorAll(
-            "input[type='checkbox']"
-          );
-          const rowsToDelete = [];
+      function removeRow() {
+        const tableBody = document.getElementById("locationTableBody");
+        const checkboxes = tableBody.querySelectorAll("input[type='checkbox']");
+        const rowsToDelete = [];
 
-          checkboxes.forEach((checkbox) => {
-            if (checkbox.checked) {
-              // Collect the name from the data-name attribute of the row
-              const row = checkbox.closest("tr");
-              const dataName = row
-                .querySelector("td[data-name]")
-                .getAttribute("data-name");
+        checkboxes.forEach((checkbox) => {
+          if (checkbox.checked) {
+            // Collect the name from the data-name attribute of the row
+            const row = checkbox.closest("tr");
+            const dataName = row
+              .querySelector("td[data-name]")
+              .getAttribute("data-name");
 
-              if (dataName) {
-                rowsToDelete.push(dataName);
-              }
+            if (dataName) {
+              rowsToDelete.push(dataName);
             }
-          });
-
-          console.log(rowsToDelete);
-
-          if (rowsToDelete.length > 0) {
-            // Call the server to delete the rows from the database
-            frappe.call({
-              method: "sahayog.doc_events.task.delete_location_details", // Update with your server-side method
-              args: {
-                names: rowsToDelete,
-              },
-              callback: function (response) {
-                if (response.message.message === "success") {
-                  console.log(response);
-                  // Remove the rows from the DOM after successful deletion
-                  checkboxes.forEach((checkbox) => {
-                    if (checkbox.checked) {
-                      const row = checkbox.closest("tr");
-                      tableBody.removeChild(row);
-                    }
-                  });
-
-                  // Update the serial numbers
-                  updateSerialNumbers();
-
-                  // Hide the remove button if no checkboxes are checked
-                  toggleRemoveButton();
-                  // Show a Frappe alert after successful deletion
-                  frappe.show_alert({
-                    message: "Selected row have been successfully deleted.",
-                    indicator: "green",
-                  });
-                } else {
-                  frappe.msgprint("Error deleting location details.");
-                }
-              },
-            });
-          } else {
-            frappe.msgprint("No rows selected for deletion.");
           }
         });
 
-      // Function to upload the files to the server
-      function uploadFile(file) {
-        return new Promise((resolve, reject) => {
-          const formData = new FormData();
-          formData.append("file", file);
+        console.log(rowsToDelete);
 
+        if (rowsToDelete.length > 0) {
+          // Call the server to delete the rows from the database
           frappe.call({
-            method: "frappe.client.upload_file",
+            method: "sahayog.doc_events.task.delete_location_details", // Update with your server-side method
             args: {
-              filedata: file,
-              filename: file.name,
-              folder: "Home", // Use the folder where you want to store the file
+              names: rowsToDelete,
             },
-            async: true, // We want it to be async for better performance
             callback: function (response) {
-              if (response.message) {
-                resolve(response.message.file_url); // Resolve with the file URL
+              if (response.message.message === "success") {
+                console.log(response);
+                // Remove the rows from the DOM after successful deletion
+                checkboxes.forEach((checkbox) => {
+                  if (checkbox.checked) {
+                    const row = checkbox.closest("tr");
+                    tableBody.removeChild(row);
+                  }
+                });
+
+                // Update the serial numbers
+                updateSerialNumbers();
+
+                // Hide the remove button if no checkboxes are checked
+                toggleRemoveButton();
+                // Show a Frappe alert after successful deletion
+                frappe.show_alert({
+                  message: "Selected row have been successfully deleted.",
+                  indicator: "green",
+                });
+                //Optionally refresh the page after the alert
+                setTimeout(function () {
+                  location.reload();
+                }, 1000); // Adjust the delay as needed
               } else {
-                reject("Error uploading file"); // Reject in case of error
+                frappe.msgprint("Error deleting location details.");
               }
             },
           });
-        });
+        } else {
+          frappe.msgprint("No rows selected for deletion.");
+        }
       }
 
       // Function to handle the update or addition of location details
       function saveOrUpdateLocationDetails() {
         const rows = document.querySelectorAll("#locationTableBody tr");
         const locationData = [];
+        let hasEmptyLocationName = false; // Flag to check for empty location names
+        let hasChanges = false; // Flag to check for changes in the table
 
         rows.forEach((row) => {
-          const locationName = row.querySelector("input[type='text']").value;
+          const locationName = row
+            .querySelector("input[type='text']")
+            .value.trim();
           const status = row.querySelector("select").value;
           const files = row.querySelector("input[type='file']").files;
           const name =
@@ -405,6 +431,20 @@
             });
           }
 
+          // Check if locationName is empty
+          if (!locationName) {
+            hasEmptyLocationName = true;
+          }
+
+          // Check if the row is new (not in initialData) or has changes
+          if (
+            !initialData[name] ||
+            initialData[name].location_name !== locationName ||
+            initialData[name].status !== status
+          ) {
+            hasChanges = true;
+          }
+
           locationData.push({
             location_name: locationName,
             status: status,
@@ -412,6 +452,22 @@
             file_metadata: fileInfo, // Send only the metadata (filename, size, type)
           });
         });
+
+        // If any locationName is empty, show an alert and stop the save operation
+        if (hasEmptyLocationName) {
+          frappe.msgprint(
+            "Location name cannot be empty. Please fill location name."
+          );
+          return; // Stop the execution
+        }
+
+        // If there are no changes, show an alert and stop the save operation
+        if (!hasChanges) {
+          frappe.msgprint(
+            "No changes detected. Please make changes before saving."
+          );
+          return; // Stop the execution
+        }
 
         console.log("locations to pass:", locationData);
 
@@ -423,12 +479,16 @@
             docname: docname,
           },
           callback: function (response) {
-            if (response) {
+            if (response.message.message === "success") {
               console.log(response);
               frappe.show_alert({
                 message: "Location details saved or updated successfully.",
                 indicator: "green",
               });
+              //Optionally refresh the page after the alert
+              setTimeout(function () {
+                location.reload();
+              }, 1000); // Adjust the delay as needed
             } else {
               frappe.msgprint("Error saving or updating location details.");
             }
@@ -475,7 +535,15 @@
       //         console.error("Error uploading files:", error);
       //       });
       //   });
-      function handleFileUpload(event, name) {
+
+      function triggerFileInput(name) {
+        const fileInput = document.querySelector(
+          `input[type="file"][data-name="${name}"]`
+        );
+        fileInput.click();
+      }
+
+      function handleFileUpload(fileInput, name) {
         event.preventDefault(); // Prevent the default file picker
 
         // Get the row's docname (this could be stored in a hidden field or data attribute)
@@ -493,7 +561,43 @@
           fieldname: fieldname, // The dynamic fieldname from the row
           on_success: function (file) {
             console.log("File uploaded:", file);
+            frappe.show_alert({
+              message: "File uploaded successfully.",
+              indicator: "green",
+            });
+            //Optionally refresh the page after the alert
+            setTimeout(function () {
+              location.reload();
+            }, 1000); // Adjust the delay as needed
             // Perform additional actions, like attaching the file to a specific Doctype
+          },
+        });
+      }
+      function deleteFile(fileName, childDocname, docname) {
+        let file_name = fileName;
+        let attached_to_field = childDocname;
+        let attached_to_name = docname;
+
+        console.log(file_name, childDocname, docname);
+        frappe.call({
+          method: "sahayog.doc_events.task.delete_file",
+          args: {
+            file_name: file_name,
+            attached_to_field: attached_to_field,
+            attached_to_name: attached_to_name,
+            attached_to_doctype: "Task",
+          },
+          callback: function (response) {
+            if (response) {
+              console.log(response);
+              frappe.msgprint(`File ${fileName} deleted successfully.`);
+            } else {
+              frappe.msgprint(`Failed to delete file ${fileName}.`);
+            }
+          },
+          error: function (error) {
+            console.error("Error deleting file:", error);
+            frappe.msgprint("An error occurred while deleting the file.");
           },
         });
       }
@@ -516,10 +620,16 @@
           <!--Dynamically added row here-->
         </tbody>
       </table>
-      <input type="file" id="fileInput" multiple />
+      <!-- <input type="file" id="fileInput" multiple /> -->
 
-      <button class="add-row-btn" id="addRowBtn">+ Add Location</button>
-      <button class="delete-row-btn hidden" id="removeRowBtn">
+      <button class="add-row-btn" id="addRowBtn" onclick="addRow()">
+        + Add Location
+      </button>
+      <button
+        class="delete-row-btn hidden"
+        id="removeRowBtn"
+        onclick="removeRow()"
+      >
         - Remove Location
       </button>
       <button class="save-btn" id="saveOrUpdateLocBtn">Save Location</button>
