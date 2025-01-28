@@ -105,6 +105,7 @@ after_migrate = [
     "sahayog.patches.fixtures.add_module_profile.execute",
     "sahayog.patches.fixtures.add_role_profile.execute",
     "sahayog.patches.fixtures.hr_setting.execute",
+    "sahayog.patches.fixtures.set_view_setting_of_project.execute",
 
 
 ]
