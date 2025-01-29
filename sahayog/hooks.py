@@ -162,7 +162,7 @@ after_migrate = [
 # Hook on document methods and events
 
 doc_events = {
- "Employee": {
+    "Employee": {
         "after_insert": "sahayog.doc_events.create_user_from_employee.create_user",
       
 
@@ -173,6 +173,12 @@ doc_events = {
         "before_save": [
              "sahayog.doc_events.employee.emp_enable_disable",
             
+        ],
+    },
+    "Project": {
+
+        "on_update": [
+            "sahayog.doc_events.project.update_branch_status",
         ],
     },
     "User": {
@@ -187,11 +193,11 @@ doc_events = {
         "after_insert": [
             "sahayog.doc_events.task.create_letter_of_intent",   
         ],
-    },
-
-    
-
-    
+        "on_update": [
+            "sahayog.doc_events.task.update_branch_status_trigger",
+        ]
+        
+    },    
 }
 
 # Scheduled Tasks
