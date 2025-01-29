@@ -4,6 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils.file_manager import get_file
 from frappe.core.doctype.file.file import File
+from sahayog.doc_events.project import update_branch_status
+
 
 
 def create_letter_of_intent(doc, method):
@@ -290,3 +292,19 @@ def delete_file(file_name, attached_to_field, attached_to_name, attached_to_doct
     return {"message": "success", "file_name": file_doc}
        
 
+
+def update_branch_status_trigger(doc, method):
+    try:
+        # Check if the Task has a linked Project
+        if doc.project:
+            # Fetch the linked Project document
+            project = frappe.get_doc("Project", doc.project)
+
+            # Call the update_branch_status function for the linked project
+            update_branch_status(project, method)
+
+    except Exception as e:
+        # Log the error if any exception occurs
+        frappe.log_error(message=str(e), title="Error in update_branch_status_trigger")
+        # Show an error message to the user
+        frappe.msgprint(f"An error occurred while triggering the branch status update for Project: {str(e)}")
