@@ -72,7 +72,7 @@ def assign_permission():
                 "select": 1, "create": 1, "email": 1, "export": 1, "read": 1, "report": 1, "share": 1, "write": 1, "print": 1
             },
             "Letter of Intent": {
-                "select": 1, "email": 1, "export": 1, "read": 1, "delete": 1, "report": 1, "share": 1, "write": 1, "print": 1
+                "select": 1, "email": 1, "export": 1, "read": 1, "report": 1, "share": 1, "write": 1, "print": 1
             }
         },
         "Task Manager": {
@@ -83,7 +83,7 @@ def assign_permission():
                 "select": 1, "create": 1, "email": 1, "export": 1, "read": 1, "report": 1, "share": 1, "write": 1, "print": 1
             },
             "Letter of Intent": {
-                "select": 1, "create": 1, "email": 1, "export": 1, "read": 1, "delete": 1, "report": 1, "share": 1, "write": 1, "submit": 1, "print": 1, "cancel": 1
+                "select": 1, "create": 1, "email": 1, "export": 1, "read": 1, "report": 1, "share": 1, "write": 1, "submit": 1, "print": 1, "cancel": 1
             }
         }
     }
@@ -117,7 +117,6 @@ def assign_permission():
                     "share": permissions.get("share", 0),
                     "write": permissions.get("write", 0),
                     "print": permissions.get("print", 0),
-                    "delete": permissions.get("delete", 0),
                     "submit": permissions.get("submit", 0),
                     "cancel": permissions.get("cancel", 0),
                 })
