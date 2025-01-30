@@ -117,7 +117,6 @@ def assign_permission():
                     "share": permissions.get("share", 0),
                     "write": permissions.get("write", 0),
                     "print": permissions.get("print", 0),
-                    "delete": permissions.get("delete", 0),
                     "submit": permissions.get("submit", 0),
                     "cancel": permissions.get("cancel", 0),
                 })
