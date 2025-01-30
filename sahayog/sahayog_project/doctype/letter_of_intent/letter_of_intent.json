@@ -8,9 +8,11 @@
  "field_order": [
   "project_section",
   "project",
+  "date",
   "column_break_c4sb",
   "task",
   "personal_information_section",
+  "salutation",
   "owner_name",
   "residential_address",
   "column_break_5djl",
@@ -208,13 +210,15 @@
    "in_list_view": 1,
    "label": " Project",
    "options": "Project",
+   "read_only_depends_on": "eval:frappe.session.user!=\"Administrator\"\n",
    "reqd": 1
   },
   {
    "fieldname": "task",
    "fieldtype": "Link",
    "label": "Task",
-   "options": "Task"
+   "options": "Task",
+   "read_only_depends_on": "eval:frappe.session.user!=\"Administrator\"\n"
   },
   {
    "fieldname": "column_break_c4sb",
@@ -269,12 +273,23 @@
    "fieldname": "maintenance",
    "fieldtype": "Data",
    "label": "Maintenance"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "salutation",
+   "fieldtype": "Link",
+   "label": "Salutation",
+   "options": "Salutation"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-20 14:21:56.924910",
+ "modified": "2025-01-30 10:54:39.983235",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Letter of Intent",
