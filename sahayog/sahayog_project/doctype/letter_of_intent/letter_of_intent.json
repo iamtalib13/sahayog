@@ -50,7 +50,6 @@
   "type_of_agreement",
   "column_break_4gzf",
   "section_break_dffg",
-  "amended_from",
   "amended_from"
  ],
  "fields": [
@@ -300,7 +299,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-30 15:25:18.414733",
+ "modified": "2025-01-31 11:56:18.774396",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Letter of Intent",
