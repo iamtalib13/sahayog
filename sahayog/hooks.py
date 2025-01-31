@@ -93,7 +93,6 @@ doctype_js = {
 # ]
 
 after_migrate = [
-    "sahayog.patches.fixtures.set_module_for_loi.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_designation.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
