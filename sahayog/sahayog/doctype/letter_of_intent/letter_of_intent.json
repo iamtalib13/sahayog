@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:{project}-LOI",
- "creation": "2025-01-30 15:25:18.414733",
+ "creation": "2025-02-03 11:27:09.661013",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -50,6 +50,7 @@
   "type_of_agreement",
   "column_break_4gzf",
   "section_break_dffg",
+  "amended_from",
   "amended_from"
  ],
  "fields": [
@@ -284,12 +285,22 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Letter of Intent",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-31 12:14:34.664355",
+ "modified": "2025-02-03 11:27:09.661013",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Letter of Intent",
