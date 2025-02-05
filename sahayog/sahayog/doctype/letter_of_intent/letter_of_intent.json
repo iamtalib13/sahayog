@@ -50,7 +50,6 @@
   "type_of_agreement",
   "column_break_4gzf",
   "section_break_dffg",
-  "amended_from",
   "amended_from"
  ],
  "fields": [
@@ -126,7 +125,7 @@
   },
   {
    "fieldname": "pan_number",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": " PAN Number"
   },
   {
@@ -300,7 +299,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-03 11:27:09.661013",
+ "modified": "2025-02-05 12:52:19.099233",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Letter of Intent",
