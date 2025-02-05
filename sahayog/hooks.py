@@ -195,7 +195,11 @@ doc_events = {
         ],
         "on_update": [
             "sahayog.doc_events.task.update_branch_status_trigger",
-        ]
+        ],
+        "validate": [
+            "sahayog.doc_events.task.validate_location_status",
+        ],
+
         
     },    
 }

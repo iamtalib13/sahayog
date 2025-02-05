@@ -308,3 +308,19 @@ def update_branch_status_trigger(doc, method):
         frappe.log_error(message=str(e), title="Error in update_branch_status_trigger")
         # Show an error message to the user
         frappe.msgprint(f"An error occurred while triggering the branch status update for Project: {str(e)}")
+
+def validate_location_status(doc, method):
+    if doc.subject == "Task 1: Acquisition of Property" and doc.status == "Completed":
+        # Count the number of 'Approved' status in the child table
+        approved_status_count = 0
+        for location in doc.custom_location_details:
+            if location.status == "Approved":
+                approved_status_count += 1
+        
+        # Check if there are no 'Approved' status locations
+        if approved_status_count == 0:
+            frappe.throw(_("Cannot mark the task as 'Completed' until at least one location detail is 'Approved'."))
+
+        # Check if there is more than one 'Approved' status location
+        if approved_status_count > 1:
+            frappe.throw(_("Only one location detail can have 'Approved' status before marking the task as 'Completed'."))

@@ -24,16 +24,18 @@
    "label": "Attachments"
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "status"
+   "label": "status",
+   "options": "Pending\nApproved\nRejected"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-01-13 17:07:49.122693",
+ "modified": "2025-02-05 17:36:51.118286",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Location Details",
