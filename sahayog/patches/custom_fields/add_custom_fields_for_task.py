@@ -28,6 +28,22 @@ def execute():
                 "options": "Location Details",  # Child table doctype
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 1: Acquisition of Property'",
             },
+            {
+                "fieldname": "custom_agreement_details_section",
+                "fieldtype": "Section Break",
+                "insert_after": "completed_on",
+                "label": "Agreement Details",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3: Agreement and Handover'",
+               
+            },
+            {
+                "fieldname": "custom_agreement",
+                "fieldtype": "Attach",
+                "insert_after": "custom_agreement_details_section",
+                "label": "Agreement Attatchment",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3: Agreement and Handover'",
+               
+            },
         ],
     }
     create_custom_fields(fields)
