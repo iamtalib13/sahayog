@@ -3,29 +3,24 @@ import frappe
 # Global variable to prevent recursion
 script_running = False
 
-def update_branch_status(doc, method):
+def update_branch_status(doc, method, status):
     global script_running
 
     try:
-        # Prevent recursion
         if script_running:
             return
-        
-        script_running = True  # Set flag to indicate script is running
+        script_running = True
 
-        # Extract the percent_complete and current custom_branch_status from the passed 'doc'
-        percent_complete = doc.percent_complete  # Direct access to the field
-        custom_branch_status = None  # Variable to store the updated status
-        
-        # Determine the status based on percent_complete
+        percent_complete = doc.percent_complete
+        custom_branch_status = None
+
         if percent_complete == 0:
             custom_branch_status = "Not Started"
         elif 1 <= percent_complete <= 99:
             custom_branch_status = "Under Development"
         elif percent_complete == 100:
             custom_branch_status = "Live"
-        
-        # Generate HTML and CSS for the card with a progress ring and animation
+
         progress_ring = f'''
         <style>
             .progress-card {{
@@ -86,24 +81,20 @@ def update_branch_status(doc, method):
         </div>
         '''
 
-        # Update the custom_branch_status field only if the status has changed
         if custom_branch_status and custom_branch_status != doc.custom_branch_status:
             doc.custom_branch_status = custom_branch_status
-            doc.save()  # Save the changes made to the doc
-            # Show a custom progress card with percentage and animation
-            frappe.msgprint(progress_ring, title=f"Project {doc.name} Status Updated")
-            print(f"Updated Project: {doc.name} - Percent Complete: {percent_complete}% - New Status: {custom_branch_status}")
+            doc.save()
+
+            if status == "Completed":  # ✅ Show message only when status is 'Completed'
+                frappe.msgprint(progress_ring, title=f"Project {doc.name} Status Updated")
+
         else:
-            # Show a custom progress card with no changes if needed
-            frappe.msgprint(progress_ring, title=f"Project {doc.name} Status")
-            print(f"No change needed for Project: {doc.name} - Percent Complete: {percent_complete}% - Current Status: {doc.custom_branch_status}")
-    
+            if status == "Completed":
+                frappe.msgprint(progress_ring, title=f"Project {doc.name} Status")
+
     except Exception as e:
-        # Log the error if any exception occurs
         frappe.log_error(message=str(e), title="Error in update_branch_status")
-        # Show an error message to the user
         frappe.msgprint(f"An error occurred while updating the project: {str(e)}")
-    
+
     finally:
-        # Reset the global flag after execution
         script_running = False

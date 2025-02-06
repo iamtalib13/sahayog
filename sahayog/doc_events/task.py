@@ -299,9 +299,9 @@ def update_branch_status_trigger(doc, method):
         if doc.project:
             # Fetch the linked Project document
             project = frappe.get_doc("Project", doc.project)
-
-            # Call the update_branch_status function for the linked project
-            update_branch_status(project, method)
+            status = doc.status
+            # Call the update_branch_status function for the linked project with status
+            update_branch_status(project, method, status)
 
     except Exception as e:
         # Log the error if any exception occurs
@@ -324,3 +324,10 @@ def validate_location_status(doc, method):
         # Check if there is more than one 'Approved' status location
         if approved_status_count > 1:
             frappe.throw(_("Only one location detail can have 'Approved' status before marking the task as 'Completed'."))
+
+
+def validate_agreement_status(doc, method):
+    if doc.subject == "Task 3: Agreement and Handover" and doc.status == "Completed":
+        # Check if the custom_agreement field is empty or None
+        if not doc.custom_agreement:
+            frappe.throw(_("Cannot mark the task as 'Completed' until the Agreement is provided."))
