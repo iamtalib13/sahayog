@@ -11,10 +11,11 @@ from frappe.model.document import Document
 class LetterofIntent(Document):
 	  
 	def validate(self):
-		#"""Validates Aadhar, Mobile, and PAN numbers before saving."""
-		self.validate_aadhar_number()
-		self.validate_mobile_number()
-		self.validate_pan_number()
+		# Check if docstatus is changing from 0 to 1
+		if self.docstatus == 1 and self.get_doc_before_save() and self.get_doc_before_save().docstatus == 0:
+			self.validate_aadhar_number()
+			self.validate_mobile_number()
+			self.validate_pan_number()
 
 	def validate_aadhar_number(self):
 		#"""Validate Aadhar Number format (XXXX XXXX XXXX)."""

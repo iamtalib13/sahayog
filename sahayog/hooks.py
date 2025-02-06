@@ -198,6 +198,7 @@ doc_events = {
         ],
         "validate": [
             "sahayog.doc_events.task.validate_location_status",
+            "sahayog.doc_events.task.validate_agreement_status",
         ],
 
         
