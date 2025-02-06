@@ -3,7 +3,7 @@ import frappe
 # Global variable to prevent recursion
 script_running = False
 
-def update_branch_status(doc, method, status):
+def update_branch_status(doc, method, status=None):
     global script_running
 
     try:
