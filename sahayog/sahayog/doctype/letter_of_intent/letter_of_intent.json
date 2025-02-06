@@ -29,7 +29,7 @@
   "maintenance",
   "security_deposit",
   "financial_terms_section",
-  "lease_and_license",
+  "leave_and_license",
   "stamp_duty",
   "lock_in_period",
   "exit_clause",
@@ -44,7 +44,7 @@
   "signage",
   "arbitration_and_jurisdiction",
   "landlord_scope_of_work",
-  "nternet_antina",
+  "internet_antina",
   "split_ratio",
   "agreement_details_section",
   "type_of_agreement",
@@ -173,11 +173,6 @@
    "label": "Financial Terms"
   },
   {
-   "fieldname": "lease_and_license",
-   "fieldtype": "Data",
-   "label": "Leave and License Period"
-  },
-  {
    "fieldname": "stamp_duty",
    "fieldtype": "Data",
    "label": "Stamp Duty and Registration"
@@ -247,11 +242,6 @@
    "label": "Landlord Scope of Work"
   },
   {
-   "fieldname": "nternet_antina",
-   "fieldtype": "Small Text",
-   "label": "Internet Antina"
-  },
-  {
    "fieldname": "split_ratio",
    "fieldtype": "Small Text",
    "label": "Split Ratio"
@@ -294,12 +284,22 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "internet_antina",
+   "fieldtype": "Small Text",
+   "label": "Internet Antina"
+  },
+  {
+   "fieldname": "leave_and_license",
+   "fieldtype": "Data",
+   "label": "Leave and License Period"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-05 12:52:19.099233",
+ "modified": "2025-02-06 15:55:21.527797",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Letter of Intent",
