@@ -299,9 +299,9 @@ def update_branch_status_trigger(doc, method):
         if doc.project:
             # Fetch the linked Project document
             project = frappe.get_doc("Project", doc.project)
-
-            # Call the update_branch_status function for the linked project
-            update_branch_status(project, method)
+            status = doc.status
+            # Call the update_branch_status function for the linked project with status
+            update_branch_status(project, method, status)
 
     except Exception as e:
         # Log the error if any exception occurs
