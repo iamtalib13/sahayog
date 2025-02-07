@@ -135,11 +135,73 @@
         font-size: 12px;
       }
     </style>
-    <script>
-      let initialData = {}; // Initialize initialData as an empty object
+  </head>
+  <body>
+    <div class="table-container">
+      <table class="location-table" id="locationTable">
+        <thead class="table-heading">
+          <tr>
+            <th>Check</th>
+            <th>Sr. No</th>
+            <th>Location Name</th>
+            <th>Attachments</th>
+            <th>Status</th>
+            <th class="hidden">Name</th>
+          </tr>
+        </thead>
+        <tbody id="locationTableBody">
+          <!--Dynamically added row here-->
+        </tbody>
+      </table>
+      <!-- <input type="file" id="fileInput" multiple /> -->
 
-      //fetch the prevous data for table of location details
-      fetchAndPopulateTable();
+      <button class="add-row-btn" id="addRowBtn" onclick="addRow()">
+        + Add Location
+      </button>
+      <button
+        class="delete-row-btn hidden"
+        id="removeRowBtn"
+        onclick="removeRow()"
+      >
+        - Remove Location
+      </button>
+      <button
+        class="save-btn"
+        id="saveOrUpdateLocBtn"
+        onclick="saveOrUpdateLocationDetails()"
+      >
+        Save Location
+      </button>
+    </div>
+    <script>
+      if (!window.initialData) {
+        let initialData = {}; // Declare only once
+      }
+
+      async function fetchAttachments(detail, docname) {
+        return new Promise((resolve, reject) => {
+          frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "File",
+              filters: {
+                attached_to_doctype: "Task",
+                attached_to_name: docname,
+                attached_to_field: detail.name,
+              },
+              fields: ["*"],
+            },
+            callback: function (fileResponse) {
+              if (fileResponse.message) {
+                console.log(fileResponse);
+                resolve(fileResponse.message);
+              } else {
+                reject("Failed to fetch attachments");
+              }
+            },
+          });
+        });
+      }
 
       async function fetchAndPopulateTable() {
         const docname = cur_frm.doc.name;
@@ -151,77 +213,83 @@
           });
 
           if (response.message) {
-            console.log("Fetchdata:", response.message);
             const locationDetails = response.message || [];
             const tableBody = document.getElementById("locationTableBody");
 
-            // Clear existing rows
+            // Clear existing rows and reset initialData
             tableBody.innerHTML = "";
 
-            // Reset initialData
             initialData = {};
+
+            console.log(initialData);
 
             for (const [index, detail] of locationDetails.entries()) {
               const newRow = document.createElement("tr");
 
               try {
                 const files = await fetchAttachments(detail, docname);
-                console.log(files);
                 newRow.innerHTML = `
-            <td class="checkbox-container">
-              <input type="checkbox" />
-            </td>
-            <td class="sr-no">${index + 1}</td>
-            <td><input type="text" value="${detail.location_name}" /></td>
-            <td> <div class="attachments">
-              <input type="file" multiple style="display: none;"
-                onclick="handleFileUpload(this, '${detail.name}')"
-                data-name="${detail.name}" />
-              <img src="/assets/sahayog/images/add.png"
-                width="25" height="25" onclick="triggerFileInput('${
+                  <td class="checkbox-container">
+                    <input type="checkbox" />
+                  </td>
+                  <td class="sr-no">${index + 1}</td>
+                  <td><input type="text" value="${detail.location_name}" /></td>
+                  <td>
+                    <div class="attachments">
+                      <input type="file" multiple style="display: none;"
+                        onclick="handleFileUpload(this, '${detail.name}')"
+                        data-name="${detail.name}" />
+                      <img src="/assets/sahayog/images/add.png"
+                        width="25" height="25" onclick="triggerFileInput('${
+                          detail.name
+                        }')">
+                      <ul class="no-bullets">
+                        ${files
+                          .map(
+                            (file) => `
+                          <li class="file-list-row">
+                            <div>
+                              <a class="file-name" href="${
+                                file.file_url
+                              }" target="_blank">${file.file_name}</a>
+                              <span class="file-size">(${formatFileSize(
+                                file.file_size
+                              )})</span>
+                            </div>
+                            <div>
+                              <img class="delete-file-btn" src="/assets/sahayog/images/close.png" width="10"
+                                onclick="deleteFile('${file.file_name}', '${
+                              file.attached_to_field
+                            }', '${file.attached_to_name}')">
+                            </div>
+                          </li>
+                        `
+                          )
+                          .join("")}
+                      </ul>
+                    </div>
+                  </td>
+                  <td>
+                    <select>
+                      <option value="Pending" ${
+                        detail.status === "Pending" ? "selected" : ""
+                      }>Pending</option>
+                      <option value="Approved" ${
+                        detail.status === "Approved" ? "selected" : ""
+                      }>Approved</option>
+                      <option value="Rejected" ${
+                        detail.status === "Rejected" ? "selected" : ""
+                      }>Rejected</option>
+                    </select>
+                  </td>
+                  <td class="hidden" data-name="${detail.name}">${
                   detail.name
-                }')">
-              <ul class="no-bullets">
-                ${files
-                  .map(
-                    (file) =>
-                      `<li class="file-list-row"><div><a class="file-name" href="${
-                        file.file_url
-                      }" target="_blank">${file.file_name}</a>
-                        <span class="file-size">(${formatFileSize(
-                          file.file_size
-                        )})</span></div>
-                        <div>
-                        <img class="delete-file-btn" src="/assets/sahayog/images/close.png"
-                width="10"  onclick="deleteFile('${file.file_name}','${
-                        file.attached_to_field
-                      }','${file.attached_to_name}')">
-                       </div>
-                        </li>`
-                  )
-                  .join("")}
-              </ul>
-              </div>
-            </td>
-            <td>
-              <select>
-                <option value="Pending" ${
-                  detail.status === "Pending" ? "selected" : ""
-                }>Pending</option>
-                <option value="Approved" ${
-                  detail.status === "Approved" ? "selected" : ""
-                }>Approved</option>
-                <option value="Rejected" ${
-                  detail.status === "Rejected" ? "selected" : ""
-                }>Rejected</option>
-              </select>
-            </td>
-            <td class="hidden" data-name="${detail.name}">${detail.name}</td>
-          `;
+                }</td>
+                `;
 
                 tableBody.appendChild(newRow);
 
-                // Initialize initialData with fetched details
+                // Store the initial data for each detail
                 initialData[detail.name] = {
                   location_name: detail.location_name,
                   status: detail.status,
@@ -236,6 +304,10 @@
         } catch (error) {
           console.error("Error fetching location details:", error);
         }
+      }
+      if (!window.hasRunFetchTable) {
+        window.hasRunFetchTable = true;
+        fetchAndPopulateTable();
       }
 
       function formatFileSize(sizeInBytes) {
@@ -258,30 +330,6 @@
         });
       }
 
-      async function fetchAttachments(detail, docname) {
-        return new Promise((resolve, reject) => {
-          frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "File",
-              filters: {
-                attached_to_doctype: "Task",
-                attached_to_name: docname,
-                attached_to_field: detail.name,
-              },
-              fields: ["*"],
-            },
-            callback: function (fileResponse) {
-              if (fileResponse.message) {
-                resolve(fileResponse.message);
-              } else {
-                reject("Failed to fetch attachments");
-              }
-            },
-          });
-        });
-      }
-
       // Add event listener after HTML is injected
       function addRow() {
         const tableBody = document.getElementById("locationTableBody");
@@ -289,26 +337,36 @@
         //newRow.classList.add("new-row"); // Mark new rows with a class
 
         newRow.innerHTML = `
-                       <td class="checkbox-container">
-                           <input type="checkbox" />
-                       </td>
-                       <td class="sr-no"></td>
-                       <td><input type="text" placeholder="Location Name" /></td>
-                        <td><input type="file" multiple  class="hidden" /></td>
-                       <td>
-                           <select>
-                               <option value="Pending">Pending</option>
-                               <option value="Approved">Approved</option>
-                               <option value="Rejected">Rejected</option>
-                           </select>
-                       </td>
-                        <td class="hidden" data-name=""></td>
-                   `;
+                             <td class="checkbox-container">
+                                 <input type="checkbox" />
+                             </td>
+                             <td class="sr-no"></td>
+                             <td><input type="text" placeholder="Location Name" /></td>
+                              <td><input type="file" multiple  class="hidden" /></td>
+                             <td>
+                                 <select>
+                                     <option value="Pending">Pending</option>
+                                     <option value="Approved">Approved</option>
+                                     <option value="Rejected">Rejected</option>
+                                 </select>
+                             </td>
+                              <td class="hidden" data-name=""></td>
+                         `;
 
         tableBody.appendChild(newRow);
         updateSerialNumbers();
         toggleRemoveButton();
       }
+
+      // Add event listener to checkboxes
+      document
+        .getElementById("locationTableBody")
+        .addEventListener("change", function (event) {
+          console.log("Change event detected");
+          if (event.target.type === "checkbox") {
+            toggleRemoveButton(); // Call function to check if any checkbox is checked
+          }
+        });
 
       // Function to handle showing and hiding the remove button
       function toggleRemoveButton() {
@@ -321,7 +379,7 @@
         const isAnyChecked = Array.from(checkboxes).some(
           (checkbox) => checkbox.checked
         );
-
+        console.log("Is any checkbox checked: ", isAnyChecked);
         // Add or remove the 'hidden' class based on the checkbox status
         if (isAnyChecked) {
           removeButton.classList.remove("hidden");
@@ -329,15 +387,6 @@
           removeButton.classList.add("hidden");
         }
       }
-
-      // Add event listener to checkboxes
-      document
-        .getElementById("locationTableBody")
-        .addEventListener("change", function (event) {
-          if (event.target.type === "checkbox") {
-            toggleRemoveButton(); // Call function to check if any checkbox is checked
-          }
-        });
 
       // Function to remove checked rows
       function removeRow() {
@@ -405,6 +454,7 @@
 
       // Function to handle the update or addition of location details
       function saveOrUpdateLocationDetails() {
+        console.log("save hora hai...");
         const rows = document.querySelectorAll("#locationTableBody tr");
         const locationData = [];
         let hasEmptyLocationName = false; // Flag to check for empty location names
@@ -496,46 +546,6 @@
         });
       }
 
-      // Add event listener for the save/update button
-      document
-        .getElementById("saveOrUpdateLocBtn")
-        .addEventListener("click", saveOrUpdateLocationDetails);
-
-      // document
-      //   .getElementById("fileInput")
-      //   .addEventListener("change", function (event) {
-      //     // Get the FileList object containing all selected files
-      //     const files = event.target.files;
-
-      //     // Create a new FormData object to hold the files and other data
-      //     const formData = new FormData();
-
-      //     // Append doctype and docname to the FormData object
-      //     formData.append("doctype", "Task"); // Replace with your doctype
-      //     formData.append("docname", "TASK-2025-00056"); // Replace with your docname
-
-      //     // Loop through the FileList and append each file to the FormData object
-      //     for (let i = 0; i < files.length; i++) {
-      //       formData.append("file", files[i]);
-      //     }
-      //     console.log(formData);
-      //     // Make a POST request to upload the files
-      //     fetch("/api/method/upload_file", {
-      //       method: "POST",
-      //       headers: {
-      //         "X-Frappe-CSRF-Token": frappe.csrf_token, // Ensure CSRF token is set
-      //       },
-      //       body: formData, // FormData containing the files and metadata
-      //     })
-      //       .then((response) => response.json())
-      //       .then((data) => {
-      //         console.log("Files uploaded successfully:", data);
-      //       })
-      //       .catch((error) => {
-      //         console.error("Error uploading files:", error);
-      //       });
-      //   });
-
       function triggerFileInput(name) {
         const fileInput = document.querySelector(
           `input[type="file"][data-name="${name}"]`
@@ -602,37 +612,5 @@
         });
       }
     </script>
-  </head>
-  <body>
-    <div class="table-container">
-      <table class="location-table" id="locationTable">
-        <thead class="table-heading">
-          <tr>
-            <th>Check</th>
-            <th>Sr. No</th>
-            <th>Location Name</th>
-            <th>Attachments</th>
-            <th>Status</th>
-            <th class="hidden">Name</th>
-          </tr>
-        </thead>
-        <tbody id="locationTableBody">
-          <!--Dynamically added row here-->
-        </tbody>
-      </table>
-      <!-- <input type="file" id="fileInput" multiple /> -->
-
-      <button class="add-row-btn" id="addRowBtn" onclick="addRow()">
-        + Add Location
-      </button>
-      <button
-        class="delete-row-btn hidden"
-        id="removeRowBtn"
-        onclick="removeRow()"
-      >
-        - Remove Location
-      </button>
-      <button class="save-btn" id="saveOrUpdateLocBtn">Save Location</button>
-    </div>
   </body>
 </html>
