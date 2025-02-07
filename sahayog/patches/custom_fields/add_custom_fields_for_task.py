@@ -44,6 +44,23 @@ def execute():
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3: Agreement and Handover'",
                
             },
+             {
+                "fieldname": "custom_supplier_details_section",
+                "fieldtype": "Section Break",
+                "insert_after": "custom_agreement",
+                "label": "Supplier Details",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4: Vendor Allocation'",
+               
+            },
+            {
+                "fieldname": "custom_allow_supplier",
+                "fieldtype": "Table",
+                "options": "Allow Supplier",
+                "insert_after": "custom_supplier_details_section",
+                "label": "Allow Supplier",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4: Vendor Allocation'",
+               
+            },
         ],
     }
     create_custom_fields(fields)
