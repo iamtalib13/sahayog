@@ -1022,6 +1022,7 @@ function triggerCelebration() {
 }"""
 
 
+    # Check if Custom HTML Block already exists
     custom_block = frappe.db.exists('Custom HTML Block', 'Sahayog Projects')
     if custom_block:
         doc = frappe.get_doc('Custom HTML Block', 'Sahayog Projects')
@@ -1039,48 +1040,7 @@ function triggerCelebration() {
             'script': js_content
         }).insert()
         print("Created Custom HTML Block: Sahayog Projects")
-
-
-    workspace = frappe.db.exists('Workspace', 'Sahayog Project')
-    if workspace:
-        ws_doc = frappe.get_doc('Workspace', 'Sahayog Project')
-        # Check if the custom block already exists in the workspace
-        if not any(block.custom_block_name == 'Sahayog Projects' for block in ws_doc.custom_blocks):
-            ws_doc.append('custom_blocks', {
-                'custom_block_name': 'Sahayog Projects',
-                'label': 'Sahayog Projects'
-            })
-            print("Added Custom Block to Workspace: Sahayog Project")
-
-        # Add roles if not already present
-        roles_to_add = ['Project Manager', 'Task Manager']
-        existing_roles = [role.role for role in ws_doc.roles]
-        for role in roles_to_add:
-            if role not in existing_roles:
-                ws_doc.append('roles', {'role': role})
-                print(f"Added Role '{role}' to Workspace: Sahayog Project")
-
-        ws_doc.public = 1
-        ws_doc.save()
-        print("Updated Workspace: Sahayog Project")
-    else:
-        frappe.get_doc({
-            'doctype': 'Workspace',
-            'name': 'Sahayog Project',
-            'public': 1,
-            'custom_blocks': [
-                {
-                    'custom_block_name': 'Sahayog Projects',
-                    'label': 'Sahayog Projects'
-                }
-            ],
-            'roles': [
-                {'role': 'Project Manager'},
-                {'role': 'Task Manager'}
-            ]
-        }).insert()
-        print("Created Workspace: Sahayog Project")
-
+        
     frappe.db.commit()
 
 
