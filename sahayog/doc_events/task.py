@@ -257,39 +257,49 @@ def get_custom_location_details(docname):
     location_details = frappe.db.sql(query, (docname,), as_dict=True)
     return location_details
 
-#to delete the file attached with location details 
-# @frappe.whitelist()
-# def delete_file(file_name, attached_to_field, attached_to_name, attached_to_doctype):
-#     try:
-#         # Fetch the file using the unique 'name' field
-#         file_doc = frappe.get_doc('File', file_name)
-#         # Debug: print the list of files
-#         frappe.log_error(f"Files found: {file_doc}")
-#         # if (file_doc.attached_to_field == "t8ug5r91eq" and
-#         #     file_doc.attached_to_name == "TASK-2025-00064" and
-#         #     file_doc.attached_to_doctype == "Task"):
-#             # Proceed to delete the file
-#             #frappe.delete_doc('File', file_doc)
-           
-#         return {"message": "success", "file_name": file_doc}
-#         # else:
-#         #     return {"error": "File does not match the provided details"}
-#     except frappe.DoesNotExistError:
-#         return {"error": "File not found"}
-#     except Exception as e:
-#         frappe.log_error(f"Error deleting file {file_name}: {str(e)}")
-#         return {"error": str(e)}
-
-
 @frappe.whitelist()
-def delete_file(file_name, attached_to_field, attached_to_name, attached_to_doctype):
+def check_file_exists(file_name, doctype, docname):
+    """
+    Checks if a file with the given file_name exists attached to the specified doctype and docname.
+    """
+    exists = frappe.db.exists("File", {
+        "file_name": file_name,
+        "attached_to_doctype": doctype,
+        "attached_to_name": docname
+    })
+    return {"exists": bool(exists)}
+
+#to delete the file attached with location details 
+@frappe.whitelist()
+def delete_file(name):
+    try:
+        # Check if the file exists using frappe.db.exists.
+        if not frappe.db.exists('File', name):
+            return {"error": "File not found"}
+
+        # Fetch the file document
+        file_doc = frappe.get_doc('File', name)
+        frappe.log_error(f"Deleting file: {file_doc}")
+
+        # Delete the file document
+        frappe.delete_doc('File', name)
+
+        return {"message": "success", "file_name": name}
+    except Exception as e:
+        frappe.log_error(f"Error deleting file {name}: {str(e)}")
+        return {"error": str(e)}
+
+
+
+# @frappe.whitelist()
+# def delete_file(name):
    
-    # Fetch the file using the unique 'name' field
-    file_doc = frappe.get_doc('File', file_name)
-    # Debug: print the list of files
-    frappe.log_error(f"Files found: {file_doc}")
+#     # Fetch the file using the unique 'name' field
+#     file_doc = frappe.get_doc('File', name)
+#     # Debug: print the list of files
+#     frappe.log_error(f"Files found: {file_doc}")
     
-    return {"message": "success", "file_name": file_doc}
+#     return {"message": "success", "file_name": file_doc}
        
 
 

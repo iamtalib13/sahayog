@@ -174,6 +174,10 @@
       </button>
     </div>
     <script>
+      if (!window.hasRunFetchTable) {
+        window.hasRunFetchTable = true;
+        fetchAndPopulateTable();
+      }
       if (!window.initialData) {
         let initialData = {}; // Declare only once
       }
@@ -229,63 +233,67 @@
               try {
                 const files = await fetchAttachments(detail, docname);
                 newRow.innerHTML = `
-                  <td class="checkbox-container">
-                    <input type="checkbox" />
-                  </td>
-                  <td class="sr-no">${index + 1}</td>
-                  <td><input type="text" value="${detail.location_name}" /></td>
-                  <td>
-                    <div class="attachments">
-                      <input type="file" multiple style="display: none;"
-                        onclick="handleFileUpload(this, '${detail.name}')"
-                        data-name="${detail.name}" />
-                      <img src="/assets/sahayog/images/add.png"
-                        width="25" height="25" onclick="triggerFileInput('${
-                          detail.name
-                        }')">
-                      <ul class="no-bullets">
-                        ${files
-                          .map(
-                            (file) => `
-                          <li class="file-list-row">
-                            <div>
-                              <a class="file-name" href="${
-                                file.file_url
-                              }" target="_blank">${file.file_name}</a>
-                              <span class="file-size">(${formatFileSize(
-                                file.file_size
-                              )})</span>
-                            </div>
-                            <div>
-                              <img class="delete-file-btn" src="/assets/sahayog/images/close.png" width="10"
-                                onclick="deleteFile('${file.file_name}', '${
-                              file.attached_to_field
-                            }', '${file.attached_to_name}')">
-                            </div>
-                          </li>
-                        `
-                          )
-                          .join("")}
-                      </ul>
-                    </div>
-                  </td>
-                  <td>
-                    <select>
-                      <option value="Pending" ${
-                        detail.status === "Pending" ? "selected" : ""
-                      }>Pending</option>
-                      <option value="Approved" ${
-                        detail.status === "Approved" ? "selected" : ""
-                      }>Approved</option>
-                      <option value="Rejected" ${
-                        detail.status === "Rejected" ? "selected" : ""
-                      }>Rejected</option>
-                    </select>
-                  </td>
-                  <td class="hidden" data-name="${detail.name}">${
+                        <td class="checkbox-container">
+                          <input type="checkbox" />
+                        </td>
+                        <td class="sr-no">${index + 1}</td>
+                        <td><input type="text" value="${
+                          detail.location_name
+                        }" /></td>
+                        <td>
+                          <div class="attachments">
+                            <input type="file" multiple style="display: none;"
+                              onclick="handleFileUpload(this, '${detail.name}')"
+                              data-name="${detail.name}" />
+                            <img src="/assets/sahayog/images/add.png"
+                              width="25" height="25" onclick="triggerFileInput('${
+                                detail.name
+                              }')">
+                            <ul class="no-bullets">
+                              ${files
+                                .map(
+                                  (file) => `
+                                <li class="file-list-row">
+                                  <div>
+                                    <a class="file-name" href="${
+                                      file.file_url
+                                    }" target="_blank">${file.file_name}</a>
+                                    <span class="file-size">(${formatFileSize(
+                                      file.file_size
+                                    )})</span>
+                                  </div>
+                                  <div>
+                                    <img class="delete-file-btn" src="/assets/sahayog/images/close.png" width="10"
+                                      onclick="deleteFile('${
+                                        file.file_name
+                                      }', '${file.attached_to_field}', '${
+                                    file.attached_to_name
+                                  }','${file.name}')">
+                                  </div>
+                                </li>
+                              `
+                                )
+                                .join("")}
+                            </ul>
+                          </div>
+                        </td>
+                        <td>
+                          <select>
+                            <option value="Pending" ${
+                              detail.status === "Pending" ? "selected" : ""
+                            }>Pending</option>
+                            <option value="Approved" ${
+                              detail.status === "Approved" ? "selected" : ""
+                            }>Approved</option>
+                            <option value="Rejected" ${
+                              detail.status === "Rejected" ? "selected" : ""
+                            }>Rejected</option>
+                          </select>
+                        </td>
+                        <td class="hidden" data-name="${detail.name}">${
                   detail.name
                 }</td>
-                `;
+                      `;
 
                 tableBody.appendChild(newRow);
 
@@ -304,10 +312,6 @@
         } catch (error) {
           console.error("Error fetching location details:", error);
         }
-      }
-      if (!window.hasRunFetchTable) {
-        window.hasRunFetchTable = true;
-        fetchAndPopulateTable();
       }
 
       function formatFileSize(sizeInBytes) {
@@ -337,21 +341,21 @@
         //newRow.classList.add("new-row"); // Mark new rows with a class
 
         newRow.innerHTML = `
-                             <td class="checkbox-container">
-                                 <input type="checkbox" />
-                             </td>
-                             <td class="sr-no"></td>
-                             <td><input type="text" placeholder="Location Name" /></td>
-                              <td><input type="file" multiple  class="hidden" /></td>
-                             <td>
-                                 <select>
-                                     <option value="Pending">Pending</option>
-                                     <option value="Approved">Approved</option>
-                                     <option value="Rejected">Rejected</option>
-                                 </select>
-                             </td>
-                              <td class="hidden" data-name=""></td>
-                         `;
+                                   <td class="checkbox-container">
+                                       <input type="checkbox" />
+                                   </td>
+                                   <td class="sr-no"></td>
+                                   <td><input type="text" placeholder="Location Name" /></td>
+                                    <td><input type="file" multiple  class="hidden" /></td>
+                                   <td>
+                                       <select>
+                                           <option value="Pending">Pending</option>
+                                           <option value="Approved">Approved</option>
+                                           <option value="Rejected">Rejected</option>
+                                       </select>
+                                   </td>
+                                    <td class="hidden" data-name=""></td>
+                               `;
 
         tableBody.appendChild(newRow);
         updateSerialNumbers();
@@ -535,10 +539,11 @@
                 message: "Location details saved or updated successfully.",
                 indicator: "green",
               });
+              location.reload();
               //Optionally refresh the page after the alert
-              setTimeout(function () {
-                location.reload();
-              }, 1000); // Adjust the delay as needed
+              // setTimeout(function () {
+              //   location.reload();
+              // }, 1000); // Adjust the delay as needed
             } else {
               frappe.msgprint("Error saving or updating location details.");
             }
@@ -553,6 +558,7 @@
         fileInput.click();
       }
 
+      //Function to attach multiple files
       function handleFileUpload(fileInput, name) {
         event.preventDefault(); // Prevent the default file picker
 
@@ -563,27 +569,66 @@
         const docname = cur_frm.doc.name;
         console.log(docname);
         console.log(fieldname);
-        // Open Frappe's File Upload Dialog
-        new frappe.ui.FileUploader({
-          allow_multiple: true, // Allow multiple files to be uploaded
-          doctype: "Task", // The doctype (e.g., "Task")
-          docname: docname, // The dynamic docname from the row
-          fieldname: fieldname, // The dynamic fieldname from the row
-          on_success: function (file) {
-            console.log("File uploaded:", file);
-            frappe.show_alert({
-              message: "File uploaded successfully.",
-              indicator: "green",
-            });
-            //Optionally refresh the page after the alert
-            setTimeout(function () {
-              location.reload();
-            }, 1000); // Adjust the delay as needed
-            // Perform additional actions, like attaching the file to a specific Doctype
+        // Call the server method to check if the file already exists
+        frappe.call({
+          method: "sahayog.doc_events.task.check_file_exists", // Update path accordingly
+          args: {
+            file_name: fieldname,
+            doctype: "Task", // Or the relevant doctype
+            docname: docname,
+          },
+          callback: function (response) {
+            if (response.message.exists) {
+              frappe.msgprint("File " + file.name + " already exists!");
+            } else {
+              // File does not exist, so open Frappe's File Uploader
+              new frappe.ui.FileUploader({
+                allow_multiple: true, // Allow multiple files if needed
+                doctype: "Task", // Use your relevant doctype
+                docname: docname,
+                fieldname: fieldname, // Dynamic field name
+                on_success: function (uploaded_file) {
+                  console.log("File uploaded:", uploaded_file);
+                  frappe.show_alert({
+                    message: "File uploaded successfully.",
+                    indicator: "green",
+                  });
+                  // Optionally refresh the page after a short delay
+                  setTimeout(function () {
+                    location.reload();
+                  }, 1000);
+                },
+              });
+            }
+          },
+          error: function (error) {
+            console.error("Error checking file existence:", error);
+            frappe.msgprint("An error occurred while checking the file.");
           },
         });
+
+        // Open Frappe's File Upload Dialog
+        // new frappe.ui.FileUploader({
+        //   allow_multiple: true, // Allow multiple files to be uploaded
+        //   doctype: "Task", // The doctype (e.g., "Task")
+        //   docname: docname, // The dynamic docname from the row
+        //   fieldname: fieldname, // The dynamic fieldname from the row
+        //   on_success: function (file) {
+        //     console.log("File uploaded:", file);
+        //     frappe.show_alert({
+        //       message: "File uploaded successfully.",
+        //       indicator: "green",
+        //     });
+        //     //Optionally refresh the page after the alert
+        //     setTimeout(function () {
+        //       location.reload();
+        //     }, 1000); // Adjust the delay as needed
+        //     // Perform additional actions, like attaching the file to a specific Doctype
+        //   },
+        // });
       }
-      function deleteFile(fileName, childDocname, docname) {
+
+      function deleteFile(fileName, childDocname, docname, fileDocName) {
         let file_name = fileName;
         let attached_to_field = childDocname;
         let attached_to_name = docname;
@@ -592,15 +637,20 @@
         frappe.call({
           method: "sahayog.doc_events.task.delete_file",
           args: {
-            file_name: file_name,
-            attached_to_field: attached_to_field,
-            attached_to_name: attached_to_name,
-            attached_to_doctype: "Task",
+            name: fileDocName,
           },
           callback: function (response) {
-            if (response) {
+            if (response.message.message === "success") {
               console.log(response);
-              frappe.msgprint(`File ${fileName} deleted successfully.`);
+              //frappe.msgprint(`File ${fileName} deleted successfully.`);
+              frappe.show_alert({
+                message: "File has been successfully deleted.",
+                indicator: "green",
+              });
+              //Optionally refresh the page after the alert
+              setTimeout(function () {
+                location.reload();
+              }, 500); // Adjust the delay as needed
             } else {
               frappe.msgprint(`Failed to delete file ${fileName}.`);
             }
