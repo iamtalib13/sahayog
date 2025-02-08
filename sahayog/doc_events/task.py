@@ -5,6 +5,8 @@ from frappe import _
 from frappe.utils.file_manager import get_file
 from frappe.core.doctype.file.file import File
 from sahayog.doc_events.project import update_branch_status
+from frappe.utils import get_url
+
 
 
 
@@ -24,7 +26,7 @@ def create_letter_of_intent(doc, method):
         letter_of_intent.insert(ignore_permissions=True)
 
         # Optionally, show a message to confirm the creation
-        frappe.msgprint(f"Letter of Intent created for project: {project}")
+        #frappe.msgprint(f"Letter of Intent created for project: {project}")
 
 #render the the html file of location details
 @frappe.whitelist()
@@ -341,3 +343,28 @@ def validate_agreement_status(doc, method):
         # Check if the custom_agreement field is empty or None
         if not doc.custom_agreement:
             frappe.throw(_("Cannot mark the task as 'Completed' until the Agreement is provided."))
+
+
+
+def check_loi_docstatus_for_task_2(doc, method):
+    if doc.subject == 'Task 2: Letter of Intent':
+        project = doc.project
+
+        # Fetch all Letters of Intent with matching project
+        loi_docs = frappe.get_all('Letter of Intent', 
+                                  filters={'project': project}, 
+                                  fields=['name', 'docstatus'])
+
+        if loi_docs:
+            for loi in loi_docs:
+                if loi['docstatus'] == 0:
+                    # LOI is saved but not submitted
+                    loi_url = f"{get_url()}/app/letter-of-intent/{loi['name']}"
+                    frappe.throw(
+                        _(f"First fill and submit the Letter of Intent before setting Task 2 status to completed. <b><a href='{loi_url}'>Click here to open LOI</a><b>"),
+                        title="Incomplete Letter of Intent"
+                    )
+            # If all LOIs are submitted
+            pass
+        else:
+            frappe.msgprint(_(f"No Letter of Intent found for project {project}"))
