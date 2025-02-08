@@ -28,7 +28,7 @@ def execute():
     <div class="sidebar">
         <div class="sidebar-fixed">
             <span style="font-size:20px;">#Projects</span>
-<button onclick="frappe.new_doc('Project')" 
+<button class="createPRbtn" onclick="frappe.new_doc('Project')" 
         style="float:right; border-radius: 5px; color: #009A1E; border-color: #009A1E; border: 1px solid; background-color: transparent;">
     + Create Project
 </button>
@@ -382,6 +382,21 @@ li:hover .loading-indicator::before {
 populateFilters();
 setupFilterListeners();
 fetchEmpName();
+hideCreatePRButton();
+function hideCreatePRButton() {
+    // Check if the user doesn't have both 'Administrator' and 'Project Manager' roles
+    if (!frappe.user.has_role('Administrator') && !frappe.user.has_role('Project Manager')) {
+        const createPRbtn = root_element.querySelector('.createPRbtn');
+        
+        if (createPRbtn) {
+            createPRbtn.style.display = 'none';
+        } else {
+            console.log("Button with class '.createPRbtn' not found!");
+        }
+    } else {
+        console.log("User has the required role.");
+    }
+}
 function fetchAllProjects() {
   frappe.call({
     method: "sahayog.patches.fixtures.add_custom_html_block_for_project.get_all_projects",
