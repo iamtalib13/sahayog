@@ -225,7 +225,7 @@
 
             initialData = {};
 
-            console.log(initialData);
+            console.log("initial data", initialData);
 
             for (const [index, detail] of locationDetails.entries()) {
               const newRow = document.createElement("tr");
@@ -567,65 +567,27 @@
         const fieldname = name;
         // Fetch docname from hidden field or a data attribute
         const docname = cur_frm.doc.name;
-        console.log(docname);
-        console.log(fieldname);
-        // Call the server method to check if the file already exists
-        frappe.call({
-          method: "sahayog.doc_events.task.check_file_exists", // Update path accordingly
-          args: {
-            file_name: fieldname,
-            doctype: "Task", // Or the relevant doctype
-            docname: docname,
-          },
-          callback: function (response) {
-            if (response.message.exists) {
-              frappe.msgprint("File " + file.name + " already exists!");
-            } else {
-              // File does not exist, so open Frappe's File Uploader
-              new frappe.ui.FileUploader({
-                allow_multiple: true, // Allow multiple files if needed
-                doctype: "Task", // Use your relevant doctype
-                docname: docname,
-                fieldname: fieldname, // Dynamic field name
-                on_success: function (uploaded_file) {
-                  console.log("File uploaded:", uploaded_file);
-                  frappe.show_alert({
-                    message: "File uploaded successfully.",
-                    indicator: "green",
-                  });
-                  // Optionally refresh the page after a short delay
-                  setTimeout(function () {
-                    location.reload();
-                  }, 1000);
-                },
-              });
-            }
-          },
-          error: function (error) {
-            console.error("Error checking file existence:", error);
-            frappe.msgprint("An error occurred while checking the file.");
+        console.log("taskname", docname);
+        console.log("name", fieldname);
+        // Open Frappe's File Upload Dialog
+        new frappe.ui.FileUploader({
+          allow_multiple: true, // Allow multiple files to be uploaded
+          doctype: "Task", // The doctype (e.g., "Task")
+          docname: docname, // The dynamic docname from the row
+          fieldname: fieldname, // The dynamic fieldname from the row
+          on_success: function (file) {
+            console.log("File uploaded:", file);
+            frappe.show_alert({
+              message: "File uploaded successfully.",
+              indicator: "green",
+            });
+            //Optionally refresh the page after the alert
+            setTimeout(function () {
+              location.reload();
+            }, 1000); // Adjust the delay as needed
+            // Perform additional actions, like attaching the file to a specific Doctype
           },
         });
-
-        // Open Frappe's File Upload Dialog
-        // new frappe.ui.FileUploader({
-        //   allow_multiple: true, // Allow multiple files to be uploaded
-        //   doctype: "Task", // The doctype (e.g., "Task")
-        //   docname: docname, // The dynamic docname from the row
-        //   fieldname: fieldname, // The dynamic fieldname from the row
-        //   on_success: function (file) {
-        //     console.log("File uploaded:", file);
-        //     frappe.show_alert({
-        //       message: "File uploaded successfully.",
-        //       indicator: "green",
-        //     });
-        //     //Optionally refresh the page after the alert
-        //     setTimeout(function () {
-        //       location.reload();
-        //     }, 1000); // Adjust the delay as needed
-        //     // Perform additional actions, like attaching the file to a specific Doctype
-        //   },
-        // });
       }
 
       function deleteFile(fileName, childDocname, docname, fileDocName) {
