@@ -1,52 +1,53 @@
 import frappe
 
 def create_tasks_and_project_template():
-    # List of task subjects (this is the only dynamic field)
+    # List of task subjects
     task_subjects = [
-        "Acquisition of Property",
+        "Acquisition of the Property",
         "Letter of Intent",
         "Agreement and Handover",
+        "Manpower Recruitment",  # Independent task (no dependencies)
         "Vendor Allocation",
-        "Infra Work",
+        "Infrastructure Development Work",
         "IT Hardware Installation",
         "IT Software Installation and Activation",
         "Handover to Business Team",
         "Ready for Inauguration",
     ]
 
-    previous_task_name = None  # To track the previous task for dependency
-    task_list = []  # To store created task names
+    last_dependent_task = None  # Track last task that should have dependencies
+    task_list = []  # Store created task names
 
-    # Create tasks dynamically with a "Task n:" prefix
     for i, subject in enumerate(task_subjects, start=1):
         task_name = f"Task {i}: {subject}"
-        
+
         # Check if the task already exists
         existing_task = frappe.db.exists("Task", {"subject": task_name})
-        
+
         if not existing_task:
-            # Use frappe.get_doc() correctly to create a new Task document
+            # Create a new Task document
             task = frappe.get_doc({
                 "doctype": "Task",
-                "subject": task_name,  # Add the "Task n:" prefix
-                "status": "Template",  # Set the status field to "Template"
+                "subject": task_name,
+                "status": "Template",
                 "is_template": 1
             })
-            
-            # Set dependency if there's a previous task
-            if previous_task_name:
-                # Append the previous task as a dependency in the child table
+
+            # Skip dependency for "Manpower Recruitment" (Task 4)
+            if subject != "Manpower Recruitment" and last_dependent_task:
                 task.append("depends_on", {
-                    "doctype": "Task", 
-                    "task": previous_task_name
+                    "doctype": "Task",
+                    "task": last_dependent_task
                 })
-            
-            # Insert the task document into the database
+
+            # Insert the task into the database
             task.insert()
             print(f"Successfully created {task.subject}")
-            
-            # Update previous_task_name to the current task's name
-            previous_task_name = task.name
+
+            # Update last dependent task (skip Task 4)
+            if subject != "Manpower Recruitment":
+                last_dependent_task = task.name
+
             task_list.append(task.name)
         else:
             print(f"Task '{task_name}' already exists and will not be created again.")
@@ -59,29 +60,30 @@ def create_tasks_and_project_template():
     existing_project_template = frappe.db.exists("Project Template", "New Branch Setup")
     
     if not existing_project_template:
-        # Create a new Project template named "New Branch Setup"
+        # Create a new Project Template
         project_template = frappe.get_doc({
             "doctype": "Project Template",
-            "project_name": "New Branch Setup",  # The name of the template
-            "tasks": []  # Initialize the task list as empty
+            "project_name": "New Branch Setup",
+            "tasks": []
         })
-        # Set the name explicitly to avoid 'Please set the document name' error
-        project_template.name = project_template.project_name  # Set the name to the project_name
+        project_template.name = project_template.project_name
     
-        # Add the tasks as milestones or regular tasks to the project
+        # Add tasks to the project template
         for task_name in task_list:
             project_template.append("tasks", {
-                "task": task_name  # Link the created task to the project
+                "task": task_name
             })
     
         # Insert the project template into the database
         project_template.insert()
         print(f"Project Template 'New Branch Setup' created successfully.")
     
-        frappe.db.commit()  # Commit changes to the database
+        frappe.db.commit()
     
     else:
         print(f"Project Template 'New Branch Setup' already exists. Skipping creation.")
+
+
 
 
 @frappe.whitelist()

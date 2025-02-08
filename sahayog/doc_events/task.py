@@ -259,10 +259,12 @@ def get_custom_location_details(docname):
     location_details = frappe.db.sql(query, (docname,), as_dict=True)
     return location_details
 
+#check file already exists
 @frappe.whitelist()
 def check_file_exists(file_name, doctype, docname):
     """
-    Checks if a file with the given file_name exists attached to the specified doctype and docname.
+    Checks if a file with the given file_name exists and is attached
+    to the specified doctype and docname.
     """
     exists = frappe.db.exists("File", {
         "file_name": file_name,
