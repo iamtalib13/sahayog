@@ -200,6 +200,8 @@ doc_events = {
         "validate": [
             "sahayog.doc_events.task.validate_location_status",
             "sahayog.doc_events.task.validate_agreement_status",
+            "sahayog.doc_events.task.check_loi_docstatus_for_task_2",
+            
         ],
 
         
