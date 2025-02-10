@@ -24,8 +24,6 @@ def execute():
   </div>
 
   <div class="container"  style="display: flex; flex-direction: row;">
-
-  
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-fixed">
