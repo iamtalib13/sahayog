@@ -359,7 +359,7 @@ def check_loi_docstatus_for_task_2(doc, method):
 
         if loi_docs:
             for loi in loi_docs:
-                if loi['docstatus'] == 0:
+                if loi['docstatus'] == 1:
                     # LOI is saved but not submitted
                     loi_url = f"{get_url()}/app/letter-of-intent/{loi['name']}"
                     frappe.throw(

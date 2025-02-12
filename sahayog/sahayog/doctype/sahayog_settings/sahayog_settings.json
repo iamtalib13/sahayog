@@ -6,7 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "project_settings_section",
-  "location_finalizer"
+  "location_finalizer",
+  "task_template_setting_section",
+  "task_template_setting"
  ],
  "fields": [
   {
@@ -19,12 +21,22 @@
    "fieldtype": "Table",
    "label": "Location finalizer",
    "options": "Roles"
+  },
+  {
+   "fieldname": "task_template_setting_section",
+   "fieldtype": "Section Break",
+   "label": "Task Template Setting"
+  },
+  {
+   "fieldname": "task_template_setting",
+   "fieldtype": "Table",
+   "options": "Task Template"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-16 15:57:59.068005",
+ "modified": "2025-02-10 17:57:26.098875",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",

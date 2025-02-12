@@ -9,7 +9,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "sb_details",
                 "label": "Location Details",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 1: Acquisition of Property'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 1: Acquisition of the Property'",
                
             },
             {
@@ -17,7 +17,7 @@ def execute():
                 "fieldtype": "HTML",
                 "insert_after": "custom_location_details_section",
                 "label": "Location Details",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 1: Acquisition of Property'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 1: Acquisition of the Property'",
                
             },
             {
@@ -26,7 +26,7 @@ def execute():
                 "insert_after": "custom_location_details_html",
                 "label": "Location",
                 "options": "Location Details",  # Child table doctype
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 1: Acquisition of Property'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 1: Acquisition of the Property'",
             },
             {
                 "fieldname": "custom_agreement_details_section",
@@ -59,6 +59,13 @@ def execute():
                 "insert_after": "custom_supplier_details_section",
                 "label": "Allow Supplier",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4: Vendor Allocation'",
+               
+            },
+               {
+                "fieldname": "custom_sequence",
+                "fieldtype": "Int",
+                "insert_after": "subject",
+                "label": "Sequence",
                
             },
         ],

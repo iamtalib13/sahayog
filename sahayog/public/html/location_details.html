@@ -134,6 +134,11 @@
       .file-size {
         font-size: 12px;
       }
+      .status-select {
+        padding: 5px;
+        border-radius: 8px;
+        background: transparent;
+      }
     </style>
   </head>
   <body>
@@ -278,7 +283,7 @@
                           </div>
                         </td>
                         <td>
-                          <select>
+                          <select class="status-select">
                             <option value="Pending" ${
                               detail.status === "Pending" ? "selected" : ""
                             }>Pending</option>
@@ -348,7 +353,7 @@
                                    <td><input type="text" placeholder="Location Name" /></td>
                                     <td><input type="file" multiple  class="hidden" /></td>
                                    <td>
-                                       <select>
+                                       <select class="status-select">
                                            <option value="Pending">Pending</option>
                                            <option value="Approved">Approved</option>
                                            <option value="Rejected">Rejected</option>
