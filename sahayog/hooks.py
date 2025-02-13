@@ -101,7 +101,7 @@ after_migrate = [
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
-    "sahayog.patches.fixtures.create_task.create_tasks_and_project_template",
+   # "sahayog.patches.fixtures.create_task.create_tasks_and_project_template",
     "sahayog.patches.fixtures.add_module_profile.execute",
     "sahayog.patches.fixtures.add_role_profile.execute",
     "sahayog.patches.fixtures.hr_setting.execute",
@@ -203,9 +203,13 @@ doc_events = {
             "sahayog.doc_events.task.check_loi_docstatus_for_task_2",
             
         ],
-
         
-    },    
+    },  
+    
+    "Sahayog Settings": {
+        "on_update": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template",
+        "after_save": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template"
+    } 
 }
 
 # Scheduled Tasks
