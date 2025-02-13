@@ -139,6 +139,11 @@
         border-radius: 8px;
         background: transparent;
       }
+      .status-text {
+        font-weight: bold;
+        color: #333;
+        padding: 5px;
+      }
     </style>
   </head>
   <body>
@@ -146,7 +151,7 @@
       <table class="location-table" id="locationTable">
         <thead class="table-heading">
           <tr>
-            <th>Check</th>
+            <th class="checkbox-container">Check</th>
             <th>Sr. No</th>
             <th>Location Name</th>
             <th>Attachments</th>
@@ -238,67 +243,69 @@
               try {
                 const files = await fetchAttachments(detail, docname);
                 newRow.innerHTML = `
-                        <td class="checkbox-container">
-                          <input type="checkbox" />
-                        </td>
-                        <td class="sr-no">${index + 1}</td>
-                        <td><input type="text" value="${
-                          detail.location_name
-                        }" /></td>
-                        <td>
-                          <div class="attachments">
-                            <input type="file" multiple style="display: none;"
-                              onclick="handleFileUpload(this, '${detail.name}')"
-                              data-name="${detail.name}" />
-                            <img src="/assets/sahayog/images/add.png"
-                              width="25" height="25" onclick="triggerFileInput('${
-                                detail.name
-                              }')">
-                            <ul class="no-bullets">
-                              ${files
-                                .map(
-                                  (file) => `
-                                <li class="file-list-row">
-                                  <div>
-                                    <a class="file-name" href="${
-                                      file.file_url
-                                    }" target="_blank">${file.file_name}</a>
-                                    <span class="file-size">(${formatFileSize(
-                                      file.file_size
-                                    )})</span>
-                                  </div>
-                                  <div>
-                                    <img class="delete-file-btn" src="/assets/sahayog/images/close.png" width="10"
-                                      onclick="deleteFile('${
-                                        file.file_name
-                                      }', '${file.attached_to_field}', '${
-                                    file.attached_to_name
-                                  }','${file.name}')">
-                                  </div>
-                                </li>
-                              `
-                                )
-                                .join("")}
-                            </ul>
-                          </div>
-                        </td>
-                        <td>
-                          <select class="status-select">
-                            <option value="Pending" ${
-                              detail.status === "Pending" ? "selected" : ""
-                            }>Pending</option>
-                            <option value="Approved" ${
-                              detail.status === "Approved" ? "selected" : ""
-                            }>Approved</option>
-                            <option value="Rejected" ${
-                              detail.status === "Rejected" ? "selected" : ""
-                            }>Rejected</option>
-                          </select>
-                        </td>
-                        <td class="hidden" data-name="${detail.name}">${
+                            <td class="checkbox-container">
+                              <input type="checkbox" />
+                            </td>
+                            <td class="sr-no">${index + 1}</td>
+                            <td><input type="text" value="${
+                              detail.location_name
+                            }" /></td>
+                            <td>
+                              <div class="attachments">
+                                <input type="file" multiple style="display: none;"
+                                  onclick="handleFileUpload(this, '${
+                                    detail.name
+                                  }')"
+                                  data-name="${detail.name}" />
+                                <img src="/assets/sahayog/images/add.png"
+                                  width="25" height="25" onclick="triggerFileInput('${
+                                    detail.name
+                                  }')">
+                                <ul class="no-bullets">
+                                  ${files
+                                    .map(
+                                      (file) => `
+                                    <li class="file-list-row">
+                                      <div>
+                                        <a class="file-name" href="${
+                                          file.file_url
+                                        }" target="_blank">${file.file_name}</a>
+                                        <span class="file-size">(${formatFileSize(
+                                          file.file_size
+                                        )})</span>
+                                      </div>
+                                      <div>
+                                        <img class="delete-file-btn" src="/assets/sahayog/images/close.png" width="10"
+                                          onclick="deleteFile('${
+                                            file.file_name
+                                          }', '${file.attached_to_field}', '${
+                                        file.attached_to_name
+                                      }','${file.name}')">
+                                      </div>
+                                    </li>
+                                  `
+                                    )
+                                    .join("")}
+                                </ul>
+                              </div>
+                            </td>
+                            <td>
+                              <select class="status-select">
+                                <option value="Pending" ${
+                                  detail.status === "Pending" ? "selected" : ""
+                                }>Pending</option>
+                                <option value="Approved" ${
+                                  detail.status === "Approved" ? "selected" : ""
+                                }>Approved</option>
+                                <option value="Rejected" ${
+                                  detail.status === "Rejected" ? "selected" : ""
+                                }>Rejected</option>
+                              </select>
+                            </td>
+                            <td class="hidden" data-name="${detail.name}">${
                   detail.name
                 }</td>
-                      `;
+                          `;
 
                 tableBody.appendChild(newRow);
 
@@ -346,21 +353,17 @@
         //newRow.classList.add("new-row"); // Mark new rows with a class
 
         newRow.innerHTML = `
-                                   <td class="checkbox-container">
-                                       <input type="checkbox" />
-                                   </td>
-                                   <td class="sr-no"></td>
-                                   <td><input type="text" placeholder="Location Name" /></td>
-                                    <td><input type="file" multiple  class="hidden" /></td>
-                                   <td>
-                                       <select class="status-select">
-                                           <option value="Pending">Pending</option>
-                                           <option value="Approved">Approved</option>
-                                           <option value="Rejected">Rejected</option>
-                                       </select>
-                                   </td>
-                                    <td class="hidden" data-name=""></td>
-                               `;
+                                       <td class="checkbox-container">
+                                           <input type="checkbox" />
+                                       </td>
+                                       <td class="sr-no"></td>
+                                       <td><input type="text" placeholder="Location Name" /></td>
+                                        <td><input type="file" multiple  class="hidden" /></td>
+                                       <td>Pending
+                                           
+                                       </td>
+                                        <td class="hidden" data-name=""></td>
+                                   `;
 
         tableBody.appendChild(newRow);
         updateSerialNumbers();
@@ -628,6 +631,62 @@
           },
         });
       }
+      console.log(frappe.session.user);
+      setTimeout(() => {
+        console.log(document.querySelectorAll(".status-select"));
+      }, 2000);
+
+      //Fetch the role of the currently logged-in user.
+      frappe.call({
+        method: "sahayog.doc_events.task.get_user_role",
+        callback: function (response) {
+          let user_role = response.message;
+          console.log("User Role:", user_role);
+
+          setTimeout(() => {
+            document.querySelectorAll(".status-select").forEach((select) => {
+              console.log("Task select found:", select);
+
+              // Disable select if the user is a Task Manager
+              if (user_role === "Task Manager") {
+                let td = select.parentElement; // Get the parent <td>
+                td.innerHTML = select.value; // Replace select with its value
+              }
+            });
+
+            if (user_role === "Project Manager") {
+              document.getElementById("addRowBtn").classList.add("hidden");
+              document.getElementById("removeRowBtn").classList.add("hidden");
+
+              document
+                .querySelectorAll('td input[type="text"]')
+                .forEach((input) => {
+                  input.readOnly = true; // Make it read-only
+
+                  input.style.cursor = "not-allowed"; // Optional: Change cursor to indicate non-editable
+                });
+
+              // Hide all images with the specific src
+              document
+                .querySelectorAll('img[src="/assets/sahayog/images/add.png"]')
+                .forEach((img) => {
+                  img.style.display = "none";
+                });
+
+              // Hide all checkboxes inside .checkbox-container
+              document
+                .querySelectorAll(".checkbox-container")
+                .forEach((checkbox) => {
+                  checkbox.style.display = "none";
+                });
+
+              document.querySelectorAll(".delete-file-btn").forEach((btn) => {
+                btn.style.display = "none"; // Hide delete button
+              });
+            }
+          }, 200); // Adjust delay as needed
+        },
+      });
     </script>
   </body>
 </html>
