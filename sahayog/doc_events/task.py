@@ -370,3 +370,10 @@ def check_loi_docstatus_for_task_2(doc, method):
             pass
         else:
             frappe.msgprint(_(f"No Letter of Intent found for project {project}"))
+
+
+#Fetch the role of the currently logged-in user.
+@frappe.whitelist()
+def get_user_role():
+    role = frappe.db.get_value("User", {"name": frappe.session.user}, "role_profile_name")
+    return role
