@@ -98,10 +98,11 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_file.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_request_for_quotation.execute",
+
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
-   # "sahayog.patches.fixtures.create_task.create_tasks_and_project_template",
     "sahayog.patches.fixtures.add_module_profile.execute",
     "sahayog.patches.fixtures.add_role_profile.execute",
     "sahayog.patches.fixtures.hr_setting.execute",
@@ -109,6 +110,8 @@ after_migrate = [
     "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
     "sahayog.patches.fixtures.add_custom_html_block_for_project.execute",
+    
+    
 ]
 # Uninstallation
 # ------------
@@ -254,9 +257,11 @@ override_whitelisted_methods = {
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
-# override_doctype_dashboards = {
-# 	"Task": "sahayog.task.get_dashboard_data"
-# }
+override_doctype_dashboards = {
+	#"Task": "sahayog.task.get_dashboard_data",
+    "Project": "sahayog.dashboard.project_dashboard.get_data",
+
+}
 
 # exempt linked doctypes from being automatically cancelled
 #
