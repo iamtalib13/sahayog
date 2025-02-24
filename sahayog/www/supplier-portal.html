@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Portal</title>
+    <script>
+        function loadPage(page) {
+            fetch(page)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById("main-content").innerHTML = html;
+            })
+            .catch(error => console.error("Error loading the page:", error));
+        }
+        
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+    {% if frappe.session.user == "Guest" %}
+    <h1 style="text-align: center; margin-top: 50px;">Please log in to view this page.</h1>
+    <p style="text-align: center;"><a href="/login">Login</a></p>    
+     
+    {% else %} 
+
+    <div style="display: flex;">
+        <!-- Sidebar -->
+        <div style="width: 250px; background: #f8f9fa; padding: 20px; height: 100vh;">
+            <h2 style="font-size: 20px; margin-bottom: 20px;">Home</h2>
+            <ul style="list-style: none; padding: 0;">
+                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('request_for_quotations.html')" style="text-decoration: none; color: black;">Request for Quotations</a></li>
+                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('supplier_quotation.html')" style="text-decoration: none; color: black;">Supplier Quotation</a></li>
+                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('purchase_orders.html')" style="text-decoration: none; color: black;">Purchase Orders</a></li>
+                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('purchase_invoices.html')" style="text-decoration: none; color: black;">Purchase Invoices</a></li>
+                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('my_account.html')" style="text-decoration: none; color: black;">My Account</a></li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div id="main-content" style="flex: 1; padding: 20px;">
+            <h1>Welcome to Supplier Portal</h1>
+            <p>Click an option from the sidebar to view details.</p>
+        </div>
+    </div>
+  {% endif %}
+</body>
+</html>
