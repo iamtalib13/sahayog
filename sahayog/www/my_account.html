@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+        }
+        .profile-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            background: red;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    {% if frappe.session.user != "Guest" %}
+        <div class="profile-header">
+            <div class="profile-icon">
+                {{ frappe.session.user[0]|upper }}
+            </div>
+            <h2>My Account</h2>
+        </div>
+        <p><strong>Logged in as:</strong> {{ frappe.session.user }}</p>
+        <a href="/?cmd=web_logout" class="button">Logout</a>
+    {% else %}
+        <script>
+            alert("Please login first.");
+            window.location.href = "/login";
+        </script>
+    {% endif %}
+</div>
+
+</body>
+</html>
