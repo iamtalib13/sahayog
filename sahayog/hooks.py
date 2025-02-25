@@ -111,6 +111,8 @@ after_migrate = [
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
     "sahayog.patches.fixtures.add_custom_html_block_for_project.execute",
     "sahayog.patches.fixtures.add_item_group.execute",
+    "sahayog.patches.fixtures.add_warehouses.execute",
+
 
 ]
 # Uninstallation
@@ -157,9 +159,9 @@ after_migrate = [
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+    "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse"
+}
 
 # Document Events
 # ---------------
@@ -212,7 +214,9 @@ doc_events = {
     "Sahayog Settings": {
         "on_update": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template",
         "after_save": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template"
-    } 
+    },
+
+
 }
 
 # Scheduled Tasks
@@ -252,6 +256,7 @@ doc_events = {
 override_whitelisted_methods = {
     "frappe.model.naming.set_name_by_naming_series": "sahayog.override.employee_naming.set_name_by_naming_series_override",
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive"
+    
 }
 #
 # each overriding function accepts a `data` argument;
