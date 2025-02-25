@@ -110,8 +110,8 @@ after_migrate = [
     "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
     "sahayog.patches.fixtures.add_custom_html_block_for_project.execute",
-    
-    
+    "sahayog.patches.fixtures.add_item_group.execute",
+
 ]
 # Uninstallation
 # ------------
