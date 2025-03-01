@@ -1,13 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>Request for Quotations</h1>
-<p>Details about Request for Quotations...</p>
+{% set supplier = frappe.db.sql("""
+    SELECT parent FROM `tabPortal User` 
+    WHERE user = %s AND parenttype = 'Supplier'
+""", frappe.session.user, as_dict=True) %}
 
-</body>
-</html>
+{% if supplier %}
+    {% set supplier_name = supplier[0].parent %}
+
+    {% set quotations = frappe.db.sql("""
+        SELECT rfq.name, rfq.transaction_date, rfq.status 
+        FROM `tabRequest for Quotation` rfq
+        JOIN `tabRequest for Quotation Supplier` supp ON rfq.name = supp.parent
+        WHERE supp.supplier = %s
+        ORDER BY rfq.transaction_date DESC
+    """, supplier_name, as_dict=True) %}
+{% else %}
+    {% set quotations = [] %}
+{% endif %}
+
+<div style="padding: 20px;">
+    <h1 style="font-size: 24px; font-weight: bold;">Request for Quotation</h1>
+
+    {% if quotations %}
+        {% for rfq in quotations %}
+            <div class="rfq-item" 
+                 data-rfq="{{ rfq.name }}"
+                 style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;">
+                <span>
+                    <strong style="color: #333;">{{ rfq.name }}</strong>
+                </span>
+                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                    ● {{ rfq.status }}
+                </span>
+                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                    {{ frappe.utils.format_date(rfq.transaction_date, "MMMM d, yyyy") }}
+                </span>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: gray; margin-top: 10px;">No records found.</p>
+    {% endif %}
+</div>
+
+<!-- Popup Form -->
+<div id="popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border-radius: 10px; z-index: 1000;">
+    <h2>RFQ Details</h2>
+    <p id="rfq-name"></p>
+    <button id="closePopupBtn"
+            style="background: red; color: white; padding: 5px 10px; border: none; cursor: pointer; margin-top: 10px;">
+        Close
+    </button>
+</div>
