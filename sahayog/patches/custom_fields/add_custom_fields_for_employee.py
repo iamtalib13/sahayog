@@ -15,7 +15,6 @@ def execute():
             },
 
 
-
             {
                 "fieldname": "custom_region",
                 "fieldtype": "Link",
@@ -48,6 +47,12 @@ def execute():
                 "fieldtype": "Check",
                 "insert_after": "erpnext_user",
                 "label": "Skip Auto Creation",
+            },
+             {
+                "fieldname": "custom_emp_warehouse",
+                "fieldtype": "Data",
+                "insert_after": "salutation",
+                "label": "Employee Warehouse",
             },
           
         ]
