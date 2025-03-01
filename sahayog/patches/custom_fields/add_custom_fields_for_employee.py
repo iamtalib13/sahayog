@@ -50,7 +50,7 @@ def execute():
             },
              {
                 "fieldname": "custom_emp_warehouse",
-                "fieldtype": "Data",
+                "fieldtype": "Link",
                 "insert_after": "salutation",
                 "label": "Employee Warehouse",
             },
