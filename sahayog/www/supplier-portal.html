@@ -4,44 +4,615 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supplier Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <style>
+        /* Apply fonts to the entire page */
+        body {
+            font-family: "Ubuntu", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+        }
+
+        .menu-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.menu-item a {
+    text-decoration: none;
+    color: black;
+    display: block;
+}
+
+.menu-item:hover{
+    background: #c7c7c9;
+}
+.menu-item.active {  /* Added .active for selected state */
+    background: #2587f0;
+    color: white;
+}
+
+.menu-item:hover a,
+.menu-item.active a {  /* Ensure link color also changes */
+    color: white;
+}
+
+    .rfq-item, .sq-item {
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.rfq-item:hover, .sq-item:hover {
+    background-color: #f1f5f9; /* Light grayish blue */
+    transform: scale(1.02); /* Slightly enlarge on hover */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+/* Style for input boxes (Qty & Rate) */
+.qty-input, .rate-input {
+    width: 100px; /* Adjust width */
+    padding: 8px;
+    font-size: 16px;
+    border: 2px solid #0369a1; /* Blue border */
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Hover effect */
+.qty-input:hover, .rate-input:hover {
+    border-color: #0284c7; /* Lighter blue */
+}
+
+/* Focus effect */
+.qty-input:focus, .rate-input:focus {
+    border-color: #0284c7;
+    box-shadow: 0px 0px 8px rgba(3, 105, 161, 0.4);
+}
+
+/* Amount field */
+.amount {
+    font-weight: bold;
+    color: #0369a1;
+    padding: 10px;
+}/* Style for Quantity & Rate Inputs */
+.qty-input, .rate-input {
+    width: 100px; /* Fixed width */
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: right;
+    -moz-appearance: textfield; /* Remove number input arrows */
+}
+
+/* Remove spinner arrows from input type number */
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button,
+.rate-input::-webkit-outer-spin-button,
+.rate-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Style for Total & Grand Total Fields */
+.amount, .rfq-grand-total, .sqGrandTotal{
+    width: 140px; /* Prevents structure breaking */
+    padding: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: right;
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis; /* Adds "..." if number is too big */
+    background: #f8f9fa; /* Light background for readability */
+    border-radius: 5px;
+}
+
+#rfqContainer::-webkit-scrollbar,
+    #sqContainer::-webkit-scrollbar {
+        width: 0px; /* Width 0 kar diya -> invisible scrollbar */
+    }
+
+    </style>
     <script>
-        function loadPage(page) {
-            fetch(page)
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById("main-content").innerHTML = html;
-            })
-            .catch(error => console.error("Error loading the page:", error));
+
+        document.querySelectorAll(".qty-input, .rate-input").forEach(input => {
+            input.addEventListener("input", function() {
+                updateAmount(this);
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const menuItems = document.querySelectorAll(".menu-item");
+            menuItems.forEach(item => {
+                item.addEventListener("click", function () {
+                    // Remove 'active' class from all menu items
+                    menuItems.forEach(i => i.classList.remove("active"));
+                
+                    // Add 'active' class to the clicked item
+                    this.classList.add("active");
+                
+                    // Store selected menu in localStorage to persist after page reload
+                    localStorage.setItem("selectedMenu", this.innerText);
+                });
+            });
+        
+            // On page load, check localStorage and highlight the stored menu item
+            const savedMenu = localStorage.getItem("selectedMenu");
+            if (savedMenu) {
+                menuItems.forEach(item => {
+                    if (item.innerText === savedMenu) {
+                        item.classList.add("active");
+                    }
+                });
+            }
+
+            document.querySelectorAll(".qty-input, .rate-input").forEach(function (input) {
+                // Prevent non-numeric characters (including minus key)
+                input.addEventListener("keypress", function (e) {
+                    if (!/^\d$/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+            
+                // Prevent pasting non-numeric values (including negative numbers)
+                input.addEventListener("paste", function (e) {
+                    let pasteData = (e.clipboardData || window.clipboardData).getData("text");
+                    if (!/^\d+$/.test(pasteData)) {
+                        e.preventDefault();
+                    }
+                });
+            
+                // Remove negative numbers if somehow entered
+                input.addEventListener("input", function () {
+                    this.value = this.value.replace(/[^0-9]/g, ""); // Remove anything that is not a number
+                });
+            });
+        });
+        
+        
+        function adjustContainerHeight() {
+            let screenHeight = window.innerHeight; // Screen height le raha hai
+            let headerHeight = 100; // Approx header height + extra padding
+            let availableHeight = screenHeight - headerHeight; // Jo space bacha wo container ke liye
+
+            document.getElementById("rfqContainer").style.maxHeight = availableHeight + "px";
+            document.getElementById("sqContainer").style.maxHeight = availableHeight + "px";
         }
         
+            // Page load hone ke baad adjust karega
+            window.onload = adjustContainerHeight;
+            // Jab window resize ho to bhi adjust karega
+            window.onresize = adjustContainerHeight;
+
+
+        function showSection(sectionId, updateURL = true) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+        
+            // Hide main content when navigating to a section
+            document.getElementById('main-content').style.display = 'none';
+        
+            // Show the selected section
+            if (document.getElementById(sectionId)) {
+                document.getElementById(sectionId).style.display = 'block';
+            }
+        
+            // Update URL hash if triggered by user click
+            if (updateURL) {
+                history.pushState(null, null, '#' + sectionId);
+            }
+        }
+       
+        // Load the correct section from URL on page load
+        document.addEventListener("DOMContentLoaded", function() {
+            const sectionId = window.location.hash.substring(1); // Get section from URL hash
+
+            if (sectionId && document.getElementById(sectionId)) {
+                showSection(sectionId, false); // Show correct section on page load
+            } else {
+                document.getElementById('main-content').style.display = 'block'; // Default view
+            }
+        });
+
     </script>
 </head>
-<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
-    {% if frappe.session.user == "Guest" %}
-    <h1 style="text-align: center; margin-top: 50px;">Please log in to view this page.</h1>
-    <p style="text-align: center;"><a href="/login">Login</a></p>    
-     
-    {% else %} 
+<body style="margin: 0; padding: 0;">
 
     <div style="display: flex;">
         <!-- Sidebar -->
-        <div style="width: 250px; background: #f8f9fa; padding: 20px; height: 100vh;">
-            <h2 style="font-size: 20px; margin-bottom: 20px;">Home</h2>
+        <div style="width: 200px; background: #f8f9fa; padding: 10px; height: 100vh;" class="sidebar" id="sidebar">
+            <h2 style="font-size: 20px; margin-bottom: 20px; cursor: pointer;padding-left: 10px; " onclick="window.location.href='/supplier-portal';">Home</h2>
             <ul style="list-style: none; padding: 0;">
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('request_for_quotations.html')" style="text-decoration: none; color: black;">Request for Quotations</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('supplier_quotation.html')" style="text-decoration: none; color: black;">Supplier Quotation</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('purchase_orders.html')" style="text-decoration: none; color: black;">Purchase Orders</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('purchase_invoices.html')" style="text-decoration: none; color: black;">Purchase Invoices</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('my_account.html')" style="text-decoration: none; color: black;">My Account</a></li>
+                <li class="menu-item" onclick="showSection('requestForQuotations')">Request for Quotations</li>
+                <li class="menu-item" onclick="showSection('supplierQuotation')">Supplier Quotation</li>
+                <li class="menu-item" onclick="showSection('purchaseOrders')">Purchase Orders</li>
+                <li class="menu-item" onclick="showSection('purchaseInvoices')">Purchase Invoices</li>
+                <li class="menu-item" onclick="showSection('myAccount')">My Account</li>
             </ul>
         </div>
-        
+
         <!-- Main Content -->
-        <div id="main-content" style="flex: 1; padding: 20px;">
-            <h1>Welcome to Supplier Portal</h1>
-            <p>Click an option from the sidebar to view details.</p>
+        <div style="flex: 1; padding: 20px;">
+            <div id="main-content" style="flex: 1; padding: 20px;">
+                <h1>Welcome to Supplier Portal</h1>
+                <p>Click an option from the sidebar to view details.</p>
+            </div>
+
+            <div id="requestForQuotations" class="section" style="display: none;">
+                <!-- Yeh SQL query check karega ki logged-in user ek Supplier hai ya nahi -->
+                {% set supplier = frappe.db.sql("""
+                    SELECT parent FROM `tabPortal User` 
+                    WHERE user = %s AND parenttype = 'Supplier'
+                """, frappe.session.user, as_dict=True) %}
+                
+                {% if supplier %}
+                    <!-- Agar supplier mila to uska naam `supplier_name` me store karenge -->
+                    {% set supplier_name = supplier[0].parent %}
+                    
+                    <!-- Ab ek aur SQL query run karenge jo RFQ (Request for Quotation) ko fetch karega 
+                         jo iss supplier ke liye available hai -->
+                    {% set quotations = frappe.db.sql("""
+                        SELECT rfq.name, rfq.transaction_date, rfq.status 
+                        FROM `tabRequest for Quotation` rfq
+                        JOIN `tabRequest for Quotation Supplier` supp ON rfq.name = supp.parent
+                        WHERE supp.supplier = %s
+                        ORDER BY rfq.transaction_date DESC
+                    """, supplier_name, as_dict=True) %}
+                {% else %}
+                    <!-- Agar supplier nahi mila to quotation list empty hogi -->
+                    {% set quotations = [] %}
+                {% endif %}
+                
+                <div id="rfqContainer" style="padding: 20px; overflow-y: auto;">
+
+                    <!-- Heading: Request for Quotation -->
+                    <h1 style="font-size: 24px; font-weight: bold;">Request for Quotation</h1>
+            
+                    {% if quotations %}
+                        <!-- Agar RFQs available hain to unko list me show karenge -->
+                        {% for rfq in quotations %}
+                            <div class="rfq-item" 
+                                 data-rfq="{{ rfq.name }}" 
+                                 data-date="{{ frappe.utils.format_date(rfq.transaction_date, 'MMMM d, yyyy') }}"
+                                 data-status="{{ rfq.status }}"
+                                 data-supplier="{{ supplier_name }}"
+                                 style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
+                                 onclick="openRFQPage(this)">
+                                <!-- RFQ ka naam -->
+                                <span>
+                                    <strong style="color: #333;">{{ rfq.name }}</strong>
+                                </span>
+                                <!-- RFQ ka status badge -->
+                                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                                    ● {{ rfq.status }}
+                                </span>
+                                <!-- RFQ ki date -->
+                                <span style="color: #585d5f; padding: 5px 10px;">
+                                    {{ frappe.utils.format_date(rfq.transaction_date, "MMMM d, yyyy") }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Agar koi RFQ nahi mila to ye message show hoga -->
+                        <p style="color: gray; margin-top: 10px;">No records found.</p>
+                    {% endif %}
+                </div>
+            </div>
+                    
+            <div id="rfqDetailsPage" class="section" style="display: none; padding: 20px;">
+                <!-- Back button jo RFQ list par wapas le jaata hai -->
+                <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
+                    <a href="#" onclick="showSection('requestForQuotations')" style="color: #0369a1; text-decoration: none;">← Back to RFQ List</a>
+                </div>
+            
+                <!-- RFQ ka title aur quotation create karne ka button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h1 id="rfq-title" style="margin: 0; font-size: 2.5rem;"></h1>
+                    <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Make Quotation</button>
+                </div>
+            
+                <!-- RFQ ka supplier aur date details dikhane ke liye -->
+                <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
+                    <span id="rfq-supplier"></span>
+                    <span id="rfq-date"></span>
+                </div>
+            
+                <!-- RFQ ke items ko dikhane ke liye ek table -->
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                    <thead>
+                        <tr style="background: #f8f9fa; text-align: left; padding: 10px;">
+                            <th style="padding: 8px;">Item</th>
+                            <th style="padding: 8px;">Qty</th>
+                            <th style="padding: 8px;">Rate</th>
+                            <th style="padding: 8px;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rfq-items">
+                        <!-- API se aane wale RFQ items yahan dynamically add honge -->
+                    </tbody>
+                    
+                </table>
+                <hr>
+                <!-- Grand total ka display -->
+                <div style="display: flex; justify-content:flex-end;align-items: center; margin-top: 10px; font-weight: bold;">
+                    <span>Grand Total&nbsp;&nbsp;</span>
+                    <span id="rfq-grand-total" class="rfq-grand-total">₹ 0.00</span>
+                </div>
+            
+                <script>
+                    function openRFQPage(element) {
+                        // Jab user kisi RFQ par click karega to yeh function chalega
+            
+                        // RFQ ka naam, date aur supplier details le rahe hain
+                        var rfqName = element.getAttribute("data-rfq");
+                        var rfqDate = element.getAttribute("data-date");
+                        var rfqSupplier = element.getAttribute("data-supplier");
+            
+                        // RFQ list ko hide kar rahe hain aur details page dikhana hai
+                        document.getElementById("requestForQuotations").style.display = "none";
+                        document.getElementById("rfqDetailsPage").style.display = "block";
+            
+                        // RFQ ka naam, supplier aur date ko update kar rahe hain
+                        document.getElementById("rfq-title").innerText = rfqName;
+                        document.getElementById("rfq-supplier").innerText = "Supplier: " + rfqSupplier;
+                        document.getElementById("rfq-date").innerText = "Date: " + rfqDate;
+            
+                        // Pichle RFQ ke items ko clear karna
+                        var itemsTable = document.getElementById("rfq-items");
+                        itemsTable.innerHTML = "";
+            
+                        // API call kar ke RFQ ke items fetch kar rahe hain
+                        fetch(`/api/method/sahayog.www.supplier_portal.get_rfq_items?rfq_name=${rfqName}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log("API Response for RFQ:", data);
+            
+                                if (data.message && data.message.length > 0) {
+                                    data.message.forEach(item => {
+                                        var row = document.createElement("tr");
+                                        row.innerHTML = `
+                                            <td>${item.item_code}</td>
+                                            <td><input type="number" class="qty-input" value="${item.qty}" min="1" oninput="updateAmount(this)"></td>
+                                            <td><input type="number" class="rate-input" data-qty="${item.qty}" oninput="updateAmount(this)"></td>
+                                            <td class="amount">₹ 0.00</td>
+                                        `;
+                                        itemsTable.appendChild(row);
+                                    });
+            
+                                    updateGrandTotalAmount(); // Grand total update karna
+                                } else {
+                                    console.error("No items found for RFQ:", rfqName);
+                                }
+                            })
+                            .catch(error => console.error("API Error:", error));
+                    }
+            
+                    function updateAmount(input) {
+                        console.log("📢 updateAmount called!");  // Debugging line
+                        var row = input.closest("tr");
+                        var qtyInput = row.querySelector(".qty-input");
+                        var rateInput = row.querySelector(".rate-input");
+                        var amountCell = row.querySelector(".amount");
+
+                        var qty = parseFloat(qtyInput.value) || 0;
+                        var rate = parseFloat(rateInput.value) || 0;
+                        var amount = qty * rate;
+
+                        amountCell.innerText = "₹ " + amount.toFixed(2);
+                        console.log("✅ Updated Amount:", amount);
+
+                        updateGrandTotalAmount(); // Calling Grand Total Update
+                        console.log("🚀 Grand Total function triggered");
+                    }
+
+
+            
+                    function updateGrandTotalAmount() {
+                        try {
+                            console.log("🔥 updateGrandTotal called!");
+                        
+                            let total = 0;
+                            document.querySelectorAll(".amount").forEach(cell => {
+                                let textValue = cell.innerText.replace(/[₹,]/g, "").trim();
+                                let value = parseFloat(textValue);
+
+                                console.log("📌 Processing Amount:", textValue, "➡️ Parsed:", value, "➡️ Is NaN:", isNaN(value));
+                            
+                                if (!isNaN(value)) {
+                                    total += value;
+                                }
+                            });
+                        
+                            console.log("🎯 Calculated Grand Total:", total);
+                            document.getElementById("rfq-grand-total").innerText = "₹ " + total.toFixed(2);
+                            console.log("✅ Grand Total Updated:", document.getElementById("rfq-grand-total").innerText);
+                        } catch (error) {
+                            console.error("❌ Error in updateGrandTotal:", error);
+                        }
+                    }
+
+
+
+
+                </script>
+            
+            </div>
+                        
+            <div id="supplierQuotation" class="section" style="display: none;">
+                <!-- Yeh SQL query check karega ki logged-in user ek Supplier hai ya nahi -->
+                {% set supplier = frappe.db.sql("""
+                    SELECT parent FROM `tabPortal User` 
+                    WHERE user = %s AND parenttype = 'Supplier'
+                """, frappe.session.user, as_dict=True) %}
+            
+                {% if supplier %}
+                    {% set supplier_name = supplier[0].parent %}
+            
+                    <!-- Supplier ke quotations fetch kar rahe hai -->
+                    {% set quotations = frappe.db.sql("""
+                        SELECT sq.name, sq.transaction_date, sq.status 
+                        FROM `tabSupplier Quotation` sq
+                        WHERE sq.supplier = %s
+                        ORDER BY sq.transaction_date DESC
+                    """, supplier_name, as_dict=True) %}
+                {% else %}
+                    {% set quotations = [] %}
+                {% endif %}
+            
+                <div id="sqContainer" style="padding: 20px; overflow-y: auto;">
+                    <!-- Heading: Request for Quotation -->
+                    <h1 style="font-size: 24px; font-weight: bold;">Supplier Quotation</h1>
+
+                    {% if quotations %}
+                        {% for sq in quotations %}
+                            <div class="sq-item"
+                                 data-sq="{{ sq.name }}"
+                                 data-date="{{ frappe.utils.format_date(sq.transaction_date, 'MMMM d, yyyy') }}"
+                                 data-status="{{ sq.status }}"
+                                 data-supplier="{{ supplier_name }}"
+                                 style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
+                                 onclick="openSQPage(this)">
+                                <span>
+                                    <strong style="color: #333;">{{ sq.name }}</strong>
+                                </span>
+                                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                                    ● {{ sq.status }}
+                                </span>
+                                <span style="color: #585d5f; padding: 5px 10px;">
+                                    {{ frappe.utils.format_date(sq.transaction_date, "MMMM d, yyyy") }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: gray; margin-top: 10px;">No records found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="sqDetailsPage" class="section" style="display: none; padding: 20px;">
+                <!-- Back button jo SQ list par wapas le jaata hai -->
+                <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
+                    <a href="#" onclick="showSection('supplierQuotation')" style="color: #0369a1; text-decoration: none;">← Back to SQ List</a>
+                </div>
+
+                <!-- SQ ka title aur quotation aur STATUS karne ka button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h1 id="sqTitle" style="margin: 0; font-size: 2.5rem;"></h1>
+                    <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Print / Edit</button>
+
+                </div>
+                
+                <!-- <h1 id="sqTitle" style="font-size: 24px; font-weight: bold;"></h1> -->
+                <!-- <p id="sqDate" style="color: gray;"></p> -->
+                <!-- <span id="sqSupplier" style="display: inline-block; padding: 5px 10px; border-radius: 10px; font-weight: bold; float: right;"></span> -->
+
+                <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
+                    <span id="sqStatus" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 14px;"></span>
+                    <span id="sqSupplier"></span>
+                    <span id="sqDate"></span>
+                </div>
+                
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="text-align: left; padding: 10px;">Item</th>
+                            <th style="text-align: left; padding: 10px;">Quantity</th>
+                            <th style="text-align: left; padding: 10px;">Rate</th>
+                            <th style="text-align: left; padding: 10px;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sqItemsList">
+                        <!-- Items will be populated here dynamically -->
+                    </tbody>
+                </table>
+                <hr>
+                <div style="display: flex; justify-content:flex-end;align-items: center; margin-top: 10px; font-weight: bold;">
+                    <span>Grand Total&nbsp;&nbsp;</span>
+                    <span id="sqGrandTotal" class="sqGrandTotal">₹ 0.00</span>
+                </div>
+
+               <script>
+                    function openSQPage(element) {
+                        var sqName = element.getAttribute("data-sq");
+                        var sqDate = element.getAttribute("data-date");
+                        var sqSupplier = element.getAttribute("data-supplier");
+                        var sqStatus = element.getAttribute("data-status");
+
+                        document.getElementById("supplierQuotation").style.display = "none";
+                        document.getElementById("sqDetailsPage").style.display = "block";
+
+                        document.getElementById("sqTitle").innerText = sqName;
+                        document.getElementById("sqSupplier").innerText = "Supplier: " + sqSupplier;
+                        document.getElementById("sqDate").innerText = "Date: " + sqDate;
+                        document.getElementById("sqStatus").innerText = sqStatus;
+
+                        var itemsTable = document.getElementById("sqItemsList");
+                        itemsTable.innerHTML = "";
+
+                        fetch(`/api/method/sahayog.www.supplier_portal.get_sq_items?sq_name=${sqName}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log("API Response for SQ:", data);
+                            
+                                if (data.message && Array.isArray(data.message) && data.message.length > 0) {
+                                    data.message.forEach(item => {
+                                        var row = document.createElement("tr");
+                                        var rate = (item.base_amount / Math.max(item.qty, 1)).toFixed(2); // Avoid NaN
+                                    
+                                        row.innerHTML = `
+                                            <td>${item.item_code}</td>
+                                            <td><input type="number" class="qty-input" value="${item.qty}" min="1" readonly></td>
+                                            <td><input type="number" class="rate-input" value="${rate}" readonly></td>
+                                            <td class="amount">₹ ${item.base_amount.toFixed(2)}</td>
+                                        `;
+                                        itemsTable.appendChild(row);
+                                    });
+                                
+                                    updateGrandTotal();
+                                } else {
+                                    console.error("No items found for SQ:", sqName);
+                                }
+                            })
+                            .catch(error => console.error("API Error:", error));
+                    }
+
+                    function updateGrandTotal() {
+                        var total = 0;
+                        document.querySelectorAll(".amount").forEach(amountCell => {
+                            total += parseFloat(amountCell.innerText.replace("₹ ", "")) || 0;
+                        });
+                    
+                        document.getElementById("sqGrandTotal").innerText = "₹ " + total.toFixed(2);
+                    }
+
+                </script>
+            </div>
+                  
+            <div id="purchaseOrders" class="section" style="display: none;">
+                <h2>Purchase Orders</h2>
+                <button onclick="alert('Purchase Orders Button Clicked!')">Click Me</button>
+            </div>
+
+            <div id="purchaseInvoices" class="section" style="display: none;">
+                <h2>Purchase Invoices</h2>
+                <button onclick="alert('Purchase Invoices Button Clicked!')">Click Me</button>
+            </div>
+
+            <div id="myAccount" class="section" style="display: none;">
+                <h2>My Account</h2>
+                <button onclick="alert('My Account Button Clicked!')">Click Me</button>
+            </div>
+
         </div>
     </div>
-  {% endif %}
+
 </body>
 </html>

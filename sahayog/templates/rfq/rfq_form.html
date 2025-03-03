@@ -1,0 +1,131 @@
+
+<!-- Popup Form -->
+<div id="popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border-radius: 10px; z-index: 1000; width: 600px; max-width: 90%;">
+
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
+        <a href="#" onclick="closePopup()" style="color: #0369a1; text-decoration: none;">Request for Quotation</a>
+        <span> &gt; <strong id="rfq-breadcrumb"></strong></span>
+    </div>
+    
+    <!-- RFQ Heading & Button -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h1 id="rfq-title" style="margin: 0; font-size: 24px;"></h1>
+        <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;">Make Quotation</button>
+    </div>
+    
+    <!-- Supplier & Date -->
+    <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
+        <span id="rfq-supplier"></span>
+        <span id="rfq-date"></span>
+    </div>
+    
+    <!-- Items Table -->
+    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+        <thead>
+            <tr style="background: #f8f9fa; text-align: left; padding: 10px;">
+                <th style="padding: 8px;">Item</th>
+                <th style="padding: 8px;">Qty</th>
+                <th style="padding: 8px;">Rate</th>
+                <th style="padding: 8px;">Amount</th>
+            </tr>
+    
+        </thead>
+        <tbody id="rfq-items">
+            <!-- RFQ Items will be loaded here dynamically -->
+        </tbody>
+    </table>
+    
+    <!-- Grand Total -->
+    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-weight: bold;">
+        <span>Grand Total</span>
+        <span id="rfq-grand-total">₹ 0.00</span>
+    </div>
+    
+    <!-- Close Button -->
+    <button onclick="closePopup()" style="margin-top: 15px; background: red; color: white; padding: 5px 10px; border: none; cursor: pointer;">
+        Close
+    </button>
+    
+    <script>
+    
+        function openRFQPopup(element) {
+            // Get RFQ details from the clicked element
+            var rfqName = element.getAttribute("data-rfq");
+            var rfqDate = element.getAttribute("data-date");
+            var rfqSupplier = element.getAttribute("data-supplier");
+                        
+            // Update popup fields
+            document.getElementById("rfq-breadcrumb").innerText = rfqName;
+            document.getElementById("rfq-title").innerText = rfqName;
+            document.getElementById("rfq-supplier").innerText = "Supplier: " + rfqSupplier;
+            document.getElementById("rfq-date").innerText = "Date: " + rfqDate;
+                        
+            // Clear previous items
+            var itemsTable = document.getElementById("rfq-items");
+            itemsTable.innerHTML = "";
+                        
+                // Fetch RFQ items using fetch API
+                fetch(`/api/method/sahayog.www.supplier_portal.get_rfq_items?rfq_name=${rfqName}`)
+                    .then(response => response.json())  // Convert response to JSON
+                    .then(data => {
+                        console.log("API Response:", data);  // Debugging log
+                    
+                        if (data.message && data.message.length > 0) {
+                            data.message.forEach(item => {
+                                var row = document.createElement("tr");
+    
+                                row.innerHTML = `
+                                    <td>${item.item_code}</td>
+                                    <td><input type="number" class="qty-input" value="${item.qty}" min="1" oninput="updateAmount(this)"></td>
+                                    <td><input type="number" class="rate-input" data-qty="${item.qty}" oninput="updateAmount(this)"></td>
+                                    <td class="amount">₹ 0.00</td>
+                                `;
+                            
+                                itemsTable.appendChild(row);
+                            });
+                        
+                            updateGrandTotal(); // Ensure grand total is reset
+                        } else {
+                            console.error("No items found for RFQ:", rfqName);
+                        }
+                    })
+                    .catch(error => console.error("API Error:", error));
+    
+            // Show popup
+            document.getElementById("popup").style.display = "block";
+        }
+    
+        function updateAmount(input) {
+            var row = input.closest("tr");
+    
+            var qtyInput = row.querySelector(".qty-input");
+            var rateInput = row.querySelector(".rate-input");
+            var amountCell = row.querySelector(".amount");
+    
+            var qty = parseFloat(qtyInput.value) || 0;
+            var rate = parseFloat(rateInput.value) || 0;
+    
+            // Calculate amount
+            var amount = qty * rate;
+            amountCell.innerText = "₹ " + amount.toFixed(2);
+    
+            // Update grand total
+            updateGrandTotal();
+        }
+    
+        function updateGrandTotal() {
+            var total = 0;
+            document.querySelectorAll(".amount").forEach(amountCell => {
+                total += parseFloat(amountCell.innerText.replace("₹ ", "")) || 0;
+            });
+        
+            document.getElementById("rfq-grand-total").innerText = "₹ " + total.toFixed(2);
+        }
+    
+        function closePopup() {
+            document.getElementById("popup").style.display = "none";
+        }
+    </script>
+    </div>
+    
