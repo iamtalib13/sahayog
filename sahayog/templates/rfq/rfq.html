@@ -1,0 +1,47 @@
+{% set supplier = frappe.db.sql("""
+SELECT parent FROM `tabPortal User` 
+WHERE user = %s AND parenttype = 'Supplier'
+""", frappe.session.user, as_dict=True) %}
+
+{% if supplier %}
+{% set supplier_name = supplier[0].parent %}
+
+{% set quotations = frappe.db.sql("""
+    SELECT rfq.name, rfq.transaction_date, rfq.status 
+    FROM `tabRequest for Quotation` rfq
+    JOIN `tabRequest for Quotation Supplier` supp ON rfq.name = supp.parent
+    WHERE supp.supplier = %s
+    ORDER BY rfq.transaction_date DESC
+""", supplier_name, as_dict=True) %}
+{% else %}
+{% set quotations = [] %}
+{% endif %}
+
+<div style="padding: 20px;">
+<h1 style="font-size: 24px; font-weight: bold;">Request for Quotation</h1>
+
+{% if quotations %}
+    {% for rfq in quotations %}
+        <div class="rfq-item" 
+             data-rfq="{{ rfq.name }}"
+             data-date="{{ frappe.utils.format_date(rfq.transaction_date, 'MMMM d, yyyy') }}"
+             data-status="{{ rfq.status }}"
+             data-supplier="{{ supplier_name }}"
+             style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
+             onclick="openRFQPopup(this)">
+            <span>
+                <strong style="color: #333;">{{ rfq.name }}</strong>
+            </span>
+            <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                ● {{ rfq.status }}
+            </span>
+            <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                {{ frappe.utils.format_date(rfq.transaction_date, "MMMM d, yyyy") }}
+            </span>
+        </div>
+    {% endfor %}
+{% else %}
+    <p style="color: gray; margin-top: 10px;">No records found.</p>
+{% endif %}
+</div>
+{% include "/templates/rfq/rfq_form.html" %}
