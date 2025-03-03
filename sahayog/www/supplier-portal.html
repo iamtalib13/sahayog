@@ -16,27 +16,32 @@
         }
 
         .menu-item {
-        margin-bottom: 10px;
-        padding: 10px;
-        cursor: pointer;
-        border-radius: 5px;
-        transition: background 0.3s ease, color 0.3s ease;
-    }
+    margin-bottom: 10px;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s ease, color 0.3s ease;
+}
 
-    .menu-item a {
-        text-decoration: none;
-        color: black;
-        display: block;
-    }
+.menu-item a {
+    text-decoration: none;
+    color: black;
+    display: block;
+}
 
-    .menu-item:hover {
-        background: #007bff;
-        color: white;
-    }
+.menu-item:hover{
+    background: #c7c7c9;
+}
+.menu-item.active {  /* Added .active for selected state */
+    background: #2587f0;
+    color: white;
+}
 
-    .menu-item:hover a {
-        color: white;
-    }
+.menu-item:hover a,
+.menu-item.active a {  /* Ensure link color also changes */
+    color: white;
+}
+
     .rfq-item, .sq-item {
     transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
 }
@@ -94,7 +99,7 @@
 }
 
 /* Style for Total & Grand Total Fields */
-.amount, .rfq-grand-total {
+.amount, .rfq-grand-total, .sqGrandTotal{
     width: 140px; /* Prevents structure breaking */
     padding: 8px;
     font-size: 16px;
@@ -105,7 +110,6 @@
     text-overflow: ellipsis; /* Adds "..." if number is too big */
     background: #f8f9fa; /* Light background for readability */
     border-radius: 5px;
-    display: inline-block;
 }
 
 #rfqContainer::-webkit-scrollbar,
@@ -115,8 +119,39 @@
 
     </style>
     <script>
-     
+
+        document.querySelectorAll(".qty-input, .rate-input").forEach(input => {
+            input.addEventListener("input", function() {
+                updateAmount(this);
+            });
+        });
+
         document.addEventListener("DOMContentLoaded", function () {
+
+            const menuItems = document.querySelectorAll(".menu-item");
+            menuItems.forEach(item => {
+                item.addEventListener("click", function () {
+                    // Remove 'active' class from all menu items
+                    menuItems.forEach(i => i.classList.remove("active"));
+                
+                    // Add 'active' class to the clicked item
+                    this.classList.add("active");
+                
+                    // Store selected menu in localStorage to persist after page reload
+                    localStorage.setItem("selectedMenu", this.innerText);
+                });
+            });
+        
+            // On page load, check localStorage and highlight the stored menu item
+            const savedMenu = localStorage.getItem("selectedMenu");
+            if (savedMenu) {
+                menuItems.forEach(item => {
+                    if (item.innerText === savedMenu) {
+                        item.classList.add("active");
+                    }
+                });
+            }
+
             document.querySelectorAll(".qty-input, .rate-input").forEach(function (input) {
                 // Prevent non-numeric characters (including minus key)
                 input.addEventListener("keypress", function (e) {
@@ -303,11 +338,12 @@
                     <tbody id="rfq-items">
                         <!-- API se aane wale RFQ items yahan dynamically add honge -->
                     </tbody>
+                    
                 </table>
-            
+                <hr>
                 <!-- Grand total ka display -->
-                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-weight: bold;">
-                    <span>Grand Total</span>
+                <div style="display: flex; justify-content:flex-end;align-items: center; margin-top: 10px; font-weight: bold;">
+                    <span>Grand Total&nbsp;&nbsp;</span>
                     <span id="rfq-grand-total" class="rfq-grand-total">₹ 0.00</span>
                 </div>
             
@@ -337,7 +373,7 @@
                         fetch(`/api/method/sahayog.www.supplier_portal.get_rfq_items?rfq_name=${rfqName}`)
                             .then(response => response.json())
                             .then(data => {
-                                console.log("API Response:", data);
+                                console.log("API Response for RFQ:", data);
             
                                 if (data.message && data.message.length > 0) {
                                     data.message.forEach(item => {
@@ -351,7 +387,7 @@
                                         itemsTable.appendChild(row);
                                     });
             
-                                    updateGrandTotal(); // Grand total update karna
+                                    updateGrandTotalAmount(); // Grand total update karna
                                 } else {
                                     console.error("No items found for RFQ:", rfqName);
                                 }
@@ -360,32 +396,52 @@
                     }
             
                     function updateAmount(input) {
-                        // Yeh function item ka amount calculate karega jab qty ya rate change hogi
-            
-                        var row = input.closest("tr"); // Current row select karna
-                        var qtyInput = row.querySelector(".qty-input"); // Quantity input field
-                        var rateInput = row.querySelector(".rate-input"); // Rate input field
-                        var amountCell = row.querySelector(".amount"); // Amount cell
-            
-                        var qty = parseFloat(qtyInput.value) || 0; // Quantity ka value lena
-                        var rate = parseFloat(rateInput.value) || 0; // Rate ka value lena
-                        var amount = qty * rate; // Total amount calculate karna
-            
-                        amountCell.innerText = "₹ " + amount.toFixed(2); // Amount ko display karna
-                        updateGrandTotal(); // Grand total update karna
+                        console.log("📢 updateAmount called!");  // Debugging line
+                        var row = input.closest("tr");
+                        var qtyInput = row.querySelector(".qty-input");
+                        var rateInput = row.querySelector(".rate-input");
+                        var amountCell = row.querySelector(".amount");
+
+                        var qty = parseFloat(qtyInput.value) || 0;
+                        var rate = parseFloat(rateInput.value) || 0;
+                        var amount = qty * rate;
+
+                        amountCell.innerText = "₹ " + amount.toFixed(2);
+                        console.log("✅ Updated Amount:", amount);
+
+                        updateGrandTotalAmount(); // Calling Grand Total Update
+                        console.log("🚀 Grand Total function triggered");
                     }
+
+
             
-                    function updateGrandTotal() {
-                        // Yeh function pura table ka grand total calculate karega
-            
-                        var total = 0;
-                        document.querySelectorAll(".amount").forEach(amountCell => {
-                            total += parseFloat(amountCell.innerText.replace("₹ ", "")) || 0;
-                        });
-            
-                        // Grand total ko display karna
-                        document.getElementById("rfq-grand-total").innerText = "₹ " + total.toFixed(2);
+                    function updateGrandTotalAmount() {
+                        try {
+                            console.log("🔥 updateGrandTotal called!");
+                        
+                            let total = 0;
+                            document.querySelectorAll(".amount").forEach(cell => {
+                                let textValue = cell.innerText.replace(/[₹,]/g, "").trim();
+                                let value = parseFloat(textValue);
+
+                                console.log("📌 Processing Amount:", textValue, "➡️ Parsed:", value, "➡️ Is NaN:", isNaN(value));
+                            
+                                if (!isNaN(value)) {
+                                    total += value;
+                                }
+                            });
+                        
+                            console.log("🎯 Calculated Grand Total:", total);
+                            document.getElementById("rfq-grand-total").innerText = "₹ " + total.toFixed(2);
+                            console.log("✅ Grand Total Updated:", document.getElementById("rfq-grand-total").innerText);
+                        } catch (error) {
+                            console.error("❌ Error in updateGrandTotal:", error);
+                        }
                     }
+
+
+
+
                 </script>
             
             </div>
@@ -442,35 +498,104 @@
             </div>
 
             <div id="sqDetailsPage" class="section" style="display: none; padding: 20px;">
-                <h1 id="sqTitle" style="font-size: 24px; font-weight: bold;"></h1>
-                <p id="sqDate" style="color: gray;"></p>
-                <span id="sqStatus" style="display: inline-block; padding: 5px 10px; border-radius: 10px; font-weight: bold;"></span>
-                <p id="sqSupplier" style="font-weight: bold; text-align: right;"></p>
+                <!-- Back button jo SQ list par wapas le jaata hai -->
+                <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
+                    <a href="#" onclick="showSection('supplierQuotation')" style="color: #0369a1; text-decoration: none;">← Back to SQ List</a>
+                </div>
+
+                <!-- SQ ka title aur quotation aur STATUS karne ka button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h1 id="sqTitle" style="margin: 0; font-size: 2.5rem;"></h1>
+                    <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Print / Edit</button>
+
+                </div>
                 
-                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <!-- <h1 id="sqTitle" style="font-size: 24px; font-weight: bold;"></h1> -->
+                <!-- <p id="sqDate" style="color: gray;"></p> -->
+                <!-- <span id="sqSupplier" style="display: inline-block; padding: 5px 10px; border-radius: 10px; font-weight: bold; float: right;"></span> -->
+
+                <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
+                    <span id="sqStatus" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 14px;"></span>
+                    <span id="sqSupplier"></span>
+                    <span id="sqDate"></span>
+                </div>
+                
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
                     <thead>
                         <tr style="background: #f8f9fa;">
                             <th style="text-align: left; padding: 10px;">Item</th>
-                            <th style="text-align: center; padding: 10px;">Quantity</th>
-                            <th style="text-align: center; padding: 10px;">Rate</th>
-                            <th style="text-align: right; padding: 10px;">Amount</th>
+                            <th style="text-align: left; padding: 10px;">Quantity</th>
+                            <th style="text-align: left; padding: 10px;">Rate</th>
+                            <th style="text-align: left; padding: 10px;">Amount</th>
                         </tr>
                     </thead>
                     <tbody id="sqItemsList">
                         <!-- Items will be populated here dynamically -->
                     </tbody>
-
-                    <script>
-                        
-                    </script>
                 </table>
-                
-                <div style="text-align: right; margin-top: 20px; font-weight: bold;">
-                    Grand Total: <span id="sqGrandTotal" style="font-size: 18px;">₹0.00</span>
+                <hr>
+                <div style="display: flex; justify-content:flex-end;align-items: center; margin-top: 10px; font-weight: bold;">
+                    <span>Grand Total&nbsp;&nbsp;</span>
+                    <span id="sqGrandTotal" class="sqGrandTotal">₹ 0.00</span>
                 </div>
+
+               <script>
+                    function openSQPage(element) {
+                        var sqName = element.getAttribute("data-sq");
+                        var sqDate = element.getAttribute("data-date");
+                        var sqSupplier = element.getAttribute("data-supplier");
+                        var sqStatus = element.getAttribute("data-status");
+
+                        document.getElementById("supplierQuotation").style.display = "none";
+                        document.getElementById("sqDetailsPage").style.display = "block";
+
+                        document.getElementById("sqTitle").innerText = sqName;
+                        document.getElementById("sqSupplier").innerText = "Supplier: " + sqSupplier;
+                        document.getElementById("sqDate").innerText = "Date: " + sqDate;
+                        document.getElementById("sqStatus").innerText = sqStatus;
+
+                        var itemsTable = document.getElementById("sqItemsList");
+                        itemsTable.innerHTML = "";
+
+                        fetch(`/api/method/sahayog.www.supplier_portal.get_sq_items?sq_name=${sqName}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log("API Response for SQ:", data);
+                            
+                                if (data.message && Array.isArray(data.message) && data.message.length > 0) {
+                                    data.message.forEach(item => {
+                                        var row = document.createElement("tr");
+                                        var rate = (item.base_amount / Math.max(item.qty, 1)).toFixed(2); // Avoid NaN
+                                    
+                                        row.innerHTML = `
+                                            <td>${item.item_code}</td>
+                                            <td><input type="number" class="qty-input" value="${item.qty}" min="1" readonly></td>
+                                            <td><input type="number" class="rate-input" value="${rate}" readonly></td>
+                                            <td class="amount">₹ ${item.base_amount.toFixed(2)}</td>
+                                        `;
+                                        itemsTable.appendChild(row);
+                                    });
+                                
+                                    updateGrandTotal();
+                                } else {
+                                    console.error("No items found for SQ:", sqName);
+                                }
+                            })
+                            .catch(error => console.error("API Error:", error));
+                    }
+
+                    function updateGrandTotal() {
+                        var total = 0;
+                        document.querySelectorAll(".amount").forEach(amountCell => {
+                            total += parseFloat(amountCell.innerText.replace("₹ ", "")) || 0;
+                        });
+                    
+                        document.getElementById("sqGrandTotal").innerText = "₹ " + total.toFixed(2);
+                    }
+
+                </script>
             </div>
-            
-        
+                  
             <div id="purchaseOrders" class="section" style="display: none;">
                 <h2>Purchase Orders</h2>
                 <button onclick="alert('Purchase Orders Button Clicked!')">Click Me</button>
