@@ -175,9 +175,11 @@ override_doctype_class = {
 
 doc_events = {
     "Employee": {
-        "after_insert": "sahayog.doc_events.create_user_from_employee.create_user",
+        "after_insert": [
+            "sahayog.doc_events.create_user_from_employee.create_user",
+            "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
+        ],
       
-
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
             
@@ -225,6 +227,7 @@ doc_events = {
     "Branch": {
         "after_insert": "sahayog.doc_events.branch_warehouse.create_branch_warehouse"
     }
+
 
 
 }

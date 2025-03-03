@@ -2,36 +2,53 @@ import frappe
 
 def execute():
     """
-    Creates predefined warehouses and dynamically adds warehouses for all branches.
+    1️⃣ Existing warehouses ko update karega.
+    2️⃣ Agar warehouse nahi hai to naye create karega.
+    3️⃣ Branch Doctype ke 'custom_warehouse' field me warehouse assign karega.
     """
+
     warehouse_list = [
         "Stationary Gondia"
     ]
 
-    # Create predefined warehouses
+    # Step 1: Predefined Warehouses ko create/update karo
     for warehouse in warehouse_list:
-        create_warehouse_if_not_exists(warehouse, is_group=True)  # Predefined warehouses are not group warehouses
+        create_or_update_warehouse(warehouse, is_group=True)
 
-    # Create warehouses for all existing branches
+    # Step 2: Branch-wise Warehouses ko create/update karo
     branches = frappe.get_all("Branch", fields=["name"])
     for branch in branches:
-        create_warehouse_if_not_exists(branch["name"], is_group=True)  # Branch warehouse should be a group warehouse
+        warehouse_name = branch["name"]
+        warehouse = create_or_update_warehouse(warehouse_name, is_group=True)
+        
+        # Step 3: Branch Doctype ke `custom_warehouse` me warehouse assign karo
+        if warehouse:
+            frappe.db.set_value("Branch", branch["name"], "custom_warehouse", warehouse_name)
+            print(f"✅ Warehouse Linked to Branch: {branch['name']} -> {warehouse_name}")
 
-    frappe.db.commit()  # Ensure changes are saved
+    frappe.db.commit()  # Final commit ek baar karna best practice hai
 
-def create_warehouse_if_not_exists(warehouse_name, is_group=False):
+def create_or_update_warehouse(warehouse_name, is_group=False):
     """
-    Check if warehouse exists, if not, create it.
+    Agar warehouse exist karta hai to update karega,
+    warna naya create karega aur return karega.
     """
-    if not frappe.db.exists("Warehouse", warehouse_name):
+    if frappe.db.exists("Warehouse", warehouse_name):
+        # ✅ Update existing warehouse
+        frappe.db.set_value("Warehouse", warehouse_name, {
+            "is_group": 1 if is_group else 0,
+            "company": frappe.defaults.get_defaults().get("company")
+        })
+        print(f"🔄 Warehouse Updated: {warehouse_name} (Group: {is_group})")
+    else:
+        # ✅ Naya warehouse create karo
         warehouse = frappe.get_doc({
             "doctype": "Warehouse",
             "warehouse_name": warehouse_name,
-            "company": frappe.defaults.get_defaults().get("company"),  # Fetch default company
-            "is_group": 1 if is_group else 0  # Set as Group Warehouse for branches
+            "company": frappe.defaults.get_defaults().get("company"),
+            "is_group": 1 if is_group else 0
         })
         warehouse.insert(ignore_permissions=True)
-        frappe.db.commit()
         print(f"✅ Warehouse Created: {warehouse_name} (Group: {is_group})")
-    else:
-        print(f"⚠️ Warehouse Already Exists: {warehouse_name}")
+    
+    return warehouse_name  # Warehouse name return karna taaki link ho sake

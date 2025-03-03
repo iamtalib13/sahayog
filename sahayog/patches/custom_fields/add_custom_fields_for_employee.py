@@ -53,6 +53,7 @@ def execute():
                 "fieldtype": "Link",
                 "insert_after": "salutation",
                 "label": "Employee Warehouse",
+                "options":"Warehouse",
             },
           
         ]
