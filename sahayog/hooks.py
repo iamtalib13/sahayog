@@ -220,6 +220,10 @@ doc_events = {
         "after_save": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template"
     },
 
+    "Branch": {
+        "after_insert": "sahayog.doc_events.branch_warehouse.create_branch_warehouse"
+    }
+
 
 }
 
