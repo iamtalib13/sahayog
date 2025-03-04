@@ -278,10 +278,10 @@
             
                     {% if quotations %}
                         <!-- Agar RFQs available hain to unko list me show karenge -->
-                        {% for rfq in quotations %}
-                            <div class="rfq-item" 
+                        {% for rfq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
+                        <div class="rfq-item" 
                                  data-rfq="{{ rfq.name }}" 
-                                 data-date="{{ frappe.utils.format_date(rfq.transaction_date, 'MMMM d, yyyy') }}"
+                                 data-date="{{ rfq.transaction_date }}"
                                  data-status="{{ rfq.status }}"
                                  data-supplier="{{ supplier_name }}"
                                  style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
@@ -307,22 +307,22 @@
                 </div>
             </div>
                     
-            <div id="rfqDetailsPage" class="section" style="display: none; padding: 20px;">
+            <div id="rfqDetailsPage" class="section rfq-details" style="display: none; padding: 20px;">
                 <!-- Back button jo RFQ list par wapas le jaata hai -->
                 <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
-                    <a href="#" onclick="showSection('requestForQuotations')" style="color: #0369a1; text-decoration: none;">← Back to RFQ List</a>
+                    <a onclick="showSection('requestForQuotations')" style="color: #0369a1; text-decoration: none;">← Back to RFQ List</a>
                 </div>
             
                 <!-- RFQ ka title aur quotation create karne ka button -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h1 id="rfq-title" style="margin: 0; font-size: 2.5rem;"></h1>
-                    <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Make Quotation</button>
+                    <button id="makeSupplierQuotationBtn" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Make Quotation</button>
                 </div>
             
                 <!-- RFQ ka supplier aur date details dikhane ke liye -->
                 <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
-                    <span id="rfq-supplier"></span>
-                    <span id="rfq-date"></span>
+                    <div>Supplier: <span id="rfq-supplier"></span></div>
+                    <div>Date: <span id="rfq-date"></span></div>
                 </div>
             
                 <!-- RFQ ke items ko dikhane ke liye ek table -->
@@ -348,23 +348,39 @@
                 </div>
             
                 <script>
+                    let itemsData = []; // Declare globally
+
                     function openRFQPage(element) {
                         // Jab user kisi RFQ par click karega to yeh function chalega
-            
+                        function formatDate(dateString) {
+                            var date = new Date(dateString);
+                            var options = { year: "numeric", month: "long", day: "numeric" };
+                            return date.toLocaleDateString("en-US", options);
+                        }
                         // RFQ ka naam, date aur supplier details le rahe hain
                         var rfqName = element.getAttribute("data-rfq");
-                        var rfqDate = element.getAttribute("data-date");
+                        var rfqDate = formatDate(element.getAttribute("data-date"));
                         var rfqSupplier = element.getAttribute("data-supplier");
+
+                        var detailsDiv = document.querySelector(".rfq-details");
+
+                        if (detailsDiv) {
+                            detailsDiv.id = rfqName; // Change the id dynamically
+                        }
+
+                        // Now show the new div
+                        showSection(rfqName);
+
             
                         // RFQ list ko hide kar rahe hain aur details page dikhana hai
                         document.getElementById("requestForQuotations").style.display = "none";
-                        document.getElementById("rfqDetailsPage").style.display = "block";
+                        document.getElementById(rfqName).style.display = "block";
             
                         // RFQ ka naam, supplier aur date ko update kar rahe hain
                         document.getElementById("rfq-title").innerText = rfqName;
-                        document.getElementById("rfq-supplier").innerText = "Supplier: " + rfqSupplier;
-                        document.getElementById("rfq-date").innerText = "Date: " + rfqDate;
-            
+                        document.getElementById("rfq-supplier").innerText =rfqSupplier;
+                        document.getElementById("rfq-date").innerText =rfqDate;
+
                         // Pichle RFQ ke items ko clear karna
                         var itemsTable = document.getElementById("rfq-items");
                         itemsTable.innerHTML = "";
@@ -374,6 +390,7 @@
                             .then(response => response.json())
                             .then(data => {
                                 console.log("API Response for RFQ:", data);
+                                itemsData = []; // Reset data before adding new items
             
                                 if (data.message && data.message.length > 0) {
                                     data.message.forEach(item => {
@@ -385,8 +402,19 @@
                                             <td class="amount">₹ 0.00</td>
                                         `;
                                         itemsTable.appendChild(row);
+
+                                        // Store in global variable
+                                        itemsData.push({
+                                            item_code: item.item_code,
+                                            uom: item.uom,
+                                            stock_uom: item.stock_uom,
+                                            qty: item.qty,
+                                            rate: 0,
+                                            amount: 0
+                                        });
                                     });
-            
+                                    
+                                    window.itemsData = itemsData; // Ensure global access
                                     updateGrandTotalAmount(); // Grand total update karna
                                 } else {
                                     console.error("No items found for RFQ:", rfqName);
@@ -396,7 +424,6 @@
                     }
             
                     function updateAmount(input) {
-                        console.log("📢 updateAmount called!");  // Debugging line
                         var row = input.closest("tr");
                         var qtyInput = row.querySelector(".qty-input");
                         var rateInput = row.querySelector(".rate-input");
@@ -407,41 +434,115 @@
                         var amount = qty * rate;
 
                         amountCell.innerText = "₹ " + amount.toFixed(2);
-                        console.log("✅ Updated Amount:", amount);
 
                         updateGrandTotalAmount(); // Calling Grand Total Update
-                        console.log("🚀 Grand Total function triggered");
                     }
 
 
             
                     function updateGrandTotalAmount() {
-                        try {
-                            console.log("🔥 updateGrandTotal called!");
-                        
+                        try {                        
                             let total = 0;
                             document.querySelectorAll(".amount").forEach(cell => {
                                 let textValue = cell.innerText.replace(/[₹,]/g, "").trim();
-                                let value = parseFloat(textValue);
-
-                                console.log("📌 Processing Amount:", textValue, "➡️ Parsed:", value, "➡️ Is NaN:", isNaN(value));
-                            
+                                let value = parseFloat(textValue);                            
                                 if (!isNaN(value)) {
                                     total += value;
                                 }
                             });
                         
-                            console.log("🎯 Calculated Grand Total:", total);
                             document.getElementById("rfq-grand-total").innerText = "₹ " + total.toFixed(2);
-                            console.log("✅ Grand Total Updated:", document.getElementById("rfq-grand-total").innerText);
                         } catch (error) {
-                            console.error("❌ Error in updateGrandTotal:", error);
+                            console.error("Error in updateGrandTotal:", error);
                         }
                     }
 
+                    document.getElementById("makeSupplierQuotationBtn").addEventListener("click", function() {
+                        if (confirm("Are you sure you want to submit the quotation?")) {
+                            submitQuotation();
+                        }
+                    });
 
+                    function submitQuotation() {
+                        if (!window.itemsData || window.itemsData.length === 0) {
+                            alert("No items found. Please fetch RFQ items first.");
+                            return;
+                        }
+                    
+                        let supplierName = document.getElementById("rfq-supplier").innerText;
+                        let rfqName = document.getElementById("rfq-title").innerText;
+                        let transactionDate = document.getElementById("rfq-date").innerText;
 
+                        let grandTotal = document.getElementById("rfq-grand-total").innerText.replace("₹", "").trim();
+                    
+                        let rows = document.querySelectorAll("#rfq-items tr");
+                        let isValid = true; // Validation flag
+                    
+                        rows.forEach((row, index) => {
+                            let qtyInput = row.querySelector(".qty-input");
+                            let rateInput = row.querySelector(".rate-input");
+                            let amountCell = row.querySelector(".amount");
+                        
+                            let qty = parseFloat(qtyInput.value);
+                            let rate = parseFloat(rateInput.value);
+                            let amount = parseFloat(amountCell.innerText.replace("₹", "").trim());
+                        
+                            if (isNaN(qty) || qty <= 0 || isNaN(rate) || rate <= 0 || isNaN(amount) || amount <= 0) {
+                                alert("Quantity, Rate, and Amount must be valid numbers greater than zero.");
+                                isValid = false;
+                                return;
+                            }
+                        
+                            // Update window.itemsData
+                            if (window.itemsData[index]) {
+                                window.itemsData[index].qty = qty;
+                                window.itemsData[index].rate = rate;
+                                window.itemsData[index].amount = amount;
+                            }
+                        });
+                    
+                        if (!isValid) return; // Stop submission if validation fails
+                    
+                        let payload = {
+                            supplier_name: supplierName,
+                            rfq_name: rfqName,
+                            transaction_date: transactionDate,
+                            items: window.itemsData,
+                        };
 
+                        // Ensure date is in YYYY-MM-DD format
+                        const formatDate = (dateString) => {
+                            const date = new Date(dateString);
+                            return date.toISOString().split("T")[0]; // Extract YYYY-MM-DD part
+                        };
+                        
+                        // Assuming transaction_date is in an incorrect format
+                        payload.transaction_date = formatDate(payload.transaction_date);
+                                        
+                        fetch("/api/method/sahayog.www.supplier_portal.create_supplier_quotation", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            // console.log("Server Response:", result); // Debugging purpose
+                        
+                            if (result.message && result.message.success) {
+                                // alert("Success!\n" + result.message.message + "\nQuotation Name: " + result.message.name);
+
+                                // Redirect to the Supplier Quotation list page and open the created document
+                                window.location.href = `/supplier-portal#${result.message.name}`;
+                            } else {
+                                alert("⚠️ Error: " + (result.message.message || "Unexpected error occurred."));
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Fetch Error:", error);
+                            alert("❌ An unexpected error occurred: " + error.message);
+                        });
+
+                    }
                 </script>
             
             </div>
@@ -472,7 +573,7 @@
                     <h1 style="font-size: 24px; font-weight: bold;">Supplier Quotation</h1>
 
                     {% if quotations %}
-                        {% for sq in quotations %}
+                    {% for sq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
                             <div class="sq-item"
                                  data-sq="{{ sq.name }}"
                                  data-date="{{ frappe.utils.format_date(sq.transaction_date, 'MMMM d, yyyy') }}"
@@ -497,10 +598,10 @@
                 </div>
             </div>
 
-            <div id="sqDetailsPage" class="section" style="display: none; padding: 20px;">
+            <div id="sqDetailsPage" class="section sq-details" style="display: none; padding: 20px;">
                 <!-- Back button jo SQ list par wapas le jaata hai -->
                 <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
-                    <a href="#" onclick="showSection('supplierQuotation')" style="color: #0369a1; text-decoration: none;">← Back to SQ List</a>
+                    <a onclick="showSection('supplierQuotation')" style="color: #0369a1; text-decoration: none;">← Back to SQ List</a>
                 </div>
 
                 <!-- SQ ka title aur quotation aur STATUS karne ka button -->
@@ -546,8 +647,17 @@
                         var sqSupplier = element.getAttribute("data-supplier");
                         var sqStatus = element.getAttribute("data-status");
 
+                        var detailsDiv = document.querySelector(".sq-details");
+
+                        if (detailsDiv) {
+                            detailsDiv.id = sqName; // Change the id dynamically
+                        }
+
+                        // Now show the new div
+                        showSection(sqName);
+
                         document.getElementById("supplierQuotation").style.display = "none";
-                        document.getElementById("sqDetailsPage").style.display = "block";
+                        document.getElementById(sqName).style.display = "block";
 
                         document.getElementById("sqTitle").innerText = sqName;
                         document.getElementById("sqSupplier").innerText = "Supplier: " + sqSupplier;
