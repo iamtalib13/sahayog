@@ -8,12 +8,14 @@ def execute():
     """
 
     warehouse_list = [
-        "Stationary Gondia"
+        "Stationary Gondia",
+        "Gondia IT",
+        "Nagpur IT"
     ]
 
     # Step 1: Predefined Warehouses ko create/update karo
     for warehouse in warehouse_list:
-        create_or_update_warehouse(warehouse, is_group=True)
+        create_or_update_warehouse(warehouse, is_group=False)
 
     # Step 2: Branch-wise Warehouses ko create/update karo
     branches = frappe.get_all("Branch", fields=["name"])
