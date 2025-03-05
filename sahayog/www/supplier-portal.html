@@ -58,7 +58,7 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 /* Style for input boxes (Qty & Rate) */
-.qty-input, .rate-input {
+.sq-qty-input, .sq-rate-input,.rfq-qty-input, .rfq-rate-input{
     width: 100px; /* Adjust width */
     padding: 8px;
     font-size: 16px;
@@ -66,28 +66,30 @@
     border-radius: 6px;
     outline: none;
     transition: all 0.3s ease-in-out;
-    cursor: not-allowed; /* Indicate non-editable */
 
+}
+.sq-qty-input, .sq-rate-input{
+    cursor: not-allowed; /* Indicate non-editable */
 }
 
 /* Hover effect */
-.qty-input:hover, .rate-input:hover {
+.sq-qty-input:hover, .sq-rate-input:hover,.rfq-qty-input:hover, .rfq-rate-input:hover {
     border-color: #0284c7; /* Lighter blue */
 }
  /* Active state when editable */
- .qty-input.editable, .rate-input.editable {
+ .sq-qty-input.editable, .sq-rate-input.editable {
         border-color: #0284c7; /* Blue border */
         background-color: white; /* White background */
         cursor: text; /* Change cursor to text */
     }
 
     /* Hover effect */
-    .qty-input.editable:hover, .rate-input.editable:hover {
+    .sq-qty-input.editable:hover, .sq-rate-input.editable:hover {
         border-color: #0284c7; /* Lighter blue */
     }
 
 /* Focus effect */
-.qty-input:focus, .rate-input:focus {
+.sq-qty-input:focus, .sq-rate-input:focus ,.rfq-qty-input:focus, .rfq-rate-input:focus{
     border-color: #0284c7;
     box-shadow: 0px 0px 8px rgba(3, 105, 161, 0.4);
 }
@@ -98,7 +100,7 @@
     color: #0369a1;
     padding: 10px;
 }/* Style for Quantity & Rate Inputs */
-.qty-input, .rate-input {
+.sq-qty-input, .sq-rate-input ,.rfq-qty-input, .rfq-rate-input{
     width: 100px; /* Fixed width */
     padding: 8px;
     font-size: 16px;
@@ -109,10 +111,14 @@
 }
 
 /* Remove spinner arrows from input type number */
-.qty-input::-webkit-outer-spin-button,
-.qty-input::-webkit-inner-spin-button,
-.rate-input::-webkit-outer-spin-button,
-.rate-input::-webkit-inner-spin-button {
+.sq-qty-input::-webkit-outer-spin-button,
+.sq-qty-input::-webkit-inner-spin-button,
+.sq-rate-input::-webkit-outer-spin-button,
+.sq-rate-input::-webkit-inner-spin-button,
+.rfq-qty-input::-webkit-outer-spin-button,
+.rfq-qty-input::-webkit-inner-spin-button,
+.rfq-rate-input::-webkit-outer-spin-button,
+.rfq-rate-input::-webkit-inner-spin-button{
     -webkit-appearance: none;
     margin: 0;
 }
@@ -139,7 +145,7 @@
     </style>
     <script>
 
-        document.querySelectorAll(".qty-input, .rate-input").forEach(input => {
+        document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input").forEach(input => {
             input.addEventListener("input", function() {
                 updateAmount(this);
             });
@@ -171,7 +177,7 @@
                 });
             }
 
-            document.querySelectorAll(".qty-input, .rate-input").forEach(function (input) {
+            document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input").forEach(function (input) {
                 // Prevent non-numeric characters (including minus key)
                 input.addEventListener("keypress", function (e) {
                     if (!/^\d$/.test(e.key)) {
@@ -418,8 +424,8 @@
                                         var row = document.createElement("tr");
                                         row.innerHTML = `
                                             <td>${item.item_code}</td>
-                                            <td><input type="number" class="qty-input" value="${item.qty}" min="1" oninput="updateAmount(this)"></td>
-                                            <td><input type="number" class="rate-input" data-qty="${item.qty}" oninput="updateAmount(this)"></td>
+                                            <td><input type="number" class="rfq-qty-input" value="${item.qty}" min="1" oninput="updateAmount(this)"></td>
+                                            <td><input type="number" class="rfq-rate-input" data-qty="${item.qty}" oninput="updateAmount(this)"></td>
                                             <td class="amount">₹ 0.00</td>
                                         `;
                                         itemsTable.appendChild(row);
@@ -467,12 +473,17 @@
             
                     function updateAmount(input) {
                         var row = input.closest("tr");
-                        var qtyInput = row.querySelector(".qty-input");
-                        var rateInput = row.querySelector(".rate-input");
+                        var rfq_qtyInput = row.querySelector(".rfq-qty-input");
+                        var rfq_rateInput = row.querySelector(".rfq-rate-input");
                         var amountCell = row.querySelector(".amount");
 
-                        var qty = parseFloat(qtyInput.value) || 0;
-                        var rate = parseFloat(rateInput.value) || 0;
+                        if (!rfq_qtyInput || !rfq_rateInput || !amountCell) {
+                            console.error("Required elements not found." + rfq_qtyInput + rfq_rateInput + amountCell);
+                            return;
+                        }
+
+                        var qty = parseFloat(rfq_qtyInput.value) || 0;
+                        var rate = parseFloat(rfq_rateInput.value) || 0;
                         var amount = qty * rate;
 
                         amountCell.innerText = "₹ " + amount.toFixed(2);
@@ -536,15 +547,15 @@
                         let isValid = true; // Validation flag
                     
                         rows.forEach((row, index) => {
-                            let qtyInput = row.querySelector(".qty-input");
-                            let rateInput = row.querySelector(".rate-input");
+                            let rfq_qtyInput = row.querySelector(".rfq-qty-input");
+                            let rfq_rateInput = row.querySelector(".rfq-rate-input");
                             let amountCell = row.querySelector(".amount");
                         
-                            let qty = parseFloat(qtyInput.value);
-                            let rate = parseFloat(rateInput.value);
-                            let amount = parseFloat(amountCell.innerText.replace("₹", "").trim());
+                            let rfq_qty = parseFloat(rfq_qtyInput?.value);
+                            let rfq_rate = parseFloat(rfq_rateInput?.value);
+                            let rfq_amount = parseFloat(amountCell?.innerText.replace("₹", "").trim());
                         
-                            if (isNaN(qty) || qty <= 0 || isNaN(rate) || rate <= 0 || isNaN(amount) || amount <= 0) {
+                            if (isNaN(rfq_qty) || rfq_qty <= 0 || isNaN(rfq_rate) || rfq_rate <= 0 || isNaN(rfq_amount) || rfq_amount <= 0) {
                                 alert("Quantity, Rate, and Amount must be valid numbers greater than zero.");
                                 isValid = false;
                                 return;
@@ -552,9 +563,9 @@
                         
                             // Update window.itemsData
                             if (window.itemsData[index]) {
-                                window.itemsData[index].qty = qty;
-                                window.itemsData[index].rate = rate;
-                                window.itemsData[index].amount = amount;
+                                window.itemsData[index].qty = rfq_qty;
+                                window.itemsData[index].rate = rfq_rate;
+                                window.itemsData[index].amount = rfq_amount;
                             }
                         });
                     
@@ -608,116 +619,62 @@
 
                     }
 
-                    // AFTER PAGE RELOAD, RUN THIS CODE:
                     document.addEventListener("DOMContentLoaded", function () {
-    if (localStorage.getItem("supplier_quotation_success") === "true") {
-        console.log("✔️ Page reloaded. Resuming execution...");
-
-        // Show loading effect
-        let loadingDiv = document.createElement("div");
-        loadingDiv.id = "loading-overlay";
-        Object.assign(loadingDiv.style, {
-            position: "fixed",
-            top: "0",
-            left: "0",
-            width: "100%",
-            height: "100%",
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontSize: "20px",
-            zIndex: "1000"
-        });
-        loadingDiv.innerHTML = "Loading... Please wait";
-        document.body.appendChild(loadingDiv);
-
-        // Step 2: Click the "Supplier Quotation" menu item
-        setTimeout(() => {
-            console.log("Step 2: Clicking on 'Supplier Quotation' menu item...");
-            let menuItem = document.querySelector(".menu-item[onclick=\"showSection('supplierQuotation')\"]");
-            if (menuItem) {
-                menuItem.click();
-                console.log("✔️ Supplier Quotation menu clicked successfully.");
-
-                // Step 3: Click the newly created quotation after UI update
-                setTimeout(() => {
-                    let quotationName = localStorage.getItem("supplier_quotation_name");
-                    console.log(`Step 3: Clicking on the newly created quotation: ${quotationName}`);
-                    let newQuotation = document.getElementById(quotationName);
-                    if (newQuotation) {
-                        console.log(`🔄 Scrolling to quotation '${quotationName}'...`);
-                        newQuotation.scrollIntoView({ behavior: "smooth", block: "center" });
-
-                        setTimeout(() => {
-                            console.log(`✔️ Clicking on Quotation '${quotationName}'...`);
-                            newQuotation.style.transition = "background 0.5s ease-in-out";
-                            newQuotation.style.background = "#d4edda"; // Light green highlight
-                            
-                            setTimeout(() => {
-                                newQuotation.click();
-                                console.log(`✔️ Quotation '${quotationName}' clicked successfully.`);
-                                
-                                // Show success message in bottom right with slide-in effect
-                                let successMessage = document.createElement("div");
-                                successMessage.id = "success-message";
-                                Object.assign(successMessage.style, {
-                                    position: "fixed",
-                                    bottom: "20px",
-                                    right: "-300px",
-                                    background: "#28a745",
-                                    color: "white",
-                                    padding: "10px 20px",
-                                    borderRadius: "5px",
-                                    boxShadow: "0px 0px 10px rgba(0,0,0,0.2)",
-                                    fontSize: "16px",
-                                    transition: "right 0.5s ease-in-out",
-                                    opacity: "1",
-                                    zIndex: "1000"
-                                });
-                                successMessage.innerText = `✔️ Quotation '${quotationName}' clicked successfully.`;
-                                document.body.appendChild(successMessage);
-
-                                // Slide-in effect
-                                setTimeout(() => {
-                                    successMessage.style.right = "20px";
-                                }, 100);
-
-                                // Slide-out effect after 3 seconds
-                                setTimeout(() => {
-                                    successMessage.style.right = "-300px";
-                                    setTimeout(() => successMessage.remove(), 500);
-                                }, 3000);
-
-                                newQuotation.style.background = ""; // Remove highlight after click
-                            }, 500);
-                        }, 1000);
-                    } else {
-                        console.log(`❌ Error: Quotation '${quotationName}' not found.`);
-                    }
-
-                    // Hide loading effect
-                    setTimeout(() => {
-                        if (document.body.contains(loadingDiv)) {
-                            document.body.removeChild(loadingDiv);
+                        // Ensure this script only runs on the correct page
+                        if (localStorage.getItem("supplier_quotation_success") === "true") {
+                            console.log("✔️ Page reloaded. Resuming execution...");
+                            // Show loading effect
+                            let loadingDiv = document.createElement("div");
+                            loadingDiv.id = "loading-overlay";
+                            Object.assign(loadingDiv.style, {
+                                position: "fixed",
+                                top: "0",
+                                left: "0",
+                                width: "100%",
+                                height: "100%",
+                                background: "rgba(0, 0, 0, 0.5)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                                fontSize: "20px",
+                                zIndex: "1000"
+                            });
+                            loadingDiv.innerHTML = "Loading... Please wait";
+                            document.body.appendChild(loadingDiv);
+                            // Step 2: Wait for "Supplier Quotation" menu item to appear
+                            let menuInterval = setInterval(() => {
+                                let menuItem = document.querySelector(".menu-item[onclick=\"showSection('supplierQuotation')\"]");
+                                if (menuItem) {
+                                    clearInterval(menuInterval); // Stop checking once found
+                                    console.log("✔️ Supplier Quotation menu clicked successfully.");
+                                    menuItem.click();
+                                    // Step 3: Wait for the quotation to appear
+                                    let quotationInterval = setInterval(() => {
+                                        let quotationName = localStorage.getItem("supplier_quotation_name");
+                                        let newQuotation = document.getElementById(quotationName);
+                                        if (newQuotation) {
+                                            clearInterval(quotationInterval); // Stop checking once found
+                                            console.log(`✔️ Clicking on Quotation '${quotationName}'...`);
+                                            newQuotation.scrollIntoView({ behavior: "smooth", block: "center" });
+                                            setTimeout(() => newQuotation.click(), 500);
+                                            // Remove loading effect
+                                            setTimeout(() => {
+                                                if (document.body.contains(loadingDiv)) {
+                                                    document.body.removeChild(loadingDiv);
+                                                }
+                                            }, 1000);
+                                            // Clear localStorage **only after all steps are completed**
+                                            setTimeout(() => {
+                                                localStorage.removeItem("supplier_quotation_success");
+                                                localStorage.removeItem("supplier_quotation_name");
+                                            }, 2000);
+                                        }
+                                    }, 500); // Check every 500ms
+                                }
+                            }, 500); // Check every 500ms
                         }
-                    }, 2000);
-
-                    // Clear localStorage after execution to avoid repeated actions
-                    localStorage.removeItem("supplier_quotation_success");
-                    localStorage.removeItem("supplier_quotation_name");
-                }, 1000);
-            } else {
-                console.log("❌ Error: Supplier Quotation menu item not found.");
-                if (document.body.contains(loadingDiv)) {
-                    document.body.removeChild(loadingDiv);
-                }
-            }
-        }, 500); // Give time for page elements to load
-    }
-});
-
+                    });
                 </script>
             
             </div>
@@ -845,8 +802,8 @@
                 
                                         row.innerHTML = `
                                             <td>${item.item_code}</td>
-                                            <td><input type="number" class="qty-input" value="${item.qty}" min="1" oninput="updateAmount(this)" readonly></td>
-                                            <td><input type="number" class="rate-input" value="${rate}" oninput="updateAmount(this)" readonly></td>
+                                            <td><input type="number" class="sq-qty-input" value="${item.qty}" min="1" oninput="updateSQAmount(this)" readonly></td>
+                                            <td><input type="number" class="sq-rate-input" value="${rate}" oninput="updateSQAmount(this)" readonly></td>
                                             <td class="amount">₹ ${item.base_amount.toFixed(2)}</td>
                                         `;
                                         itemsTable.appendChild(row);
@@ -860,17 +817,17 @@
                             .catch(error => console.error("API Error:", error));
                     }
                 
-                    function updateAmount(input) {
+                    function updateSQAmount(input) {
                         var row = input.closest("tr");
-                        var qtyInput = row.querySelector(".qty-input");
-                        var rateInput = row.querySelector(".rate-input");
+                        var sq_qtyInput = row.querySelector(".sq-qty-input");
+                        var sq_rateInput = row.querySelector(".sq-rate-input");
                         var amountCell = row.querySelector(".amount");
+
+                        var sq_qty = parseFloat(sq_qtyInput.value) || 0;
+                        var sq_rate = parseFloat(sq_rateInput.value) || 0;
+                        var sq_amount = sq_qty * sq_rate;
                 
-                        var qty = parseFloat(qtyInput.value) || 0;
-                        var rate = parseFloat(rateInput.value) || 0;
-                        var amount = qty * rate;
-                
-                        amountCell.innerText = "₹ " + amount.toFixed(2);
+                        amountCell.innerText = "₹ " + sq_amount.toFixed(2);
                 
                         updateGrandTotalAmount(); // Calling Grand Total Update
                     }
@@ -898,7 +855,7 @@
                 
                         editButton.addEventListener("click", function () {
                             if (!isEditing) {
-                                document.querySelectorAll(".qty-input, .rate-input").forEach(input => {
+                                document.querySelectorAll(".sq-qty-input, .sq-rate-input").forEach(input => {
                                     input.removeAttribute("readonly");
                                     input.classList.add("editable"); // Apply editable styles
 
@@ -909,8 +866,8 @@
                                 const updatedItems = [];
                                 document.querySelectorAll("#sqItemsList tr").forEach(row => {
                                     const itemCode = row.children[0].innerText;
-                                    const qty = row.querySelector(".qty-input").value;
-                                    const rate = row.querySelector(".rate-input").value;
+                                    const qty = row.querySelector(".sq-qty-input").value;
+                                    const rate = row.querySelector(".sq-rate-input").value;
                 
                                     updatedItems.push({
                                         item_code: itemCode,
@@ -941,7 +898,7 @@
                                 })
                                 .catch(error => console.error("API Error:", error));
                 
-                                document.querySelectorAll(".qty-input, .rate-input").forEach(input => {
+                                document.querySelectorAll(".sq-qty-input, .sq-rate-input").forEach(input => {
                                     input.setAttribute("readonly", "true");
                                     input.classList.remove("editable"); // Remove editable styles
                                 });
