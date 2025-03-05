@@ -66,12 +66,25 @@
     border-radius: 6px;
     outline: none;
     transition: all 0.3s ease-in-out;
+    cursor: not-allowed; /* Indicate non-editable */
+
 }
 
 /* Hover effect */
 .qty-input:hover, .rate-input:hover {
     border-color: #0284c7; /* Lighter blue */
 }
+ /* Active state when editable */
+ .qty-input.editable, .rate-input.editable {
+        border-color: #0284c7; /* Blue border */
+        background-color: white; /* White background */
+        cursor: text; /* Change cursor to text */
+    }
+
+    /* Hover effect */
+    .qty-input.editable:hover, .rate-input.editable:hover {
+        border-color: #0284c7; /* Lighter blue */
+    }
 
 /* Focus effect */
 .qty-input:focus, .rate-input:focus {
@@ -769,13 +782,11 @@
                 <!-- SQ ka title aur quotation aur STATUS karne ka button -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h1 id="sqTitle" style="margin: 0; font-size: 2.5rem;"></h1>
-                    <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Print / Edit</button>
-
+                    <div>
+                        <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Print</button>
+                        <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Edit</button>
+                    </div>
                 </div>
-                
-                <!-- <h1 id="sqTitle" style="font-size: 24px; font-weight: bold;"></h1> -->
-                <!-- <p id="sqDate" style="color: gray;"></p> -->
-                <!-- <span id="sqSupplier" style="display: inline-block; padding: 5px 10px; border-radius: 10px; font-weight: bold; float: right;"></span> -->
 
                 <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
                     <span id="sqStatus" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 14px;"></span>
@@ -802,64 +813,146 @@
                     <span id="sqGrandTotal" class="sqGrandTotal">₹ 0.00</span>
                 </div>
 
-               <script>
+                <script>
                     function openSQPage(element) {
                         var sqName = element.getAttribute("data-sq");
                         var sqDate = element.getAttribute("data-date");
                         var sqSupplier = element.getAttribute("data-supplier");
                         var sqStatus = element.getAttribute("data-status");
-
-                        // Now show the new div
+                
                         showSection(sqName);
-
+                
                         document.getElementById("supplierQuotation").style.display = "none";
                         document.getElementById("sqDetailsPage").style.display = "block";
-
+                
                         document.getElementById("sqTitle").innerText = sqName;
                         document.getElementById("sqSupplier").innerText = "Supplier: " + sqSupplier;
                         document.getElementById("sqDate").innerText = "Date: " + sqDate;
                         document.getElementById("sqStatus").innerText = sqStatus;
-
+                
                         var itemsTable = document.getElementById("sqItemsList");
                         itemsTable.innerHTML = "";
-
+                
                         fetch(`/api/method/sahayog.www.supplier_portal.get_sq_items?sq_name=${sqName}`)
                             .then(response => response.json())
                             .then(data => {
                                 console.log("API Response for SQ:", data);
-                            
+                
                                 if (data.message && Array.isArray(data.message) && data.message.length > 0) {
                                     data.message.forEach(item => {
                                         var row = document.createElement("tr");
                                         var rate = (item.base_amount / Math.max(item.qty, 1)).toFixed(2); // Avoid NaN
-                                    
+                
                                         row.innerHTML = `
                                             <td>${item.item_code}</td>
-                                            <td><input type="number" class="qty-input" value="${item.qty}" min="1" readonly></td>
-                                            <td><input type="number" class="rate-input" value="${rate}" readonly></td>
+                                            <td><input type="number" class="qty-input" value="${item.qty}" min="1" oninput="updateAmount(this)" readonly></td>
+                                            <td><input type="number" class="rate-input" value="${rate}" oninput="updateAmount(this)" readonly></td>
                                             <td class="amount">₹ ${item.base_amount.toFixed(2)}</td>
                                         `;
                                         itemsTable.appendChild(row);
                                     });
-                                
-                                    updateGrandTotal();
+                
+                                    updateGrandTotalAmount();
                                 } else {
                                     console.error("No items found for SQ:", sqName);
                                 }
                             })
                             .catch(error => console.error("API Error:", error));
                     }
-
-                    function updateGrandTotal() {
-                        var total = 0;
-                        document.querySelectorAll(".amount").forEach(amountCell => {
-                            total += parseFloat(amountCell.innerText.replace("₹ ", "")) || 0;
-                        });
-                    
-                        document.getElementById("sqGrandTotal").innerText = "₹ " + total.toFixed(2);
+                
+                    function updateAmount(input) {
+                        var row = input.closest("tr");
+                        var qtyInput = row.querySelector(".qty-input");
+                        var rateInput = row.querySelector(".rate-input");
+                        var amountCell = row.querySelector(".amount");
+                
+                        var qty = parseFloat(qtyInput.value) || 0;
+                        var rate = parseFloat(rateInput.value) || 0;
+                        var amount = qty * rate;
+                
+                        amountCell.innerText = "₹ " + amount.toFixed(2);
+                
+                        updateGrandTotalAmount(); // Calling Grand Total Update
                     }
+                
+                    function updateGrandTotalAmount() {
+                        try {                        
+                            let total = 0;
+                            document.querySelectorAll(".amount").forEach(cell => {
+                                let textValue = cell.innerText.replace(/[₹,]/g, "").trim();
+                                let value = parseFloat(textValue);                            
+                                if (!isNaN(value)) {
+                                    total += value;
+                                }
+                            });
+                
+                            document.getElementById("sqGrandTotal").innerText = "₹ " + total.toFixed(2);
+                        } catch (error) {
+                            console.error("Error in updateGrandTotal:", error);
+                        }
+                    }
+                
+                    document.addEventListener("DOMContentLoaded", function () {
+                        const editButton = document.querySelector("#sqDetailsPage button:nth-child(2)"); // Edit button
+                        let isEditing = false;
+                
+                        editButton.addEventListener("click", function () {
+                            if (!isEditing) {
+                                document.querySelectorAll(".qty-input, .rate-input").forEach(input => {
+                                    input.removeAttribute("readonly");
+                                    input.classList.add("editable"); // Apply editable styles
 
+                                });
+                                editButton.innerText = "Save";
+                                isEditing = true;
+                            } else {
+                                const updatedItems = [];
+                                document.querySelectorAll("#sqItemsList tr").forEach(row => {
+                                    const itemCode = row.children[0].innerText;
+                                    const qty = row.querySelector(".qty-input").value;
+                                    const rate = row.querySelector(".rate-input").value;
+                
+                                    updatedItems.push({
+                                        item_code: itemCode,
+                                        qty: parseFloat(qty),
+                                        rate: parseFloat(rate)
+                                    });
+                                });
+                
+                                fetch("/api/method/sahayog.www.supplier_portal.update_sq_items", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        sq_name: document.getElementById("sqTitle").innerText,
+                                        items: JSON.stringify(updatedItems)
+                                    })
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log("Full Response:", data);
+                                    if (data.message && data.message.message === "success") {
+                                        alert("Quotation updated successfully!");
+                                    } else if (data._server_messages) {
+                                        let serverMessage = JSON.parse(data._server_messages);
+                                        alert(serverMessage[0].message);
+                                    } else {
+                                        alert("Error updating quotation.");
+                                    }
+                                })
+                                .catch(error => console.error("API Error:", error));
+                
+                                document.querySelectorAll(".qty-input, .rate-input").forEach(input => {
+                                    input.setAttribute("readonly", "true");
+                                    input.classList.remove("editable"); // Remove editable styles
+                                });
+                
+                                editButton.innerText = "Edit";
+                                isEditing = false;
+                            }
+                        });
+                    });
                 </script>
+                
             </div>
                   
             <div id="purchaseOrders" class="section" style="display: none;">

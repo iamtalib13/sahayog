@@ -1,5 +1,7 @@
 import frappe
 from frappe.model.document import Document
+import json
+
 @frappe.whitelist()
 def get_rfq_items(rfq_name, supplier_name):
     """Fetch RFQ items dynamically based on the clicked RFQ and check for existing Supplier Quotation"""
@@ -105,3 +107,39 @@ def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
     except Exception as e:
         frappe.log_error(f"Error: {str(e)}", "Supplier Quotation Error")
         return {"success": False, "message": str(e)}
+
+@frappe.whitelist()
+def update_sq_items(sq_name, items):
+    try:
+        # Ensure items is not empty
+        if not items:
+            return {"error": "Items data is missing"}
+
+        # Decode JSON properly
+        try:
+            items = json.loads(items)
+        except json.JSONDecodeError:
+            return {"error": "Invalid JSON format in items"}
+
+        if not sq_name or not items:
+            return {"error": "Missing supplier quotation name or items"}
+
+        # Fetch the Supplier Quotation document
+        sq_doc = frappe.get_doc("Supplier Quotation", sq_name)
+
+        # Update items
+        for item in sq_doc.items:
+            for updated_item in items:
+                if item.item_code == updated_item["item_code"]:
+                    item.qty = updated_item["qty"]
+                    item.rate = updated_item["rate"]
+
+        # Save the document
+        sq_doc.save()
+        frappe.db.commit()
+
+        return {"message": "success"}
+
+    except Exception as e:
+        frappe.log_error(f"Error in update_sq_items: {str(e)}")
+        return {"error": str(e)}
