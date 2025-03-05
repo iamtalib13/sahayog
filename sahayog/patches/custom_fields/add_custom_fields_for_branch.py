@@ -10,8 +10,7 @@ def execute():
                 "options": "Warehouse",
                 "insert_after": "branch",
                 "label": "Warehouse",
-            },
-             
+            },  
             
         ],
     }
