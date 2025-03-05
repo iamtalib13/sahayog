@@ -44,6 +44,12 @@
 
     .rfq-item, .sq-item {
     transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-around; 
+    padding: 10px; 
+    border-bottom: 1px solid #ddd; 
+    cursor: pointer;
 }
 
 .rfq-item:hover, .sq-item:hover {
@@ -209,6 +215,13 @@
             if (updateURL) {
                 history.pushState(null, null, '#' + sectionId);
             }
+
+            // Reapply CSS styles to list items (RFQ/SQ items)
+            document.querySelectorAll(".rfq-item, .sq-item").forEach(item => {
+                item.style.display = "flex";
+                item.style.alignItems = "center";
+                item.style.justifyContent = "space-around";
+            });
         }
        
         // Load the correct section from URL on page load
@@ -279,13 +292,12 @@
                     {% if quotations %}
                         <!-- Agar RFQs available hain to unko list me show karenge -->
                         {% for rfq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
-                        <div class="rfq-item" 
+                        <div class="rfq-item" id="{{ rfq.name }}"
                                  data-rfq="{{ rfq.name }}" 
                                  data-date="{{ rfq.transaction_date }}"
                                  data-status="{{ rfq.status }}"
                                  data-supplier="{{ supplier_name }}"
-                                 style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
-                                 onclick="openRFQPage(this)">
+                                 onclick="openRFQPage(this);">
                                 <!-- RFQ ka naam -->
                                 <span>
                                     <strong style="color: #333;">{{ rfq.name }}</strong>
@@ -349,6 +361,8 @@
             
                 <script>
                     let itemsData = []; // Declare globally
+                    let supplierquotationexist = false; // Declare variable
+                    let supplier_quotation_name;
 
                     function openRFQPage(element) {
                         // Jab user kisi RFQ par click karega to yeh function chalega
@@ -362,19 +376,13 @@
                         var rfqDate = formatDate(element.getAttribute("data-date"));
                         var rfqSupplier = element.getAttribute("data-supplier");
 
-                        var detailsDiv = document.querySelector(".rfq-details");
-
-                        if (detailsDiv) {
-                            detailsDiv.id = rfqName; // Change the id dynamically
-                        }
-
                         // Now show the new div
                         showSection(rfqName);
 
             
                         // RFQ list ko hide kar rahe hain aur details page dikhana hai
                         document.getElementById("requestForQuotations").style.display = "none";
-                        document.getElementById(rfqName).style.display = "block";
+                        document.getElementById("rfqDetailsPage").style.display = "block";
             
                         // RFQ ka naam, supplier aur date ko update kar rahe hain
                         document.getElementById("rfq-title").innerText = rfqName;
@@ -386,14 +394,14 @@
                         itemsTable.innerHTML = "";
             
                         // API call kar ke RFQ ke items fetch kar rahe hain
-                        fetch(`/api/method/sahayog.www.supplier_portal.get_rfq_items?rfq_name=${rfqName}`)
+                        fetch(`/api/method/sahayog.www.supplier_portal.get_rfq_items?rfq_name=${rfqName}&supplier_name=${rfqSupplier}`)
                             .then(response => response.json())
                             .then(data => {
                                 console.log("API Response for RFQ:", data);
                                 itemsData = []; // Reset data before adding new items
             
-                                if (data.message && data.message.length > 0) {
-                                    data.message.forEach(item => {
+                                if (data.message && data.message.items && data.message.items.length > 0) {
+                                    data.message.items.forEach(item => {
                                         var row = document.createElement("tr");
                                         row.innerHTML = `
                                             <td>${item.item_code}</td>
@@ -418,6 +426,27 @@
                                     updateGrandTotalAmount(); // Grand total update karna
                                 } else {
                                     console.error("No items found for RFQ:", rfqName);
+                                }
+
+                                // Handle existing Supplier Quotation message
+                                if (data.message && data.message.existing_quotation) {
+                                    console.warn(`Supplier Quotation already exists: ${data.message.existing_quotation}`);
+                                    supplierquotationexist = true; // Set flag
+                                    supplier_quotation_name = data.message.existing_quotation; // Store name
+                                
+                                    // Change button text to "View Quotation" if Supplier Quotation exists
+                                    let makeSupplierQuotationBtn = document.getElementById("makeSupplierQuotationBtn");
+                                    if (makeSupplierQuotationBtn && supplier_quotation_name) {
+                                        makeSupplierQuotationBtn.innerText = "View Quotation" 
+                                    }
+
+                                } else {
+                                    console.log("No existing Supplier Quotation found.");
+                                    let makeSupplierQuotationBtn = document.getElementById("makeSupplierQuotationBtn");
+                                    if (makeSupplierQuotationBtn && supplier_quotation_name) {
+                                        makeSupplierQuotationBtn.innerText = "Make Quotation" 
+                                    }
+
                                 }
                             })
                             .catch(error => console.error("API Error:", error));
@@ -457,9 +486,24 @@
                         }
                     }
 
+                    
                     document.getElementById("makeSupplierQuotationBtn").addEventListener("click", function() {
-                        if (confirm("Are you sure you want to submit the quotation?")) {
-                            submitQuotation();
+                        if (supplierquotationexist === true) {
+                            // Store the flag and name in localStorage before redirecting
+                            localStorage.setItem("supplier_quotation_success", "true");
+                            localStorage.setItem("supplier_quotation_name", supplier_quotation_name);
+
+                            console.log("Step 1: Refreshing the page...");
+
+                            // Add a slight delay before refreshing to ensure localStorage is saved
+                            setTimeout(() => {
+                                location.reload();  
+                            }, 200);
+                        }
+                        else{
+                            if (confirm("Are you sure you want to submit the quotation?")) {
+                                submitQuotation();
+                            }
                         }
                     });
 
@@ -531,8 +575,15 @@
                             if (result.message && result.message.success) {
                                 // alert("Success!\n" + result.message.message + "\nQuotation Name: " + result.message.name);
 
+                                // Store the flag and name in localStorage
+                                localStorage.setItem("supplier_quotation_success", "true");
+                                localStorage.setItem("supplier_quotation_name", result.message.name);
+
+                                console.log("Step 1: Refreshing the page...");
+                                location.reload();  // Refresh the page
+
                                 // Redirect to the Supplier Quotation list page and open the created document
-                                window.location.href = `/supplier-portal#${result.message.name}`;
+                                // window.location.href = `/supplier-portal#${result.message.name}`;
                             } else {
                                 alert("⚠️ Error: " + (result.message.message || "Unexpected error occurred."));
                             }
@@ -543,6 +594,117 @@
                         });
 
                     }
+
+                    // AFTER PAGE RELOAD, RUN THIS CODE:
+                    document.addEventListener("DOMContentLoaded", function () {
+    if (localStorage.getItem("supplier_quotation_success") === "true") {
+        console.log("✔️ Page reloaded. Resuming execution...");
+
+        // Show loading effect
+        let loadingDiv = document.createElement("div");
+        loadingDiv.id = "loading-overlay";
+        Object.assign(loadingDiv.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: "20px",
+            zIndex: "1000"
+        });
+        loadingDiv.innerHTML = "Loading... Please wait";
+        document.body.appendChild(loadingDiv);
+
+        // Step 2: Click the "Supplier Quotation" menu item
+        setTimeout(() => {
+            console.log("Step 2: Clicking on 'Supplier Quotation' menu item...");
+            let menuItem = document.querySelector(".menu-item[onclick=\"showSection('supplierQuotation')\"]");
+            if (menuItem) {
+                menuItem.click();
+                console.log("✔️ Supplier Quotation menu clicked successfully.");
+
+                // Step 3: Click the newly created quotation after UI update
+                setTimeout(() => {
+                    let quotationName = localStorage.getItem("supplier_quotation_name");
+                    console.log(`Step 3: Clicking on the newly created quotation: ${quotationName}`);
+                    let newQuotation = document.getElementById(quotationName);
+                    if (newQuotation) {
+                        console.log(`🔄 Scrolling to quotation '${quotationName}'...`);
+                        newQuotation.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                        setTimeout(() => {
+                            console.log(`✔️ Clicking on Quotation '${quotationName}'...`);
+                            newQuotation.style.transition = "background 0.5s ease-in-out";
+                            newQuotation.style.background = "#d4edda"; // Light green highlight
+                            
+                            setTimeout(() => {
+                                newQuotation.click();
+                                console.log(`✔️ Quotation '${quotationName}' clicked successfully.`);
+                                
+                                // Show success message in bottom right with slide-in effect
+                                let successMessage = document.createElement("div");
+                                successMessage.id = "success-message";
+                                Object.assign(successMessage.style, {
+                                    position: "fixed",
+                                    bottom: "20px",
+                                    right: "-300px",
+                                    background: "#28a745",
+                                    color: "white",
+                                    padding: "10px 20px",
+                                    borderRadius: "5px",
+                                    boxShadow: "0px 0px 10px rgba(0,0,0,0.2)",
+                                    fontSize: "16px",
+                                    transition: "right 0.5s ease-in-out",
+                                    opacity: "1",
+                                    zIndex: "1000"
+                                });
+                                successMessage.innerText = `✔️ Quotation '${quotationName}' clicked successfully.`;
+                                document.body.appendChild(successMessage);
+
+                                // Slide-in effect
+                                setTimeout(() => {
+                                    successMessage.style.right = "20px";
+                                }, 100);
+
+                                // Slide-out effect after 3 seconds
+                                setTimeout(() => {
+                                    successMessage.style.right = "-300px";
+                                    setTimeout(() => successMessage.remove(), 500);
+                                }, 3000);
+
+                                newQuotation.style.background = ""; // Remove highlight after click
+                            }, 500);
+                        }, 1000);
+                    } else {
+                        console.log(`❌ Error: Quotation '${quotationName}' not found.`);
+                    }
+
+                    // Hide loading effect
+                    setTimeout(() => {
+                        if (document.body.contains(loadingDiv)) {
+                            document.body.removeChild(loadingDiv);
+                        }
+                    }, 2000);
+
+                    // Clear localStorage after execution to avoid repeated actions
+                    localStorage.removeItem("supplier_quotation_success");
+                    localStorage.removeItem("supplier_quotation_name");
+                }, 1000);
+            } else {
+                console.log("❌ Error: Supplier Quotation menu item not found.");
+                if (document.body.contains(loadingDiv)) {
+                    document.body.removeChild(loadingDiv);
+                }
+            }
+        }, 500); // Give time for page elements to load
+    }
+});
+
                 </script>
             
             </div>
@@ -574,7 +736,7 @@
 
                     {% if quotations %}
                     {% for sq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
-                            <div class="sq-item"
+                            <div class="sq-item" id="{{ sq.name }}"
                                  data-sq="{{ sq.name }}"
                                  data-date="{{ frappe.utils.format_date(sq.transaction_date, 'MMMM d, yyyy') }}"
                                  data-status="{{ sq.status }}"
@@ -647,17 +809,11 @@
                         var sqSupplier = element.getAttribute("data-supplier");
                         var sqStatus = element.getAttribute("data-status");
 
-                        var detailsDiv = document.querySelector(".sq-details");
-
-                        if (detailsDiv) {
-                            detailsDiv.id = sqName; // Change the id dynamically
-                        }
-
                         // Now show the new div
                         showSection(sqName);
 
                         document.getElementById("supplierQuotation").style.display = "none";
-                        document.getElementById(sqName).style.display = "block";
+                        document.getElementById("sqDetailsPage").style.display = "block";
 
                         document.getElementById("sqTitle").innerText = sqName;
                         document.getElementById("sqSupplier").innerText = "Supplier: " + sqSupplier;

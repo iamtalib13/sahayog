@@ -1,15 +1,36 @@
 import frappe
 from frappe.model.document import Document
-
 @frappe.whitelist()
-def get_rfq_items(rfq_name):
-    """Fetch RFQ items dynamically based on the clicked RFQ"""
+def get_rfq_items(rfq_name, supplier_name):
+    """Fetch RFQ items dynamically based on the clicked RFQ and check for existing Supplier Quotation"""
+
+    # Check if Supplier Quotation already exists for this supplier and RFQ
+    existing_quotation = frappe.db.sql(
+        """
+        SELECT sq.name 
+        FROM `tabSupplier Quotation` sq
+        JOIN `tabSupplier Quotation Item` sqi ON sq.name = sqi.parent
+        WHERE sq.supplier = %s AND sqi.request_for_quotation = %s
+        LIMIT 1
+        """, 
+        (supplier_name, rfq_name),
+        as_dict=True
+    )
+
+    # Fetch RFQ items
     items = frappe.get_all(
         "Request for Quotation Item",
         filters={"parent": rfq_name},
-        fields=["item_code", "qty", "creation","uom","stock_uom"]
+        fields=["item_code", "qty", "creation", "uom", "stock_uom"]
     )
-    return items
+
+    return {
+        "success": True,
+        "items": items,
+        "existing_quotation": existing_quotation[0]['name'] if existing_quotation else None,
+        "message": f"Supplier Quotation already exists: {existing_quotation[0]['name']}" if existing_quotation else "No existing Supplier Quotation found."
+    }
+
 
 
 @frappe.whitelist()
