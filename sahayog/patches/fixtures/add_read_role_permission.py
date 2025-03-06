@@ -2,11 +2,11 @@ import frappe
 
 def execute():
     # List of doctypes to update
-    doctypes = ["Division", "Zone", "Region", "Branch"]
+    doctypes = ["Division", "Zone", "Region", "Branch", "Project Template"]
 
-    # Get all roles except System Manager
+    # Get all roles except System Manager and Administrator
     roles = frappe.get_all("Role", filters={"disabled": 0}, pluck="name")
-    roles = [role for role in roles if role != "System Manager"]  # Exclude System Manager
+    roles = [role for role in roles if role not in ["System Manager", "Administrator"]]
 
     for doctype in doctypes:
         for role in roles:
@@ -20,11 +20,12 @@ def execute():
 
                 if existing_permissions:
                     # Only enable read permission without modifying other fields
-                    frappe.db.set_value(
-                        "Custom DocPerm", {"parent": doctype, "role": role}, {
-                            "read": 1
-                        }
-                    )
+                    frappe.db.sql("""
+                        UPDATE `tabCustom DocPerm`
+                        SET `read` = 1
+                        WHERE `parent` = %s AND `role` = %s AND `read` = 0
+                    """, (doctype, role))
+                    
                     print(f"✅ Read access enabled for {role} on {doctype} (Existing permissions preserved)")
                 else:
                     # Create new permission if not exists
@@ -44,4 +45,4 @@ def execute():
                 print(f"❌ Error setting permissions for {role} on {doctype}: {str(e)}")
 
     frappe.db.commit()
-    print("✅ Read permissions set for Division, Zone, Region, and Branch (without modifying existing permissions).")
+    print("✅ Read permissions set for Division, Zone, Region, Branch, and Project Template without modifying existing settings.")
