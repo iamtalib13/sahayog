@@ -142,6 +142,129 @@
         width: 0px; /* Width 0 kar diya -> invisible scrollbar */
     }
 
+    .comment-section {
+    width: 100%;
+    margin: auto;
+    padding: 10px;
+    border-radius: 10px;
+    /* border: 1px solid #ccc; */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Comments list */
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Chat bubble base */
+.comment {
+    position: relative;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    border: 1px solid #ccc;
+    word-wrap: break-word;
+    width: 80%;
+    margin-left: 40px; /* Creates space for the vertical line */
+
+}
+/* User name */
+.comment-user {
+    font-weight: bold;
+    font-size: 12px;
+    color: #555;
+}
+/* Chat input */
+.comment-input {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+
+.comment-input textarea {
+    flex-grow: 1;
+    border: none;
+}
+
+.comment-input button {
+    background: #0369a1;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    margin-left: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.comment-input button:hover {
+    background: #025985;
+}
+
+/* Scrollbar Styling */
+.comments-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 5px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.comment.user-comment {
+    /* align-self: flex-end; */
+    background: #e4e4e3; /* Light green for user comments */
+}
+
+.comment.other-comment {
+    /* align-self: flex-start; */
+    background: transparent; /* Light gray for others */
+}
+.comment::before {
+    content: "";
+    position: absolute;
+    left: -18px; /* Position the vertical line */
+    top: 0;
+    width: 2px;
+    height: calc(100% + 20px); /* Extend below to connect */
+    background: #ccc;
+}
+
+.comment-content {
+    margin-left: 10px;
+}
+
+/* Vertical line connecting all comments */
+.comment::after {
+    content: "";
+    position: absolute;
+    left: -23px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 5px;
+    background: #dbdbdb;
+    border: 4px solid #676b6d;
+    border-radius: 50%;
+    z-index: 2;
+
+}
+/* Ensures the last comment line extends a little */
+.comment:last-child::before {
+    height: calc(100% + 10px);
+}
     </style>
     <script>
 
@@ -244,15 +367,110 @@
         }
        
         // Load the correct section from URL on page load
-        document.addEventListener("DOMContentLoaded", function() {
-            const sectionId = window.location.hash.substring(1); // Get section from URL hash
+        document.addEventListener("DOMContentLoaded", function () {
+    let activeSectionName = localStorage.getItem("lastActiveSection");
 
-            if (sectionId && document.getElementById(sectionId)) {
-                showSection(sectionId, false); // Show correct section on page load
+    function getActiveSection() {
+        let activeSection = document.querySelector(".section[style*='display: block']");
+
+        if (activeSection) {
+            console.log("✅ Active Section:", activeSection.id);
+            
+            if (activeSection.id === "rfqDetailsPage" || activeSection.id === "sqDetailsPage") {
+                localStorage.setItem("lastActiveSection", activeSection.id);
+
+                // Save Title & ID when opening RFQ/SQ
+                if (activeSection.id === "rfqDetailsPage") {
+                    let rfqId = document.getElementById("rfq-title")?.innerText.trim() || "";
+                    localStorage.setItem("savedRFQId", rfqId);
+                } else if (activeSection.id === "sqDetailsPage") {
+                    let sqId = document.getElementById("sqTitle")?.innerText.trim() || "";
+                    localStorage.setItem("savedSQId", sqId);
+                }
+
+                console.log("🔹 Saved Active Section:", activeSection.id);
             } else {
-                document.getElementById('main-content').style.display = 'block'; // Default view
+                localStorage.removeItem("lastActiveSection"); // Clear if different section
             }
+        } else {
+            console.log("❌ No Active Section Found.");
+        }
+    }
+
+    function showLoadingOverlay() {
+        let loadingDiv = document.createElement("div");
+        loadingDiv.id = "loading-overlay";
+        Object.assign(loadingDiv.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: "20px",
+            zIndex: "1000"
         });
+        loadingDiv.innerHTML = "Loading... Please wait";
+        document.body.appendChild(loadingDiv);
+    }
+
+    function hideLoadingOverlay() {
+        let loadingDiv = document.getElementById("loading-overlay");
+        if (loadingDiv) {
+            loadingDiv.remove();
+        }
+    }
+
+    // Only trigger navigation if last section was RFQ or SQ
+    if (activeSectionName === "rfqDetailsPage" || activeSectionName === "sqDetailsPage") {
+        console.log(`🔄 Restoring ${activeSectionName}...`);
+        showLoadingOverlay(); // Show loading screen
+
+        let menuItemSelector = activeSectionName === "rfqDetailsPage" 
+            ? ".menu-item[onclick*='showSection(\"requestForQuotations\")']" 
+            : ".menu-item[onclick*='showSection(\"supplierQuotation\")']";
+
+        let itemSelector = activeSectionName === "rfqDetailsPage" 
+            ? "#requestForQuotations .rfq-item" 
+            : "#supplierQuotation .sq-item";
+
+        let savedId = activeSectionName === "rfqDetailsPage" 
+            ? localStorage.getItem("savedRFQId") 
+            : localStorage.getItem("savedSQId");
+
+        let menuItem = document.querySelector(menuItemSelector);
+        if (menuItem) {
+            menuItem.click();
+            console.log(`📌 Navigated to ${activeSectionName === "rfqDetailsPage" ? "RFQ" : "SQ"} List...`);
+        }
+
+        // Wait for list to load, then match the exact RFQ/SQ by ID
+        setTimeout(() => {
+            let matchingItem = [...document.querySelectorAll(itemSelector)].find(item => 
+                item.id.trim() === savedId // Match saved ID
+            );
+
+            if (matchingItem) {
+                matchingItem.click();
+                console.log(`✅ Clicked ${activeSectionName}: ${savedId}`);
+            } else {
+                console.log("⚠️ Saved RFQ/SQ ID not found in the list.");
+            }
+            hideLoadingOverlay();
+        }, 1500);
+    }
+
+    // Detect changes in sections dynamically
+    const observer = new MutationObserver(getActiveSection);
+    document.querySelectorAll(".section").forEach(section => {
+        observer.observe(section, { attributes: true, attributeFilter: ["style"] });
+    });
+});
+
 
     </script>
 </head>
@@ -260,7 +478,7 @@
 
     <div style="display: flex;">
         <!-- Sidebar -->
-        <div style="width: 200px; background: #f8f9fa; padding: 10px; height: 100vh;" class="sidebar" id="sidebar">
+        <div style="width: 200px; background: #f8f9fa; padding: 10px; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden;" class="sidebar" id="sidebar">
             <h2 style="font-size: 20px; margin-bottom: 20px; cursor: pointer;padding-left: 10px; " onclick="window.location.href='/supplier-portal';">Home</h2>
             <ul style="list-style: none; padding: 0;">
                 <li class="menu-item" onclick="showSection('requestForQuotations')">Request for Quotations</li>
@@ -272,7 +490,7 @@
         </div>
 
         <!-- Main Content -->
-        <div style="flex: 1; padding: 20px;">
+        <div style="flex: 1; padding: 20px; margin-left: 220px; height: 100vh; overflow-y: auto;scrollbar-width: none;" class="mainbar" id="mainbar">
             <div id="main-content" style="flex: 1; padding: 20px;">
                 <h1>Welcome to Supplier Portal</h1>
                 <p>Click an option from the sidebar to view details.</p>
@@ -357,20 +575,22 @@
                 </div>
             
                 <!-- RFQ ke items ko dikhane ke liye ek table -->
-                <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
-                    <thead>
-                        <tr style="background: #f8f9fa; text-align: left; padding: 10px;">
-                            <th style="padding: 8px;">Item</th>
-                            <th style="padding: 8px;">Qty</th>
-                            <th style="padding: 8px;">Rate</th>
-                            <th style="padding: 8px;">Amount</th>
-                        </tr>
+                <div style="max-height: 300px; overflow-y: auto;scrollbar-width: none;">
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                        <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                            <tr>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Quantity</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Rate</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Amount</th>
+                            </tr>
                     </thead>
                     <tbody id="rfq-items">
                         <!-- API se aane wale RFQ items yahan dynamically add honge -->
                     </tbody>
                     
                 </table>
+                </div>
                 <hr>
                 <!-- Grand total ka display -->
                 <div style="display: flex; justify-content:flex-end;align-items: center; margin-top: 10px; font-weight: bold;">
@@ -442,7 +662,7 @@
                                     });
                                     
                                     window.itemsData = itemsData; // Ensure global access
-                                    updateGrandTotalAmount(); // Grand total update karna
+                                    UpdateGrandTotalAmount(); // Grand total update karna
                                 } else {
                                     console.error("No items found for RFQ:", rfqName);
                                 }
@@ -458,6 +678,20 @@
                                     if (makeSupplierQuotationBtn && supplier_quotation_name) {
                                         makeSupplierQuotationBtn.innerText = "View Quotation" 
                                     }
+                                    // Select all input fields with the given classes
+                                    let qtyInputs = document.querySelectorAll('.rfq-qty-input');
+                                        let rateInputs = document.querySelectorAll('.rfq-rate-input');
+                                                                        
+                                        // Disable inputs and add 'not-allowed' cursor style
+                                        qtyInputs.forEach(input => {
+                                            input.style.cursor = "not-allowed";
+                                            input.disabled = true; // Make it non-editable
+                                        });
+                                    
+                                        rateInputs.forEach(input => {
+                                            input.style.cursor = "not-allowed";
+                                            input.disabled = true; // Make it non-editable
+                                    });
 
                                 } else {
                                     console.log("No existing Supplier Quotation found.");
@@ -465,6 +699,19 @@
                                     if (makeSupplierQuotationBtn && supplier_quotation_name) {
                                         makeSupplierQuotationBtn.innerText = "Make Quotation" 
                                     }
+                                    // Enable inputs and reset cursor style
+                                    let qtyInputs = document.querySelectorAll('.rfq-qty-input');
+                                    let rateInputs = document.querySelectorAll('.rfq-rate-input');
+
+                                    qtyInputs.forEach(input => {
+                                        input.style.cursor = "default"; // Reset cursor
+                                        input.disabled = false; // Make it editable
+                                    });
+                                
+                                    rateInputs.forEach(input => {
+                                        input.style.cursor = "default"; // Reset cursor
+                                        input.disabled = false; // Make it editable
+                                    });
 
                                 }
                             })
@@ -488,12 +735,12 @@
 
                         amountCell.innerText = "₹ " + amount.toFixed(2);
 
-                        updateGrandTotalAmount(); // Calling Grand Total Update
+                        UpdateGrandTotalAmount(); // Calling Grand Total Update
                     }
 
 
             
-                    function updateGrandTotalAmount() {
+                    function UpdateGrandTotalAmount() {
                         try {                        
                             let total = 0;
                             document.querySelectorAll(".amount").forEach(cell => {
@@ -731,12 +978,12 @@
             </div>
 
             <div id="sqDetailsPage" class="section sq-details" style="display: none; padding: 20px;">
-                <!-- Back button jo SQ list par wapas le jaata hai -->
+                <!-- Back button -->
                 <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
                     <a onclick="showSection('supplierQuotation')" style="color: #0369a1; text-decoration: none;">← Back to SQ List</a>
                 </div>
-
-                <!-- SQ ka title aur quotation aur STATUS karne ka button -->
+            
+                <!-- SQ Title & Actions -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h1 id="sqTitle" style="margin: 0; font-size: 2.5rem;"></h1>
                     <div>
@@ -744,31 +991,53 @@
                         <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Edit</button>
                     </div>
                 </div>
-
+            
+                <!-- SQ Info -->
                 <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
                     <span id="sqStatus" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 14px;"></span>
                     <span id="sqSupplier"></span>
                     <span id="sqDate"></span>
                 </div>
-                
-                <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
-                    <thead>
-                        <tr style="background: #f8f9fa;">
-                            <th style="text-align: left; padding: 10px;">Item</th>
-                            <th style="text-align: left; padding: 10px;">Quantity</th>
-                            <th style="text-align: left; padding: 10px;">Rate</th>
-                            <th style="text-align: left; padding: 10px;">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sqItemsList">
-                        <!-- Items will be populated here dynamically -->
-                    </tbody>
-                </table>
+            
+                <!-- Scrollable Items Table -->
+                <div style="max-height: 300px; overflow-y: auto;scrollbar-width: none;">
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                        <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                            <tr>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Quantity</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Rate</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sqItemsList">
+                            <!-- Items will be dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            
+                <!-- Grand Total -->
                 <hr>
-                <div style="display: flex; justify-content:flex-end;align-items: center; margin-top: 10px; font-weight: bold;">
+                <div style="display: flex; justify-content:flex-end; align-items: center; margin-top: 10px; font-weight: bold;">
                     <span>Grand Total&nbsp;&nbsp;</span>
                     <span id="sqGrandTotal" class="sqGrandTotal">₹ 0.00</span>
                 </div>
+            
+                <!-- Comment Section -->
+                <hr>
+                <div class="comment-section">
+                    <h3>Comments</h3>
+                    <div class="comment-input">
+                        <div class="comment-avatar"></div>
+                        <textarea id="comment-text" placeholder="Type a reply / comment"></textarea>
+                        <button id="postCommentButton" onclick="postSQComment()">Post</button>
+                    </div>
+                    <!-- Comments List -->
+                    <div class="comments-list">
+                        <!-- Comments will be dynamically populated -->        
+                    </div>
+                </div>
+                      
 
                 <script>
                     function openSQPage(element) {
@@ -815,6 +1084,12 @@
                                 }
                             })
                             .catch(error => console.error("API Error:", error));
+                        // Fetch and populate comments
+                        fetchSQComments(sqName);
+                        console.log("called fetchSQComments");
+
+                        // Set SQ name for posting comments
+                        document.getElementById("postCommentButton").setAttribute("data-sq", sqName);
                     }
                 
                     function updateSQAmount(input) {
@@ -908,6 +1183,100 @@
                             }
                         });
                     });
+
+                    function fetchSQComments(sqName) {
+    var commentsList = document.querySelector(".comments-list");
+    commentsList.innerHTML = "<p>Loading comments...</p>";
+
+    // Fetch logged-in user dynamically
+    fetch('/api/method/frappe.auth.get_logged_user')
+        .then(response => response.json())
+        .then(data => {
+            let loggedInUser = data.message; // Get the logged-in user from API
+
+            fetch(`/api/method/sahayog.www.supplier_portal.get_sq_comments?sq_name=${sqName}`)
+                .then(response => response.json())
+                .then(data => {
+                    let comments = data.message.message;
+
+                    if (!Array.isArray(comments) || comments.length === 0) {
+                        commentsList.innerHTML = "<p>No comments yet.</p>";
+                        return;
+                    }
+
+                    commentsList.innerHTML = "";
+
+                    comments.forEach(comment => {
+                        let tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = comment.comment;
+                        let plainText = tempDiv.textContent || tempDiv.innerText;
+
+                        let commentDiv = document.createElement("div");
+                        commentDiv.classList.add("comment");
+
+                        if (comment.owner === loggedInUser) {
+                            commentDiv.classList.add("user-comment");
+                        } else {
+                            commentDiv.classList.add("other-comment");
+                        }
+
+                        // Construct user avatar URL
+                        let userAvatar = `/api/method/frappe.client.get_user_avatar?user=${comment.owner}`;
+                        let defaultAvatar = "/assets/frappe/images/ui/avatar.png"; // Fallback avatar
+
+                        commentDiv.innerHTML = `
+                             <div class="comment-content">
+                                <span class="comment-user">
+                                    ${comment.owner} &#9679; 
+                                    <span class="comment-time" title="${new Date(comment.creation).toLocaleString()}">
+                                        ${comment.pretty_creation}
+                                    </span>
+                                </span>
+                                <hr>
+                                <p class="comment-message">${plainText}</p>
+                            </div>
+                        `;
+                        commentsList.appendChild(commentDiv);
+                    });
+
+                    // Auto-scroll to the latest comment
+                    commentsList.scrollTop = commentsList.scrollHeight;
+                })
+                .catch(error => {
+                    console.error("Error fetching comments:", error);
+                    commentsList.innerHTML = "<p>Error loading comments.</p>";
+                });
+        })
+        .catch(error => console.error("Error fetching user:", error));
+}
+
+
+function postSQComment() {
+    let sqName = document.getElementById("sqTitle").innerText;
+    let commentText = document.getElementById("comment-text").value.trim();
+    if (commentText === "") {
+        alert("Please enter a comment!");
+        return;
+    }
+
+    fetch(`/api/method/sahayog.www.supplier_portal.add_sq_comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            sq_name: sqName,  // Use the correct `sq_name`
+            comment: commentText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Comment posted:", data);
+        document.getElementById("comment-text").value = "";  // Clear input
+        fetchSQComments(sqName);  // Reload comments
+    })
+    .catch(error => console.error("Error posting comment:", error));
+}
+
+
                 </script>
                 
             </div>

@@ -1,5 +1,7 @@
 import frappe
 from frappe.model.document import Document
+from frappe.utils import pretty_date
+from bs4 import BeautifulSoup
 import json
 
 @frappe.whitelist()
@@ -143,3 +145,38 @@ def update_sq_items(sq_name, items):
     except Exception as e:
         frappe.log_error(f"Error in update_sq_items: {str(e)}")
         return {"error": str(e)}
+ 
+@frappe.whitelist()
+def get_sq_comments(sq_name):
+    comments = frappe.get_all(
+        "Comment",
+        filters={"reference_name": sq_name, "reference_doctype": "Supplier Quotation"},
+        fields=["owner", "creation", "content as comment"],
+        order_by="creation desc"
+    )
+
+    # Clean comment text and add pretty date
+    for comment in comments:
+        comment["comment"] = BeautifulSoup(comment["comment"], "html.parser").get_text(strip=True)
+        comment["pretty_creation"] = pretty_date(comment["creation"])  # Add human-readable date
+
+    return {"message": comments}
+
+
+@frappe.whitelist()
+def add_sq_comment(sq_name, comment):
+    if not sq_name or not comment:
+        return {"error": "Missing parameters"}
+
+    new_comment = frappe.get_doc({
+        "doctype": "Comment",
+        "comment_type": "Comment",
+        "reference_doctype": "Supplier Quotation",
+        "reference_name": sq_name,
+        "content": comment,
+        "comment_by": frappe.session.user
+    })
+    new_comment.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"message": "Comment added successfully!"}
