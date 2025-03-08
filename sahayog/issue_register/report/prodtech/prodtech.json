@@ -1,0 +1,23 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2025-03-08 13:47:42.404716",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letterhead": null,
+ "modified": "2025-03-08 13:47:42.404716",
+ "modified_by": "Administrator",
+ "module": "Issue Register",
+ "name": "Prodtech",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Issue Register",
+ "report_name": "Prodtech",
+ "report_type": "Script Report",
+ "roles": [],
+ "timeout": 0
+}
