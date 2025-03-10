@@ -346,5 +346,13 @@ fixtures = [
         "filters": [
             ["name", "=", "LOI"]
         ]
+    },
+    {
+        "dt": "Prodtech",
+        
+    },
+    {
+        "dt": "Module",
+        
     }
 ]
