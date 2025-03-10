@@ -1,0 +1,215 @@
+{
+ "actions": [],
+ "allow_events_in_timeline": 1,
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "format:TASK-{DD}{MM}{YYYY}-{####}",
+ "creation": "2025-03-08 12:05:13.551543",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_details_section",
+  "status",
+  "assigned_date",
+  "module",
+  "column_break_icvt",
+  "raised_by_emp",
+  "raised_by_dept",
+  "column_break_liuo",
+  "type",
+  "priority",
+  "issue_details_section",
+  "issue_title",
+  "section_break_co9i",
+  "test_scenario",
+  "column_break_luxw",
+  "changes_required",
+  "section_break_simh",
+  "prodtech",
+  "column_break_amei",
+  "handled_by",
+  "section_break_icdu",
+  "testing_date",
+  "column_break_oact",
+  "solved_date",
+  "section_break_upux",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_details_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Details"
+  },
+  {
+   "fieldname": "raised_by_dept",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Raised By Department",
+   "options": "\nSales\nOperations\nFinance & Accounts\nAudit\nHuman Resource\nInformation Technology",
+   "reqd": 1
+  },
+  {
+   "fieldname": "raised_by_emp",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Raised By",
+   "reqd": 1
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nClosed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "\nCR\nISSUE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "module",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Module",
+   "options": "Module",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_icvt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "issue_title",
+   "fieldtype": "Small Text",
+   "in_standard_filter": 1,
+   "label": "Issue Title"
+  },
+  {
+   "fieldname": "test_scenario",
+   "fieldtype": "Text Editor",
+   "label": "Test Scenario"
+  },
+  {
+   "fieldname": "changes_required",
+   "fieldtype": "Text Editor",
+   "label": "Changes Required"
+  },
+  {
+   "fieldname": "issue_details_section",
+   "fieldtype": "Section Break",
+   "label": "Issue Details"
+  },
+  {
+   "fieldname": "section_break_simh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "prodtech",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Prodtech",
+   "options": "Prodtech"
+  },
+  {
+   "fieldname": "column_break_amei",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "handled_by",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Handled By",
+   "options": "Prodtech"
+  },
+  {
+   "fieldname": "section_break_icdu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Text Editor",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "section_break_upux",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "testing_date",
+   "fieldtype": "Date",
+   "label": "Testing Date"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Priority",
+   "options": "\nLow\nMedium\nHigh",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "assigned_date",
+   "fieldtype": "Date",
+   "label": "Assigned Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "solved_date",
+   "fieldtype": "Date",
+   "label": "Solved Date"
+  },
+  {
+   "fieldname": "column_break_liuo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_luxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_co9i",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_oact",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-08 12:54:00.978362",
+ "modified_by": "Administrator",
+ "module": "Issue Register",
+ "name": "Issue Register",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
