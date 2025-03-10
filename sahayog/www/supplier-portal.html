@@ -181,34 +181,106 @@
     font-size: 12px;
     color: #555;
 }
-/* Chat input */
+/* Chat Input */
 .comment-input {
     display: flex;
     align-items: center;
-    padding: 10px;
+    gap: 10px; /* Adds spacing between elements */
+    padding: 12px;
     border-radius: 10px;
     border: 1px solid #ccc;
+    background: #f9f9f9; /* Light background for better contrast */
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+    transition: all 0.3s ease-in-out;
 }
 
+/* Improve textarea styling */
 .comment-input textarea {
     flex-grow: 1;
     border: none;
+    outline: none;
+    resize: none; /* Prevent resizing */
+    font-size: 14px;
+    padding: 8px;
+    min-height: 40px; /* Ensure good height */
+    border-radius: 5px;
+    background: transparent;
 }
 
+/* Style for the send button */
 .comment-input button {
     background: #0369a1;
     color: white;
     border: none;
-    padding: 8px 15px;
-    margin-left: 10px;
-    border-radius: 10px;
+    padding: 10px 18px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: 0.3s;
+    font-weight: bold;
+    transition: background 0.3s, transform 0.2s;
 }
 
+/* Hover and active effect */
 .comment-input button:hover {
     background: #025985;
+    transform: scale(1.05); /* Slight zoom effect */
 }
+
+.comment-input button:active {
+    background: #01476a;
+    transform: scale(0.98); /* Press effect */
+}
+/* Edit Button */
+.edit-btn {
+    background: transparent; /* Green */
+    color: #28a745;
+    border: 1px solid #28a745;
+    padding: 2px 7px;
+    margin:2px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-btn:hover {
+    transform: scale(1.08); /* Slight zoom effect */
+}
+
+.edit-btn:active {
+    transform: scale(0.95); /* Press effect */
+}
+
+/* Delete Button */
+.delete-btn {
+    background: transparent; /* Red */
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    padding: 2px 7px;
+    margin:2px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-btn:hover {
+    transform: scale(1.08);
+}
+
+.delete-btn:active {
+    transform: scale(0.95);
+}
+
+
+
 
 /* Scrollbar Styling */
 .comments-list::-webkit-scrollbar {
@@ -265,6 +337,23 @@
 .comment:last-child::before {
     height: calc(100% + 10px);
 }
+.comment-message {
+    border: none;          /* Remove border */
+    background: transparent; /* Make background transparent */
+    outline: none;          /* Remove focus outline */
+    cursor: default;        /* Default cursor when disabled */
+    width: 100%;            /* Adjust width to fit content */
+    font-size: 14px;        /* Match font styling */
+}
+
+/* When editing is enabled */
+.comment-message:focus {
+    cursor: text;           /* Show text cursor when editing */
+    border: none;          /* Remove border */
+    transition: all 0.2s ease-in-out;
+    font-size: 16px;
+}
+
     </style>
     <script>
 
@@ -1188,11 +1277,10 @@
     var commentsList = document.querySelector(".comments-list");
     commentsList.innerHTML = "<p>Loading comments...</p>";
 
-    // Fetch logged-in user dynamically
     fetch('/api/method/frappe.auth.get_logged_user')
         .then(response => response.json())
         .then(data => {
-            let loggedInUser = data.message; // Get the logged-in user from API
+            let loggedInUser = data.message;
 
             fetch(`/api/method/sahayog.www.supplier_portal.get_sq_comments?sq_name=${sqName}`)
                 .then(response => response.json())
@@ -1214,6 +1302,8 @@
                         let commentDiv = document.createElement("div");
                         commentDiv.classList.add("comment");
 
+                        let isUserComment = comment.owner === loggedInUser;
+
                         if (comment.owner === loggedInUser) {
                             commentDiv.classList.add("user-comment");
                         } else {
@@ -1221,25 +1311,24 @@
                         }
 
                         commentDiv.innerHTML = `
-                             <div class="comment-content">
+                            <div class="comment-content">
                                 <span class="comment-user">
                                     ${comment.owner} &#9679; 
                                     <span class="comment-time" title="${new Date(comment.creation).toLocaleString()}">
                                         ${comment.pretty_creation}
                                     </span>
-                                    ${comment.owner === loggedInUser ? `
+                                    ${isUserComment ? `
                                     <button style="float:right;" class="delete-btn" onclick="deleteComment('${comment.name}')">Delete</button>
-                                    <button style="float:right;" class="edit-btn" onclick="editComment('${comment.name}', this)">Edit</button>
+                                    <button style="float:right;" class="edit-btn" onclick="toggleEditSave(this, '${comment.name}')">Edit</button>
                                 ` : ""}
                                 </span>
                                 <hr>
-                                <p class="comment-message">${plainText}</p>
+                                <input type="textarea" class="comment-message" value="${plainText}" disabled>
                             </div>
                         `;
                         commentsList.appendChild(commentDiv);
                     });
 
-                    // Auto-scroll to the latest comment
                     commentsList.scrollTop = commentsList.scrollHeight;
                 })
                 .catch(error => {
@@ -1248,6 +1337,111 @@
                 });
         })
         .catch(error => console.error("Error fetching user:", error));
+}
+// Toggle between Edit and Save
+function toggleEditSave(button, commentId) {
+    let commentContainer = button.closest(".comment-content");
+    let inputField = commentContainer.querySelector(".comment-message");
+
+    if (button.innerText === "Edit") {
+        // Store the original comment before enabling edit mode
+        inputField.dataset.originalValue = inputField.value;
+
+        inputField.removeAttribute("disabled");
+        inputField.focus();
+        button.innerText = "Save";
+
+        // Add event listener to detect clicks outside the input field
+        document.addEventListener("click", handleClickOutside);
+    } else {
+        let updatedComment = inputField.value.trim();
+        
+        if (!updatedComment) {
+            alert("Comment cannot be empty!");
+            return;
+        }
+
+        // If value changed, update the comment
+        if (updatedComment !== inputField.dataset.originalValue) {
+            updateComment(commentId, updatedComment, button, inputField);
+        } else {
+            // No changes -> Revert to "Edit"
+            inputField.setAttribute("disabled", true);
+            button.innerText = "Edit";
+        }
+
+        document.removeEventListener("click", handleClickOutside);
+    }
+
+    function handleClickOutside(event) {
+        if (!commentContainer.contains(event.target)) {
+            // Revert back to "Edit" if no change was made
+            if (inputField.value.trim() === inputField.dataset.originalValue) {
+                inputField.setAttribute("disabled", true);
+                button.innerText = "Edit";
+            }
+            document.removeEventListener("click", handleClickOutside);
+        }
+    }
+}
+
+// Update comment in backend
+function updateComment(commentId, updatedComment, button, inputField) {
+    console.log("Updating comment ID:", commentId); // Debugging
+
+    fetch('/api/method/sahayog.www.supplier_portal.update_sq_comment', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            comment_id: commentId,
+            updated_comment: updatedComment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("API Response:", data); // Debugging
+
+        // Handle different possible response structures
+        if (data.message === "success" || (data.message && data.message.message === "success")) {
+            inputField.setAttribute("disabled", true);
+            button.innerText = "Edit";
+            alert("Comment updated successfully!");
+        } else {
+            alert("Error updating comment.");
+        }
+    })
+    .catch(error => {
+        console.error("Error updating comment:", error);
+        alert("Error updating comment.");
+    });
+}
+
+// Delete comment
+function deleteComment(commentId) {
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+
+    console.log("Deleting comment ID:", commentId); // Debugging
+
+    fetch('/api/method/sahayog.www.supplier_portal.delete_sq_comment', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment_id: commentId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("API Response:", data); // Debugging
+
+        if (data.message === "success" || (data.message && data.message.message === "success")) {
+            console.log("Comment deleted successfully!");
+            fetchSQComments(document.getElementById("sqTitle").innerText);
+        } else {
+            alert("Error deleting comment.");
+        }
+    })
+    .catch(error => {
+        console.error("Error deleting comment:", error);
+        alert("Error deleting comment.");
+    });
 }
 
 
