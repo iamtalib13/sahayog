@@ -1220,10 +1220,6 @@
                             commentDiv.classList.add("other-comment");
                         }
 
-                        // Construct user avatar URL
-                        let userAvatar = `/api/method/frappe.client.get_user_avatar?user=${comment.owner}`;
-                        let defaultAvatar = "/assets/frappe/images/ui/avatar.png"; // Fallback avatar
-
                         commentDiv.innerHTML = `
                              <div class="comment-content">
                                 <span class="comment-user">
@@ -1231,6 +1227,10 @@
                                     <span class="comment-time" title="${new Date(comment.creation).toLocaleString()}">
                                         ${comment.pretty_creation}
                                     </span>
+                                    ${comment.owner === loggedInUser ? `
+                                    <button style="float:right;" class="delete-btn" onclick="deleteComment('${comment.name}')">Delete</button>
+                                    <button style="float:right;" class="edit-btn" onclick="editComment('${comment.name}', this)">Edit</button>
+                                ` : ""}
                                 </span>
                                 <hr>
                                 <p class="comment-message">${plainText}</p>
