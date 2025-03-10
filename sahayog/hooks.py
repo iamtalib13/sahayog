@@ -67,9 +67,9 @@ app_include_js = "/assets/frappe/js/frappe-web.min.js"
 # home_page = "login"
 
 # website user home page (by Role)
-# role_home_page = {
-#     "Supplier": "/supplier-portal"
-#  }
+role_home_page = {
+    "Supplier": "/supplier-portal"
+}
 
 # Generators
 # ----------
