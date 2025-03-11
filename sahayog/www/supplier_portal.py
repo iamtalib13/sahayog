@@ -151,7 +151,7 @@ def get_sq_comments(sq_name):
     comments = frappe.get_all(
         "Comment",
         filters={"reference_name": sq_name, "reference_doctype": "Supplier Quotation"},
-        fields=["owner", "creation", "content as comment"],
+        fields=["owner", "creation", "content as comment","name"],
         order_by="creation desc"
     )
 
@@ -180,3 +180,24 @@ def add_sq_comment(sq_name, comment):
     frappe.db.commit()
 
     return {"message": "Comment added successfully!"}
+
+
+@frappe.whitelist()
+def update_sq_comment(comment_id, updated_comment):
+    try:
+        comment = frappe.get_doc("Comment", comment_id)
+        comment.content = updated_comment
+        comment.save(ignore_permissions=True)
+        frappe.db.commit()
+        return {"message": "success"}
+    except Exception as e:
+        return {"error": str(e)}
+    
+@frappe.whitelist()
+def delete_sq_comment(comment_id):
+    try:
+        frappe.delete_doc("Comment", comment_id, ignore_permissions=True)
+        frappe.db.commit()
+        return {"message": "success"}
+    except Exception as e:
+        return {"error": str(e)}
