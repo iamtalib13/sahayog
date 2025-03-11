@@ -6,7 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "module"
+  "module",
+  "team"
  ],
  "fields": [
   {
@@ -16,11 +17,19 @@
    "label": "Module",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "default": "Prodtech",
+   "fieldname": "team",
+   "fieldtype": "Select",
+   "label": "Team",
+   "options": "Prodtech\nErptech",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-08 12:28:35.163559",
+ "modified": "2025-03-11 17:05:38.981005",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Module",

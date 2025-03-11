@@ -21,9 +21,11 @@
   "column_break_liuo",
   "type",
   "priority",
+  "team",
   "issue_details_section",
   "issue_title",
   "section_break_co9i",
+  "testing_date",
   "test_scenario",
   "column_break_luxw",
   "changes_required",
@@ -31,8 +33,6 @@
   "prodtech",
   "column_break_amei",
   "handled_by",
-  "section_break_icdu",
-  "testing_date",
   "section_break_upux",
   "remarks"
  ],
@@ -127,12 +127,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Handled By",
+   "label": "Handle By",
    "options": "Prodtech"
-  },
-  {
-   "fieldname": "section_break_icdu",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "remarks",
@@ -163,11 +159,9 @@
    "reqd": 1
   },
   {
-   "depends_on": "eval:doc.status",
    "fieldname": "solved_date",
    "fieldtype": "Date",
-   "label": "Solved Date",
-   "mandatory_depends_on": "eval:doc.status == \"Closed\""
+   "label": "Solved Date"
   },
   {
    "fieldname": "column_break_liuo",
@@ -184,11 +178,18 @@
   {
    "fieldname": "column_break_adts",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "Prodtech",
+   "fieldname": "team",
+   "fieldtype": "Select",
+   "label": "Team",
+   "options": "Prodtech\nErptech"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-11 13:19:38.141650",
+ "modified": "2025-03-11 17:37:24.154346",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Issue Register",
