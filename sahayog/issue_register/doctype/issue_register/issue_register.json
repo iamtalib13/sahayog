@@ -5,16 +5,19 @@
  "allow_rename": 1,
  "autoname": "format:TASK-{DD}{MM}{YYYY}-{####}",
  "creation": "2025-03-08 12:05:13.551543",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "basic_details_section",
-  "status",
-  "assigned_date",
-  "module",
   "column_break_icvt",
   "raised_by_emp",
   "raised_by_dept",
+  "module",
+  "column_break_adts",
+  "status",
+  "solved_date",
+  "assigned_date",
   "column_break_liuo",
   "type",
   "priority",
@@ -30,8 +33,6 @@
   "handled_by",
   "section_break_icdu",
   "testing_date",
-  "column_break_oact",
-  "solved_date",
   "section_break_upux",
   "remarks"
  ],
@@ -46,16 +47,14 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Raised By Department",
-   "options": "\nSales\nOperations\nFinance & Accounts\nAudit\nHuman Resource\nInformation Technology",
-   "reqd": 1
+   "options": "\nIT\nOperation\nFinance & Accounts\nFinance\nAccounts\nLoan & Recovery\nAudit\nHR\nSales"
   },
   {
    "fieldname": "raised_by_emp",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Raised By",
-   "reqd": 1
+   "label": "Raised By"
   },
   {
    "default": "Open",
@@ -64,16 +63,15 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Open\nClosed",
-   "reqd": 1
+   "options": "Open\nClosed"
   },
   {
    "fieldname": "type",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Type",
-   "options": "\nCR\nISSUE",
-   "reqd": 1
+   "options": "\nCR\nISSUE"
   },
   {
    "fieldname": "module",
@@ -81,8 +79,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Module",
-   "options": "Module",
-   "reqd": 1
+   "options": "Module"
   },
   {
    "fieldname": "column_break_icvt",
@@ -116,6 +113,7 @@
   {
    "fieldname": "prodtech",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Prodtech",
    "options": "Prodtech"
@@ -127,6 +125,7 @@
   {
    "fieldname": "handled_by",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Handled By",
    "options": "Prodtech"
@@ -154,8 +153,7 @@
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Priority",
-   "options": "\nLow\nMedium\nHigh",
-   "reqd": 1
+   "options": "\nLow\nMedium\nHigh"
   },
   {
    "default": "Today",
@@ -165,9 +163,11 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval:doc.status",
    "fieldname": "solved_date",
    "fieldtype": "Date",
-   "label": "Solved Date"
+   "label": "Solved Date",
+   "mandatory_depends_on": "eval:doc.status == \"Closed\""
   },
   {
    "fieldname": "column_break_liuo",
@@ -182,32 +182,19 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "column_break_oact",
+   "fieldname": "column_break_adts",
    "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-08 12:54:00.978362",
+ "modified": "2025-03-11 13:19:38.141650",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Issue Register",
  "naming_rule": "Expression",
  "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
+ "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
