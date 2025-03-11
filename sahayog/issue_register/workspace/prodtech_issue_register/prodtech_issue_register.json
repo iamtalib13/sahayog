@@ -13,7 +13,7 @@
    "label": "Open CR VS ISSUE"
   }
  ],
- "content": "[{\"id\":\"HdkdaOvjE5\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Prodtech Issue Register</span>\",\"col\":12}},{\"id\":\"ndsWU4ZUaN\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"CR\",\"col\":4}},{\"id\":\"GqI82LWNpR\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Issue\",\"col\":4}},{\"id\":\"062Vej0Vxd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Prodtech Report\",\"col\":3}},{\"id\":\"fGGTnFZoBA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Prodtech Member Wise Open Task\",\"col\":12}},{\"id\":\"Yjjmpa3wLj\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Module Wise Open Issue\",\"col\":12}},{\"id\":\"pjIbm6ebBI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Open CR VS ISSUE\",\"col\":12}}]",
+ "content": "[{\"id\":\"HdkdaOvjE5\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Prodtech Issue Register</b></span>\",\"col\":12}},{\"id\":\"ndsWU4ZUaN\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"CR\",\"col\":4}},{\"id\":\"GqI82LWNpR\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Issue\",\"col\":4}},{\"id\":\"062Vej0Vxd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Prodtech Report\",\"col\":3}},{\"id\":\"fGGTnFZoBA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Prodtech Member Wise Open Task\",\"col\":12}},{\"id\":\"Yjjmpa3wLj\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Module Wise Open Issue\",\"col\":12}},{\"id\":\"pjIbm6ebBI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Open CR VS ISSUE\",\"col\":12}}]",
  "creation": "2025-03-08 12:59:24.438539",
  "custom_blocks": [],
  "docstatus": 0,
@@ -26,7 +26,7 @@
  "is_hidden": 0,
  "label": "Prodtech Issue Register",
  "links": [],
- "modified": "2025-03-10 13:41:19.915536",
+ "modified": "2025-03-11 11:29:36.152232",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Prodtech Issue Register",
@@ -46,8 +46,12 @@
    "quick_list_filter": "[[\"Issue Register\",\"type\",\"=\",\"ISSUE\",false]]"
   }
  ],
- "roles": [],
- "sequence_id": 49.0,
+ "roles": [
+  {
+   "role": "Prodtech"
+  }
+ ],
+ "sequence_id": 42.0,
  "shortcuts": [
   {
    "color": "Grey",
