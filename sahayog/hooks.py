@@ -277,6 +277,13 @@ override_whitelisted_methods = {
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive"
     
 }
+override_whitelisted_methods = {
+    "erpnext.stock.get_item_details.get_item_details": "sahayog.override.supplier_quotation_last_purchase_price.custom_get_item_details",
+    "erpnext.stock.get_item_details.apply_price_list": "sahayog.override.supplier_quotation_last_purchase_price.custom_apply_price_list",
+}
+
+
+
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
