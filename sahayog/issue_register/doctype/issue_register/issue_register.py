@@ -9,7 +9,7 @@ class IssueRegister(Document):
 	pass
 
 
-
+#For Prodtech analysis
 @frappe.whitelist(allow_guest=True)
 def get_issue_chart_data():
     issues = frappe.db.sql("""
@@ -17,7 +17,32 @@ def get_issue_chart_data():
                SUM(CASE WHEN type = 'ISSUE' THEN 1 ELSE 0 END) AS issue_count,
                SUM(CASE WHEN type = 'CR' THEN 1 ELSE 0 END) AS cr_count
         FROM `tabIssue Register`
-        WHERE status = 'Open'                   
+        WHERE status = 'Open' AND team = 'Prodtech'                
+        GROUP BY prodtech
+        ORDER BY (SUM(CASE WHEN type = 'ISSUE' THEN 1 ELSE 0 END) + SUM(CASE WHEN type = 'CR' THEN 1 ELSE 0 END)) DESC
+    """, as_dict=True)
+
+    labels = [row["prodtech"] for row in issues]
+    issue_values = [row["issue_count"] for row in issues]
+    cr_values = [row["cr_count"] for row in issues]
+
+    return {
+        "labels": labels,
+        "datasets": [
+            {"name": "Open Issues", "type": "bar", "values": issue_values},
+            {"name": "Open CRs", "type": "bar", "values": cr_values},
+        ]
+    }
+
+#For ERPTech analysis
+@frappe.whitelist(allow_guest=True)
+def get_issue_chart_data_erp():
+    issues = frappe.db.sql("""
+        SELECT prodtech, 
+               SUM(CASE WHEN type = 'ISSUE' THEN 1 ELSE 0 END) AS issue_count,
+               SUM(CASE WHEN type = 'CR' THEN 1 ELSE 0 END) AS cr_count
+        FROM `tabIssue Register`
+        WHERE status = 'Open' AND team = 'Erptech'                
         GROUP BY prodtech
         ORDER BY (SUM(CASE WHEN type = 'ISSUE' THEN 1 ELSE 0 END) + SUM(CASE WHEN type = 'CR' THEN 1 ELSE 0 END)) DESC
     """, as_dict=True)
