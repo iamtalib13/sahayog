@@ -176,7 +176,6 @@ override_doctype_class = {
 # Document Events
 # ---------------
 # Hook on document methods and events
-
 doc_events = {
     "Employee": {
         "after_insert": [
@@ -230,8 +229,11 @@ doc_events = {
 
     "Branch": {
         "after_insert": "sahayog.doc_events.branch_warehouse.create_branch_warehouse"
-    }
+    },
 
+    "Supplier Quotation": {
+        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit"
+    }
 
 
 }

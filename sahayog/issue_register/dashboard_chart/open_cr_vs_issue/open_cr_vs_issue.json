@@ -9,6 +9,7 @@
  "doctype": "Dashboard Chart",
  "document_type": "Issue Register",
  "dynamic_filters_json": "[]",
+
  "filters_json": "[[\"Issue Register\",\"team\",\"=\",\"Erptech\",false]]",
  "group_by_based_on": "type",
  "group_by_type": "Count",
@@ -17,6 +18,7 @@
  "is_standard": 1,
  "last_synced_on": "2025-03-12 11:31:07.886278",
  "modified": "2025-03-12 11:31:21.718010",
+
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Open CR VS ISSUE",
@@ -28,7 +30,9 @@
  "time_interval": "Yearly",
  "timeseries": 0,
  "timespan": "Last Year",
+
  "type": "Pie",
+
  "use_report_chart": 0,
  "value_based_on": "",
  "y_axis": []

@@ -1,6 +1,7 @@
 // Copyright (c) 2025, Developer Team and contributors
 // For license information, please see license.txt
 
+
 frappe.ui.form.on("Issue Register", {
   refresh: function (frm) {},
 
@@ -22,3 +23,4 @@ function set_module_query(frm) {
     };
   });
 }
+
