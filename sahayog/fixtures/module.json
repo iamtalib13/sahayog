@@ -1,51 +1,51 @@
 [
- {
-  "docstatus": 0,
-  "doctype": "Module",
-  "modified": "2025-03-10 14:24:25.159422",
-  "module": "Collection APK",
-  "name": "Collection APK"
- },
- {
-  "docstatus": 0,
-  "doctype": "Module",
-  "modified": "2025-03-08 12:29:04.765035",
-  "module": "Collection Portal",
-  "name": "Collection Portal"
- },
- {
-  "docstatus": 0,
-  "doctype": "Module",
-  "modified": "2025-03-08 13:31:46.929951",
-  "module": "Finacle Report",
-  "name": "Finacle Report"
- },
- {
-  "docstatus": 0,
-  "doctype": "Module",
-  "modified": "2025-03-08 12:28:47.159795",
-  "module": "Collection App",
-  "name": "Collection App"
- },
- {
-  "docstatus": 0,
-  "doctype": "Module",
-  "modified": "2025-03-08 13:31:34.879049",
-  "module": "Mobile Banking",
-  "name": "Mobile Banking"
- },
- {
-  "docstatus": 0,
-  "doctype": "Module",
-  "modified": "2025-03-08 13:34:18.225093",
-  "module": "Finacle Technical",
-  "name": "Finacle Technical"
- },
- {
-  "docstatus": 0,
-  "doctype": "Module",
-  "modified": "2025-03-08 12:48:34.457874",
-  "module": "Finacle Functional",
-  "name": "Finacle Functional"
- }
+  {
+    "docstatus": 0,
+    "doctype": "Module",
+    "modified": "2025-03-10 14:24:25.159422",
+    "module": "Collection (APK)",
+    "name": "Collection (APK)"
+  },
+  {
+    "docstatus": 0,
+    "doctype": "Module",
+    "modified": "2025-03-08 12:29:04.765035",
+    "module": "Collection Portal",
+    "name": "Collection Portal"
+  },
+  {
+    "docstatus": 0,
+    "doctype": "Module",
+    "modified": "2025-03-08 13:31:46.929951",
+    "module": "Finacle Report",
+    "name": "Finacle Report"
+  },
+  {
+    "docstatus": 0,
+    "doctype": "Module",
+    "modified": "2025-03-08 12:28:47.159795",
+    "module": "Collection App",
+    "name": "Collection App"
+  },
+  {
+    "docstatus": 0,
+    "doctype": "Module",
+    "modified": "2025-03-08 13:31:34.879049",
+    "module": "Mobile Banking",
+    "name": "Mobile Banking"
+  },
+  {
+    "docstatus": 0,
+    "doctype": "Module",
+    "modified": "2025-03-08 13:34:18.225093",
+    "module": "Finacle Technical",
+    "name": "Finacle Technical"
+  },
+  {
+    "docstatus": 0,
+    "doctype": "Module",
+    "modified": "2025-03-08 12:48:34.457874",
+    "module": "Finacle Functional",
+    "name": "Finacle Functional"
+  }
 ]
