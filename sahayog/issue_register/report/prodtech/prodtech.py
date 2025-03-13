@@ -51,7 +51,9 @@ def get_issue_register_data(filters):
         SELECT
             *
         FROM `tabIssue Register`
-        WHERE {conditions}
+        WHERE {conditions} 
+        ORDER BY creation DESC
+
     """
 
     return frappe.db.sql(sql_query, query_filters, as_dict=True)

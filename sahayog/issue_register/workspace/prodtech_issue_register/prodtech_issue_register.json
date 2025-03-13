@@ -5,17 +5,18 @@
    "label": "Module Wise Open Issue"
   },
   {
-   "chart_name": "Prodtech Member Wise Open Task",
-   "label": "Prodtech Member Wise Open Task"
-  },
-  {
    "chart_name": "Open CR VS ISSUE",
    "label": "Open CR VS ISSUE"
   }
  ],
- "content": "[{\"id\":\"HdkdaOvjE5\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Prodtech Issue Register</span>\",\"col\":12}},{\"id\":\"ndsWU4ZUaN\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"CR\",\"col\":4}},{\"id\":\"GqI82LWNpR\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Issue\",\"col\":4}},{\"id\":\"062Vej0Vxd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Prodtech Report\",\"col\":3}},{\"id\":\"fGGTnFZoBA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Prodtech Member Wise Open Task\",\"col\":12}},{\"id\":\"Yjjmpa3wLj\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Module Wise Open Issue\",\"col\":12}},{\"id\":\"pjIbm6ebBI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Open CR VS ISSUE\",\"col\":12}}]",
+ "content": "[{\"id\":\"HdkdaOvjE5\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Prodtech Issue Register</b></span>\",\"col\":12}},{\"id\":\"j11IGJvNiU\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Create New\",\"col\":3}},{\"id\":\"g25w3PEG5D\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Open\",\"col\":3}},{\"id\":\"AkpUVTArQh\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Closed\",\"col\":3}},{\"id\":\"G2EzAlvRQz\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total\",\"col\":3}},{\"id\":\"IhRte7tHAD\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Prodtech Analysis\",\"col\":12}},{\"id\":\"062Vej0Vxd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Prodtech Report\",\"col\":3}},{\"id\":\"Yjjmpa3wLj\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Module Wise Open Issue\",\"col\":12}},{\"id\":\"pjIbm6ebBI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Open CR VS ISSUE\",\"col\":12}}]",
  "creation": "2025-03-08 12:59:24.438539",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "Prodtech Analysis",
+   "label": "Prodtech Analysis"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -26,29 +27,46 @@
  "is_hidden": 0,
  "label": "Prodtech Issue Register",
  "links": [],
- "modified": "2025-03-10 13:41:19.915536",
+ "modified": "2025-03-12 11:42:13.850139",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Prodtech Issue Register",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Total",
+   "number_card_name": "Total"
+  },
+  {
+   "label": "Open",
+   "number_card_name": "Open"
+  },
+  {
+   "label": "Closed",
+   "number_card_name": "Closed"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
- "quick_lists": [
+ "quick_lists": [],
+ "roles": [
   {
-   "document_type": "Issue Register",
-   "label": "CR",
-   "quick_list_filter": "[[\"Issue Register\",\"type\",\"=\",\"CR\",false]]"
+   "role": "Prodtech"
   },
   {
-   "document_type": "Issue Register",
-   "label": "Issue",
-   "quick_list_filter": "[[\"Issue Register\",\"type\",\"=\",\"ISSUE\",false]]"
+   "role": "ERPTech"
   }
  ],
- "roles": [],
- "sequence_id": 49.0,
+ "sequence_id": 42.0,
  "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "New",
+   "label": "Create New",
+   "link_to": "Issue Register",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
   {
    "color": "Grey",
    "doc_view": "List",
