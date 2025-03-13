@@ -1,0 +1,69 @@
+{
+ "charts": [
+  {
+   "chart_name": "ERPTech Module Wise Open Issue",
+   "label": "Module Wise Open Issue"
+  },
+  {
+   "chart_name": "ERPTech Open CR VS ISSUE",
+   "label": "Open CR VS ISSUE"
+  }
+ ],
+ "content": "[{\"id\":\"HdkdaOvjE5\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>ERPTech</b></span>\",\"col\":12}},{\"id\":\"j11IGJvNiU\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Create New\",\"col\":3}},{\"id\":\"g25w3PEG5D\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Open\",\"col\":3}},{\"id\":\"AkpUVTArQh\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Closed\",\"col\":3}},{\"id\":\"G2EzAlvRQz\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total\",\"col\":3}},{\"id\":\"IhRte7tHAD\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"ERPTech Analysis\",\"col\":12}},{\"id\":\"Yjjmpa3wLj\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Module Wise Open Issue\",\"col\":12}},{\"id\":\"pjIbm6ebBI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Open CR VS ISSUE\",\"col\":12}}]",
+ "creation": "2025-03-12 11:14:37.434103",
+ "custom_blocks": [
+  {
+   "custom_block_name": "ERPTech Analysis",
+   "label": "ERPTech Analysis"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "organization",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "ERPTech",
+ "links": [],
+ "modified": "2025-03-12 12:14:35.399956",
+ "modified_by": "Administrator",
+ "module": "Issue Register",
+ "name": "ERPTech",
+ "number_cards": [
+  {
+   "label": "Total",
+   "number_card_name": "Total ERPTech"
+  },
+  {
+   "label": "Open",
+   "number_card_name": "Open ERPTech"
+  },
+  {
+   "label": "Closed",
+   "number_card_name": "Closed ERPTech"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "ERPTech"
+  }
+ ],
+ "sequence_id": 42.1,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "New",
+   "label": "Create New",
+   "link_to": "Issue Register",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "ERPTech"
+}
