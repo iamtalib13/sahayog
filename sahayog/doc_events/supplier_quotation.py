@@ -35,6 +35,4 @@ def supplier_quotation_on_submit(doc, method):
 
             frappe.logger().info(f"Created New Item Price for {item.item_code} | Price: {item.rate}")
 
-        frappe.db.commit()  # Ensure changes are saved
-
     frappe.logger().info(f"Supplier Quotation {doc.name} processing completed.")

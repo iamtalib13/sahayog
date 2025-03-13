@@ -46,7 +46,6 @@ def get_sq_items(sq_name):
         fields=["item_code", "qty", "amount", "base_amount"]
     )
     return items
-
 @frappe.whitelist()
 def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
     try:
@@ -90,11 +89,24 @@ def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
         })
 
         for item in items:
+            item_code = item.get("item_code")
+            qty = item.get("qty")
+            rate = item.get("rate") or 0
+            amount = item.get("amount") or 0
+
+            # Fetch price_list_rate from Item Price where item_code and supplier match
+            price_list_rate = frappe.db.get_value("Item Price", 
+                                                  {"item_code": item_code, "supplier": supplier_name}, 
+                                                  "price_list_rate")
+
+            last_purchase_price = price_list_rate if price_list_rate is not None else 0  # Set to 0 if not found
+
             doc.append("items", {
-                "item_code": item.get("item_code"),
-                "qty": item.get("qty"),
-                "rate": item.get("rate"),
-                "amount": item.get("amount"),
+                "item_code": item_code,
+                "qty": qty,
+                "rate": rate,
+                "amount": amount,
+                "last_purchase_price": last_purchase_price,  # Setting last_purchase_price
                 "request_for_quotation": rfq_name
             })
 
@@ -109,6 +121,7 @@ def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
     except Exception as e:
         frappe.log_error(f"Error: {str(e)}", "Supplier Quotation Error")
         return {"success": False, "message": str(e)}
+
 
 @frappe.whitelist()
 def update_sq_items(sq_name, items):
