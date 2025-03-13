@@ -354,5 +354,12 @@ fixtures = [
     {
         "dt": "Module",
         
+    },
+
+   
+    {
+        "dt": "Custom DocPerm",
+        "filters": [["parent", "=", "Issue Register"]]
     }
+
 ]
