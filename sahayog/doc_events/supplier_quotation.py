@@ -36,3 +36,31 @@ def supplier_quotation_on_submit(doc, method):
             frappe.logger().info(f"Created New Item Price for {item.item_code} | Price: {item.rate}")
 
     frappe.logger().info(f"Supplier Quotation {doc.name} processing completed.")
+
+
+def supplier_quotation_form_render(doc, method):
+    if not doc.items:
+        return
+    
+    # Iterate over items in Supplier Quotation
+    for item in doc.items:
+        item_code = item.item_code
+        if not item_code:
+            continue
+
+        # Fetch price_list_rate and supplier from Item Price
+        item_prices = frappe.get_all(
+            "Item Price",
+            filters={"item_code": item_code},
+            fields=["price_list_rate", "supplier"]
+        )
+
+        # Format as 'price_list_rate - supplier'
+        options = "\n".join(
+            f"{ip['price_list_rate']} - {ip['supplier'] or 'N/A'}" for ip in item_prices
+        )
+
+        # Update the field in the Supplier Quotation item row
+        item.last_purchase_price_supplierwise = options
+
+    frappe.msgprint("Fetched and updated price list rates & suppliers.")

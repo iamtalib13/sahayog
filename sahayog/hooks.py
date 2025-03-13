@@ -232,7 +232,8 @@ doc_events = {
     },
 
     "Supplier Quotation": {
-        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit"
+        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit",
+        "form_render": "sahayog.doc_events.supplier_quotation.supplier_quotation_form_render",
     }
 
 
