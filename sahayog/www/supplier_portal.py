@@ -36,16 +36,26 @@ def get_rfq_items(rfq_name, supplier_name):
     }
 
 
-
 @frappe.whitelist()
 def get_sq_items(sq_name):
     """Fetch Supplier Quotation items dynamically based on the clicked SQ"""
-    items = frappe.get_all(
-        "Supplier Quotation Item",
-        filters={"parent": sq_name},
-        fields=["item_code", "qty", "amount", "base_amount"]
-    )
-    return items
+    if not sq_name:
+        return {"message":("Missing Supplier Quotation Name")}
+
+    try:
+        items = frappe.get_all(
+            "Supplier Quotation Item",
+            filters={"parent": sq_name},
+            fields=["item_code", "qty", "amount", "base_amount", "last_purchase_price","proposed_price","show_proposed_price"]
+        )
+
+        return {"message": items if items else ("No items found for this SQ")}
+    
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(),("Error fetching SQ items"))
+        return {"error": str(e)}
+    
+
 @frappe.whitelist()
 def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
     try:

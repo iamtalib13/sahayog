@@ -58,7 +58,7 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 /* Style for input boxes (Qty & Rate) */
-.sq-qty-input, .sq-rate-input,.rfq-qty-input, .rfq-rate-input{
+.sq-qty-input, .sq-rate-input,.rfq-qty-input, .rfq-rate-input,.sq-last-rate-input,.sq-proposed-price-input{
     width: 100px; /* Adjust width */
     padding: 8px;
     font-size: 16px;
@@ -68,12 +68,12 @@
     transition: all 0.3s ease-in-out;
 
 }
-.sq-qty-input, .sq-rate-input{
+.sq-qty-input, .sq-rate-input,.sq-last-rate-input,.sq-proposed-price-input{
     cursor: not-allowed; /* Indicate non-editable */
 }
 
 /* Hover effect */
-.sq-qty-input:hover, .sq-rate-input:hover,.rfq-qty-input:hover, .rfq-rate-input:hover {
+.sq-qty-input:hover, .sq-rate-input:hover,.rfq-qty-input:hover, .rfq-rate-input:hover,.sq-last-rate-input:hover,.sq-proposed-price-input:hover {
     border-color: #0284c7; /* Lighter blue */
 }
  /* Active state when editable */
@@ -89,7 +89,7 @@
     }
 
 /* Focus effect */
-.sq-qty-input:focus, .sq-rate-input:focus ,.rfq-qty-input:focus, .rfq-rate-input:focus{
+.sq-qty-input:focus, .sq-rate-input:focus ,.rfq-qty-input:focus, .rfq-rate-input:focus,.sq-last-rate-input:focus,.sq-proposed-price-input:focus{
     border-color: #0284c7;
     box-shadow: 0px 0px 8px rgba(3, 105, 161, 0.4);
 }
@@ -100,7 +100,7 @@
     color: #0369a1;
     padding: 10px;
 }/* Style for Quantity & Rate Inputs */
-.sq-qty-input, .sq-rate-input ,.rfq-qty-input, .rfq-rate-input{
+.sq-qty-input, .sq-rate-input ,.rfq-qty-input, .rfq-rate-input,.sq-last-rate-input,.sq-proposed-price-input{
     width: 100px; /* Fixed width */
     padding: 8px;
     font-size: 16px;
@@ -115,6 +115,10 @@
 .sq-qty-input::-webkit-inner-spin-button,
 .sq-rate-input::-webkit-outer-spin-button,
 .sq-rate-input::-webkit-inner-spin-button,
+.sq-last-rate-input::-webkit-outer-spin-button,
+.sq-last-rate-input::-webkit-inner-spin-button,
+.sq-proposed-price-input::-webkit-outer-spin-button,
+.sq-proposed-price-input::-webkit-inner-spin-button,
 .rfq-qty-input::-webkit-outer-spin-button,
 .rfq-qty-input::-webkit-inner-spin-button,
 .rfq-rate-input::-webkit-outer-spin-button,
@@ -357,7 +361,7 @@
     </style>
     <script>
 
-        document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input").forEach(input => {
+        document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input",".sq-last-rate-input").forEach(input => {
             input.addEventListener("input", function() {
                 updateAmount(this);
             });
@@ -389,7 +393,7 @@
                 });
             }
 
-            document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input").forEach(function (input) {
+            document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input",".sq-last-rate-input").forEach(function (input) {
                 // Prevent non-numeric characters (including minus key)
                 input.addEventListener("keypress", function (e) {
                     if (!/^\d$/.test(e.key)) {
@@ -1096,6 +1100,8 @@
                                 <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
                                 <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Quantity</th>
                                 <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Rate</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Last Selling Rate</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Proposed Rate</th>
                                 <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Amount</th>
                             </tr>
                         </thead>
@@ -1149,30 +1155,50 @@
                         itemsTable.innerHTML = "";
                 
                         fetch(`/api/method/sahayog.www.supplier_portal.get_sq_items?sq_name=${sqName}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                console.log("API Response for SQ:", data);
+    .then(response => response.json())
+    .then(data => {
+        console.log("API Response for SQ:", data);
+
+        // Fix: Extract the correct items array (avoid extra `message.message`)
+        let items = Array.isArray(data.message) ? data.message : (data.message?.message || []);
+
+        if (items.length > 0) {
+            items.forEach(item => {
+                var row = document.createElement("tr");
+                var rate = (item.base_amount / Math.max(item.qty, 1)).toFixed(2); // Avoid NaN
                 
-                                if (data.message && Array.isArray(data.message) && data.message.length > 0) {
-                                    data.message.forEach(item => {
-                                        var row = document.createElement("tr");
-                                        var rate = (item.base_amount / Math.max(item.qty, 1)).toFixed(2); // Avoid NaN
+                // Determine what to display in the Proposed Price column
+                let proposedPriceContent;
+                if (item.show_proposed_price) {
+                    proposedPriceContent = `<input style="background:#86C44C;;"  type="number" class="sq-proposed-price-input" value="${item.proposed_price || 0}" readonly>`;
+                } else if (!item.show_proposed_price && !item.proposed_price) {
+                    proposedPriceContent =  `<input type="text" class="sq-proposed-price-input" value="" readonly>`;
+                } else if (!item.show_proposed_price && item.proposed_price) {
+                    proposedPriceContent = `<input type="text" class="sq-proposed-price-input" value="" readonly>`;
+                }
+
+                row.innerHTML = `
+                    <td>${item.item_code}</td>
+                    <td><input type="number" class="sq-qty-input" value="${item.qty}" min="1" oninput="updateSQAmount(this)" readonly></td>
+                    <td><input type="number" class="sq-rate-input" value="${rate}" oninput="updateSQAmount(this)" readonly></td>
+                    <td><input type="number" class="sq-last-rate-input" value="${item.last_purchase_price || 0}" readonly></td>
+                    <td>${proposedPriceContent}</td>
+                    <td class="amount">₹ ${item.base_amount.toFixed(2)}</td>
+                `;
+                itemsTable.appendChild(row);
+
+                // Validate rate and proposed price after rows are added
+            validateRateAndProposedPrice();
                 
-                                        row.innerHTML = `
-                                            <td>${item.item_code}</td>
-                                            <td><input type="number" class="sq-qty-input" value="${item.qty}" min="1" oninput="updateSQAmount(this)" readonly></td>
-                                            <td><input type="number" class="sq-rate-input" value="${rate}" oninput="updateSQAmount(this)" readonly></td>
-                                            <td class="amount">₹ ${item.base_amount.toFixed(2)}</td>
-                                        `;
-                                        itemsTable.appendChild(row);
-                                    });
-                
-                                    updateGrandTotalAmount();
-                                } else {
-                                    console.error("No items found for SQ:", sqName);
-                                }
-                            })
-                            .catch(error => console.error("API Error:", error));
+            }); 
+            updateGrandTotalAmount();
+        } else {
+            console.error("No items found for SQ:", sqName);
+        }
+    })
+    .catch(error => console.error("API Error:", error));
+
+
                         // Fetch and populate comments
                         fetchSQComments(sqName);
                         console.log("called fetchSQComments");
@@ -1212,6 +1238,42 @@
                             console.error("Error in updateGrandTotal:", error);
                         }
                     }
+
+                    function validateRateAndProposedPrice() {
+    const rows = document.querySelectorAll("#sqItemsList tr"); // Select all rows inside tbody
+
+    rows.forEach(row => {
+        let rateInput = row.querySelector(".sq-rate-input"); // Get Rate input
+        let proposedPriceInput = row.querySelector(".sq-proposed-price-input"); // Get Proposed Price input
+
+        if (rateInput && proposedPriceInput) {
+            let rateValue = rateInput.value.trim(); // Get value and trim whitespace
+            let proposedPriceValue = proposedPriceInput.value.trim();
+
+            // Skip the row if either field is empty
+            if (rateValue === "" || proposedPriceValue === "") {
+                return;
+            }
+
+            // Convert values to numbers
+            rateValue = parseFloat(rateValue) || 0;
+            proposedPriceValue = parseFloat(proposedPriceValue) || 0;
+
+            if (rateValue <= proposedPriceValue) {
+                // Both inputs should have green background if rate is less than or equal to proposed price
+                rateInput.style.backgroundColor = "#86C44C";
+                proposedPriceInput.style.backgroundColor = "#86C44C";
+            } else {
+                // Rate should be red if it's greater than proposed price
+                rateInput.style.backgroundColor = "red";
+                proposedPriceInput.style.backgroundColor = "#86C44C";
+            }
+        }
+    });
+}
+
+
+                    
                 
                     document.addEventListener("DOMContentLoaded", function () {
                         const editButton = document.querySelector("#sqDetailsPage button:nth-child(2)"); // Edit button
@@ -1253,6 +1315,7 @@
                                     console.log("Full Response:", data);
                                     if (data.message && data.message.message === "success") {
                                         alert("Quotation updated successfully!");
+                                        window.location.reload(); // Correct method to refresh the page
                                     } else if (data._server_messages) {
                                         let serverMessage = JSON.parse(data._server_messages);
                                         alert(serverMessage[0].message);

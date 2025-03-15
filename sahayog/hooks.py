@@ -47,6 +47,7 @@ doctype_js = {
 
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
+    "Supplier Quotation": "public/js/supplier_quotation.js",
   
 }
 app_include_js = "/assets/frappe/js/frappe-web.min.js"
@@ -232,7 +233,7 @@ doc_events = {
     },
 
     "Supplier Quotation": {
-        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit"
+        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit",
     }
 
 
