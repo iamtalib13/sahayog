@@ -46,7 +46,7 @@ def get_sq_items(sq_name):
         items = frappe.get_all(
             "Supplier Quotation Item",
             filters={"parent": sq_name},
-            fields=["item_code", "qty", "amount", "base_amount", "last_purchase_price"]
+            fields=["item_code", "qty", "amount", "base_amount", "last_purchase_price","proposed_price","show_proposed_price"]
         )
 
         return {"message": items if items else ("No items found for this SQ")}
