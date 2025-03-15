@@ -4,44 +4,1494 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supplier Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <style>
+        /* Apply fonts to the entire page */
+        body {
+            font-family: "Ubuntu", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+        }
+
+        .menu-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.menu-item a {
+    text-decoration: none;
+    color: black;
+    display: block;
+}
+
+.menu-item:hover{
+    background: #c7c7c9;
+}
+.menu-item.active {  /* Added .active for selected state */
+    background: #2587f0;
+    color: white;
+}
+
+.menu-item:hover a,
+.menu-item.active a {  /* Ensure link color also changes */
+    color: white;
+}
+
+    .rfq-item, .sq-item {
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-around; 
+    padding: 10px; 
+    border-bottom: 1px solid #ddd; 
+    cursor: pointer;
+}
+
+.rfq-item:hover, .sq-item:hover {
+    background-color: #f1f5f9; /* Light grayish blue */
+    transform: scale(1.02); /* Slightly enlarge on hover */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+/* Style for input boxes (Qty & Rate) */
+.sq-qty-input, .sq-rate-input,.rfq-qty-input, .rfq-rate-input{
+    width: 100px; /* Adjust width */
+    padding: 8px;
+    font-size: 16px;
+    border: 2px solid #0369a1; /* Blue border */
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.3s ease-in-out;
+
+}
+.sq-qty-input, .sq-rate-input{
+    cursor: not-allowed; /* Indicate non-editable */
+}
+
+/* Hover effect */
+.sq-qty-input:hover, .sq-rate-input:hover,.rfq-qty-input:hover, .rfq-rate-input:hover {
+    border-color: #0284c7; /* Lighter blue */
+}
+ /* Active state when editable */
+ .sq-qty-input.editable, .sq-rate-input.editable {
+        border-color: #0284c7; /* Blue border */
+        background-color: white; /* White background */
+        cursor: text; /* Change cursor to text */
+    }
+
+    /* Hover effect */
+    .sq-qty-input.editable:hover, .sq-rate-input.editable:hover {
+        border-color: #0284c7; /* Lighter blue */
+    }
+
+/* Focus effect */
+.sq-qty-input:focus, .sq-rate-input:focus ,.rfq-qty-input:focus, .rfq-rate-input:focus{
+    border-color: #0284c7;
+    box-shadow: 0px 0px 8px rgba(3, 105, 161, 0.4);
+}
+
+/* Amount field */
+.amount {
+    font-weight: bold;
+    color: #0369a1;
+    padding: 10px;
+}/* Style for Quantity & Rate Inputs */
+.sq-qty-input, .sq-rate-input ,.rfq-qty-input, .rfq-rate-input{
+    width: 100px; /* Fixed width */
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: right;
+    -moz-appearance: textfield; /* Remove number input arrows */
+}
+
+/* Remove spinner arrows from input type number */
+.sq-qty-input::-webkit-outer-spin-button,
+.sq-qty-input::-webkit-inner-spin-button,
+.sq-rate-input::-webkit-outer-spin-button,
+.sq-rate-input::-webkit-inner-spin-button,
+.rfq-qty-input::-webkit-outer-spin-button,
+.rfq-qty-input::-webkit-inner-spin-button,
+.rfq-rate-input::-webkit-outer-spin-button,
+.rfq-rate-input::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Style for Total & Grand Total Fields */
+.amount, .rfq-grand-total, .sqGrandTotal{
+    width: 140px; /* Prevents structure breaking */
+    padding: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: right;
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis; /* Adds "..." if number is too big */
+    background: #f8f9fa; /* Light background for readability */
+    border-radius: 5px;
+}
+
+#rfqContainer::-webkit-scrollbar,
+    #sqContainer::-webkit-scrollbar {
+        width: 0px; /* Width 0 kar diya -> invisible scrollbar */
+    }
+
+    .comment-section {
+    width: 100%;
+    margin: auto;
+    padding: 10px;
+    border-radius: 10px;
+    /* border: 1px solid #ccc; */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Comments list */
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Chat bubble base */
+.comment {
+    position: relative;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    border: 1px solid #ccc;
+    word-wrap: break-word;
+    width: 80%;
+    margin-left: 40px; /* Creates space for the vertical line */
+
+}
+/* User name */
+.comment-user {
+    font-weight: bold;
+    font-size: 12px;
+    color: #555;
+}
+/* Chat Input */
+.comment-input {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Adds spacing between elements */
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    background: #f9f9f9; /* Light background for better contrast */
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+    transition: all 0.3s ease-in-out;
+}
+
+/* Improve textarea styling */
+.comment-input textarea {
+    flex-grow: 1;
+    border: none;
+    outline: none;
+    resize: none; /* Prevent resizing */
+    font-size: 14px;
+    padding: 8px;
+    min-height: 40px; /* Ensure good height */
+    border-radius: 5px;
+    background: transparent;
+}
+
+/* Style for the send button */
+.comment-input button {
+    background: #0369a1;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s, transform 0.2s;
+}
+
+/* Hover and active effect */
+.comment-input button:hover {
+    background: #025985;
+    transform: scale(1.05); /* Slight zoom effect */
+}
+
+.comment-input button:active {
+    background: #01476a;
+    transform: scale(0.98); /* Press effect */
+}
+/* Edit Button */
+.edit-btn {
+    background: transparent; /* Green */
+    color: #28a745;
+    border: 1px solid #28a745;
+    padding: 2px 7px;
+    margin:2px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-btn:hover {
+    transform: scale(1.08); /* Slight zoom effect */
+}
+
+.edit-btn:active {
+    transform: scale(0.95); /* Press effect */
+}
+
+/* Delete Button */
+.delete-btn {
+    background: transparent; /* Red */
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    padding: 2px 7px;
+    margin:2px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-btn:hover {
+    transform: scale(1.08);
+}
+
+.delete-btn:active {
+    transform: scale(0.95);
+}
+
+
+
+
+/* Scrollbar Styling */
+.comments-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 5px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.comment.user-comment {
+    /* align-self: flex-end; */
+    background: #e4e4e3; /* Light green for user comments */
+}
+
+.comment.other-comment {
+    /* align-self: flex-start; */
+    background: transparent; /* Light gray for others */
+}
+.comment::before {
+    content: "";
+    position: absolute;
+    left: -18px; /* Position the vertical line */
+    top: 0;
+    width: 2px;
+    height: calc(100% + 20px); /* Extend below to connect */
+    background: #ccc;
+}
+
+.comment-content {
+    margin-left: 10px;
+}
+
+/* Vertical line connecting all comments */
+.comment::after {
+    content: "";
+    position: absolute;
+    left: -23px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 5px;
+    background: #dbdbdb;
+    border: 4px solid #676b6d;
+    border-radius: 50%;
+    z-index: 2;
+
+}
+/* Ensures the last comment line extends a little */
+.comment:last-child::before {
+    height: calc(100% + 10px);
+}
+.comment-message {
+    border: none;          /* Remove border */
+    background: transparent; /* Make background transparent */
+    outline: none;          /* Remove focus outline */
+    cursor: default;        /* Default cursor when disabled */
+    width: 100%;            /* Adjust width to fit content */
+    font-size: 14px;        /* Match font styling */
+}
+
+/* When editing is enabled */
+.comment-message:focus {
+    cursor: text;           /* Show text cursor when editing */
+    border: none;          /* Remove border */
+    transition: all 0.2s ease-in-out;
+    font-size: 16px;
+}
+
+    </style>
     <script>
-        function loadPage(page) {
-            fetch(page)
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById("main-content").innerHTML = html;
-            })
-            .catch(error => console.error("Error loading the page:", error));
+
+        document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input").forEach(input => {
+            input.addEventListener("input", function() {
+                updateAmount(this);
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const menuItems = document.querySelectorAll(".menu-item");
+            menuItems.forEach(item => {
+                item.addEventListener("click", function () {
+                    // Remove 'active' class from all menu items
+                    menuItems.forEach(i => i.classList.remove("active"));
+                
+                    // Add 'active' class to the clicked item
+                    this.classList.add("active");
+                
+                    // Store selected menu in localStorage to persist after page reload
+                    localStorage.setItem("selectedMenu", this.innerText);
+                });
+            });
+        
+            // On page load, check localStorage and highlight the stored menu item
+            const savedMenu = localStorage.getItem("selectedMenu");
+            if (savedMenu) {
+                menuItems.forEach(item => {
+                    if (item.innerText === savedMenu) {
+                        item.classList.add("active");
+                    }
+                });
+            }
+
+            document.querySelectorAll(".sq-qty-input, .sq-rate-input",".rfq-qty-input, .rfq-rate-input").forEach(function (input) {
+                // Prevent non-numeric characters (including minus key)
+                input.addEventListener("keypress", function (e) {
+                    if (!/^\d$/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+            
+                // Prevent pasting non-numeric values (including negative numbers)
+                input.addEventListener("paste", function (e) {
+                    let pasteData = (e.clipboardData || window.clipboardData).getData("text");
+                    if (!/^\d+$/.test(pasteData)) {
+                        e.preventDefault();
+                    }
+                });
+            
+                // Remove negative numbers if somehow entered
+                input.addEventListener("input", function () {
+                    this.value = this.value.replace(/[^0-9]/g, ""); // Remove anything that is not a number
+                });
+            });
+        });
+        
+        
+        function adjustContainerHeight() {
+            let screenHeight = window.innerHeight; // Screen height le raha hai
+            let headerHeight = 100; // Approx header height + extra padding
+            let availableHeight = screenHeight - headerHeight; // Jo space bacha wo container ke liye
+
+            document.getElementById("rfqContainer").style.maxHeight = availableHeight + "px";
+            document.getElementById("sqContainer").style.maxHeight = availableHeight + "px";
         }
         
+            // Page load hone ke baad adjust karega
+            window.onload = adjustContainerHeight;
+            // Jab window resize ho to bhi adjust karega
+            window.onresize = adjustContainerHeight;
+
+
+        function showSection(sectionId, updateURL = true) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+        
+            // Hide main content when navigating to a section
+            document.getElementById('main-content').style.display = 'none';
+        
+            // Show the selected section
+            if (document.getElementById(sectionId)) {
+                document.getElementById(sectionId).style.display = 'block';
+            }
+        
+            // Update URL hash if triggered by user click
+            if (updateURL) {
+                history.pushState(null, null, '#' + sectionId);
+            }
+
+            // Reapply CSS styles to list items (RFQ/SQ items)
+            document.querySelectorAll(".rfq-item, .sq-item").forEach(item => {
+                item.style.display = "flex";
+                item.style.alignItems = "center";
+                item.style.justifyContent = "space-around";
+            });
+        }
+       
+        // Load the correct section from URL on page load
+        document.addEventListener("DOMContentLoaded", function () {
+    let activeSectionName = localStorage.getItem("lastActiveSection");
+
+    function getActiveSection() {
+        let activeSection = document.querySelector(".section[style*='display: block']");
+
+        if (activeSection) {
+            console.log("✅ Active Section:", activeSection.id);
+            
+            if (activeSection.id === "rfqDetailsPage" || activeSection.id === "sqDetailsPage") {
+                localStorage.setItem("lastActiveSection", activeSection.id);
+
+                // Save Title & ID when opening RFQ/SQ
+                if (activeSection.id === "rfqDetailsPage") {
+                    let rfqId = document.getElementById("rfq-title")?.innerText.trim() || "";
+                    localStorage.setItem("savedRFQId", rfqId);
+                } else if (activeSection.id === "sqDetailsPage") {
+                    let sqId = document.getElementById("sqTitle")?.innerText.trim() || "";
+                    localStorage.setItem("savedSQId", sqId);
+                }
+
+                console.log("🔹 Saved Active Section:", activeSection.id);
+            } else {
+                localStorage.removeItem("lastActiveSection"); // Clear if different section
+            }
+        } else {
+            console.log("❌ No Active Section Found.");
+        }
+    }
+
+    function showLoadingOverlay() {
+        let loadingDiv = document.createElement("div");
+        loadingDiv.id = "loading-overlay";
+        Object.assign(loadingDiv.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: "20px",
+            zIndex: "1000"
+        });
+        loadingDiv.innerHTML = "Loading... Please wait";
+        document.body.appendChild(loadingDiv);
+    }
+
+    function hideLoadingOverlay() {
+        let loadingDiv = document.getElementById("loading-overlay");
+        if (loadingDiv) {
+            loadingDiv.remove();
+        }
+    }
+
+    // Only trigger navigation if last section was RFQ or SQ
+    if (activeSectionName === "rfqDetailsPage" || activeSectionName === "sqDetailsPage") {
+        console.log(`🔄 Restoring ${activeSectionName}...`);
+        showLoadingOverlay(); // Show loading screen
+
+        let menuItemSelector = activeSectionName === "rfqDetailsPage" 
+            ? ".menu-item[onclick*='showSection(\"requestForQuotations\")']" 
+            : ".menu-item[onclick*='showSection(\"supplierQuotation\")']";
+
+        let itemSelector = activeSectionName === "rfqDetailsPage" 
+            ? "#requestForQuotations .rfq-item" 
+            : "#supplierQuotation .sq-item";
+
+        let savedId = activeSectionName === "rfqDetailsPage" 
+            ? localStorage.getItem("savedRFQId") 
+            : localStorage.getItem("savedSQId");
+
+        let menuItem = document.querySelector(menuItemSelector);
+        if (menuItem) {
+            menuItem.click();
+            console.log(`📌 Navigated to ${activeSectionName === "rfqDetailsPage" ? "RFQ" : "SQ"} List...`);
+        }
+
+        // Wait for list to load, then match the exact RFQ/SQ by ID
+        setTimeout(() => {
+            let matchingItem = [...document.querySelectorAll(itemSelector)].find(item => 
+                item.id.trim() === savedId // Match saved ID
+            );
+
+            if (matchingItem) {
+                matchingItem.click();
+                console.log(`✅ Clicked ${activeSectionName}: ${savedId}`);
+            } else {
+                console.log("⚠️ Saved RFQ/SQ ID not found in the list.");
+            }
+            hideLoadingOverlay();
+        }, 1500);
+    }
+
+    // Detect changes in sections dynamically
+    const observer = new MutationObserver(getActiveSection);
+    document.querySelectorAll(".section").forEach(section => {
+        observer.observe(section, { attributes: true, attributeFilter: ["style"] });
+    });
+});
+
+
     </script>
 </head>
-<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
-    {% if frappe.session.user == "Guest" %}
-    <h1 style="text-align: center; margin-top: 50px;">Please log in to view this page.</h1>
-    <p style="text-align: center;"><a href="/login">Login</a></p>    
-     
-    {% else %} 
+<body style="margin: 0; padding: 0;">
 
     <div style="display: flex;">
         <!-- Sidebar -->
-        <div style="width: 250px; background: #f8f9fa; padding: 20px; height: 100vh;">
-            <h2 style="font-size: 20px; margin-bottom: 20px;">Home</h2>
+        <div style="width: 200px; background: #f8f9fa; padding: 10px; height: 100vh; position: fixed; top: 0; left: 0; overflow: hidden;" class="sidebar" id="sidebar">
+            <h2 style="font-size: 20px; margin-bottom: 20px; cursor: pointer;padding-left: 10px; " onclick="window.location.href='/supplier-portal';">Home</h2>
             <ul style="list-style: none; padding: 0;">
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('request_for_quotations.html')" style="text-decoration: none; color: black;">Request for Quotations</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('supplier_quotation.html')" style="text-decoration: none; color: black;">Supplier Quotation</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('purchase_orders.html')" style="text-decoration: none; color: black;">Purchase Orders</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('purchase_invoices.html')" style="text-decoration: none; color: black;">Purchase Invoices</a></li>
-                <li style="margin-bottom: 10px;"><a href="#" onclick="loadPage('my_account.html')" style="text-decoration: none; color: black;">My Account</a></li>
+                <li class="menu-item" onclick="showSection('requestForQuotations')">Request for Quotations</li>
+                <li class="menu-item" onclick="showSection('supplierQuotation')">Supplier Quotation</li>
+                <li class="menu-item" onclick="showSection('purchaseOrders')">Purchase Orders</li>
+                <li class="menu-item" onclick="showSection('purchaseInvoices')">Purchase Invoices</li>
+                <li class="menu-item" onclick="showSection('myAccount')">My Account</li>
             </ul>
         </div>
-        
+
         <!-- Main Content -->
-        <div id="main-content" style="flex: 1; padding: 20px;">
-            <h1>Welcome to Supplier Portal</h1>
-            <p>Click an option from the sidebar to view details.</p>
+        <div style="flex: 1; padding: 20px; margin-left: 220px; height: 100vh; overflow-y: auto;scrollbar-width: none;" class="mainbar" id="mainbar">
+            <div id="main-content" style="flex: 1; padding: 20px;">
+                <h1>Welcome to Supplier Portal</h1>
+                <p>Click an option from the sidebar to view details.</p>
+            </div>
+
+            <div id="requestForQuotations" class="section" style="display: none;">
+                <!-- Yeh SQL query check karega ki logged-in user ek Supplier hai ya nahi -->
+                {% set supplier = frappe.db.sql("""
+                    SELECT parent FROM `tabPortal User` 
+                    WHERE user = %s AND parenttype = 'Supplier'
+                """, frappe.session.user, as_dict=True) %}
+                
+                {% if supplier %}
+                    <!-- Agar supplier mila to uska naam `supplier_name` me store karenge -->
+                    {% set supplier_name = supplier[0].parent %}
+                    
+                    <!-- Ab ek aur SQL query run karenge jo RFQ (Request for Quotation) ko fetch karega 
+                         jo iss supplier ke liye available hai -->
+                    {% set quotations = frappe.db.sql("""
+                        SELECT rfq.name, rfq.transaction_date, rfq.status 
+                        FROM `tabRequest for Quotation` rfq
+                        JOIN `tabRequest for Quotation Supplier` supp ON rfq.name = supp.parent
+                        WHERE supp.supplier = %s
+                        ORDER BY rfq.transaction_date DESC
+                    """, supplier_name, as_dict=True) %}
+                {% else %}
+                    <!-- Agar supplier nahi mila to quotation list empty hogi -->
+                    {% set quotations = [] %}
+                {% endif %}
+                
+                <div id="rfqContainer" style="padding: 20px; overflow-y: auto;">
+
+                    <!-- Heading: Request for Quotation -->
+                    <h1 style="font-size: 24px; font-weight: bold;">Request for Quotation</h1>
+            
+                    {% if quotations %}
+                        <!-- Agar RFQs available hain to unko list me show karenge -->
+                        {% for rfq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
+                        <div class="rfq-item" id="{{ rfq.name }}"
+                                 data-rfq="{{ rfq.name }}" 
+                                 data-date="{{ rfq.transaction_date }}"
+                                 data-status="{{ rfq.status }}"
+                                 data-supplier="{{ supplier_name }}"
+                                 onclick="openRFQPage(this);">
+                                <!-- RFQ ka naam -->
+                                <span>
+                                    <strong style="color: #333;">{{ rfq.name }}</strong>
+                                </span>
+                                <!-- RFQ ka status badge -->
+                                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                                    ● {{ rfq.status }}
+                                </span>
+                                <!-- RFQ ki date -->
+                                <span style="color: #585d5f; padding: 5px 10px;">
+                                    {{ frappe.utils.format_date(rfq.transaction_date, "MMMM d, yyyy") }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Agar koi RFQ nahi mila to ye message show hoga -->
+                        <p style="color: gray; margin-top: 10px;">No records found.</p>
+                    {% endif %}
+                </div>
+            </div>
+                    
+            <div id="rfqDetailsPage" class="section rfq-details" style="display: none; padding: 20px;">
+                <!-- Back button jo RFQ list par wapas le jaata hai -->
+                <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
+                    <a onclick="showSection('requestForQuotations')" style="color: #0369a1; text-decoration: none;">← Back to RFQ List</a>
+                </div>
+            
+                <!-- RFQ ka title aur quotation create karne ka button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h1 id="rfq-title" style="margin: 0; font-size: 2.5rem;"></h1>
+                    <button id="makeSupplierQuotationBtn" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Make Quotation</button>
+                </div>
+            
+                <!-- RFQ ka supplier aur date details dikhane ke liye -->
+                <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
+                    <div>Supplier: <span id="rfq-supplier"></span></div>
+                    <div>Date: <span id="rfq-date"></span></div>
+                </div>
+            
+                <!-- RFQ ke items ko dikhane ke liye ek table -->
+                <div style="max-height: 300px; overflow-y: auto;scrollbar-width: none;">
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                        <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                            <tr>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Quantity</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Rate</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Amount</th>
+                            </tr>
+                    </thead>
+                    <tbody id="rfq-items">
+                        <!-- API se aane wale RFQ items yahan dynamically add honge -->
+                    </tbody>
+                    
+                </table>
+                </div>
+                <hr>
+                <!-- Grand total ka display -->
+                <div style="display: flex; justify-content:flex-end;align-items: center; margin-top: 10px; font-weight: bold;">
+                    <span>Grand Total&nbsp;&nbsp;</span>
+                    <span id="rfq-grand-total" class="rfq-grand-total">₹ 0.00</span>
+                </div>
+            
+                <script>
+                    let itemsData = []; // Declare globally
+                    let supplierquotationexist = false; // Declare variable
+                    let supplier_quotation_name;
+
+                    function openRFQPage(element) {
+                        // Jab user kisi RFQ par click karega to yeh function chalega
+                        function formatDate(dateString) {
+                            var date = new Date(dateString);
+                            var options = { year: "numeric", month: "long", day: "numeric" };
+                            return date.toLocaleDateString("en-US", options);
+                        }
+                        // RFQ ka naam, date aur supplier details le rahe hain
+                        var rfqName = element.getAttribute("data-rfq");
+                        var rfqDate = formatDate(element.getAttribute("data-date"));
+                        var rfqSupplier = element.getAttribute("data-supplier");
+
+                        // Now show the new div
+                        showSection(rfqName);
+
+            
+                        // RFQ list ko hide kar rahe hain aur details page dikhana hai
+                        document.getElementById("requestForQuotations").style.display = "none";
+                        document.getElementById("rfqDetailsPage").style.display = "block";
+            
+                        // RFQ ka naam, supplier aur date ko update kar rahe hain
+                        document.getElementById("rfq-title").innerText = rfqName;
+                        document.getElementById("rfq-supplier").innerText =rfqSupplier;
+                        document.getElementById("rfq-date").innerText =rfqDate;
+
+                        // Pichle RFQ ke items ko clear karna
+                        var itemsTable = document.getElementById("rfq-items");
+                        itemsTable.innerHTML = "";
+            
+                        // API call kar ke RFQ ke items fetch kar rahe hain
+                        fetch(`/api/method/sahayog.www.supplier_portal.get_rfq_items?rfq_name=${rfqName}&supplier_name=${rfqSupplier}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log("API Response for RFQ:", data);
+                                itemsData = []; // Reset data before adding new items
+            
+                                if (data.message && data.message.items && data.message.items.length > 0) {
+                                    data.message.items.forEach(item => {
+                                        var row = document.createElement("tr");
+                                        row.innerHTML = `
+                                            <td>${item.item_code}</td>
+                                            <td><input type="number" class="rfq-qty-input" value="${item.qty}" min="1" oninput="updateAmount(this)"></td>
+                                            <td><input type="number" class="rfq-rate-input" data-qty="${item.qty}" oninput="updateAmount(this)"></td>
+                                            <td class="amount">₹ 0.00</td>
+                                        `;
+                                        itemsTable.appendChild(row);
+
+                                        // Store in global variable
+                                        itemsData.push({
+                                            item_code: item.item_code,
+                                            uom: item.uom,
+                                            stock_uom: item.stock_uom,
+                                            qty: item.qty,
+                                            rate: 0,
+                                            amount: 0
+                                        });
+                                    });
+                                    
+                                    window.itemsData = itemsData; // Ensure global access
+                                    UpdateGrandTotalAmount(); // Grand total update karna
+                                } else {
+                                    console.error("No items found for RFQ:", rfqName);
+                                }
+
+                                // Handle existing Supplier Quotation message
+                                if (data.message && data.message.existing_quotation) {
+                                    console.warn(`Supplier Quotation already exists: ${data.message.existing_quotation}`);
+                                    supplierquotationexist = true; // Set flag
+                                    supplier_quotation_name = data.message.existing_quotation; // Store name
+                                
+                                    // Change button text to "View Quotation" if Supplier Quotation exists
+                                    let makeSupplierQuotationBtn = document.getElementById("makeSupplierQuotationBtn");
+                                    if (makeSupplierQuotationBtn && supplier_quotation_name) {
+                                        makeSupplierQuotationBtn.innerText = "View Quotation" 
+                                    }
+                                    // Select all input fields with the given classes
+                                    let qtyInputs = document.querySelectorAll('.rfq-qty-input');
+                                        let rateInputs = document.querySelectorAll('.rfq-rate-input');
+                                                                        
+                                        // Disable inputs and add 'not-allowed' cursor style
+                                        qtyInputs.forEach(input => {
+                                            input.style.cursor = "not-allowed";
+                                            input.disabled = true; // Make it non-editable
+                                        });
+                                    
+                                        rateInputs.forEach(input => {
+                                            input.style.cursor = "not-allowed";
+                                            input.disabled = true; // Make it non-editable
+                                    });
+
+                                } else {
+                                    console.log("No existing Supplier Quotation found.");
+                                    let makeSupplierQuotationBtn = document.getElementById("makeSupplierQuotationBtn");
+                                    if (makeSupplierQuotationBtn && supplier_quotation_name) {
+                                        makeSupplierQuotationBtn.innerText = "Make Quotation" 
+                                    }
+                                    // Enable inputs and reset cursor style
+                                    let qtyInputs = document.querySelectorAll('.rfq-qty-input');
+                                    let rateInputs = document.querySelectorAll('.rfq-rate-input');
+
+                                    qtyInputs.forEach(input => {
+                                        input.style.cursor = "default"; // Reset cursor
+                                        input.disabled = false; // Make it editable
+                                    });
+                                
+                                    rateInputs.forEach(input => {
+                                        input.style.cursor = "default"; // Reset cursor
+                                        input.disabled = false; // Make it editable
+                                    });
+
+                                }
+                            })
+                            .catch(error => console.error("API Error:", error));
+                    }
+            
+                    function updateAmount(input) {
+                        var row = input.closest("tr");
+                        var rfq_qtyInput = row.querySelector(".rfq-qty-input");
+                        var rfq_rateInput = row.querySelector(".rfq-rate-input");
+                        var amountCell = row.querySelector(".amount");
+
+                        if (!rfq_qtyInput || !rfq_rateInput || !amountCell) {
+                            console.error("Required elements not found." + rfq_qtyInput + rfq_rateInput + amountCell);
+                            return;
+                        }
+
+                        var qty = parseFloat(rfq_qtyInput.value) || 0;
+                        var rate = parseFloat(rfq_rateInput.value) || 0;
+                        var amount = qty * rate;
+
+                        amountCell.innerText = "₹ " + amount.toFixed(2);
+
+                        UpdateGrandTotalAmount(); // Calling Grand Total Update
+                    }
+
+
+            
+                    function UpdateGrandTotalAmount() {
+                        try {                        
+                            let total = 0;
+                            document.querySelectorAll(".amount").forEach(cell => {
+                                let textValue = cell.innerText.replace(/[₹,]/g, "").trim();
+                                let value = parseFloat(textValue);                            
+                                if (!isNaN(value)) {
+                                    total += value;
+                                }
+                            });
+                        
+                            document.getElementById("rfq-grand-total").innerText = "₹ " + total.toFixed(2);
+                        } catch (error) {
+                            console.error("Error in updateGrandTotal:", error);
+                        }
+                    }
+
+                    
+                    document.getElementById("makeSupplierQuotationBtn").addEventListener("click", function() {
+                        if (supplierquotationexist === true) {
+                            // Store the flag and name in localStorage before redirecting
+                            localStorage.setItem("supplier_quotation_success", "true");
+                            localStorage.setItem("supplier_quotation_name", supplier_quotation_name);
+
+                            console.log("Step 1: Refreshing the page...");
+
+                            // Add a slight delay before refreshing to ensure localStorage is saved
+                            setTimeout(() => {
+                                location.reload();  
+                            }, 200);
+                        }
+                        else{
+                            if (confirm("Are you sure you want to submit the quotation?")) {
+                                submitQuotation();
+                            }
+                        }
+                    });
+
+                    function submitQuotation() {
+                        if (!window.itemsData || window.itemsData.length === 0) {
+                            alert("No items found. Please fetch RFQ items first.");
+                            return;
+                        }
+                    
+                        let supplierName = document.getElementById("rfq-supplier").innerText;
+                        let rfqName = document.getElementById("rfq-title").innerText;
+                        let transactionDate = document.getElementById("rfq-date").innerText;
+
+                        let grandTotal = document.getElementById("rfq-grand-total").innerText.replace("₹", "").trim();
+                    
+                        let rows = document.querySelectorAll("#rfq-items tr");
+                        let isValid = true; // Validation flag
+                    
+                        rows.forEach((row, index) => {
+                            let rfq_qtyInput = row.querySelector(".rfq-qty-input");
+                            let rfq_rateInput = row.querySelector(".rfq-rate-input");
+                            let amountCell = row.querySelector(".amount");
+                        
+                            let rfq_qty = parseFloat(rfq_qtyInput?.value);
+                            let rfq_rate = parseFloat(rfq_rateInput?.value);
+                            let rfq_amount = parseFloat(amountCell?.innerText.replace("₹", "").trim());
+                        
+                            if (isNaN(rfq_qty) || rfq_qty <= 0 || isNaN(rfq_rate) || rfq_rate <= 0 || isNaN(rfq_amount) || rfq_amount <= 0) {
+                                alert("Quantity, Rate, and Amount must be valid numbers greater than zero.");
+                                isValid = false;
+                                return;
+                            }
+                        
+                            // Update window.itemsData
+                            if (window.itemsData[index]) {
+                                window.itemsData[index].qty = rfq_qty;
+                                window.itemsData[index].rate = rfq_rate;
+                                window.itemsData[index].amount = rfq_amount;
+                            }
+                        });
+                    
+                        if (!isValid) return; // Stop submission if validation fails
+                    
+                        let payload = {
+                            supplier_name: supplierName,
+                            rfq_name: rfqName,
+                            transaction_date: transactionDate,
+                            items: window.itemsData,
+                        };
+
+                        // Ensure date is in YYYY-MM-DD format
+                        const formatDate = (dateString) => {
+                            const date = new Date(dateString);
+                            return date.toISOString().split("T")[0]; // Extract YYYY-MM-DD part
+                        };
+                        
+                        // Assuming transaction_date is in an incorrect format
+                        payload.transaction_date = formatDate(payload.transaction_date);
+                                        
+                        fetch("/api/method/sahayog.www.supplier_portal.create_supplier_quotation", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            // console.log("Server Response:", result); // Debugging purpose
+                        
+                            if (result.message && result.message.success) {
+                                // alert("Success!\n" + result.message.message + "\nQuotation Name: " + result.message.name);
+
+                                // Store the flag and name in localStorage
+                                localStorage.setItem("supplier_quotation_success", "true");
+                                localStorage.setItem("supplier_quotation_name", result.message.name);
+
+                                console.log("Step 1: Refreshing the page...");
+                                location.reload();  // Refresh the page
+
+                                // Redirect to the Supplier Quotation list page and open the created document
+                                // window.location.href = `/supplier-portal#${result.message.name}`;
+                            } else {
+                                alert("⚠️ Error: " + (result.message.message || "Unexpected error occurred."));
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Fetch Error:", error);
+                            alert("❌ An unexpected error occurred: " + error.message);
+                        });
+
+                    }
+
+                    document.addEventListener("DOMContentLoaded", function () {
+                        // Ensure this script only runs on the correct page
+                        if (localStorage.getItem("supplier_quotation_success") === "true") {
+                            console.log("✔️ Page reloaded. Resuming execution...");
+                            // Show loading effect
+                            let loadingDiv = document.createElement("div");
+                            loadingDiv.id = "loading-overlay";
+                            Object.assign(loadingDiv.style, {
+                                position: "fixed",
+                                top: "0",
+                                left: "0",
+                                width: "100%",
+                                height: "100%",
+                                background: "rgba(0, 0, 0, 0.5)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                                fontSize: "20px",
+                                zIndex: "1000"
+                            });
+                            loadingDiv.innerHTML = "Loading... Please wait";
+                            document.body.appendChild(loadingDiv);
+                            // Step 2: Wait for "Supplier Quotation" menu item to appear
+                            let menuInterval = setInterval(() => {
+                                let menuItem = document.querySelector(".menu-item[onclick=\"showSection('supplierQuotation')\"]");
+                                if (menuItem) {
+                                    clearInterval(menuInterval); // Stop checking once found
+                                    console.log("✔️ Supplier Quotation menu clicked successfully.");
+                                    menuItem.click();
+                                    // Step 3: Wait for the quotation to appear
+                                    let quotationInterval = setInterval(() => {
+                                        let quotationName = localStorage.getItem("supplier_quotation_name");
+                                        let newQuotation = document.getElementById(quotationName);
+                                        if (newQuotation) {
+                                            clearInterval(quotationInterval); // Stop checking once found
+                                            console.log(`✔️ Clicking on Quotation '${quotationName}'...`);
+                                            newQuotation.scrollIntoView({ behavior: "smooth", block: "center" });
+                                            setTimeout(() => newQuotation.click(), 500);
+                                            // Remove loading effect
+                                            setTimeout(() => {
+                                                if (document.body.contains(loadingDiv)) {
+                                                    document.body.removeChild(loadingDiv);
+                                                }
+                                            }, 1000);
+                                            // Clear localStorage **only after all steps are completed**
+                                            setTimeout(() => {
+                                                localStorage.removeItem("supplier_quotation_success");
+                                                localStorage.removeItem("supplier_quotation_name");
+                                            }, 2000);
+                                        }
+                                    }, 500); // Check every 500ms
+                                }
+                            }, 500); // Check every 500ms
+                        }
+                    });
+                </script>
+            
+            </div>
+                        
+            <div id="supplierQuotation" class="section" style="display: none;">
+                <!-- Yeh SQL query check karega ki logged-in user ek Supplier hai ya nahi -->
+                {% set supplier = frappe.db.sql("""
+                    SELECT parent FROM `tabPortal User` 
+                    WHERE user = %s AND parenttype = 'Supplier'
+                """, frappe.session.user, as_dict=True) %}
+            
+                {% if supplier %}
+                    {% set supplier_name = supplier[0].parent %}
+            
+                    <!-- Supplier ke quotations fetch kar rahe hai -->
+                    {% set quotations = frappe.db.sql("""
+                        SELECT sq.name, sq.transaction_date, sq.status 
+                        FROM `tabSupplier Quotation` sq
+                        WHERE sq.supplier = %s
+                        ORDER BY sq.transaction_date DESC
+                    """, supplier_name, as_dict=True) %}
+                {% else %}
+                    {% set quotations = [] %}
+                {% endif %}
+            
+                <div id="sqContainer" style="padding: 20px; overflow-y: auto;">
+                    <!-- Heading: Request for Quotation -->
+                    <h1 style="font-size: 24px; font-weight: bold;">Supplier Quotation</h1>
+
+                    {% if quotations %}
+                    {% for sq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
+                            <div class="sq-item" id="{{ sq.name }}"
+                                 data-sq="{{ sq.name }}"
+                                 data-date="{{ frappe.utils.format_date(sq.transaction_date, 'MMMM d, yyyy') }}"
+                                 data-status="{{ sq.status }}"
+                                 data-supplier="{{ supplier_name }}"
+                                 style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
+                                 onclick="openSQPage(this)">
+                                <span>
+                                    <strong style="color: #333;">{{ sq.name }}</strong>
+                                </span>
+                                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                                    ● {{ sq.status }}
+                                </span>
+                                <span style="color: #585d5f; padding: 5px 10px;">
+                                    {{ frappe.utils.format_date(sq.transaction_date, "MMMM d, yyyy") }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: gray; margin-top: 10px;">No records found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="sqDetailsPage" class="section sq-details" style="display: none; padding: 20px;">
+                <!-- Back button -->
+                <div style="margin-bottom: 10px; font-size: 14px; color: gray;">
+                    <a onclick="showSection('supplierQuotation')" style="color: #0369a1; text-decoration: none;">← Back to SQ List</a>
+                </div>
+            
+                <!-- SQ Title & Actions -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h1 id="sqTitle" style="margin: 0; font-size: 2.5rem;"></h1>
+                    <div>
+                        <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Print</button>
+                        <button style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 1rem;">Edit</button>
+                    </div>
+                </div>
+            
+                <!-- SQ Info -->
+                <div style="display: flex; justify-content: space-between; color: gray; font-size: 14px; margin-bottom: 20px;">
+                    <span id="sqStatus" style="background: black; color: white; padding: 5px 15px; border-radius: 5px; border: none; cursor: pointer;font-size: 14px;"></span>
+                    <span id="sqSupplier"></span>
+                    <span id="sqDate"></span>
+                </div>
+            
+                <!-- Scrollable Items Table -->
+                <div style="max-height: 300px; overflow-y: auto;scrollbar-width: none;">
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                        <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                            <tr>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Item</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Quantity</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Rate</th>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sqItemsList">
+                            <!-- Items will be dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            
+                <!-- Grand Total -->
+                <hr>
+                <div style="display: flex; justify-content:flex-end; align-items: center; margin-top: 10px; font-weight: bold;">
+                    <span>Grand Total&nbsp;&nbsp;</span>
+                    <span id="sqGrandTotal" class="sqGrandTotal">₹ 0.00</span>
+                </div>
+            
+                <!-- Comment Section -->
+                <hr>
+                <div class="comment-section">
+                    <h3>Comments</h3>
+                    <div class="comment-input">
+                        <div class="comment-avatar"></div>
+                        <textarea id="comment-text" placeholder="Type a reply / comment"></textarea>
+                        <button id="postCommentButton" onclick="postSQComment()">Post</button>
+                    </div>
+                    <!-- Comments List -->
+                    <div class="comments-list">
+                        <!-- Comments will be dynamically populated -->        
+                    </div>
+                </div>
+                      
+
+                <script>
+                    function openSQPage(element) {
+                        var sqName = element.getAttribute("data-sq");
+                        var sqDate = element.getAttribute("data-date");
+                        var sqSupplier = element.getAttribute("data-supplier");
+                        var sqStatus = element.getAttribute("data-status");
+                
+                        showSection(sqName);
+                
+                        document.getElementById("supplierQuotation").style.display = "none";
+                        document.getElementById("sqDetailsPage").style.display = "block";
+                
+                        document.getElementById("sqTitle").innerText = sqName;
+                        document.getElementById("sqSupplier").innerText = "Supplier: " + sqSupplier;
+                        document.getElementById("sqDate").innerText = "Date: " + sqDate;
+                        document.getElementById("sqStatus").innerText = sqStatus;
+                
+                        var itemsTable = document.getElementById("sqItemsList");
+                        itemsTable.innerHTML = "";
+                
+                        fetch(`/api/method/sahayog.www.supplier_portal.get_sq_items?sq_name=${sqName}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log("API Response for SQ:", data);
+                
+                                if (data.message && Array.isArray(data.message) && data.message.length > 0) {
+                                    data.message.forEach(item => {
+                                        var row = document.createElement("tr");
+                                        var rate = (item.base_amount / Math.max(item.qty, 1)).toFixed(2); // Avoid NaN
+                
+                                        row.innerHTML = `
+                                            <td>${item.item_code}</td>
+                                            <td><input type="number" class="sq-qty-input" value="${item.qty}" min="1" oninput="updateSQAmount(this)" readonly></td>
+                                            <td><input type="number" class="sq-rate-input" value="${rate}" oninput="updateSQAmount(this)" readonly></td>
+                                            <td class="amount">₹ ${item.base_amount.toFixed(2)}</td>
+                                        `;
+                                        itemsTable.appendChild(row);
+                                    });
+                
+                                    updateGrandTotalAmount();
+                                } else {
+                                    console.error("No items found for SQ:", sqName);
+                                }
+                            })
+                            .catch(error => console.error("API Error:", error));
+                        // Fetch and populate comments
+                        fetchSQComments(sqName);
+                        console.log("called fetchSQComments");
+
+                        // Set SQ name for posting comments
+                        document.getElementById("postCommentButton").setAttribute("data-sq", sqName);
+                    }
+                
+                    function updateSQAmount(input) {
+                        var row = input.closest("tr");
+                        var sq_qtyInput = row.querySelector(".sq-qty-input");
+                        var sq_rateInput = row.querySelector(".sq-rate-input");
+                        var amountCell = row.querySelector(".amount");
+
+                        var sq_qty = parseFloat(sq_qtyInput.value) || 0;
+                        var sq_rate = parseFloat(sq_rateInput.value) || 0;
+                        var sq_amount = sq_qty * sq_rate;
+                
+                        amountCell.innerText = "₹ " + sq_amount.toFixed(2);
+                
+                        updateGrandTotalAmount(); // Calling Grand Total Update
+                    }
+                
+                    function updateGrandTotalAmount() {
+                        try {                        
+                            let total = 0;
+                            document.querySelectorAll(".amount").forEach(cell => {
+                                let textValue = cell.innerText.replace(/[₹,]/g, "").trim();
+                                let value = parseFloat(textValue);                            
+                                if (!isNaN(value)) {
+                                    total += value;
+                                }
+                            });
+                
+                            document.getElementById("sqGrandTotal").innerText = "₹ " + total.toFixed(2);
+                        } catch (error) {
+                            console.error("Error in updateGrandTotal:", error);
+                        }
+                    }
+                
+                    document.addEventListener("DOMContentLoaded", function () {
+                        const editButton = document.querySelector("#sqDetailsPage button:nth-child(2)"); // Edit button
+                        let isEditing = false;
+                
+                        editButton.addEventListener("click", function () {
+                            if (!isEditing) {
+                                document.querySelectorAll(".sq-qty-input, .sq-rate-input").forEach(input => {
+                                    input.removeAttribute("readonly");
+                                    input.classList.add("editable"); // Apply editable styles
+
+                                });
+                                editButton.innerText = "Save";
+                                isEditing = true;
+                            } else {
+                                const updatedItems = [];
+                                document.querySelectorAll("#sqItemsList tr").forEach(row => {
+                                    const itemCode = row.children[0].innerText;
+                                    const qty = row.querySelector(".sq-qty-input").value;
+                                    const rate = row.querySelector(".sq-rate-input").value;
+                
+                                    updatedItems.push({
+                                        item_code: itemCode,
+                                        qty: parseFloat(qty),
+                                        rate: parseFloat(rate)
+                                    });
+                                });
+                
+                                fetch("/api/method/sahayog.www.supplier_portal.update_sq_items", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        sq_name: document.getElementById("sqTitle").innerText,
+                                        items: JSON.stringify(updatedItems)
+                                    })
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log("Full Response:", data);
+                                    if (data.message && data.message.message === "success") {
+                                        alert("Quotation updated successfully!");
+                                    } else if (data._server_messages) {
+                                        let serverMessage = JSON.parse(data._server_messages);
+                                        alert(serverMessage[0].message);
+                                    } else {
+                                        alert("Error updating quotation.");
+                                    }
+                                })
+                                .catch(error => console.error("API Error:", error));
+                
+                                document.querySelectorAll(".sq-qty-input, .sq-rate-input").forEach(input => {
+                                    input.setAttribute("readonly", "true");
+                                    input.classList.remove("editable"); // Remove editable styles
+                                });
+                
+                                editButton.innerText = "Edit";
+                                isEditing = false;
+                            }
+                        });
+                    });
+
+                    function fetchSQComments(sqName) {
+    var commentsList = document.querySelector(".comments-list");
+    commentsList.innerHTML = "<p>Loading comments...</p>";
+
+    fetch('/api/method/frappe.auth.get_logged_user')
+        .then(response => response.json())
+        .then(data => {
+            let loggedInUser = data.message;
+
+            fetch(`/api/method/sahayog.www.supplier_portal.get_sq_comments?sq_name=${sqName}`)
+                .then(response => response.json())
+                .then(data => {
+                    let comments = data.message.message;
+
+                    if (!Array.isArray(comments) || comments.length === 0) {
+                        commentsList.innerHTML = "<p>No comments yet.</p>";
+                        return;
+                    }
+
+                    commentsList.innerHTML = "";
+
+                    comments.forEach(comment => {
+                        let tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = comment.comment;
+                        let plainText = tempDiv.textContent || tempDiv.innerText;
+
+                        let commentDiv = document.createElement("div");
+                        commentDiv.classList.add("comment");
+
+                        let isUserComment = comment.owner === loggedInUser;
+
+                        if (comment.owner === loggedInUser) {
+                            commentDiv.classList.add("user-comment");
+                        } else {
+                            commentDiv.classList.add("other-comment");
+                        }
+
+                        commentDiv.innerHTML = `
+                            <div class="comment-content">
+                                <span class="comment-user">
+                                    ${comment.owner} &#9679; 
+                                    <span class="comment-time" title="${new Date(comment.creation).toLocaleString()}">
+                                        ${comment.pretty_creation}
+                                    </span>
+                                    ${isUserComment ? `
+                                    <button style="float:right;" class="delete-btn" onclick="deleteComment('${comment.name}')">Delete</button>
+                                    <button style="float:right;" class="edit-btn" onclick="toggleEditSave(this, '${comment.name}')">Edit</button>
+                                ` : ""}
+                                </span>
+                                <hr>
+                                <input type="textarea" class="comment-message" value="${plainText}" disabled>
+                            </div>
+                        `;
+                        commentsList.appendChild(commentDiv);
+                    });
+
+                    commentsList.scrollTop = commentsList.scrollHeight;
+                })
+                .catch(error => {
+                    console.error("Error fetching comments:", error);
+                    commentsList.innerHTML = "<p>Error loading comments.</p>";
+                });
+        })
+        .catch(error => console.error("Error fetching user:", error));
+}
+// Toggle between Edit and Save
+function toggleEditSave(button, commentId) {
+    let commentContainer = button.closest(".comment-content");
+    let inputField = commentContainer.querySelector(".comment-message");
+
+    if (button.innerText === "Edit") {
+        // Store the original comment before enabling edit mode
+        inputField.dataset.originalValue = inputField.value;
+
+        inputField.removeAttribute("disabled");
+        inputField.focus();
+        button.innerText = "Save";
+
+        // Add event listener to detect clicks outside the input field
+        document.addEventListener("click", handleClickOutside);
+    } else {
+        let updatedComment = inputField.value.trim();
+        
+        if (!updatedComment) {
+            alert("Comment cannot be empty!");
+            return;
+        }
+
+        // If value changed, update the comment
+        if (updatedComment !== inputField.dataset.originalValue) {
+            updateComment(commentId, updatedComment, button, inputField);
+        } else {
+            // No changes -> Revert to "Edit"
+            inputField.setAttribute("disabled", true);
+            button.innerText = "Edit";
+        }
+
+        document.removeEventListener("click", handleClickOutside);
+    }
+
+    function handleClickOutside(event) {
+        if (!commentContainer.contains(event.target)) {
+            // Revert back to "Edit" if no change was made
+            if (inputField.value.trim() === inputField.dataset.originalValue) {
+                inputField.setAttribute("disabled", true);
+                button.innerText = "Edit";
+            }
+            document.removeEventListener("click", handleClickOutside);
+        }
+    }
+}
+
+// Update comment in backend
+function updateComment(commentId, updatedComment, button, inputField) {
+    console.log("Updating comment ID:", commentId); // Debugging
+
+    fetch('/api/method/sahayog.www.supplier_portal.update_sq_comment', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            comment_id: commentId,
+            updated_comment: updatedComment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("API Response:", data); // Debugging
+
+        // Handle different possible response structures
+        if (data.message === "success" || (data.message && data.message.message === "success")) {
+            inputField.setAttribute("disabled", true);
+            button.innerText = "Edit";
+            alert("Comment updated successfully!");
+        } else {
+            alert("Error updating comment.");
+        }
+    })
+    .catch(error => {
+        console.error("Error updating comment:", error);
+        alert("Error updating comment.");
+    });
+}
+
+// Delete comment
+function deleteComment(commentId) {
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+
+    console.log("Deleting comment ID:", commentId); // Debugging
+
+    fetch('/api/method/sahayog.www.supplier_portal.delete_sq_comment', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment_id: commentId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("API Response:", data); // Debugging
+
+        if (data.message === "success" || (data.message && data.message.message === "success")) {
+            console.log("Comment deleted successfully!");
+            fetchSQComments(document.getElementById("sqTitle").innerText);
+        } else {
+            alert("Error deleting comment.");
+        }
+    })
+    .catch(error => {
+        console.error("Error deleting comment:", error);
+        alert("Error deleting comment.");
+    });
+}
+
+
+function postSQComment() {
+    let sqName = document.getElementById("sqTitle").innerText;
+    let commentText = document.getElementById("comment-text").value.trim();
+    if (commentText === "") {
+        alert("Please enter a comment!");
+        return;
+    }
+
+    fetch(`/api/method/sahayog.www.supplier_portal.add_sq_comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            sq_name: sqName,  // Use the correct `sq_name`
+            comment: commentText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Comment posted:", data);
+        document.getElementById("comment-text").value = "";  // Clear input
+        fetchSQComments(sqName);  // Reload comments
+    })
+    .catch(error => console.error("Error posting comment:", error));
+}
+
+
+                </script>
+                
+            </div>
+                  
+            <div id="purchaseOrders" class="section" style="display: none;">
+                <h2>Purchase Orders</h2>
+                <button onclick="alert('Purchase Orders Button Clicked!')">Click Me</button>
+            </div>
+
+            <div id="purchaseInvoices" class="section" style="display: none;">
+                <h2>Purchase Invoices</h2>
+                <button onclick="alert('Purchase Invoices Button Clicked!')">Click Me</button>
+            </div>
+
+            <div id="myAccount" class="section" style="display: none;">
+                <h2>My Account</h2>
+                <button onclick="alert('My Account Button Clicked!')">Click Me</button>
+            </div>
+
         </div>
     </div>
-  {% endif %}
+
 </body>
 </html>

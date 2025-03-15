@@ -49,6 +49,8 @@ doctype_js = {
     "Task": "public/js/task.js",
   
 }
+app_include_js = "/assets/frappe/js/frappe-web.min.js"
+
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -65,9 +67,9 @@ doctype_js = {
 # home_page = "login"
 
 # website user home page (by Role)
-# role_home_page = {
-#     "Supplier": "/supplier-portal"
-#  }
+role_home_page = {
+    "Supplier": "/supplier-portal"
+}
 
 # Generators
 # ----------
@@ -174,7 +176,6 @@ override_doctype_class = {
 # Document Events
 # ---------------
 # Hook on document methods and events
-
 doc_events = {
     "Employee": {
         "after_insert": [
@@ -228,8 +229,11 @@ doc_events = {
 
     "Branch": {
         "after_insert": "sahayog.doc_events.branch_warehouse.create_branch_warehouse"
-    }
+    },
 
+    "Supplier Quotation": {
+        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit"
+    }
 
 
 }
