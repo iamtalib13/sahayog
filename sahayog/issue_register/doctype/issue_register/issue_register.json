@@ -63,7 +63,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Open\nClosed"
+   "options": "Open\nClosed",
+   "reqd": 1
   },
   {
    "fieldname": "type",
@@ -71,7 +72,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Type",
-   "options": "\nCR\nISSUE"
+   "options": "\nCR\nISSUE",
+   "reqd": 1
   },
   {
    "fieldname": "module",
@@ -79,7 +81,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Module",
-   "options": "Module"
+   "options": "Module",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_icvt",
@@ -116,7 +119,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Prodtech",
-   "options": "Prodtech"
+   "options": "Prodtech",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_amei",
@@ -184,12 +188,13 @@
    "fieldname": "team",
    "fieldtype": "Select",
    "label": "Team",
-   "options": "Prodtech\nErptech"
+   "options": "Prodtech\nErptech",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-11 17:37:24.154346",
+ "modified": "2025-03-15 13:36:30.566411",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Issue Register",
