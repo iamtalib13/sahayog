@@ -30,7 +30,7 @@ frappe.ui.form.on("Supplier Quotation Item", {
                     );
 
                     // Set default value blank for last_purchase_price_supplierwise
-                    frappe.model.set_value(cdt, cdn, "last_purchase_price_supplierwise", "");
+                    // frappe.model.set_value(cdt, cdn, "last_purchase_price_supplierwise", "");
 
                     // Make proposed_price readonly by default
                     let grid_row = frm.fields_dict["items"].grid.grid_rows_by_docname[cdn];
@@ -64,7 +64,6 @@ frappe.ui.form.on("Supplier Quotation Item", {
         } 
         else {
             // If blank is selected, clear proposed_price and keep it readonly
-            frappe.model.set_value(cdt, cdn, "proposed_price", "");
             if (grid_row) grid_row.toggle_editable("proposed_price", false);
         }
 
@@ -78,5 +77,4 @@ frappe.ui.form.on("Supplier Quotation Item", {
         }
 
     },
-    
 });
