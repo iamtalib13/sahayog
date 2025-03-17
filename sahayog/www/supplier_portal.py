@@ -224,4 +224,4 @@ def delete_sq_comment(comment_id):
         return {"message": "success"}
     except Exception as e:
         return {"error": str(e)}
-        
+   
