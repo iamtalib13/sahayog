@@ -80,7 +80,7 @@ def execute():
                 "insert_after": "department",
                 "label": "Project Warehouse",
                 "options":"Warehouse",
-                "reqd":1,
+                
             }
             
             

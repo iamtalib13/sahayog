@@ -235,7 +235,11 @@ doc_events = {
 
     "Supplier Quotation": {
         "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit"
-    }
+    },
+      
+    "Project": {
+        "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
+    },
 
 
 }
