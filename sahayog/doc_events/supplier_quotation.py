@@ -58,3 +58,7 @@ def supplier_quotation_form_render(item_code):
 
     frappe.logger().info(f"✅ Options for {item_code}: {options}")
     return options
+
+@frappe.whitelist()
+def ping():
+    return "pong"

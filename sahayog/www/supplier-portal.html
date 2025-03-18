@@ -606,7 +606,7 @@
                         SELECT rfq.name, rfq.transaction_date, rfq.status 
                         FROM `tabRequest for Quotation` rfq
                         JOIN `tabRequest for Quotation Supplier` supp ON rfq.name = supp.parent
-                        WHERE supp.supplier = %s
+                        WHERE supp.supplier = %s AND rfq.status = 'Submitted'
                         ORDER BY rfq.transaction_date DESC
                     """, supplier_name, as_dict=True) %}
                 {% else %}
@@ -749,6 +749,7 @@
                                             uom: item.uom,
                                             stock_uom: item.stock_uom,
                                             qty: item.qty,
+                                            warehouse: item.warehouse,
                                             rate: 0,
                                             amount: 0
                                         });
