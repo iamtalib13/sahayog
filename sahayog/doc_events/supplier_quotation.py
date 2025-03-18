@@ -1,4 +1,6 @@
 import frappe
+import json
+
 
 def supplier_quotation_on_submit(doc, method):
     frappe.logger().info(f"Processing Supplier Quotation: {doc.name}")
@@ -36,3 +38,27 @@ def supplier_quotation_on_submit(doc, method):
             frappe.logger().info(f"Created New Item Price for {item.item_code} | Price: {item.rate}")
 
     frappe.logger().info(f"Supplier Quotation {doc.name} processing completed.")
+
+@frappe.whitelist()
+def supplier_quotation_form_render(item_code):
+    """
+    Fetches 'last_purchase_price_supplierwise' options dynamically for a given item_code.
+    """
+    frappe.logger().info(f"🔹 Fetching options for item: {item_code}")
+
+    # Fetch price_list_rate and supplier from Item Price
+    item_prices = frappe.get_all(
+        "Item Price",
+        filters={"item_code": item_code},
+        fields=["price_list_rate", "supplier"]
+    )
+
+    # Generate options list
+    options = [f"{ip['price_list_rate']} - {ip['supplier'] or 'N/A'}" for ip in item_prices]
+
+    frappe.logger().info(f"✅ Options for {item_code}: {options}")
+    return options
+
+@frappe.whitelist()
+def ping():
+    return "pong"

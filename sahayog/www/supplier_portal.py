@@ -25,7 +25,7 @@ def get_rfq_items(rfq_name, supplier_name):
     items = frappe.get_all(
         "Request for Quotation Item",
         filters={"parent": rfq_name},
-        fields=["item_code", "qty", "creation", "uom", "stock_uom"]
+        fields=["item_code", "qty", "creation", "uom", "stock_uom","warehouse"]
     )
 
     return {
@@ -36,16 +36,26 @@ def get_rfq_items(rfq_name, supplier_name):
     }
 
 
-
 @frappe.whitelist()
 def get_sq_items(sq_name):
     """Fetch Supplier Quotation items dynamically based on the clicked SQ"""
-    items = frappe.get_all(
-        "Supplier Quotation Item",
-        filters={"parent": sq_name},
-        fields=["item_code", "qty", "amount", "base_amount"]
-    )
-    return items
+    if not sq_name:
+        return {"message":("Missing Supplier Quotation Name")}
+
+    try:
+        items = frappe.get_all(
+            "Supplier Quotation Item",
+            filters={"parent": sq_name},
+            fields=["item_code", "qty", "amount", "base_amount", "last_purchase_price","proposed_price","show_proposed_price"]
+        )
+
+        return {"message": items if items else ("No items found for this SQ")}
+    
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(),("Error fetching SQ items"))
+        return {"error": str(e)}
+    
+
 @frappe.whitelist()
 def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
     try:
@@ -91,6 +101,7 @@ def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
         for item in items:
             item_code = item.get("item_code")
             qty = item.get("qty")
+            warehouse = item.get("warehouse")
             rate = item.get("rate") or 0
             amount = item.get("amount") or 0
 
@@ -104,6 +115,7 @@ def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
             doc.append("items", {
                 "item_code": item_code,
                 "qty": qty,
+                "warehouse": warehouse,
                 "rate": rate,
                 "amount": amount,
                 "last_purchase_price": last_purchase_price,  # Setting last_purchase_price
@@ -214,4 +226,4 @@ def delete_sq_comment(comment_id):
         return {"message": "success"}
     except Exception as e:
         return {"error": str(e)}
-        
+   
