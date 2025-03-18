@@ -2,55 +2,66 @@ import frappe
 
 def execute():
     """
-    1️⃣ Existing warehouses ko update karega.
-    2️⃣ Agar warehouse nahi hai to naye create karega.
-    3️⃣ Branch Doctype ke 'custom_warehouse' field me warehouse assign karega.
+    ✅ Create/Update Branch Warehouses
+    ✅ Create Project Warehouses if not exist
+    ✅ Assign Warehouse to Branch custom field
     """
+    create_branch_warehouses()
+    create_project_warehouses()
+    frappe.db.commit()
 
+def create_branch_warehouses():
     warehouse_list = [
-        "Stationary Gondia",
-        "Gondia IT",
-        "Nagpur IT"
+        "Store - Stationary Gondia",
+        "Store - Gondia IT",
+        "Store - Nagpur IT"
     ]
 
-    # Step 1: Predefined Warehouses ko create/update karo
+    # Step 1: Create predefined store warehouses
     for warehouse in warehouse_list:
-        create_or_update_warehouse(warehouse, is_group=False)
+        create_or_update_warehouse(warehouse, is_group=False, category="Store")
 
-    # Step 2: Branch-wise Warehouses ko create/update karo
+    # Step 2: Create branch-specific warehouses
     branches = frappe.get_all("Branch", fields=["name"])
     for branch in branches:
-        warehouse_name = branch["name"]
-        warehouse = create_or_update_warehouse(warehouse_name, is_group=True)
-        
-        # Step 3: Branch Doctype ke `custom_warehouse` me warehouse assign karo
-        if warehouse:
+        warehouse_name = f"Branch - {branch['name']}"
+        if not frappe.db.exists("Warehouse", warehouse_name):
+            create_or_update_warehouse(warehouse_name, is_group=False, category="Branch")
             frappe.db.set_value("Branch", branch["name"], "custom_warehouse", warehouse_name)
-            print(f"✅ Warehouse Linked to Branch: {branch['name']} -> {warehouse_name}")
 
-    frappe.db.commit()  # Final commit ek baar karna best practice hai
+def create_project_warehouses():
+    projects = frappe.get_all("Project", fields=["name", "project_name"])
+    for project in projects:
+        # Use 'project_name' field from the Project Doc as warehouse name
+        warehouse_name = f"Project - {project['project_name']}"
+        if not frappe.db.exists("Warehouse", warehouse_name):
+            warehouse = frappe.get_doc({
+                "doctype": "Warehouse",
+                "warehouse_name": warehouse_name,
+                "company": frappe.defaults.get_defaults().get("company"),
+                "is_group": 0,
+                "custom_warehouse_category": "Project",
+                "project_name": project['name']  # Storing the project id for reference
+            })
+            warehouse.insert(ignore_permissions=True)
+            frappe.db.set_value("Project", project["name"], "custom_project_warehouse", warehouse_name)
+            print(f"✅ Created Warehouse: {warehouse_name}")
 
-def create_or_update_warehouse(warehouse_name, is_group=False):
+def create_or_update_warehouse(warehouse_name, is_group=False, category=None):
     """
-    Agar warehouse exist karta hai to update karega,
-    warna naya create karega aur return karega.
+    Create or update warehouse with optional category
     """
     if frappe.db.exists("Warehouse", warehouse_name):
-        # ✅ Update existing warehouse
-        frappe.db.set_value("Warehouse", warehouse_name, {
-            "is_group": 1 if is_group else 0,
-            "company": frappe.defaults.get_defaults().get("company")
-        })
-        print(f"🔄 Warehouse Updated: {warehouse_name} (Group: {is_group})")
-    else:
-        # ✅ Naya warehouse create karo
-        warehouse = frappe.get_doc({
-            "doctype": "Warehouse",
-            "warehouse_name": warehouse_name,
-            "company": frappe.defaults.get_defaults().get("company"),
-            "is_group": 1 if is_group else 0
-        })
-        warehouse.insert(ignore_permissions=True)
-        print(f"✅ Warehouse Created: {warehouse_name} (Group: {is_group})")
-    
-    return warehouse_name  # Warehouse name return karna taaki link ho sake
+        print(f"Warehouse already exists: {warehouse_name}")
+        return warehouse_name
+
+    warehouse = frappe.get_doc({
+        "doctype": "Warehouse",
+        "warehouse_name": warehouse_name,
+        "company": frappe.defaults.get_defaults().get("company"),
+        "is_group": 1 if is_group else 0,
+        "custom_warehouse_category": category
+    })
+    warehouse.insert(ignore_permissions=True)
+    print(f"✅ Created Warehouse: {warehouse_name}")
+    return warehouse_name

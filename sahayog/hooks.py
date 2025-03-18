@@ -44,7 +44,8 @@ app_license = "mit"
 
 # include js in doctype views
 doctype_js = {
-
+    "Request for Quotation": "public/js/request_for_quotation.js",
+    "Material Request": "public/js/material_request.js",
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
     "Supplier Quotation": "public/js/supplier_quotation.js",
@@ -107,7 +108,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",    
     "sahayog.patches.custom_fields.add_custom_field_for_stock_entry.execute",  
     "sahayog.patches.custom_fields.add_custom_field_for_material_request.execute",  
-
+    "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",  
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
@@ -171,7 +172,8 @@ after_migrate = [
 # Override standard doctype classes
 
 override_doctype_class = {
-    "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse"
+    "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
+   # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
 
 # Document Events

@@ -73,6 +73,15 @@ def execute():
                 "reqd":1,
                
             },
+
+            {
+                "fieldname": "custom_project_warehouse",
+                "fieldtype": "Link",
+                "insert_after": "department",
+                "label": "Project Warehouse",
+                "options":"Warehouse",
+                "reqd":1,
+            }
             
             
             
