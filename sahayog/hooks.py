@@ -48,7 +48,6 @@ doctype_js = {
     "Material Request": "public/js/material_request.js",
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
-    "Supplier Quotation": "public/js/supplier_quotation.js",
   
 }
 app_include_js = "/assets/frappe/js/frappe-web.min.js"
@@ -235,8 +234,12 @@ doc_events = {
     },
 
     "Supplier Quotation": {
-        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit",
-    }
+        "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit"
+    },
+      
+    "Project": {
+        "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
+    },
 
 
 }

@@ -4,14 +4,15 @@ def create_branch_warehouse(doc, method):
     """
     Automatically creates a warehouse when a new Branch is created and links it to the branch.
     """
-    warehouse_name = doc.name  # Warehouse name same as Branch name
+    warehouse_name = f"Branch - {doc.name}"  # Warehouse name as 'Branch - <Branch Name>'
 
     if not frappe.db.exists("Warehouse", warehouse_name):
         warehouse = frappe.get_doc({
             "doctype": "Warehouse",
             "warehouse_name": warehouse_name,
             "company": frappe.defaults.get_defaults().get("company"),
-            "is_group": 1  # Make it a group warehouse
+            "is_group": 0,  # Make it a group warehouse
+            "custom_warehouse_category": "Branch"
         })
         warehouse.insert(ignore_permissions=True)
 
