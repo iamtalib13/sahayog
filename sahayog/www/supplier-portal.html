@@ -598,7 +598,7 @@
                 {% if supplier %}
                     {% set supplier_name = supplier[0].parent %}
                     {% set quotations = frappe.db.sql("""
-                        SELECT rfq.name, rfq.transaction_date, rfq.status 
+                        SELECT rfq.name, rfq.transaction_date, rfq.status, rfq.modified
                         FROM `tabRequest for Quotation` rfq
                         JOIN `tabRequest for Quotation Supplier` supp ON rfq.name = supp.parent
                         WHERE supp.supplier = %s AND rfq.status = 'Submitted'
@@ -617,6 +617,8 @@
                         <span style="flex: 1; text-align: left;">&nbsp;&nbsp;&nbsp;&nbsp;ID</span>
                         <span style="flex: 1; text-align: center;">Status</span>
                         <span style="flex: 1; text-align: right;">Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                        <span style="flex: 1; text-align: right;">Last Modified</span>
+
                     </div>
             
                     <!-- Scrollable List -->
@@ -638,6 +640,9 @@
                                 </span>
                                 <span style="flex: 1; text-align: right; color: #585d5f;">
                                     {{ frappe.utils.format_date(rfq.transaction_date, "MMMM d, yyyy") }}
+                                </span>
+                                <span style="flex: 1; text-align: right; color: #585d5f;">
+                                    {{ frappe.utils.pretty_date(rfq.modified) }}
                                 </span>
             
                             </div>
@@ -1030,7 +1035,7 @@
                 {% if supplier %}
                     {% set supplier_name = supplier[0].parent %}
                     {% set quotations = frappe.db.sql("""
-                        SELECT sq.name, sq.transaction_date, sq.status 
+                        SELECT sq.name, sq.transaction_date, sq.status, sq.modified
                         FROM `tabSupplier Quotation` sq
                         WHERE sq.supplier = %s
                         ORDER BY sq.transaction_date DESC
@@ -1047,6 +1052,8 @@
                         <span style="flex: 1; text-align: left;">&nbsp;&nbsp;&nbsp;&nbsp;ID</span>
                         <span style="flex: 1; text-align: center;">Status</span>
                         <span style="flex: 1; text-align: right;">Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                        <span style="flex: 1; text-align: right;">Last Modified</span>
+
                     </div>
             
                     <!-- Scrollable List -->
@@ -1068,6 +1075,9 @@
                                 </span>
                                 <span style="flex: 1; text-align: right; color: #585d5f;">
                                     {{ frappe.utils.format_date(sq.transaction_date, "MMMM d, yyyy") }}
+                                </span>
+                                <span style="flex: 1; text-align: right; color: #585d5f;">
+                                    {{ frappe.utils.pretty_date(sq.modified) }}
                                 </span>
             
                             </div>
