@@ -590,18 +590,13 @@
             </div>
 
             <div id="requestForQuotations" class="section" style="display: none;">
-                <!-- Yeh SQL query check karega ki logged-in user ek Supplier hai ya nahi -->
                 {% set supplier = frappe.db.sql("""
                     SELECT parent FROM `tabPortal User` 
                     WHERE user = %s AND parenttype = 'Supplier'
                 """, frappe.session.user, as_dict=True) %}
                 
                 {% if supplier %}
-                    <!-- Agar supplier mila to uska naam `supplier_name` me store karenge -->
                     {% set supplier_name = supplier[0].parent %}
-                    
-                    <!-- Ab ek aur SQL query run karenge jo RFQ (Request for Quotation) ko fetch karega 
-                         jo iss supplier ke liye available hai -->
                     {% set quotations = frappe.db.sql("""
                         SELECT rfq.name, rfq.transaction_date, rfq.status 
                         FROM `tabRequest for Quotation` rfq
@@ -610,44 +605,50 @@
                         ORDER BY rfq.transaction_date DESC
                     """, supplier_name, as_dict=True) %}
                 {% else %}
-                    <!-- Agar supplier nahi mila to quotation list empty hogi -->
                     {% set quotations = [] %}
                 {% endif %}
                 
-                <div id="rfqContainer" style="padding: 20px; overflow-y: auto;">
-
-                    <!-- Heading: Request for Quotation -->
+                <div style="padding: 20px;">
+            
                     <h1 style="font-size: 24px; font-weight: bold;">Request for Quotation</h1>
             
-                    {% if quotations %}
-                        <!-- Agar RFQs available hain to unko list me show karenge -->
-                        {% for rfq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
-                        <div class="rfq-item" id="{{ rfq.name }}"
+                    <!-- Fixed Header -->
+                    <div id="rfqHeader" style="display: flex; font-weight: bold; background: #f3f4f6; padding: 10px; border-radius: 5px;">
+                        <span style="flex: 1; text-align: left;">&nbsp;&nbsp;&nbsp;&nbsp;ID</span>
+                        <span style="flex: 1; text-align: center;">Status</span>
+                        <span style="flex: 1; text-align: right;">Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    </div>
+            
+                    <!-- Scrollable List -->
+                    <div id="rfqContainer" style="padding: 10px; overflow-y: auto; max-height: 300px;">
+            
+                        {% if quotations %}
+                            {% for rfq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
+                            <div class="rfq-item" id="{{ rfq.name }}"
+                                 style="display: flex; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
                                  data-rfq="{{ rfq.name }}" 
                                  data-date="{{ rfq.transaction_date }}"
                                  data-status="{{ rfq.status }}"
                                  data-supplier="{{ supplier_name }}"
                                  onclick="openRFQPage(this);">
-                                <!-- RFQ ka naam -->
-                                <span>
-                                    <strong style="color: #333;">{{ rfq.name }}</strong>
-                                </span>
-                                <!-- RFQ ka status badge -->
-                                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                                
+                                <span style="flex: 1; text-align: left;"><strong style="color: #333;">{{ rfq.name }}</strong></span>
+                                <span style="flex: 1; text-align: center; background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
                                     ● {{ rfq.status }}
                                 </span>
-                                <!-- RFQ ki date -->
-                                <span style="color: #585d5f; padding: 5px 10px;">
+                                <span style="flex: 1; text-align: right; color: #585d5f;">
                                     {{ frappe.utils.format_date(rfq.transaction_date, "MMMM d, yyyy") }}
                                 </span>
+            
                             </div>
-                        {% endfor %}
-                    {% else %}
-                        <!-- Agar koi RFQ nahi mila to ye message show hoga -->
-                        <p style="color: gray; margin-top: 10px;">No records found.</p>
-                    {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p style="color: gray; margin-top: 10px;">No records found.</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+            
                     
             <div id="rfqDetailsPage" class="section rfq-details" style="display: none; padding: 20px;">
                 <!-- Back button jo RFQ list par wapas le jaata hai -->
@@ -1021,7 +1022,6 @@
             </div>
                         
             <div id="supplierQuotation" class="section" style="display: none;">
-                <!-- Yeh SQL query check karega ki logged-in user ek Supplier hai ya nahi -->
                 {% set supplier = frappe.db.sql("""
                     SELECT parent FROM `tabPortal User` 
                     WHERE user = %s AND parenttype = 'Supplier'
@@ -1029,8 +1029,6 @@
             
                 {% if supplier %}
                     {% set supplier_name = supplier[0].parent %}
-            
-                    <!-- Supplier ke quotations fetch kar rahe hai -->
                     {% set quotations = frappe.db.sql("""
                         SELECT sq.name, sq.transaction_date, sq.status 
                         FROM `tabSupplier Quotation` sq
@@ -1041,35 +1039,46 @@
                     {% set quotations = [] %}
                 {% endif %}
             
-                <div id="sqContainer" style="padding: 20px; overflow-y: auto;">
-                    <!-- Heading: Request for Quotation -->
+                <div style="padding: 20px;">
                     <h1 style="font-size: 24px; font-weight: bold;">Supplier Quotation</h1>
-
-                    {% if quotations %}
-                    {% for sq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
+            
+                    <!-- Fixed Header -->
+                    <div id="sqHeader" style="display: flex; font-weight: bold; background: #f3f4f6; padding: 10px; border-radius: 5px;">
+                        <span style="flex: 1; text-align: left;">&nbsp;&nbsp;&nbsp;&nbsp;ID</span>
+                        <span style="flex: 1; text-align: center;">Status</span>
+                        <span style="flex: 1; text-align: right;">Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    </div>
+            
+                    <!-- Scrollable List -->
+                    <div id="sqContainer" style="padding: 10px; overflow-y: auto; max-height: 300px;">
+            
+                        {% if quotations %}
+                            {% for sq in quotations | sort(attribute='name', reverse=True) | sort(attribute='transaction_date', reverse=True) %}
                             <div class="sq-item" id="{{ sq.name }}"
+                                 style="display: flex; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
                                  data-sq="{{ sq.name }}"
                                  data-date="{{ frappe.utils.format_date(sq.transaction_date, 'MMMM d, yyyy') }}"
                                  data-status="{{ sq.status }}"
                                  data-supplier="{{ supplier_name }}"
-                                 style="display: flex; align-items: center; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;"
                                  onclick="openSQPage(this)">
-                                <span>
-                                    <strong style="color: #333;">{{ sq.name }}</strong>
-                                </span>
-                                <span style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
+                                
+                                <span style="flex: 1; text-align: left;"><strong style="color: #333;">{{ sq.name }}</strong></span>
+                                <span style="flex: 1; text-align: center; background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 10px;">
                                     ● {{ sq.status }}
                                 </span>
-                                <span style="color: #585d5f; padding: 5px 10px;">
+                                <span style="flex: 1; text-align: right; color: #585d5f;">
                                     {{ frappe.utils.format_date(sq.transaction_date, "MMMM d, yyyy") }}
                                 </span>
+            
                             </div>
-                        {% endfor %}
-                    {% else %}
-                        <p style="color: gray; margin-top: 10px;">No records found.</p>
-                    {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p style="color: gray; margin-top: 10px;">No records found.</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+            
 
             <div id="sqDetailsPage" class="section sq-details" style="display: none; padding: 20px;">
                 <!-- Back button -->
