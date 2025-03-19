@@ -44,6 +44,7 @@ app_license = "mit"
 
 # include js in doctype views
 doctype_js = {
+    "Supplier Quotation": "public/js/supplier_quotation.js",
     "Request for Quotation": "public/js/request_for_quotation.js",
     "Material Request": "public/js/material_request.js",
     "Workspace": "public/js/workspace.js",
@@ -102,12 +103,13 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_file.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_request_for_quotation.execute",
-
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation_item.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",    
     "sahayog.patches.custom_fields.add_custom_field_for_stock_entry.execute",  
     "sahayog.patches.custom_fields.add_custom_field_for_material_request.execute",  
     "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",  
+    "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
