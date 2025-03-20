@@ -62,3 +62,15 @@ def supplier_quotation_form_render(item_code):
 @frappe.whitelist()
 def ping():
     return "pong"
+
+
+def sync_project_field(doc, method):
+    """
+    Before Save: Sync custom_project value to project field
+    """
+    if doc.custom_project:
+        doc.project = doc.custom_project
+        frappe.logger().info(f"✅ Synced custom_project to project for {doc.name}")
+    else:
+        doc.project = None  # Optional: clear project if custom_project is empty
+        frappe.logger().info(f"ℹ️ Cleared project for {doc.name} as custom_project is empty")
