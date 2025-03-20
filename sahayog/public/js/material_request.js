@@ -110,11 +110,6 @@ frappe.ui.form.on("Material Request", {
 });
 
 frappe.ui.form.on("Material Request Item", {
-  item_code: function (frm, cdt, cdn) {
-    let row = locals[cdt][cdn];
-    row.description = ""; // Blank the description
-    frm.refresh_field("items"); // Refresh the child table
-  },
   form_render(frm, cdt, cdn) {
     // Get the current child table row document
     let row = locals[cdt][cdn];
