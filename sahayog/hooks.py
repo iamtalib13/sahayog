@@ -110,6 +110,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",  
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
@@ -174,6 +175,7 @@ after_migrate = [
 
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
+   
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
 
@@ -244,8 +246,10 @@ doc_events = {
         "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
     },
     "Purchase Order": {
-        "on_submit": "sahayog.doc_events.purchase_order.create_purchase_receipt"
-    }
+        "on_submit": "sahayog.doc_events.purchase_order.create_purchase_receipt",
+        "before_save": "sahayog.doc_events.purchase_order.sync_project_field"
+    },
+   
 
 
 }
@@ -286,8 +290,8 @@ doc_events = {
 
 override_whitelisted_methods = {
     "frappe.model.naming.set_name_by_naming_series": "sahayog.override.employee_naming.set_name_by_naming_series_override",
-    "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive"
-    
+    "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
+    "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
 }
 #
 # each overriding function accepts a `data` argument;
