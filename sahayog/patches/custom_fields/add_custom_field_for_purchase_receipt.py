@@ -4,7 +4,14 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 def execute():
     fields = {
         "Purchase Receipt": [
-                         
+            {
+                "fieldname": "custom_grn_srn",
+                "fieldtype": "Select",
+                "options": "\nGoods Receipt Note\nService Receipt Note",
+                "insert_after": "supplier",
+                "label": "GRN - SRN",
+                "reqd": 1,
+            },
             {
                 "fieldname": "custom_request_for",
                 "fieldtype": "Select",
@@ -13,7 +20,6 @@ def execute():
                 "label": "Request For",
                 "reqd": 1,
             },
-                
             {
                 "fieldname": "custom_branch",
                 "fieldtype": "Link",
@@ -32,7 +38,6 @@ def execute():
                 "depends_on": "eval:doc.custom_request_for == 'Project'",
                 "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
             },  
-                 
         ],
     }
     create_custom_fields(fields)

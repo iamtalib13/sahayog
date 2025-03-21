@@ -248,6 +248,10 @@ doc_events = {
     },
     "Purchase Order": {
         "on_submit": "sahayog.doc_events.purchase_order.create_purchase_receipt",
+        "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname"
+    },
+    "Purchase Receipt": {
+        "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname"
         "before_save": "sahayog.doc_events.purchase_order.sync_project_field"
     },
    

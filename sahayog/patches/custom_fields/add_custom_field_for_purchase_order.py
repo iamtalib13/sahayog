@@ -32,7 +32,16 @@ def execute():
                 "label": "Project",
                 "depends_on": "eval:doc.custom_request_for == 'Project'",
                 "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
-            },  
+            },
+            {
+                "fieldname": "custom_grn_srn",
+                "fieldtype": "Select",
+                "options": "\nGoods Receipt Note\nService Receipt Note",
+                "insert_after": "supplier",
+                "label": "GRN / SRN ?",
+                "reqd": 1,
+            },
+            
                  
         ],
     }
