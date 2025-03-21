@@ -1,4 +1,4 @@
-frappe.ui.form.on("Material Request", {
+frappe.ui.form.on("Purchase Order", {
   refresh: function (frm) {
     // Make 'description' field mandatory for all existing rows in child table
     cur_frm.fields_dict.items.grid.toggle_reqd("description", true);
@@ -27,7 +27,6 @@ frappe.ui.form.on("Material Request", {
 
     frm.set_df_property("set_warehouse", "read_only", false); // ✅ Reset read-only
   },
-
   store_query: function (frm) {
     frm.set_query("set_warehouse", function () {
       return {
@@ -105,18 +104,6 @@ frappe.ui.form.on("Material Request", {
       frm.set_value("custom_branch", "");
       frm.set_value("set_warehouse", "");
       frm.set_df_property("set_warehouse", "read_only", false); // ✅ Reset read-only
-    }
-  },
-});
-
-frappe.ui.form.on("Material Request Item", {
-  form_render(frm, cdt, cdn) {
-    // Get the current child table row document
-    let row = locals[cdt][cdn];
-    if (row) {
-      cur_frm.fields_dict.items.grid.toggle_reqd("description", true);
-    } else {
-      // console.error("Row is undefined.");
     }
   },
 });

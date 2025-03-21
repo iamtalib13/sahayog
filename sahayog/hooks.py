@@ -44,6 +44,7 @@ app_license = "mit"
 
 # include js in doctype views
 doctype_js = {
+    "Purchase Order": "public/js/purchase_order.js",
     "Supplier Quotation": "public/js/supplier_quotation.js",
     "Request for Quotation": "public/js/request_for_quotation.js",
     "Material Request": "public/js/material_request.js",
@@ -175,6 +176,7 @@ after_migrate = [
 
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
+   
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
 
@@ -250,7 +252,9 @@ doc_events = {
     },
     "Purchase Receipt": {
         "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname"
-    }
+        "before_save": "sahayog.doc_events.purchase_order.sync_project_field"
+    },
+   
 
 
 }
@@ -291,8 +295,8 @@ doc_events = {
 
 override_whitelisted_methods = {
     "frappe.model.naming.set_name_by_naming_series": "sahayog.override.employee_naming.set_name_by_naming_series_override",
-    "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive"
-    
+    "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
+    "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
 }
 #
 # each overriding function accepts a `data` argument;
