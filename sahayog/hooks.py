@@ -110,6 +110,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",  
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
@@ -244,7 +245,11 @@ doc_events = {
         "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
     },
     "Purchase Order": {
-        "on_submit": "sahayog.doc_events.purchase_order.create_purchase_receipt"
+        "on_submit": "sahayog.doc_events.purchase_order.create_purchase_receipt",
+        "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname"
+    },
+    "Purchase Receipt": {
+        "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname"
     }
 
 
