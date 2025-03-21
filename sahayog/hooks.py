@@ -251,7 +251,7 @@ doc_events = {
         "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname"
     },
     "Purchase Receipt": {
-        "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname"
+        "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname",
         "before_save": "sahayog.doc_events.purchase_order.sync_project_field"
     },
    
