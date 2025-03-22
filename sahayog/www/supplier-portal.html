@@ -598,7 +598,8 @@
                 {% if supplier %}
                     {% set supplier_name = supplier[0].parent %}
                     {% set quotations = frappe.db.sql("""
-                        SELECT rfq.name, rfq.transaction_date, rfq.status, rfq.modified
+                        SELECT rfq.name, rfq.transaction_date, rfq.status, rfq.modified,
+                        rfq.custom_request_for,rfq.custom_project,rfq.custom_branch
                         FROM `tabRequest for Quotation` rfq
                         JOIN `tabRequest for Quotation Supplier` supp ON rfq.name = supp.parent
                         WHERE supp.supplier = %s AND rfq.status = 'Submitted'
@@ -632,6 +633,9 @@
                                  data-date="{{ rfq.transaction_date }}"
                                  data-status="{{ rfq.status }}"
                                  data-supplier="{{ supplier_name }}"
+                                 data-custom_request_for="{{ rfq.custom_request_for }}"
+                                 data-custom_project="{{ rfq.custom_project }}"
+                                 data-custom_branch="{{ rfq.custom_branch }}"
                                  onclick="openRFQPage(this);">
                                 
                                 <span style="flex: 1; text-align: left;"><strong style="color: #333;">{{ rfq.name }}</strong></span>
@@ -714,6 +718,14 @@
                         var rfqDate = formatDate(element.getAttribute("data-date"));
                         var rfqSupplier = element.getAttribute("data-supplier");
 
+                        let customRequestFor = element.getAttribute("data-custom_request_for") || '';
+                        let customProject = element.getAttribute("data-custom_project") || '';
+                        let customBranch = element.getAttribute("data-custom_branch") || '';
+
+                        customProject = (customProject === "None" || customProject == null) ? '' : customProject;
+                        customBranch = (customBranch === "None" || customBranch == null) ? '' : customBranch;
+                        customRequestFor = (customRequestFor === "None" || customRequestFor == null) ? '' : customRequestFor;
+
                         // Now show the new div
                         showSection(rfqName);
 
@@ -756,6 +768,9 @@
                                             stock_uom: item.stock_uom,
                                             qty: item.qty,
                                             warehouse: item.warehouse,
+                                            custom_request_for:item.custom_request_for,
+                                            custom_project:item.custom_project,
+                                            custom_branch:item.custom_branch,
                                             rate: 0,
                                             amount: 0
                                         });
@@ -816,6 +831,25 @@
                                 }
                             })
                             .catch(error => console.error("API Error:", error));
+
+                        document.getElementById("makeSupplierQuotationBtn").addEventListener("click", function() {
+                            if (supplierquotationexist === true) {
+                                // Store the flag and name in localStorage before redirecting
+                                localStorage.setItem("supplier_quotation_success", "true");
+                                localStorage.setItem("supplier_quotation_name", supplier_quotation_name);
+
+                                console.log("Step 1: Refreshing the page...");
+
+                                // Add a slight delay before refreshing to ensure localStorage is saved
+                                setTimeout(() => {
+                                    location.reload();  
+                                }, 200);
+                            }
+                            else{
+                                if (confirm("Are you sure you want to submit the quotation?")) {
+                                    submitQuotation(customRequestFor, customProject, customBranch);                                }
+                            }
+                        });
                     }
             
                     function updateAmount(input) {
@@ -857,28 +891,8 @@
                         }
                     }
 
-                    
-                    document.getElementById("makeSupplierQuotationBtn").addEventListener("click", function() {
-                        if (supplierquotationexist === true) {
-                            // Store the flag and name in localStorage before redirecting
-                            localStorage.setItem("supplier_quotation_success", "true");
-                            localStorage.setItem("supplier_quotation_name", supplier_quotation_name);
 
-                            console.log("Step 1: Refreshing the page...");
-
-                            // Add a slight delay before refreshing to ensure localStorage is saved
-                            setTimeout(() => {
-                                location.reload();  
-                            }, 200);
-                        }
-                        else{
-                            if (confirm("Are you sure you want to submit the quotation?")) {
-                                submitQuotation();
-                            }
-                        }
-                    });
-
-                    function submitQuotation() {
+                    function submitQuotation(customRequestFor, customProject, customBranch){
                         if (!window.itemsData || window.itemsData.length === 0) {
                             alert("No items found. Please fetch RFQ items first.");
                             return;
@@ -907,7 +921,8 @@
                                 isValid = false;
                                 return;
                             }
-                        
+                            
+
                             // Update window.itemsData
                             if (window.itemsData[index]) {
                                 window.itemsData[index].qty = rfq_qty;
@@ -917,13 +932,18 @@
                         });
                     
                         if (!isValid) return; // Stop submission if validation fails
-                    
+                        
                         let payload = {
                             supplier_name: supplierName,
                             rfq_name: rfqName,
                             transaction_date: transactionDate,
                             items: window.itemsData,
+                            custom_request_for: customRequestFor, // This will be an array of values
+                            custom_project: customProject, // This will be an array of values
+                            custom_branch: customBranch // This will be an array of values
+
                         };
+                        console.log("Payload:", payload);
 
                         // Ensure date is in YYYY-MM-DD format
                         const formatDate = (dateString) => {
@@ -941,7 +961,7 @@
                         })
                         .then(response => response.json())
                         .then(result => {
-                            // console.log("Server Response:", result); // Debugging purpose
+                            console.log("Server Response:", result); // Debugging purpose
                         
                             if (result.message && result.message.success) {
                                 // alert("Success!\n" + result.message.message + "\nQuotation Name: " + result.message.name);

@@ -57,7 +57,7 @@ def get_sq_items(sq_name):
     
 
 @frappe.whitelist()
-def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
+def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items, custom_request_for,custom_project,custom_branch):
     try:
         frappe.log_error(
             f"Received Data: {supplier_name}, {rfq_name}, {transaction_date}, Items Count: {len(items)}",
@@ -95,6 +95,9 @@ def create_supplier_quotation(supplier_name, rfq_name, transaction_date, items):
             "doctype": "Supplier Quotation",
             "supplier": supplier_name,
             "transaction_date": transaction_date,
+            "custom_request_for": custom_request_for,
+            "custom_project": custom_project,
+            "custom_branch": custom_branch,
             "items": []
         })
 
