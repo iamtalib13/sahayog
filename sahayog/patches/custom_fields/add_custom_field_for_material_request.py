@@ -13,6 +13,16 @@ def execute():
                 "mandatory_depends_on": "eval:doc.custom_request_for",
                 "depends_on": "eval:doc.custom_request_for",
             },  
+
+            {
+                "fieldname": "custom_employee_name",
+                "fieldtype": "Data",
+                "insert_after": "custom_employee",
+                "label": "Employee Name",
+                "read_only": 1,
+                "fetch_from": "employee_name",
+            },
+               
             
              
             {

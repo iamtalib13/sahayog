@@ -11,6 +11,10 @@ def create_purchase_receipt(doc, method):
     pr.purchase_order = doc.name  # Link to the submitted Purchase Order
     pr.set_warehouse = doc.set_warehouse
     pr.custom_grn_srn = doc.custom_grn_srn
+    pr.custom_request_for = doc.custom_request_for
+    pr.custom_branch = doc.custom_branch
+    pr.custom_project = doc.custom_project
+    pr.project = doc.project
     
     # Copy items from PO to PR
     for item in doc.items:
