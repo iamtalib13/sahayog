@@ -4,6 +4,8 @@ frappe.ui.form.on("Purchase Order", {
     cur_frm.fields_dict.items.grid.toggle_reqd("description", true);
     frm.refresh_field("items");
     frm.toggle_reqd("set_warehouse", true);
+    frm.set_df_property("project", "hidden", 1);
+    frm.set_df_property("cost_center", "hidden", 1);
   },
 
   onload: function (frm) {
@@ -11,6 +13,9 @@ frappe.ui.form.on("Purchase Order", {
     frm.trigger("branch_query");
     frm.trigger("project_query");
     frm.toggle_reqd("set_warehouse", true);
+    frm.set_df_property("project", "hidden", 1);
+    frm.set_df_property("cost_center", "hidden", 1);
+    frm.set_df_property("accounting_dimensions_section", "collapsible", 0);
   },
 
   custom_request_for: function (frm) {

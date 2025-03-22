@@ -28,3 +28,6 @@ def execute():
         # Catch any errors and log them
         frappe.log_error(message=str(e), title="Error creating Role Profile with child")
         print(f"Error creating Role Profile: {str(e)}")
+
+
+

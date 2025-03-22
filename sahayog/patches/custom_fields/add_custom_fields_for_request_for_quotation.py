@@ -7,7 +7,7 @@ def execute():
              {
                 "fieldname": "custom_request_for",
                 "fieldtype": "Select",
-                "insert_after": "billing_address",
+                "insert_after": "status",
                 "reqd": 1,
                 "label": "Request For",
                 "options": "\nBranch\nProject\nStore"

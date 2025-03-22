@@ -4,6 +4,8 @@ frappe.ui.form.on("Material Request", {
     cur_frm.fields_dict.items.grid.toggle_reqd("description", true);
     frm.refresh_field("items");
     frm.toggle_reqd("set_warehouse", true);
+    frm.set_df_property("project", "hidden", 1);
+    frm.set_df_property("cost_center", "hidden", 1);
   },
 
   onload: function (frm) {
@@ -11,6 +13,8 @@ frappe.ui.form.on("Material Request", {
     frm.trigger("branch_query");
     frm.trigger("project_query");
     frm.toggle_reqd("set_warehouse", true);
+    frm.set_df_property("project", "hidden", 1);
+    frm.set_df_property("cost_center", "hidden", 1);
   },
 
   custom_request_for: function (frm) {
