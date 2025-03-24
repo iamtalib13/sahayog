@@ -4,17 +4,30 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 def execute():
     fields = {
         "Purchase Order": [
-                         
+           
+            {
+                "fieldname": "custom_grn_srn",
+                "fieldtype": "Select",
+                "options": "\nGoods Receipt Note\nService Receipt Note",
+                "insert_after": "supplier",
+                "label": "GRN / SRN ?",
+                "reqd": 1,
+            },
+             {
+                "fieldname": "custom_section_request_details",
+                "fieldtype": "Section Break",
+                "insert_after": "custom_revision",
+                "label": "Request Details",
+            },
             {
                 "fieldname": "custom_request_for",
                 "fieldtype": "Select",
                 "options": "\nBranch\nProject\nStore",
-                "insert_after": "custom_grn_srn",
+                "insert_after": "custom_section_request_details",
                 "label": "Request For",
                 "reqd": 1,
             },
-                
- 
+
             {
                 "fieldname": "custom_branch",
                 "fieldtype": "Link",
@@ -34,14 +47,37 @@ def execute():
                 "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
             },
             {
-                "fieldname": "custom_grn_srn",
-                "fieldtype": "Select",
-                "options": "\nGoods Receipt Note\nService Receipt Note",
-                "insert_after": "supplier",
-                "label": "GRN / SRN ?",
+                "fieldname": "custom_section_subject_and_remarks",
+                "fieldtype": "Section Break",
+                "insert_after": "custom_section_request_details",
+                "label": "Subject and Remarks",
+            },
+            {
+                "fieldname": "custom_subject",
+                "fieldtype": "Small Text",
+                "insert_after": "custom_section_subject_and_remarks",
+                "label": "Subject",
                 "reqd": 1,
             },
             {
+
+                "fieldname": "custom_remarks",
+                "fieldtype": "Text Editor",
+                "insert_after": "custom_subject",
+                "label": "Remarks",
+                "reqd": 1,
+            },
+
+            {   
+                "fieldname": "custom_revision",
+                "label": "Revision",
+                "fieldtype": "Int",  # Change to 'Int' or 'Select' if needed
+                "insert_after": "amended_from",  # Change this based on where you want the field
+                "depends_on": "eval:doc.amended_from",
+                "read_only": 1,  # Make it read-only  
+                
+            },
+
                 "fieldname": "custom_terms_table",
                 "fieldtype": "Table",
                 "options": "Custom Terms and Conditions",  # Link to your child table
@@ -49,6 +85,7 @@ def execute():
                 "label": "Terms and Conditions",
             }
                  
+
         ],
     }
     create_custom_fields(fields)

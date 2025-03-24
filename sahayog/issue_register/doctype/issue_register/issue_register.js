@@ -107,11 +107,11 @@ function validate_testing_date(frm) {
   let today = frappe.datetime.get_today();
 
   if (testing_date) {
-    if (!assigned_date) {
-      frappe.msgprint(__("Please set the Assigned Date before Testing Date."));
-      frm.set_value("testing_date", "");
-      return;
-    }
+    // if (!assigned_date) {
+    //   frappe.msgprint(__("Please set the Assigned Date before Testing Date."));
+    //   frm.set_value("testing_date", "");
+    //   return;
+    // }
 
     if (solved_date && testing_date > solved_date) {
       frappe.msgprint(__("Testing Date cannot be after Solved Date."));

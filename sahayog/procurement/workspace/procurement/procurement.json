@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"ipGNPqzAvZ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Procurement Management</span>\",\"col\":12}},{\"id\":\"0pUJkqr9zl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Material Request\",\"col\":3}},{\"id\":\"vTzmQ6MrfN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Request for Quotation\",\"col\":3}},{\"id\":\"-ghsqyjoNo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Quotation\",\"col\":3}},{\"id\":\"ChRjlFgG1n\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order\",\"col\":3}},{\"id\":\"ADqL_hiZ8f\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Receipt\",\"col\":3}},{\"id\":\"bGdtirfOcc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Invoice\",\"col\":3}},{\"id\":\"9Leg-dAbom\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment Entry\",\"col\":3}},{\"id\":\"pS-ojEmUgG\",\"type\":\"card\",\"data\":{\"card_name\":\"Items & Pricing\",\"col\":4}},{\"id\":\"Lrp51PZF9t\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier\",\"col\":4}},{\"id\":\"RqjMLLNjvU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"ZdODkM7nNq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}},{\"id\":\"CnflPAtewu\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":5}},{\"id\":\"9HR0dkqJfd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Requested Items to Order and Receive\",\"col\":4}},{\"id\":\"kyk9WVjPWD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Procurement Tracker\",\"col\":3}},{\"id\":\"vbHnYB0te9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Quotation Comparison\",\"col\":5}},{\"id\":\"Fm5LdmVOWL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order Analysis\",\"col\":4}},{\"id\":\"MYol3gDCx4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order Trends\",\"col\":3}},{\"id\":\"lO6KFsOVU-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Subcontracted Raw Materials To Be Transferred\",\"col\":5}},{\"id\":\"q6Gv9Ki9uk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Subcontracted Item to be Received\",\"col\":4}},{\"id\":\"5qhpm94MS_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item-wise Purchase History\",\"col\":3}},{\"id\":\"oGk3O_m2P0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Analytics\",\"col\":3}}]",
+ "content": "[{\"id\":\"ipGNPqzAvZ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Procurement Management</span>\",\"col\":12}},{\"id\":\"0pUJkqr9zl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Material Request\",\"col\":3}},{\"id\":\"vTzmQ6MrfN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Request for Quotation\",\"col\":3}},{\"id\":\"-ghsqyjoNo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Quotation\",\"col\":3}},{\"id\":\"ChRjlFgG1n\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order\",\"col\":3}},{\"id\":\"ADqL_hiZ8f\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Receipt\",\"col\":3}},{\"id\":\"bGdtirfOcc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Invoice\",\"col\":3}},{\"id\":\"9Leg-dAbom\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment Entry\",\"col\":3}},{\"id\":\"pS-ojEmUgG\",\"type\":\"card\",\"data\":{\"card_name\":\"Items & Pricing\",\"col\":4}},{\"id\":\"Lrp51PZF9t\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier\",\"col\":4}},{\"id\":\"SXD0NmkybG\",\"type\":\"card\",\"data\":{\"card_name\":\"Terms & Conditions\",\"col\":4}},{\"id\":\"RqjMLLNjvU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"ZdODkM7nNq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}},{\"id\":\"CnflPAtewu\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":5}},{\"id\":\"9HR0dkqJfd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Requested Items to Order and Receive\",\"col\":4}},{\"id\":\"kyk9WVjPWD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Procurement Tracker\",\"col\":3}},{\"id\":\"vbHnYB0te9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Quotation Comparison\",\"col\":5}},{\"id\":\"Fm5LdmVOWL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order Analysis\",\"col\":4}},{\"id\":\"MYol3gDCx4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order Trends\",\"col\":3}},{\"id\":\"lO6KFsOVU-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Subcontracted Raw Materials To Be Transferred\",\"col\":5}},{\"id\":\"q6Gv9Ki9uk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Subcontracted Item to be Received\",\"col\":4}},{\"id\":\"5qhpm94MS_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item-wise Purchase History\",\"col\":3}},{\"id\":\"oGk3O_m2P0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Analytics\",\"col\":3}}]",
  "creation": "2025-03-18 15:40:26.271027",
  "custom_blocks": [],
  "docstatus": 0,
@@ -79,9 +79,28 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Terms & Conditions",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Terms and Conditions",
+   "link_count": 0,
+   "link_to": "Terms and Conditions",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-03-21 16:49:03.865939",
+ "modified": "2025-03-24 12:02:04.854159",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Procurement",

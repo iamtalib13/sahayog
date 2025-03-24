@@ -15,7 +15,6 @@ frappe.ui.form.on("Purchase Order", {
     frm.toggle_reqd("set_warehouse", true);
     frm.set_df_property("project", "hidden", 1);
     frm.set_df_property("cost_center", "hidden", 1);
-    frm.set_df_property("accounting_dimensions_section", "collapsible", 0);
   },
 
   custom_request_for: function (frm) {

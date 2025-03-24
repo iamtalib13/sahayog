@@ -21,8 +21,8 @@ class IssueRegister(Document):
 
         # Ensure testing_date is between assigned_date and solved_date
         if self.testing_date:
-            if self.testing_date < self.assigned_date:
-                frappe.throw("Testing Date cannot be before Assign Date.")
+            # if self.testing_date < self.assigned_date:
+            #     frappe.throw("Testing Date cannot be before Assign Date.")
             if self.solved_date and self.testing_date > self.solved_date:
                 frappe.throw("Testing Date cannot be after Solved Date.")
             if self.solved_date and self.testing_date > frappe.utils.today():
