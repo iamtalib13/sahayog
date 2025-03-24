@@ -247,7 +247,7 @@ doc_events = {
         "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
     },
     "Purchase Order": {
-        "on_submit": "sahayog.doc_events.purchase_order.create_purchase_receipt",
+        # "on_submit": "sahayog.doc_events.purchase_order.create_purchase_receipt",
         "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname"
     },
     "Purchase Receipt": {
