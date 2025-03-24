@@ -14,8 +14,8 @@ def execute():
                 "fieldtype": "Int",
                 "insert_after": "custom_column_break",
                 "label": "Sequence",
-                "reqd": 1,
-                "unique": 1
+                "unique": 1,
+                "read_only": 1,
             }
         ]
     }

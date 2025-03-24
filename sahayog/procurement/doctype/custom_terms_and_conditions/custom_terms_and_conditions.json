@@ -13,7 +13,7 @@
  ],
  "fields": [
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "show_tc",
    "fieldtype": "Check",
    "label": "Show?"
@@ -22,23 +22,26 @@
    "fieldname": "title",
    "fieldtype": "Link",
    "label": "Title",
-   "options": "Terms and Conditions"
+   "options": "Terms and Conditions",
+   "read_only": 1
   },
   {
    "fieldname": "terms",
-   "fieldtype": "Data",
-   "label": "Terms"
+   "fieldtype": "Small Text",
+   "label": "Terms",
+   "read_only": 1
   },
   {
    "fieldname": "sequence",
    "fieldtype": "Int",
-   "label": "Sequence"
+   "label": "Sequence",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-24 12:52:50.667304",
+ "modified": "2025-03-24 16:37:34.629333",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Custom Terms and Conditions",
