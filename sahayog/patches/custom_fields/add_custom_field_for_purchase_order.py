@@ -27,6 +27,7 @@ def execute():
                 "label": "Request For",
                 "reqd": 1,
             },
+
             {
                 "fieldname": "custom_branch",
                 "fieldtype": "Link",
@@ -59,8 +60,9 @@ def execute():
                 "reqd": 1,
             },
             {
+
                 "fieldname": "custom_remarks",
-                "fieldtype": "Small Text",
+                "fieldtype": "Text Editor",
                 "insert_after": "custom_subject",
                 "label": "Remarks",
                 "reqd": 1,
@@ -75,6 +77,15 @@ def execute():
                 "read_only": 1,  # Make it read-only  
                 
             },
+
+                "fieldname": "custom_terms_table",
+                "fieldtype": "Table",
+                "options": "Custom Terms and Conditions",  # Link to your child table
+                "insert_after": "terms",  # Adjust based on where you want it
+                "label": "Terms and Conditions",
+            }
+                 
+
         ],
     }
     create_custom_fields(fields)
