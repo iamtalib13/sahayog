@@ -78,6 +78,7 @@ def execute():
                 
             },
 
+    {
                 "fieldname": "custom_terms_table",
                 "fieldtype": "Table",
                 "options": "Custom Terms and Conditions",  # Link to your child table
