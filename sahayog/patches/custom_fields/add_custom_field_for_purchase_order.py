@@ -14,7 +14,7 @@ def execute():
                 "reqd": 1,
             },
                 
-
+ 
             {
                 "fieldname": "custom_branch",
                 "fieldtype": "Link",
@@ -41,7 +41,13 @@ def execute():
                 "label": "GRN / SRN ?",
                 "reqd": 1,
             },
-            
+            {
+                "fieldname": "custom_terms_table",
+                "fieldtype": "Table",
+                "options": "Custom Terms and Conditions",  # Link to your child table
+                "insert_after": "terms",  # Adjust based on where you want it
+                "label": "Terms and Conditions",
+            }
                  
         ],
     }

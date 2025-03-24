@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-24 12:07:39.215195",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sequence",
+  "title",
+  "terms",
+  "show_tc"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "show_tc",
+   "fieldtype": "Check",
+   "label": "Show?"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Link",
+   "label": "Title",
+   "options": "Terms and Conditions"
+  },
+  {
+   "fieldname": "terms",
+   "fieldtype": "Data",
+   "label": "Terms"
+  },
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-03-24 12:52:50.667304",
+ "modified_by": "Administrator",
+ "module": "Procurement",
+ "name": "Custom Terms and Conditions",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

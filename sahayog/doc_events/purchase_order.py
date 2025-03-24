@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils import now_datetime
+from frappe.utils import strip_html  # Import strip_html to remove HTML tags
 from frappe.model.naming import make_autoname
 
 def create_purchase_receipt(doc, method):
@@ -36,6 +37,26 @@ def create_purchase_receipt(doc, method):
     # Save PR as Draft
     pr.insert()
     frappe.msgprint(f"Purchase Receipt {pr.name} created in Draft status.", alert=True)
+
+def fetch_terms_conditions(doc, method):
+    # Fetch all Terms and Conditions in ascending order by custom_sequence
+    terms_conditions = frappe.get_all(
+        "Terms and Conditions",
+        filters={},
+        fields=["custom_sequence", "title", "terms"],
+        order_by="custom_sequence ASC"
+    )
+
+    # Clear existing child table entries (if any)
+    doc.custom_terms_table = []
+
+    # Insert fetched data into the child table
+    for terms in terms_conditions:
+        doc.append("custom_terms_table", {
+            "sequence": terms.custom_sequence,
+            "title": strip_html(terms.title),  # Safe, even if title has no HTML
+            "terms": strip_html(terms.terms)   # Required to remove unwanted HTML
+        })
 
 def get_short_fiscal_year():
     """Return the current Indian fiscal year in short format (YY-YY)."""
