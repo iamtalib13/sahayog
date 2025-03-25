@@ -259,9 +259,6 @@ doc_events = {
     "Department":{
         "autoname": "sahayog.doc_events.department.department_name"
     },
-    "Terms and Conditions": {
-        "before_insert": "sahayog.doc_events.terms_and_conditions.terms_conditions_auto_increment"
-    }
 }
 
 # Scheduled Tasks

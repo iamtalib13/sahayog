@@ -15,7 +15,7 @@ def execute():
                 "insert_after": "custom_column_break",
                 "label": "Sequence",
                 "unique": 1,
-                "read_only": 1,
+                "reqd": 1,
             }
         ]
     }
