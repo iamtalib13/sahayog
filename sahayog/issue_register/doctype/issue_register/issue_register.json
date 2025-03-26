@@ -161,9 +161,11 @@
    "label": "Assigned Date"
   },
   {
+   "depends_on": "eval: doc.status === 'Closed'",
    "fieldname": "solved_date",
    "fieldtype": "Date",
-   "label": "Solved Date"
+   "label": "Solved Date",
+   "mandatory_depends_on": "eval: doc.status === 'Closed'"
   },
   {
    "fieldname": "column_break_liuo",
@@ -192,7 +194,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-24 12:00:12.964075",
+ "modified": "2025-03-24 16:12:56.545164",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Issue Register",

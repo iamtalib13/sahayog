@@ -38,6 +38,15 @@ def execute():
                 "depends_on": "eval:doc.custom_request_for == 'Project'",
                 "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
             },  
+
+            {
+                "fieldname": "custom_sahayog_status",
+                "fieldtype": "Select",
+                "options": "\nDraft\nPending From CFO\nApproved",
+                "insert_after": "return_against",
+                "label": "Sahayog Status",
+                "no_copy": 1,
+            }
         ],
     }
     create_custom_fields(fields)

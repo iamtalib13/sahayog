@@ -8,30 +8,34 @@ import frappe.utils
 
 class IssueRegister(Document):
     def validate(self):
+        # Ensure solved_date is mandatory before closing
+        if self.status == "Closed" and not self.solved_date:
+            frappe.throw("Solved Date is required before closing the issue.")
+
         # Ensure assigned_date is not in the future
-        if self.assigned_date and self.assigned_date > frappe.utils.today():
-            frappe.throw("Assign Date cannot be a future date.")
+        if self.assigned_date:
+            if self.assigned_date > frappe.utils.today():
+                frappe.throw("Assign Date cannot be a future date.")
+            if self.testing_date and self.assigned_date < self.testing_date:
+                frappe.throw("Assign Date cannot be before Testing Date.")
 
         # Ensure solved_date is not before assigned_date and not in the future
         if self.solved_date:
-            if self.solved_date < self.assigned_date:
+            if self.assigned_date and self.solved_date < self.assigned_date:
                 frappe.throw("Solved Date cannot be before Assign Date.")
             if self.solved_date > frappe.utils.today():
                 frappe.throw("Solved Date cannot be a future date.")
 
         # Ensure testing_date is between assigned_date and solved_date
         if self.testing_date:
-            # if self.testing_date < self.assigned_date:
-            #     frappe.throw("Testing Date cannot be before Assign Date.")
+            if self.assigned_date and self.testing_date > self.assigned_date:
+                frappe.throw("Testing Date cannot be after Assign Date.")
             if self.solved_date and self.testing_date > self.solved_date:
                 frappe.throw("Testing Date cannot be after Solved Date.")
-            if self.solved_date and self.testing_date > frappe.utils.today():
+            if self.testing_date > frappe.utils.today():
                 frappe.throw("Testing Date cannot be a future date.")
 
-    def before_save(self):
-        # If status is Closed, ensure solved_date is mandatory
-        if self.status == "Closed" and not self.solved_date:
-            frappe.throw("Solved Date is required before closing the issue.")
+   
 
 
 #For Prodtech analysis
@@ -88,4 +92,3 @@ def get_issue_chart_data_erp():
 @frappe.whitelist()
 def ping():
       return "Pong"
-
