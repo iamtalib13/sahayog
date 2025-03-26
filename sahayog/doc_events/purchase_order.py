@@ -55,7 +55,8 @@ def fetch_terms_conditions(doc, method):
         doc.append("custom_terms_table", {
             "sequence": terms.custom_sequence,
             "title": strip_html(terms.title),  # Safe, even if title has no HTML
-            "terms": strip_html(terms.terms)   # Required to remove unwanted HTML
+            "terms": strip_html(terms.terms),   # Required to remove unwanted HTML
+            "show_tc": 1  # Optional: Show all terms by default
         })
 
 def get_short_fiscal_year():
