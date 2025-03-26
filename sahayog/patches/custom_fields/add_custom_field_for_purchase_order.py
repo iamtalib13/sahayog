@@ -68,22 +68,23 @@ def execute():
                 "reqd": 1,
             },
 
-            {   
-                "fieldname": "custom_revision",
-                "label": "Revision",
-                "fieldtype": "Int",  # Change to 'Int' or 'Select' if needed
-                "insert_after": "amended_from",  # Change this based on where you want the field
-                "depends_on": "eval:doc.amended_from",
-                "read_only": 1,  # Make it read-only  
-                
-            },
+        
 
-    {
+            {
                 "fieldname": "custom_terms_table",
                 "fieldtype": "Table",
                 "options": "Custom Terms and Conditions",  # Link to your child table
                 "insert_after": "terms",  # Adjust based on where you want it
                 "label": "Terms and Conditions",
+            },
+
+            {
+                "fieldname": "custom_sahayog_status",
+                "fieldtype": "Select",
+                "options": "\nDraft\nPending From CFO\nApproved",
+                "insert_after": "is_subcontracted",
+                "label": "Sahayog Status",
+            
             }
                  
 

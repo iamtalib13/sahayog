@@ -2,6 +2,12 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Issue Register", {
+  validate: function (frm) {
+    if (frm.doc.status === "Closed" && !frm.doc.solved_date) {
+      frappe.throw(__("Solved Date is mandatory when closing the issue."));
+    }
+  },
+
   refresh: function (frm) {
     make_form_readonly_if_closed(frm);
   },
@@ -16,9 +22,9 @@ frappe.ui.form.on("Issue Register", {
     validate_testing_date(frm);
   },
 
-  after_save: function (frm) {
-    make_form_readonly_if_closed(frm);
-  },
+  // after_save: function (frm) {
+  //   make_form_readonly_if_closed(frm);
+  // },
 
   onload: function (frm) {
     set_module_query(frm);
@@ -42,12 +48,25 @@ function set_module_query(frm) {
 // Make form read only after save and issue is closed
 function make_form_readonly_if_closed(frm) {
   if (frm.doc.status === "Closed") {
-    frm.disable_form();
+    frm.disable_save();
     frm.set_intro(__("This issue is closed and cannot be modified."), "red");
-    // frappe.msgprint(__("This issue is closed and cannot be edited."));
+
+    // Make all fields read-only
+    frm.fields_dict_array = Object.values(frm.fields_dict);
+    frm.fields_dict_array.forEach(function (field) {
+      field.df.read_only = 1;
+      field.refresh();
+    });
   } else {
-    frm.enable_form();
+    frm.enable_save();
     frm.set_intro(""); // Remove intro if status is not closed
+
+    // Remove read-only from fields when status is not Closed
+    frm.fields_dict_array = Object.values(frm.fields_dict);
+    frm.fields_dict_array.forEach(function (field) {
+      field.df.read_only = 0;
+      field.refresh();
+    });
   }
 }
 
@@ -55,11 +74,18 @@ function make_form_readonly_if_closed(frm) {
 function validate_assigned_date(frm) {
   let assigned_date = frm.doc.assigned_date;
   let solved_date = frm.doc.solved_date;
+  let testing_date = frm.doc.testing_date;
   let today = frappe.datetime.get_today();
 
   if (assigned_date) {
     if (assigned_date > today) {
       frappe.msgprint(__("Assigned Date cannot be a future date."));
+      frm.set_value("assigned_date", "");
+    }
+    if (assigned_date && assigned_date < testing_date) {
+      frappe.msgprint(
+        __("Assigned Date must be after or the same as Testing Date.")
+      );
       frm.set_value("assigned_date", "");
     }
 
@@ -107,11 +133,10 @@ function validate_testing_date(frm) {
   let today = frappe.datetime.get_today();
 
   if (testing_date) {
-    // if (!assigned_date) {
-    //   frappe.msgprint(__("Please set the Assigned Date before Testing Date."));
-    //   frm.set_value("testing_date", "");
-    //   return;
-    // }
+    if (assigned_date && testing_date > assigned_date) {
+      frappe.msgprint(__("Testing Date cannot be after Assigned Date."));
+      frm.set_value("testing_date", "");
+    }
 
     if (solved_date && testing_date > solved_date) {
       frappe.msgprint(__("Testing Date cannot be after Solved Date."));
