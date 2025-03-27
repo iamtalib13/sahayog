@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-27 13:40:53.824061",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "purchase_user_name",
+  "user_signature"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "user_signature",
+   "fieldtype": "Attach Image",
+   "ignore_user_permissions": 1,
+   "label": "User Signature"
+  },
+  {
+   "columns": 2,
+   "fieldname": "purchase_user_name",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Username",
+   "options": "User"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-03-27 15:41:55.457240",
+ "modified_by": "Administrator",
+ "module": "Procurement",
+ "name": "Users and Signature",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

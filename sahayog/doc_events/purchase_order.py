@@ -76,6 +76,11 @@ def purchase_order_autoname(doc, method):
     elif doc.custom_po_wo == "Work Order":
         doc.name = make_autoname(f"SB/WO/{fiscal_year}/.#####")
 
+def get_po_progress_status_html(doc, method):
+    html_content = frappe.render_template("sahayog/public/html/po_progress_status.html", {})
+    return html_content  # No escaping here
+
+
 
 def sync_project_field(doc, method):
     """
@@ -103,3 +108,10 @@ def show_status_messages(doc, method):
         frappe.msgprint("Successfully Approved.")
     else:
         frappe.msgprint("This document is in an unknown status.")
+
+
+def on_cancel(doc, method):
+    """
+    On Cancel: Show a message when a document is cancelled
+    """
+    frappe.set_value(doc.doctype, doc.name, "custom_sahayog_status", "Cancelled")       
