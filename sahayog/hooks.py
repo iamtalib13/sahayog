@@ -128,6 +128,8 @@ after_migrate = [
     "sahayog.patches.fixtures.add_read_role_permission.execute",
     "sahayog.patches.fixtures.add_role_profile_for_stock_user.execute",
     "sahayog.patches.fixtures.set_project_template_mandatory.execute",
+    "sahayog.patches.fixtures.add_custom_workflow_state.execute",
+    # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
 
 
 ]
@@ -250,7 +252,8 @@ doc_events = {
     "Purchase Order": {
         "on_update": "sahayog.doc_events.purchase_order.show_status_messages",
         "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname",
-        "before_insert": "sahayog.doc_events.purchase_order.fetch_terms_conditions"
+        "before_insert": "sahayog.doc_events.purchase_order.fetch_terms_conditions",
+        
     },
     "Purchase Receipt": {
         "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname",

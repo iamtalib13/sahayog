@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "purchase_manager",
-  "cfo"
+  "cfo",
+  "purchase_users_and_signature"
  ],
  "fields": [
   {
@@ -18,12 +19,18 @@
    "fieldname": "cfo",
    "fieldtype": "Attach Image",
    "label": "CFO"
+  },
+  {
+   "fieldname": "purchase_users_and_signature",
+   "fieldtype": "Table",
+   "label": "Purchase Users and Signature",
+   "options": "Users and Signature"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-03-26 17:43:31.376082",
+ "modified": "2025-03-27 13:43:31.745121",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Digital Signature",
