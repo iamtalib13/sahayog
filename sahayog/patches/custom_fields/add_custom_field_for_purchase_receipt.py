@@ -4,12 +4,13 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 def execute():
     fields = {
         "Purchase Receipt": [
-            {
-                "fieldname": "custom_grn_srn",
+           {
+                "fieldname": "custom_po_wo",
                 "fieldtype": "Select",
-                "options": "\nGoods Receipt Note\nService Receipt Note",
+                "options": "\nPurchase Order\nWork Order",
                 "insert_after": "supplier",
-                "label": "GRN - SRN",
+                "label": "Type",
+                "description": "Select the type of the document",
                 "reqd": 1,
             },
             {
@@ -42,10 +43,11 @@ def execute():
             {
                 "fieldname": "custom_sahayog_status",
                 "fieldtype": "Select",
-                "options": "\nDraft\nPending From CFO\nApproved",
+                "options": "\nPending\nReceived",
                 "insert_after": "return_against",
                 "label": "Sahayog Status",
                 "no_copy": 1,
+                "read_only": 1,
             }
         ],
     }
