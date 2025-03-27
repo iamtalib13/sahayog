@@ -6,6 +6,7 @@ frappe.ui.form.on("Purchase Order", {
     frm.toggle_reqd("set_warehouse", true);
     frm.set_df_property("project", "hidden", 1);
     frm.set_df_property("cost_center", "hidden", 1);
+    console.log(frm.doc);
   },
 
   onload: function (frm) {

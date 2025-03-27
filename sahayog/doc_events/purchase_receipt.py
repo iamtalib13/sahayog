@@ -14,7 +14,7 @@ def purchase_receipt_autoname(doc, method):
     """Set custom naming series for Purchase Receipt based on GRN or SRN."""
     fiscal_year = get_short_fiscal_year()  # Get dynamically calculated short fiscal year
 
-    if doc.custom_grn_srn == "Goods Receipt Note":
+    if doc.custom_po_wo == "Purchase Order":
         doc.name = make_autoname(f"SB/GRN/{fiscal_year}/.#####")
-    elif doc.custom_grn_srn == "Service Receipt Note":
+    elif doc.custom_po_wo == "Work Order":
         doc.name = make_autoname(f"SB/SRN/{fiscal_year}/.#####")

@@ -71,9 +71,9 @@ def purchase_order_autoname(doc, method):
     """Set custom naming series for Purchase Order based on GRN or SRN."""
     fiscal_year = get_short_fiscal_year()  # Get dynamically calculated short fiscal year
 
-    if doc.custom_grn_srn == "Goods Receipt Note":
+    if doc.custom_po_wo == "Purchase Order":
         doc.name = make_autoname(f"SB/PO/{fiscal_year}/.#####")
-    elif doc.custom_grn_srn == "Service Receipt Note":
+    elif doc.custom_po_wo == "Work Order":
         doc.name = make_autoname(f"SB/WO/{fiscal_year}/.#####")
 
 
@@ -87,3 +87,19 @@ def sync_project_field(doc, method):
     else:
         doc.project = None  # Optional: clear project if custom_project is empty
         frappe.logger().info(f"ℹ️ Cleared project for {doc.name} as custom_project is empty")
+
+    
+def show_status_messages(doc, method):
+    """
+    Show status messages based on custom_sahayog_status
+    """
+    if doc.custom_sahayog_status == "Draft":
+        frappe.msgprint("This document is in Draft status.")
+    elif doc.custom_sahayog_status == "Pending From Purchase Manager":
+        frappe.msgprint("Successfully sent to Purchase Manager.")
+    elif doc.custom_sahayog_status == "Pending From CFO":
+        frappe.msgprint("Successfully sent to CFO.")
+    elif doc.custom_sahayog_status == "Approved":
+        frappe.msgprint("Successfully Approved.")
+    else:
+        frappe.msgprint("This document is in an unknown status.")
