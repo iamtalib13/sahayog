@@ -32,7 +32,15 @@ def execute():
                 "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
             }, 
 
-
+            {
+                "fieldname": "custom_store_incharge",
+                "fieldtype": "Link",
+                "options": "Store Incharge",
+                "insert_after": "status",
+                "label": "Store Incharge",
+                
+            },
+               
            
         ]
     }

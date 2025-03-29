@@ -130,48 +130,49 @@ frappe.ui.form.on("Purchase Order", {
     ];
 
     let activeIndex = steps.findIndex((step) => step.status === currentStatus);
+    let correctionRequiredIndex =
+      currentStatus === "Correction Required" ? 1 : -1;
+    let rejectedIndex = currentStatus === "Rejected" ? 2 : -1;
 
-    // अगर 'Approved' है, तो सारे स्टेप्स कंप्लीटेड दिखाएं
-    const isFullyApproved = currentStatus === "Submitted";
+    // If status is "Submitted," treat it as all steps completed
+    if (currentStatus === "Submitted") {
+      activeIndex = steps.length; // Set activeIndex beyond the last step to mark all as completed
+    }
 
     let html = `
         <style>
-        .form-message.blue {
-    z-index: 0;
-}
-
-
-            .step-wizard-list {
-                color: #333;
-                list-style-type: none;
-                border-radius: 10px;
-                display: flex;
-                padding: 5px;
+            .step-wizard {
                 position: relative;
-                z-index: 10;
+                padding: 20px 0;
+            }
+            .step-wizard-list {
+                list-style-type: none;
+                display: flex;
+                justify-content: space-between;
+                position: relative;
+                margin: 0;
+                padding: 0;
             }
             .step-wizard-item {
-                padding: 0 20px;
-                flex-basis: 0;
-                flex-grow: 1;
-                max-width: 100%;
-                display: flex;
-                flex-direction: column;
+                flex: 1;
                 text-align: center;
-                min-width: 170px;
                 position: relative;
+                min-width: 150px;
+                z-index: 1;
             }
-            .step-wizard-item + .step-wizard-item:after {
+            /* Connector Line Base Style */
+            .step-wizard-item:not(:last-child):after {
                 content: "";
                 position: absolute;
-                left: 0;
-                top: 19px;
-                background: #21d4fd;
+                top: 20px;
+                left: 50%;
                 width: 100%;
                 height: 2px;
-                transform: translateX(-50%);
-                z-index: -10;
+                background: #21d4fd;
+                transform: translateX(0);
+                z-index: -1;
             }
+
             .progress-count {
                 height: 40px;
                 width: 40px;
@@ -180,9 +181,8 @@ frappe.ui.form.on("Purchase Order", {
                 justify-content: center;
                 border-radius: 50%;
                 font-weight: 600;
-                margin: 0 auto;
+                margin: 0 auto 8px;
                 position: relative;
-                z-index: 10;
                 color: transparent;
             }
             .progress-count:after {
@@ -195,13 +195,13 @@ frappe.ui.form.on("Purchase Order", {
                 top: 50%;
                 transform: translate(-50%, -50%);
                 border-radius: 50%;
-                z-index: -10;
             }
             .progress-label {
                 font-size: 14px;
                 font-weight: 600;
-               
+                display: block;
             }
+
             .completed .progress-count:before {
                 content: "✓";
                 font-size: 22px;
@@ -211,7 +211,15 @@ frappe.ui.form.on("Purchase Order", {
                 left: 50%;
                 top: 50%;
                 transform: translate(-50%, -50%);
+                z-index: 1;
             }
+            .completed .progress-count:after {
+                background: #21d4fd;
+            }
+            .completed:not(:last-child):after {
+                background: #21d4fd;
+            }
+
             .current-item .progress-count:after {
                 background: #fff;
                 border: 2px solid #21d4fd;
@@ -219,44 +227,108 @@ frappe.ui.form.on("Purchase Order", {
             .current-item .progress-count {
                 color: #21d4fd;
             }
-            .current-item ~ .step-wizard-item .progress-count:after {
+
+            .correction-required .progress-count:after {
+                background: red;
+            }
+            .correction-required .progress-label {
+                color: red;
+                font-weight: bold;
+            }
+
+            .rejected .progress-count:before {
+                content: "✗";
+                font-size: 22px;
+                font-weight: bold;
+                color: white;
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 1;
+            }
+            .rejected .progress-count:after {
+                background: red;
+            }
+            .rejected .progress-label {
+                color: red;
+                font-weight: bold;
+            }
+
+            .not-reached .progress-count:after {
                 height: 10px;
                 width: 10px;
                 background: #ccc;
             }
-            .current-item ~ .step-wizard-item .progress-label {
+            .not-reached .progress-label {
                 opacity: 0.5;
             }
-        </style>
+            /* Fade connector lines after correction or rejection */
+            .correction-required:not(:last-child):after,
+            .rejected:not(:last-child):after,
+            .not-reached:not(:last-child):after {
+                background: #ccc;
+            }
 
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+            .status-message {
+                background: #fff3cd;
+                color: #856404;
+                padding: 10px;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+                text-align: center;
+            }
+        </style>
 
         <section class="step-wizard">
             <ul class="step-wizard-list">
                 ${steps
-                  .map(
-                    (step, index) => `
-                        <li class="step-wizard-item ${
-                          isFullyApproved || index < activeIndex
-                            ? "completed"
-                            : ""
-                        } ${
-                      index === activeIndex && !isFullyApproved
-                        ? "current-item"
-                        : ""
-                    }">
-                            <span class="progress-count"></span>
-                            <span class="progress-label">${step.label}</span>
-                        </li>
-                    `
-                  )
+                  .map((step, index) => {
+                    let additionalClass = "";
+                    if (index < activeIndex) additionalClass = "completed";
+                    if (index === activeIndex) additionalClass = "current-item";
+                    if (correctionRequiredIndex === index)
+                      additionalClass = "correction-required";
+                    if (rejectedIndex === index) additionalClass = "rejected";
+                    if (
+                      (correctionRequiredIndex !== -1 &&
+                        index > correctionRequiredIndex) ||
+                      (rejectedIndex !== -1 && index > rejectedIndex)
+                    ) {
+                      additionalClass = "not-reached";
+                    }
+
+                    return `
+                            <li class="step-wizard-item ${additionalClass}">
+                                <span class="progress-count">${index + 1}</span>
+                                <span class="progress-label">${
+                                  step.label
+                                }</span>
+                            </li>
+                        `;
+                  })
                   .join("")}
             </ul>
+            ${
+              correctionRequiredIndex !== -1
+                ? `<div class="status-message">Correction required from Purchase Manager. Please review.</div>`
+                : ""
+            }
+            ${
+              rejectedIndex !== -1
+                ? `<div class="status-message">Rejected by CFO. Please revise the request.</div>`
+                : ""
+            }
+            ${
+              currentStatus === "Submitted"
+                ? `<div class="status-message">Purchase Order Submitted Successfully!</div>`
+                : ""
+            }
         </section>
     `;
 
-    //frm.set_df_property("custom_status_html_po", "options", html);
-    if (frm.doc.custom_sahayog_status != "Cancelled") {
+    if (frm.doc.custom_sahayog_status !== "Cancelled") {
       frm.set_intro(html);
     }
   },

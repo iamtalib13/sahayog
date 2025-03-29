@@ -11,7 +11,7 @@ def execute():
                 "fieldname": "custom_request_for",
                 "fieldtype": "Select",
                 "options": "\nBranch\nProject\nStore",
-                "insert_after": "supplier",
+                "insert_after": "custom_store_incharge",
                 "label": "Request For",
                 "reqd": 1,
             },
@@ -35,6 +35,15 @@ def execute():
                 "depends_on": "eval:doc.custom_request_for == 'Project'",
                 "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
             },  
+
+            {
+                "fieldname": "custom_store_incharge",
+                "fieldtype": "Link",
+                "options": "Store Incharge",
+                "insert_after": "supplier",
+                "label": "Store Incharge",
+                
+            },
                  
         ],
     }

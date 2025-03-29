@@ -43,12 +43,19 @@ def execute():
             {
                 "fieldname": "custom_sahayog_status",
                 "fieldtype": "Select",
-                "options": "\nPending\nReceived",
+                "options": "\nDraft\nPending From Store Incharge\nReceived",              
                 "insert_after": "return_against",
                 "label": "Sahayog Status",
                 "no_copy": 1,
                 "read_only": 1,
-            }
+            },
+             {
+                "fieldname": "custom_store_incharge",
+                "fieldtype": "Link",
+                "options": "Store Incharge",
+                "insert_after": "custom_po_wo",
+                "label": "Store Incharge",
+            }, 
         ],
     }
     create_custom_fields(fields)

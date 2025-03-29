@@ -5,24 +5,15 @@ def execute():
     fields = {
         "Material Request": [
             {
-                "fieldname": "custom_employee",
+                "fieldname": "custom_store_incharge",
                 "fieldtype": "Link",
-                "options": "Employee",
+                "options": "Store Incharge",
                 "insert_after": "material_request_type",
-                "label": "Employee",
-                "mandatory_depends_on": "eval:doc.custom_request_for",
-                "depends_on": "eval:doc.custom_request_for",
+                "label": "Store Incharge",
+                "reqd": 1,
+                
             },  
 
-            {
-                "fieldname": "custom_employee_name",
-                "fieldtype": "Data",
-                "insert_after": "custom_employee",
-                "label": "Employee Name",
-                "read_only": 1,
-                "fetch_from": "employee_name",
-            },
-               
             
              
             {

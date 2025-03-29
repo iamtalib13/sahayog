@@ -94,20 +94,20 @@ def sync_project_field(doc, method):
         frappe.logger().info(f"ℹ️ Cleared project for {doc.name} as custom_project is empty")
 
     
-def show_status_messages(doc, method):
-    """
-    Show status messages based on custom_sahayog_status
-    """
-    if doc.custom_sahayog_status == "Draft":
-        frappe.msgprint("This document is in Draft status.")
-    elif doc.custom_sahayog_status == "Pending From Purchase Manager":
-        frappe.msgprint("Successfully sent to Purchase Manager.")
-    elif doc.custom_sahayog_status == "Pending From CFO":
-        frappe.msgprint("Successfully sent to CFO.")
-    elif doc.custom_sahayog_status == "Approved":
-        frappe.msgprint("Successfully Approved.")
-    else:
-        frappe.msgprint("This document is in an unknown status.")
+# def show_status_messages(doc, method):
+#     """
+#     Show status messages based on custom_sahayog_status
+#     """
+#     if doc.custom_sahayog_status == "Draft":
+#         frappe.msgprint("This document is in Draft status.")
+#     elif doc.custom_sahayog_status == "Pending From Purchase Manager":
+#         frappe.msgprint("Successfully sent to Purchase Manager.")
+#     elif doc.custom_sahayog_status == "Pending From CFO":
+#         frappe.msgprint("Successfully sent to CFO.")
+#     elif doc.custom_sahayog_status == "Approved":
+#         frappe.msgprint("Successfully Approved.")
+#     else:
+#         frappe.msgprint("This document is in an unknown status.")
 
 
 def on_cancel(doc, method):
