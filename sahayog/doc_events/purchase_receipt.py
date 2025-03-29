@@ -18,3 +18,12 @@ def purchase_receipt_autoname(doc, method):
         doc.name = make_autoname(f"SB/GRN/{fiscal_year}/.#####")
     elif doc.custom_po_wo == "Work Order":
         doc.name = make_autoname(f"SB/SRN/{fiscal_year}/.#####")
+
+
+def validate_store_incharge(doc, method):
+    """Validate Store Incharge based on the selected Branch."""
+    if doc.custom_sahayog_status == "Received" and not doc.custom_received_remarks:
+        frappe.throw("Received Remarks is mandatory.") 
+
+    if doc.custom_sahayog_status == "Received" and not doc.custom_store_incharge:
+        frappe.throw("Store Incharge is mandatory.")

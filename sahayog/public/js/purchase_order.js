@@ -126,7 +126,6 @@ frappe.ui.form.on("Purchase Order", {
       { label: "Prepared", status: "Draft" },
       { label: "Purchase Manager", status: "Pending From Purchase Manager" },
       { label: "CFO", status: "Pending From CFO" },
-      { label: "Supplier", status: "Approved" },
     ];
 
     let activeIndex = steps.findIndex((step) => step.status === currentStatus);
@@ -134,8 +133,8 @@ frappe.ui.form.on("Purchase Order", {
       currentStatus === "Correction Required" ? 1 : -1;
     let rejectedIndex = currentStatus === "Rejected" ? 2 : -1;
 
-    // If status is "Submitted," treat it as all steps completed
-    if (currentStatus === "Submitted") {
+    // If status is "Approved," treat it as all steps completed
+    if (currentStatus === "Approved") {
       activeIndex = steps.length; // Set activeIndex beyond the last step to mark all as completed
     }
 
@@ -143,7 +142,7 @@ frappe.ui.form.on("Purchase Order", {
         <style>
             .step-wizard {
                 position: relative;
-                padding: 20px 0;
+                
             }
             .step-wizard-list {
                 list-style-type: none;
@@ -271,7 +270,7 @@ frappe.ui.form.on("Purchase Order", {
             }
 
             .status-message {
-                background: #fff3cd;
+               
                 color: #856404;
                 padding: 10px;
                 border-radius: 5px;
@@ -321,8 +320,8 @@ frappe.ui.form.on("Purchase Order", {
                 : ""
             }
             ${
-              currentStatus === "Submitted"
-                ? `<div class="status-message">Purchase Order Submitted Successfully!</div>`
+              currentStatus === "Approved"
+                ? `<div class="status-message">Purchase Order Approved Successfully!</div>`
                 : ""
             }
         </section>

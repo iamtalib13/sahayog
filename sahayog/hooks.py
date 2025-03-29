@@ -253,11 +253,12 @@ doc_events = {
         #"on_update": "sahayog.doc_events.purchase_order.show_status_messages",
         "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname",
         "before_insert": "sahayog.doc_events.purchase_order.fetch_terms_conditions",
-        
+        "validate": "sahayog.doc_events.purchase_order.validate_store_incharge_po",
     },
     "Purchase Receipt": {
         "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname",
-        "before_save": "sahayog.doc_events.purchase_order.sync_project_field"
+        "before_save": "sahayog.doc_events.purchase_order.sync_project_field",
+        "validate": "sahayog.doc_events.purchase_receipt.validate_store_incharge",
     },
     "Department":{
         "autoname": "sahayog.doc_events.department.department_name"
