@@ -114,4 +114,14 @@ def on_cancel(doc, method):
     """
     On Cancel: Show a message when a document is cancelled
     """
-    frappe.set_value(doc.doctype, doc.name, "custom_sahayog_status", "Cancelled")       
+    frappe.set_value(doc.doctype, doc.name, "custom_sahayog_status", "Cancelled")     
+
+
+def validate_store_incharge_po(doc, method):
+    """Validate Store Incharge based on the selected Branch."""
+
+    if doc.custom_sahayog_status == "Pending From Purchase Manager" and not doc.custom_store_incharge:
+        frappe.throw("Store Incharge is mandatory.")  
+
+    if doc.custom_sahayog_status == "Pending Form CFO" and not doc.custom_store_incharge:
+        frappe.throw("Store Incharge is mandatory.")

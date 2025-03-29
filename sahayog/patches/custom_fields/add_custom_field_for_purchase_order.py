@@ -101,7 +101,7 @@ def execute():
             {
                 "fieldname": "custom_sahayog_status",
                 "fieldtype": "Select",
-                "options": "\nDraft\nPending From Purchase Manager\nPending From CFO\nApproved\nSubmitted\nRejected\nCancelled\nCorrection Required",
+                "options": "\nDraft\nPending From Purchase Manager\nPending From CFO\nApproved\nRejected\nCancelled\nCorrection Required",
                 "insert_after": "is_subcontracted",
                 "label": "Sahayog Status",
                 "no_copy": 1,
