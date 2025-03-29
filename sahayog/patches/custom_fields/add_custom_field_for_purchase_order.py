@@ -24,12 +24,21 @@ def execute():
                 "description": "Select the type of the document",
                 "reqd": 1,
             },
+
+            {
+                "fieldname": "custom_remarks_amended",
+                "fieldtype": "Small Text",
+                "insert_after": "amended_from",
+                "label": "Amended Remarks",
+                "depends_on": "eval:doc.amended_from",
+                "mandatory_depends_on": "eval:doc.amended_from",
+            },
              
           
             {
                 "fieldname": "custom_section_subject_and_remarks",
                 "fieldtype": "Section Break",
-                "insert_after": "amended_from",
+                "insert_after": "custom_remarks_amended",
                 "label": "Subject and Remarks",
             },
             {
@@ -98,9 +107,17 @@ def execute():
                 "no_copy": 1,
                 "read_only": 1,
             
-            }
+            },
                  
-
+            {
+                "fieldname": "custom_store_incharge",
+                "fieldtype": "Link",
+                "options": "Store Incharge",
+                "insert_after": "custom_po_wo",
+                "label": "Store Incharge",
+                
+                
+            },  
         ],
     }
     create_custom_fields(fields)
