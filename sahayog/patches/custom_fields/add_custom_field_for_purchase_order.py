@@ -40,6 +40,10 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "custom_remarks_amended",
                 "label": "Subject and Remarks",
+                "collapsible": 1,
+                "collapsible_name": "Subject and Remarks",
+                "default_collapsed": 1,
+                
             },
             {
                 "fieldname": "custom_subject",
@@ -49,12 +53,18 @@ def execute():
                 "reqd": 1,
             },
             {
+                "fieldname": "custom_remarks_col_break",
+                "fieldtype": "Column Break",
+                "insert_after": "custom_subject",
+            },
+            {
 
                 "fieldname": "custom_remarks",
                 "fieldtype": "Text Editor",
-                "insert_after": "custom_subject",
+                "insert_after": "custom_remarks_col_break",
                 "label": "Remarks",
                 "reqd": 1,
+                "height": 100,
             },
 
             

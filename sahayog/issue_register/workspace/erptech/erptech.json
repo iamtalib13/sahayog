@@ -1,22 +1,8 @@
 {
- "charts": [
-  {
-   "chart_name": "ERPTech Module Wise Open Issue",
-   "label": "Module Wise Open Issue"
-  },
-  {
-   "chart_name": "ERPTech Open CR VS ISSUE",
-   "label": "Open CR VS ISSUE"
-  }
- ],
+ "charts": [],
  "content": "[{\"id\":\"HdkdaOvjE5\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>ERPTech</b></span>\",\"col\":12}},{\"id\":\"j11IGJvNiU\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Create New\",\"col\":3}},{\"id\":\"g25w3PEG5D\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Open\",\"col\":3}},{\"id\":\"AkpUVTArQh\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Closed\",\"col\":3}},{\"id\":\"G2EzAlvRQz\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total\",\"col\":3}},{\"id\":\"IhRte7tHAD\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"ERPTech Analysis\",\"col\":12}},{\"id\":\"Yjjmpa3wLj\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Module Wise Open Issue\",\"col\":12}},{\"id\":\"pjIbm6ebBI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Open CR VS ISSUE\",\"col\":12}}]",
  "creation": "2025-03-12 11:14:37.434103",
- "custom_blocks": [
-  {
-   "custom_block_name": "ERPTech Analysis",
-   "label": "ERPTech Analysis"
-  }
- ],
+ "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -27,34 +13,17 @@
  "is_hidden": 0,
  "label": "ERPTech",
  "links": [],
- "modified": "2025-03-21 16:49:03.838571",
+ "modified": "2025-04-04 15:43:35.593247",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "ERPTech",
- "number_cards": [
-  {
-   "label": "Total",
-   "number_card_name": "Total ERPTech"
-  },
-  {
-   "label": "Open",
-   "number_card_name": "Open ERPTech"
-  },
-  {
-   "label": "Closed",
-   "number_card_name": "Closed ERPTech"
-  }
- ],
+ "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
- "roles": [
-  {
-   "role": "ERPTech"
-  }
- ],
- "sequence_id": 43.0,
+ "roles": [],
+ "sequence_id": 40.0,
  "shortcuts": [
   {
    "color": "Grey",
