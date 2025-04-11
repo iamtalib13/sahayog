@@ -70,9 +70,9 @@ app_include_js = "/assets/frappe/js/frappe-web.min.js"
 # home_page = "login"
 
 # website user home page (by Role)
-role_home_page = {
-    "Supplier": "/supplier-portal"
-}
+# role_home_page = {
+#     "Supplier": "/supplier-portal"
+# }
 
 # Generators
 # ----------
@@ -179,6 +179,7 @@ after_migrate = [
 
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
+    "User": "sahayog.override.user.CustomUser",
    
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
@@ -214,6 +215,8 @@ doc_events = {
             "sahayog.doc_events.user.user_enable_disable",
             "sahayog.doc_events.user.capital_user_name",   
         ],
+
+        
     },
     "Task": {
 
@@ -303,6 +306,7 @@ override_whitelisted_methods = {
     "frappe.model.naming.set_name_by_naming_series": "sahayog.override.employee_naming.set_name_by_naming_series_override",
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
     "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
+    "erpnext.selling.doctype.customer.customer": "sahayog.override.override_make_contact.custom_make_contact",
 }
 #
 # each overriding function accepts a `data` argument;
