@@ -59,7 +59,7 @@
         letter-spacing: 0.02em;
       }
       .delete-row-btn:hover {
-        background-color: rgb(231, 231, 231);
+        background-color: rgb(151 21 21);
       }
       .save-btn {
         margin-top: 10px;
@@ -147,7 +147,7 @@
     </style>
   </head>
   <body>
-    <div class="table-container">
+    <div class="table-container mb-4">
       <table class="location-table" id="locationTable">
         <thead class="table-heading">
           <tr>
@@ -401,17 +401,21 @@
         //newRow.classList.add("new-row"); // Mark new rows with a class
 
         newRow.innerHTML = `
-                                       <td class="checkbox-container">
-                                           <input type="checkbox" />
-                                       </td>
-                                       <td class="sr-no"></td>
-                                       <td><input type="text" placeholder="Location Name" /></td>
-                                        <td><input type="file" multiple  class="hidden" /></td>
-                                       <td>Pending
-                                           
-                                       </td>
-                                        <td class="hidden" data-name=""></td>
-                                   `;
+                              <td class="checkbox-container">
+                                  <input type="checkbox" />
+                              </td>
+                              <td class="sr-no"></td>
+                              <td><input type="text" placeholder="Location Name" /></td>
+                               <td><input type="file" multiple  class="hidden" /></td>
+                             <td>
+  <select class="status-select">
+    <option value="Pending" selected>Pending</option>
+    <option value="Approved">Approved</option>
+    <option value="Rejected">Rejected</option>
+  </select>
+</td>
+                              <td class="hidden" data-name=""></td>
+                          `;
 
         tableBody.appendChild(newRow);
         updateSerialNumbers();
@@ -453,10 +457,10 @@
         const tableBody = document.getElementById("locationTableBody");
         const checkboxes = tableBody.querySelectorAll("input[type='checkbox']");
         const rowsToDelete = [];
+        const serialNumbers = [];
 
         checkboxes.forEach((checkbox) => {
           if (checkbox.checked) {
-            // Collect the name from the data-name attribute of the row
             const row = checkbox.closest("tr");
             const dataName = row
               .querySelector("td[data-name]")
@@ -464,6 +468,10 @@
 
             if (dataName) {
               rowsToDelete.push(dataName);
+              // Assuming serial number is in the first <td>
+              const serialNo = row.querySelector("td.sr-no").textContent.trim();
+              // Add serial number to the array
+              serialNumbers.push(serialNo);
             }
           }
         });
@@ -471,42 +479,59 @@
         console.log(rowsToDelete);
 
         if (rowsToDelete.length > 0) {
-          // Call the server to delete the rows from the database
-          frappe.call({
-            method: "sahayog.doc_events.task.delete_location_details", // Update with your server-side method
-            args: {
-              names: rowsToDelete,
-            },
-            callback: function (response) {
-              if (response.message.message === "success") {
-                console.log(response);
-                // Remove the rows from the DOM after successful deletion
-                checkboxes.forEach((checkbox) => {
-                  if (checkbox.checked) {
-                    const row = checkbox.closest("tr");
-                    tableBody.removeChild(row);
+          frappe.confirm(
+            `Are you sure you want to delete the following row(s)?<br><b>Serial No(s): ${serialNumbers.join(
+              ", "
+            )}</b>`,
+
+            () => {
+              // Proceed with original deletion logic
+              frappe.call({
+                method: "sahayog.doc_events.task.delete_location_details", // Update with your server-side method
+                args: {
+                  names: rowsToDelete,
+                },
+                callback: function (response) {
+                  if (response.message.message === "success") {
+                    console.log(response);
+                    // Remove the rows from the DOM after successful deletion
+                    checkboxes.forEach((checkbox) => {
+                      if (checkbox.checked) {
+                        const row = checkbox.closest("tr");
+                        tableBody.removeChild(row);
+                      }
+                    });
+
+                    // Update the serial numbers
+                    updateSerialNumbers();
+
+                    // Hide the remove button if no checkboxes are checked
+                    toggleRemoveButton();
+
+                    // Show a Frappe alert after successful deletion
+                    frappe.show_alert({
+                      message: "Selected row have been successfully deleted.",
+                      indicator: "green",
+                    });
+
+                    // Optionally refresh the page after the alert
+                    setTimeout(function () {
+                      location.reload();
+                    }, 1000); // Adjust the delay as needed
+                  } else {
+                    frappe.msgprint("Error deleting location details.");
                   }
-                });
-
-                // Update the serial numbers
-                updateSerialNumbers();
-
-                // Hide the remove button if no checkboxes are checked
-                toggleRemoveButton();
-                // Show a Frappe alert after successful deletion
-                frappe.show_alert({
-                  message: "Selected row have been successfully deleted.",
-                  indicator: "green",
-                });
-                //Optionally refresh the page after the alert
-                setTimeout(function () {
-                  location.reload();
-                }, 1000); // Adjust the delay as needed
-              } else {
-                frappe.msgprint("Error deleting location details.");
-              }
+                },
+              });
             },
-          });
+            () => {
+              // Cancel action
+              frappe.show_alert({
+                message: "Deletion cancelled.",
+                indicator: "orange",
+              });
+            }
+          );
         } else {
           frappe.msgprint("No rows selected for deletion.");
         }
@@ -516,6 +541,7 @@
       function saveOrUpdateLocationDetails() {
         console.log("save hora hai...");
         const rows = document.querySelectorAll("#locationTableBody tr");
+        console.log("rows", rows);
         const locationData = [];
         let hasEmptyLocationName = false; // Flag to check for empty location names
         let hasChanges = false; // Flag to check for changes in the table
@@ -524,7 +550,11 @@
           const locationName = row
             .querySelector("input[type='text']")
             .value.trim();
-          const status = row.querySelector("select").value;
+          console.log("locationName", locationName);
+          //const status = row.querySelector("select.status-select").value;
+          const statusSelect = row.querySelector("select.status-select");
+          const status = statusSelect?.value || "Pending"; // fallback if null
+          console.log("statusSelect", statusSelect);
           const files = row.querySelector("input[type='file']").files;
           const name =
             row.querySelector("td[data-name]").getAttribute("data-name") || ""; // Initially empty
@@ -647,38 +677,51 @@
       }
 
       function deleteFile(fileName, childDocname, docname, fileDocName) {
-        let file_name = fileName;
-        let attached_to_field = childDocname;
-        let attached_to_name = docname;
+        frappe.confirm(
+          `Are you sure you want to delete the file <b>${fileName}</b>?`,
+          () => {
+            // YES clicked
+            let file_name = fileName;
+            let attached_to_field = childDocname;
+            let attached_to_name = docname;
 
-        console.log(file_name, childDocname, docname);
-        frappe.call({
-          method: "sahayog.doc_events.task.delete_file",
-          args: {
-            name: fileDocName,
+            console.log(file_name, childDocname, docname);
+            frappe.call({
+              method: "sahayog.doc_events.task.delete_file",
+              args: {
+                name: fileDocName,
+              },
+              callback: function (response) {
+                if (response.message.message === "success") {
+                  console.log(response);
+                  frappe.show_alert({
+                    message: "File has been successfully deleted.",
+                    indicator: "green",
+                  });
+                  setTimeout(function () {
+                    location.reload();
+                  }, 500);
+                } else {
+                  frappe.msgprint(`Failed to delete file ${fileName}.`);
+                }
+              },
+              error: function (error) {
+                console.error("Error deleting file:", error);
+                frappe.msgprint("An error occurred while deleting the file.");
+              },
+            });
           },
-          callback: function (response) {
-            if (response.message.message === "success") {
-              console.log(response);
-              //frappe.msgprint(`File ${fileName} deleted successfully.`);
-              frappe.show_alert({
-                message: "File has been successfully deleted.",
-                indicator: "green",
-              });
-              //Optionally refresh the page after the alert
-              setTimeout(function () {
-                location.reload();
-              }, 500); // Adjust the delay as needed
-            } else {
-              frappe.msgprint(`Failed to delete file ${fileName}.`);
-            }
-          },
-          error: function (error) {
-            console.error("Error deleting file:", error);
-            frappe.msgprint("An error occurred while deleting the file.");
-          },
-        });
+          () => {
+            // NO clicked
+            frappe.show_alert({
+              message: "File deletion cancelled.",
+              indicator: "orange",
+            });
+          }
+        );
       }
+
+      // Fetch the role of the currently logged-in user
       console.log(frappe.session.user);
       setTimeout(() => {
         console.log(document.querySelectorAll(".status-select"));
