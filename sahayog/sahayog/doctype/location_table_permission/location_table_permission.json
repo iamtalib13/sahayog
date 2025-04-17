@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-12 13:55:22.790518",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "role",
+  "can_edit_status",
+  "can_add_row",
+  "can_edit_location"
+ ],
+ "fields": [
+  {
+   "fieldname": "role",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Role",
+   "options": "Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "can_edit_status",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Can Edit Status"
+  },
+  {
+   "default": "0",
+   "fieldname": "can_add_row",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Can Add Row"
+  },
+  {
+   "default": "0",
+   "fieldname": "can_edit_location",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Can Edit Location"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-04-12 14:00:12.853551",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Location Table Permission",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
