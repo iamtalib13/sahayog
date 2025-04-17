@@ -8,7 +8,9 @@
   "project_settings_section",
   "location_finalizer",
   "task_template_setting_section",
-  "task_template_setting"
+  "task_template_setting",
+  "loc_perm_settings_section",
+  "location_table_permissions"
  ],
  "fields": [
   {
@@ -31,12 +33,24 @@
    "fieldname": "task_template_setting",
    "fieldtype": "Table",
    "options": "Task Template"
+  },
+  {
+   "fieldname": "loc_perm_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Location Table Permission Settings"
+  },
+  {
+   "fieldname": "location_table_permissions",
+   "fieldtype": "Table",
+   "label": "Location Table Permissions",
+   "options": "Location Table Permission"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-02-10 17:57:26.098875",
+ "modified": "2025-04-12 13:59:41.388985",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
