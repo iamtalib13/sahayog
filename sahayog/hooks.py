@@ -98,8 +98,8 @@ app_include_js = "/assets/frappe/js/frappe-web.min.js"
 # ]
 
 after_migrate = [
+    "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
-    "sahayog.patches.custom_fields.add_custom_fields_for_designation.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_file.execute",
