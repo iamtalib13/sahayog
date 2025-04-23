@@ -18,6 +18,7 @@ def execute():
                 "insert_after": "custom_sahayog_tab_break",
                 "reqd": 1,
                 "options": "Product",
+                "ignore_user_permissions": True,
                
             },
 
@@ -29,6 +30,16 @@ def execute():
                 "fetch_from": "custom_product.product_name",
                
             },
+
+            {
+                "label": "Lead Owner Branch",
+                "fieldname": "custom_lead_owner_branch",
+                "fieldtype": "Link",
+                "insert_after": "custom_product_name",
+                "options": "Branch",
+                "ignore_user_permissions": True,
+        
+            }
              
             
         ],

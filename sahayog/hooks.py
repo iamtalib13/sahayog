@@ -50,6 +50,7 @@ doctype_js = {
     "Material Request": "public/js/material_request.js",
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
+    "CRM Lead": "public/js/crm_lead.js",
   
 }
 app_include_js = "/assets/frappe/js/frappe-web.min.js"
@@ -165,9 +166,11 @@ after_migrate = [
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
+permission_query_conditions = {
+	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+    "CRM Lead": "sahayog.permissions.get_lead_permission_by_branch",
+    
+}
 #
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
@@ -191,7 +194,7 @@ doc_events = {
     "Employee": {
         "after_insert": [
             "sahayog.doc_events.create_user_from_employee.create_user",
-            "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
+            # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
         ],
       
         "before_save": [
@@ -266,6 +269,10 @@ doc_events = {
     "Department":{
         "autoname": "sahayog.doc_events.department.department_name"
     },
+
+    "CRM Lead": {
+        "before_insert": "sahayog.doc_events.crm_lead.set_lead_owner_branch",
+    }
 }
 
 # Scheduled Tasks
