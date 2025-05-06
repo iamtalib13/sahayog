@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:TICKET-{DD}{MM}{YY}-{#####}",
+ "creation": "2025-04-26 22:59:07.780854",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "raised_by",
+  "column_break_iuqr",
+  "ticket_type",
+  "status",
+  "section_break_jgpb",
+  "subject",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  },
+  {
+   "fieldname": "raised_by",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Raised By",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Department",
+   "options": "Ticket Department"
+  },
+  {
+   "fieldname": "ticket_type",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Ticket Type",
+   "options": "Ticket Type"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Ticket Status",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_iuqr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_jgpb",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-04-26 23:35:14.518673",
+ "modified_by": "Administrator",
+ "module": "Ticket Management",
+ "name": "Ticket",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
