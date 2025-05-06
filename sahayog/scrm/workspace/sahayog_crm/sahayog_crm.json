@@ -1,17 +1,13 @@
 {
- "charts": [
+ "charts": [],
+ "content": "[{\"id\":\"FCWVyAYYX8\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog CRM Dashboard\",\"col\":12}}]",
+ "creation": "2025-04-23 14:50:14.614663",
+ "custom_blocks": [
   {
-   "chart_name": "Status Wise Leads",
-   "label": "Status Wise Leads"
-  },
-  {
-   "chart_name": "Conversion Rate Report",
-   "label": "Conversion Rate Report"
+   "custom_block_name": "Sahayog CRM Dashboard",
+   "label": "Sahayog CRM Dashboard"
   }
  ],
- "content": "[{\"id\":\"rmuNGRmY8l\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Sahayog CRM - Sales User</b></span>\",\"col\":12}},{\"id\":\"s0Qs7oWoWr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Portal\",\"col\":3}},{\"id\":\"sgSQhQ7KZO\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"84qKxXw_3h\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Status Wise Leads\",\"col\":6}},{\"id\":\"9IeFHTI8Qz\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Conversion Rate Report\",\"col\":6}}]",
- "creation": "2025-04-23 14:50:14.614663",
- "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -22,7 +18,7 @@
  "is_hidden": 0,
  "label": "Sahayog CRM",
  "links": [],
- "modified": "2025-04-23 17:57:41.042178",
+ "modified": "2025-05-06 16:06:12.087992",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Sahayog CRM",
@@ -37,14 +33,6 @@
   }
  ],
  "sequence_id": 46.0,
- "shortcuts": [
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "CRM Portal",
-   "type": "URL",
-   "url": "/crm"
-  }
- ],
+ "shortcuts": [],
  "title": "Sahayog CRM"
 }

@@ -19,4 +19,7 @@ def get_lead_permission_by_branch(user):
     # Add condition for the owner
     conditions.append(f"`tabCRM Lead`.owner = '{user}'")
 
+    # Add condition for assigned user (stored as a JSON string in _assign)
+    conditions.append(f"`tabCRM Lead`._assign LIKE '%\"{user}\"%'")
+
     return " or ".join(conditions) if conditions else ""

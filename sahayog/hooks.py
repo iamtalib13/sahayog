@@ -114,6 +114,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_terms_and_conditions.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_gender.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
@@ -183,6 +184,7 @@ permission_query_conditions = {
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
     "User": "sahayog.override.user.CustomUser",
+    "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
    
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
@@ -271,30 +273,48 @@ doc_events = {
     },
 
     "CRM Lead": {
-        "before_insert": "sahayog.doc_events.crm_lead.set_lead_owner_branch",
+        "before_insert": [
+            "sahayog.doc_events.crm_lead.set_lead_owner_branch",
+            "sahayog.doc_events.crm_lead.set_sla"
+            
+        ],
+        "after_insert": [
+            "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
+        ],
+        "on_update": [
+            "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
+        ],
+
+
     }
 }
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"sahayog.tasks.all"
-# 	],
-# 	"daily": [
-# 		"sahayog.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"sahayog.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"sahayog.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"sahayog.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "cron": {
+        "* * * * *": [
+            "sahayog.scrm.api.lead_escalation.run_escalation_check"
+        ]
+    }
+    # You can uncomment these if needed later:
+    # "all": [
+    #     "sahayog.tasks.all"
+    # ],
+    # "daily": [
+    #     "sahayog.tasks.daily"
+    # ],
+    # "hourly": [
+    #     "sahayog.tasks.hourly"
+    # ],
+    # "weekly": [
+    #     "sahayog.tasks.weekly"
+    # ],
+    # "monthly": [
+    #     "sahayog.tasks.monthly"
+    # ],
+}
 
 # Testing
 # -------

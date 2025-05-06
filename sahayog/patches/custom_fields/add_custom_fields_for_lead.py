@@ -14,10 +14,10 @@ def execute():
             {
                 "label": "Product",
                 "fieldname": "custom_product",
-                "fieldtype": "Link",
+                "fieldtype": "Table",
                 "insert_after": "custom_sahayog_tab_break",
                 "reqd": 1,
-                "options": "Product",
+                "options": "Lead Product",
                 "ignore_user_permissions": True,
                
             },
@@ -39,8 +39,34 @@ def execute():
                 "options": "Branch",
                 "ignore_user_permissions": True,
         
-            }
-             
+            },
+           
+
+             {
+                "label": "Escalation Matrix",
+                "fieldname": "custom_escalation_matrix",
+                "fieldtype": "Table",
+                "insert_after": "custom_lead_owner_branch",
+                "options": "Escalation Matrix",
+                
+             },
+             {
+                "label": "Escalated To",
+                "fieldname": "custom_escalated_to",
+                "fieldtype": "Data",
+                "insert_after": "custom_escalation_matrix",
+                "ignore_user_permissions": True,
+
+             },
+             {
+                "label": "Escalated To User",
+                "fieldname": "custom_escalated_to_user",
+                "fieldtype": "Data",
+                "insert_after": "custom_escalated_to",
+                "ignore_user_permissions": True,
+             },
+
+            
             
         ],
     }

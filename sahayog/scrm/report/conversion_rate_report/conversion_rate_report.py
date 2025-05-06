@@ -1,13 +1,17 @@
-# sahayog/sahayog/scrm/report/conversion_rate_report/conversion_rate_report.py
-
 import frappe
 
 def execute(filters=None):
     if not filters:
         filters = {}
 
-    conditions = ["lead_owner = %(lead_owner)s"]
-    values = {"lead_owner": frappe.session.user}
+    user = frappe.session.user
+
+    # Initial condition: current user is lead_owner OR assigned user
+    conditions = [f"(lead_owner = %(user)s OR _assign LIKE %(assign_like)s)"]
+    values = {
+        "user": user,
+        "assign_like": f'%"{user}"%'  # Matches exact user in JSON string
+    }
 
     if filters.get("status"):
         conditions.append("status = %(status)s")

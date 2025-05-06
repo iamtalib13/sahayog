@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRM Dashboard</title>
+    <!-- Include Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      /* You can add any custom CSS styles here */
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2fbff;
+      }
+      h3 {
+        text-align: center;
+      }
+
+      .crm-portal-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 16px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 14px;
+        transition: background-color 0.2s ease-in-out;
+      }
+
+      .crm-portal-button:hover {
+        text-decoration: underline;
+      }
+
+      .redirect-icon {
+        margin-left: 8px;
+      }
+
+      .dashboard-cards {
+        display: flex;
+        gap: 10px;
+        margin: 10px;
+      }
+
+      .lead-card {
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        width: 220px;
+        text-align: center;
+        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      a {
+        text-decoration: none;
+        color: #000;
+      }
+      .lead-visual-card {
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        width: 100%;
+
+        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .task-container {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        width: 320px;
+        padding: 16px;
+      }
+      .task-container h3 {
+        margin-top: 0;
+        font-size: 18px;
+        margin-bottom: 16px;
+        color: #333;
+      }
+      .task-day {
+        margin-bottom: 16px;
+      }
+      .task-day strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 4px;
+      }
+      .task-day small {
+        color: gray;
+      }
+      .task {
+        background: #f0f0f0;
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .time {
+        font-size: 12px;
+        color: #333;
+        white-space: nowrap;
+      }
+      .bar {
+        width: 4px;
+        height: 30px;
+        background: gray;
+        border-radius: 2px;
+      }
+      .description {
+        font-size: 14px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="lead-dashboard">
+      <h1>Sahayog CRM Dashboard</h1>
+      <div class="crm-portal-container">
+        <!-- <a href="/crm" class="crm-portal-button">
+          CRM Portal
+          <span class="redirect-icon">🔗</span>
+        </a> -->
+      </div>
+
+      <div class="dashboard-cards">
+        <div class="lead-card">
+          <h3>
+            <a
+              id="total-leads-link"
+              href="/crm/leads/view/list?view=5"
+              target="_blank"
+              >Total Leads</a
+            >
+          </h3>
+          <p id="total-leads">0</p>
+        </div>
+
+        <div class="lead-card">
+          <h3>
+            <a
+              id="assigned-leads-link"
+              href="/crm/leads/view/list?view=7"
+              target="_blank"
+              >Assigned to Me</a
+            >
+          </h3>
+          <p id="assigned-leads">0</p>
+        </div>
+
+        <div class="lead-card">
+          <h3>
+            <a
+              id="escalated-leads-link"
+              href="/crm/leads/view/list?view=12"
+              target="_blank"
+              >Escalated to Me</a
+            >
+          </h3>
+          <p id="escalated-leads">0</p>
+        </div>
+
+        <!-- Conversion Rate with Column Chart -->
+        <div class="lead-card">
+          <h3>Conversion Rate</h3>
+          <p id="conversion-rate">0</p>
+        </div>
+      </div>
+      <div class="dashboard-cards">
+        <div class="lead-visual-card" id="lead-tasks-card">
+          <h3>upcoming Tasks</h3>
+          <div class="task-day">
+            <strong>May 6 <small>Today</small></strong>
+            <div class="task">
+              <div class="time">
+                10:30 AM<br />
+                <small>In 20min</small>
+              </div>
+              <div class="bar"></div>
+              <div class="description">Call To Kapil Sir</div>
+            </div>
+          </div>
+        </div>
+        <div class="lead-visual-card" id="lead-status-card">
+          <h3>Lead by Status</h3>
+          <div
+            style="display: flex; justify-content: center; align-items: center"
+          >
+            <canvas id="statusPieChart" width="300" height="300"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRM Page content
+    <div class="card">
+      <h3>Status-wise Leads</h3>
+      <canvas id="statusPieChart" width="400" height="400"></canvas>
+    </div> -->
+
+    <!-- JavaScript Code -->
+    <script>
+      function renderStatusPieChart(statusData) {
+        const ctx = document.getElementById("statusPieChart").getContext("2d");
+        const labels = statusData.map((s) => s.status);
+        const values = statusData.map((s) => s.count);
+
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                data: values,
+                backgroundColor: [
+                  "#36a2eb",
+                  "#ffcd56",
+                  "#4bc0c0",
+                  "#ff6384",
+                  "#9966ff",
+                ],
+              },
+            ],
+          },
+          options: {
+            responsive: false,
+            plugins: {
+              legend: { position: "bottom" },
+              tooltip: {
+                callbacks: {
+                  label: function (tooltipItem) {
+                    return `${tooltipItem.label}: ${tooltipItem.raw} leads`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Replace frappe.call with fetch() to call API and get data
+      async function fetchLeadDashboardData() {
+        try {
+          const response = await fetch(
+            "api/method/sahayog.scrm.api.sahayog_crm_dashboard.get_lead_dashboard_data",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (response.ok) {
+            const res = await response.json();
+            const data = res.message; // Access the 'message' field
+            console.log("Lead Dashboard Data: ", data);
+
+            // Set numbers
+            document.getElementById("total-leads").innerText = data.total_leads;
+            document.getElementById("assigned-leads").innerText =
+              data.assigned_leads;
+            // document.getElementById("escalated-leads").innerText =
+            //   data.escalated_leads;
+
+            // Draw updated Pie Chart
+            renderStatusPieChart(data.status_wise);
+          } else {
+            console.error("Failed to fetch data: ", response.status);
+          }
+        } catch (error) {
+          console.error("Error fetching data: ", error);
+        }
+      }
+
+      // Call the fetch function when the page is ready
+      fetchLeadDashboardData();
+    </script>
+  </body>
+</html>
