@@ -44,20 +44,42 @@
       }
 
       .lead-card {
-        background: white;
+        font-size: large;
+        color: #f0f0f0;
         padding: 20px;
         border-radius: 5px;
-        width: 220px;
+        width: 240px;
         text-align: center;
         box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
       }
+
+      #total-leads-card {
+        background: #7181ad; /* Dark Navy Blue */
+        color: #ffffff;
+      }
+
+      #assigned-leads-card {
+        background: #6488a9; /* Dark Slate */
+        color: #ffffff;
+      }
+
+      #escalated-leads-card {
+        background: #976562; /* Dark Maroon */
+        color: #ffffff;
+      }
+
+      #conversion-rate-card {
+        background: #606f72; /* Charcoal Gray */
+        color: #ffffff;
+      }
+
       a {
         text-decoration: none;
-        color: #000;
+        color: #f0f0f0;
       }
       .lead-visual-card {
         background: white;
-        padding: 20px;
+        padding: 10px 20px;
         border-radius: 5px;
         width: 100%;
 
@@ -78,6 +100,8 @@
       }
       .task-day {
         margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
       }
       .task-day strong {
         display: block;
@@ -95,6 +119,7 @@
         align-items: center;
         gap: 12px;
         margin-top: 8px;
+        cursor: pointer;
       }
       .time {
         font-size: 12px;
@@ -104,27 +129,65 @@
       .bar {
         width: 4px;
         height: 30px;
-        background: gray;
+        background: #7196a1;
         border-radius: 2px;
       }
       .description {
         font-size: 14px;
         color: #333;
       }
+      .task .time small {
+        color: green;
+      }
+
+      .task .time small:contains("Overdue") {
+        color: red;
+      }
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+      }
     </style>
   </head>
   <body>
     <div id="lead-dashboard">
-      <h1>Sahayog CRM Dashboard</h1>
-      <div class="crm-portal-container">
-        <!-- <a href="/crm" class="crm-portal-button">
-          CRM Portal
-          <span class="redirect-icon">🔗</span>
-        </a> -->
-      </div>
+      <header class="dashboard-header">
+        <div
+          class="header-content"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <div style="display: flex; align-items: center">
+            <img
+              src="assets/sahayog/images/tree.png"
+              width="50"
+              height="50"
+              alt="Sahayog Logo"
+              class="logo"
+              style="margin-right: 10px"
+            />
+            <h1 class="dashboard-title">Sahayog CRM Dashboard</h1>
+          </div>
+
+          <div>
+            <a
+              href="/crm/leads/view/list?view=5"
+              class="crm-portal-button"
+              target="_blank"
+              style="text-decoration: none; color: #007bff; font-weight: bold"
+            >
+              CRM Portal
+              <span class="redirect-icon">🔗</span>
+            </a>
+          </div>
+        </div>
+      </header>
 
       <div class="dashboard-cards">
-        <div class="lead-card">
+        <div class="lead-card" id="total-leads-card">
           <h3>
             <a
               id="total-leads-link"
@@ -136,7 +199,7 @@
           <p id="total-leads">0</p>
         </div>
 
-        <div class="lead-card">
+        <div class="lead-card" id="assigned-leads-card">
           <h3>
             <a
               id="assigned-leads-link"
@@ -148,7 +211,7 @@
           <p id="assigned-leads">0</p>
         </div>
 
-        <div class="lead-card">
+        <div class="lead-card" id="escalated-leads-card">
           <h3>
             <a
               id="escalated-leads-link"
@@ -161,26 +224,23 @@
         </div>
 
         <!-- Conversion Rate with Column Chart -->
-        <div class="lead-card">
+        <div class="lead-card" id="conversion-rate-card">
           <h3>Conversion Rate</h3>
           <p id="conversion-rate">0</p>
         </div>
       </div>
       <div class="dashboard-cards">
         <div class="lead-visual-card" id="lead-tasks-card">
-          <h3>upcoming Tasks</h3>
-          <div class="task-day">
-            <strong>May 6 <small>Today</small></strong>
-            <div class="task">
-              <div class="time">
-                10:30 AM<br />
-                <small>In 20min</small>
-              </div>
-              <div class="bar"></div>
-              <div class="description">Call To Kapil Sir</div>
-            </div>
+          <h3>Upcoming Tasks</h3>
+          <!-- Sync message -->
+          <!-- Date and Syncing Message -->
+
+          <div id="task-container">
+            <!-- Task items will be populated here dynamically by JavaScript -->
           </div>
+          <!-- Tasks will be populated here dynamically by JavaScript -->
         </div>
+
         <div class="lead-visual-card" id="lead-status-card">
           <h3>Lead by Status</h3>
           <div
@@ -199,7 +259,137 @@
     </div> -->
 
     <!-- JavaScript Code -->
+
     <script>
+      // Initialize the container first
+      const leadTasksContainer = document.getElementById("task-container");
+
+      // Now call the function to fetch tasks
+      fetchTodayTasks();
+      // Poll every 1 minute (60,000 ms)
+      setInterval(fetchTodayTasks, 60000);
+
+      async function fetchTodayTasks() {
+        try {
+          // Generate the header with syncing message
+          const headerHTML = generateTodayHeader();
+
+          // Render the header before the request
+          leadTasksContainer.innerHTML = headerHTML;
+
+          // Find the syncing message element
+          const syncingMessage = document.getElementById("syncing-message");
+
+          // Display the syncing message
+          if (syncingMessage) {
+            syncingMessage.style.display = "inline";
+          }
+
+          // Fetch tasks from the API
+          const response = await fetch(
+            "/api/method/sahayog.scrm.api.sahayog_crm_dashboard.get_today_tasks"
+          );
+          const tasks = await response.json();
+          const data = tasks.message;
+
+          console.log("Tasks: ", data);
+
+          // Render tasks or show "No tasks for today"
+          if (data.length > 0) {
+            renderTasks(data);
+          } else {
+            leadTasksContainer.innerHTML = `
+        ${headerHTML}
+        <p>No tasks for today.</p>
+      `;
+          }
+        } catch (error) {
+          console.error("Error fetching tasks:", error);
+        } finally {
+          // Hide the "Syncing..." message after 3 seconds
+          const syncingMessage = document.getElementById("syncing-message");
+          if (syncingMessage) {
+            setTimeout(() => {
+              syncingMessage.style.display = "none";
+            }, 3000); // <-- 3 seconds delay
+          }
+        }
+      }
+
+      // Format time to display AM/PM
+      function formatTime(dateStr) {
+        const date = new Date(dateStr);
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const formattedTime = `${hours % 12 || 12}:${minutes
+          .toString()
+          .padStart(2, "0")} ${ampm}`;
+        return formattedTime;
+      }
+
+      // Calculate the time difference
+      function getTimeDifference(dueDate) {
+        const now = new Date();
+        const due = new Date(dueDate);
+        const diffMs = due - now;
+
+        if (diffMs <= 0) return "Overdue";
+
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        return hours > 0 ? `In ${hours}h ${minutes}min` : `In ${minutes}min`;
+      }
+
+      // Generate header with date and syncing message
+      function generateTodayHeader() {
+        return `
+    <div class="task-day">
+      <strong>
+        ${new Date().toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })} 
+        <small>Today</small>
+      </strong>
+      <!-- Syncing Message -->
+      <span id="syncing-message" style="margin-left: 10px; font-size:12px; align-items: center; ">
+          <!-- <img src="assets/sahayog/images/cloud-sync.png" width=20 height=20 alt="Syncing..." />-->
+           Syncing...</span>
+    </div>
+  `;
+      }
+
+      // Render tasks
+      function renderTasks(tasks) {
+        const headerHTML = generateTodayHeader();
+        const tasksHTML = tasks
+          .map((task) => {
+            return `
+        <div class="task" onclick="redirectToTask('${task.reference_docname}')">
+          <div class="time">
+            ${formatTime(task.due_date)}<br />
+            <small>${getTimeDifference(task.due_date)}</small>
+          </div>
+          <div class="bar"></div>
+          <div class="description">${task.title}</div>
+        </div>
+      `;
+          })
+          .join("");
+
+        leadTasksContainer.innerHTML = headerHTML + tasksHTML;
+      }
+
+      // Redirect to the specific task in a new tab
+      window.redirectToTask = function (referenceDocname) {
+        const baseUrl = "/crm/leads";
+        const fullUrl = `${baseUrl}/${referenceDocname}?view=5&viewType=list#tasks`;
+        window.open(fullUrl, "_blank");
+      };
+
+      // Function to render the status pie chart
       function renderStatusPieChart(statusData) {
         const ctx = document.getElementById("statusPieChart").getContext("2d");
         const labels = statusData.map((s) => s.status);
@@ -260,6 +450,11 @@
             document.getElementById("total-leads").innerText = data.total_leads;
             document.getElementById("assigned-leads").innerText =
               data.assigned_leads;
+            document.getElementById("escalated-leads").innerText =
+              data.escalated_leads[0].count;
+            document.getElementById("conversion-rate").innerText =
+              data.conversion_rate + "%";
+
             // document.getElementById("escalated-leads").innerText =
             //   data.escalated_leads;
 

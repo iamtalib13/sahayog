@@ -34,10 +34,14 @@ def escalate_to_next_level(doc, row):
         level = get_escalation_level(doc, row)
 
         if level < 3:  # Max 3 levels
-            escalation_times = [1, 2, 3]  # Minutes for each level
-            new_end_time = row.end_time + timedelta(minutes=escalation_times[level])
+            escalation_times = [1, 2]  # Only 2 levels have time-based escalation
+            new_end_time = None
+            
+            # If it is the final level, we don't set an end time
+            if level < 2:
+                new_end_time = row.end_time + timedelta(minutes=escalation_times[level])
 
-            # Prevent duplicate entries for next user
+            # Prevent duplicate entries for the next user
             next_row_exists = any(
                 next_row.user == next_user and 
                 next_row.is_escalated == 0 and 
@@ -51,13 +55,14 @@ def escalate_to_next_level(doc, row):
                     "current_escalation_status": "Pending",
                     "communication_status": "Open",
                     "start_time": row.end_time,
-                    "end_time": new_end_time,
+                    "end_time": new_end_time,   # This will be None for the 3rd level
                     "is_escalated": 0
                 })
                 doc.save(ignore_permissions=True)
                 
                 # Share the document with the next user
                 share_document_with_user(doc, next_user)
+
 
 def get_escalation_level(doc, row):
     # Count already escalated rows

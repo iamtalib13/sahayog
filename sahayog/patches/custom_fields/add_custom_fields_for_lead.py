@@ -66,6 +66,30 @@ def execute():
                 "ignore_user_permissions": True,
              },
 
+                { 
+                "label": "Customer Type",
+                "fieldname": "custom_customer_type",
+                "fieldtype": "Select",  
+                "insert_after": "custom_escalated_to_user",
+                "options": "\nIndividual\nCorporate",
+
+                },
+
+                {
+                    "label": "Zone",
+                    "fieldname": "custom_zone",
+                    "fieldtype": "Link",
+                    "insert_after": "custom_customer_type",
+                    "options": "Zone",
+                },
+
+                {
+                    "label": "Region",
+                    "fieldname": "custom_region",
+                    "fieldtype": "Link",
+                    "insert_after": "custom_zone",
+                    "options": "Region",
+                }
             
             
         ],

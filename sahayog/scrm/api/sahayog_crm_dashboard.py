@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import get_datetime_str, now_datetime
 
 @frappe.whitelist()
 def get_lead_dashboard_data():
@@ -29,7 +30,7 @@ def get_lead_dashboard_data():
 
         converted_leads = frappe.db.count('CRM Lead', {
             'lead_owner': user,
-            'status': 'Converted'
+            'Converted': 1
         })
 
         assigned_leads = frappe.db.sql("""
@@ -53,6 +54,7 @@ def get_lead_dashboard_data():
             SELECT COUNT(name) as count
             FROM `tabCRM Lead`
             WHERE custom_escalated_to = %s
+            AND converted = 0
         """, (user,), as_dict=True)
 
     conversion_rate = (converted_leads / total_leads) * 100 if total_leads else 0
@@ -65,3 +67,72 @@ def get_lead_dashboard_data():
         "status_wise": status_wise,
         "escalated_leads": escalated_leads
     }
+
+@frappe.whitelist()
+def get_today_tasks():
+    user = frappe.session.user
+    now = now_datetime()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = now.replace(hour=23, minute=59, second=59, microsecond=0)
+
+    tasks = frappe.db.sql("""
+        SELECT *
+        FROM `tabCRM Task`
+        WHERE assigned_to = %s
+        AND status = 'Todo'
+        AND DATE(due_date) = CURDATE()
+        AND reference_doctype = 'CRM Lead'
+        ORDER BY due_date ASC
+    """, (user,), as_dict=True)
+
+    return tasks
+
+@frappe.whitelist(allow_guest=True)
+def get_zone_region_data():
+    # Fetch all unique zones from the database
+    all_zones = frappe.db.sql("""
+        SELECT DISTINCT TRIM(custom_zone) AS zone 
+        FROM `tabCRM Lead`
+        WHERE custom_zone IS NOT NULL
+        ORDER BY zone
+    """, as_list=True)
+
+    # Flatten the list of tuples
+    all_zones = [zone[0] for zone in all_zones]
+
+    # Fetch the actual zone-region data
+    result = frappe.db.sql("""
+        SELECT TRIM(custom_zone) AS zone, TRIM(custom_region) AS region, COUNT(name) AS region_count
+        FROM `tabCRM Lead`
+        WHERE custom_zone IS NOT NULL AND custom_region IS NOT NULL
+        GROUP BY custom_zone, custom_region
+    """, as_dict=True)
+
+    frappe.log_error(message=f"Zone-Region Data: {result}", title="Zone Region Fetch Log")
+
+    # Get unique regions from the result
+    regions = list(set(item['region'] for item in result))
+    
+    # Initialize the data structure with 0 for missing zones
+    zone_region_counts = {zone: {region: 0 for region in regions} for zone in all_zones}
+
+    # Fill in the data from the result
+    for item in result:
+        zone_region_counts[item['zone']][item['region']] = item['region_count']
+
+    # Prepare the chart data
+    chart_data = {
+        'labels': all_zones,
+        'datasets': []
+    }
+
+    # Create datasets for each region
+    for region in regions:
+        dataset = {
+            'name': region,
+            'values': [zone_region_counts[zone].get(region, 0) for zone in all_zones]
+        }
+        chart_data['datasets'].append(dataset)
+
+    return chart_data
+
