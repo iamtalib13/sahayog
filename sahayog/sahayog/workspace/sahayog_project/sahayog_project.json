@@ -12,12 +12,13 @@
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
+ "icon": "",
  "idx": 0,
- "indicator_color": "green",
- "is_hidden": 1,
+ "indicator_color": "",
+ "is_hidden": 0,
  "label": "Sahayog Project",
  "links": [],
- "modified": "2025-04-04 15:57:01.475610",
+ "modified": "2025-04-29 11:26:41.583868",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Project",
@@ -32,6 +33,9 @@
   },
   {
    "role": "Task Manager"
+  },
+  {
+   "role": "CFO"
   }
  ],
  "sequence_id": 45.0,

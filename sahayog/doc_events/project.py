@@ -83,7 +83,7 @@ def update_branch_status(doc, method, status=None):
 
         if custom_branch_status and custom_branch_status != doc.custom_branch_status:
             doc.custom_branch_status = custom_branch_status
-            doc.save()
+            doc.save(ignore_permissions=True)  # ⬅️ Permissions ignored here
 
             if status == "Completed":  # ✅ Show message only when status is 'Completed'
                 frappe.msgprint(progress_ring, title=f"Project {doc.name} Status Updated")
