@@ -1,0 +1,38 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"FCWVyAYYX8\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog CRM Dashboard\",\"col\":12}}]",
+ "creation": "2025-04-23 14:50:14.614663",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Sahayog CRM Dashboard",
+   "label": "Sahayog CRM Dashboard"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "crm",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Sahayog CRM",
+ "links": [],
+ "modified": "2025-05-06 16:06:12.087992",
+ "modified_by": "Administrator",
+ "module": "SCRM",
+ "name": "Sahayog CRM",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Sales User"
+  }
+ ],
+ "sequence_id": 46.0,
+ "shortcuts": [],
+ "title": "Sahayog CRM"
+}

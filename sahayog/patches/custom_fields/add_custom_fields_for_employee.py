@@ -48,13 +48,7 @@ def execute():
                 "insert_after": "erpnext_user",
                 "label": "Skip Auto Creation",
             },
-             {
-                "fieldname": "custom_emp_warehouse",
-                "fieldtype": "Link",
-                "insert_after": "salutation",
-                "label": "Employee Warehouse",
-                "options":"Warehouse",
-            },
+             
           
         ]
     }

@@ -50,6 +50,8 @@ doctype_js = {
     "Material Request": "public/js/material_request.js",
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
+    "CRM Lead": "public/js/crm_lead.js",
+    "Project": "public/js/project.js"
   
 }
 app_include_js = "/assets/frappe/js/frappe-web.min.js"
@@ -98,8 +100,8 @@ app_include_js = "/assets/frappe/js/frappe-web.min.js"
 # ]
 
 after_migrate = [
+    "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
-    "sahayog.patches.custom_fields.add_custom_fields_for_designation.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_file.execute",
@@ -127,7 +129,7 @@ after_migrate = [
     "sahayog.patches.fixtures.add_warehouses.execute",
     "sahayog.patches.fixtures.add_read_role_permission.execute",
     "sahayog.patches.fixtures.add_role_profile_for_stock_user.execute",
-    "sahayog.patches.fixtures.set_project_template_mandatory.execute",
+    #"sahayog.patches.fixtures.set_project_template_mandatory.execute",
     "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
 
@@ -165,9 +167,11 @@ after_migrate = [
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
+permission_query_conditions = {
+	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+    "CRM Lead": "sahayog.permissions.get_lead_permission_by_branch",
+    
+}
 #
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
@@ -180,6 +184,7 @@ after_migrate = [
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
     "User": "sahayog.override.user.CustomUser",
+    "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
    
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
@@ -191,7 +196,7 @@ doc_events = {
     "Employee": {
         "after_insert": [
             "sahayog.doc_events.create_user_from_employee.create_user",
-            "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
+            # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
         ],
       
         "before_save": [
@@ -266,28 +271,50 @@ doc_events = {
     "Department":{
         "autoname": "sahayog.doc_events.department.department_name"
     },
+
+    "CRM Lead": {
+        "before_insert": [
+            "sahayog.doc_events.crm_lead.set_lead_owner_branch",
+            "sahayog.doc_events.crm_lead.set_sla"
+            
+        ],
+        "after_insert": [
+            "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
+        ],
+        "on_update": [
+            "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
+        ],
+
+
+    }
 }
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"sahayog.tasks.all"
-# 	],
-# 	"daily": [
-# 		"sahayog.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"sahayog.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"sahayog.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"sahayog.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "cron": {
+        "* * * * *": [
+            "sahayog.scrm.api.lead_escalation.run_escalation_check"
+        ]
+    }
+    # You can uncomment these if needed later:
+    # "all": [
+    #     "sahayog.tasks.all"
+    # ],
+    # "daily": [
+    #     "sahayog.tasks.daily"
+    # ],
+    # "hourly": [
+    #     "sahayog.tasks.hourly"
+    # ],
+    # "weekly": [
+    #     "sahayog.tasks.weekly"
+    # ],
+    # "monthly": [
+    #     "sahayog.tasks.monthly"
+    # ],
+}
 
 # Testing
 # -------

@@ -292,8 +292,34 @@ def delete_file(name):
     except Exception as e:
         frappe.log_error(f"Error deleting file {name}: {str(e)}")
         return {"error": str(e)}
+    
+#Fetch the role of the currently logged-in user.
+@frappe.whitelist()
+def get_user_role():
+    roles = frappe.get_roles(frappe.session.user)
+    return roles  # This returns a list of roles like ["System Manager", "Project Manager"]
 
+# Fetch the location table permissions based on user roles
+@frappe.whitelist()
+def get_location_table_permissions(roles=None):
+    if not roles:
+        roles = frappe.get_roles(frappe.session.user)
+    
+    settings = frappe.get_single("Sahayog Settings")
 
+    permissions = {
+        "can_edit_status": False,
+        "can_add_row": False,
+        "can_edit_location": False,
+    }
+
+    for row in settings.location_table_permissions:
+        if row.role in roles:
+            permissions["can_edit_status"] |= row.can_edit_status
+            permissions["can_add_row"] |= row.can_add_row
+            permissions["can_edit_location"] |= row.can_edit_location
+
+    return permissions
 
 # @frappe.whitelist()
 # def delete_file(name):
@@ -359,7 +385,7 @@ def check_loi_docstatus_for_task_2(doc, method):
 
         if loi_docs:
             for loi in loi_docs:
-                if loi['docstatus'] == 1:
+                if loi['docstatus'] == 0:
                     # LOI is saved but not submitted
                     loi_url = f"{get_url()}/app/letter-of-intent/{loi['name']}"
                     frappe.throw(
@@ -372,8 +398,4 @@ def check_loi_docstatus_for_task_2(doc, method):
             frappe.msgprint(_(f"No Letter of Intent found for project {project}"))
 
 
-#Fetch the role of the currently logged-in user.
-@frappe.whitelist()
-def get_user_role():
-    role = frappe.db.get_value("User", {"name": frappe.session.user}, "role_profile_name")
-    return role
+

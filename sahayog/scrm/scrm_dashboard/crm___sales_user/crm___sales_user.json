@@ -1,0 +1,21 @@
+{
+ "cards": [],
+ "charts": [
+  {
+   "chart": "Status Wise Leads",
+   "width": "Half"
+  }
+ ],
+ "creation": "2025-04-23 17:12:54.183192",
+ "dashboard_name": "CRM - Sales User",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2025-04-23 17:12:54.183192",
+ "modified_by": "Administrator",
+ "module": "SCRM",
+ "name": "CRM - Sales User",
+ "owner": "Administrator"
+}
