@@ -235,6 +235,7 @@ renderAssignedTasks("All");
         doc.style = css_content
         doc.script = js_content
         doc.save()
+        
         print("✅ Updated Custom HTML Block: Task Assigned")
     else:
         frappe.get_doc({
