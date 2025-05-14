@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-05-08 17:20:24.074967",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_du8e",
+  "agent",
+  "collection_type",
+  "product",
+  "is_split",
+  "column_break_j3q0",
+  "number_of_accounts",
+  "amount",
+  "collected_on",
+  "split_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_du8e",
+   "fieldtype": "Section Break",
+   "label": "Collection Details"
+  },
+  {
+   "fieldname": "collection_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Collection Type",
+   "options": "\nCollected\nPending",
+   "reqd": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Product",
+   "options": "\nSMBG\nRD",
+   "reqd": 1
+  },
+  {
+   "fieldname": "number_of_accounts",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Number of Accounts",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "collected_on",
+   "fieldtype": "Date",
+   "label": "Collected On ",
+   "reqd": 1
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Agent",
+   "options": "Agent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_j3q0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "split_from",
+   "fieldtype": "Link",
+   "label": "Split From",
+   "options": "Collection"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_split",
+   "fieldtype": "Check",
+   "label": "Is Split ?"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-08 17:28:11.657887",
+ "modified_by": "Administrator",
+ "module": "Collections",
+ "name": "Collection",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
