@@ -1,0 +1,239 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:agent_code",
+ "creation": "2025-05-08 17:17:31.001019",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "agent_details_section",
+  "is_active",
+  "agent_code",
+  "agent_full_name",
+  "created_on",
+  "aadhar_number",
+  "phone",
+  "column_break_lod0",
+  "agent_status",
+  "gender",
+  "branch_code_sol_id",
+  "pan_number",
+  "address",
+  "employee_tab",
+  "employee_details_section",
+  "employee_id",
+  "employee_name",
+  "phone_number",
+  "division",
+  "region",
+  "column_break_7zz0",
+  "employee_user_id",
+  "employee_designation",
+  "date_of_joining",
+  "branch",
+  "zone",
+  "collections_tab",
+  "total_collections",
+  "column_break_7oqj",
+  "total_collected_collections",
+  "column_break_rfq0",
+  "total_pending_collections"
+ ],
+ "fields": [
+  {
+   "fieldname": "agent_details_section",
+   "fieldtype": "Tab Break",
+   "label": "Agent"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "agent_code",
+   "fieldtype": "Data",
+   "label": "Agent Code",
+   "unique": 1
+  },
+  {
+   "fieldname": "agent_full_name",
+   "fieldtype": "Data",
+   "label": "Agent Full Name"
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Date",
+   "label": "Created On"
+  },
+  {
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone"
+  },
+  {
+   "fieldname": "column_break_lod0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_status",
+   "fieldtype": "Select",
+   "label": "Agent Status",
+   "options": "\nLive\nClosed"
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOther"
+  },
+  {
+   "fieldname": "branch_code_sol_id",
+   "fieldtype": "Data",
+   "label": "Branch Code / SOL ID"
+  },
+  {
+   "fieldname": "pan_number",
+   "fieldtype": "Data",
+   "label": "PAN number"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "employee_details_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
+   "fieldname": "employee_id",
+   "fieldtype": "Link",
+   "label": "Employee ID",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name"
+  },
+  {
+   "fetch_from": "employee_id.cell_number",
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "Phone Number"
+  },
+  {
+   "fetch_from": "employee_id.custom_division",
+   "fieldname": "division",
+   "fieldtype": "Data",
+   "label": "Division"
+  },
+  {
+   "fetch_from": "employee_id.custom_region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
+  },
+  {
+   "fieldname": "column_break_7zz0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee_id.user_id",
+   "fieldname": "employee_user_id",
+   "fieldtype": "Data",
+   "label": "Employee User ID"
+  },
+  {
+   "fetch_from": "employee_id.designation",
+   "fieldname": "employee_designation",
+   "fieldtype": "Data",
+   "label": "Employee Designation"
+  },
+  {
+   "fetch_from": "employee_id.date_of_joining",
+   "fieldname": "date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining"
+  },
+  {
+   "fetch_from": "employee_id.branch",
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch"
+  },
+  {
+   "fetch_from": "employee_id.custom_zone",
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "label": "Zone"
+  },
+  {
+   "fieldname": "collections_tab",
+   "fieldtype": "Tab Break",
+   "label": "Collections"
+  },
+  {
+   "fieldname": "total_collections",
+   "fieldtype": "Data",
+   "label": "Total Collections"
+  },
+  {
+   "fieldname": "column_break_7oqj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_collected_collections",
+   "fieldtype": "Data",
+   "label": "Total Collected Collections"
+  },
+  {
+   "fieldname": "column_break_rfq0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_pending_collections",
+   "fieldtype": "Data",
+   "label": "Total Pending Collections"
+  },
+  {
+   "fieldname": "employee_tab",
+   "fieldtype": "Tab Break",
+   "label": "Employee"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-08 17:30:40.214984",
+ "modified_by": "Administrator",
+ "module": "Collections",
+ "name": "Agent",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
