@@ -230,6 +230,7 @@ renderAssignedTasks("All");
 
     custom_block = frappe.db.exists('Custom HTML Block', 'Task Assigned')
     if custom_block:
+        # Update the existing Custom HTML Block
         doc = frappe.get_doc('Custom HTML Block', 'Task Assigned')
         doc.html = html_content
         doc.style = css_content
