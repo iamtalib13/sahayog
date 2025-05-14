@@ -129,7 +129,7 @@ after_migrate = [
     "sahayog.patches.fixtures.add_warehouses.execute",
     "sahayog.patches.fixtures.add_read_role_permission.execute",
     "sahayog.patches.fixtures.add_role_profile_for_stock_user.execute",
-    "sahayog.patches.fixtures.set_project_template_mandatory.execute",
+    #"sahayog.patches.fixtures.set_project_template_mandatory.execute",
     "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
 
