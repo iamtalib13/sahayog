@@ -237,7 +237,6 @@ renderAssignedTasks("All");
         doc.script = js_content
         doc.save()
         print("✅ Updated Custom HTML Block: Task Assigned")
-        frappe.error_logger("Updated Custom HTML Block: Task Assigned")
     else:
         # Create a new Custom HTML Block if it doesn't exist
         frappe.get_doc({
@@ -248,6 +247,5 @@ renderAssignedTasks("All");
             'script': js_content
         }).insert()
         print("✅ Created Custom HTML Block: Task Assigned")
-        frappe.error_logger("Created Custom HTML Block: Task Assigned")
 
     frappe.db.commit()
