@@ -11,31 +11,13 @@ def execute():
                 "insert_after": "status_change_log",
                
             },
-            {
-                "label": "Product",
-                "fieldname": "custom_product",
-                "fieldtype": "Table",
-                "insert_after": "custom_sahayog_tab_break",
-                "reqd": 1,
-                "options": "Lead Product",
-                "ignore_user_permissions": True,
-               
-            },
-
-            {
-                "label": "Product Name",
-                "fieldname": "custom_product_name",
-                "fieldtype": "Data",
-                "insert_after": "custom_product",
-                "fetch_from": "custom_product.product_name",
-               
-            },
+            
 
             {
                 "label": "Lead Owner Branch",
                 "fieldname": "custom_lead_owner_branch",
                 "fieldtype": "Link",
-                "insert_after": "custom_product_name",
+                "insert_after": "custom_sahayog_tab_break",
                 "options": "Branch",
                 "ignore_user_permissions": True,
         
@@ -83,15 +65,24 @@ def execute():
                     "options": "Zone",
                 },
 
+
                 {
                     "label": "Region",
                     "fieldname": "custom_region",
                     "fieldtype": "Link",
                     "insert_after": "custom_zone",
                     "options": "Region",
-                }
-            
-            
+                }, 
+
+               
+               {
+                   "label": "Product",
+                    "fieldname": "custom_product",
+                    "fieldtype": "Table",
+                    "insert_after": "custom_region",
+                    "options": "Lead Product",
+                        
+               }
         ],
     }
     create_custom_fields(fields)

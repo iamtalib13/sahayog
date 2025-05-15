@@ -10,13 +10,10 @@ def get_lead_dashboard_data():
         total_leads = frappe.db.count('CRM Lead')
 
         converted_leads = frappe.db.count('CRM Lead', {
-            'status': 'Converted'
+            'status': 'Qualified',
+            'converted': 1
         })
 
-        assigned_leads = frappe.db.count('ToDo', {
-            'reference_type': 'CRM Lead',
-            'status': 'Open'
-        })
 
         status_wise = frappe.db.sql("""
             SELECT status, COUNT(name) as count
@@ -25,6 +22,7 @@ def get_lead_dashboard_data():
         """, as_dict=True)
 
     else:
+
         # Normal user sees only their own data
         total_leads = frappe.db.count('CRM Lead', {'lead_owner': user})
 
@@ -37,7 +35,7 @@ def get_lead_dashboard_data():
             SELECT COUNT(name)
             FROM `tabCRM Lead`
             WHERE
-                status = 'New'
+                converted = 0
                 AND lead_owner != %s
                 AND _assign LIKE %s
         """, (user, f'%{user}%'))[0][0]
