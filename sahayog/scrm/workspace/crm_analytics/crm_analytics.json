@@ -1,0 +1,71 @@
+{
+ "charts": [
+  {
+   "chart_name": "Monthly Lead Trend",
+   "label": "Monthly Lead Trend"
+  },
+  {
+   "chart_name": "Branch Wise Leads",
+   "label": "Branch Wise Leads"
+  },
+  {
+   "chart_name": "Status Wise Leads",
+   "label": "Status Wise Leads"
+  },
+  {
+   "chart_name": "Leads by Source",
+   "label": "Leads by Source"
+  },
+  {
+   "chart_name": "Region Wise Leads",
+   "label": "Region Wise Leads"
+  },
+  {
+   "chart_name": "Zone Wise Leads",
+   "label": "Zone Wise Leads"
+  }
+ ],
+ "content": "[{\"id\":\"rN8EsihaUU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Sahayog CRM Analytics</span>\",\"col\":12}},{\"id\":\"2BoN9NQFqx\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Lead Trend\",\"col\":12}},{\"id\":\"gykf2nVfhw\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Status Wise Leads\",\"col\":6}},{\"id\":\"Zvq5PD-1tL\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Leads by Source\",\"col\":6}},{\"id\":\"s5-ZGuckEM\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Region Wise Leads\",\"col\":12}},{\"id\":\"kN5Amm4nfo\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zone Wise Leads\",\"col\":12}},{\"id\":\"XXQKN89hIQ\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"CRM-Zone and Region wise Data\",\"col\":12}},{\"id\":\"_nxWMT_2Yd\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Branch Wise Leads\",\"col\":12}},{\"id\":\"P_FaSLBq5x\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"sUXCWSsQbl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Wise Lead Conversion\",\"col\":3}}]",
+ "creation": "2025-05-07 02:31:14.871504",
+ "custom_blocks": [
+  {
+   "custom_block_name": "CRM-Zone and Region wise Data",
+   "label": "CRM-Zone and Region wise Data"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "CRM Analytics",
+ "links": [],
+ "modified": "2025-05-14 16:24:01.809489",
+ "modified_by": "Administrator",
+ "module": "SCRM",
+ "name": "CRM Analytics",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Sales Manager"
+  }
+ ],
+ "sequence_id": 39.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Employee Wise Lead Conversion",
+   "link_to": "Conversion Report",
+   "report_ref_doctype": "CRM Lead",
+   "type": "Report"
+  }
+ ],
+ "title": "CRM Analytics"
+}

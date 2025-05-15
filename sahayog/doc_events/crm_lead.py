@@ -3,10 +3,21 @@ from frappe.utils import now_datetime
 
 def set_lead_owner_branch(doc, method):
     if frappe.session.user != "Administrator":  # Check if the user is not admin
-        if not doc.custom_lead_owner_branch:
-            branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "branch")
+        if not (doc.custom_lead_owner_branch and doc.custom_region and doc.custom_zone):
+            # Fetch branch, region, and zone from Employee doctype
+            branch, region, zone = frappe.db.get_value(
+                "Employee",
+                {"user_id": frappe.session.user},
+                ["branch", "custom_region", "custom_zone"]
+            )
+
+            # Set values if available
             if branch:
                 doc.custom_lead_owner_branch = branch
+            if region:
+                doc.custom_region = region
+            if zone:
+                doc.custom_zone = zone
 
 def set_sla(doc,method):
     if not doc.sla:
@@ -63,3 +74,16 @@ def update_escalation_matrix_row(doc, method):
 
     # Log to ensure updates have been made
     frappe.log_error(f"Escalation Matrix updated for Lead: {doc.name}", "Escalation Matrix Update")
+
+
+import re
+
+# This function is triggered before saving a lead
+# It validates the mobile number field to ensure it is mandatory and exactly 10 digits
+def validate_lead_fields(doc, method):
+    # Validate Mobile Number - Mandatory and 10 digits check
+    if not doc.mobile_no:
+        frappe.throw("Mobile Number is mandatory.")
+    
+    if not re.match(r'^\d{10}$', doc.mobile_no):
+        frappe.throw("Invalid Mobile Number. It should be exactly 10 digits.")

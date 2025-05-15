@@ -53,7 +53,7 @@ doctype_js = {
     "CRM Lead": "public/js/crm_lead.js",
   
 }
-app_include_js = "/assets/frappe/js/frappe-web.min.js"
+#app_include_js = "/assets/frappe/js/frappe-web.min.js"
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -128,10 +128,13 @@ after_migrate = [
     "sahayog.patches.fixtures.add_warehouses.execute",
     "sahayog.patches.fixtures.add_read_role_permission.execute",
     "sahayog.patches.fixtures.add_role_profile_for_stock_user.execute",
-    "sahayog.patches.fixtures.set_project_template_mandatory.execute",
+   # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
     "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
 
+    "sahayog.scrm.custom_html_block.crm_bm.execute",
+    "sahayog.scrm.custom_html_block.crm_zone_and_region_wise_data.execute",
+    "sahayog.scrm.custom_html_block.sahayog_crm_dashboard.execute",
 
 ]
 # Uninstallation
@@ -283,8 +286,9 @@ doc_events = {
         "on_update": [
             "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
         ],
-
-
+        "before_save": [
+            "sahayog.doc_events.crm_lead.validate_lead_fields",
+        ]
     }
 }
 
