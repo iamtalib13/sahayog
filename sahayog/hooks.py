@@ -51,9 +51,10 @@ doctype_js = {
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
     "CRM Lead": "public/js/crm_lead.js",
+    "Project": "public/js/project.js"
   
 }
-#app_include_js = "/assets/frappe/js/frappe-web.min.js"
+# app_include_js = "/assets/frappe/js/frappe-web.min.js"
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -124,11 +125,12 @@ after_migrate = [
     "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
     "sahayog.patches.fixtures.add_custom_html_block_for_project.execute",
+    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
     "sahayog.patches.fixtures.add_item_group.execute",
     "sahayog.patches.fixtures.add_warehouses.execute",
     "sahayog.patches.fixtures.add_read_role_permission.execute",
     "sahayog.patches.fixtures.add_role_profile_for_stock_user.execute",
-   # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
+    "sahayog.patches.fixtures.set_project_template_mandatory.execute",
     "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
 
