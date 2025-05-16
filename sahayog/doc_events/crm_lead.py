@@ -4,20 +4,29 @@ from frappe.utils import now_datetime
 def set_lead_owner_branch(doc, method):
     if frappe.session.user != "Administrator":  # Check if the user is not admin
         if not (doc.custom_lead_owner_branch and doc.custom_region and doc.custom_zone):
-            # Fetch branch, region, and zone from Employee doctype
-            branch, region, zone = frappe.db.get_value(
-                "Employee",
-                {"user_id": frappe.session.user},
-                ["branch", "custom_region", "custom_zone"]
-            )
+            try:
+                # Fetch branch, region, and zone from Employee doctype
+                branch, region, zone = frappe.db.get_value(
+                    "Employee",
+                    {"user_id": frappe.session.user},
+                    ["branch", "custom_region", "custom_zone"]
+                )
+                
+                if not (branch or region or zone):
+                    frappe.log_error(f"No matching Employee record found for user: {frappe.session.user}", "Set Lead Owner Branch Error")
+                    frappe.throw("Could not fetch Branch, Region, or Zone for the current user. Please ensure your employee details are properly set.")
 
-            # Set values if available
-            if branch:
-                doc.custom_lead_owner_branch = branch
-            if region:
-                doc.custom_region = region
-            if zone:
-                doc.custom_zone = zone
+                # Set values if available
+                if branch:
+                    doc.custom_lead_owner_branch = branch
+                if region:
+                    doc.custom_region = region
+                if zone:
+                    doc.custom_zone = zone
+
+            except Exception as e:
+                frappe.log_error(f"Error fetching values for user {frappe.session.user}: {str(e)}", "Set Lead Owner Branch Error")
+                frappe.throw("An error occurred while fetching your branch details. Please contact the administrator.")
 
 def set_sla(doc,method):
     if not doc.sla:
