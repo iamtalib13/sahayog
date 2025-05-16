@@ -279,15 +279,15 @@ doc_events = {
     "CRM Lead": {
         "before_insert": [
             "sahayog.doc_events.crm_lead.set_lead_owner_branch",
-            "sahayog.doc_events.crm_lead.set_sla"
+            # "sahayog.doc_events.crm_lead.set_sla"
             
         ],
-        "after_insert": [
-            "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
-        ],
-        "on_update": [
-            "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
-        ],
+        # "after_insert": [
+        #     "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
+        # ],
+        # "on_update": [
+        #     "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
+        # ],
         "before_save": [
             "sahayog.doc_events.crm_lead.validate_lead_fields",
         ]
@@ -298,11 +298,11 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-    "cron": {
-        "* * * * *": [
-            "sahayog.scrm.api.lead_escalation.run_escalation_check"
-        ]
-    }
+    # "cron": {
+    #     "* * * * *": [
+    #         "sahayog.scrm.api.lead_escalation.run_escalation_check"
+    #     ]
+    # }
     # You can uncomment these if needed later:
     # "all": [
     #     "sahayog.tasks.all"

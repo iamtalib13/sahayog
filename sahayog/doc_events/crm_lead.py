@@ -3,20 +3,21 @@ from frappe.utils import now_datetime
 
 def set_lead_owner_branch(doc, method):
     if frappe.session.user != "Administrator":  # Check if the user is not admin
-        if not (doc.custom_lead_owner_branch and doc.custom_region and doc.custom_zone):
-            try:
-                # Fetch branch, region, and zone from Employee doctype
-                branch, region, zone = frappe.db.get_value(
-                    "Employee",
-                    {"user_id": frappe.session.user},
-                    ["branch", "custom_region", "custom_zone"]
-                )
-                
-                if not (branch or region or zone):
-                    frappe.log_error(f"No matching Employee record found for user: {frappe.session.user}", "Set Lead Owner Branch Error")
-                    frappe.throw("Could not fetch Branch, Region, or Zone for the current user. Please ensure your employee details are properly set.")
+        try:
+            # Fetch branch, region, and zone from Employee doctype for current user
+            result = frappe.db.get_value(
+                "Employee",
+                {"user_id": frappe.session.user},
+                ["branch", "custom_region", "custom_zone"]
+            )
 
-                # Set values if available
+            if not result:
+                frappe.throw("Could not fetch Branch, Region, or Zone for the current user. Please ensure your employee details are properly set.")
+
+            branch, region, zone = result
+
+            # Only set if those fields are not already set in doc
+            if not (doc.custom_lead_owner_branch and doc.custom_region and doc.custom_zone):
                 if branch:
                     doc.custom_lead_owner_branch = branch
                 if region:
@@ -24,13 +25,27 @@ def set_lead_owner_branch(doc, method):
                 if zone:
                     doc.custom_zone = zone
 
-            except Exception as e:
-                frappe.log_error(f"Error fetching values for user {frappe.session.user}: {str(e)}", "Set Lead Owner Branch Error")
-                frappe.throw("An error occurred while fetching your branch details. Please contact the administrator.")
+        except Exception as e:
+            frappe.throw("An error occurred while fetching your branch details. Please contact the administrator.")
 
-def set_sla(doc,method):
-    if not doc.sla:
-        doc.sla= "Sahayog SLA"
+
+# It sets the SLA field to "Sahayog SLA" if it is empty
+# and the field exists in the document's metadata
+def set_sla(doc, method):
+    try:
+        if 'sla' in doc.as_dict():
+            if not doc.sla:
+                doc.sla = "Sahayog SLA"
+        else:
+            # Log warning if 'sla' field does not exist
+            frappe.log_error(f"'SLA' field not found in {doc.doctype}. Please check the configuration.", "Set SLA Warning")
+            print(f"Warning: 'SLA' field not found in {doc.doctype}. Please check the configuration.")
+    except Exception as e:
+        # Log any unexpected errors during SLA setting
+        frappe.log_error(f"Error setting SLA for {doc.doctype} {doc.name}: {str(e)}", "Set SLA Error")
+        print(f"Error setting SLA for {doc.doctype} {doc.name}: {str(e)}")
+
+
 
 
 # This function is triggered when a lead is created
