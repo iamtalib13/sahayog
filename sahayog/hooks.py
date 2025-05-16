@@ -198,10 +198,10 @@ override_doctype_class = {
 # Hook on document methods and events
 doc_events = {
     "Employee": {
-        "after_insert": [
-            "sahayog.doc_events.create_user_from_employee.create_user",
-            # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
-        ],
+        # "after_insert": [
+        #     # "sahayog.doc_events.create_user_from_employee.create_user",
+        #     # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
+        # ],
       
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
