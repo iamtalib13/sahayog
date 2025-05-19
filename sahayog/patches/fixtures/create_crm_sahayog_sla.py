@@ -21,7 +21,7 @@ def execute():
         "priorities": [
             {
                 "priority": "Open",
-                "first_response_time": "1m",
+                "first_response_time": 60,
                 "default_priority": 0,
             }
         ],
