@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import now, now_datetime
 
 def set_lead_owner_branch(doc, method):
     if frappe.session.user != "Administrator":  # Check if the user is not admin
@@ -50,16 +50,26 @@ def set_sla(doc, method):
 
 # This function is triggered when a lead is created
 # It adds a new row to the escalation matrix with the initial values
+
 def add_escalation_matrix_row(doc, method):
-    # When a new lead is created, append a new row to the escalation matrix with default values
-    doc.append("custom_escalation_matrix", {
-        "user": doc.owner,
-        "current_escalation_status": "Pending",
-        "start_time": doc.creation,
-        "end_time": doc.response_by,
-        "is_escalated": 0
-    })
-    doc.save(ignore_permissions=True)
+    try:
+        # Attempt to append a new row to the escalation matrix with default values
+        doc.append("custom_escalation_matrix", {
+            "user": doc.owner,
+            "current_escalation_status": "Pending",
+            "start_time": doc.creation,
+            "end_time": doc.response_by,
+            "is_escalated": 0
+        })
+        
+        # Save the document with ignore permissions
+        doc.save(ignore_permissions=True)
+
+    except Exception as e:
+        # Log the error with a timestamp and document reference
+        frappe.log_error(f"Failed to add escalation matrix row for Doc: {doc.name}. Error: {str(e)}", 
+                         f"Escalation Matrix Error - {now()}")
+
 
 # This function is triggered when a lead is updated 
 import frappe

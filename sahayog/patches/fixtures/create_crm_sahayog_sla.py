@@ -34,4 +34,4 @@ def execute():
     # Insert and commit
     sla_doc.insert()
     frappe.db.commit()
-    frappe.msgprint("Sahayog SLA created successfully")  # Informational
+    print("Sahayog SLA created successfully")  # Informational
