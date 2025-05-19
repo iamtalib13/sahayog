@@ -133,10 +133,12 @@ after_migrate = [
     # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
     "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
+    "sahayog.patches.fixtures.create_crm_sahayog_sla.execute",
 
     "sahayog.scrm.custom_html_block.crm_bm.execute",
     "sahayog.scrm.custom_html_block.crm_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.sahayog_crm_dashboard.execute",
+
 
 ]
 # Uninstallation
@@ -198,19 +200,19 @@ override_doctype_class = {
 # Hook on document methods and events
 doc_events = {
     "Employee": {
-        # "after_insert": [
-        #     # "sahayog.doc_events.create_user_from_employee.create_user",
-        #     # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
-        # ],
+        "after_insert": [
+            "sahayog.doc_events.create_user_from_employee.create_user",
+            # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
+        ],
       
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
             
         ],
-        # "before_save": [
-        #      "sahayog.doc_events.employee.emp_enable_disable",
+        "before_save": [
+             "sahayog.doc_events.employee.emp_enable_disable",
             
-        # ],
+        ],
     },
     "Project": {
 
@@ -279,15 +281,14 @@ doc_events = {
     "CRM Lead": {
         "before_insert": [
             "sahayog.doc_events.crm_lead.set_lead_owner_branch",
-            # "sahayog.doc_events.crm_lead.set_sla"
-            
+            "sahayog.doc_events.crm_lead.set_sla"
         ],
-        # "after_insert": [
-        #     "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
-        # ],
-        # "on_update": [
-        #     "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
-        # ],
+        "after_insert": [
+            "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
+        ],
+        "on_update": [
+            "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
+        ],
         "before_save": [
             "sahayog.doc_events.crm_lead.validate_lead_fields",
         ]
@@ -298,11 +299,11 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-    # "cron": {
-    #     "* * * * *": [
-    #         "sahayog.scrm.api.lead_escalation.run_escalation_check"
-    #     ]
-    # }
+    "cron": {
+        "* * * * *": [
+            "sahayog.scrm.api.lead_escalation.run_escalation_check"
+        ]
+    }
     # You can uncomment these if needed later:
     # "all": [
     #     "sahayog.tasks.all"
@@ -339,6 +340,8 @@ override_whitelisted_methods = {
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
     "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
     "erpnext.selling.doctype.customer.customer": "sahayog.override.override_make_contact.custom_make_contact",
+    #"frappe.core.doctype.communication.email.make": "sahayog.override.email_sender_override.make"
+
 }
 #
 # each overriding function accepts a `data` argument;
