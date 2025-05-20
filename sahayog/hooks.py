@@ -209,10 +209,10 @@ doc_events = {
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
             
         ],
-        "before_save": [
-             "sahayog.doc_events.employee.emp_enable_disable",
+        # "before_save": [
+        #      "sahayog.doc_events.employee.emp_enable_disable",
             
-        ],
+        # ],
     },
     "Project": {
 
