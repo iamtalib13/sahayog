@@ -39,25 +39,22 @@ def create_purchase_receipt(doc, method):
     frappe.msgprint(f"Purchase Receipt {pr.name} created in Draft status.", alert=True)
 
 def fetch_terms_conditions(doc, method):
-    # Fetch all Terms and Conditions in ascending order by custom_sequence
-    terms_conditions = frappe.get_all(
-        "Terms and Conditions",
-        filters={},
-        fields=["custom_sequence", "title", "terms"],
-        order_by="custom_sequence ASC"
-    )
+    # Only fetch and populate if custom_terms_table is empty
+    if not doc.custom_terms_table:
+        terms_conditions = frappe.get_all(
+            "Terms and Conditions",
+            filters={},
+            fields=["custom_sequence", "title", "terms"],
+            order_by="custom_sequence ASC"
+        )
 
-    # Clear existing child table entries (if any)
-    doc.custom_terms_table = []
-
-    # Insert fetched data into the child table
-    for terms in terms_conditions:
-        doc.append("custom_terms_table", {
-            "sequence": terms.custom_sequence,
-            "title": strip_html(terms.title),  # Safe, even if title has no HTML
-            "terms": strip_html(terms.terms),   # Required to remove unwanted HTML
-            "show_tc": 0  # Optional: Show all terms by default
-        })
+        for terms in terms_conditions:
+            doc.append("custom_terms_table", {
+                "sequence": terms.custom_sequence,
+                "title": strip_html(terms.title),
+                "terms": strip_html(terms.terms),
+                "show_tc": 0
+            })
 
 def get_short_fiscal_year():
     """Return the current Indian fiscal year in short format (YY-YY)."""

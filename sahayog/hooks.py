@@ -226,8 +226,6 @@ doc_events = {
             "sahayog.doc_events.user.user_enable_disable",
             "sahayog.doc_events.user.capital_user_name",   
         ],
-
-        
     },
     "Task": {
 
@@ -266,7 +264,7 @@ doc_events = {
     "Purchase Order": {
         #"on_update": "sahayog.doc_events.purchase_order.show_status_messages",
         "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname",
-        "validate": "sahayog.doc_events.purchase_order.fetch_terms_conditions",
+        "before_save": "sahayog.doc_events.purchase_order.fetch_terms_conditions",
         "validate": "sahayog.doc_events.purchase_order.validate_store_incharge_po",
     },
     "Purchase Receipt": {
