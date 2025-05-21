@@ -134,3 +134,18 @@ def get_zone_region_data():
 
     return chart_data
 
+
+@frappe.whitelist()
+def get_all_crm_view_settings():
+    try:
+        # Fetch all records from the table
+        records = frappe.db.get_all(
+            "CRM View Settings",
+            fields=["*"]  # or specify only required fields for performance
+        )
+
+        return records
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Error in get_all_crm_view_settings")
+        return {"error": "Internal server error"}
