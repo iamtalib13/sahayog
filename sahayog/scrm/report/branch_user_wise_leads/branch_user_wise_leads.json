@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2025-05-14 17:38:19.302232",
+ "modified": "2025-05-21 13:45:12.875061",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Branch User-wise Leads",
@@ -25,6 +25,9 @@
   },
   {
    "role": "Sales User"
+  },
+  {
+   "role": "Branch Manager"
   }
  ],
  "timeout": 0
