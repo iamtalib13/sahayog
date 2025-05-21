@@ -10,6 +10,14 @@ frappe.ui.form.on("Purchase Order", {
     if (frm.is_new()) {
       frm.set_value("custom_sahayog_status", "Draft");
     }
+
+    if (frappe.session.user !== 'Administrator') {
+      frm.set_df_property('terms', 'hidden', 1);
+      frm.set_df_property('tc_name', 'hidden', 1);
+  } else {
+      frm.set_df_property('terms', 'hidden', 0);
+      frm.set_df_property('tc_name', 'hidden', 0);
+  }
   },
 
   onload: function (frm) {
