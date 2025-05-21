@@ -1,9 +1,20 @@
 import frappe
-
 @frappe.whitelist()
 def get_logged_in_employee():
     if frappe.session.user == "Administrator":
-        return {"error": "Administrator login not allowed"}
+        return {
+            "employee_name": "ADMIN",
+            "employee": "ADMIN",
+            "reports_to": "ADMIN",
+            "designation": "ADMIN",
+            "branch": "ADMIN",
+            "custom_zone": "ADMIN",
+            "custom_region": "ADMIN",
+            "custom_division": "ADMIN",
+            "date_of_joining": "ADMIN",
+            "cell_number": "ADMIN",
+            "gender": "ADMIN"
+        }
 
     employee = frappe.get_value(
         "Employee",
@@ -18,8 +29,8 @@ def get_logged_in_employee():
             "custom_region",
             "custom_division",
             "date_of_joining",
-            "cell_number",  # added
-            "gender"        # added
+            "cell_number",
+            "gender"
         ],
         as_dict=True
     )
