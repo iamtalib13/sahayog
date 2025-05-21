@@ -39,7 +39,7 @@ def create_purchase_receipt(doc, method):
     frappe.msgprint(f"Purchase Receipt {pr.name} created in Draft status.", alert=True)
 
 def fetch_terms_conditions(doc, method):
-    # Only fetch and populate if custom_terms_table is empty
+    # If the child table is empty, fetch and populate it
     if not doc.custom_terms_table:
         terms_conditions = frappe.get_all(
             "Terms and Conditions",
@@ -55,6 +55,9 @@ def fetch_terms_conditions(doc, method):
                 "terms": strip_html(terms.terms),
                 "show_tc": 0
             })
+    else:
+        # Table already has data, do nothing to keep existing show_tc and rows
+        pass
 
 def get_short_fiscal_year():
     """Return the current Indian fiscal year in short format (YY-YY)."""
