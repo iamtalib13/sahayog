@@ -39,26 +39,38 @@ def create_purchase_receipt(doc, method):
     frappe.msgprint(f"Purchase Receipt {pr.name} created in Draft status.", alert=True)
 
 def fetch_terms_conditions(doc, method):
-    # If the child table is empty, fetch and populate it
-    frappe.log_error(f"This function is called for docname: {doc.name}", "fetch_terms_conditions")
-    if not doc.custom_terms_table:
+    """Populate custom_terms_table with Terms and Conditions if it's empty. Logs success and errors."""
+
+    try:
+        if doc.get("custom_terms_table"):
+            return  # Already populated, skip
+
         terms_conditions = frappe.get_all(
             "Terms and Conditions",
-            filters={},
             fields=["custom_sequence", "title", "terms"],
             order_by="custom_sequence ASC"
         )
 
-        for terms in terms_conditions:
+        for tc in terms_conditions:
             doc.append("custom_terms_table", {
-                "sequence": terms.custom_sequence,
-                "title": strip_html(terms.title),
-                "terms": strip_html(terms.terms),
+                "sequence": tc.custom_sequence,
+                "title": strip_html(tc.title or ""),
+                "terms": strip_html(tc.terms or ""),
                 "show_tc": 0
             })
-    else:
-        # Table already has data, do nothing to keep existing show_tc and rows
-        pass
+
+        # ✅ Success log
+        frappe.log_error(
+            title="fetch_terms_conditions: Success",
+            message=f"Terms populated successfully for doc {doc.doctype} | {doc.name}"
+        )
+
+    except Exception as e:
+        # ❌ Error log with traceback
+        frappe.log_error(
+            title="fetch_terms_conditions: Error",
+            message=frappe.get_traceback()
+        )
 
 def get_short_fiscal_year():
     """Return the current Indian fiscal year in short format (YY-YY)."""
