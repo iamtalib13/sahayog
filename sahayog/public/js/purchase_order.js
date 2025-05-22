@@ -10,6 +10,23 @@ frappe.ui.form.on("Purchase Order", {
     if (frm.is_new()) {
       frm.set_value("custom_sahayog_status", "Draft");
     }
+
+    if (frappe.session.user !== 'Administrator') {
+      frm.set_df_property('terms', 'hidden', 1);
+      frm.set_df_property('tc_name', 'hidden', 1);
+  } else {
+      frm.set_df_property('terms', 'hidden', 0);
+      frm.set_df_property('tc_name', 'hidden', 0);
+  }
+
+  if (frappe.user.has_role("Administrator")) {
+    frm.add_custom_button("Admin Save", function () {
+        // Save the document
+        frm.dirty();
+        frm.save();
+    }); // You can use any group like "Actions"
+  }
+
   },
 
   onload: function (frm) {
@@ -22,6 +39,23 @@ frappe.ui.form.on("Purchase Order", {
     frm.trigger("po_progress_status_html");
     if (frm.is_new()) {
       frm.set_value("custom_sahayog_status", "Draft");
+    }
+  },
+  onload: function(frm) {
+    if (frappe.session.user !== 'Administrator') {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .row-check.sortable-handle.col {
+                display: none !important;
+            }
+            .row-index.sortable-handle.col {
+                display: none !important;
+            }
+            button.btn.btn-xs.btn-secondary.grid-add-row {
+                display: none !important;
+            }
+        `;
+        document.head.appendChild(style);
     }
   },
 

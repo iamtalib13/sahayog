@@ -39,25 +39,28 @@ def create_purchase_receipt(doc, method):
     frappe.msgprint(f"Purchase Receipt {pr.name} created in Draft status.", alert=True)
 
 def fetch_terms_conditions(doc, method):
-    # Fetch all Terms and Conditions in ascending order by custom_sequence
-    terms_conditions = frappe.get_all(
-        "Terms and Conditions",
-        filters={},
-        fields=["custom_sequence", "title", "terms"],
-        order_by="custom_sequence ASC"
-    )
+    """Populate custom_terms_table with Terms and Conditions if it's empty. Logs success and errors."""
 
-    # Clear existing child table entries (if any)
-    doc.custom_terms_table = []
+    try:
+        if doc.get("custom_terms_table"):
+            return  # Already populated, skip
 
-    # Insert fetched data into the child table
-    for terms in terms_conditions:
-        doc.append("custom_terms_table", {
-            "sequence": terms.custom_sequence,
-            "title": strip_html(terms.title),  # Safe, even if title has no HTML
-            "terms": strip_html(terms.terms),   # Required to remove unwanted HTML
-            "show_tc": 1  # Optional: Show all terms by default
-        })
+        terms_conditions = frappe.get_all(
+            "Terms and Conditions",
+            fields=["custom_sequence", "title", "terms"],
+            order_by="custom_sequence ASC"
+        )
+
+        for tc in terms_conditions:
+            doc.append("custom_terms_table", {
+                "sequence": tc.custom_sequence,
+                "title": strip_html(tc.title or ""),
+                "terms": strip_html(tc.terms or ""),
+                "show_tc": 1
+            })
+
+    except Exception as e:
+        frappe.msgprint(f"Error fetching terms and conditions: {str(e)}", alert=True)
 
 def get_short_fiscal_year():
     """Return the current Indian fiscal year in short format (YY-YY)."""

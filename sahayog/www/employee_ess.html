@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Employee Profile with 3 Tabs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="/assets/frappe/dist/js/main.bundle.BYJXV4LB.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+       /* Hide all scrollbars universally */
+  * {
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE and Edge */
+  }
+
+  *::-webkit-scrollbar {
+    display: none;                /* Chrome, Safari and Opera */
+  }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans text-gray-800">
+    <!-- Top red bar -->
+    
+    <!-- Main Profile Header -->
+    <div class="bg-[#61b533] text-white px-4 py-4">
+      <div class="flex flex-col md:flex-row md:items-start gap-4">
+        <!-- Profile Image -->
+        <div class="relative w-20 h-20 shrink-0">
+          <img
+            class="w-20 h-20 rounded-full object-cover border-2 border-white"
+            src="assets/sahayog/images/sahayog_user_logo.png"
+            alt="Profile"
+          />
+          <span
+            class="absolute bottom-1 right-1 w-4 h-4 bg-orange-500 border-2 border-red-900 rounded-full"
+          ></span>
+        </div>
+    
+        <!-- User Details -->
+        <div class="flex flex-col justify-start">
+          <!-- Name -->
+          <h2 class="font-extrabold text-white text-lg leading-tight">
+            <span id="employee-name">Loading...</span>
+          </h2>
+    
+          <!-- Detail Rows with CSS Grid -->
+          <div
+          class="mt-2 text-xs font-normal grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-2 w-full max-w-full"
+          >
+          <div>
+            <span class="font-semibold">Joining Date:</span>
+            <span id="date-of-joining">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Reports To:</span>
+            <span id="reports-to">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Designation:</span>
+            <span id="designation">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Branch:</span>
+            <span id="branch">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Zone:</span>
+            <span id="zone">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Region:</span>
+            <span id="region">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Division:</span>
+            <span id="division">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Cell Number:</span>
+            <span id="cell-number">-</span>
+          </div>
+          <div>
+            <span class="font-semibold">Gender:</span>
+            <span id="gender">-</span>
+          </div>
+          </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      
+      
+      
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b border-gray-200 select-none">
+      <ul class="flex overflow-x-auto scrollbar-hide text-xs font-normal text-gray-600" role="tablist" id="tabs">
+        <li class="flex-shrink-0">
+          <button class="px-4 py-2 text-[#61b533] font-semibold border-b-2 border-[#61b533] bg-[#61b533]/20" data-tab="ticket">Ticket</button>
+        </li>
+        <li class="flex-shrink-0">
+          <button class="px-4 py-2 hover:text-gray-900" data-tab="asset">Asset</button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="p-4 space-y-6 max-w-7xl mx-auto">
+      <!-- Ticket Tab -->
+      <section class="tab-content" id="ticket">
+        <div class="bg-white rounded-md shadow-sm p-4 border border-gray-200 text-xs text-gray-800">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-sm text-gray-700">Ticket Information</h3>
+            <div class="flex space-x-2">
+              <select id="ticket-filter-status" class="border text-xs px-2 py-1 rounded text-gray-700">
+                <option value="">All Status</option>
+                <option>Open</option>
+                <option>Read</option>
+                <option>In-Progress</option>
+                <option>On-Hold</option>
+                <option>Re-Opened</option>
+                <option>Resolved</option>
+                <option>Closed</option>
+                <option>Cancelled</option>
+              </select>
+              <select id="ticket-filter-priority" class="border text-xs px-2 py-1 rounded text-gray-700">
+                <option value="">All Priority</option>
+                <option>Normal</option>
+                <option>Medium</option>
+                <option>High</option>
+                <option>Urgent</option>
+              </select>
+              <button onclick="window.top.location.href='/app/sahayog-ticket/new'" class="bg-[#61b533] hover:bg-[#4a9323] text-white text-xs px-3 py-1 rounded">
+                + Create Ticket
+              </button>              
+            </div>
+          </div>
+      
+          <!-- Table layout begins here -->
+          <div class="overflow-x-auto border border-gray-200 rounded-md">
+            <div class="max-h-64 overflow-y-auto">
+              <table class="min-w-full divide-y divide-gray-200 text-xs text-gray-700">
+                <thead class="bg-gray-50 font-medium sticky top-0 z-10">
+                  <tr>
+                    <th class="px-3 py-2 text-left bg-gray-50">ID</th>
+                    <th class="px-3 py-2 text-left bg-gray-50">Status</th>
+                    <th class="px-3 py-2 text-left bg-gray-50">Branch</th>
+                    <th class="px-3 py-2 text-left bg-gray-50">Employee</th>
+                    <th class="px-3 py-2 text-left bg-gray-50">Region</th>
+                    <th class="px-3 py-2 text-left bg-gray-50">Ticket Type</th>
+                    <th class="px-3 py-2 text-left bg-gray-50">Creation</th>
+                  </tr>
+                </thead>
+                <tbody id="ticket-list" class="divide-y divide-gray-100">
+                  <!-- Dynamic ticket rows will load here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          
+          
+        </div>
+      </section>
+      
+      <!-- Asset Tab -->
+      <section class="tab-content hidden" id="asset">
+        <div class="bg-white rounded-md shadow-sm p-4 border border-gray-200 text-xs text-gray-800">
+          <h3 class="font-semibold mb-2">Asset Information</h3>
+          <p>This is the Asset tab content. Add relevant asset details here.</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Tab switching logic
+      const tabButtons = document.querySelectorAll('[data-tab]');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-tab');
+
+          tabButtons.forEach(b => {
+            b.classList.remove('text-[#61b533]', 'font-semibold', 'border-b-2', 'border-[#61b533]', 'bg-[#61b533]/20');
+          });
+          btn.classList.add('text-[#61b533]', 'font-semibold', 'border-b-2', 'border-[#61b533]', 'bg-[#61b533]/20');
+
+          tabContents.forEach(content => {
+            content.classList.add('hidden');
+          });
+          document.getElementById(target).classList.remove('hidden');
+        });
+      });
+
+      function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.innerText = text || "-";
+}
+
+fetch('/api/method/sahayog.api.employee.get_logged_in_employee')
+  .then(response => response.json())
+  .then(data => {
+    const emp = data.message;
+    if (!emp || emp.error) {
+      setText("employee-name", emp?.error || "Employee data not found");
+      return;
+    }
+
+    setText("employee-name", emp.employee_name);
+    setText("date-of-joining", emp.date_of_joining);
+    setText("reports-to", emp.reports_to || "N/A");
+    setText("designation", emp.designation);
+    setText("branch", emp.branch);
+    setText("zone", emp.custom_zone);
+    setText("region", emp.custom_region);
+    setText("division", emp.custom_division);
+
+    // New fields
+    setText("cell-number", emp.cell_number);
+    setText("gender", emp.gender);
+  })
+  .catch(error => {
+    console.error("Error fetching employee data:", error);
+    setText("employee-name", "Error loading employee data");
+  });
+
+  function renderTickets(tickets) {
+  const list = document.getElementById("ticket-list");
+  list.innerHTML = "";
+
+  if (!tickets.length) {
+    list.innerHTML = `<tr><td colspan="8" class="text-center text-gray-400 py-3">No tickets found.</td></tr>`;
+    return;
+  }
+
+  tickets.forEach(ticket => {
+    const row = document.createElement("tr");
+    row.className = "hover:bg-gray-100 cursor-pointer";
+    row.onclick = () => {
+      window.top.location.href = `/app/sahayog-ticket/${ticket.name}`;
+    };
+
+    row.innerHTML = `
+      <td class="px-3 py-2 font-medium text-blue-700">${ticket.name}</td>
+      <td class="px-3 py-2">
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+          ${ticket.status === 'Open' ? 'bg-red-100 text-red-600' :
+            ticket.status === 'Closed' ? 'bg-green-100 text-green-600' :
+            'bg-yellow-100 text-yellow-600'}">
+          ${ticket.status || '-'}
+        </span>
+      </td>
+      <td class="px-3 py-2 truncate max-w-[120px]" title="${ticket.branch_name || ''}">
+        ${ticket.branch_name || '-'}
+      </td>
+      <td class="px-3 py-2 truncate max-w-[120px]" title="${ticket.employee_name || ''}">
+        ${ticket.employee_name || '-'}
+      </td>
+      <td class="px-3 py-2">${ticket.region || '-'}</td>
+      <td class="px-3 py-2">${ticket.ticket_type || '-'}</td>
+      <td class="px-3 py-2" title="${ticket.creation}">${prettyDate(ticket.creation)}</td>    `;
+
+    list.appendChild(row);
+  });
+}
+
+function fetchAndFilterTickets() {
+  fetch('/api/method/sahayog.api.employee.get_user_tickets')
+    .then(res => res.json())
+    .then(data => {
+      const tickets = data.message || [];
+
+      const status = document.getElementById("ticket-filter-status").value;
+      const priority = document.getElementById("ticket-filter-priority").value;
+
+      const filtered = tickets.filter(t => {
+        return (!status || t.status === status) &&
+               (!priority || t.priority === priority);
+      });
+
+      renderTickets(filtered);
+    });
+}
+
+// Initial Load
+fetchAndFilterTickets();
+
+// Filter listeners
+document.getElementById("ticket-filter-status").addEventListener("change", fetchAndFilterTickets);
+document.getElementById("ticket-filter-priority").addEventListener("change", fetchAndFilterTickets);
+
+
+function prettyDate(dateString) {
+  const time = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now - time) / 1000);
+
+  if (isNaN(seconds)) return dateString;
+
+  const intervals = {
+    year: 31536000,
+    month: 2592000,
+    week: 604800,
+    day: 86400,
+    hour: 3600,
+    minute: 60,
+    second: 1
+  };
+
+  for (let key in intervals) {
+    const interval = Math.floor(seconds / intervals[key]);
+    if (interval >= 1) {
+      return `${interval} ${key}${interval !== 1 ? "s" : ""} ago`;
+    }
+  }
+
+  return "Just now";
+}
+
+    </script>
+  </body>
+</html>
