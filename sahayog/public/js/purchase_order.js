@@ -39,9 +39,6 @@ frappe.ui.form.on("Purchase Order", {
             .row-check.sortable-handle.col {
                 display: none !important;
             }
-            .row-index.sortable-handle.col {
-                display: none !important;
-            }
             button.btn.btn-xs.btn-secondary.grid-add-row {
                 display: none !important;
             }
