@@ -1,18 +1,19 @@
 {
  "actions": [],
- "autoname": "field:cluster_name",
- "creation": "2025-05-16 17:21:11.692724",
+ "allow_rename": 1,
+ "autoname": "field:cluster",
+ "creation": "2025-05-22 11:05:40.144668",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "cluster_name",
+  "cluster",
   "branch_list"
  ],
  "fields": [
   {
-   "fieldname": "cluster_name",
+   "fieldname": "cluster",
    "fieldtype": "Data",
-   "label": "Cluster Name",
+   "label": "Cluster",
    "unique": 1
   },
   {
@@ -25,7 +26,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-16 17:26:41.308903",
+ "modified": "2025-05-22 11:13:41.157750",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Cluster Mapping",

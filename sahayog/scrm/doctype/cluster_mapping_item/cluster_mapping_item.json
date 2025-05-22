@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-05-16 17:25:44.386805",
+ "creation": "2025-05-22 11:07:05.317635",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -12,18 +12,16 @@
   {
    "fieldname": "branch",
    "fieldtype": "Link",
-   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Branch",
-   "options": "Branch",
-   "reqd": 1
+   "options": "Branch"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-16 17:26:13.914644",
+ "modified": "2025-05-22 11:08:48.339613",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Cluster Mapping Item",
