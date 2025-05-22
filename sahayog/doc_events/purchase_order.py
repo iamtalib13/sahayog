@@ -37,25 +37,34 @@ def create_purchase_receipt(doc, method):
     # Save PR as Draft
     pr.insert()
     frappe.msgprint(f"Purchase Receipt {pr.name} created in Draft status.", alert=True)
-
+    
 def fetch_terms_conditions(doc, method):
-    """Populate custom_terms_table with Terms and Conditions if it's empty. Logs success and errors."""
+    """Populate or update custom_terms_table with Terms and Conditions. Logs success and errors."""
 
     try:
-        if doc.get("custom_terms_table"):
-            return  # Already populated, skip
-
         terms_conditions = frappe.get_all(
             "Terms and Conditions",
             fields=["title", "terms"],
         )
 
-        for tc in terms_conditions:
-            doc.append("custom_terms_table", {
-                "title": strip_html(tc.title or ""),
-                "terms": strip_html(tc.terms or ""),
-                "show_tc": 1
-            })
+        # Create a dict from the source for easier lookup
+        tc_dict = {strip_html(tc.title or ""): strip_html(tc.terms or "") for tc in terms_conditions}
+
+        existing_titles = {strip_html(row.title): row for row in doc.get("custom_terms_table", [])}
+
+        for title, terms in tc_dict.items():
+            if title in existing_titles:
+                # Update existing row
+                row = existing_titles[title]
+                row.terms = terms
+                row.show_tc = 1
+            else:
+                # Append missing row
+                doc.append("custom_terms_table", {
+                    "title": title,
+                    "terms": terms,
+                    "show_tc": 1
+                })
 
     except Exception as e:
         frappe.msgprint(f"Error fetching terms and conditions: {str(e)}", alert=True)
