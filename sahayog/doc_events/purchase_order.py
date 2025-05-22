@@ -56,7 +56,7 @@ def fetch_terms_conditions(doc, method):
                 "sequence": tc.custom_sequence,
                 "title": strip_html(tc.title or ""),
                 "terms": strip_html(tc.terms or ""),
-                "show_tc": 0
+                "show_tc": 1
             })
 
         # ✅ Success log
