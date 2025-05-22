@@ -59,18 +59,8 @@ def fetch_terms_conditions(doc, method):
                 "show_tc": 1
             })
 
-        # ✅ Success log
-        frappe.log_error(
-            title="fetch_terms_conditions: Success",
-            message=f"Terms populated successfully for doc {doc.doctype} | {doc.name}"
-        )
-
     except Exception as e:
-        # ❌ Error log with traceback
-        frappe.log_error(
-            title="fetch_terms_conditions: Error",
-            message=frappe.get_traceback()
-        )
+        frappe.msgprint(f"Error fetching terms and conditions: {str(e)}", alert=True)
 
 def get_short_fiscal_year():
     """Return the current Indian fiscal year in short format (YY-YY)."""
