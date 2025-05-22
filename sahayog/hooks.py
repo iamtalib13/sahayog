@@ -114,7 +114,6 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
-    "sahayog.patches.custom_fields.add_custom_field_for_terms_and_conditions.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",

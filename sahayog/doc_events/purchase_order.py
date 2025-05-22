@@ -47,13 +47,11 @@ def fetch_terms_conditions(doc, method):
 
         terms_conditions = frappe.get_all(
             "Terms and Conditions",
-            fields=["custom_sequence", "title", "terms"],
-            order_by="custom_sequence ASC"
+            fields=["title", "terms"],
         )
 
         for tc in terms_conditions:
             doc.append("custom_terms_table", {
-                "sequence": tc.custom_sequence,
                 "title": strip_html(tc.title or ""),
                 "terms": strip_html(tc.terms or ""),
                 "show_tc": 1
