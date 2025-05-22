@@ -18,15 +18,6 @@ frappe.ui.form.on("Purchase Order", {
       frm.set_df_property('terms', 'hidden', 0);
       frm.set_df_property('tc_name', 'hidden', 0);
   }
-
-  if (frappe.user.has_role("Administrator")) {
-    frm.add_custom_button("Admin Save", function () {
-        // Save the document
-        frm.dirty();
-        frm.save();
-    }); // You can use any group like "Actions"
-  }
-
   },
 
   onload: function (frm) {
