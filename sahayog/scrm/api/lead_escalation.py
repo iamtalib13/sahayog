@@ -50,44 +50,43 @@ def run_escalation_check():
 
 
 def escalate_to_next_level(doc, row):
-    """
-    Escalates the current row to the next level by fetching the reporting person.
-    If the reporting person is active, it creates a new row in the escalation matrix.
-    """
     next_user = get_reporting_user(row.user)
 
     if next_user:
-        level = get_escalation_level(doc, row)
+        # Determine how many times this lead has already been escalated
+        level = len([r for r in doc.get("custom_escalation_matrix") if r.is_escalated == 1])
 
-        if level < 3:  # Max 3 levels
-            escalation_times = [1, 2]  # Only 2 levels have time-based escalation
-            new_end_time = None
-            
-            # If it is the final level, we don't set an end time
-            if level < 2:
-                new_end_time = row.end_time + timedelta(minutes=escalation_times[level])
+        # Define escalation durations in hours
+        escalation_hours = [24, 48, 72]  # You can add more if needed
 
-            # Prevent duplicate entries for the next user
-            next_row_exists = any(
-                next_row.user == next_user and 
-                next_row.is_escalated == 0 and 
-                next_row.current_escalation_status == "Pending"
-                for next_row in doc.get("custom_escalation_matrix")
-            )
+        # If escalation exceeds defined levels, no more escalation
+        if level >= len(escalation_hours):
+            frappe.log_error(f"Max escalation level reached for Lead: {doc.name}", "Escalation Check")
+            return
 
-            if not next_row_exists:
-                # ✅ Append a new row for the next user
-                doc.append("custom_escalation_matrix", {
-                    "user": next_user,
-                    "current_escalation_status": "Pending",
-                    "start_time": row.end_time,
-                    "end_time": new_end_time,
-                    "is_escalated": 0
-                })
-                
-                # ✅ Save changes and share with the user
-                doc.save(ignore_permissions=True)
-                share_document_with_user(doc, next_user)
+        # Calculate end_time only if escalation_hours available for the level
+        new_end_time = row.end_time + timedelta(hours=escalation_hours[level]) if row.end_time else None
+
+        # Check if the same next user already exists and is pending
+        next_row_exists = any(
+            next_row.user == next_user and
+            next_row.is_escalated == 0 and
+            next_row.current_escalation_status == "Pending"
+            for next_row in doc.get("custom_escalation_matrix")
+        )
+
+        if not next_row_exists:
+            doc.append("custom_escalation_matrix", {
+                "user": next_user,
+                "current_escalation_status": "Pending",
+                "start_time": row.end_time or now_datetime(),
+                "end_time": new_end_time,
+                "is_escalated": 0
+            })
+
+            doc.save(ignore_permissions=True)
+            share_document_with_user(doc, next_user)
+
 
 
 def get_escalation_level(doc, row):
