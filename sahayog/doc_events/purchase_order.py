@@ -40,6 +40,7 @@ def create_purchase_receipt(doc, method):
 
 def fetch_terms_conditions(doc, method):
     # If the child table is empty, fetch and populate it
+    frappe.log_error(f"This function is called for docname: {doc.name}", "fetch_terms_conditions")
     if not doc.custom_terms_table:
         terms_conditions = frappe.get_all(
             "Terms and Conditions",
