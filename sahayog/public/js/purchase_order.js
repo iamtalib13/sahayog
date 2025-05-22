@@ -22,6 +22,7 @@ frappe.ui.form.on("Purchase Order", {
   if (frappe.user.has_role("Administrator")) {
     frm.add_custom_button("Admin Save", function () {
         // Save the document
+        frm.dirty();
         frm.save();
     }); // You can use any group like "Actions"
   }
