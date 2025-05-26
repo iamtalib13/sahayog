@@ -3,7 +3,7 @@ import frappe
 
 def execute():
     # Insert a new Custom HTML Block document named 'Sahayog Project'
-    html_content = """  <!DOCTYPE html>
+    html_content = """   <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -18,7 +18,7 @@ def execute():
 <div class="container">
     <div class="row align-items-center">
   <div class="col d-flex justify-content-between">
-    <h3>CRM-Branch Manager</h3>
+    <h3>CRM-Branch <span id="branchName"></span></h3>
     <a
       href="/crm/leads/view"
       class="crm-portal-button"
@@ -111,7 +111,6 @@ def execute():
 </body>
 </html>
 
-    
 
     """
 
@@ -145,7 +144,7 @@ def execute():
     
         """
 
-    js_content = """  // 🔄 Get all the elements from root_element (provided by Frappe)
+    js_content = """    // 🔄 Get all the elements from root_element (provided by Frappe)
 const totalLeadsElement = root_element.querySelector('#total_leads');
 const convertedLeadsElement = root_element.querySelector('#converted_leads');
 const assignedLeadsElement = root_element.querySelector('#assigned_leads');
@@ -155,6 +154,7 @@ const escalatedLeadsTable = root_element.querySelector('#escalated_leads_table')
 const userWiseChartContainer = root_element.querySelector('#user-wise-chart'); // ✅ Correct way to access the chart container
 const userWiseHeading = root_element.querySelector('#user-wise-heading');
 const viewReportLink = root_element.querySelector('#view-report-link');  // The link element for redirect
+const branchName = root_element.querySelector('#branchName'); 
 
 
 // 🌐 Fetch Data from Server
@@ -165,6 +165,7 @@ frappe.call({
     console.log(data);
 
     // 🔄 Update the UI elements
+    branchName.textContent = data.branch;
     totalLeadsElement.textContent = data.total_leads;
     convertedLeadsElement.textContent = data.converted_leads;
     assignedLeadsElement.textContent = data.assigned_leads;
@@ -270,6 +271,7 @@ frappe.call({
 }).catch(error => {
     console.error("Error fetching dashboard data: ", error);
 });
+
 
 
 
