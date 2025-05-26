@@ -373,12 +373,20 @@ def validate_agreement_status(doc, method):
             frappe.throw(_("Cannot mark the task as 'Completed' until the Agreement is provided."))
 
 
-
 def check_loi_docstatus_for_task_2(doc, method):
+    # ✅ Task 2 ka status agar "Completed" nahi hai to validation mat chalao
+    if doc.status != 'Completed':
+        return
+
+    # ✅ Agar Task abhi abhi insert hua hai (project banate time) to validation skip karo
+    if doc.is_new():
+        return
+
+    # ✅ Ab actual validation sirf Task 2 ke liye chale
     if doc.subject == 'Task 2: Letter of Intent':
         project = doc.project
 
-        # Fetch all Letters of Intent with matching project
+        # LOI fetch karo project ke basis pe
         loi_docs = frappe.get_all('Letter of Intent', 
                                   filters={'project': project}, 
                                   fields=['name', 'docstatus'])
@@ -386,16 +394,11 @@ def check_loi_docstatus_for_task_2(doc, method):
         if loi_docs:
             for loi in loi_docs:
                 if loi['docstatus'] == 0:
-                    # LOI is saved but not submitted
+                    # LOI saved hai but submit nahi hua
                     loi_url = f"{get_url()}/app/letter-of-intent/{loi['name']}"
                     frappe.throw(
-                        _(f"First fill and submit the Letter of Intent before setting Task 2 status to completed. <b><a href='{loi_url}'>Click here to open LOI</a><b>"),
+                        _(f"First fill and submit the Letter of Intent before setting Task 2 status to completed. <b><a href='{loi_url}'>Click here to open LOI</a></b>"),
                         title="Incomplete Letter of Intent"
                     )
-            # If all LOIs are submitted
-            pass
         else:
             frappe.msgprint(_(f"No Letter of Intent found for project {project}"))
-
-
-
