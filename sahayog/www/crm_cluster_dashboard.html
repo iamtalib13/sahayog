@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cluster Head Dashboard - CRM</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <script src="https://cdn.jsdelivr.net/npm/frappe-charts@1.6.0/dist/frappe-charts.min.iife.js"></script>
+    <style>
+      /* dashboard.css */
+
+      .card {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+        text-align: center;
+        transition: transform 0.2s ease;
+        height: 130px;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgb(0 0 0 / 0.15);
+      }
+
+      #charts {
+        margin-top: 40px;
+        display: flex;
+        gap: 40px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+
+      .section.chart-box {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        flex: 1 1 48%;
+        box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+      }
+
+      .section.chart-box h4 {
+        margin-bottom: 20px;
+        font-weight: 600;
+        color: #343a40;
+      }
+
+      /* Escalated Leads Table */
+      .section {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 40px;
+        box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+      }
+
+      .section h4 {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #343a40;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+
+      table thead tr {
+        background-color: #007bff;
+        color: white;
+      }
+
+      table th,
+      table td {
+        padding: 12px 15px;
+        border: 1px solid #dee2e6;
+        text-align: left;
+      }
+
+      table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row py-2">
+        <h4>CRM Dashboard-Cluster Head</h4>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="row">
+        <div class="col-md-3">
+          <div class="card">
+            <h5>Total Leads</h5>
+            <h3 id="total_leads">0</h3>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <h5>Converted Leads</h5>
+            <h3 id="converted_leads">0</h3>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <h5>Assigned Leads</h5>
+            <h3 id="assigned_leads">0</h3>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <h5>Conversion Rate %</h5>
+            <h3 id="conversion_rate"></h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div id="charts">
+        <!-- Status-wise Leads -->
+        <div class="section chart-box">
+          <h4>Status-wise Leads</h4>
+          <div id="status-wise-leads-chart"></div>
+        </div>
+
+        <!-- Cluster-wise Lead Conversion -->
+        <div class="section chart-box">
+          <h4>Cluster-wise Lead Conversion</h4>
+          <div id="cluster-conversion-chart"></div>
+        </div>
+      </div>
+
+      <!-- Escalated Leads Table -->
+      <div class="section">
+        <h4>Escalated Leads</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Lead Name</th>
+              <th>Assigned To</th>
+              <th>Status</th>
+              <th>Escalation Reason</th>
+            </tr>
+          </thead>
+          <tbody id="escalated-leads-table">
+            <tr>
+              <td colspan="4">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+
+    <!-- Frappe Charts -->
+    <script src="https://unpkg.com/frappe-charts@1.6.1/dist/frappe-charts.min.iife.js"></script>
+    <script>
+      function loadDashboardData() {
+        frappe.call({
+          method: "your_app.api.cluster_dashboard.get_dashboard_data",
+          callback: function (r) {
+            const data = r.message;
+
+            // Metrics
+            document.getElementById("total-leads").innerText = data.total_leads;
+            document.getElementById("converted-leads").innerText =
+              data.converted_leads;
+            document.getElementById("escalated-leads").innerText =
+              data.escalated_leads;
+            document.getElementById("open-opportunities").innerText =
+              data.open_opportunities;
+
+            // Charts
+            renderChart("status-wise-leads-chart", data.status_wise_leads);
+            renderChart("cluster-conversion-chart", data.cluster_conversion);
+
+            // Table
+            const table = document.getElementById("escalated-leads-table");
+            table.innerHTML = "";
+            data.escalated_leads_list.forEach((row) => {
+              table.innerHTML += `
+              <tr>
+                <td>${row.lead_name}</td>
+                <td>${row.owner}</td>
+                <td>${row.status}</td>
+                <td>${row.reason || "N/A"}</td>
+              </tr>`;
+            });
+          },
+        });
+      }
+
+      function renderChart(containerId, dataset) {
+        new frappe.Chart(`#${containerId}`, {
+          data: {
+            labels: dataset.map((d) => d.label),
+            datasets: [{ values: dataset.map((d) => d.value) }],
+          },
+          type: "bar",
+          height: 250,
+          colors: ["#5e64ff"],
+        });
+      }
+
+      frappe.ready(() => {
+        loadDashboardData();
+      });
+    </script>
+  </body>
+</html>
