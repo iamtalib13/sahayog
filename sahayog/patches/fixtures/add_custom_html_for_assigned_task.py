@@ -250,4 +250,3 @@ renderAssignedTasks("All");
         
         print("✅ Created Custom HTML Block: Task Assigned")
 
-    frappe.db.commit()
