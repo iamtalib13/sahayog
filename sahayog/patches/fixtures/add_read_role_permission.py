@@ -2,39 +2,41 @@ import frappe
 
 def execute():
     doctypes = ["Division", "Zone", "Region", "Branch", "Project Template"]
-    employee_role = "Employee"
+    role = "Employee"
 
-    # Get all active roles except System Manager and Administrator
-    roles = frappe.get_all("Role", filters={"disabled": 0}, pluck="name")
-    roles_to_remove = [r for r in roles if r not in ["System Manager", "Administrator", employee_role]]
-
-    # 🧹 Step 1: Remove junk permissions (if exist)
     for doctype in doctypes:
-        for role in roles_to_remove:
-            perm_names = frappe.get_all("Custom DocPerm", filters={"parent": doctype, "role": role}, pluck="name")
-            if perm_names:
+        try:
+            # Check if Employee role permission already exists for this doctype
+            existing_permissions = frappe.get_all(
+                "Custom DocPerm",
+                filters={"parent": doctype, "role": role},
+                pluck="name"
+            )
+
+            if existing_permissions:
+                # Enable read permission if not already enabled
                 frappe.db.sql("""
-                    DELETE FROM `tabCustom DocPerm`
-                    WHERE `parent` = %s AND `role` = %s
+                    UPDATE `tabCustom DocPerm`
+                    SET `read` = 1
+                    WHERE `parent` = %s AND `role` = %s AND `read` = 0
                 """, (doctype, role))
-                print(f"🗑️ Removed permission for role '{role}' on '{doctype}'")
+                print(f"✅ Read access enabled for {role} on {doctype} (Existing permissions preserved)")
+            else:
+                # Create new read-only permission for Employee role
+                new_permission = frappe.get_doc({
+                    "doctype": "Custom DocPerm",
+                    "parent": doctype,
+                    "parentfield": "permissions",
+                    "parenttype": "DocType",
+                    "role": role,
+                    "read": 1
+                })
+                new_permission.insert(ignore_permissions=True)
+                print(f"✅ Added new read-only permission for {role} on {doctype}")
 
-    # ✅ Step 2: Add read-only permission for 'Employee' if not already exists
-    for doctype in doctypes:
-        exists = frappe.get_all("Custom DocPerm", filters={"parent": doctype, "role": employee_role})
-        if not exists:
-            doc = frappe.get_doc({
-                "doctype": "Custom DocPerm",
-                "parent": doctype,
-                "parentfield": "permissions",
-                "parenttype": "DocType",
-                "role": employee_role,
-                "read": 1
-            })
-            doc.insert(ignore_permissions=True)
-            print(f"✅ Added read-only permission for 'Employee' on '{doctype}'")
-        else:
-            print(f"⏩ 'Employee' already has permission on '{doctype}', skipping")
+        except Exception as e:
+            frappe.log_error(f"❌ Error setting permissions for {role} on {doctype}: {str(e)}")
+            print(f"❌ Error setting permissions for {role} on {doctype}: {str(e)}")
 
     frappe.db.commit()
-    print("🎯 Cleanup and setup complete.")
+    print("✅ Read permissions set for Employee role on selected doctypes.")
