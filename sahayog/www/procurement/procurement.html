@@ -1,0 +1,391 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sahayog Procurement</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  />
+  <style>
+    /* Custom scrollbar for sidebar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #4b5563;
+      border-radius: 3px;
+    }
+  </style>
+  <link rel="icon" href="/assets/sahayog/images/tree.png" type="image/png" />
+</head>
+<body class="bg-white min-h-screen flex flex-col">
+  <div class="flex flex-1 min-h-0">
+    <!-- Sidebar -->
+    <aside class="bg-gray-700 text-gray-300 w-48 flex flex-col justify-between">
+      <div>
+        <div class="px-4 py-4 text-sm font-normal border-b border-gray-600 flex items-center space-x-2">
+          <img src="/assets/sahayog/images/tree.png" alt="Sahayog Logo" class="h-5 w-auto" />
+          <span>Sahayog Procurement</span>
+        </div>
+        
+        <nav class="mt-4 space-y-3 px-3 text-sm select-none">
+          <!-- Master -->
+          <div>
+            <button
+              id="master-toggle"
+              type="button"
+              class="w-full flex items-center justify-between text-gray-300 hover:text-white font-normal"
+              aria-expanded="true"
+              onclick="toggleMenu('master-submenu')"
+            >
+              <span class="flex items-center">
+                <i class="fas fa-file-alt mr-2"></i>
+                Master
+              </span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="master-submenu" class="mt-1 ml-6 space-y-1">
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Item')">
+                <i class="far fa-square mr-2 text-xs"></i> Item
+              </button>
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Vendor')">
+                <i class="far fa-square mr-2 text-xs"></i> Vendor
+              </button>
+            </div>
+          </div>
+
+          <!-- Transactions -->
+          <div>
+            <button
+              id="transactions-toggle"
+              type="button"
+              class="w-full flex items-center justify-between text-gray-300 hover:text-white font-normal"
+              aria-expanded="false"
+              onclick="toggleMenu('transactions-submenu')"
+            >
+              <span class="flex items-center">
+                <i class="fas fa-exchange-alt mr-2"></i>
+                Transactions
+              </span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="transactions-submenu" class="mt-1 ml-6 space-y-1 hidden">
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Material Request')">
+                <i class="far fa-square mr-2 text-xs"></i> Material Request
+              </button>
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Request for Quotation')">
+                <i class="far fa-square mr-2 text-xs"></i> Request for Quotation
+              </button>
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Supplier Quotation')">
+                <i class="far fa-square mr-2 text-xs"></i> Supplier Quotation
+              </button>
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Purchase Order')">
+                <i class="far fa-square mr-2 text-xs"></i> Purchase Order
+              </button>
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Purchase Receipt')">
+                <i class="far fa-square mr-2 text-xs"></i> Purchase Receipt
+              </button>
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Purchase Invoice')">
+                <i class="far fa-square mr-2 text-xs"></i> Purchase Invoice
+              </button>
+              <button class="w-full text-left text-gray-300 hover:text-white flex items-center text-sm" onclick="selectOption('Payment')">
+                <i class="far fa-square mr-2 text-xs"></i> Payment
+              </button>
+            </div>
+          </div>
+
+          <!-- Reports -->
+          <button
+            id="reports-btn"
+            class="w-full flex items-center text-gray-300 hover:text-white font-normal text-sm"
+            onclick="selectOption('Reports')"
+          >
+            <i class="fas fa-chart-bar mr-2"></i>
+            Reports
+          </button>
+        </nav>
+      </div>
+      <div class="flex justify-around bg-gray-800 py-2">
+        <button class="text-gray-400 hover:text-white text-lg">
+          <i class="fas fa-exclamation-triangle"></i>
+        </button>
+        <button class="text-gray-400 hover:text-white text-lg">
+          <i class="fas fa-home"></i>
+        </button>
+        <button class="text-gray-400 hover:text-white text-lg">
+          <i class="fas fa-power-off"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col min-h-0">
+      <!-- Header -->
+      <header class="flex items-center bg-yellow-400 text-gray-900 px-4 h-12 text-base font-semibold select-none">
+        <button class="mr-3 text-lg">
+          <i class="fas fa-bars"></i>
+        </button>
+        <i class="fas fa-home mr-2"></i>
+        <span class="font-extrabold text-lg" id="main-title">Sahayog Procurement</span>
+        <div class="flex-1"></div>
+        <div class="flex space-x-6 pr-2 text-sm">
+          <span>Financial Year - 2025-2026</span>
+          <span>Welcome SANDEEP UKY</span>
+        </div>
+      </header>
+
+      <!-- Content area -->
+      <main class="flex-1 p-4 overflow-auto">
+        <div id="content-area" class="border border-gray-200 bg-gray-50 h-full max-w-full rounded-sm p-4 overflow-auto">
+          <div id="filters" class="mb-4 hidden">
+            <label for="filter-input" class="block mb-1 text-gray-700 text-sm font-semibold">Filter:</label>
+            <input
+              type="text"
+              id="filter-input"
+              placeholder="Type to filter..."
+              class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+              oninput="filterList()"
+            />
+          </div>
+          <div id="loading" class="hidden text-center py-4">
+            <i class="fas fa-spinner fa-spin text-lg text-gray-500"></i>
+            <p class="text-sm text-gray-600 mt-2">Loading items...</p>
+          </div>
+          <ul id="list-view" class="text-sm text-gray-700 max-h-56 overflow-auto border border-gray-300 rounded p-2 space-y-1"></ul>
+        </div>
+      </main>
+
+      <!-- Footer -->
+      <footer class="text-sm text-gray-600 text-right px-4 py-1 select-none">
+        Smart ERP - by <a href="https://fastrack.in" target="_blank" class="text-blue-600 hover:underline">Fastrack Solutions</a>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Toggle submenu visibility
+    function toggleMenu(id) {
+      const submenu = document.getElementById(id);
+      if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+      } else {
+        submenu.classList.add('hidden');
+      }
+    }
+
+    // Fetch items from Frappe/ERPNext API
+    async function fetchItems() {
+      const loading = document.getElementById('loading');
+      const listView = document.getElementById('list-view');
+      
+      loading.classList.remove('hidden');
+      listView.innerHTML = '';
+
+      try {
+        // Replace with your actual Frappe/ERPNext API endpoint
+        const response = await fetch('/api/resource/Item?fields=["name","item_name","description"]', {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Include cookies for authentication
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        return data.data || [];
+      } catch (error) {
+        console.error('Error fetching items:', error);
+        listView.innerHTML = '<li class="text-gray-500 text-sm">Error loading items. Please try again.</li>';
+        return [];
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+
+    // Current selected option
+    let currentOption = null;
+
+    // Select option and update main view
+    async function selectOption(option) {
+      currentOption = option;
+      document.getElementById('main-title').textContent = option;
+      
+      if (option === 'Item') {
+        await renderItemList();
+      } else {
+        renderList(option);
+      }
+    }
+
+    // Render item list from Frappe/ERPNext
+    async function renderItemList() {
+      const listView = document.getElementById('list-view');
+      const filters = document.getElementById('filters');
+      const filterInput = document.getElementById('filter-input');
+
+      // Clear filter input
+      filterInput.value = '';
+
+      // Show filters
+      filters.classList.remove('hidden');
+
+      // Fetch items from API
+      const items = await fetchItems();
+
+      // Clear list
+      listView.innerHTML = '';
+
+      if (items.length === 0) {
+        listView.innerHTML = '<li class="text-gray-500 text-sm">No items found.</li>';
+        return;
+      }
+
+      // Create list items
+      items.forEach((item) => {
+        let li = document.createElement('li');
+        li.className = 'border border-gray-300 rounded p-2 bg-white hover:bg-yellow-50 cursor-default text-sm';
+        
+        // Display item details
+        li.innerHTML = `
+          <div class="font-medium">${item.item_name || item.name}</div>
+          <div class="text-gray-500 text-xs">ID: ${item.name}</div>
+          <div class="text-gray-600 mt-1">${item.description || 'No description available'}</div>
+        `;
+        
+        listView.appendChild(li);
+      });
+    }
+
+    // Data for other options (unchanged)
+    const data = {
+      "Vendor": [
+        { id: 1, name: "Vendor X", location: "Delhi", rating: 4.5 },
+        { id: 2, name: "Vendor Y", location: "Mumbai", rating: 4.0 },
+        { id: 3, name: "Vendor Z", location: "Chennai", rating: 3.8 }
+      ],
+      "Material Request": [
+        { id: 101, requester: "User1", date: "2024-06-01", status: "Pending" },
+        { id: 102, requester: "User2", date: "2024-06-03", status: "Approved" }
+      ],
+      "Request for Quotation": [
+        { id: 201, vendor: "Vendor X", date: "2024-05-20", status: "Open" },
+        { id: 202, vendor: "Vendor Y", date: "2024-05-22", status: "Closed" }
+      ],
+      "Supplier Quotation": [
+        { id: 301, supplier: "Supplier A", date: "2024-05-25", amount: "$5000" },
+        { id: 302, supplier: "Supplier B", date: "2024-05-27", amount: "$4500" }
+      ],
+      "Purchase Order": [
+        { id: 401, orderNo: "PO123", date: "2024-06-01", status: "Delivered" },
+        { id: 402, orderNo: "PO124", date: "2024-06-05", status: "Pending" }
+      ],
+      "Purchase Receipt": [
+        { id: 501, receiptNo: "PR123", date: "2024-06-02", status: "Received" },
+        { id: 502, receiptNo: "PR124", date: "2024-06-06", status: "Pending" }
+      ],
+      "Purchase Invoice": [
+        { id: 601, invoiceNo: "INV123", date: "2024-06-03", amount: "$10000" },
+        { id: 602, invoiceNo: "INV124", date: "2024-06-07", amount: "$8000" }
+      ],
+      "Payment": [
+        { id: 701, paymentNo: "PAY123", date: "2024-06-04", amount: "$5000" },
+        { id: 702, paymentNo: "PAY124", date: "2024-06-08", amount: "$3000" }
+      ],
+      "Reports": [
+        { id: 1, reportName: "Sales Report", date: "2024-06-01" },
+        { id: 2, reportName: "Inventory Report", date: "2024-06-02" }
+      ]
+    };
+
+    // Render list view for non-Item options
+    function renderList(option) {
+      const listView = document.getElementById('list-view');
+      const filters = document.getElementById('filters');
+      const filterInput = document.getElementById('filter-input');
+
+      // Clear filter input
+      filterInput.value = '';
+
+      // Show filters only if data exists
+      if (data[option] && data[option].length > 0) {
+        filters.classList.remove('hidden');
+      } else {
+        filters.classList.add('hidden');
+      }
+
+      // Clear list
+      listView.innerHTML = '';
+
+      if (!data[option]) {
+        listView.innerHTML = '<li class="text-gray-500 text-sm">No data available.</li>';
+        return;
+      }
+
+      // Create list items based on option
+      data[option].forEach((item) => {
+        let li = document.createElement('li');
+        li.className = 'border border-gray-300 rounded p-2 bg-white hover:bg-yellow-50 cursor-default text-sm';
+
+        // Different layouts for different options
+        switch (option) {
+          case 'Vendor':
+            li.textContent = `ID: ${item.id} | Name: ${item.name} | Location: ${item.location} | Rating: ${item.rating}`;
+            break;
+          case 'Material Request':
+            li.textContent = `ID: ${item.id} | Requester: ${item.requester} | Date: ${item.date} | Status: ${item.status}`;
+            break;
+          case 'Request for Quotation':
+            li.textContent = `ID: ${item.id} | Vendor: ${item.vendor} | Date: ${item.date} | Status: ${item.status}`;
+            break;
+          case 'Supplier Quotation':
+            li.textContent = `ID: ${item.id} | Supplier: ${item.supplier} | Date: ${item.date} | Amount: ${item.amount}`;
+            break;
+          case 'Purchase Order':
+            li.textContent = `ID: ${item.id} | Order No: ${item.orderNo} | Date: ${item.date} | Status: ${item.status}`;
+            break;
+          case 'Purchase Receipt':
+            li.textContent = `ID: ${item.id} | Receipt No: ${item.receiptNo} | Date: ${item.date} | Status: ${item.status}`;
+            break;
+          case 'Purchase Invoice':
+            li.textContent = `ID: ${item.id} | Invoice No: ${item.invoiceNo} | Date: ${item.date} | Amount: ${item.amount}`;
+            break;
+          case 'Payment':
+            li.textContent = `ID: ${item.id} | Payment No: ${item.paymentNo} | Date: ${item.date} | Amount: ${item.amount}`;
+            break;
+          case 'Reports':
+            li.textContent = `ID: ${item.id} | Report Name: ${item.reportName} | Date: ${item.date}`;
+            break;
+          default:
+            li.textContent = JSON.stringify(item);
+        }
+        listView.appendChild(li);
+      });
+    }
+
+    // Filter list based on input
+    function filterList() {
+      const filterValue = document.getElementById('filter-input').value.toLowerCase();
+      const listView = document.getElementById('list-view');
+      const items = listView.getElementsByTagName('li');
+
+      for (let i = 0; i < items.length; i++) {
+        const text = items[i].textContent.toLowerCase();
+        if (text.indexOf(filterValue) > -1) {
+          items[i].style.display = '';
+        } else {
+          items[i].style.display = 'none';
+        }
+      }
+    }
+
+    // Initialize default view
+    selectOption('Item');
+  </script>
+</body>
+</html>

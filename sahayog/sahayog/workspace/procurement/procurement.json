@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"JsFMAPhVXo\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Sahayog Procurement</b></span>\",\"col\":12}},{\"id\":\"9CSUpwipBM\",\"type\":\"card\",\"data\":{\"card_name\":\"Material Request\",\"col\":4}},{\"id\":\"mR8-9V21x5\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase\",\"col\":4}},{\"id\":\"x5Iv66T-uT\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier\",\"col\":4}},{\"id\":\"Tk1MhvUCIV\",\"type\":\"card\",\"data\":{\"card_name\":\"Item Master\",\"col\":4}}]",
+ "content": "[{\"id\":\"JsFMAPhVXo\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Sahayog Procurement</b></span>\",\"col\":12}},{\"id\":\"9tW61RAkLq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Portal\",\"col\":3}},{\"id\":\"9CSUpwipBM\",\"type\":\"card\",\"data\":{\"card_name\":\"Material Request\",\"col\":3}},{\"id\":\"mR8-9V21x5\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase\",\"col\":3}},{\"id\":\"x5Iv66T-uT\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier\",\"col\":3}},{\"id\":\"Tk1MhvUCIV\",\"type\":\"card\",\"data\":{\"card_name\":\"Item Master\",\"col\":3}}]",
  "creation": "2025-06-03 13:57:54.345823",
  "custom_blocks": [],
  "docstatus": 0,
@@ -149,7 +149,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-06-03 14:14:03.419780",
+ "modified": "2025-06-03 16:10:31.697276",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Procurement",
@@ -164,6 +164,14 @@
   }
  ],
  "sequence_id": 75.0,
- "shortcuts": [],
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Portal",
+   "type": "URL",
+   "url": "/procurement/procurement"
+  }
+ ],
  "title": "Procurement"
 }
