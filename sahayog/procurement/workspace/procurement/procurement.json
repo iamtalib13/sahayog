@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\":\"ipGNPqzAvZ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Procurement Management</span>\",\"col\":12}},{\"id\":\"0pUJkqr9zl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Material Request\",\"col\":3}},{\"id\":\"vTzmQ6MrfN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Request for Quotation\",\"col\":3}},{\"id\":\"-ghsqyjoNo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Quotation\",\"col\":3}},{\"id\":\"ChRjlFgG1n\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order\",\"col\":3}},{\"id\":\"ADqL_hiZ8f\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Receipt\",\"col\":3}},{\"id\":\"bGdtirfOcc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Invoice\",\"col\":3}},{\"id\":\"9Leg-dAbom\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment Entry\",\"col\":3}}]",
- "creation": "2025-03-18 15:40:26.271027",
+ "content": "[{\"id\":\"JsFMAPhVXo\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Procurement</span>\",\"col\":12}},{\"id\":\"4vRkE3TYNQ\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase\",\"col\":4}}]",
+ "creation": "2025-06-03 13:57:54.345823",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -15,7 +15,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Supplier",
+   "label": "Purchase",
    "link_count": 1,
    "link_type": "DocType",
    "onboard": 0,
@@ -24,15 +24,15 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Supplier",
+   "label": "Purchase Order",
    "link_count": 0,
-   "link_to": "Supplier",
+   "link_to": "Purchase Order",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2025-06-03 13:47:36.273968",
+ "modified": "2025-06-03 13:58:42.804774",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Procurement",
@@ -43,68 +43,10 @@
  "quick_lists": [],
  "roles": [
   {
-   "role": "Purchase Manager"
+   "role": "Procurement User"
   }
  ],
- "sequence_id": 72.0,
- "shortcuts": [
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "label": "Supplier Quotation",
-   "link_to": "Supplier Quotation",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "format": "{}",
-   "label": "Material Request",
-   "link_to": "Material Request",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "label": "Payment Entry",
-   "link_to": "Payment Entry",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "label": "Purchase Receipt",
-   "link_to": "Purchase Receipt",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "label": "Purchase Invoice",
-   "link_to": "Purchase Invoice",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "label": "Purchase Order",
-   "link_to": "Purchase Order",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "label": "Request for Quotation",
-   "link_to": "Request for Quotation",
-   "stats_filter": "[]",
-   "type": "DocType"
-  }
- ],
+ "sequence_id": 75.0,
+ "shortcuts": [],
  "title": "Procurement"
 }
