@@ -1,0 +1,40 @@
+<div class="card-deck">
+  {% if doc_type == "tab1" %}
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Tab 1 - Card A</h5>
+      <p class="card-text">Yeh Tab 1 ke liye content hai.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Tab 1 - Card B</h5>
+      <p class="card-text">Dusra card Tab 1 ke liye.</p>
+    </div>
+  </div>
+
+  {% elif doc_type == "tab2" %}
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Tab 2 - Summary</h5>
+      <p class="card-text">Yeh Tab 2 ka overview hai.</p>
+    </div>
+  </div>
+
+  {% elif doc_type == "tab3" %}
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Tab 3 - Report</h5>
+      <p class="card-text">Yeh Tab 3 ki report hai.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Tab 3 - Analysis</h5>
+      <p class="card-text">Analysis content Tab 3 ke liye.</p>
+    </div>
+  </div>
+  {% else %}
+  <p>No data available for this tab.</p>
+  {% endif %}
+</div>

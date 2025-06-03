@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>My Portal</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    />
+    <style>
+      .sidebar {
+        height: 100vh;
+        background-color: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+        padding-top: 20px;
+      }
+
+      .nav-link.active {
+        background-color: #007bff;
+        color: white !important;
+      }
+
+      .tab-content-section {
+        display: none;
+      }
+
+      .tab-content-section.active {
+        display: block;
+      }
+
+      .card-deck {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 sidebar">
+          <ul class="nav flex-column nav-pills">
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                data-tab="tab1"
+                href="javascript:void(0);"
+                >Tab 1</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-tab="tab2" href="javascript:void(0);"
+                >Tab 2</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-tab="tab3" href="javascript:void(0);"
+                >Tab 3</a
+              >
+            </li>
+          </ul>
+        </div>
+
+        <!-- Content Area -->
+        <div class="col-md-9">
+          <div id="tab1" class="tab-content-section active">
+            {% set doc_type = "tab1" %} {% include
+            "templates/includes/cards.html" %}
+          </div>
+
+          <div id="tab2" class="tab-content-section">
+            {% set doc_type = "tab2" %} {% include
+            "templates/includes/cards.html" %}
+          </div>
+
+          <div id="tab3" class="tab-content-section">
+            {% set doc_type = "tab3" %} {% include
+            "templates/includes/cards.html" %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const tabs = document.querySelectorAll(".nav-link[data-tab]");
+        const sections = document.querySelectorAll(".tab-content-section");
+
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", () => {
+            // Remove active from all tabs
+            tabs.forEach((t) => t.classList.remove("active"));
+            tab.classList.add("active");
+
+            // Hide all content sections
+            sections.forEach((sec) => sec.classList.remove("active"));
+
+            // Show selected section
+            const selected = tab.getAttribute("data-tab");
+            document.getElementById(selected).classList.add("active");
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
