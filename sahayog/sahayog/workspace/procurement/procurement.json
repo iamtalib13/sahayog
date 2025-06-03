@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"JsFMAPhVXo\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Procurement</span>\",\"col\":12}},{\"id\":\"4vRkE3TYNQ\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase\",\"col\":4}}]",
+ "content": "[{\"id\":\"JsFMAPhVXo\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Sahayog Procurement</b></span>\",\"col\":12}},{\"id\":\"mR8-9V21x5\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase\",\"col\":4}}]",
  "creation": "2025-06-03 13:57:54.345823",
  "custom_blocks": [],
  "docstatus": 0,
@@ -32,7 +32,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-06-03 14:02:22.472253",
+ "modified": "2025-06-03 14:06:05.891597",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Procurement",
