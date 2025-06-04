@@ -18,21 +18,24 @@ frappe.ui.form.on("Attendees", {
   agent_employee(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
 
-    if (row.reference_doctype && row.agent_employee) {
-      // Decide which field to fetch based on doctype
-      let name_field =
-        row.reference_doctype === "Employee" ? "employee_name" : "agent_name";
+    if (!row.agent_employee) {
+      frappe.model.set_value(cdt, cdn, "full_name", "");
+      return;
+    }
 
-      frappe.db
-        .get_value(row.reference_doctype, row.agent_employee, name_field)
-        .then((r) => {
-          if (r && r.message) {
-            let fetched_name = r.message[name_field];
-            if (fetched_name) {
-              frappe.model.set_value(cdt, cdn, "full_name", fetched_name);
-            }
+    if (row.reference_doctype && row.agent_employee) {
+      frm.call({
+        method: "get_agent_full_name",
+        args: {
+          reference_doctype: row.reference_doctype,
+          agent_employee: row.agent_employee,
+        },
+        callback: function (r) {
+          if (r.message) {
+            frappe.model.set_value(cdt, cdn, "full_name", r.message);
           }
-        });
+        },
+      });
     }
   },
 });
