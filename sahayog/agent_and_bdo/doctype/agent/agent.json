@@ -6,7 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "agent"
+  "agent",
+  "agent_name"
  ],
  "fields": [
   {
@@ -14,15 +15,20 @@
    "fieldtype": "Data",
    "label": "Agent",
    "unique": 1
+  },
+  {
+   "fieldname": "agent_name",
+   "fieldtype": "Data",
+   "label": "Agent Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-02 15:19:21.298448",
+ "modified": "2025-06-04 11:33:26.689473",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
- "name": "Agents",
+ "name": "Agent",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
@@ -39,6 +45,8 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
+ "search_fields": "agent_name",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

@@ -7,34 +7,48 @@
  "engine": "InnoDB",
  "field_order": [
   "reference_doctype",
-  "swayam_sevaksevika_name"
+  "agent_employee",
+  "full_name"
  ],
  "fields": [
   {
+   "columns": 2,
    "fieldname": "reference_doctype",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Reference Doctype",
-   "options": "\nAgents\nEmployee"
+   "label": "Type",
+   "options": "\nAgent\nEmployee",
+   "reqd": 1
   },
   {
-   "fieldname": "swayam_sevaksevika_name",
+   "columns": 3,
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name"
+  },
+  {
+   "columns": 2,
+   "fieldname": "agent_employee",
    "fieldtype": "Dynamic Link",
    "in_list_view": 1,
-   "label": "Swayam Sevak/Sevika Name",
-   "options": "reference_doctype"
+   "label": "Agent / Employee",
+   "mandatory_depends_on": "eval:doc.reference_doctype",
+   "options": "reference_doctype",
+   "read_only_depends_on": "eval:!doc.reference_doctype"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-02 17:13:02.949992",
+ "modified": "2025-06-04 12:34:32.778356",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Attendees",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
