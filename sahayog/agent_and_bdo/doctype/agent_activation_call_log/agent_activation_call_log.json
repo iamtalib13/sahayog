@@ -1,0 +1,192 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:CALL-{DD}{MM}{YY}-{###}",
+ "creation": "2025-06-04 15:57:17.561506",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "trainer_details_section",
+  "report_date",
+  "trainer",
+  "column_break_qcmo",
+  "calling_date",
+  "section_break_upui",
+  "agent",
+  "agent_phone_number",
+  "date_of_joining",
+  "connected_status",
+  "reply_type",
+  "column_break_jxgr",
+  "agent_name",
+  "branch",
+  "district",
+  "wants_to_stay",
+  "want_to_exit",
+  "exited",
+  "section_break_qvyu",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "default": "Today",
+   "fieldname": "report_date",
+   "fieldtype": "Date",
+   "label": "Report Date"
+  },
+  {
+   "fieldname": "trainer",
+   "fieldtype": "Link",
+   "label": "Trainer",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "column_break_qcmo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "calling_date",
+   "fieldtype": "Date",
+   "label": "Calling Date"
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "label": "Agent",
+   "options": "Agent"
+  },
+  {
+   "fieldname": "section_break_upui",
+   "fieldtype": "Section Break",
+   "label": "Agent Details"
+  },
+  {
+   "fieldname": "agent_phone_number",
+   "fieldtype": "Data",
+   "label": "Agent Phone Number"
+  },
+  {
+   "fieldname": "date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining"
+  },
+  {
+   "fieldname": "connected_status",
+   "fieldtype": "Select",
+   "label": "Connected Status",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "reply_type",
+   "fieldtype": "Select",
+   "label": "Reply Type",
+   "options": "\nPositive\nNegative"
+  },
+  {
+   "fieldname": "column_break_jxgr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "label": "District"
+  },
+  {
+   "default": "0",
+   "fieldname": "wants_to_stay",
+   "fieldtype": "Check",
+   "label": "Wants to Stay"
+  },
+  {
+   "default": "0",
+   "fieldname": "want_to_exit",
+   "fieldtype": "Check",
+   "label": "Want to Exit"
+  },
+  {
+   "default": "0",
+   "fieldname": "exited",
+   "fieldtype": "Check",
+   "label": "Exited"
+  },
+  {
+   "fieldname": "section_break_qvyu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Text Editor",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "trainer_details_section",
+   "fieldtype": "Section Break",
+   "label": "Trainer Details"
+  },
+  {
+   "fetch_from": "agent.agent_name",
+   "fieldname": "agent_name",
+   "fieldtype": "Data",
+   "label": "Agent Name"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-04 16:12:48.038729",
+ "modified_by": "Administrator",
+ "module": "Agent and BDO",
+ "name": "Agent Activation Call Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Trainer",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Trainer Head",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

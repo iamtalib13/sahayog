@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"UWWLg_1xs8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Agent &amp; BDO Management</b></span>\",\"col\":12}},{\"id\":\"2zahJyOq01\",\"type\":\"card\",\"data\":{\"card_name\":\"Agent\",\"col\":4}},{\"id\":\"olAmtX7rBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Meeting Management\",\"col\":4}}]",
+ "content": "[{\"id\":\"UWWLg_1xs8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h3\\\"><b>Meeting Management</b></span>\",\"col\":12}},{\"id\":\"2zahJyOq01\",\"type\":\"card\",\"data\":{\"card_name\":\"Agent\",\"col\":4}},{\"id\":\"olAmtX7rBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Meeting Management\",\"col\":4}},{\"id\":\"qkMbPG-AQc\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"id\":\"dLP1bIaj2C\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h3\\\"><b>Agent Activation Management</b></span>\",\"col\":12}},{\"id\":\"29H1qywfLX\",\"type\":\"card\",\"data\":{\"card_name\":\"Agent Activation Calling\",\"col\":4}},{\"id\":\"Yf4yrcA3fL\",\"type\":\"card\",\"data\":{\"card_name\":\"Report\",\"col\":4}}]",
  "creation": "2025-06-04 13:41:38.287198",
  "custom_blocks": [],
  "docstatus": 0,
@@ -50,9 +50,112 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Meeting Summary Report",
+   "link_count": 0,
+   "link_to": "Meeting Summary Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Meeting",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Attendee Participation Report",
+   "link_count": 0,
+   "link_to": "Attendee Participation Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Meeting",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Trainer-Wise Report",
+   "link_count": 0,
+   "link_to": "Trainer-Wise Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Meeting",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Agent Activation Calling",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Agent Activation Call Log",
+   "link_count": 0,
+   "link_to": "Agent Activation Call Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Report",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Trainer-wise Calling Summary",
+   "link_count": 0,
+   "link_to": "Trainer-wise Calling Summary",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Agent Activation Call Log",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Detailed Agent Calling Report",
+   "link_count": 0,
+   "link_to": "Detailed Agent Calling Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Agent Activation Call Log",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Agent Exit Summary Report",
+   "link_count": 0,
+   "link_to": "Agent Exit Summary Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Agent Activation Call Log",
+   "type": "Link"
   }
  ],
- "modified": "2025-06-04 13:46:01.252644",
+ "modified": "2025-06-04 16:35:15.357456",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Trainer",
