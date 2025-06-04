@@ -9,9 +9,9 @@
  "hide_custom": 0,
  "icon": "milestone",
  "idx": 0,
- "indicator_color": "green",
+ "indicator_color": "",
  "is_hidden": 0,
- "label": "Trainer",
+ "label": "Agent & BDO Management",
  "links": [
   {
    "hidden": 0,
@@ -155,10 +155,10 @@
    "type": "Link"
   }
  ],
- "modified": "2025-06-04 16:35:15.357456",
+ "modified": "2025-06-04 16:40:43.378739",
  "modified_by": "Administrator",
  "module": "Sahayog",
- "name": "Trainer",
+ "name": "Agent & BDO Management",
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
@@ -171,5 +171,5 @@
  ],
  "sequence_id": 76.0,
  "shortcuts": [],
- "title": "Trainer"
+ "title": "Agent & BDO Management"
 }
