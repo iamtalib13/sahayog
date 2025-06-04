@@ -1,12 +1,13 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:MEETING-{DD}{MM}{YY}-{##}",
  "creation": "2025-06-02 12:56:11.347306",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "section_break_zarz",
-  "trainer_name",
+  "trainer",
   "date",
   "start_time",
   "column_break_sfsv",
@@ -15,12 +16,13 @@
   "end_time",
   "amended_from",
   "section_break_xhny",
-  "table_ynvb"
+  "attandees_table"
  ],
  "fields": [
   {
    "fieldname": "section_break_zarz",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Training Details"
   },
   {
    "fieldname": "amended_from",
@@ -33,11 +35,7 @@
    "search_index": 1
   },
   {
-   "fieldname": "trainer_name",
-   "fieldtype": "Data",
-   "label": "Trainer Name"
-  },
-  {
+   "default": "Today",
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date"
@@ -68,10 +66,17 @@
   },
   {
    "fieldname": "section_break_xhny",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Attandees Details"
   },
   {
-   "fieldname": "table_ynvb",
+   "fieldname": "trainer",
+   "fieldtype": "Link",
+   "label": "Trainer",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "attandees_table",
    "fieldtype": "Table",
    "options": "Attendees"
   }
@@ -80,10 +85,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-02 14:03:31.472980",
+ "modified": "2025-06-04 12:05:01.533304",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Meeting",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -100,6 +106,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
