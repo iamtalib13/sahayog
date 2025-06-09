@@ -49,6 +49,13 @@ def execute():
                 "label": "Skip Auto Creation",
             },
              
+            {
+                "fieldname": "custom_cluter",
+                "fieldtype": "Link",
+                "options": "Cluster Mapping",
+                "insert_after": "custom_division",
+                "label": "Cluster"
+            },
           
         ]
     }
