@@ -1,9 +1,10 @@
 frappe.ui.form.on("Lead", {
   refresh(frm) {
-    if (!isAdmin()) return;
+    frm.set_df_property("activities_tab", "display_depends", "");
+    if (isAdmin()) return;
 
     hideFields(frm, [
-      "full_name",
+      "lead_name",
       "middle_name",
       "last_name",
       "job_title",
@@ -15,19 +16,15 @@ frappe.ui.form.on("Lead", {
       "organization_section",
       "other_info_tab",
       "qualification_tab",
+      "activities_tab",
     ]);
 
+    frm.set_df_property("first_name", "label", "Full Name");
+
     makeFieldsReadOnly(frm, ["lead_owner"]);
-    setSelectFieldOptions(frm);
+    // setSelectFieldOptions(frm);
     setFilterOnFields(frm);
     setMandtatoryFields(frm, ["source", "mobile_no"]);
-  },
-
-  // Before saving the document
-  before_save(frm) {
-    if (frm.doc.custom_full_name) {
-      frm.set_value("first_name", frm.doc.custom_full_name);
-    }
   },
 });
 
@@ -39,6 +36,9 @@ function isAdmin() {
 // Hide multiple fields
 function hideFields(frm, fields) {
   fields.forEach((field) => frm.set_df_property(field, "hidden", true));
+
+  $("#lead-activities_tab-tab").hide();
+  $("#lead-notes_tab-tab").hide();
 }
 
 //  Make multiple fields read-only
