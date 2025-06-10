@@ -192,7 +192,7 @@ override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
-    "Lead": "scrm.controller.lead.lead.Lead"
+    
 
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
