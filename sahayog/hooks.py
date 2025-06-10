@@ -138,6 +138,7 @@ after_migrate = [
     "sahayog.scrm.custom_html_block.crm_bm.execute",
     "sahayog.scrm.custom_html_block.crm_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.sahayog_crm_dashboard.execute",
+    "sahayog.scrm.custom_html_block.crm_cluster_head.execute",
 
 
 ]
