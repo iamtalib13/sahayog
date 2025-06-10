@@ -51,8 +51,8 @@ doctype_js = {
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
     "CRM Lead": "public/js/crm_lead.js",
-    "Project": "public/js/project.js"
-  
+    "Project": "public/js/project.js",
+    "Lead":"scrm/controller/lead/lead.js"
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 
@@ -100,7 +100,7 @@ doctype_js = {
 # ]
 
 after_migrate = [
-    "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_crm_lead.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
