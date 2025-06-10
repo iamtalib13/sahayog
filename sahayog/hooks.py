@@ -114,6 +114,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
     "sahayog.patches.fixtures.add_region.execute",
     "sahayog.patches.fixtures.add_division.execute",
     "sahayog.patches.fixtures.add_zone.execute",
@@ -191,7 +192,8 @@ override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
-   
+    "Lead": "scrm.controller.lead.lead.Lead"
+
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
 
@@ -291,6 +293,8 @@ doc_events = {
             "sahayog.doc_events.crm_lead.validate_lead_fields",
         ]
     }
+    
+   
 }
 
 # Scheduled Tasks
