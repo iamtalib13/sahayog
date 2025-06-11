@@ -149,3 +149,25 @@ def get_all_crm_view_settings():
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error in get_all_crm_view_settings")
         return {"error": "Internal server error"}
+    
+@frappe.whitelist()
+def get_lead_appointment_count():
+    user = frappe.session.user
+    is_admin = user == "Administrator"
+
+    def count(doctype, status):
+        filters = {"status": status}
+        if not is_admin:
+            filters["owner"] = user
+        return frappe.db.count(doctype, filters)
+
+    return {
+        "lead": count("Lead", "Lead"),
+        "converted": count("Lead", "Converted"),
+        "follow_up": count("Lead", "Follow Up"),
+        "not_interested": count("Lead", "Not Interested"),
+        "opportunity": count("Lead", "Opportunity"),
+        "open": count("Appointment", "Open"),
+        "closed": count("Appointment", "Closed"),
+    }
+
