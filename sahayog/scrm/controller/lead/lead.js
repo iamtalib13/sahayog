@@ -1,5 +1,19 @@
 frappe.ui.form.on("Lead", {
   refresh(frm) {
+
+    // Add "Create Appointment" button
+    frm.add_custom_button("Create Appointment", () => {
+      frappe.new_doc("Appointment", {
+        customer_name: frm.doc.first_name,
+        customer_phone_number: frm.doc.mobile_no || frm.doc.phone ||"",
+        customer_email: frm.doc.email_id || "",
+        appointment_with: "Lead",
+        party: frm.doc.name,
+        status: "Open"
+      });
+    }, __("Create"));
+
+
     if (isAdmin()) return;
 
     hideFields(frm, [
@@ -23,25 +37,6 @@ frappe.ui.form.on("Lead", {
     setFilterOnFields(frm);
     setMandtatoryFields(frm, ["source", "mobile_no"]);
   },
-
-  // status: function (frm) {
-  //   if (frm.doc.status === "Follow Up") {
-  //     frappe.confirm(
-  //       "Do you want to schedule a follow-up appointment?",
-  //       function () {
-  //         // Create new Appointment and pre-fill lead data
-  //         frappe.new_doc("Appointment", {
-  //           lead: frm.doc.name,
-  //           customer_name: frm.doc.lead_name,
-  //           // Add other pre-fill fields if needed
-  //         });
-  //       },
-  //       function () {
-  //         // Optional: Do something if user cancels
-  //       }
-  //     );
-  //   }
-  // },
 });
 
 //  Check if current user is Administrator

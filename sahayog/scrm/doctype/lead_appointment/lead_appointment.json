@@ -6,45 +6,73 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "appointment",
   "scheduled_time",
   "status",
-  "title",
-  "notes"
+  "customer_name",
+  "customer_email",
+  "customer_phone_number"
  ],
  "fields": [
   {
+   "fetch_from": "appointment.scheduled_time",
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
-   "label": "Appointment Time"
+   "in_list_view": 1,
+   "label": "Scheduled Time",
+   "read_only": 1
   },
   {
+   "fetch_from": "appointment.status",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
-   "options": "Open\nClosed"
+   "options": "\nOpen\nClosed",
+   "read_only": 1
   },
   {
-   "fieldname": "title",
+   "fetch_from": "appointment.customer_name",
+   "fieldname": "customer_name",
    "fieldtype": "Data",
-   "label": "Title"
+   "in_list_view": 1,
+   "label": "Name",
+   "read_only": 1
   },
   {
-   "fieldname": "notes",
-   "fieldtype": "Small Text",
-   "label": "Notes"
+   "fieldname": "appointment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Appointment",
+   "options": "Appointment",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.customer_email",
+   "fieldname": "customer_email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.customer_phone_number",
+   "fieldname": "customer_phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "read_only": 1
   }
  ],
- "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-11 16:24:58.050146",
+ "modified": "2025-06-11 17:29:12.702994",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Lead Appointment",
  "owner": "Administrator",
  "permissions": [],
- "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
