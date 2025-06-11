@@ -1,6 +1,5 @@
 frappe.ui.form.on("Lead", {
   refresh(frm) {
-    frm.set_df_property("activities_tab", "display_depends", "");
     if (isAdmin()) return;
 
     hideFields(frm, [
@@ -16,13 +15,11 @@ frappe.ui.form.on("Lead", {
       "organization_section",
       "other_info_tab",
       "qualification_tab",
-      "activities_tab",
     ]);
 
     frm.set_df_property("first_name", "label", "Full Name");
 
     makeFieldsReadOnly(frm, ["lead_owner"]);
-    // setSelectFieldOptions(frm);
     setFilterOnFields(frm);
     setMandtatoryFields(frm, ["source", "mobile_no"]);
   },
@@ -44,19 +41,6 @@ function hideFields(frm, fields) {
 //  Make multiple fields read-only
 function makeFieldsReadOnly(frm, fields) {
   fields.forEach((field) => frm.set_df_property(field, "read_only", 1));
-}
-
-//  Set custom options for the status field
-function setSelectFieldOptions(frm) {
-  const options = [
-    "Lead",
-    "New",
-    "Converted",
-    "Follow Up",
-    "Not Interested",
-    "Opportunity",
-  ];
-  frm.set_df_property("status", "options", options.join("\n"));
 }
 
 // Apply filter to source field
