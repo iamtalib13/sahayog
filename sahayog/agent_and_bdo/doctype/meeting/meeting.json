@@ -10,10 +10,10 @@
   "trainer",
   "date",
   "start_time",
+  "end_time",
   "column_break_sfsv",
   "training_location",
   "topic",
-  "end_time",
   "amended_from",
   "section_break_xhny",
   "attandees_table"
@@ -70,9 +70,10 @@
   {
    "fieldname": "section_break_xhny",
    "fieldtype": "Section Break",
-   "label": "Attandees Details"
+   "label": "Attendees Details"
   },
   {
+   "depends_on": "eval:!doc.__islocal",
    "fieldname": "trainer",
    "fieldtype": "Link",
    "label": "Trainer",
@@ -88,7 +89,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-04 13:54:24.837857",
+ "modified": "2025-06-11 17:55:13.211215",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Meeting",
