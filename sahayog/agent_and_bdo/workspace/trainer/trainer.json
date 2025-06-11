@@ -1,0 +1,52 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"Kd1IgRwrm1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Agent &amp; BDO Management</span>\",\"col\":12}},{\"id\":\"Cm3yn-euGx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Meeting\",\"col\":3}},{\"id\":\"QNu0hJsWFr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent Activation Call Log\",\"col\":3}}]",
+ "creation": "2025-06-11 17:41:21.628216",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "customer",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Trainer",
+ "links": [],
+ "modified": "2025-06-11 17:43:01.251171",
+ "modified_by": "Administrator",
+ "module": "Agent and BDO",
+ "name": "Trainer",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Trainer"
+  }
+ ],
+ "sequence_id": 77.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{}",
+   "label": "Meeting",
+   "link_to": "Meeting",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{}",
+   "label": "Agent Activation Call Log",
+   "link_to": "Agent Activation Call Log",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Trainer"
+}
