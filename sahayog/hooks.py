@@ -292,8 +292,12 @@ doc_events = {
         "before_save": [
             "sahayog.doc_events.crm_lead.validate_lead_fields",
         ]
+    },
+    "Lead": {
+        "before_insert": [
+            "sahayog.scrm.controller.lead.lead.update_employee_details",
+        ]
     }
-    
    
 }
 
