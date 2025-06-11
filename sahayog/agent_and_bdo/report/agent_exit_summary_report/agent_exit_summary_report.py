@@ -41,8 +41,8 @@ def execute(filters=None):
             ac.branch,
             ac.district,
             ac.exited
-        FROM `tabAgent Activation Call Log` ac
-        LEFT JOIN `tabEmployee` emp ON ac.trainer = emp.name
+        FROM `tabAgent Activation Call Log` AS ac
+        LEFT JOIN tabEmployee emp ON ac.trainer = emp.name
         WHERE ac.docstatus < 2 {conditions}
         ORDER BY ac.report_date DESC
     """, filters, as_dict=1)
