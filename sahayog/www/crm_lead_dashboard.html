@@ -1,0 +1,191 @@
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<style>
+  body {
+    background: transparent;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+  }
+  .tabs {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .tab {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 0.375rem 0.375rem 0 0;
+    background: #ffffff;
+    font-weight: 600;
+    transition: background 0.3s;
+  }
+
+  .tab.active {
+    background: rgb(190, 185, 185);
+    border: 1px solid #e5e7eb;
+    border-bottom: none;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background: transparent;
+  }
+
+  .card {
+    border-top: 3px solid;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: transparent;
+    transition: 0.2s ease-in-out;
+    cursor: pointer;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .card-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .card-title {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .section {
+    display: none;
+  }
+
+  .section.active {
+    display: block;
+  }
+</style>
+
+<!-- Heading and Welcome -->
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 1rem;">
+  <p style="font-size: 1rem; font-weight: 600; margin: 0;">
+    Welcome, <br>{{ frappe.get_fullname() }}
+  </p>
+
+  <div style="position: relative;">
+    <button id="plus-btn" style="font-size: 1.5rem; background: #10b981; color: white; border: none; border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer;">+</button>
+    
+    <div id="dropdown-menu" style="display: none; position: absolute; right: 0; top: 2.5rem; background: white; border: 1px solid #e5e7eb; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 0.375rem; min-width: 150px; z-index: 1000;">
+      <div onclick="top.location.href='/app/lead/new-lead-1'" style="padding: 0.75rem 1rem; cursor: pointer; font-size: 0.9rem;">+ Lead</div>
+      <div onclick="top.location.href='/app/appointment/new-appointment-1'" style="padding: 0.75rem 1rem; cursor: pointer; font-size: 0.9rem;">+ Appointment</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-target="appointment-section">Appointment</div>
+  <div class="tab " data-target="lead-section">Lead</div>
+</div>
+
+<!-- Lead Section -->
+<div class="section" id="lead-section">
+  <div class="cards">
+    <div class="card" style="border-top-color: #64748b" onclick="top.location.href='/app/lead?status=Lead'">
+      <div class="card-value" id="lead-count">--</div>
+      <div class="card-title">Lead</div>
+    </div>
+    <div class="card" style="border-top-color: #10b981" onclick="top.location.href='/app/lead?status=Converted'">
+      <div class="card-value" id="converted-count">--</div>
+      <div class="card-title">Converted</div>
+    </div>
+    <div class="card" style="border-top-color: #f59e0b" onclick="top.location.href='/app/lead?status=Follow Up'">
+      <div class="card-value" id="followup-count">--</div>
+      <div class="card-title">Follow Up</div>
+    </div>
+    <div class="card" style="border-top-color: #ef4444" onclick="top.location.href='/app/lead?status=Not Interested'">
+      <div class="card-value" id="notinterested-count">--</div>
+      <div class="card-title">Not Interested</div>
+    </div>
+    <div class="card" style="border-top-color: #8b5cf6" onclick="top.location.href='/app/lead?status=Opportunity'">
+      <div class="card-value" id="opportunity-count">--</div>
+      <div class="card-title">Opportunity</div>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Section -->
+<div class="section active" id="appointment-section">
+  <div class="cards">
+    <div class="card" style="border-top-color: #ee4040" onclick="top.location.href='/app/appointment?status=Open'">
+      <div class="card-value" id="open-count">--</div>
+      <div class="card-title">Open</div>
+    </div>
+    <div class="card" style="border-top-color: #10b981" onclick="top.location.href='/app/appointment?status=Closed'">
+      <div class="card-value" id="closed-count">--</div>
+      <div class="card-title">Closed</div>
+    </div>
+  </div>
+</div>
+
+<!-- JS -->
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch('/api/method/sahayog.scrm.api.sahayog_crm_dashboard.get_lead_appointment_count');
+      const { message: data } = await res.json();
+
+      const ids = {
+        'lead-count': data.lead,
+        'converted-count': data.converted,
+        'followup-count': data.follow_up,
+        'notinterested-count': data.not_interested,
+        'opportunity-count': data.opportunity,
+        'open-count': data.open,
+        'closed-count': data.closed
+      };
+
+      for (const [id, count] of Object.entries(ids)) {
+        document.getElementById(id).textContent = count ?? 0;
+      }
+
+    } catch (e) {
+      console.error('Card data error:', e);
+    }
+
+    // Tab functionality
+    const tabs = document.querySelectorAll('.tab');
+    const sections = document.querySelectorAll('.section');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        sections.forEach(sec => sec.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const plusBtn = document.getElementById("plus-btn");
+    const dropdown = document.getElementById("dropdown-menu");
+
+    plusBtn.addEventListener("click", () => {
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    });
+
+    // Optional: Hide dropdown if user clicks outside
+    document.addEventListener("click", function (event) {
+      if (!plusBtn.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+  });
+</script>
