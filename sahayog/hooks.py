@@ -299,6 +299,9 @@ doc_events = {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
         ]
+    },
+    "Appointment": {
+        "after_insert": "sahayog.doc_events.appointment.link_appointment_to_lead"
     }
    
 }

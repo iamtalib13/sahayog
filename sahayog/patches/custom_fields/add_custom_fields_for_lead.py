@@ -37,9 +37,21 @@ def execute():
                 "fieldname": "custom_zone",
                 "fieldtype": "Data",
                 "insert_after": "custom_region",
+            },{
+                "label": "Lead Appointment Details",
+                "fieldname": "custom_lead_appointment_section",
+                "fieldtype": "Section Break",
+                "insert_after": "custom_zone",
+                "collapsible": 1,
             },
-           
-            
+            {
+                "label": "Lead Appointments",
+                "fieldname": "custom_lead_appointments",
+                "fieldtype": "Table",
+                "options": "Lead Appointment",
+                "insert_after": "custom_lead_appointment_section",
+                "read_only": 1,
+            }, 
         ],
     }
     create_custom_fields(fields)
