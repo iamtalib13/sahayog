@@ -177,7 +177,8 @@ after_migrate = [
 
 permission_query_conditions = {
 	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-    "CRM Lead": "sahayog.permissions.get_lead_permission_by_branch",
+    "Lead": "sahayog.permissions.get_lead_permission",
+   # "Appointment": "sahayog.permissions.get_appointment_permission",
     
 }
 #
