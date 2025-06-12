@@ -2,6 +2,7 @@ frappe.ui.form.on("Lead", {
   refresh(frm) {
 
     // Add "Create Appointment" button
+    if(!frm.is_new()) {
     frm.add_custom_button("Create Appointment", () => {
       frappe.new_doc("Appointment", {
         customer_name: frm.doc.first_name,
@@ -12,6 +13,7 @@ frappe.ui.form.on("Lead", {
         status: "Open"
       });
     }, __("Create"));
+  }
 
 
     if (isAdmin()) return;
