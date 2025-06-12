@@ -52,7 +52,8 @@ doctype_js = {
     "Task": "public/js/task.js",
     "CRM Lead": "public/js/crm_lead.js",
     "Project": "public/js/project.js",
-    "Lead":"scrm/controller/lead/lead.js"
+    "Lead":"scrm/controller/lead/lead.js",
+    "Appointment" : "scrm/controller/appointment/appointment.js"
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 
