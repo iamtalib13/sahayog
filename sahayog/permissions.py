@@ -1,6 +1,6 @@
 import frappe
 
-def get_lead_permission(user):
+def get_lead_permission_by_branch(user):
     if not user:
         user = frappe.session.user
 
