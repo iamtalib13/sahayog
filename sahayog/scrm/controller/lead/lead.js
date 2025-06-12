@@ -1,20 +1,22 @@
 frappe.ui.form.on("Lead", {
   refresh(frm) {
-
     // Add "Create Appointment" button
-    if(!frm.is_new()) {
-    frm.add_custom_button("Create Appointment", () => {
-      frappe.new_doc("Appointment", {
-        customer_name: frm.doc.first_name,
-        customer_phone_number: frm.doc.mobile_no || frm.doc.phone ||"",
-        customer_email: frm.doc.email_id || "",
-        appointment_with: "Lead",
-        party: frm.doc.name,
-        status: "Open"
-      });
-    }, __("Create"));
-  }
-
+    if (!frm.is_new()) {
+      frm.add_custom_button(
+        "Create Appointment",
+        () => {
+          frappe.new_doc("Appointment", {
+            customer_name: frm.doc.first_name,
+            customer_phone_number: frm.doc.mobile_no || frm.doc.phone || "",
+            customer_email: frm.doc.email_id || "",
+            appointment_with: "Lead",
+            party: frm.doc.name,
+            status: "Open",
+          });
+        },
+        __("Create")
+      );
+    }
 
     if (isAdmin()) return;
 
@@ -31,6 +33,8 @@ frappe.ui.form.on("Lead", {
       "organization_section",
       "other_info_tab",
       "qualification_tab",
+      "address_html",
+      "contact_html",
     ]);
 
     frm.set_df_property("first_name", "label", "Full Name");

@@ -11,6 +11,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "contact_html",
                 "collapsible": 1,
+                "hidden" : 1,
             },
             {
                 "label":"Employee ID",
@@ -52,6 +53,22 @@ def execute():
                 "insert_after": "custom_lead_appointment_tab",
                 "read_only": 1,
             }, 
+
+            {
+                "label": "Product Details",
+                "fieldname":"custom_product_details_section",
+                "fieldtype" : "Section Break",
+                "insert_after": "phone_ext",
+                "collapsible": 1,
+            },
+            {
+                "label": "Product",
+                "fieldname": "custom_product_table",
+                "fieldtype": "Table",
+                "options": "Lead Product",
+                "insert_after": "custom_product_details_section",
+                
+            }
         ],
     }
     create_custom_fields(fields)
