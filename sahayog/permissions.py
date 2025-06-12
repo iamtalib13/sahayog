@@ -33,20 +33,26 @@ def get_appointment_permission(user):
 
     conditions = []
 
-    # Check if the user is a Branch Manager
+   # Extra access for Branch Manager
     if "Branch Manager" in user_roles:
-        # Fetch branch of the user from Employee doctype
-        user_branch = frappe.db.get_value('Employee', {'user_id': user}, 'branch')
-        
+        user_branch = frappe.db.get_value("Employee", {"user_id": user}, "branch")
         if user_branch:
-            # Add condition to show only appointments of the same branch
-            conditions.append(f"`tabAppointment`.custom_branch = '{user_branch}'")
+            # Add condition: show appointments linked to Leads in same branch
+            conditions.append(f"""
+                (
+                    `tabAppointment`.appointment_with = 'Lead'
+                    AND EXISTS (
+                        SELECT 1 FROM `tabLead`
+                        WHERE `tabLead`.name = `tabAppointment`.party
+                        AND `tabLead`.custom_branch = '{user_branch}'
+                    )
+                )
+            """)
 
-    # Add condition for the owner
     conditions.append(f"`tabAppointment`.owner = '{user}'")
 
     # Add condition for assigned user (stored as a JSON string in _assign)
-    conditions.append(f"`tabAppointment`._assign LIKE '%\"{user}\"%'")
+    #conditions.append(f"`tabAppointment`._assign LIKE '%\"{user}\"%'")
 
     # Add condition for escalated user if used
     # conditions.append(f"`tabAppointment`.custom_escalated_to = '{user}'")
