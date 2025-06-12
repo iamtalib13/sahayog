@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"Kd1IgRwrm1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Agent &amp; BDO Management</span>\",\"col\":12}},{\"id\":\"Cm3yn-euGx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Meeting\",\"col\":3}},{\"id\":\"QNu0hJsWFr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent Activation Call Log\",\"col\":3}}]",
+ "content": "[{\"id\":\"Kd1IgRwrm1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Agent &amp; BDO Management</span>\",\"col\":12}},{\"id\":\"HN5slot4s3\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Meeting\",\"col\":6}},{\"id\":\"7rkm4PFErc\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Agent Activation Calls\",\"col\":6}},{\"id\":\"1ifWFNo03Y\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Meeting\",\"col\":6}},{\"id\":\"uewQeF8Yuj\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Agent Activation Call Log\",\"col\":6}}]",
  "creation": "2025-06-11 17:41:21.628216",
  "custom_blocks": [],
  "docstatus": 0,
@@ -13,40 +13,41 @@
  "is_hidden": 0,
  "label": "Trainer",
  "links": [],
- "modified": "2025-06-11 17:43:01.251171",
+ "modified": "2025-06-12 11:32:13.651985",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Trainer",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Meeting",
+   "number_card_name": "Meeting"
+  },
+  {
+   "label": "Agent Activation Calls",
+   "number_card_name": "Agent Activation Calls"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
- "quick_lists": [],
+ "quick_lists": [
+  {
+   "document_type": "Meeting",
+   "label": "Meeting",
+   "quick_list_filter": "[]"
+  },
+  {
+   "document_type": "Agent Activation Call Log",
+   "label": "Agent Activation Call Log",
+   "quick_list_filter": "[]"
+  }
+ ],
  "roles": [
   {
    "role": "Trainer"
   }
  ],
  "sequence_id": 77.0,
- "shortcuts": [
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "format": "{}",
-   "label": "Meeting",
-   "link_to": "Meeting",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Green",
-   "doc_view": "List",
-   "format": "{}",
-   "label": "Agent Activation Call Log",
-   "link_to": "Agent Activation Call Log",
-   "stats_filter": "[]",
-   "type": "DocType"
-  }
- ],
+ "shortcuts": [],
  "title": "Trainer"
 }
