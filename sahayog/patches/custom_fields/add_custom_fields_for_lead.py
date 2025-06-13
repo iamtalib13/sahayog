@@ -59,7 +59,7 @@ def execute():
                 "fieldname":"custom_product_details_section",
                 "fieldtype" : "Section Break",
                 "insert_after": "phone_ext",
-                "collapsible": 1,
+                
             },
             {
                 "label": "Product",
