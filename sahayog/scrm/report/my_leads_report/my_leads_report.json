@@ -1,0 +1,31 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2025-06-13 13:34:53.812880",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "json": "{}",
+ "letter_head": "Sahayog Purchase Order",
+ "letterhead": null,
+ "modified": "2025-06-13 14:09:01.471857",
+ "modified_by": "Administrator",
+ "module": "SCRM",
+ "name": "My Leads Report",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "SELECT\n    name AS \"Lead ID:Link/Lead:150\",\n    lead_name AS \"Lead Name::200\",\n    status AS \"Status::120\",\n    source AS \"Source::120\",\n    email_id AS \"Email::180\",\n    phone AS \"Phone::120\",\n    mobile_no AS \"Mobile::120\",\n    creation AS \"Created On:Datetime:180\",\n    owner AS \"Created By:Link/User:150\"\nFROM\n    `tabLead`\nWHERE\n    owner = %(user)s\nORDER BY\n    creation DESC\n",
+ "ref_doctype": "Lead",
+ "report_name": "My Leads Report",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Sales User"
+  }
+ ],
+ "timeout": 0
+}
