@@ -6,4 +6,6 @@
 # Patches added in this section will be executed after doctypes are migrated
 sahayog.patches.add_roles
 
+
 sahayog.patches.set_lead_status_options
+sahayog.patches.set_quick_entry_opportunity
