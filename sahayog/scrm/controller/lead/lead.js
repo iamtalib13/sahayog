@@ -2,6 +2,14 @@ frappe.ui.form.on("Lead", {
   refresh(frm) {
     // Add "Create Appointment" button
     if (!frm.is_new()) {
+      // Remove the default "Customer" button under the "Create" group
+      setTimeout(() => {
+        frm.remove_custom_button("Customer", "Create");
+        frm.remove_custom_button("Prospect", "Create");
+        frm.remove_custom_button("Quotation", "Create");
+        frm.remove_custom_button("Add to Prospect", "Action");
+      }, 100);
+
       frm.add_custom_button(
         "Create Appointment",
         () => {
@@ -12,6 +20,18 @@ frappe.ui.form.on("Lead", {
             appointment_with: "Lead",
             party: frm.doc.name,
             status: "Open",
+          });
+        },
+        __("Create")
+      );
+      frm.add_custom_button(
+        "Opportunity",
+        () => {
+          frappe.new_doc("Opportunity", {
+            party_name: frm.doc.name, // Link to the current Lead or Contact
+            opportunity_from: "Lead", // or "Customer", depending on the context
+            contact_email: frm.doc.email_id || "",
+            contact_mobile: frm.doc.mobile_no || frm.doc.phone || "",
           });
         },
         __("Create")
