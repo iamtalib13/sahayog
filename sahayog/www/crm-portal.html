@@ -1,0 +1,978 @@
+<html class="scroll-smooth" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>Sahayog CRM PWA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Roboto", sans-serif;
+        overscroll-behavior-y: contain;
+      }
+      main {
+        padding-bottom: 4.5rem; /* space for fixed bottom nav */
+      }
+      /* Scrollbar for filters */
+      .filters-scroll::-webkit-scrollbar {
+        display: none;
+    }
+    </style>
+    <!-- PWA Manifest -->
+    <link href="manifest.json" rel="manifest" />
+    <meta content="#16a34a" name="theme-color" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta
+      content="black-translucent"
+      name="apple-mobile-web-app-status-bar-style"
+    />
+    <meta content="Sahayog CRM" name="apple-mobile-web-app-title" />
+    <link
+      href="https://placehold.co/128x128/png?text=CRM"
+      rel="apple-touch-icon"
+    />
+    <script>
+      // Register service worker for PWA
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("sw.js").catch((err) => {
+            console.log("Service Worker registration failed: ", err);
+          });
+        });
+      }
+    </script>
+  </head>
+  <body class="bg-white text-gray-900 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header
+      class="flex justify-between items-center px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-30"
+    >
+      <h1 class="text-green-600 font-extrabold text-xl select-none">
+        Sahayog CRM
+      </h1>
+      <div class="flex space-x-5 text-black text-xl">
+        <button aria-label="Refresh Page" class="focus:outline-none" onclick="location.reload()">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+      
+    </header>
+    <!-- Search Bar -->
+    <div
+      class="px-4 py-3 border-b border-gray-200 sticky top-[56px] bg-white z-20"
+    >
+      <div
+        class="flex items-center bg-gray-100 rounded-full px-4 py-2 text-gray-600 text-sm"
+      >
+        <i class="fas fa-search mr-2"> </i>
+        <input
+          aria-label="Search input"
+          class="bg-transparent focus:outline-none w-full"
+          id="searchInput"
+          placeholder="Search"
+          type="text"
+        />
+      </div>
+    </div>
+    <!-- Dynamic Filters -->
+    <div
+      class="filters-scroll flex space-x-2 px-4 py-2 overflow-x-auto border-b border-gray-200 bg-white sticky top-[104px] z-20"
+      id="dynamicFilters"
+    >
+      <!-- Filters buttons inserted dynamically -->
+    </div>
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto px-4 space-y-4 pb-24" id="app">
+      <section class="space-y-4" id="crm-list">
+        <!-- CRM items rendered dynamically -->
+      </section>
+    </main>
+    <!-- Floating Action Button -->
+    <button
+      aria-label="New entry"
+      class="fixed bottom-20 right-5 bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-lg p-4 shadow-lg focus:outline-none z-30"
+      id="fabNewEntry"
+      title="Add New Entry"
+    >
+      <i class="fas fa-plus text-white text-xl"> </i>
+    </button>
+    <!-- Bottom Navigation for CRM -->
+    <nav
+      aria-label="Primary"
+      class="flex justify-around items-center border-t border-gray-300 py-2 text-black text-xs font-semibold select-none fixed bottom-0 left-0 right-0 bg-white z-40"
+      role="navigation"
+    >
+      <button
+        aria-current="page"
+        aria-label="Appointments"
+        class="flex flex-col items-center text-green-600 font-extrabold relative focus:outline-none"
+        id="navAppointment"
+        type="button"
+      >
+        <i class="fas fa-calendar-check text-lg"> </i>
+        <span> Appointment </span>
+      </button>
+      <button
+        aria-label="Leads"
+        class="flex flex-col items-center focus:outline-none"
+        id="navLead"
+        type="button"
+      >
+        <i class="fas fa-user-plus text-lg"> </i>
+        <span> Lead </span>
+      </button>
+      <button
+        aria-label="Profile"
+        class="flex flex-col items-center focus:outline-none"
+        id="navProfile"
+        type="button"
+      >
+        <i class="fas fa-user-circle text-lg"> </i>
+        <span> Opportunity </span>
+      </button>
+      <button
+        aria-label="Reports"
+        class="flex flex-col items-center focus:outline-none"
+        id="navReport"
+        type="button"
+      >
+        <i class="fas fa-file-alt text-lg"> </i>
+        <span> Report </span>
+      </button>
+      
+    </nav>
+    <script>
+        // Configuration
+        const SYNC_INTERVAL = 5000; // 5 seconds
+        const LONG_POLL_TIMEOUT = 30000; // 30 seconds
+      
+        // Elements
+        const crmList = document.getElementById("crm-list");
+        const dynamicFilters = document.getElementById("dynamicFilters");
+        const navButtons = {
+          appointment: document.getElementById("navAppointment"),
+          lead: document.getElementById("navLead"),
+          report: document.getElementById("navReport"),
+          profile: document.getElementById("navProfile"),
+        };
+        const searchInput = document.getElementById("searchInput");
+      
+        // Current state
+        let currentSection = "appointment"; // Default to lead section
+        let currentFilter = "All";
+        let leadData = [];
+        let appointmentData = [];
+        let lastSyncTimestamp = new Date().toISOString();
+        let syncIntervalId = null;
+        let longPollRequest = null;
+        let isSyncing = false;
+      
+        // EventSource for real-time updates (if supported)
+        let eventSource = null;
+      
+        // Check if EventSource is supported
+        const isEventSourceSupported = () => {
+          return typeof EventSource !== "undefined";
+        };
+      
+        // Initialize EventSource connection
+        const initEventSource = () => {
+          if (!isEventSourceSupported()) return;
+      
+          const eventSourceUrl = `/api/method/frappe.realtime.get_events`;
+      
+          eventSource = new EventSource(eventSourceUrl, {
+            withCredentials: true,
+          });
+      
+          eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.doctype === "Lead" || data.doctype === "Appointment") {
+              handleDataUpdate();
+            }
+          };
+      
+          eventSource.onerror = (error) => {
+            console.error("EventSource error:", error);
+            // Fall back to polling if EventSource fails
+            eventSource.close();
+            startPolling();
+          };
+        };
+      
+        // Start polling for updates
+        const startPolling = () => {
+          if (syncIntervalId) clearInterval(syncIntervalId);
+      
+          // Initial sync
+          syncData();
+      
+          // Set up regular polling
+          syncIntervalId = setInterval(syncData, SYNC_INTERVAL);
+        };
+      
+        // Stop all sync methods
+        const stopSync = () => {
+          if (syncIntervalId) clearInterval(syncIntervalId);
+          if (longPollRequest) longPollRequest.abort();
+          if (eventSource) eventSource.close();
+        };
+      
+        // Handle data updates
+        const handleDataUpdate = () => {
+          if (currentSection === "lead") {
+            fetchLeads(true).then((leads) => {
+              leadData = processLeadData(leads);
+              renderList(currentSection, currentFilter, searchInput.value.trim());
+            });
+          } else if (currentSection === "appointment") {
+            fetchAppointments(true).then((appointments) => {
+              appointmentData = processAppointmentData(appointments);
+              renderList(currentSection, currentFilter, searchInput.value.trim());
+            });
+          }
+        };
+      
+        // Synchronize data
+        const syncData = () => {
+          if (isSyncing) return;
+          isSyncing = true;
+      
+          // Use long polling first, fall back to regular fetch
+          attemptLongPoll()
+            .catch(() => {
+              handleDataUpdate();
+            })
+            .finally(() => {
+              isSyncing = false;
+            });
+        };
+      
+        // Attempt long polling
+        const attemptLongPoll = async () => {
+          return new Promise((resolve, reject) => {
+            const url = `/api/method/frappe.realtime.poll?last_modified=${encodeURIComponent(
+              lastSyncTimestamp
+            )}`;
+      
+            longPollRequest = new XMLHttpRequest();
+            longPollRequest.open("GET", url, true);
+            longPollRequest.withCredentials = true;
+            longPollRequest.timeout = LONG_POLL_TIMEOUT;
+      
+            longPollRequest.onload = () => {
+              if (longPollRequest.status === 200) {
+                const response = JSON.parse(longPollRequest.response);
+                if (
+                  response.message &&
+                  (response.message.doctypes.includes("Lead") ||
+                    response.message.doctypes.includes("Appointment"))
+                ) {
+                  handleDataUpdate();
+                }
+                lastSyncTimestamp = new Date().toISOString();
+                resolve();
+              } else {
+                reject();
+              }
+            };
+      
+            longPollRequest.onerror = () => reject();
+            longPollRequest.ontimeout = () => reject();
+      
+            longPollRequest.send();
+          });
+        };
+      
+        // Fetch leads from Frappe REST API using session cookies
+        async function fetchLeads(forceRefresh = false) {
+          try {
+            const endpoint = `/api/resource/Lead?fields=["*"]`;
+      
+            // Add cache-buster if forcing refresh
+            const url = forceRefresh ? `${endpoint}&_=${Date.now()}` : endpoint;
+      
+            const response = await fetch(url, {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: forceRefresh ? "no-cache" : "default",
+            });
+      
+            if (!response.ok) {
+              if (response.status === 403) {
+                window.location.href = `/login?redirect-to=${encodeURIComponent(
+                  window.location.href
+                )}`;
+                return [];
+              }
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+      
+            const data = await response.json();
+            lastSyncTimestamp = new Date().toISOString();
+            return data.data;
+          } catch (error) {
+            console.error("Error fetching leads:", error);
+            return [];
+          }
+        }
+      
+        // Fetch appointments from Frappe REST API
+        async function fetchAppointments(forceRefresh = false) {
+          try {
+            const endpoint = `/api/resource/Appointment?fields=["*"]`;
+      
+            // Add cache-buster if forcing refresh
+            const url = forceRefresh ? `${endpoint}&_=${Date.now()}` : endpoint;
+      
+            const response = await fetch(url, {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: forceRefresh ? "no-cache" : "default",
+            });
+      
+            if (!response.ok) {
+              if (response.status === 403) {
+                window.location.href = `/login?redirect-to=${encodeURIComponent(
+                  window.location.href
+                )}`;
+                return [];
+              }
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+      
+            const data = await response.json();
+            lastSyncTimestamp = new Date().toISOString();
+            return data.data;
+          } catch (error) {
+            console.error("Error fetching appointments:", error);
+            return [];
+          }
+        }
+      
+        // Process lead data for our UI
+        function processLeadData(leads) {
+          return leads.map((lead) => {
+            // Format modified or fallback to creation
+            const modifiedString = lead.modified
+              ? prettyDate(lead.modified)
+              : lead.creation
+              ? prettyDate(lead.creation)
+              : "N/A";
+        
+            // Determine status
+            const status = lead.status || "Lead";
+            let statusClass = "";
+        
+            switch (status.toLowerCase()) {
+              case "converted":
+                statusClass = "bg-green-100 text-green-800";
+                break;
+              case "opportunity":
+                statusClass = "bg-blue-100 text-blue-800";
+                break;
+              case "not interested":
+                statusClass = "bg-red-100 text-red-800";
+                break;
+              default:
+                statusClass = "bg-gray-100 text-gray-800";
+            }
+        
+            return {
+              title: `Lead: ${lead.lead_name || "Unnamed Lead"}`,
+              subtitle: `${lead.email_id || ""} • ${lead.mobile_no || ""}`,
+              lastUpdated: modifiedString,
+              status: status,
+              statusClass: statusClass,
+              img: "https://placehold.co/40x40/png?text=L",
+              alt: "Lead icon",
+              rawData: lead,
+            };
+          });
+        }
+
+      
+        // Process appointment data for our UI
+        function processAppointmentData(appointments) {
+          return appointments.map((appointment) => {
+            // Format scheduled date
+            const scheduledDate = appointment.scheduled_time
+              ? new Date(appointment.scheduled_time)
+              : new Date();
+        
+            const dateString = scheduledDate.toLocaleDateString(undefined, {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            });
+            const timeString = scheduledDate.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            });
+        
+            // Format modified or fallback to creation
+            const modifiedString = appointment.modified
+              ? prettyDate(appointment.modified)
+              : appointment.creation
+              ? prettyDate(appointment.creation)
+              : "N/A";
+        
+            // Determine status
+            const status = appointment.status || "Scheduled";
+            let statusClass = "";
+        
+            switch (status.toLowerCase()) {
+              case "closed":
+                statusClass = "bg-green-100 text-green-800";
+                break;
+              case "open":
+                statusClass = "bg-red-100 text-red-800";
+                break;
+              case "rescheduled":
+                statusClass = "bg-yellow-100 text-yellow-800";
+                break;
+              default:
+                statusClass = "bg-blue-100 text-blue-800";
+            }
+        
+            // Upcoming or past
+            const now = new Date();
+            const timeStatus = scheduledDate > now ? "Upcoming" : "Past";
+        
+            return {
+              title: `${appointment.customer_name || "Unnamed Appointment"}`,
+              subtitle: `${dateString} • ${timeString}`,
+              lastUpdated: modifiedString,
+              status: status,
+              timeStatus: timeStatus,
+              statusClass: statusClass,
+              img: "https://placehold.co/40x40/png?text=A",
+              alt: "Appointment icon",
+              rawData: appointment,
+            };
+          });
+        }
+        
+            // Helper: count how many items match a given filter
+            function countItems(section, filter, items) {
+              const now = new Date();
+            
+              return items.filter((item) => {
+                if (section === "appointment") {
+                  const scheduledDate = item.rawData.scheduled_time
+                    ? new Date(item.rawData.scheduled_time)
+                    : null;
+                
+                  switch (filter) {
+                    case "All":
+                      return true;
+                    case "Due":
+                      return (
+                        scheduledDate &&
+                        scheduledDate < now &&
+                        item.status !== "Closed"
+                      );
+                    case "Upcoming":
+                      return (
+                        scheduledDate &&
+                        scheduledDate > now &&
+                        item.status !== "Closed"
+                      );
+                    case "Open":
+                      return item.status === "Open";
+                    case "Closed":
+                      return item.status === "Closed";
+                    case "Today":
+                      if (!scheduledDate) return false;
+                      const today = new Date();
+                      return (
+                        scheduledDate.getDate() === today.getDate() &&
+                        scheduledDate.getMonth() === today.getMonth() &&
+                        scheduledDate.getFullYear() === today.getFullYear()
+                      );
+                    default:
+                      return false;
+                  }
+                }
+            
+                // lead (or any other generic) section
+                if (filter === "All") return true;
+                return item.status === filter;
+              }).length;
+            }
+            
+            function renderFilters(section) {
+              dynamicFilters.innerHTML = "";
+            
+              // 1.  Build the filter list ----------------------------------------------
+              let filters = [];
+              if (section === "lead") {
+                filters = ["All", "Lead","Follow Up", "Opportunity", "Converted", "Not Interested"];
+              } else if (section === "appointment") {
+                filters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+              } else {
+                filters = ["All"];
+              }
+          
+              // 2.  Figure out which items we’re counting ------------------------------
+              let items = [];
+              if (section === "lead") {
+                items = leadData;
+              } else if (section === "appointment") {
+                items = appointmentData;
+              } else {
+                items = data[section]?.items || [];
+              }
+          
+              // 3.  Render each filter button with its counter -------------------------
+              filters.forEach((filter, idx) => {
+                const count = countItems(section, filter, items);
+            
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = `text-xs font-semibold rounded-full px-3 py-1 whitespace-nowrap select-none border ${
+                  idx === 0
+                    ? "bg-green-100 text-green-700 border-green-300"
+                    : "border-gray-300 text-gray-700"
+                }`;
+                btn.textContent = `${filter} (${count})`;
+                btn.setAttribute("aria-pressed", idx === 0 ? "true" : "false");
+            
+                btn.addEventListener("click", () => {
+                  Array.from(dynamicFilters.children).forEach((child) => {
+                    child.classList.remove(
+                      "bg-green-100",
+                      "text-green-700",
+                      "border-green-300"
+                    );
+                    child.classList.add("border-gray-300", "text-gray-700");
+                    child.setAttribute("aria-pressed", "false");
+                  });
+                  btn.classList.add("bg-green-100", "text-green-700", "border-green-300");
+                  btn.classList.remove("border-gray-300", "text-gray-700");
+                  btn.setAttribute("aria-pressed", "true");
+              
+                  currentFilter = filter;
+                  renderList(currentSection, currentFilter, searchInput.value.trim());
+                });
+            
+                dynamicFilters.appendChild(btn);
+              });
+          
+              currentFilter = filters[0]; // default selected filter
+            }
+
+        
+        // Render list items
+        function renderList(section, filter, searchText) {
+          crmList.innerHTML = "";
+        
+          let items = [];
+          if (section === "lead") {
+            items = leadData;
+          } else if (section === "appointment") {
+            items = appointmentData;
+          } else {
+            items = data[section]?.items || [];
+          }
+      
+          const filteredItems = items.filter((item) => {
+            // For appointments, we have special filters
+            if (section === "appointment") {
+              const now = new Date();
+              const scheduledDate = item.rawData.scheduled_time ? new Date(item.rawData.scheduled_time) : null;
+            
+              // Start with search filter
+              const matchesSearch =
+                !searchText ||
+                item.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                item.subtitle.toLowerCase().includes(searchText.toLowerCase());
+            
+              // Then apply the specific filter
+              switch (filter) {
+                case "All":
+                  return matchesSearch;
+                case "Due":
+                  return matchesSearch && scheduledDate && scheduledDate < now && item.status !== "Closed";
+                case "Upcoming":
+                  return matchesSearch && scheduledDate && scheduledDate > now && item.status !== "Closed";
+                case "Open":
+                  return matchesSearch && item.status === "Open";
+                case "Closed":
+                  return matchesSearch && item.status === "Closed";
+                case "Today":
+                  if (!scheduledDate) return false;
+                  const today = new Date();
+                  return matchesSearch && 
+                         scheduledDate.getDate() === today.getDate() &&
+                         scheduledDate.getMonth() === today.getMonth() &&
+                         scheduledDate.getFullYear() === today.getFullYear();
+                default:
+                  return matchesSearch;
+              }
+            } else {
+              // For other sections (leads, etc.)
+              const matchesFilter = filter === "All" || item.status === filter;
+              const matchesSearch =
+                !searchText ||
+                item.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                item.subtitle.toLowerCase().includes(searchText.toLowerCase());
+              return matchesFilter && matchesSearch;
+            }
+          });
+
+          // ✅ Sort by modified time descending (recent first)
+            filteredItems.sort((a, b) => {
+              const dateA = new Date(a.rawData.modified || a.rawData.creation || 0);
+              const dateB = new Date(b.rawData.modified || b.rawData.creation || 0);
+              return dateB - dateA;
+            });
+      
+          if (filteredItems.length === 0) {
+            const noDataDiv = document.createElement("div");
+            noDataDiv.className = "text-center text-gray-500 py-10 select-none";
+            noDataDiv.textContent = "No records found.";
+            crmList.appendChild(noDataDiv);
+            return;
+          }
+      
+          filteredItems.forEach((item) => {
+            const div = document.createElement("div");
+            div.className =
+              "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
+            div.tabIndex = 0;
+            div.setAttribute("role", "button");
+            div.setAttribute("aria-label", item.title + ", " + item.subtitle);
+        
+            div.innerHTML = `
+              <div class="flex items-center space-x-3 flex-1 min-w-0">
+                  <img src="${item.img}" alt="${
+              item.alt
+            }" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
+                  <div class="min-w-0">
+                    <p class="font-semibold text-base leading-5 select-text truncate">${
+                      item.title
+                    }</p>
+                    <p class="text-gray-500 text-sm truncate select-text">${
+                      item.subtitle
+                    }</p>
+                    ${
+                      item.statusClass
+                        ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
+                        : ""
+                    }
+                  </div>
+              </div>
+              <div class="text-xs text-gray-500 select-none whitespace-nowrap ml-2">${
+                item.lastUpdated
+              }</div>
+            `;
+          
+            div.addEventListener("click", () => {
+              if (section === "lead") {
+                showLeadDetails(item.rawData || item);
+              } else if (section === "appointment") {
+                showAppointmentDetails(item.rawData || item);
+              }
+            });
+        
+            crmList.appendChild(div);
+          });
+        }
+      
+        // Show lead details
+        function showLeadDetails(lead) {
+          const date = lead.creation ? new Date(lead.creation) : new Date();
+          const details = `
+            <div class="p-4">
+              <h3 class="font-bold text-lg mb-2">Lead Details</h3>
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p class="text-sm text-gray-500">Name</p>
+                  <p>${lead.lead_name || "N/A"}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Company</p>
+                  <p>${lead.company_name || "N/A"}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Email</p>
+                  <p>${lead.email_id || "N/A"}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Phone</p>
+                  <p>${lead.mobile_no || "N/A"}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Status</p>
+                  <p>${lead.status || "N/A"}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Source</p>
+                  <p>${lead.source || "N/A"}</p>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500">Created On</p>
+              <p>${date.toLocaleDateString()} at ${date.toLocaleTimeString()}</p>
+              ${
+                lead.notes
+                  ? `
+              <div class="mt-4">
+                <p class="text-sm text-gray-500">Notes</p>
+                <p class="bg-gray-50 p-2 rounded">${lead.notes}</p>
+              </div>
+              `
+                  : ""
+              }
+            </div>
+          `;
+      
+          const modal = document.createElement("div");
+          modal.className =
+            "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
+          modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+              ${details}
+              <div class="p-4 border-t flex justify-end">
+                <button id="closeModal" class="bg-green-600 text-white px-4 py-2 rounded">Close</button>
+              </div>
+            </div>
+          `;
+      
+          document.body.appendChild(modal);
+          modal.querySelector("#closeModal").addEventListener("click", () => {
+            document.body.removeChild(modal);
+          });
+        }
+      
+        // Show appointment details
+        function showAppointmentDetails(appointment) {
+          const scheduledDate = appointment.scheduled_time ? new Date(appointment.scheduled_time) : new Date();
+          const duration = appointment.duration ? `${appointment.duration} minutes` : "N/A";
+          
+          const details = `
+            <div class="p-4">
+              <h3 class="font-bold text-lg mb-2">Appointment Details</h3>
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p class="text-sm text-gray-500">With</p>
+                  <p>${appointment.customer_name || "N/A"}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Status</p>
+                  <p>${appointment.status || "N/A"}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Scheduled Time</p>
+                  <p>${scheduledDate.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">Duration</p>
+                  <p>${duration}</p>
+                </div>
+              </div>
+              <div class="mb-4">
+                <p class="text-sm text-gray-500">Description</p>
+                <p class="bg-gray-50 p-2 rounded">${appointment.description || "No description"}</p>
+              </div>
+              ${
+                appointment.notes
+                  ? `
+              <div class="mt-4">
+                <p class="text-sm text-gray-500">Notes</p>
+                <p class="bg-gray-50 p-2 rounded">${appointment.notes}</p>
+              </div>
+              `
+                  : ""
+              }
+            </div>
+          `;
+      
+          const modal = document.createElement("div");
+          modal.className =
+            "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
+          modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+              ${details}
+              <div class="p-4 border-t flex justify-end space-x-2">
+                <button id="rescheduleBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Reschedule</button>
+                <button id="closeModal" class="bg-green-600 text-white px-4 py-2 rounded">Close</button>
+              </div>
+            </div>
+          `;
+      
+          document.body.appendChild(modal);
+          modal.querySelector("#closeModal").addEventListener("click", () => {
+            document.body.removeChild(modal);
+          });
+          
+          // Add reschedule functionality
+          const rescheduleBtn = modal.querySelector("#rescheduleBtn");
+          if (rescheduleBtn) {
+            rescheduleBtn.addEventListener("click", () => {
+              window.open(`/app/appointment/${appointment.name}`, "_blank");
+            });
+          }
+        }
+      
+        // Initialize app
+        async function initApp() {
+          if (currentSection === "lead") {
+            const rawLeads = await fetchLeads();
+            leadData = processLeadData(rawLeads);
+          } else if (currentSection === "appointment") {
+            const rawAppointments = await fetchAppointments();
+            appointmentData = processAppointmentData(rawAppointments);
+          }
+      
+          renderFilters(currentSection);
+          renderList(currentSection, currentFilter, "");
+      
+          Object.entries(navButtons).forEach(([key, btn]) => {
+            if (key === currentSection) {
+              btn.classList.add("text-green-600", "font-extrabold");
+              btn.setAttribute("aria-current", "true");
+            } else {
+              btn.classList.remove("text-green-600", "font-extrabold");
+              btn.setAttribute("aria-current", "false");
+            }
+          });
+      
+          // Initialize real-time sync
+          if (isEventSourceSupported()) {
+            initEventSource();
+          } else {
+            startPolling();
+          }
+        }
+      
+        // Navigation button click handlers
+        Object.entries(navButtons).forEach(([key, btn]) => {
+          btn.addEventListener("click", async () => {
+            if (currentSection === key) return;
+      
+            currentSection = key;
+            searchInput.value = "";
+      
+            if (currentSection === "lead" && leadData.length === 0) {
+              const rawLeads = await fetchLeads();
+              leadData = processLeadData(rawLeads);
+            } else if (currentSection === "appointment" && appointmentData.length === 0) {
+              const rawAppointments = await fetchAppointments();
+              appointmentData = processAppointmentData(rawAppointments);
+            }
+      
+            renderFilters(currentSection);
+            renderList(currentSection, currentFilter, "");
+      
+            Object.values(navButtons).forEach((b) => {
+              b.classList.remove("text-green-600", "font-extrabold");
+              b.setAttribute("aria-current", "false");
+            });
+            btn.classList.add("text-green-600", "font-extrabold");
+            btn.setAttribute("aria-current", "true");
+          });
+        });
+      
+        // Search input handler with debounce
+        let searchTimeout;
+        searchInput.addEventListener("input", () => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            renderList(currentSection, currentFilter, searchInput.value.trim());
+          }, 300);
+        });
+      
+        // Floating Action Button click handler
+        document.getElementById("fabNewEntry").addEventListener("click", () => {
+          if (currentSection === "lead") {
+            window.open(`/app/lead/new-lead-1`, "_blank");
+          } else if (currentSection === "appointment") {
+            window.open(`/app/appointment/new-appointment-1`, "_blank");
+          }
+        });
+      
+        // Accessibility: Keyboard navigation for list items
+        crmList.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            const item = e.target.closest('[role="button"]');
+            if (item) {
+              item.click();
+            }
+          }
+        });
+      
+        // Demo data for other sections
+        const data = {
+          report: {
+            filters: ["Monthly", "Weekly", "Daily"],
+            items: [
+              {
+                title: "Monthly Sales Report",
+                subtitle: "Summary of sales and leads for current month",
+                time: "2 days ago",
+                status: "Monthly",
+                img: "https://placehold.co/40x40/png?text=R",
+                alt: "Report icon",
+              },
+            ],
+          },
+          profile: {
+            filters: ["All"],
+            items: [
+              {
+                title: "My Profile",
+                subtitle: "Manage your account and settings",
+                time: "-",
+                status: "All",
+                img: "https://placehold.co/40x40/png?text=P",
+                alt: "Profile icon",
+              },
+            ],
+          },
+        };
+      
+        // Initialize app on load
+        window.addEventListener("load", initApp);
+      
+        // Clean up on page unload
+        window.addEventListener("beforeunload", () => {
+          stopSync();
+        });
+
+        function prettyDate(inputDate) {
+            const date = new Date(inputDate);
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (isNaN(seconds)) return "Invalid date";
+            
+            if (seconds < 5) return "just now";
+            if (seconds < 60) return `${seconds} seconds ago`;
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 30) return `${days} day${days !== 1 ? "s" : ""} ago`;
+            const months = Math.floor(days / 30);
+            if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+            const years = Math.floor(months / 12);
+            return `${years} year${years !== 1 ? "s" : ""} ago`;
+        }
+
+      </script>
+  </body>
+</html>
