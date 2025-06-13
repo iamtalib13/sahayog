@@ -13,6 +13,17 @@
       rel="stylesheet"
     />
     <style>
+      /* For WebKit browsers (Chrome, Safari, Edge) */
+      *::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* For Firefox */
+      * {
+        scrollbar-width: none;       /* Firefox */
+        -ms-overflow-style: none;    /* Internet Explorer 10+ */
+      }
+
       body {
         font-family: "Roboto", sans-serif;
         overscroll-behavior-y: contain;
@@ -129,9 +140,9 @@
         <span> Lead </span>
       </button>
       <button
-        aria-label="Profile"
+        aria-label="Opportunity"
         class="flex flex-col items-center focus:outline-none"
-        id="navProfile"
+        id="navOpportunity"
         type="button"
       >
         <i class="fas fa-user-circle text-lg"> </i>
@@ -160,7 +171,7 @@
           appointment: document.getElementById("navAppointment"),
           lead: document.getElementById("navLead"),
           report: document.getElementById("navReport"),
-          profile: document.getElementById("navProfile"),
+          opportunity: document.getElementById("navOpportunity"),
         };
         const searchInput = document.getElementById("searchInput");
       
@@ -169,6 +180,7 @@
         let currentFilter = "All";
         let leadData = [];
         let appointmentData = [];
+        let opportunityData = [];
         let lastSyncTimestamp = new Date().toISOString();
         let syncIntervalId = null;
         let longPollRequest = null;
@@ -194,7 +206,7 @@
       
           eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (data.doctype === "Lead" || data.doctype === "Appointment") {
+            if (data.doctype === "Lead" || data.doctype === "Appointment" || data.doctype === "Opportunity") {
               handleDataUpdate();
             }
           };
@@ -235,6 +247,11 @@
           } else if (currentSection === "appointment") {
             fetchAppointments(true).then((appointments) => {
               appointmentData = processAppointmentData(appointments);
+              renderList(currentSection, currentFilter, searchInput.value.trim());
+            });
+          } else if (currentSection === "opportunity") {
+            fetchOpportunity(true).then((opportunities) => {
+              opportunityData = processOpportunityData(opportunities);
               renderList(currentSection, currentFilter, searchInput.value.trim());
             });
           }
@@ -360,6 +377,41 @@
             return [];
           }
         }
+
+        async function fetchOpportunity(forceRefresh = false) {
+          try {
+            const endpoint = `/api/resource/Opportunity?fields=["*"]`;
+          
+            // Add cache-buster if forcing refresh
+            const url = forceRefresh ? `${endpoint}&_=${Date.now()}` : endpoint;
+          
+            const response = await fetch(url, {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: forceRefresh ? "no-cache" : "default",
+            });
+          
+            if (!response.ok) {
+              if (response.status === 403) {
+                window.location.href = `/login?redirect-to=${encodeURIComponent(
+                  window.location.href
+                )}`;
+                return [];
+              }
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+          
+            const data = await response.json();
+            lastSyncTimestamp = new Date().toISOString();
+            return data.data;
+          } catch (error) {
+            console.error("Error fetching opportunities:", error);
+            return [];
+          }
+        }
+
       
         // Process lead data for our UI
         function processLeadData(leads) {
@@ -464,82 +516,126 @@
             };
           });
         }
-        
-            // Helper: count how many items match a given filter
-            function countItems(section, filter, items) {
-              const now = new Date();
-            
-              return items.filter((item) => {
-                if (section === "appointment") {
-                  const scheduledDate = item.rawData.scheduled_time
-                    ? new Date(item.rawData.scheduled_time)
-                    : null;
-                
-                  switch (filter) {
-                    case "All":
-                      return true;
-                    case "Due":
-                      return (
-                        scheduledDate &&
-                        scheduledDate < now &&
-                        item.status !== "Closed"
-                      );
-                    case "Upcoming":
-                      return (
-                        scheduledDate &&
-                        scheduledDate > now &&
-                        item.status !== "Closed"
-                      );
-                    case "Open":
-                      return item.status === "Open";
-                    case "Closed":
-                      return item.status === "Closed";
-                    case "Today":
-                      if (!scheduledDate) return false;
-                      const today = new Date();
-                      return (
-                        scheduledDate.getDate() === today.getDate() &&
-                        scheduledDate.getMonth() === today.getMonth() &&
-                        scheduledDate.getFullYear() === today.getFullYear()
-                      );
-                    default:
-                      return false;
-                  }
-                }
-            
-                // lead (or any other generic) section
-                if (filter === "All") return true;
-                return item.status === filter;
-              }).length;
+
+        // Process opportunity data for our UI
+        function processOpportunityData(opportunities) {
+          return opportunities.map((opportunity) => {
+            // Format expected closing date
+            const trasactionDate = opportunity.transaction_date
+              ? new Date(opportunity.expected_closing)
+              : null;
+          
+            const trasactionDateString = trasactionDate
+              ? trasactionDate.toLocaleDateString(undefined, {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "No Date";
+              
+            // Format modified or fallback to creation
+            const modifiedString = opportunity.modified
+              ? prettyDate(opportunity.modified)
+              : opportunity.creation
+              ? prettyDate(opportunity.creation)
+              : "N/A";
+              
+            // Determine status
+            const status = opportunity.status || "Open";
+            let statusClass = "";
+              
+            switch (status.toLowerCase()) {
+              case "closed":
+                statusClass = "bg-green-100 text-green-800";
+                break;
+              case "converted":
+                statusClass = "bg-blue-100 text-blue-800";
+                break;
+              case "open":
+                statusClass = "bg-red-100 text-red-800";
+                break;
+              default:
+                statusClass = "bg-gray-100 text-gray-800";
             }
+          
+            return {
+              title: `OPP: ${opportunity.name || "Unnamed"}`,
+              subtitle: `Lead:${opportunity.party_name || ""} • ${trasactionDateString}`,
+              lastUpdated: modifiedString,
+              status: status,
+              statusClass: statusClass,
+              img: "https://placehold.co/40x40/png?text=O",
+              alt: "Opportunity icon",
+              rawData: opportunity,
+            };
+          });
+        }
+
+        
+        function countItems(section, filter, items) {
+        const now = new Date();
+              
+        return items.filter((item) => {
+          if (section === "appointment") {
+            const scheduledDate = item.rawData.scheduled_time
+              ? new Date(item.rawData.scheduled_time)
+              : null;
+          
+            switch (filter) {
+              case "All":
+                return true;
+              case "Due":
+                return scheduledDate && scheduledDate < now && item.status !== "Closed";
+              case "Upcoming":
+                return scheduledDate && scheduledDate > now && item.status !== "Closed";
+              case "Open":
+                return item.status === "Open";
+              case "Closed":
+                return item.status === "Closed";
+              case "Today":
+                if (!scheduledDate) return false;
+                const today = new Date();
+                return (
+                  scheduledDate.getDate() === today.getDate() &&
+                  scheduledDate.getMonth() === today.getMonth() &&
+                  scheduledDate.getFullYear() === today.getFullYear()
+                );
+              default:
+                return false;
+            }
+          }
+        
+          // Generic handling for lead and opportunity
+          if (filter === "All") return true;
+          return item.status === filter;
+        }).length;
+      }
+
             
             function renderFilters(section) {
               dynamicFilters.innerHTML = "";
-            
-              // 1.  Build the filter list ----------------------------------------------
+
               let filters = [];
               if (section === "lead") {
-                filters = ["All", "Lead","Follow Up", "Opportunity", "Converted", "Not Interested"];
+                filters = ["All", "Lead", "Follow Up", "Opportunity", "Converted", "Not Interested"];
               } else if (section === "appointment") {
                 filters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
-              } else {
-                filters = ["All"];
+              } else if (section === "opportunity") {
+                filters = ["All", "Open", "Quotation", "Converted", "Lost", "Replied", "Closed"];
               }
-          
-              // 2.  Figure out which items we’re counting ------------------------------
+            
               let items = [];
               if (section === "lead") {
                 items = leadData;
               } else if (section === "appointment") {
                 items = appointmentData;
-              } else {
-                items = data[section]?.items || [];
+              } else if (section === "opportunity") {
+                items = opportunityData;
               }
-          
-              // 3.  Render each filter button with its counter -------------------------
+            
               filters.forEach((filter, idx) => {
                 const count = countItems(section, filter, items);
-            
+              
                 const btn = document.createElement("button");
                 btn.type = "button";
                 btn.className = `text-xs font-semibold rounded-full px-3 py-1 whitespace-nowrap select-none border ${
@@ -549,149 +645,167 @@
                 }`;
                 btn.textContent = `${filter} (${count})`;
                 btn.setAttribute("aria-pressed", idx === 0 ? "true" : "false");
-            
+              
                 btn.addEventListener("click", () => {
                   Array.from(dynamicFilters.children).forEach((child) => {
-                    child.classList.remove(
-                      "bg-green-100",
-                      "text-green-700",
-                      "border-green-300"
-                    );
+                    child.classList.remove("bg-green-100", "text-green-700", "border-green-300");
                     child.classList.add("border-gray-300", "text-gray-700");
                     child.setAttribute("aria-pressed", "false");
                   });
+                
                   btn.classList.add("bg-green-100", "text-green-700", "border-green-300");
                   btn.classList.remove("border-gray-300", "text-gray-700");
                   btn.setAttribute("aria-pressed", "true");
-              
+                
                   currentFilter = filter;
                   renderList(currentSection, currentFilter, searchInput.value.trim());
                 });
-            
+              
                 dynamicFilters.appendChild(btn);
               });
-          
+            
               currentFilter = filters[0]; // default selected filter
             }
 
-        
-        // Render list items
-        function renderList(section, filter, searchText) {
-          crmList.innerHTML = "";
-        
-          let items = [];
-          if (section === "lead") {
-            items = leadData;
-          } else if (section === "appointment") {
-            items = appointmentData;
-          } else {
-            items = data[section]?.items || [];
-          }
-      
-          const filteredItems = items.filter((item) => {
-            // For appointments, we have special filters
-            if (section === "appointment") {
-              const now = new Date();
-              const scheduledDate = item.rawData.scheduled_time ? new Date(item.rawData.scheduled_time) : null;
-            
-              // Start with search filter
-              const matchesSearch =
-                !searchText ||
-                item.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                item.subtitle.toLowerCase().includes(searchText.toLowerCase());
-            
-              // Then apply the specific filter
-              switch (filter) {
-                case "All":
-                  return matchesSearch;
-                case "Due":
-                  return matchesSearch && scheduledDate && scheduledDate < now && item.status !== "Closed";
-                case "Upcoming":
-                  return matchesSearch && scheduledDate && scheduledDate > now && item.status !== "Closed";
-                case "Open":
-                  return matchesSearch && item.status === "Open";
-                case "Closed":
-                  return matchesSearch && item.status === "Closed";
-                case "Today":
-                  if (!scheduledDate) return false;
-                  const today = new Date();
-                  return matchesSearch && 
-                         scheduledDate.getDate() === today.getDate() &&
-                         scheduledDate.getMonth() === today.getMonth() &&
-                         scheduledDate.getFullYear() === today.getFullYear();
-                default:
-                  return matchesSearch;
-              }
-            } else {
-              // For other sections (leads, etc.)
-              const matchesFilter = filter === "All" || item.status === filter;
-              const matchesSearch =
-                !searchText ||
-                item.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                item.subtitle.toLowerCase().includes(searchText.toLowerCase());
-              return matchesFilter && matchesSearch;
-            }
-          });
 
-          // ✅ Sort by modified time descending (recent first)
-            filteredItems.sort((a, b) => {
-              const dateA = new Date(a.rawData.modified || a.rawData.creation || 0);
-              const dateB = new Date(b.rawData.modified || b.rawData.creation || 0);
-              return dateB - dateA;
-            });
-      
-          if (filteredItems.length === 0) {
-            const noDataDiv = document.createElement("div");
-            noDataDiv.className = "text-center text-gray-500 py-10 select-none";
-            noDataDiv.textContent = "No records found.";
-            crmList.appendChild(noDataDiv);
-            return;
-          }
-      
-          filteredItems.forEach((item) => {
-            const div = document.createElement("div");
-            div.className =
-              "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
-            div.tabIndex = 0;
-            div.setAttribute("role", "button");
-            div.setAttribute("aria-label", item.title + ", " + item.subtitle);
         
-            div.innerHTML = `
-              <div class="flex items-center space-x-3 flex-1 min-w-0">
-                  <img src="${item.img}" alt="${
-              item.alt
-            }" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
-                  <div class="min-w-0">
-                    <p class="font-semibold text-base leading-5 select-text truncate">${
-                      item.title
-                    }</p>
-                    <p class="text-gray-500 text-sm truncate select-text">${
-                      item.subtitle
-                    }</p>
-                    ${
-                      item.statusClass
-                        ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
-                        : ""
-                    }
-                  </div>
-              </div>
-              <div class="text-xs text-gray-500 select-none whitespace-nowrap ml-2">${
-                item.lastUpdated
-              }</div>
-            `;
+          // Render list items
+          function renderList(section, filter, searchText) {
+            crmList.innerHTML = "";
+
+            let items = [];
+            if (section === "lead") {
+              items = leadData;
+            } else if (section === "appointment") {
+              items = appointmentData;
+            } else if (section === "opportunity") {
+              items = opportunityData;
+            } else if (section === "report") {
+              items = [
+                {
+                  title: "My Leads Report",
+                  subtitle: "View detailed lead analytics",
+                  link: "/app/query-report/My%20Leads%20Report",
+                  img: "https://placehold.co/40x40/png?text=R1",
+                  alt: "Leads Report",
+                },
+                {
+                  title: "My Appointments Report",
+                  subtitle: "Monitor your appointment trends",
+                  link: "/app/query-report/My%20Appointments",
+                  img: "https://placehold.co/40x40/png?text=R2",
+                  alt: "Appointments Report",
+                },
+              ];
+            }
           
-            div.addEventListener("click", () => {
-              if (section === "lead") {
-                showLeadDetails(item.rawData || item);
-              } else if (section === "appointment") {
-                showAppointmentDetails(item.rawData || item);
-              }
+            if (section === "lead" || section === "appointment" || section === "opportunity") {
+              items = items.filter((item) => {
+                const matchesSearch =
+                  !searchText ||
+                  item.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                  item.subtitle.toLowerCase().includes(searchText.toLowerCase());
+              
+                if (section === "appointment") {
+                  const now = new Date();
+                  const scheduledDate = item.rawData.scheduled_time ? new Date(item.rawData.scheduled_time) : null;
+                
+                  switch (filter) {
+                    case "All":
+                      return matchesSearch;
+                    case "Due":
+                      return matchesSearch && scheduledDate && scheduledDate < now && item.status !== "Closed";
+                    case "Upcoming":
+                      return matchesSearch && scheduledDate && scheduledDate > now && item.status !== "Closed";
+                    case "Open":
+                      return matchesSearch && item.status === "Open";
+                    case "Closed":
+                      return matchesSearch && item.status === "Closed";
+                    case "Today":
+                      if (!scheduledDate) return false;
+                      const today = new Date();
+                      return (
+                        matchesSearch &&
+                        scheduledDate.getDate() === today.getDate() &&
+                        scheduledDate.getMonth() === today.getMonth() &&
+                        scheduledDate.getFullYear() === today.getFullYear()
+                      );
+                    default:
+                      return matchesSearch;
+                  }
+                } else {
+                  const matchesFilter = filter === "All" || item.status === filter;
+                  return matchesFilter && matchesSearch;
+                }
+              });
+            
+              items.sort((a, b) => {
+                const dateA = new Date(a.rawData.modified || a.rawData.creation || 0);
+                const dateB = new Date(b.rawData.modified || b.rawData.creation || 0);
+                return dateB - dateA;
+              });
+            }
+          
+            if (items.length === 0) {
+              const noDataDiv = document.createElement("div");
+              noDataDiv.className = "text-center text-gray-500 py-10 select-none";
+              noDataDiv.textContent = "No records found.";
+              crmList.appendChild(noDataDiv);
+              return;
+            }
+          
+            items.forEach((item) => {
+              const div = document.createElement("div");
+              div.className =
+                "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
+              div.tabIndex = 0;
+              div.setAttribute("role", "button");
+              div.setAttribute("aria-label", item.title + ", " + item.subtitle);
+            
+              div.innerHTML = `
+                <div class="flex items-center space-x-3 flex-1 min-w-0">
+                    <img src="${item.img}" alt="${item.alt}" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
+                    <div class="min-w-0">
+                      <p class="font-semibold text-base leading-5 select-text truncate">${item.title}</p>
+                      <p class="text-gray-500 text-sm truncate select-text">${item.subtitle}</p>
+                      ${
+                        item.statusClass
+                          ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
+                          : ""
+                      }
+                    </div>
+                </div>
+                ${
+                  item.lastUpdated
+                    ? `<div class="text-xs text-gray-500 select-none whitespace-nowrap ml-2">${item.lastUpdated}</div>`
+                    : ""
+                }
+              `;
+              
+              div.addEventListener("click", () => {
+                if (section === "report" && item.link) {
+                  window.open(item.link, "_blank");
+                } else {
+                  const doctype =
+                    section === "lead"
+                      ? "Lead"
+                      : section === "appointment"
+                      ? "Appointment"
+                      : section === "opportunity"
+                      ? "Opportunity"
+                      : null;
+                
+                  const name = item.rawData?.name;
+                  if (doctype && name) {
+                    window.location.href = `/app/${doctype.toLowerCase()}/${name}`;
+                  }
+                }
+              });
+            
+              crmList.appendChild(div);
             });
-        
-            crmList.appendChild(div);
-          });
-        }
-      
+          }
+
         // Show lead details
         function showLeadDetails(lead) {
           const date = lead.creation ? new Date(lead.creation) : new Date();
@@ -835,6 +949,9 @@
           } else if (currentSection === "appointment") {
             const rawAppointments = await fetchAppointments();
             appointmentData = processAppointmentData(rawAppointments);
+          } else if (currentSection === "opportunity") {
+            const rawOpportunities = await fetchOpportunity();
+            opportunityData = processOpportunityData(rawOpportunities);
           }
       
           renderFilters(currentSection);
@@ -872,6 +989,9 @@
             } else if (currentSection === "appointment" && appointmentData.length === 0) {
               const rawAppointments = await fetchAppointments();
               appointmentData = processAppointmentData(rawAppointments);
+            } else if (currentSection === "opportunity" && opportunityData.length === 0) {
+              const rawOpportunities = await fetchOpportunity();
+              opportunityData = processOpportunityData(rawOpportunities);
             }
       
             renderFilters(currentSection);
@@ -897,11 +1017,7 @@
       
         // Floating Action Button click handler
         document.getElementById("fabNewEntry").addEventListener("click", () => {
-          if (currentSection === "lead") {
             window.open(`/app/lead/new-lead-1`, "_blank");
-          } else if (currentSection === "appointment") {
-            window.open(`/app/appointment/new-appointment-1`, "_blank");
-          }
         });
       
         // Accessibility: Keyboard navigation for list items
@@ -914,36 +1030,6 @@
             }
           }
         });
-      
-        // Demo data for other sections
-        const data = {
-          report: {
-            filters: ["Monthly", "Weekly", "Daily"],
-            items: [
-              {
-                title: "Monthly Sales Report",
-                subtitle: "Summary of sales and leads for current month",
-                time: "2 days ago",
-                status: "Monthly",
-                img: "https://placehold.co/40x40/png?text=R",
-                alt: "Report icon",
-              },
-            ],
-          },
-          profile: {
-            filters: ["All"],
-            items: [
-              {
-                title: "My Profile",
-                subtitle: "Manage your account and settings",
-                time: "-",
-                status: "All",
-                img: "https://placehold.co/40x40/png?text=P",
-                alt: "Profile icon",
-              },
-            ],
-          },
-        };
       
         // Initialize app on load
         window.addEventListener("load", initApp);

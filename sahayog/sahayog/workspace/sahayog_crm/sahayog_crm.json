@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"FCWVyAYYX8\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog CRM Dashboard\",\"col\":12}}]",
+ "content": "[{\"id\":\"U2n_9rosU5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Portal\",\"col\":3}},{\"id\":\"FCWVyAYYX8\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog CRM Dashboard\",\"col\":12}}]",
  "creation": "2025-04-23 14:50:14.614663",
  "custom_blocks": [
   {
@@ -18,7 +18,7 @@
  "is_hidden": 0,
  "label": "Sahayog CRM",
  "links": [],
- "modified": "2025-06-12 15:55:02.406466",
+ "modified": "2025-06-13 16:12:31.905155",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog CRM",
@@ -33,6 +33,14 @@
   }
  ],
  "sequence_id": 68.0,
- "shortcuts": [],
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Portal",
+   "type": "URL",
+   "url": "/crm-portal"
+  }
+ ],
  "title": "Sahayog CRM"
 }
