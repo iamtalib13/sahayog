@@ -18,7 +18,7 @@
  "is_hidden": 0,
  "label": "CRM-BM",
  "links": [],
- "modified": "2025-05-17 12:23:06.023598",
+ "modified": "2025-06-14 13:01:03.006947",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "CRM-BM",
@@ -32,7 +32,7 @@
    "role": "Branch Manager"
   }
  ],
- "sequence_id": 40.0,
+ "sequence_id": 71.0,
  "shortcuts": [],
  "title": "CRM-BM"
 }
