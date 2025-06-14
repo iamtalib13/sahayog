@@ -1,0 +1,41 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"3QJR8ONogq\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM Admin</span>\",\"col\":12}},{\"id\":\"-4jM-zrNpt\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
+ "creation": "2025-06-14 12:57:16.165214",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "projects",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "CRM Admin",
+ "links": [],
+ "modified": "2025-06-14 15:53:06.037950",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "CRM Admin",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Employee CRM",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Sales Manager"
+  }
+ ],
+ "sequence_id": 82.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "CRM Lead Conversion Report",
+   "link_to": "CRM Lead Conversion Report",
+   "type": "Report"
+  }
+ ],
+ "title": "CRM Admin"
+}
