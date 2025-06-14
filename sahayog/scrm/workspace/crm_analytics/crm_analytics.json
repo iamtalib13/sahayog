@@ -42,7 +42,7 @@
  "is_hidden": 0,
  "label": "CRM Analytics",
  "links": [],
- "modified": "2025-05-14 16:24:01.809489",
+ "modified": "2025-06-14 13:01:02.982375",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "CRM Analytics",
@@ -56,14 +56,13 @@
    "role": "Sales Manager"
   }
  ],
- "sequence_id": 39.0,
+ "sequence_id": 70.0,
  "shortcuts": [
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "Employee Wise Lead Conversion",
    "link_to": "Conversion Report",
-   "report_ref_doctype": "CRM Lead",
    "type": "Report"
   }
  ],
