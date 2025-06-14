@@ -35,6 +35,52 @@
       .filters-scroll::-webkit-scrollbar {
         display: none;
     }
+        /* Dialog background blur */
+    body.dialog-open main,
+    body.dialog-open .page-container {
+      filter: blur(3px);
+    }
+
+    /* Dialog */
+    .custom-dialog {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .custom-dialog-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 300px;
+    }
+    .custom-dialog input, .custom-dialog select {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    .dialog-buttons {
+      display: flex;
+      justify-content: space-between;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out;
+    }
+
     </style>
     <!-- PWA Manifest -->
     <link href="manifest.json" rel="manifest" />
@@ -105,15 +151,86 @@
         <!-- CRM items rendered dynamically -->
       </section>
     </main>
+
     <!-- Floating Action Button -->
-    <button
-      aria-label="New entry"
-      class="fixed bottom-20 right-5 bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-lg p-4 shadow-lg focus:outline-none z-30"
-      id="fabNewEntry"
-      title="Add New Entry"
+    <!-- Floating Action Button -->
+<button
+aria-label="New entry"
+id="fabNewEntry"
+title="Add New Entry"
+class="fixed bottom-20 right-5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-full p-4 shadow-lg focus:outline-none z-30"
+>
+<i class="fas fa-plus text-xl"></i>
+</button>
+
+<!-- Custom Dialog -->
+<div
+id="customDialog"
+class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
+>
+<div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md space-y-4 animate-fadeIn">
+  <h3 class="text-lg font-semibold">Create New Lead</h3>
+
+  <p
+    id="leadSuccessMsg"
+    class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 hidden"
+  >
+    ✅ Lead created successfully!
+  </p>
+ 
+  <!-- Source -->
+  <div id="divSource">
+    <label class="block font-medium">Source <span class="text-red-600">*</span></label>
+    <select
+      id="source"
+      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
     >
-      <i class="fas fa-plus text-white text-xl"> </i>
+      <option value="">Select</option>
+      <option>Advertisement</option>
+      <option>Campaign</option>
+      <option>Existing Customer</option>
+      <option>Reference</option>
+      <option>Walk In</option>
+    </select>
+    <p id="errorSource" class="text-sm text-red-600 hidden mt-1">Please select a source.</p>
+  </div>
+
+  <!-- Full Name -->
+  <div id="divFullName">
+    <label class="block font-medium">Full Name <span class="text-red-600">*</span></label>
+    <input
+      type="text"
+      id="fullName"
+      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+    />
+    <p id="errorFullName" class="text-sm text-red-600 hidden mt-1">Please enter full name.</p>
+  </div>
+
+  <!-- Mobile No -->
+  <div id="divMobileNo">
+    <label class="block font-medium">Mobile No <span class="text-red-600">*</span></label>
+    <input
+      type="text"
+      id="mobileNo"
+      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+    />
+    <p id="errorMobile" class="text-sm text-red-600 hidden mt-1">
+      Please enter a valid 10-digit mobile number.
+    </p>
+  </div>
+
+  <!-- Buttons -->
+  <div class="flex justify-end space-x-2 pt-4" id="divLeadButton"> 
+    <button id="cancelLead" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
+      Cancel
     </button>
+    <button id="createLead" class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
+      Create
+    </button>
+  </div>
+</div>
+</div>
+
     <!-- Bottom Navigation for CRM -->
     <nav
       aria-label="Primary"
@@ -521,17 +638,17 @@
         function processOpportunityData(opportunities) {
           return opportunities.map((opportunity) => {
             // Format expected closing date
-            const trasactionDate = opportunity.transaction_date
-              ? new Date(opportunity.expected_closing)
+            const transactionDate = opportunity.transaction_date
+              ? new Date(opportunity.transaction_date)
               : null;
-          
-            const trasactionDateString = trasactionDate
-              ? trasactionDate.toLocaleDateString(undefined, {
+
+            const transactionDateString = transactionDate
+              ? transactionDate.toLocaleDateString(undefined, {
                   day: "2-digit",
                   month: "short",
                   year: "numeric",
                 })
-              : "No Date";
+              : "No Date";              
               
             // Format modified or fallback to creation
             const modifiedString = opportunity.modified
@@ -560,7 +677,7 @@
           
             return {
               title: `OPP: ${opportunity.name || "Unnamed"}`,
-              subtitle: `Lead:${opportunity.party_name || ""} • ${trasactionDateString}`,
+              subtitle: `Lead:${opportunity.party_name || ""} • ${transactionDateString}`,
               lastUpdated: modifiedString,
               status: status,
               statusClass: statusClass,
@@ -797,7 +914,7 @@
                 
                   const name = item.rawData?.name;
                   if (doctype && name) {
-                    window.location.href = `/app/${doctype.toLowerCase()}/${name}`;
+                    window.top.location.href = `/app/${doctype.toLowerCase()}/${name}`;
                   }
                 }
               });
@@ -1014,12 +1131,129 @@
             renderList(currentSection, currentFilter, searchInput.value.trim());
           }, 300);
         });
-      
-        // Floating Action Button click handler
-        document.getElementById("fabNewEntry").addEventListener("click", () => {
-            window.open(`/app/lead/new-lead-1`, "_blank");
-        });
-      
+
+      //custom dialog for creating new lead
+      const dialog = document.getElementById("customDialog");
+const fab = document.getElementById("fabNewEntry");
+const cancelBtn = document.getElementById("cancelLead");
+const createBtn = document.getElementById("createLead");
+const successMsg = document.getElementById("leadSuccessMsg");
+
+fab.addEventListener("click", () => toggleDialog(true));
+cancelBtn.addEventListener("click", () => toggleDialog(false));
+createBtn.addEventListener("click", handleCreateLead);
+
+function toggleDialog(show) {
+  dialog.style.display = show ? "flex" : "none";
+  if (!show) clearForm();
+}
+
+function clearForm() {
+  document.getElementById("fullName").value = "";
+  document.getElementById("source").value = "";
+  document.getElementById("mobileNo").value = "";
+
+  hideAllErrors();
+  successMsg.classList.add("hidden");
+}
+
+function hideAllErrors() {
+  document.querySelectorAll("[id^='error']").forEach(el => el.classList.add("hidden"));
+  document.querySelectorAll("input, select").forEach(el => el.classList.remove("border-red-500"));
+}
+
+function showError(fieldId, errorId) {
+  document.getElementById(errorId).classList.remove("hidden");
+  document.getElementById(fieldId).classList.add("border-red-500");
+}
+
+function hideError(fieldId, errorId) {
+  document.getElementById(errorId).classList.add("hidden");
+  document.getElementById(fieldId).classList.remove("border-red-500");
+}
+
+function validateForm() {
+  let valid = true;
+
+  const fullName = document.getElementById("fullName").value.trim();
+  const source = document.getElementById("source").value;
+  const mobileNo = document.getElementById("mobileNo").value.trim();
+  const mobileRegex = /^[6-9]\d{9}$/;
+
+  if (!fullName) {
+    showError("fullName", "errorFullName");
+    valid = false;
+  } else {
+    hideError("fullName", "errorFullName");
+  }
+
+  if (!source) {
+    showError("source", "errorSource");
+    valid = false;
+  } else {
+    hideError("source", "errorSource");
+  }
+
+  if (!mobileRegex.test(mobileNo)) {
+    showError("mobileNo", "errorMobile");
+    valid = false;
+  } else {
+    hideError("mobileNo", "errorMobile");
+  }
+
+  return valid;
+}
+
+async function handleCreateLead() {
+  if (!validateForm()) return;
+
+  const first_name = document.getElementById("fullName").value.trim();
+  const source = document.getElementById("source").value;
+  const mobile_no = document.getElementById("mobileNo").value.trim();
+
+  try {
+    const res = await fetch("/api/resource/Lead", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ first_name, source, mobile_no }),
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      successMsg.classList.remove("hidden");
+
+        // Hide input field divs
+      document.getElementById("divSource").classList.add("hidden");
+      document.getElementById("divFullName").classList.add("hidden");
+      document.getElementById("divMobileNo").classList.add("hidden");
+      document.getElementById("divLeadButton").classList.add("hidden");
+       // Scroll to #navLead section if exists
+      const leadSection = document.getElementById("navLead");
+      if (leadSection) {
+        leadSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    
+      // Hide dialog after short delay
+      setTimeout(() => {
+        toggleDialog(false);
+        // After dialog is closed, update section and call init
+        currentSection = "lead";
+        initApp();
+      }, 1000);
+      setTimeout(() => toggleDialog(false), 1000); // Hide after 1.5s
+    } else {
+      alert("❌ Error: " + (result.message || "Unknown error occurred"));
+    }
+  } catch (err) {
+    alert("⚠️ Network Error: " + err.message);
+  }
+}
+
+
         // Accessibility: Keyboard navigation for list items
         crmList.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === " ") {
