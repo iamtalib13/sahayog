@@ -1,0 +1,45 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"GKmBJnSvxF\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Portal\",\"col\":3}},{\"id\":\"jRNiYnyyej\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Employee CRM\",\"col\":12}}]",
+ "creation": "2025-06-14 11:14:49.548141",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Employee CRM",
+   "label": "Employee CRM"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Employee CRM",
+ "links": [],
+ "modified": "2025-06-14 11:22:18.720973",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Employee CRM",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Sales User"
+  }
+ ],
+ "sequence_id": 78.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Portal",
+   "type": "URL",
+   "url": "/crm-portal"
+  }
+ ],
+ "title": "Employee CRM"
+}
