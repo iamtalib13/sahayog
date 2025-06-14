@@ -258,7 +258,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
         <i class="fas fa-user-plus text-lg"> </i>
         <span> Lead </span>
       </button>
-      <button
+      <!-- <button
         aria-label="Opportunity"
         class="flex flex-col items-center focus:outline-none"
         id="navOpportunity"
@@ -266,7 +266,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
       >
         <i class="fas fa-user-circle text-lg"> </i>
         <span> Opportunity </span>
-      </button>
+      </button> -->
       <button
         aria-label="Reports"
         class="flex flex-col items-center focus:outline-none"
@@ -290,7 +290,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
           appointment: document.getElementById("navAppointment"),
           lead: document.getElementById("navLead"),
           report: document.getElementById("navReport"),
-          opportunity: document.getElementById("navOpportunity"),
+          // opportunity: document.getElementById("navOpportunity"),
         };
         const searchInput = document.getElementById("searchInput");
       
@@ -736,7 +736,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
 
               let filters = [];
               if (section === "lead") {
-                filters = ["All", "Lead", "Follow Up", "Opportunity", "Converted", "Not Interested"];
+                filters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
               } else if (section === "appointment") {
                 filters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
               } else if (section === "opportunity") {
