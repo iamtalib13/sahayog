@@ -7,6 +7,7 @@ frappe.ui.form.on("Lead", {
         frm.remove_custom_button("Customer", "Create");
         frm.remove_custom_button("Prospect", "Create");
         frm.remove_custom_button("Quotation", "Create");
+        frm.remove_custom_button("Opportunity", "Create");
         frm.remove_custom_button("Add to Prospect", "Action");
       }, 100);
 
@@ -20,18 +21,6 @@ frappe.ui.form.on("Lead", {
             appointment_with: "Lead",
             party: frm.doc.name,
             status: "Open",
-          });
-        },
-        __("Create")
-      );
-      frm.add_custom_button(
-        "Opportunity",
-        () => {
-          frappe.new_doc("Opportunity", {
-            party_name: frm.doc.name, // Link to the current Lead or Contact
-            opportunity_from: "Lead", // or "Customer", depending on the context
-            contact_email: frm.doc.email_id || "",
-            contact_mobile: frm.doc.mobile_no || frm.doc.phone || "",
           });
         },
         __("Create")
@@ -95,6 +84,9 @@ function setFilterOnFields(frm) {
           "Advertisement",
           "Reference",
           "Existing Customer",
+          "Calling",
+          "Marketing Activity",
+          "TeleCalling",
         ],
       ],
     },
