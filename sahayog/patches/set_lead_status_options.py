@@ -8,11 +8,9 @@ def execute():
     # List of custom options
     options = "\n".join([
         "Lead",
-        "New",
         "Converted",
         "Follow Up",
         "Not Interested",
-        "Opportunity"
     ])
 
     try:
