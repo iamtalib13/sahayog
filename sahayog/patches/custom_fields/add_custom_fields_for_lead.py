@@ -23,20 +23,23 @@ def execute():
             {
                 "label": "Branch",
                 "fieldname": "custom_branch",
-                "fieldtype": "Data",
+                "fieldtype": "Link",
+                "options" : "Branch",
                 "insert_after": "custom_employee_id",
             },
 
             {
                 "label": "Region",
                 "fieldname": "custom_region",
-                "fieldtype": "Data",
+                "fieldtype": "Link",
+                "options" : "Region",
                 "insert_after": "custom_branch", 
             },
             {
                 "label": "Zone",
                 "fieldname": "custom_zone",
-                "fieldtype": "Data",
+                "fieldtype": "Link",
+                "options" : "Zone",
                 "insert_after": "custom_region",
             },
             {
