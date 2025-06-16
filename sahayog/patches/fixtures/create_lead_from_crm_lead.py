@@ -18,8 +18,9 @@ def execute():
     for crm in crm_leads:
         print(f"\n➡️ Processing CRM Lead: {crm.name}")
 
-        if frappe.db.exists("Lead", {"mobile_no": crm.mobile_no}):
-            print(f"⚠️ Lead with mobile number {crm.mobile_no} already exists. Skipping.")
+        # Check if already exists for this mobile + owner
+        if frappe.db.exists("Lead", {"mobile_no": crm.mobile_no, "owner": crm.lead_owner}):
+            print(f"⚠️ Lead with mobile {crm.mobile_no} and owner {crm.lead_owner} already exists. Skipping.")
             continue
 
         lead = frappe.new_doc("Lead")
