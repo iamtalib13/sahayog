@@ -85,6 +85,7 @@ def get_today_tasks():
 
     return tasks
 
+# fetch the data from CRM Lead doctype 
 @frappe.whitelist(allow_guest=True)
 def get_zone_region_data():
     # Fetch all unique zones from the database
@@ -134,6 +135,55 @@ def get_zone_region_data():
 
     return chart_data
 
+# fetch the data from Lead doctype
+@frappe.whitelist(allow_guest=True)
+def get_zone_region_data_lead():
+    # Fetch all unique zones from the database
+    all_zones = frappe.db.sql("""
+        SELECT DISTINCT TRIM(custom_zone) AS zone 
+        FROM `tabLead`
+        WHERE custom_zone IS NOT NULL
+        ORDER BY zone
+    """, as_list=True)
+
+    # Flatten the list of tuples
+    all_zones = [zone[0] for zone in all_zones]
+
+    # Fetch the actual zone-region data
+    result = frappe.db.sql("""
+        SELECT TRIM(custom_zone) AS zone, TRIM(custom_region) AS region, COUNT(name) AS region_count
+        FROM `tabLead`
+        WHERE custom_zone IS NOT NULL AND custom_region IS NOT NULL
+        GROUP BY custom_zone, custom_region
+    """, as_dict=True)
+
+    frappe.log_error(message=f"Zone-Region Data: {result}", title="Zone Region Fetch Log")
+
+    # Get unique regions from the result
+    regions = list(set(item['region'] for item in result))
+    
+    # Initialize the data structure with 0 for missing zones
+    zone_region_counts = {zone: {region: 0 for region in regions} for zone in all_zones}
+
+    # Fill in the data from the result
+    for item in result:
+        zone_region_counts[item['zone']][item['region']] = item['region_count']
+
+    # Prepare the chart data
+    chart_data = {
+        'labels': all_zones,
+        'datasets': []
+    }
+
+    # Create datasets for each region
+    for region in regions:
+        dataset = {
+            'name': region,
+            'values': [zone_region_counts[zone].get(region, 0) for zone in all_zones]
+        }
+        chart_data['datasets'].append(dataset)
+
+    return chart_data
 
 @frappe.whitelist()
 def get_all_crm_view_settings():
