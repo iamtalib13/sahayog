@@ -23,6 +23,9 @@ def execute():
             print(f"⚠️ Lead with mobile {crm.mobile_no} and owner {crm.lead_owner} already exists. Skipping.")
             continue
 
+        # Check if email is already used
+        email_exists = crm.email and frappe.db.exists("Lead", {"email_id": crm.email})
+
         lead = frappe.new_doc("Lead")
         lead.lead_owner = crm.lead_owner
         lead.salutation = crm.salutation
@@ -31,9 +34,14 @@ def execute():
         lead.mobile_no = crm.mobile_no
         lead.lead_name = crm.lead_name
         lead.gender = crm.gender
-        lead.email_id = crm.email
         lead.title = crm.lead_name
         lead.company_name = "Sahayog"
+
+        # Set email only if not duplicated
+        if not email_exists:
+            lead.email_id = crm.email
+        else:
+            print(f"🚫 Email {crm.email} already used. Skipping setting email_id.")
 
         # Set document owner
         lead.owner = crm.lead_owner
