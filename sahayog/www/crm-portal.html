@@ -430,106 +430,139 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
         // Fetch leads from Frappe REST API using session cookies
         async function fetchLeads(forceRefresh = false) {
           try {
-            const endpoint = `/api/resource/Lead?fields=["*"]`;
-      
-            // Add cache-buster if forcing refresh
-            const url = forceRefresh ? `${endpoint}&_=${Date.now()}` : endpoint;
-      
-            const response = await fetch(url, {
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-              },
-              cache: forceRefresh ? "no-cache" : "default",
-            });
-      
-            if (!response.ok) {
-              if (response.status === 403) {
-                window.location.href = `/login?redirect-to=${encodeURIComponent(
-                  window.location.href
-                )}`;
-                return [];
+              const limit = 1000;
+              let offset = 0;
+              let allLeads = [];
+          
+              while (true) {
+                const baseUrl = `/api/resource/Lead?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
+                const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
+              
+                const response = await fetch(url, {
+                  credentials: "include",
+                  headers: {
+                    Accept: "application/json",
+                  },
+                  cache: forceRefresh ? "no-cache" : "default",
+                });
+              
+                if (!response.ok) {
+                  if (response.status === 403) {
+                    window.location.href = `/login?redirect-to=${encodeURIComponent(
+                      window.location.href
+                    )}`;
+                    return [];
+                  }
+                  throw new Error(`HTTP error! status: ${response.status}`);
+                }
+              
+                const data = await response.json();
+              
+                if (!data.data || data.data.length === 0) break;
+              
+                allLeads.push(...data.data);
+              
+                if (data.data.length < limit) break; // No more pages
+                offset += limit;
               }
-              throw new Error(`HTTP error! status: ${response.status}`);
+            
+              lastSyncTimestamp = new Date().toISOString();
+              return allLeads;
+            } catch (error) {
+              console.error("Error fetching leads:", error);
+              return [];
             }
-      
-            const data = await response.json();
-            lastSyncTimestamp = new Date().toISOString();
-            return data.data;
-          } catch (error) {
-            console.error("Error fetching leads:", error);
-            return [];
-          }
         }
+
       
         // Fetch appointments from Frappe REST API
         async function fetchAppointments(forceRefresh = false) {
           try {
-            const endpoint = `/api/resource/Appointment?fields=["*"]`;
-      
-            // Add cache-buster if forcing refresh
-            const url = forceRefresh ? `${endpoint}&_=${Date.now()}` : endpoint;
-      
-            const response = await fetch(url, {
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-              },
-              cache: forceRefresh ? "no-cache" : "default",
-            });
-      
-            if (!response.ok) {
-              if (response.status === 403) {
-                window.location.href = `/login?redirect-to=${encodeURIComponent(
-                  window.location.href
-                )}`;
-                return [];
+            const limit = 1000;
+            let offset = 0;
+            let allAppointments = [];
+          
+            while (true) {
+              const baseUrl = `/api/resource/Appointment?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
+              const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
+            
+              const response = await fetch(url, {
+                credentials: "include",
+                headers: {
+                  Accept: "application/json",
+                },
+                cache: forceRefresh ? "no-cache" : "default",
+              });
+            
+              if (!response.ok) {
+                if (response.status === 403) {
+                  window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.href)}`;
+                  return [];
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
               }
-              throw new Error(`HTTP error! status: ${response.status}`);
+            
+              const data = await response.json();
+              if (!data.data || data.data.length === 0) break;
+            
+              allAppointments.push(...data.data);
+            
+              if (data.data.length < limit) break;
+              offset += limit;
             }
-      
-            const data = await response.json();
+          
             lastSyncTimestamp = new Date().toISOString();
-            return data.data;
+            return allAppointments;
           } catch (error) {
             console.error("Error fetching appointments:", error);
             return [];
           }
         }
 
+
         async function fetchOpportunity(forceRefresh = false) {
           try {
-            const endpoint = `/api/resource/Opportunity?fields=["*"]`;
+            const limit = 1000;
+            let offset = 0;
+            let allOpportunities = [];
           
-            // Add cache-buster if forcing refresh
-            const url = forceRefresh ? `${endpoint}&_=${Date.now()}` : endpoint;
-          
-            const response = await fetch(url, {
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-              },
-              cache: forceRefresh ? "no-cache" : "default",
-            });
-          
-            if (!response.ok) {
-              if (response.status === 403) {
-                window.location.href = `/login?redirect-to=${encodeURIComponent(
-                  window.location.href
-                )}`;
-                return [];
+            while (true) {
+              const baseUrl = `/api/resource/Opportunity?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
+              const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
+            
+              const response = await fetch(url, {
+                credentials: "include",
+                headers: {
+                  Accept: "application/json",
+                },
+                cache: forceRefresh ? "no-cache" : "default",
+              });
+            
+              if (!response.ok) {
+                if (response.status === 403) {
+                  window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.href)}`;
+                  return [];
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
               }
-              throw new Error(`HTTP error! status: ${response.status}`);
+            
+              const data = await response.json();
+              if (!data.data || data.data.length === 0) break;
+            
+              allOpportunities.push(...data.data);
+            
+              if (data.data.length < limit) break;
+              offset += limit;
             }
           
-            const data = await response.json();
             lastSyncTimestamp = new Date().toISOString();
-            return data.data;
+            return allOpportunities;
           } catch (error) {
             console.error("Error fetching opportunities:", error);
             return [];
           }
         }
+
 
       
         // Process lead data for our UI
