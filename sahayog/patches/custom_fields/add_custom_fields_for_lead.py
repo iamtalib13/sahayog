@@ -11,7 +11,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "contact_html",
                 "collapsible": 1,
-                "hidden" : 1,
+                
             },
             {
                 "label":"Employee ID",
