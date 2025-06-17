@@ -11,20 +11,16 @@ frappe.ui.form.on("Lead", {
         frm.remove_custom_button("Add to Prospect", "Action");
       }, 100);
 
-      frm.add_custom_button(
-        "Create Appointment",
-        () => {
-          frappe.new_doc("Appointment", {
-            customer_name: frm.doc.first_name,
-            customer_phone_number: frm.doc.mobile_no || frm.doc.phone || "",
-            customer_email: frm.doc.email_id || "",
-            appointment_with: "Lead",
-            party: frm.doc.name,
-            status: "Open",
-          });
-        },
-        __("Create")
-      );
+      frm.add_custom_button("Create Appointment", () => {
+        frappe.new_doc("Appointment", {
+          customer_name: frm.doc.first_name,
+          customer_phone_number: frm.doc.mobile_no || frm.doc.phone || "",
+          customer_email: frm.doc.email_id || "",
+          appointment_with: "Lead",
+          party: frm.doc.name,
+          status: "Open",
+        });
+      });
     }
 
     if (isAdmin()) return;
@@ -44,6 +40,7 @@ frappe.ui.form.on("Lead", {
       "qualification_tab",
       "address_html",
       "contact_html",
+      "dashboard_tab",
     ]);
 
     frm.set_df_property("first_name", "label", "Full Name");
@@ -73,6 +70,7 @@ function hideFields(frm, fields) {
 
   $("#lead-activities_tab-tab").hide();
   $("#lead-notes_tab-tab").hide();
+  $("#lead-dashboard_tab-tab").hide();
 }
 
 //  Make multiple fields read-only
