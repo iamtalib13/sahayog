@@ -1246,12 +1246,15 @@ async function handleCreateLead() {
   const source = document.getElementById("source").value;
   const mobile_no = document.getElementById("mobileNo").value.trim();
 
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
   try {
     const res = await fetch("/api/resource/Lead", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "X-Frappe-CSRF-Token": csrfToken,
       },
       body: JSON.stringify({ first_name, source, mobile_no }),
     });
