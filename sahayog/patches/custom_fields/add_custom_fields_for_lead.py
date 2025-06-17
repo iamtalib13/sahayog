@@ -71,7 +71,16 @@ def execute():
                 "options": "Lead Product",
                 "insert_after": "custom_product_details_section",
                 
+            },
+            {
+                "label": "Remark",
+                "fieldname": "custom_remark_not_interested",
+                "fieldtype": "Small Text",
+                "insert_after": "status",
+                "depends_on": "eval:doc.status == 'Not Interested'",
+                "mandatory_depends_on": "eval:doc.status == 'Not Interested'",
             }
+
         ],
     }
     create_custom_fields(fields)
