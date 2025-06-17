@@ -1239,23 +1239,19 @@ function validateForm() {
 
   return valid;
 }
-
 async function handleCreateLead() {
   if (!validateForm()) return;
 
-  const getValue = (id) => document.getElementById(id)?.value.trim();
-  const hideElement = (id) => document.getElementById(id)?.classList.add("hidden");
+  const first_name = document.getElementById("fullName").value.trim();
+  const source = document.getElementById("source").value;
+  const mobile_no = document.getElementById("mobileNo").value.trim();
 
-  const first_name = getValue("fullName");
-  const source = getValue("source");
-  const mobile_no = getValue("mobileNo");
-
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+  const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  const csrfToken = csrfMeta ? csrfMeta.content : "";
 
   try {
-    const response = await fetch("/api/resource/Lead", {
+    const res = await fetch("/api/resource/Lead", {
       method: "POST",
-      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -1264,28 +1260,34 @@ async function handleCreateLead() {
       body: JSON.stringify({ first_name, source, mobile_no }),
     });
 
-    const result = await response.json();
+    const result = await res.json();
 
-    if (response.ok) {
-      // Success UI updates
-      document.getElementById("successMsg")?.classList.remove("hidden");
-      ["divSource", "divFullName", "divMobileNo", "divLeadButton"].forEach(hideElement);
+    if (res.ok) {
+      successMsg.classList.remove("hidden");
 
-      // Scroll to lead section if available
+      ["divSource", "divFullName", "divMobileNo", "divLeadButton"].forEach(id => {
+        document.getElementById(id)?.classList.add("hidden");
+      });
+
       document.getElementById("navLead")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-      // Close dialog and re-init after delay
       setTimeout(() => {
         toggleDialog(false);
         currentSection = "lead";
         initApp();
       }, 1000);
+
     } else {
-      console.error("❌ Server Error:", result);
+      console.error("❌ Server responded with an error:", {
+        status: res.status,
+        statusText: res.statusText,
+        response: result
+      });
       alert("❌ Error: " + (result.message || "Unknown error occurred"));
     }
+
   } catch (err) {
-    console.error("⚠️ Network Error:", err);
+    console.error("⚠️ Network or parsing error:", err);
     alert("⚠️ Network Error: " + err.message);
   }
 }
