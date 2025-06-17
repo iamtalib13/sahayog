@@ -50,7 +50,7 @@ doctype_js = {
     "Material Request": "public/js/material_request.js",
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
-    # "CRM Lead": "public/js/crm_lead.js",
+    "CRM Lead": "public/js/crm_lead.js",
     "Project": "public/js/project.js",
     "Lead":"scrm/controller/lead/lead.js",
     "Appointment" : "scrm/controller/appointment/appointment.js"
@@ -101,7 +101,7 @@ doctype_js = {
 # ]
 
 after_migrate = [
-    # "sahayog.patches.custom_fields.add_custom_fields_for_crm_lead.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_crm_lead.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
@@ -136,12 +136,12 @@ after_migrate = [
     # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
     "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
-    # "sahayog.patches.fixtures.create_crm_sahayog_sla.execute",
+    "sahayog.patches.fixtures.create_crm_sahayog_sla.execute",
 
-    # "sahayog.scrm.custom_html_block.crm_bm.execute",
-    # "sahayog.scrm.custom_html_block.crm_zone_and_region_wise_data.execute",
-    # "sahayog.scrm.custom_html_block.sahayog_crm_dashboard.execute",
-    # "sahayog.scrm.custom_html_block.crm_cluster_head.execute",
+    "sahayog.scrm.custom_html_block.crm_bm.execute",
+    "sahayog.scrm.custom_html_block.crm_zone_and_region_wise_data.execute",
+    "sahayog.scrm.custom_html_block.sahayog_crm_dashboard.execute",
+    "sahayog.scrm.custom_html_block.crm_cluster_head.execute",
     "sahayog.scrm.custom_html_block.l_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.employee_crm.execute",
 
@@ -196,9 +196,7 @@ permission_query_conditions = {
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
     "User": "sahayog.override.user.CustomUser",
-    # "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
-    
-
+    "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement"
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
 
@@ -283,21 +281,21 @@ doc_events = {
         "autoname": "sahayog.doc_events.department.department_name"
     },
 
-    # "CRM Lead": {
-    #     "before_insert": [
-    #         "sahayog.doc_events.crm_lead.set_lead_owner_branch",
-    #         "sahayog.doc_events.crm_lead.set_sla"
-    #     ],
-    #     "after_insert": [
-    #         "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
-    #     ],
-    #     "on_update": [
-    #         "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
-    #     ],
-    #     "before_save": [
-    #         "sahayog.doc_events.crm_lead.validate_lead_fields",
-    #     ]
-    # },
+    "CRM Lead": {
+        "before_insert": [
+            "sahayog.doc_events.crm_lead.set_lead_owner_branch",
+            "sahayog.doc_events.crm_lead.set_sla"
+        ],
+        "after_insert": [
+            "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
+        ],
+        "on_update": [
+            "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
+        ],
+        "before_save": [
+            "sahayog.doc_events.crm_lead.validate_lead_fields",
+        ]
+    },
     "Lead": {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
@@ -313,11 +311,11 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-    # "cron": {
-    #     "* * * * *": [
-    #         "sahayog.scrm.api.lead_escalation.run_escalation_check"
-    #     ]
-    # }
+    "cron": {
+        "* * * * *": [
+            "sahayog.scrm.api.lead_escalation.run_escalation_check"
+        ]
+    }
     # You can uncomment these if needed later:
     # "all": [
     #     "sahayog.tasks.all"
