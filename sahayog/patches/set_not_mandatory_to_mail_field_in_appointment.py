@@ -5,6 +5,7 @@ def execute():
     field_name = "customer_email"
     module_name = "SCRM"
 
+
     try:
         # Check if property setter already exists
         if not frappe.db.exists("Property Setter", {
