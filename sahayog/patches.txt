@@ -8,4 +8,5 @@ sahayog.patches.add_roles
 
 
 sahayog.patches.set_lead_status_options
+sahayog.patches.set_not_mandatory_to_mail_field_in_appointment
 sahayog.patches.set_quick_entry_opportunity
