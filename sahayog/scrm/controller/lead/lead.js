@@ -52,6 +52,14 @@ frappe.ui.form.on("Lead", {
     setFilterOnFields(frm);
     setMandtatoryFields(frm, ["source", "mobile_no"]);
   },
+  validate: function (frm) {
+    const mobile = frm.doc.mobile_no;
+    const mobile_regex = /^[6-9]\d{9}$/;
+
+    if (mobile && !mobile_regex.test(mobile)) {
+      frappe.throw(__("Please enter a valid 10-digit mobile number."));
+    }
+  },
 });
 
 //  Check if current user is Administrator
