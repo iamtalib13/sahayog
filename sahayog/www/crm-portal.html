@@ -1,5 +1,6 @@
 <html class="scroll-smooth" lang="en">
   <head>
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     <title>Sahayog CRM PWA</title>
@@ -1246,7 +1247,9 @@ async function handleCreateLead() {
   const source = document.getElementById("source").value;
   const mobile_no = document.getElementById("mobileNo").value.trim();
 
-  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  const csrfToken = csrfMeta ? csrfMeta.content : "";
+
 
   try {
     const res = await fetch("/api/resource/Lead", {
@@ -1258,7 +1261,7 @@ async function handleCreateLead() {
       },
       body: JSON.stringify({ first_name, source, mobile_no }),
     });
-
+    
     const result = await res.json();
 
     if (res.ok) {
