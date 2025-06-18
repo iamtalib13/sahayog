@@ -179,6 +179,13 @@
       .custom-select-item[aria-selected="true"] {
         font-weight: 600;
       }
+      /* Error message for products */
+      #errorProducts {
+        color: #dc2626; /* Tailwind red-600 */
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none;
+      }
     </style>
     <!-- PWA Manifest -->
     <link href="manifest.json" rel="manifest" />
@@ -296,12 +303,16 @@
               id="source"
               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
             >
-              <option value="">Select</option>
+              <option value=""></option>
               <option>Advertisement</option>
               <option>Campaign</option>
               <option>Existing Customer</option>
               <option>Reference</option>
               <option>Walk In</option>
+              <option>Calling</option>
+              <option>Marketing Activity</option>
+              <option>TeleCalling</option>
+
             </select>
             <p id="errorSource" class="text-sm text-red-600 hidden mt-1">Please select a source.</p>
           </div>
@@ -333,7 +344,8 @@
 
         <!-- Products Table -->
         <div id="divProducts">
-          <label class="block font-medium mb-1">Products</label>
+          <label class="block font-medium mb-1">Products <span class="text-red-600">*</span></label>
+          
           <table class="product-table" id="productTable" aria-label="Products table">
             <thead>
               <tr>
@@ -355,6 +367,7 @@
               </tr>
             </tbody>
           </table>
+          <p id="errorProducts" class="text-red-600 mt-1">Please select at least one valid product.</p>
           <button type="button" id="addProductBtn" class="add-product-btn" aria-label="Add product row">+ Add Product</button>
         </div>
 
@@ -490,18 +503,21 @@
               leadData = processLeadData(leads);
               renderList(currentSection, currentFilter, searchInput.value.trim());
               renderFilters(currentSection);
+              updateUrl();
             });
           } else if (currentSection === "appointment") {
             fetchAppointments(true).then((appointments) => {
               appointmentData = processAppointmentData(appointments);
               renderList(currentSection, currentFilter, searchInput.value.trim());
               renderFilters(currentSection);
+              updateUrl();
             });
           } else if (currentSection === "opportunity") {
             fetchOpportunity(true).then((opportunities) => {
               opportunityData = processOpportunityData(opportunities);
               renderList(currentSection, currentFilter, searchInput.value.trim());
               renderFilters(currentSection);
+              updateUrl();
             });
           }
         };
@@ -921,12 +937,12 @@
                 const btn = document.createElement("button");
                 btn.type = "button";
                 btn.className = `text-xs font-semibold rounded-full px-3 py-1 whitespace-nowrap select-none border ${
-                  idx === 0
+                  filter === currentFilter
                     ? "bg-green-100 text-green-700 border-green-300"
                     : "border-gray-300 text-gray-700"
                 }`;
                 btn.textContent = `${filter} (${count})`;
-                btn.setAttribute("aria-pressed", idx === 0 ? "true" : "false");
+                btn.setAttribute("aria-pressed", filter === currentFilter ? "true" : "false");
               
                 btn.addEventListener("click", () => {
                   Array.from(dynamicFilters.children).forEach((child) => {
@@ -941,12 +957,16 @@
                 
                   currentFilter = filter;
                   renderList(currentSection, currentFilter, searchInput.value.trim());
+                  updateUrl();
                 });
               
                 dynamicFilters.appendChild(btn);
               });
             
-              currentFilter = filters[0]; // default selected filter
+              // If currentFilter is not in filters (e.g. on initial load), set to first filter
+              if (!filters.includes(currentFilter)) {
+                currentFilter = filters[0];
+              }
             }
 
 
@@ -1225,6 +1245,19 @@
       
         // Initialize app
         async function initApp() {
+          // Parse URL params for section and filter
+          const params = new URLSearchParams(window.location.search);
+          const sectionParam = params.get("section");
+          const filterParam = params.get("filter");
+
+          // Validate section param
+          if (sectionParam && Object.keys(navButtons).includes(sectionParam)) {
+            currentSection = sectionParam;
+          } else {
+            currentSection = "appointment";
+          }
+
+          // Fetch data for current section
           if (currentSection === "lead") {
             const rawLeads = await fetchLeads();
             leadData = processLeadData(rawLeads);
@@ -1235,11 +1268,28 @@
             const rawOpportunities = await fetchOpportunity();
             opportunityData = processOpportunityData(rawOpportunities);
           }
-      
+
+          // Set currentFilter if valid, else default
+          let validFilters = [];
+          if (currentSection === "lead") {
+            validFilters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
+          } else if (currentSection === "appointment") {
+            validFilters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+          } else if (currentSection === "opportunity") {
+            validFilters = ["All", "Open", "Quotation", "Converted", "Lost", "Replied", "Closed"];
+          } else {
+            validFilters = [];
+          }
+          if (filterParam && validFilters.includes(filterParam)) {
+            currentFilter = filterParam;
+          } else {
+            currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
+          }
+
           renderFilters(currentSection);
           renderList(currentSection, currentFilter, "");
           updateHeaderTitle(currentSection);
-      
+
           Object.entries(navButtons).forEach(([key, btn]) => {
             if (key === currentSection) {
               btn.classList.add("text-green-600", "font-extrabold");
@@ -1249,13 +1299,15 @@
               btn.setAttribute("aria-current", "false");
             }
           });
-      
+
           // Initialize real-time sync
           if (isEventSourceSupported()) {
             initEventSource();
           } else {
             startPolling();
           }
+
+          updateUrl();
         }
       
         // Navigation button click handlers
@@ -1265,7 +1317,20 @@
       
             currentSection = key;
             searchInput.value = "";
-      
+
+            // Reset filter to first filter of new section
+            let validFilters = [];
+            if (currentSection === "lead") {
+              validFilters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
+            } else if (currentSection === "appointment") {
+              validFilters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+            } else if (currentSection === "opportunity") {
+              validFilters = ["All", "Open", "Quotation", "Converted", "Lost", "Replied", "Closed"];
+            } else {
+              validFilters = [];
+            }
+            currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
+
             if (currentSection === "lead" && leadData.length === 0) {
               const rawLeads = await fetchLeads();
               leadData = processLeadData(rawLeads);
@@ -1287,6 +1352,8 @@
             });
             btn.classList.add("text-green-600", "font-extrabold");
             btn.setAttribute("aria-current", "true");
+
+            updateUrl();
           });
         });
 
@@ -1329,6 +1396,7 @@
       const successMsg = document.getElementById("leadSuccessMsg");
       const productTableBody = document.getElementById("productTableBody");
       const addProductBtn = document.getElementById("addProductBtn");
+      const errorProducts = document.getElementById("errorProducts");
 
       // Store products list globally for options
       let productsList = [];
@@ -1576,6 +1644,7 @@
 
         hideAllErrors();
         successMsg.classList.add("hidden");
+        errorProducts.style.display = "none";
 
         ["divStatus", "divSource", "divFullName", "divMobileNo", "divLeadButton", "divProducts"].forEach(id => {
           document.getElementById(id)?.classList.remove("hidden");
@@ -1608,6 +1677,7 @@
       function hideAllErrors() {
         document.querySelectorAll("[id^='error']").forEach(el => el.classList.add("hidden"));
         document.querySelectorAll("input, select").forEach(el => el.classList.remove("border-red-500"));
+        errorProducts.style.display = "none";
       }
 
       function showError(fieldId, errorId) {
@@ -1651,6 +1721,7 @@
 
         // Validate product rows: product must be selected and valid
         const productRows = productTableBody.querySelectorAll("tr");
+        let hasValidProduct = false;
         for (const row of productRows) {
           const container = row.querySelector(".custom-select-container");
           if (!container) {
@@ -1665,17 +1736,22 @@
           const selectedCode = input.dataset.selectedProductCode || "";
           if (!selectedCode) {
             input.classList.add("border-red-500");
-            valid = false;
           } else {
             // Check if selectedCode exists in productsList
             const found = productsList.find(p => p.product_code === selectedCode);
             if (!found) {
               input.classList.add("border-red-500");
-              valid = false;
             } else {
               input.classList.remove("border-red-500");
+              hasValidProduct = true;
             }
           }
+        }
+        if (!hasValidProduct) {
+          errorProducts.style.display = "block";
+          valid = false;
+        } else {
+          errorProducts.style.display = "none";
         }
 
         return valid;
@@ -1758,6 +1834,15 @@
           }
         });
       
+        // Update URL query parameters for section and filter
+        function updateUrl() {
+          const params = new URLSearchParams(window.location.search);
+          params.set("section", currentSection);
+          params.set("filter", currentFilter);
+          const newUrl = `${window.location.pathname}?${params.toString()}`;
+          window.history.replaceState({}, "", newUrl);
+        }
+
         // Initialize app on load
         window.addEventListener("load", initApp);
       
