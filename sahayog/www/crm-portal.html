@@ -3,7 +3,7 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1" name="viewport" />
-    <title>Sahayog CRM PWA</title>
+    <title>Sahayog CRM - Appointment</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
@@ -29,7 +29,6 @@
         font-family: "Roboto", sans-serif;
         overscroll-behavior-y: contain;
         background-color: transparent; /* Add this */
-
       }
       main {
         padding-bottom: 4.5rem; /* space for fixed bottom nav */
@@ -37,53 +36,149 @@
       /* Scrollbar for filters */
       .filters-scroll::-webkit-scrollbar {
         display: none;
-    }
-        /* Dialog background blur */
-    body.dialog-open main,
-    body.dialog-open .page-container {
-      filter: blur(3px);
-    }
-
-    /* Dialog */
-    .custom-dialog {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.4);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
-    .custom-dialog-content {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      width: 300px;
-    }
-    .custom-dialog input, .custom-dialog select {
-      width: 100%;
-      margin-bottom: 12px;
-    }
-    .dialog-buttons {
-      display: flex;
-      justify-content: space-between;
-    }
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
       }
-      to {
-        opacity: 1;
-        transform: translateY(0);
+      /* Dialog background blur */
+      body.dialog-open main,
+      body.dialog-open .page-container {
+        filter: blur(3px);
       }
-    }
 
-    .animate-fadeIn {
-      animation: fadeIn 0.3s ease-out;
-    }
+      /* Dialog */
+      .custom-dialog {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+      .custom-dialog-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 300px;
+      }
+      .custom-dialog input, .custom-dialog select {
+        width: 100%;
+        margin-bottom: 12px;
+      }
+      .dialog-buttons {
+        display: flex;
+        justify-content: space-between;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
+      .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+      }
+      /* Product table styles */
+      .product-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .product-table th,
+      .product-table td {
+        border: 1px solid #d1d5db; /* Tailwind gray-300 */
+        padding: 0.5rem;
+        text-align: left;
+      }
+      .product-table th {
+        background-color: #f9fafb; /* Tailwind gray-50 */
+      }
+      .product-table select {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        background-color: white;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3csvg%20width%3d%2210%22%20height%3d%227%22%20viewBox%3d%220%200%2010%207%22%20xmlns%3d%22http%3a//www.w3.org/2000/svg%22%3e%3cpath%20d%3d%22M0%200l5%207%205-7z%22%20fill%3d%22%23666%22/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 10px 7px;
+        cursor: pointer;
+      }
+      .product-table select.border-red-500 {
+        border-color: #f87171; /* Tailwind red-400 */
+      }
+      .product-table button {
+        background-color: #dc2626; /* Tailwind red-600 */
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        cursor: pointer;
+      }
+      .product-table button:hover {
+        background-color: #b91c1c; /* Tailwind red-700 */
+      }
+      .add-product-btn {
+        background-color: #16a34a; /* Tailwind green-600 */
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+      .add-product-btn:hover {
+        background-color: #15803d; /* Tailwind green-700 */
+      }
+
+      /* Custom dropdown styles */
+      .custom-select-container {
+        position: relative;
+        width: 100%;
+      }
+      .custom-select-input {
+        width: 100%;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        outline: none;
+        box-sizing: border-box;
+      }
+      .custom-select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid #d1d5db;
+        border-top: none;
+        background: white;
+        z-index: 50;
+        border-radius: 0 0 0.25rem 0.25rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      .custom-select-item {
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+      .custom-select-item:hover,
+      .custom-select-item[aria-selected="true"] {
+        background-color: #d1fae5; /* Tailwind green-100 */
+      }
+      .custom-select-item[aria-selected="true"] {
+        font-weight: 600;
+      }
     </style>
     <!-- PWA Manifest -->
     <link href="manifest.json" rel="manifest" />
@@ -114,15 +209,14 @@
     <header
       class="flex justify-between items-center px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-30"
     >
-      <h1 class="text-green-600 font-extrabold text-xl select-none">
-        Sahayog CRM
+      <h1 id="headerTitle" class="text-green-600 font-extrabold text-xl select-none">
+        Sahayog CRM - Appointment
       </h1>
       <div class="flex space-x-5 text-black text-xl">
         <button aria-label="Refresh Page" class="focus:outline-none" onclick="location.reload()">
           <i class="fas fa-sync-alt"></i>
         </button>
       </div>
-      
     </header>
     <!-- Search Bar -->
     <div
@@ -146,93 +240,135 @@
       class="filters-scroll flex space-x-2 px-4 py-2 overflow-x-auto border-b border-gray-200 bg-white sticky top-[104px] z-20"
       id="dynamicFilters"
     >
-      <!-- Filters buttons inserted dynamically -->
     </div>
     <!-- Main Content Area -->
     <main class="flex-1 overflow-y-auto px-4 space-y-4 pb-24" id="app">
       <section class="space-y-4" id="crm-list">
-        <!-- CRM items rendered dynamically -->
       </section>
     </main>
 
     <!-- Floating Action Button -->
-    <!-- Floating Action Button -->
-<button
-aria-label="New entry"
-id="fabNewEntry"
-title="Add New Entry"
-class="fixed bottom-20 right-5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-full p-4 shadow-lg focus:outline-none z-30"
->
-<i class="fas fa-plus text-xl"></i>
-</button>
-
-<!-- Custom Dialog -->
-<div
-id="customDialog"
-class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
->
-<div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md space-y-4 animate-fadeIn">
-  <h3 class="text-lg font-semibold">Create New Lead</h3>
-
-  <p
-    id="leadSuccessMsg"
-    class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 hidden"
-  >
-    ✅ Lead created successfully!
-  </p>
- 
-  <!-- Source -->
-  <div id="divSource">
-    <label class="block font-medium">Source <span class="text-red-600">*</span></label>
-    <select
-      id="source"
-      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+    <button
+      aria-label="New entry"
+      id="fabNewEntry"
+      title="Add New Entry"
+      class="fixed bottom-20 right-5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-full p-4 shadow-lg focus:outline-none z-30"
     >
-      <option value="">Select</option>
-      <option>Advertisement</option>
-      <option>Campaign</option>
-      <option>Existing Customer</option>
-      <option>Reference</option>
-      <option>Walk In</option>
-    </select>
-    <p id="errorSource" class="text-sm text-red-600 hidden mt-1">Please select a source.</p>
-  </div>
-
-  <!-- Full Name -->
-  <div id="divFullName">
-    <label class="block font-medium">Full Name <span class="text-red-600">*</span></label>
-    <input
-      type="text"
-      id="fullName"
-      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-    />
-    <p id="errorFullName" class="text-sm text-red-600 hidden mt-1">Please enter full name.</p>
-  </div>
-
-  <!-- Mobile No -->
-  <div id="divMobileNo">
-    <label class="block font-medium">Mobile No <span class="text-red-600">*</span></label>
-    <input
-      type="text"
-      id="mobileNo"
-      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-    />
-    <p id="errorMobile" class="text-sm text-red-600 hidden mt-1">
-      Please enter a valid 10-digit mobile number.
-    </p>
-  </div>
-
-  <!-- Buttons -->
-  <div class="flex justify-end space-x-2 pt-4" id="divLeadButton"> 
-    <button id="cancelLead" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
-      Cancel
+      + New Lead
     </button>
-    <button id="createLead" class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
-      Create
-    </button>
-  </div>
-</div>
-</div>
+
+    <!-- Custom Dialog -->
+    <div
+      id="customDialog"
+      class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
+    >
+      <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md space-y-4 animate-fadeIn max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold">Create New Lead</h3>
+
+        <p
+          id="leadSuccessMsg"
+          class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 hidden"
+        >
+          ✅ Lead created successfully!
+        </p>
+       
+        <!-- Form fields in two columns -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Status -->
+          <div id="divStatus">
+            <label class="block font-medium">Status <span class="text-red-600">*</span></label>
+            <select
+              id="status"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+            >
+              <option>Lead</option>
+              <option>Follow Up</option>
+              <option>Converted</option>
+              <option>Not Interested</option>
+            </select>
+            <p id="errorSource" class="text-sm text-red-600 hidden mt-1">Please select a Status.</p>
+          </div>
+         
+          <!-- Source -->
+          <div id="divSource">
+            <label class="block font-medium">Source <span class="text-red-600">*</span></label>
+            <select
+              id="source"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+            >
+              <option value="">Select</option>
+              <option>Advertisement</option>
+              <option>Campaign</option>
+              <option>Existing Customer</option>
+              <option>Reference</option>
+              <option>Walk In</option>
+            </select>
+            <p id="errorSource" class="text-sm text-red-600 hidden mt-1">Please select a source.</p>
+          </div>
+
+          <!-- Full Name -->
+          <div id="divFullName">
+            <label class="block font-medium">Full Name <span class="text-red-600">*</span></label>
+            <input
+              type="text"
+              id="fullName"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+            />
+            <p id="errorFullName" class="text-sm text-red-600 hidden mt-1">Please enter full name.</p>
+          </div>
+
+          <!-- Mobile No -->
+          <div id="divMobileNo">
+            <label class="block font-medium">Mobile No <span class="text-red-600">*</span></label>
+            <input
+              type="text"
+              id="mobileNo"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+            />
+            <p id="errorMobile" class="text-sm text-red-600 hidden mt-1">
+              Please enter a valid 10-digit mobile number.
+            </p>
+          </div>
+        </div>
+
+        <!-- Products Table -->
+        <div id="divProducts">
+          <label class="block font-medium mb-1">Products</label>
+          <table class="product-table" id="productTable" aria-label="Products table">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col" style="width: 3rem;">Remove</th>
+              </tr>
+            </thead>
+            <tbody id="productTableBody">
+              <tr>
+                <td>
+                  <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="product-list-0" aria-label="Select product">
+                    <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="product-list-0" aria-activedescendant="" />
+                    <ul class="custom-select-dropdown hidden" role="listbox" id="product-list-0" tabindex="-1"></ul>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <button type="button" id="addProductBtn" class="add-product-btn" aria-label="Add product row">+ Add Product</button>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end space-x-2 pt-4" id="divLeadButton"> 
+          <button id="cancelLead" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
+            Cancel
+          </button>
+          <button id="createLead" class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Bottom Navigation for CRM -->
     <nav
@@ -259,15 +395,6 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
         <i class="fas fa-user-plus text-lg"> </i>
         <span> Lead </span>
       </button>
-      <!-- <button
-        aria-label="Opportunity"
-        class="flex flex-col items-center focus:outline-none"
-        id="navOpportunity"
-        type="button"
-      >
-        <i class="fas fa-user-circle text-lg"> </i>
-        <span> Opportunity </span>
-      </button> -->
       <button
         aria-label="Reports"
         class="flex flex-col items-center focus:outline-none"
@@ -277,7 +404,6 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
         <i class="fas fa-file-alt text-lg"> </i>
         <span> Report </span>
       </button>
-      
     </nav>
     <script>
         // Configuration
@@ -291,12 +417,12 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
           appointment: document.getElementById("navAppointment"),
           lead: document.getElementById("navLead"),
           report: document.getElementById("navReport"),
-          // opportunity: document.getElementById("navOpportunity"),
         };
         const searchInput = document.getElementById("searchInput");
+        const headerTitle = document.getElementById("headerTitle");
       
         // Current state
-        let currentSection = "appointment"; // Default to lead section
+        let currentSection = "appointment"; // Default to appointment section
         let currentFilter = "All";
         let leadData = [];
         let appointmentData = [];
@@ -363,16 +489,19 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
             fetchLeads(true).then((leads) => {
               leadData = processLeadData(leads);
               renderList(currentSection, currentFilter, searchInput.value.trim());
+              renderFilters(currentSection);
             });
           } else if (currentSection === "appointment") {
             fetchAppointments(true).then((appointments) => {
               appointmentData = processAppointmentData(appointments);
               renderList(currentSection, currentFilter, searchInput.value.trim());
+              renderFilters(currentSection);
             });
           } else if (currentSection === "opportunity") {
             fetchOpportunity(true).then((opportunities) => {
               opportunityData = processOpportunityData(opportunities);
               renderList(currentSection, currentFilter, searchInput.value.trim());
+              renderFilters(currentSection);
             });
           }
         };
@@ -601,7 +730,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
               status: status,
               statusClass: statusClass,
               img: "https://placehold.co/40x40/png?text=L",
-              alt: "Lead icon",
+              alt: "Lead icon, a stylized letter L in green on white background",
               rawData: lead,
             };
           });
@@ -664,7 +793,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
               timeStatus: timeStatus,
               statusClass: statusClass,
               img: "https://placehold.co/40x40/png?text=A",
-              alt: "Appointment icon",
+              alt: "Appointment icon, a stylized letter A in blue on white background",
               rawData: appointment,
             };
           });
@@ -718,7 +847,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
               status: status,
               statusClass: statusClass,
               img: "https://placehold.co/40x40/png?text=O",
-              alt: "Opportunity icon",
+              alt: "Opportunity icon, a stylized letter O in gray on white background",
               rawData: opportunity,
             };
           });
@@ -840,14 +969,14 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
                   subtitle: "View detailed lead analytics",
                   link: "/app/query-report/My%20Leads%20Report",
                   img: "https://placehold.co/40x40/png?text=R1",
-                  alt: "Leads Report",
+                  alt: "Leads Report icon, stylized letter R1 in blue on white background",
                 },
                 {
                   title: "My Appointments Report",
                   subtitle: "Monitor your appointment trends",
                   link: "/app/query-report/My%20Appointments",
                   img: "https://placehold.co/40x40/png?text=R2",
-                  alt: "Appointments Report",
+                  alt: "Appointments Report icon, stylized letter R2 in blue on white background",
                 },
               ];
             }
@@ -1109,6 +1238,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
       
           renderFilters(currentSection);
           renderList(currentSection, currentFilter, "");
+          updateHeaderTitle(currentSection);
       
           Object.entries(navButtons).forEach(([key, btn]) => {
             if (key === currentSection) {
@@ -1149,6 +1279,7 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
       
             renderFilters(currentSection);
             renderList(currentSection, currentFilter, "");
+            updateHeaderTitle(currentSection);
       
             Object.values(navButtons).forEach((b) => {
               b.classList.remove("text-green-600", "font-extrabold");
@@ -1158,6 +1289,28 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
             btn.setAttribute("aria-current", "true");
           });
         });
+
+        function updateHeaderTitle(section) {
+          let label = "";
+          switch(section) {
+            case "lead":
+              label = "Lead";
+              break;
+            case "appointment":
+              label = "Appointment";
+              break;
+            case "report":
+              label = "Report";
+              break;
+            case "opportunity":
+              label = "Opportunity";
+              break;
+            default:
+              label = "";
+          }
+          headerTitle.textContent = `Sahayog CRM - ${label}`;
+          document.title = `Sahayog CRM - ${label}`;
+        }
       
         // Search input handler with debounce
         let searchTimeout;
@@ -1170,129 +1323,429 @@ class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black b
 
       //custom dialog for creating new lead
       const dialog = document.getElementById("customDialog");
-const fab = document.getElementById("fabNewEntry");
-const cancelBtn = document.getElementById("cancelLead");
-const createBtn = document.getElementById("createLead");
-const successMsg = document.getElementById("leadSuccessMsg");
+      const fab = document.getElementById("fabNewEntry");
+      const cancelBtn = document.getElementById("cancelLead");
+      const createBtn = document.getElementById("createLead");
+      const successMsg = document.getElementById("leadSuccessMsg");
+      const productTableBody = document.getElementById("productTableBody");
+      const addProductBtn = document.getElementById("addProductBtn");
 
-fab.addEventListener("click", () => toggleDialog(true));
-cancelBtn.addEventListener("click", () => toggleDialog(false));
-createBtn.addEventListener("click", handleCreateLead);
+      // Store products list globally for options
+      let productsList = [];
 
-function toggleDialog(show) {
-  dialog.style.display = show ? "flex" : "none";
-  if (!show) clearForm();
-}
+      fab.addEventListener("click", () => {
+        toggleDialog(true);
+        loadProductsOptions();
+      });
+      cancelBtn.addEventListener("click", () => toggleDialog(false));
+      createBtn.addEventListener("click", handleCreateLead);
+      addProductBtn.addEventListener("click", addProductRow);
 
-function clearForm() {
-  document.getElementById("fullName").value = "";
-  document.getElementById("source").value = "";
-  document.getElementById("mobileNo").value = "";
+      // Load products from API and populate all selects
+      async function loadProductsOptions() {
+        try {
+          const response = await fetch('/api/resource/Product?fields=["product_code","product_name"]&limit_page_length=1000', {
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+            },
+            cache: "no-cache",
+          });
+          if (!response.ok) {
+            throw new Error(`Failed to fetch products: ${response.status}`);
+          }
+          const data = await response.json();
+          productsList = data.data || [];
 
-  hideAllErrors();
-  successMsg.classList.add("hidden");
-}
+          // Initialize all custom selects with products
+          initializeAllCustomSelects();
+        } catch (error) {
+          console.error("Error loading products:", error);
+          productsList = [];
+          // Clear selects and show error option
+          const containers = productTableBody.querySelectorAll(".custom-select-container");
+          containers.forEach(container => {
+            const input = container.querySelector("input.custom-select-input");
+            const dropdown = container.querySelector(".custom-select-dropdown");
+            input.value = "";
+            dropdown.innerHTML = '<li class="custom-select-item" role="option" aria-selected="false">Failed to load products</li>';
+            dropdown.classList.remove("hidden");
+          });
+        }
+      }
 
-function hideAllErrors() {
-  document.querySelectorAll("[id^='error']").forEach(el => el.classList.add("hidden"));
-  document.querySelectorAll("input, select").forEach(el => el.classList.remove("border-red-500"));
-}
+      // Initialize all custom selects in product rows
+      function initializeAllCustomSelects() {
+        const containers = productTableBody.querySelectorAll(".custom-select-container");
+        containers.forEach((container, index) => {
+          setupCustomSelect(container, index);
+        });
+      }
 
-function showError(fieldId, errorId) {
-  document.getElementById(errorId).classList.remove("hidden");
-  document.getElementById(fieldId).classList.add("border-red-500");
-}
+      // Setup a single custom select container
+      function setupCustomSelect(container, index) {
+        const input = container.querySelector("input.custom-select-input");
+        const dropdown = container.querySelector(".custom-select-dropdown");
+        dropdown.id = `product-list-${index}`;
+        container.setAttribute("aria-owns", dropdown.id);
 
-function hideError(fieldId, errorId) {
-  document.getElementById(errorId).classList.add("hidden");
-  document.getElementById(fieldId).classList.remove("border-red-500");
-}
+        // Populate dropdown with all products initially
+        populateDropdown(dropdown, productsList);
 
-function validateForm() {
-  let valid = true;
+        // Track current highlighted index for keyboard navigation
+        let highlightedIndex = -1;
 
-  const fullName = document.getElementById("fullName").value.trim();
-  const source = document.getElementById("source").value;
-  const mobileNo = document.getElementById("mobileNo").value.trim();
-  const mobileRegex = /^[6-9]\d{9}$/;
+        // Filter dropdown items based on input
+        input.addEventListener("input", () => {
+          const filter = input.value.trim().toLowerCase();
+          const filtered = productsList.filter(p => {
+            const text = `${p.product_code} - ${p.product_name}`.toLowerCase();
+            return text.includes(filter);
+          });
+          populateDropdown(dropdown, filtered);
+          highlightedIndex = -1;
+          container.setAttribute("aria-expanded", "true");
+          dropdown.classList.remove("hidden");
+          input.setAttribute("aria-activedescendant", "");
+        });
 
-  if (!fullName) {
-    showError("fullName", "errorFullName");
-    valid = false;
-  } else {
-    hideError("fullName", "errorFullName");
-  }
+        // Show dropdown on focus
+        input.addEventListener("focus", () => {
+          if (dropdown.children.length > 0) {
+            dropdown.classList.remove("hidden");
+            container.setAttribute("aria-expanded", "true");
+          }
+        });
 
-  if (!source) {
-    showError("source", "errorSource");
-    valid = false;
-  } else {
-    hideError("source", "errorSource");
-  }
+        // Hide dropdown on blur (with delay to allow click)
+        input.addEventListener("blur", () => {
+          setTimeout(() => {
+            dropdown.classList.add("hidden");
+            container.setAttribute("aria-expanded", "false");
+            highlightedIndex = -1;
+            input.setAttribute("aria-activedescendant", "");
+          }, 150);
+        });
 
-  if (!mobileRegex.test(mobileNo)) {
-    showError("mobileNo", "errorMobile");
-    valid = false;
-  } else {
-    hideError("mobileNo", "errorMobile");
-  }
+        // Keyboard navigation
+        input.addEventListener("keydown", (e) => {
+          const items = dropdown.querySelectorAll(".custom-select-item");
+          if (dropdown.classList.contains("hidden")) return;
 
-  return valid;
-}
-async function handleCreateLead() {
-  if (!validateForm()) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (highlightedIndex < items.length - 1) {
+              highlightedIndex++;
+              updateHighlight(items, highlightedIndex, input);
+            }
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            if (highlightedIndex > 0) {
+              highlightedIndex--;
+              updateHighlight(items, highlightedIndex, input);
+            }
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && highlightedIndex < items.length) {
+              selectItem(items[highlightedIndex], container, input, dropdown);
+            }
+          } else if (e.key === "Escape") {
+            dropdown.classList.add("hidden");
+            container.setAttribute("aria-expanded", "false");
+            highlightedIndex = -1;
+            input.setAttribute("aria-activedescendant", "");
+          }
+        });
 
-  const first_name = document.getElementById("fullName").value.trim();
-  const source = document.getElementById("source").value;
-  const mobile_no = document.getElementById("mobileNo").value.trim();
+        // Click on dropdown item
+        dropdown.addEventListener("mousedown", (e) => {
+          // Prevent blur on input
+          e.preventDefault();
+        });
+        dropdown.addEventListener("click", (e) => {
+          const item = e.target.closest(".custom-select-item");
+          if (item) {
+            selectItem(item, container, input, dropdown);
+          }
+        });
 
-  const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-  const csrfToken = csrfMeta ? csrfMeta.content : "";
+        // Initialize with empty input and full list
+        input.value = "";
+        populateDropdown(dropdown, productsList);
+        dropdown.classList.add("hidden");
+        container.setAttribute("aria-expanded", "false");
+      }
 
-  try {
-    const res = await fetch("/api/resource/Lead", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Frappe-CSRF-Token": csrfToken,
-      },
-      body: JSON.stringify({ first_name, source, mobile_no }),
-    });
+      // Populate dropdown list items
+      function populateDropdown(dropdown, items) {
+        dropdown.innerHTML = "";
+        if (items.length === 0) {
+          const li = document.createElement("li");
+          li.className = "custom-select-item";
+          li.textContent = "No products found";
+          li.setAttribute("role", "option");
+          li.setAttribute("aria-selected", "false");
+          dropdown.appendChild(li);
+          return;
+        }
+        items.forEach((product) => {
+          const li = document.createElement("li");
+          li.className = "custom-select-item";
+          li.textContent = `${product.product_code} - ${product.product_name}`;
+          li.setAttribute("role", "option");
+          li.setAttribute("aria-selected", "false");
+          li.dataset.productCode = product.product_code;
+          dropdown.appendChild(li);
+        });
+      }
 
-    const result = await res.json();
+      // Update highlight on dropdown items
+      function updateHighlight(items, index, input) {
+        items.forEach((item, i) => {
+          if (i === index) {
+            item.setAttribute("aria-selected", "true");
+            item.scrollIntoView({ block: "nearest" });
+            input.setAttribute("aria-activedescendant", item.id || "");
+          } else {
+            item.setAttribute("aria-selected", "false");
+          }
+        });
+      }
 
-    if (res.ok) {
-      successMsg.classList.remove("hidden");
+      // Select an item from dropdown
+      function selectItem(item, container, input, dropdown) {
+        input.value = item.textContent;
+        dropdown.classList.add("hidden");
+        container.setAttribute("aria-expanded", "false");
+        input.setAttribute("aria-activedescendant", "");
+        // Store selected product code in dataset for validation
+        input.dataset.selectedProductCode = item.dataset.productCode || "";
+      }
 
-      ["divSource", "divFullName", "divMobileNo", "divLeadButton"].forEach(id => {
-        document.getElementById(id)?.classList.add("hidden");
+      // Add product row function
+      function addProductRow() {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>
+            <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="" aria-label="Select product">
+              <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="" aria-activedescendant="" />
+              <ul class="custom-select-dropdown hidden" role="listbox" tabindex="-1"></ul>
+            </div>
+          </td>
+          <td class="text-center">
+            <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
+          </td>
+        `;
+
+        productTableBody.appendChild(tr);
+
+        // Attach remove event
+        tr.querySelector(".remove-product-btn").addEventListener("click", () => {
+          if (productTableBody.rows.length > 1) {
+            tr.remove();
+          }
+        });
+
+        // Setup custom select for the new row
+        const container = tr.querySelector(".custom-select-container");
+        const index = productTableBody.querySelectorAll(".custom-select-container").length - 1;
+        setupCustomSelect(container, index);
+      }
+
+      // Remove product row event for initial row
+      productTableBody.querySelectorAll(".remove-product-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const row = e.target.closest("tr");
+          if (productTableBody.rows.length > 1) {
+            row.remove();
+          }
+        });
       });
 
-      document.getElementById("navLead")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      function toggleDialog(show) {
+        dialog.style.display = show ? "flex" : "none";
+        if (!show) clearForm();
+      }
 
-      setTimeout(() => {
-        toggleDialog(false);
-        currentSection = "lead";
-        initApp();
-      }, 1000);
+      function clearForm() {
+        document.getElementById("fullName").value = "";
+        document.getElementById("source").value = "";
+        document.getElementById("mobileNo").value = "";
+        document.getElementById("status").value = "Lead";
 
-    } else {
-      console.error("❌ Server responded with an error:", {
-        status: res.status,
-        statusText: res.statusText,
-        response: result
-      });
-      alert("❌ Error: " + (result.message || "Unknown error occurred"));
-    }
+        hideAllErrors();
+        successMsg.classList.add("hidden");
 
-  } catch (err) {
-    console.error("⚠️ Network or parsing error:", err);
-    alert("⚠️ Network Error: " + err.message);
-  }
-}
+        ["divStatus", "divSource", "divFullName", "divMobileNo", "divLeadButton", "divProducts"].forEach(id => {
+          document.getElementById(id)?.classList.remove("hidden");
+        });
 
+        // Clear product rows except one
+        while (productTableBody.rows.length > 1) {
+          productTableBody.deleteRow(1);
+        }
+        // Clear inputs in the remaining row
+        const firstRow = productTableBody.rows[0];
+        if (firstRow) {
+          const container = firstRow.querySelector(".custom-select-container");
+          if (container) {
+            const input = container.querySelector("input.custom-select-input");
+            if (input) {
+              input.value = "";
+              input.dataset.selectedProductCode = "";
+              const dropdown = container.querySelector(".custom-select-dropdown");
+              if (dropdown) {
+                populateDropdown(dropdown, productsList);
+                dropdown.classList.add("hidden");
+                container.setAttribute("aria-expanded", "false");
+              }
+            }
+          }
+        }
+      }
 
+      function hideAllErrors() {
+        document.querySelectorAll("[id^='error']").forEach(el => el.classList.add("hidden"));
+        document.querySelectorAll("input, select").forEach(el => el.classList.remove("border-red-500"));
+      }
+
+      function showError(fieldId, errorId) {
+        document.getElementById(errorId).classList.remove("hidden");
+        document.getElementById(fieldId).classList.add("border-red-500");
+      }
+
+      function hideError(fieldId, errorId) {
+        document.getElementById(errorId).classList.add("hidden");
+        document.getElementById(fieldId).classList.remove("border-red-500");
+      }
+
+      function validateForm() {
+        let valid = true;
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const source = document.getElementById("source").value;
+        const mobileNo = document.getElementById("mobileNo").value.trim();
+        const mobileRegex = /^[6-9]\d{9}$/;
+
+        if (!fullName) {
+          showError("fullName", "errorFullName");
+          valid = false;
+        } else {
+          hideError("fullName", "errorFullName");
+        }
+
+        if (!source) {
+          showError("source", "errorSource");
+          valid = false;
+        } else {
+          hideError("source", "errorSource");
+        }
+
+        if (!mobileRegex.test(mobileNo)) {
+          showError("mobileNo", "errorMobile");
+          valid = false;
+        } else {
+          hideError("mobileNo", "errorMobile");
+        }
+
+        // Validate product rows: product must be selected and valid
+        const productRows = productTableBody.querySelectorAll("tr");
+        for (const row of productRows) {
+          const container = row.querySelector(".custom-select-container");
+          if (!container) {
+            valid = false;
+            continue;
+          }
+          const input = container.querySelector("input.custom-select-input");
+          if (!input) {
+            valid = false;
+            continue;
+          }
+          const selectedCode = input.dataset.selectedProductCode || "";
+          if (!selectedCode) {
+            input.classList.add("border-red-500");
+            valid = false;
+          } else {
+            // Check if selectedCode exists in productsList
+            const found = productsList.find(p => p.product_code === selectedCode);
+            if (!found) {
+              input.classList.add("border-red-500");
+              valid = false;
+            } else {
+              input.classList.remove("border-red-500");
+            }
+          }
+        }
+
+        return valid;
+      }
+
+      async function handleCreateLead() {
+        if (!validateForm()) return;
+
+        const first_name = document.getElementById("fullName").value.trim();
+        const source = document.getElementById("source").value;
+        const mobile_no = document.getElementById("mobileNo").value.trim();
+        const status = document.getElementById("status").value.trim();
+
+        // Collect products data as array of objects
+        const custom_product_table = [];
+        const productRows = productTableBody.querySelectorAll("tr");
+        productRows.forEach(row => {
+          const container = row.querySelector(".custom-select-container");
+          if (!container) return;
+          const input = container.querySelector("input.custom-select-input");
+          if (input && input.dataset.selectedProductCode) {
+            custom_product_table.push({ product: input.dataset.selectedProductCode });
+          }
+        });
+
+        // Prepare payload including products array
+        const payload = { first_name, source, mobile_no, status, custom_product_table };
+
+        try {
+          const res = await fetch("/api/resource/Lead", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+            credentials: "include",
+          });
+
+          const result = await res.json();
+
+          if (res.ok) {
+            successMsg.classList.remove("hidden");
+
+            ["divStatus", "divSource", "divFullName", "divMobileNo", "divLeadButton", "divProducts"].forEach(id => {
+              document.getElementById(id)?.classList.add("hidden");
+            });
+
+            document.getElementById("navLead")?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            setTimeout(() => {
+              toggleDialog(false);
+              currentSection = "lead";
+              initApp();
+            }, 1000);
+
+          } else {
+            console.error("❌ Server responded with an error:", {
+              status: res.status,
+              statusText: res.statusText,
+              response: result
+            });
+            alert("❌ Error: " + (result.message || "Unknown error occurred"));
+          }
+
+        } catch (err) {
+          console.error("⚠️ Network or parsing error:", err);
+          alert("⚠️ Network Error: " + err.message);
+        }
+      }
 
         // Accessibility: Keyboard navigation for list items
         crmList.addEventListener("keydown", (e) => {
@@ -1332,7 +1785,6 @@ async function handleCreateLead() {
             const years = Math.floor(months / 12);
             return `${years} year${years !== 1 ? "s" : ""} ago`;
         }
-
-      </script>
+    </script>
   </body>
 </html>
