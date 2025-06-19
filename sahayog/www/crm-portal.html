@@ -1,6 +1,6 @@
 <html class="scroll-smooth" lang="en">
   <head>
-    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="csrf-token" content="{{ csrf_token }}" />
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     <title>Sahayog CRM - Appointment</title>
@@ -21,8 +21,8 @@
 
       /* For Firefox */
       * {
-        scrollbar-width: none;       /* Firefox */
-        -ms-overflow-style: none;    /* Internet Explorer 10+ */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
       }
 
       body {
@@ -47,8 +47,10 @@
       .custom-dialog {
         display: none;
         position: fixed;
-        top: 0; left: 0;
-        width: 100vw; height: 100vh;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
         background: rgba(0, 0, 0, 0.4);
         z-index: 1000;
         justify-content: center;
@@ -60,7 +62,8 @@
         border-radius: 8px;
         width: 300px;
       }
-      .custom-dialog input, .custom-dialog select {
+      .custom-dialog input,
+      .custom-dialog select {
         width: 100%;
         margin-bottom: 12px;
       }
@@ -165,7 +168,7 @@
         background: white;
         z-index: 50;
         border-radius: 0 0 0.25rem 0.25rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       .custom-select-item {
         padding: 0.25rem 0.5rem;
@@ -216,11 +219,18 @@
     <header
       class="flex justify-between items-center px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-30"
     >
-      <h1 id="headerTitle" class="text-green-600 font-extrabold text-xl select-none">
+      <h1
+        id="headerTitle"
+        class="text-green-600 font-extrabold text-xl select-none"
+      >
         Sahayog CRM - Appointment
       </h1>
       <div class="flex space-x-5 text-black text-xl">
-        <button aria-label="Refresh Page" class="focus:outline-none" onclick="location.reload()">
+        <button
+          aria-label="Refresh Page"
+          class="focus:outline-none"
+          onclick="location.reload()"
+        >
           <i class="fas fa-sync-alt"></i>
         </button>
       </div>
@@ -246,12 +256,10 @@
     <div
       class="filters-scroll flex space-x-2 px-4 py-2 overflow-x-auto border-b border-gray-200 bg-white sticky top-[104px] z-20"
       id="dynamicFilters"
-    >
-    </div>
+    ></div>
     <!-- Main Content Area -->
     <main class="flex-1 overflow-y-auto px-4 space-y-4 pb-24" id="app">
-      <section class="space-y-4" id="crm-list">
-      </section>
+      <section class="space-y-4" id="crm-list"></section>
     </main>
 
     <!-- Floating Action Button -->
@@ -269,21 +277,25 @@
       id="customDialog"
       class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
     >
-      <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md space-y-4 animate-fadeIn max-h-[90vh] overflow-y-auto">
+      <div
+        class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md space-y-4 animate-fadeIn max-h-[90vh] overflow-y-auto"
+      >
         <h3 class="text-lg font-semibold">Create New Lead</h3>
 
         <p
           id="leadSuccessMsg"
           class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 hidden"
         >
-          ✅ Lead created successfully!
+          ✅ Lead and Appointment created successfully!
         </p>
-       
+
         <!-- Form fields in two columns -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Status -->
           <div id="divStatus">
-            <label class="block font-medium">Status <span class="text-red-600">*</span></label>
+            <label class="block font-medium"
+              >Status <span class="text-red-600">*</span></label
+            >
             <select
               id="status"
               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
@@ -293,12 +305,16 @@
               <option>Converted</option>
               <option>Not Interested</option>
             </select>
-            <p id="errorSource" class="text-sm text-red-600 hidden mt-1">Please select a Status.</p>
+            <p id="errorStatus" class="text-sm text-red-600 hidden mt-1">
+              Please select a Status.
+            </p>
           </div>
-         
+
           <!-- Source -->
           <div id="divSource">
-            <label class="block font-medium">Source <span class="text-red-600">*</span></label>
+            <label class="block font-medium"
+              >Source <span class="text-red-600">*</span></label
+            >
             <select
               id="source"
               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
@@ -312,25 +328,32 @@
               <option>Calling</option>
               <option>Marketing Activity</option>
               <option>TeleCalling</option>
-
             </select>
-            <p id="errorSource" class="text-sm text-red-600 hidden mt-1">Please select a source.</p>
+            <p id="errorSource" class="text-sm text-red-600 hidden mt-1">
+              Please select a source.
+            </p>
           </div>
 
           <!-- Full Name -->
           <div id="divFullName">
-            <label class="block font-medium">Full Name <span class="text-red-600">*</span></label>
+            <label class="block font-medium"
+              >Full Name <span class="text-red-600">*</span></label
+            >
             <input
               type="text"
               id="fullName"
               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
             />
-            <p id="errorFullName" class="text-sm text-red-600 hidden mt-1">Please enter full name.</p>
+            <p id="errorFullName" class="text-sm text-red-600 hidden mt-1">
+              Please enter full name.
+            </p>
           </div>
 
           <!-- Mobile No -->
           <div id="divMobileNo">
-            <label class="block font-medium">Mobile No <span class="text-red-600">*</span></label>
+            <label class="block font-medium"
+              >Mobile No <span class="text-red-600">*</span></label
+            >
             <input
               type="text"
               id="mobileNo"
@@ -340,43 +363,109 @@
               Please enter a valid 10-digit mobile number.
             </p>
           </div>
+
+          <!-- Appointment Date & Time (conditionally shown) -->
+          <div id="divAppointmentDateTime" class="hidden sm:col-span-2">
+            <label class="block font-medium"
+              >Appointment Date & Time
+              <span class="text-red-600">*</span></label
+            >
+            <input
+              type="datetime-local"
+              id="appointmentDateTime"
+              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+            />
+            <p
+              id="errorAppointmentDateTime"
+              class="text-sm text-red-600 hidden mt-1"
+            >
+              Please select appointment date and time.
+            </p>
+          </div>
         </div>
 
         <!-- Products Table -->
         <div id="divProducts">
-          <label class="block font-medium mb-1">Products <span class="text-red-600">*</span></label>
-          
-          <table class="product-table" id="productTable" aria-label="Products table">
+          <label class="block font-medium mb-1"
+            >Products <span class="text-red-600">*</span></label
+          >
+
+          <table
+            class="product-table"
+            id="productTable"
+            aria-label="Products table"
+          >
             <thead>
               <tr>
                 <th scope="col">Product</th>
-                <th scope="col" style="width: 3rem;">Remove</th>
+                <th scope="col" style="width: 3rem">Remove</th>
               </tr>
             </thead>
             <tbody id="productTableBody">
               <tr>
                 <td>
-                  <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="product-list-0" aria-label="Select product">
-                    <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="product-list-0" aria-activedescendant="" />
-                    <ul class="custom-select-dropdown hidden" role="listbox" id="product-list-0" tabindex="-1"></ul>
+                  <div
+                    class="custom-select-container"
+                    tabindex="0"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                    role="combobox"
+                    aria-owns="product-list-0"
+                    aria-label="Select product"
+                  >
+                    <input
+                      type="text"
+                      class="custom-select-input"
+                      placeholder="Search product..."
+                      aria-autocomplete="list"
+                      aria-controls="product-list-0"
+                      aria-activedescendant=""
+                    />
+                    <ul
+                      class="custom-select-dropdown hidden"
+                      role="listbox"
+                      id="product-list-0"
+                      tabindex="-1"
+                    ></ul>
                   </div>
                 </td>
                 <td class="text-center">
-                  <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
+                  <button
+                    type="button"
+                    class="remove-product-btn"
+                    aria-label="Remove product row"
+                  >
+                    &times;
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <p id="errorProducts" class="text-red-600 mt-1">Please select at least one valid product.</p>
-          <button type="button" id="addProductBtn" class="add-product-btn" aria-label="Add product row">+ Add Product</button>
+          <p id="errorProducts" class="text-red-600 mt-1">
+            Please select at least one valid product.
+          </p>
+          <button
+            type="button"
+            id="addProductBtn"
+            class="add-product-btn"
+            aria-label="Add product row"
+          >
+            + Add Product
+          </button>
         </div>
 
         <!-- Buttons -->
-        <div class="flex justify-end space-x-2 pt-4" id="divLeadButton"> 
-          <button id="cancelLead" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
+        <div class="flex justify-end space-x-2 pt-4" id="divLeadButton">
+          <button
+            id="cancelLead"
+            class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+          >
             Cancel
           </button>
-          <button id="createLead" class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white">
+          <button
+            id="createLead"
+            class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
+          >
             Create
           </button>
         </div>
@@ -419,473 +508,485 @@
       </button>
     </nav>
     <script>
-        // Configuration
-        const SYNC_INTERVAL = 5000; // 5 seconds
-        const LONG_POLL_TIMEOUT = 30000; // 30 seconds
-      
-        // Elements
-        const crmList = document.getElementById("crm-list");
-        const dynamicFilters = document.getElementById("dynamicFilters");
-        const navButtons = {
-          appointment: document.getElementById("navAppointment"),
-          lead: document.getElementById("navLead"),
-          report: document.getElementById("navReport"),
-        };
-        const searchInput = document.getElementById("searchInput");
-        const headerTitle = document.getElementById("headerTitle");
-      
-        // Current state
-        let currentSection = "appointment"; // Default to appointment section
-        let currentFilter = "All";
-        let leadData = [];
-        let appointmentData = [];
-        let opportunityData = [];
-        let lastSyncTimestamp = new Date().toISOString();
-        let syncIntervalId = null;
-        let longPollRequest = null;
-        let isSyncing = false;
-      
-        // EventSource for real-time updates (if supported)
-        let eventSource = null;
-      
-        // Check if EventSource is supported
-        const isEventSourceSupported = () => {
-          return typeof EventSource !== "undefined";
-        };
-      
-        // Initialize EventSource connection
-        const initEventSource = () => {
-          if (!isEventSourceSupported()) return;
-      
-          const eventSourceUrl = `/api/method/frappe.realtime.get_events`;
-      
-          eventSource = new EventSource(eventSourceUrl, {
-            withCredentials: true,
-          });
-      
-          eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.doctype === "Lead" || data.doctype === "Appointment" || data.doctype === "Opportunity") {
-              handleDataUpdate();
-            }
-          };
-      
-          eventSource.onerror = (error) => {
-            console.error("EventSource error:", error);
-            // Fall back to polling if EventSource fails
-            eventSource.close();
-            startPolling();
-          };
-        };
-      
-        // Start polling for updates
-        const startPolling = () => {
-          if (syncIntervalId) clearInterval(syncIntervalId);
-      
-          // Initial sync
-          syncData();
-      
-          // Set up regular polling
-          syncIntervalId = setInterval(syncData, SYNC_INTERVAL);
-        };
-      
-        // Stop all sync methods
-        const stopSync = () => {
-          if (syncIntervalId) clearInterval(syncIntervalId);
-          if (longPollRequest) longPollRequest.abort();
-          if (eventSource) eventSource.close();
-        };
-      
-        // Handle data updates
-        const handleDataUpdate = () => {
-          if (currentSection === "lead") {
-            fetchLeads(true).then((leads) => {
-              leadData = processLeadData(leads);
-              renderList(currentSection, currentFilter, searchInput.value.trim());
-              renderFilters(currentSection);
-              updateUrl();
-            });
-          } else if (currentSection === "appointment") {
-            fetchAppointments(true).then((appointments) => {
-              appointmentData = processAppointmentData(appointments);
-              renderList(currentSection, currentFilter, searchInput.value.trim());
-              renderFilters(currentSection);
-              updateUrl();
-            });
-          } else if (currentSection === "opportunity") {
-            fetchOpportunity(true).then((opportunities) => {
-              opportunityData = processOpportunityData(opportunities);
-              renderList(currentSection, currentFilter, searchInput.value.trim());
-              renderFilters(currentSection);
-              updateUrl();
-            });
+      // Configuration
+      const SYNC_INTERVAL = 5000; // 5 seconds
+      const LONG_POLL_TIMEOUT = 30000; // 30 seconds
+
+      // Elements
+      const crmList = document.getElementById("crm-list");
+      const dynamicFilters = document.getElementById("dynamicFilters");
+      const navButtons = {
+        appointment: document.getElementById("navAppointment"),
+        lead: document.getElementById("navLead"),
+        report: document.getElementById("navReport"),
+      };
+      const searchInput = document.getElementById("searchInput");
+      const headerTitle = document.getElementById("headerTitle");
+
+      // Current state
+      let currentSection = "appointment"; // Default to appointment section
+      let currentFilter = "All";
+      let leadData = [];
+      let appointmentData = [];
+      let opportunityData = [];
+      let lastSyncTimestamp = new Date().toISOString();
+      let syncIntervalId = null;
+      let longPollRequest = null;
+      let isSyncing = false;
+
+      // EventSource for real-time updates (if supported)
+      let eventSource = null;
+
+      // Check if EventSource is supported
+      const isEventSourceSupported = () => {
+        return typeof EventSource !== "undefined";
+      };
+
+      // Initialize EventSource connection
+      const initEventSource = () => {
+        if (!isEventSourceSupported()) return;
+
+        const eventSourceUrl = `/api/method/frappe.realtime.get_events`;
+
+        eventSource = new EventSource(eventSourceUrl, {
+          withCredentials: true,
+        });
+
+        eventSource.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (
+            data.doctype === "Lead" ||
+            data.doctype === "Appointment" ||
+            data.doctype === "Opportunity"
+          ) {
+            handleDataUpdate();
           }
         };
-      
-        // Synchronize data
-        const syncData = () => {
-          if (isSyncing) return;
-          isSyncing = true;
-      
-          // Use long polling first, fall back to regular fetch
-          attemptLongPoll()
-            .catch(() => {
-              handleDataUpdate();
-            })
-            .finally(() => {
-              isSyncing = false;
-            });
+
+        eventSource.onerror = (error) => {
+          console.error("EventSource error:", error);
+          // Fall back to polling if EventSource fails
+          eventSource.close();
+          startPolling();
         };
-      
-        // Attempt long polling
-        const attemptLongPoll = async () => {
-          return new Promise((resolve, reject) => {
-            const url = `/api/method/frappe.realtime.poll?last_modified=${encodeURIComponent(
-              lastSyncTimestamp
-            )}`;
-      
-            longPollRequest = new XMLHttpRequest();
-            longPollRequest.open("GET", url, true);
-            longPollRequest.withCredentials = true;
-            longPollRequest.timeout = LONG_POLL_TIMEOUT;
-      
-            longPollRequest.onload = () => {
-              if (longPollRequest.status === 200) {
-                const response = JSON.parse(longPollRequest.response);
-                if (
-                  response.message &&
-                  (response.message.doctypes.includes("Lead") ||
-                    response.message.doctypes.includes("Appointment"))
-                ) {
-                  handleDataUpdate();
-                }
-                lastSyncTimestamp = new Date().toISOString();
-                resolve();
-              } else {
-                reject();
-              }
-            };
-      
-            longPollRequest.onerror = () => reject();
-            longPollRequest.ontimeout = () => reject();
-      
-            longPollRequest.send();
+      };
+
+      // Start polling for updates
+      const startPolling = () => {
+        if (syncIntervalId) clearInterval(syncIntervalId);
+
+        // Initial sync
+        syncData();
+
+        // Set up regular polling
+        syncIntervalId = setInterval(syncData, SYNC_INTERVAL);
+      };
+
+      // Stop all sync methods
+      const stopSync = () => {
+        if (syncIntervalId) clearInterval(syncIntervalId);
+        if (longPollRequest) longPollRequest.abort();
+        if (eventSource) eventSource.close();
+      };
+
+      // Handle data updates
+      const handleDataUpdate = () => {
+        if (currentSection === "lead") {
+          fetchLeads(true).then((leads) => {
+            leadData = processLeadData(leads);
+            renderList(currentSection, currentFilter, searchInput.value.trim());
+            renderFilters(currentSection);
+            updateUrl();
           });
-        };
-      
-        // Fetch leads from Frappe REST API using session cookies
-        async function fetchLeads(forceRefresh = false) {
-          try {
-              const limit = 1000;
-              let offset = 0;
-              let allLeads = [];
-          
-              while (true) {
-                const baseUrl = `/api/resource/Lead?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
-                const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
-              
-                const response = await fetch(url, {
-                  credentials: "include",
-                  headers: {
-                    Accept: "application/json",
-                  },
-                  cache: forceRefresh ? "no-cache" : "default",
-                });
-              
-                if (!response.ok) {
-                  if (response.status === 403) {
-                    window.location.href = `/login?redirect-to=${encodeURIComponent(
-                      window.location.href
-                    )}`;
-                    return [];
-                  }
-                  throw new Error(`HTTP error! status: ${response.status}`);
-                }
-              
-                const data = await response.json();
-              
-                if (!data.data || data.data.length === 0) break;
-              
-                allLeads.push(...data.data);
-              
-                if (data.data.length < limit) break; // No more pages
-                offset += limit;
+        } else if (currentSection === "appointment") {
+          fetchAppointments(true).then((appointments) => {
+            appointmentData = processAppointmentData(appointments);
+            renderList(currentSection, currentFilter, searchInput.value.trim());
+            renderFilters(currentSection);
+            updateUrl();
+          });
+        } else if (currentSection === "opportunity") {
+          fetchOpportunity(true).then((opportunities) => {
+            opportunityData = processOpportunityData(opportunities);
+            renderList(currentSection, currentFilter, searchInput.value.trim());
+            renderFilters(currentSection);
+            updateUrl();
+          });
+        }
+      };
+
+      // Synchronize data
+      const syncData = () => {
+        if (isSyncing) return;
+        isSyncing = true;
+
+        // Use long polling first, fall back to regular fetch
+        attemptLongPoll()
+          .catch(() => {
+            handleDataUpdate();
+          })
+          .finally(() => {
+            isSyncing = false;
+          });
+      };
+
+      // Attempt long polling
+      const attemptLongPoll = async () => {
+        return new Promise((resolve, reject) => {
+          const url = `/api/method/frappe.realtime.poll?last_modified=${encodeURIComponent(
+            lastSyncTimestamp
+          )}`;
+
+          longPollRequest = new XMLHttpRequest();
+          longPollRequest.open("GET", url, true);
+          longPollRequest.withCredentials = true;
+          longPollRequest.timeout = LONG_POLL_TIMEOUT;
+
+          longPollRequest.onload = () => {
+            if (longPollRequest.status === 200) {
+              const response = JSON.parse(longPollRequest.response);
+              if (
+                response.message &&
+                (response.message.doctypes.includes("Lead") ||
+                  response.message.doctypes.includes("Appointment"))
+              ) {
+                handleDataUpdate();
               }
-            
               lastSyncTimestamp = new Date().toISOString();
-              return allLeads;
-            } catch (error) {
-              console.error("Error fetching leads:", error);
-              return [];
+              resolve();
+            } else {
+              reject();
             }
-        }
+          };
 
-      
-        // Fetch appointments from Frappe REST API
-        async function fetchAppointments(forceRefresh = false) {
-          try {
-            const limit = 1000;
-            let offset = 0;
-            let allAppointments = [];
-          
-            while (true) {
-              const baseUrl = `/api/resource/Appointment?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
-              const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
-            
-              const response = await fetch(url, {
-                credentials: "include",
-                headers: {
-                  Accept: "application/json",
-                },
-                cache: forceRefresh ? "no-cache" : "default",
-              });
-            
-              if (!response.ok) {
-                if (response.status === 403) {
-                  window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.href)}`;
-                  return [];
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-            
-              const data = await response.json();
-              if (!data.data || data.data.length === 0) break;
-            
-              allAppointments.push(...data.data);
-            
-              if (data.data.length < limit) break;
-              offset += limit;
-            }
-          
-            lastSyncTimestamp = new Date().toISOString();
-            return allAppointments;
-          } catch (error) {
-            console.error("Error fetching appointments:", error);
-            return [];
-          }
-        }
+          longPollRequest.onerror = () => reject();
+          longPollRequest.ontimeout = () => reject();
 
+          longPollRequest.send();
+        });
+      };
 
-        async function fetchOpportunity(forceRefresh = false) {
-          try {
-            const limit = 1000;
-            let offset = 0;
-            let allOpportunities = [];
-          
-            while (true) {
-              const baseUrl = `/api/resource/Opportunity?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
-              const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
-            
-              const response = await fetch(url, {
-                credentials: "include",
-                headers: {
-                  Accept: "application/json",
-                },
-                cache: forceRefresh ? "no-cache" : "default",
-              });
-            
-              if (!response.ok) {
-                if (response.status === 403) {
-                  window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.href)}`;
-                  return [];
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-            
-              const data = await response.json();
-              if (!data.data || data.data.length === 0) break;
-            
-              allOpportunities.push(...data.data);
-            
-              if (data.data.length < limit) break;
-              offset += limit;
-            }
-          
-            lastSyncTimestamp = new Date().toISOString();
-            return allOpportunities;
-          } catch (error) {
-            console.error("Error fetching opportunities:", error);
-            return [];
-          }
-        }
+      // Fetch leads from Frappe REST API using session cookies
+      async function fetchLeads(forceRefresh = false) {
+        try {
+          const limit = 1000;
+          let offset = 0;
+          let allLeads = [];
 
+          while (true) {
+            const baseUrl = `/api/resource/Lead?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
+            const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
 
-      
-        // Process lead data for our UI
-        function processLeadData(leads) {
-          return leads.map((lead) => {
-            // Format modified or fallback to creation
-            const modifiedString = lead.modified
-              ? prettyDate(lead.modified)
-              : lead.creation
-              ? prettyDate(lead.creation)
-              : "N/A";
-        
-            // Determine status
-            const status = lead.status || "Lead";
-            let statusClass = "";
-        
-            switch (status.toLowerCase()) {
-              case "converted":
-                statusClass = "bg-green-100 text-green-800";
-                break;
-              case "opportunity":
-                statusClass = "bg-blue-100 text-blue-800";
-                break;
-              case "not interested":
-                statusClass = "bg-red-100 text-red-800";
-                break;
-              default:
-                statusClass = "bg-gray-100 text-gray-800";
-            }
-        
-            return {
-              title: `Lead: ${lead.lead_name || "Unnamed Lead"}`,
-              subtitle: `${lead.email_id || ""} • ${lead.mobile_no || ""}`,
-              lastUpdated: modifiedString,
-              status: status,
-              statusClass: statusClass,
-              img: "https://placehold.co/40x40/png?text=L",
-              alt: "Lead icon, a stylized letter L in green on white background",
-              rawData: lead,
-            };
-          });
-        }
-
-      
-        // Process appointment data for our UI
-        function processAppointmentData(appointments) {
-          return appointments.map((appointment) => {
-            // Format scheduled date
-            const scheduledDate = appointment.scheduled_time
-              ? new Date(appointment.scheduled_time)
-              : new Date();
-        
-            const dateString = scheduledDate.toLocaleDateString(undefined, {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
+            const response = await fetch(url, {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: forceRefresh ? "no-cache" : "default",
             });
-            const timeString = scheduledDate.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
+
+            if (!response.ok) {
+              if (response.status === 403) {
+                window.location.href = `/login?redirect-to=${encodeURIComponent(
+                  window.location.href
+                )}`;
+                return [];
+              }
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data.data || data.data.length === 0) break;
+
+            allLeads.push(...data.data);
+
+            if (data.data.length < limit) break; // No more pages
+            offset += limit;
+          }
+
+          lastSyncTimestamp = new Date().toISOString();
+          return allLeads;
+        } catch (error) {
+          console.error("Error fetching leads:", error);
+          return [];
+        }
+      }
+
+      // Fetch appointments from Frappe REST API
+      async function fetchAppointments(forceRefresh = false) {
+        try {
+          const limit = 1000;
+          let offset = 0;
+          let allAppointments = [];
+
+          while (true) {
+            const baseUrl = `/api/resource/Appointment?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
+            const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
+
+            const response = await fetch(url, {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: forceRefresh ? "no-cache" : "default",
             });
-        
-            // Format modified or fallback to creation
-            const modifiedString = appointment.modified
-              ? prettyDate(appointment.modified)
-              : appointment.creation
-              ? prettyDate(appointment.creation)
-              : "N/A";
-        
-            // Determine status
-            const status = appointment.status || "Scheduled";
-            let statusClass = "";
-        
-            switch (status.toLowerCase()) {
-              case "closed":
-                statusClass = "bg-green-100 text-green-800";
-                break;
-              case "open":
-                statusClass = "bg-red-100 text-red-800";
-                break;
-              case "rescheduled":
-                statusClass = "bg-yellow-100 text-yellow-800";
-                break;
-              default:
-                statusClass = "bg-blue-100 text-blue-800";
+
+            if (!response.ok) {
+              if (response.status === 403) {
+                window.location.href = `/login?redirect-to=${encodeURIComponent(
+                  window.location.href
+                )}`;
+                return [];
+              }
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
-        
-            // Upcoming or past
-            const now = new Date();
-            const timeStatus = scheduledDate > now ? "Upcoming" : "Past";
-        
-            return {
-              title: `${appointment.customer_name || "Unnamed Appointment"}`,
-              subtitle: `${dateString} • ${timeString}`,
-              lastUpdated: modifiedString,
-              status: status,
-              timeStatus: timeStatus,
-              statusClass: statusClass,
-              img: "https://placehold.co/40x40/png?text=A",
-              alt: "Appointment icon, a stylized letter A in blue on white background",
-              rawData: appointment,
-            };
-          });
+
+            const data = await response.json();
+            if (!data.data || data.data.length === 0) break;
+
+            allAppointments.push(...data.data);
+
+            if (data.data.length < limit) break;
+            offset += limit;
+          }
+
+          lastSyncTimestamp = new Date().toISOString();
+          return allAppointments;
+        } catch (error) {
+          console.error("Error fetching appointments:", error);
+          return [];
         }
+      }
 
-        // Process opportunity data for our UI
-        function processOpportunityData(opportunities) {
-          return opportunities.map((opportunity) => {
-            // Format expected closing date
-            const transactionDate = opportunity.transaction_date
-              ? new Date(opportunity.transaction_date)
-              : null;
+      async function fetchOpportunity(forceRefresh = false) {
+        try {
+          const limit = 1000;
+          let offset = 0;
+          let allOpportunities = [];
 
-            const transactionDateString = transactionDate
-              ? transactionDate.toLocaleDateString(undefined, {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "No Date";              
-              
-            // Format modified or fallback to creation
-            const modifiedString = opportunity.modified
-              ? prettyDate(opportunity.modified)
-              : opportunity.creation
-              ? prettyDate(opportunity.creation)
-              : "N/A";
-              
-            // Determine status
-            const status = opportunity.status || "Open";
-            let statusClass = "";
-              
-            switch (status.toLowerCase()) {
-              case "closed":
-                statusClass = "bg-green-100 text-green-800";
-                break;
-              case "converted":
-                statusClass = "bg-blue-100 text-blue-800";
-                break;
-              case "open":
-                statusClass = "bg-red-100 text-red-800";
-                break;
-              default:
-                statusClass = "bg-gray-100 text-gray-800";
+          while (true) {
+            const baseUrl = `/api/resource/Opportunity?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
+            const url = forceRefresh ? `${baseUrl}&_=${Date.now()}` : baseUrl;
+
+            const response = await fetch(url, {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: forceRefresh ? "no-cache" : "default",
+            });
+
+            if (!response.ok) {
+              if (response.status === 403) {
+                window.location.href = `/login?redirect-to=${encodeURIComponent(
+                  window.location.href
+                )}`;
+                return [];
+              }
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
-          
-            return {
-              title: `OPP: ${opportunity.name || "Unnamed"}`,
-              subtitle: `Lead:${opportunity.party_name || ""} • ${transactionDateString}`,
-              lastUpdated: modifiedString,
-              status: status,
-              statusClass: statusClass,
-              img: "https://placehold.co/40x40/png?text=O",
-              alt: "Opportunity icon, a stylized letter O in gray on white background",
-              rawData: opportunity,
-            };
-          });
-        }
 
-        
-        function countItems(section, filter, items) {
+            const data = await response.json();
+            if (!data.data || data.data.length === 0) break;
+
+            allOpportunities.push(...data.data);
+
+            if (data.data.length < limit) break;
+            offset += limit;
+          }
+
+          lastSyncTimestamp = new Date().toISOString();
+          return allOpportunities;
+        } catch (error) {
+          console.error("Error fetching opportunities:", error);
+          return [];
+        }
+      }
+
+      // Process lead data for our UI
+      function processLeadData(leads) {
+        return leads.map((lead) => {
+          // Format modified or fallback to creation
+          const modifiedString = lead.modified
+            ? prettyDate(lead.modified)
+            : lead.creation
+            ? prettyDate(lead.creation)
+            : "N/A";
+
+          // Determine status
+          const status = lead.status || "Lead";
+          let statusClass = "";
+
+          switch (status.toLowerCase()) {
+            case "converted":
+              statusClass = "bg-green-100 text-green-800";
+              break;
+            case "opportunity":
+              statusClass = "bg-blue-100 text-blue-800";
+              break;
+            case "not interested":
+              statusClass = "bg-red-100 text-red-800";
+              break;
+            default:
+              statusClass = "bg-gray-100 text-gray-800";
+          }
+
+          return {
+            title: `Lead: ${lead.lead_name || "Unnamed Lead"}`,
+            subtitle: `${lead.email_id || ""} • ${lead.mobile_no || ""}`,
+            lastUpdated: modifiedString,
+            status: status,
+            statusClass: statusClass,
+            img: "https://placehold.co/40x40/png?text=L",
+            alt: "Lead icon, a stylized letter L in green on white background",
+            rawData: lead,
+          };
+        });
+      }
+
+      // Process appointment data for our UI
+      function processAppointmentData(appointments) {
+        return appointments.map((appointment) => {
+          // Format scheduled date
+          const scheduledDate = appointment.scheduled_time
+            ? new Date(appointment.scheduled_time)
+            : new Date();
+
+          const dateString = scheduledDate.toLocaleDateString(undefined, {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+          const timeString = scheduledDate.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+
+          // Format modified or fallback to creation
+          const modifiedString = appointment.modified
+            ? prettyDate(appointment.modified)
+            : appointment.creation
+            ? prettyDate(appointment.creation)
+            : "N/A";
+
+          // Determine status
+          const status = appointment.status || "Scheduled";
+          let statusClass = "";
+
+          switch (status.toLowerCase()) {
+            case "closed":
+              statusClass = "bg-green-100 text-green-800";
+              break;
+            case "open":
+              statusClass = "bg-red-100 text-red-800";
+              break;
+            case "rescheduled":
+              statusClass = "bg-yellow-100 text-yellow-800";
+              break;
+            default:
+              statusClass = "bg-blue-100 text-blue-800";
+          }
+
+          // Upcoming or past
+          const now = new Date();
+          const timeStatus = scheduledDate > now ? "Upcoming" : "Past";
+
+          return {
+            title: `${appointment.customer_name || "Unnamed Appointment"}`,
+            subtitle: `${dateString} • ${timeString}`,
+            lastUpdated: modifiedString,
+            status: status,
+            timeStatus: timeStatus,
+            statusClass: statusClass,
+            img: "https://placehold.co/40x40/png?text=A",
+            alt: "Appointment icon, a stylized letter A in blue on white background",
+            rawData: appointment,
+          };
+        });
+      }
+
+      // Process opportunity data for our UI
+      function processOpportunityData(opportunities) {
+        return opportunities.map((opportunity) => {
+          // Format expected closing date
+          const transactionDate = opportunity.transaction_date
+            ? new Date(opportunity.transaction_date)
+            : null;
+
+          const transactionDateString = transactionDate
+            ? transactionDate.toLocaleDateString(undefined, {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "No Date";
+
+          // Format modified or fallback to creation
+          const modifiedString = opportunity.modified
+            ? prettyDate(opportunity.modified)
+            : opportunity.creation
+            ? prettyDate(opportunity.creation)
+            : "N/A";
+
+          // Determine status
+          const status = opportunity.status || "Open";
+          let statusClass = "";
+
+          switch (status.toLowerCase()) {
+            case "closed":
+              statusClass = "bg-green-100 text-green-800";
+              break;
+            case "converted":
+              statusClass = "bg-blue-100 text-blue-800";
+              break;
+            case "open":
+              statusClass = "bg-red-100 text-red-800";
+              break;
+            default:
+              statusClass = "bg-gray-100 text-gray-800";
+          }
+
+          return {
+            title: `OPP: ${opportunity.name || "Unnamed"}`,
+            subtitle: `Lead:${
+              opportunity.party_name || ""
+            } • ${transactionDateString}`,
+            lastUpdated: modifiedString,
+            status: status,
+            statusClass: statusClass,
+            img: "https://placehold.co/40x40/png?text=O",
+            alt: "Opportunity icon, a stylized letter O in gray on white background",
+            rawData: opportunity,
+          };
+        });
+      }
+
+      function countItems(section, filter, items) {
         const now = new Date();
-              
+
         return items.filter((item) => {
           if (section === "appointment") {
             const scheduledDate = item.rawData.scheduled_time
               ? new Date(item.rawData.scheduled_time)
               : null;
-          
+
             switch (filter) {
               case "All":
                 return true;
               case "Due":
-                return scheduledDate && scheduledDate < now && item.status !== "Closed";
+                return (
+                  scheduledDate &&
+                  scheduledDate < now &&
+                  item.status !== "Closed"
+                );
               case "Upcoming":
-                return scheduledDate && scheduledDate > now && item.status !== "Closed";
+                return (
+                  scheduledDate &&
+                  scheduledDate > now &&
+                  item.status !== "Closed"
+                );
               case "Open":
                 return item.status === "Open";
               case "Closed":
@@ -902,174 +1003,216 @@
                 return false;
             }
           }
-        
+
           // Generic handling for lead and opportunity
           if (filter === "All") return true;
           return item.status === filter;
         }).length;
       }
 
-            
-            function renderFilters(section) {
-              dynamicFilters.innerHTML = "";
+      function renderFilters(section) {
+        dynamicFilters.innerHTML = "";
 
-              let filters = [];
-              if (section === "lead") {
-                filters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
-              } else if (section === "appointment") {
-                filters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
-              } else if (section === "opportunity") {
-                filters = ["All", "Open", "Quotation", "Converted", "Lost", "Replied", "Closed"];
+        let filters = [];
+        if (section === "lead") {
+          filters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
+        } else if (section === "appointment") {
+          filters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+        } else if (section === "opportunity") {
+          filters = [
+            "All",
+            "Open",
+            "Quotation",
+            "Converted",
+            "Lost",
+            "Replied",
+            "Closed",
+          ];
+        }
+
+        let items = [];
+        if (section === "lead") {
+          items = leadData;
+        } else if (section === "appointment") {
+          items = appointmentData;
+        } else if (section === "opportunity") {
+          items = opportunityData;
+        }
+
+        filters.forEach((filter, idx) => {
+          const count = countItems(section, filter, items);
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = `text-xs font-semibold rounded-full px-3 py-1 whitespace-nowrap select-none border ${
+            filter === currentFilter
+              ? "bg-green-100 text-green-700 border-green-300"
+              : "border-gray-300 text-gray-700"
+          }`;
+          btn.textContent = `${filter} (${count})`;
+          btn.setAttribute(
+            "aria-pressed",
+            filter === currentFilter ? "true" : "false"
+          );
+
+          btn.addEventListener("click", () => {
+            Array.from(dynamicFilters.children).forEach((child) => {
+              child.classList.remove(
+                "bg-green-100",
+                "text-green-700",
+                "border-green-300"
+              );
+              child.classList.add("border-gray-300", "text-gray-700");
+              child.setAttribute("aria-pressed", "false");
+            });
+
+            btn.classList.add(
+              "bg-green-100",
+              "text-green-700",
+              "border-green-300"
+            );
+            btn.classList.remove("border-gray-300", "text-gray-700");
+            btn.setAttribute("aria-pressed", "true");
+
+            currentFilter = filter;
+            renderList(currentSection, currentFilter, searchInput.value.trim());
+            updateUrl();
+          });
+
+          dynamicFilters.appendChild(btn);
+        });
+
+        // If currentFilter is not in filters (e.g. on initial load), set to first filter
+        if (!filters.includes(currentFilter)) {
+          currentFilter = filters[0];
+        }
+      }
+
+      // Render list items
+      function renderList(section, filter, searchText) {
+        crmList.innerHTML = "";
+
+        let items = [];
+        if (section === "lead") {
+          items = leadData;
+        } else if (section === "appointment") {
+          items = appointmentData;
+        } else if (section === "opportunity") {
+          items = opportunityData;
+        } else if (section === "report") {
+          items = [
+            {
+              title: "My Leads Report",
+              subtitle: "View detailed lead analytics",
+              link: "/app/query-report/My%20Leads%20Report",
+              img: "https://placehold.co/40x40/png?text=R1",
+              alt: "Leads Report icon, stylized letter R1 in blue on white background",
+            },
+            {
+              title: "My Appointments Report",
+              subtitle: "Monitor your appointment trends",
+              link: "/app/query-report/My%20Appointments",
+              img: "https://placehold.co/40x40/png?text=R2",
+              alt: "Appointments Report icon, stylized letter R2 in blue on white background",
+            },
+          ];
+        }
+
+        if (
+          section === "lead" ||
+          section === "appointment" ||
+          section === "opportunity"
+        ) {
+          items = items.filter((item) => {
+            const matchesSearch =
+              !searchText ||
+              item.title.toLowerCase().includes(searchText.toLowerCase()) ||
+              item.subtitle.toLowerCase().includes(searchText.toLowerCase());
+
+            if (section === "appointment") {
+              const now = new Date();
+              const scheduledDate = item.rawData.scheduled_time
+                ? new Date(item.rawData.scheduled_time)
+                : null;
+
+              switch (filter) {
+                case "All":
+                  return matchesSearch;
+                case "Due":
+                  return (
+                    matchesSearch &&
+                    scheduledDate &&
+                    scheduledDate < now &&
+                    item.status !== "Closed"
+                  );
+                case "Upcoming":
+                  return (
+                    matchesSearch &&
+                    scheduledDate &&
+                    scheduledDate > now &&
+                    item.status !== "Closed"
+                  );
+                case "Open":
+                  return matchesSearch && item.status === "Open";
+                case "Closed":
+                  return matchesSearch && item.status === "Closed";
+                case "Today":
+                  if (!scheduledDate) return false;
+                  const today = new Date();
+                  return (
+                    matchesSearch &&
+                    scheduledDate.getDate() === today.getDate() &&
+                    scheduledDate.getMonth() === today.getMonth() &&
+                    scheduledDate.getFullYear() === today.getFullYear()
+                  );
+                default:
+                  return matchesSearch;
               }
-            
-              let items = [];
-              if (section === "lead") {
-                items = leadData;
-              } else if (section === "appointment") {
-                items = appointmentData;
-              } else if (section === "opportunity") {
-                items = opportunityData;
-              }
-            
-              filters.forEach((filter, idx) => {
-                const count = countItems(section, filter, items);
-              
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.className = `text-xs font-semibold rounded-full px-3 py-1 whitespace-nowrap select-none border ${
-                  filter === currentFilter
-                    ? "bg-green-100 text-green-700 border-green-300"
-                    : "border-gray-300 text-gray-700"
-                }`;
-                btn.textContent = `${filter} (${count})`;
-                btn.setAttribute("aria-pressed", filter === currentFilter ? "true" : "false");
-              
-                btn.addEventListener("click", () => {
-                  Array.from(dynamicFilters.children).forEach((child) => {
-                    child.classList.remove("bg-green-100", "text-green-700", "border-green-300");
-                    child.classList.add("border-gray-300", "text-gray-700");
-                    child.setAttribute("aria-pressed", "false");
-                  });
-                
-                  btn.classList.add("bg-green-100", "text-green-700", "border-green-300");
-                  btn.classList.remove("border-gray-300", "text-gray-700");
-                  btn.setAttribute("aria-pressed", "true");
-                
-                  currentFilter = filter;
-                  renderList(currentSection, currentFilter, searchInput.value.trim());
-                  updateUrl();
-                });
-              
-                dynamicFilters.appendChild(btn);
-              });
-            
-              // If currentFilter is not in filters (e.g. on initial load), set to first filter
-              if (!filters.includes(currentFilter)) {
-                currentFilter = filters[0];
-              }
+            } else {
+              const matchesFilter = filter === "All" || item.status === filter;
+              return matchesFilter && matchesSearch;
             }
+          });
 
+          items.sort((a, b) => {
+            const dateA = new Date(
+              a.rawData.modified || a.rawData.creation || 0
+            );
+            const dateB = new Date(
+              b.rawData.modified || b.rawData.creation || 0
+            );
+            return dateB - dateA;
+          });
+        }
 
-        
-          // Render list items
-          function renderList(section, filter, searchText) {
-            crmList.innerHTML = "";
+        if (items.length === 0) {
+          const noDataDiv = document.createElement("div");
+          noDataDiv.className = "text-center text-gray-500 py-10 select-none";
+          noDataDiv.textContent = "No records found.";
+          crmList.appendChild(noDataDiv);
+          return;
+        }
 
-            let items = [];
-            if (section === "lead") {
-              items = leadData;
-            } else if (section === "appointment") {
-              items = appointmentData;
-            } else if (section === "opportunity") {
-              items = opportunityData;
-            } else if (section === "report") {
-              items = [
-                {
-                  title: "My Leads Report",
-                  subtitle: "View detailed lead analytics",
-                  link: "/app/query-report/My%20Leads%20Report",
-                  img: "https://placehold.co/40x40/png?text=R1",
-                  alt: "Leads Report icon, stylized letter R1 in blue on white background",
-                },
-                {
-                  title: "My Appointments Report",
-                  subtitle: "Monitor your appointment trends",
-                  link: "/app/query-report/My%20Appointments",
-                  img: "https://placehold.co/40x40/png?text=R2",
-                  alt: "Appointments Report icon, stylized letter R2 in blue on white background",
-                },
-              ];
-            }
-          
-            if (section === "lead" || section === "appointment" || section === "opportunity") {
-              items = items.filter((item) => {
-                const matchesSearch =
-                  !searchText ||
-                  item.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                  item.subtitle.toLowerCase().includes(searchText.toLowerCase());
-              
-                if (section === "appointment") {
-                  const now = new Date();
-                  const scheduledDate = item.rawData.scheduled_time ? new Date(item.rawData.scheduled_time) : null;
-                
-                  switch (filter) {
-                    case "All":
-                      return matchesSearch;
-                    case "Due":
-                      return matchesSearch && scheduledDate && scheduledDate < now && item.status !== "Closed";
-                    case "Upcoming":
-                      return matchesSearch && scheduledDate && scheduledDate > now && item.status !== "Closed";
-                    case "Open":
-                      return matchesSearch && item.status === "Open";
-                    case "Closed":
-                      return matchesSearch && item.status === "Closed";
-                    case "Today":
-                      if (!scheduledDate) return false;
-                      const today = new Date();
-                      return (
-                        matchesSearch &&
-                        scheduledDate.getDate() === today.getDate() &&
-                        scheduledDate.getMonth() === today.getMonth() &&
-                        scheduledDate.getFullYear() === today.getFullYear()
-                      );
-                    default:
-                      return matchesSearch;
-                  }
-                } else {
-                  const matchesFilter = filter === "All" || item.status === filter;
-                  return matchesFilter && matchesSearch;
-                }
-              });
-            
-              items.sort((a, b) => {
-                const dateA = new Date(a.rawData.modified || a.rawData.creation || 0);
-                const dateB = new Date(b.rawData.modified || b.rawData.creation || 0);
-                return dateB - dateA;
-              });
-            }
-          
-            if (items.length === 0) {
-              const noDataDiv = document.createElement("div");
-              noDataDiv.className = "text-center text-gray-500 py-10 select-none";
-              noDataDiv.textContent = "No records found.";
-              crmList.appendChild(noDataDiv);
-              return;
-            }
-          
-            items.forEach((item) => {
-              const div = document.createElement("div");
-              div.className =
-                "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
-              div.tabIndex = 0;
-              div.setAttribute("role", "button");
-              div.setAttribute("aria-label", item.title + ", " + item.subtitle);
-            
-              div.innerHTML = `
+        items.forEach((item) => {
+          const div = document.createElement("div");
+          div.className =
+            "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
+          div.tabIndex = 0;
+          div.setAttribute("role", "button");
+          div.setAttribute("aria-label", item.title + ", " + item.subtitle);
+
+          div.innerHTML = `
                 <div class="flex items-center space-x-3 flex-1 min-w-0">
-                    <img src="${item.img}" alt="${item.alt}" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
+                    <img src="${item.img}" alt="${
+            item.alt
+          }" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
                     <div class="min-w-0">
-                      <p class="font-semibold text-base leading-5 select-text truncate">${item.title}</p>
-                      <p class="text-gray-500 text-sm truncate select-text">${item.subtitle}</p>
+                      <p class="font-semibold text-base leading-5 select-text truncate">${
+                        item.title
+                      }</p>
+                      <p class="text-gray-500 text-sm truncate select-text">${
+                        item.subtitle
+                      }</p>
                       ${
                         item.statusClass
                           ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
@@ -1083,35 +1226,35 @@
                     : ""
                 }
               `;
-              
-              div.addEventListener("click", () => {
-                if (section === "report" && item.link) {
-                  window.open(item.link, "_blank");
-                } else {
-                  const doctype =
-                    section === "lead"
-                      ? "Lead"
-                      : section === "appointment"
-                      ? "Appointment"
-                      : section === "opportunity"
-                      ? "Opportunity"
-                      : null;
-                
-                  const name = item.rawData?.name;
-                  if (doctype && name) {
-                    window.top.location.href = `/app/${doctype.toLowerCase()}/${name}`;
-                  }
-                }
-              });
-            
-              crmList.appendChild(div);
-            });
-          }
 
-        // Show lead details
-        function showLeadDetails(lead) {
-          const date = lead.creation ? new Date(lead.creation) : new Date();
-          const details = `
+          div.addEventListener("click", () => {
+            if (section === "report" && item.link) {
+              window.open(item.link, "_blank");
+            } else {
+              const doctype =
+                section === "lead"
+                  ? "Lead"
+                  : section === "appointment"
+                  ? "Appointment"
+                  : section === "opportunity"
+                  ? "Opportunity"
+                  : null;
+
+              const name = item.rawData?.name;
+              if (doctype && name) {
+                window.top.location.href = `/app/${doctype.toLowerCase()}/${name}`;
+              }
+            }
+          });
+
+          crmList.appendChild(div);
+        });
+      }
+
+      // Show lead details
+      function showLeadDetails(lead) {
+        const date = lead.creation ? new Date(lead.creation) : new Date();
+        const details = `
             <div class="p-4">
               <h3 class="font-bold text-lg mb-2">Lead Details</h3>
               <div class="grid grid-cols-2 gap-4 mb-4">
@@ -1154,11 +1297,11 @@
               }
             </div>
           `;
-      
-          const modal = document.createElement("div");
-          modal.className =
-            "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
-          modal.innerHTML = `
+
+        const modal = document.createElement("div");
+        modal.className =
+          "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
+        modal.innerHTML = `
             <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
               ${details}
               <div class="p-4 border-t flex justify-end">
@@ -1166,19 +1309,23 @@
               </div>
             </div>
           `;
-      
-          document.body.appendChild(modal);
-          modal.querySelector("#closeModal").addEventListener("click", () => {
-            document.body.removeChild(modal);
-          });
-        }
-      
-        // Show appointment details
-        function showAppointmentDetails(appointment) {
-          const scheduledDate = appointment.scheduled_time ? new Date(appointment.scheduled_time) : new Date();
-          const duration = appointment.duration ? `${appointment.duration} minutes` : "N/A";
-          
-          const details = `
+
+        document.body.appendChild(modal);
+        modal.querySelector("#closeModal").addEventListener("click", () => {
+          document.body.removeChild(modal);
+        });
+      }
+
+      // Show appointment details
+      function showAppointmentDetails(appointment) {
+        const scheduledDate = appointment.scheduled_time
+          ? new Date(appointment.scheduled_time)
+          : new Date();
+        const duration = appointment.duration
+          ? `${appointment.duration} minutes`
+          : "N/A";
+
+        const details = `
             <div class="p-4">
               <h3 class="font-bold text-lg mb-2">Appointment Details</h3>
               <div class="grid grid-cols-2 gap-4 mb-4">
@@ -1201,7 +1348,9 @@
               </div>
               <div class="mb-4">
                 <p class="text-sm text-gray-500">Description</p>
-                <p class="bg-gray-50 p-2 rounded">${appointment.description || "No description"}</p>
+                <p class="bg-gray-50 p-2 rounded">${
+                  appointment.description || "No description"
+                }</p>
               </div>
               ${
                 appointment.notes
@@ -1215,11 +1364,11 @@
               }
             </div>
           `;
-      
-          const modal = document.createElement("div");
-          modal.className =
-            "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
-          modal.innerHTML = `
+
+        const modal = document.createElement("div");
+        modal.className =
+          "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
+        modal.innerHTML = `
             <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
               ${details}
               <div class="p-4 border-t flex justify-end space-x-2">
@@ -1228,165 +1377,206 @@
               </div>
             </div>
           `;
-      
-          document.body.appendChild(modal);
-          modal.querySelector("#closeModal").addEventListener("click", () => {
-            document.body.removeChild(modal);
+
+        document.body.appendChild(modal);
+        modal.querySelector("#closeModal").addEventListener("click", () => {
+          document.body.removeChild(modal);
+        });
+
+        // Add reschedule functionality
+        const rescheduleBtn = modal.querySelector("#rescheduleBtn");
+        if (rescheduleBtn) {
+          rescheduleBtn.addEventListener("click", () => {
+            window.open(`/app/appointment/${appointment.name}`, "_blank");
           });
-          
-          // Add reschedule functionality
-          const rescheduleBtn = modal.querySelector("#rescheduleBtn");
-          if (rescheduleBtn) {
-            rescheduleBtn.addEventListener("click", () => {
-              window.open(`/app/appointment/${appointment.name}`, "_blank");
-            });
-          }
         }
-      
-        // Initialize app
-        async function initApp() {
-          // Parse URL params for section and filter
-          const params = new URLSearchParams(window.location.search);
-          const sectionParam = params.get("section");
-          const filterParam = params.get("filter");
+      }
 
-          // Validate section param
-          if (sectionParam && Object.keys(navButtons).includes(sectionParam)) {
-            currentSection = sectionParam;
+      // Initialize app
+      async function initApp() {
+        // Parse URL params for section and filter
+        const params = new URLSearchParams(window.location.search);
+        const sectionParam = params.get("section");
+        const filterParam = params.get("filter");
+
+        // Validate section param
+        if (sectionParam && Object.keys(navButtons).includes(sectionParam)) {
+          currentSection = sectionParam;
+        } else {
+          currentSection = "appointment";
+        }
+
+        // Fetch data for current section
+        if (currentSection === "lead") {
+          const rawLeads = await fetchLeads();
+          leadData = processLeadData(rawLeads);
+        } else if (currentSection === "appointment") {
+          const rawAppointments = await fetchAppointments();
+          appointmentData = processAppointmentData(rawAppointments);
+        } else if (currentSection === "opportunity") {
+          const rawOpportunities = await fetchOpportunity();
+          opportunityData = processOpportunityData(rawOpportunities);
+        }
+
+        // Set currentFilter if valid, else default
+        let validFilters = [];
+        if (currentSection === "lead") {
+          validFilters = [
+            "All",
+            "Lead",
+            "Converted",
+            "Follow Up",
+            "Not Interested",
+          ];
+        } else if (currentSection === "appointment") {
+          validFilters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+        } else if (currentSection === "opportunity") {
+          validFilters = [
+            "All",
+            "Open",
+            "Quotation",
+            "Converted",
+            "Lost",
+            "Replied",
+            "Closed",
+          ];
+        } else {
+          validFilters = [];
+        }
+        if (filterParam && validFilters.includes(filterParam)) {
+          currentFilter = filterParam;
+        } else {
+          currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
+        }
+
+        renderFilters(currentSection);
+        renderList(currentSection, currentFilter, "");
+        updateHeaderTitle(currentSection);
+
+        Object.entries(navButtons).forEach(([key, btn]) => {
+          if (key === currentSection) {
+            btn.classList.add("text-green-600", "font-extrabold");
+            btn.setAttribute("aria-current", "true");
           } else {
-            currentSection = "appointment";
+            btn.classList.remove("text-green-600", "font-extrabold");
+            btn.setAttribute("aria-current", "false");
           }
+        });
 
-          // Fetch data for current section
-          if (currentSection === "lead") {
-            const rawLeads = await fetchLeads();
-            leadData = processLeadData(rawLeads);
-          } else if (currentSection === "appointment") {
-            const rawAppointments = await fetchAppointments();
-            appointmentData = processAppointmentData(rawAppointments);
-          } else if (currentSection === "opportunity") {
-            const rawOpportunities = await fetchOpportunity();
-            opportunityData = processOpportunityData(rawOpportunities);
-          }
+        // Initialize real-time sync
+        if (isEventSourceSupported()) {
+          initEventSource();
+        } else {
+          startPolling();
+        }
 
-          // Set currentFilter if valid, else default
+        updateUrl();
+      }
+
+      // Navigation button click handlers
+      Object.entries(navButtons).forEach(([key, btn]) => {
+        btn.addEventListener("click", async () => {
+          if (currentSection === key) return;
+
+          currentSection = key;
+          searchInput.value = "";
+
+          // Reset filter to first filter of new section
           let validFilters = [];
           if (currentSection === "lead") {
-            validFilters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
+            validFilters = [
+              "All",
+              "Lead",
+              "Converted",
+              "Follow Up",
+              "Not Interested",
+            ];
           } else if (currentSection === "appointment") {
-            validFilters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+            validFilters = [
+              "Today",
+              "Due",
+              "Upcoming",
+              "Open",
+              "Closed",
+              "All",
+            ];
           } else if (currentSection === "opportunity") {
-            validFilters = ["All", "Open", "Quotation", "Converted", "Lost", "Replied", "Closed"];
+            validFilters = [
+              "All",
+              "Open",
+              "Quotation",
+              "Converted",
+              "Lost",
+              "Replied",
+              "Closed",
+            ];
           } else {
             validFilters = [];
           }
-          if (filterParam && validFilters.includes(filterParam)) {
-            currentFilter = filterParam;
-          } else {
-            currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
+          currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
+
+          if (currentSection === "lead" && leadData.length === 0) {
+            const rawLeads = await fetchLeads();
+            leadData = processLeadData(rawLeads);
+          } else if (
+            currentSection === "appointment" &&
+            appointmentData.length === 0
+          ) {
+            const rawAppointments = await fetchAppointments();
+            appointmentData = processAppointmentData(rawAppointments);
+          } else if (
+            currentSection === "opportunity" &&
+            opportunityData.length === 0
+          ) {
+            const rawOpportunities = await fetchOpportunity();
+            opportunityData = processOpportunityData(rawOpportunities);
           }
 
           renderFilters(currentSection);
           renderList(currentSection, currentFilter, "");
           updateHeaderTitle(currentSection);
 
-          Object.entries(navButtons).forEach(([key, btn]) => {
-            if (key === currentSection) {
-              btn.classList.add("text-green-600", "font-extrabold");
-              btn.setAttribute("aria-current", "true");
-            } else {
-              btn.classList.remove("text-green-600", "font-extrabold");
-              btn.setAttribute("aria-current", "false");
-            }
+          Object.values(navButtons).forEach((b) => {
+            b.classList.remove("text-green-600", "font-extrabold");
+            b.setAttribute("aria-current", "false");
           });
-
-          // Initialize real-time sync
-          if (isEventSourceSupported()) {
-            initEventSource();
-          } else {
-            startPolling();
-          }
+          btn.classList.add("text-green-600", "font-extrabold");
+          btn.setAttribute("aria-current", "true");
 
           updateUrl();
-        }
-      
-        // Navigation button click handlers
-        Object.entries(navButtons).forEach(([key, btn]) => {
-          btn.addEventListener("click", async () => {
-            if (currentSection === key) return;
-      
-            currentSection = key;
-            searchInput.value = "";
-
-            // Reset filter to first filter of new section
-            let validFilters = [];
-            if (currentSection === "lead") {
-              validFilters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
-            } else if (currentSection === "appointment") {
-              validFilters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
-            } else if (currentSection === "opportunity") {
-              validFilters = ["All", "Open", "Quotation", "Converted", "Lost", "Replied", "Closed"];
-            } else {
-              validFilters = [];
-            }
-            currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
-
-            if (currentSection === "lead" && leadData.length === 0) {
-              const rawLeads = await fetchLeads();
-              leadData = processLeadData(rawLeads);
-            } else if (currentSection === "appointment" && appointmentData.length === 0) {
-              const rawAppointments = await fetchAppointments();
-              appointmentData = processAppointmentData(rawAppointments);
-            } else if (currentSection === "opportunity" && opportunityData.length === 0) {
-              const rawOpportunities = await fetchOpportunity();
-              opportunityData = processOpportunityData(rawOpportunities);
-            }
-      
-            renderFilters(currentSection);
-            renderList(currentSection, currentFilter, "");
-            updateHeaderTitle(currentSection);
-      
-            Object.values(navButtons).forEach((b) => {
-              b.classList.remove("text-green-600", "font-extrabold");
-              b.setAttribute("aria-current", "false");
-            });
-            btn.classList.add("text-green-600", "font-extrabold");
-            btn.setAttribute("aria-current", "true");
-
-            updateUrl();
-          });
         });
+      });
 
-        function updateHeaderTitle(section) {
-          let label = "";
-          switch(section) {
-            case "lead":
-              label = "Lead";
-              break;
-            case "appointment":
-              label = "Appointment";
-              break;
-            case "report":
-              label = "Report";
-              break;
-            case "opportunity":
-              label = "Opportunity";
-              break;
-            default:
-              label = "";
-          }
-          headerTitle.textContent = `Sahayog CRM - ${label}`;
-          document.title = `Sahayog CRM - ${label}`;
+      function updateHeaderTitle(section) {
+        let label = "";
+        switch (section) {
+          case "lead":
+            label = "Lead";
+            break;
+          case "appointment":
+            label = "Appointment";
+            break;
+          case "report":
+            label = "Report";
+            break;
+          case "opportunity":
+            label = "Opportunity";
+            break;
+          default:
+            label = "";
         }
-      
-        // Search input handler with debounce
-        let searchTimeout;
-        searchInput.addEventListener("input", () => {
-          clearTimeout(searchTimeout);
-          searchTimeout = setTimeout(() => {
-            renderList(currentSection, currentFilter, searchInput.value.trim());
-          }, 300);
-        });
+        headerTitle.textContent = `Sahayog CRM - ${label}`;
+        document.title = `Sahayog CRM - ${label}`;
+      }
+
+      // Search input handler with debounce
+      let searchTimeout;
+      searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          renderList(currentSection, currentFilter, searchInput.value.trim());
+        }, 300);
+      });
 
       //custom dialog for creating new lead
       const dialog = document.getElementById("customDialog");
@@ -1397,6 +1587,16 @@
       const productTableBody = document.getElementById("productTableBody");
       const addProductBtn = document.getElementById("addProductBtn");
       const errorProducts = document.getElementById("errorProducts");
+      const statusSelect = document.getElementById("status");
+      const appointmentDateTimeDiv = document.getElementById(
+        "divAppointmentDateTime"
+      );
+      const appointmentDateTimeInput = document.getElementById(
+        "appointmentDateTime"
+      );
+      const errorAppointmentDateTime = document.getElementById(
+        "errorAppointmentDateTime"
+      );
 
       // Store products list globally for options
       let productsList = [];
@@ -1409,16 +1609,30 @@
       createBtn.addEventListener("click", handleCreateLead);
       addProductBtn.addEventListener("click", addProductRow);
 
+      // Show/hide appointment date/time based on status
+      statusSelect.addEventListener("change", () => {
+        if (statusSelect.value === "Follow Up") {
+          appointmentDateTimeDiv.classList.remove("hidden");
+        } else {
+          appointmentDateTimeDiv.classList.add("hidden");
+          appointmentDateTimeInput.value = "";
+          errorAppointmentDateTime.classList.add("hidden");
+        }
+      });
+
       // Load products from API and populate all selects
       async function loadProductsOptions() {
         try {
-          const response = await fetch('/api/resource/Product?fields=["product_code","product_name"]&limit_page_length=1000', {
-            credentials: "include",
-            headers: {
-              Accept: "application/json",
-            },
-            cache: "no-cache",
-          });
+          const response = await fetch(
+            '/api/resource/Product?fields=["product_code","product_name"]&limit_page_length=1000',
+            {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: "no-cache",
+            }
+          );
           if (!response.ok) {
             throw new Error(`Failed to fetch products: ${response.status}`);
           }
@@ -1431,12 +1645,15 @@
           console.error("Error loading products:", error);
           productsList = [];
           // Clear selects and show error option
-          const containers = productTableBody.querySelectorAll(".custom-select-container");
-          containers.forEach(container => {
+          const containers = productTableBody.querySelectorAll(
+            ".custom-select-container"
+          );
+          containers.forEach((container) => {
             const input = container.querySelector("input.custom-select-input");
             const dropdown = container.querySelector(".custom-select-dropdown");
             input.value = "";
-            dropdown.innerHTML = '<li class="custom-select-item" role="option" aria-selected="false">Failed to load products</li>';
+            dropdown.innerHTML =
+              '<li class="custom-select-item" role="option" aria-selected="false">Failed to load products</li>';
             dropdown.classList.remove("hidden");
           });
         }
@@ -1444,7 +1661,9 @@
 
       // Initialize all custom selects in product rows
       function initializeAllCustomSelects() {
-        const containers = productTableBody.querySelectorAll(".custom-select-container");
+        const containers = productTableBody.querySelectorAll(
+          ".custom-select-container"
+        );
         containers.forEach((container, index) => {
           setupCustomSelect(container, index);
         });
@@ -1466,7 +1685,7 @@
         // Filter dropdown items based on input
         input.addEventListener("input", () => {
           const filter = input.value.trim().toLowerCase();
-          const filtered = productsList.filter(p => {
+          const filtered = productsList.filter((p) => {
             const text = `${p.product_code} - ${p.product_name}`.toLowerCase();
             return text.includes(filter);
           });
@@ -1609,27 +1828,34 @@
         productTableBody.appendChild(tr);
 
         // Attach remove event
-        tr.querySelector(".remove-product-btn").addEventListener("click", () => {
-          if (productTableBody.rows.length > 1) {
-            tr.remove();
+        tr.querySelector(".remove-product-btn").addEventListener(
+          "click",
+          () => {
+            if (productTableBody.rows.length > 1) {
+              tr.remove();
+            }
           }
-        });
+        );
 
         // Setup custom select for the new row
         const container = tr.querySelector(".custom-select-container");
-        const index = productTableBody.querySelectorAll(".custom-select-container").length - 1;
+        const index =
+          productTableBody.querySelectorAll(".custom-select-container").length -
+          1;
         setupCustomSelect(container, index);
       }
 
       // Remove product row event for initial row
-      productTableBody.querySelectorAll(".remove-product-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          const row = e.target.closest("tr");
-          if (productTableBody.rows.length > 1) {
-            row.remove();
-          }
+      productTableBody
+        .querySelectorAll(".remove-product-btn")
+        .forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const row = e.target.closest("tr");
+            if (productTableBody.rows.length > 1) {
+              row.remove();
+            }
+          });
         });
-      });
 
       function toggleDialog(show) {
         dialog.style.display = show ? "flex" : "none";
@@ -1641,12 +1867,22 @@
         document.getElementById("source").value = "";
         document.getElementById("mobileNo").value = "";
         document.getElementById("status").value = "Lead";
+        appointmentDateTimeDiv.classList.add("hidden");
+        appointmentDateTimeInput.value = "";
+        errorAppointmentDateTime.classList.add("hidden");
 
         hideAllErrors();
         successMsg.classList.add("hidden");
         errorProducts.style.display = "none";
 
-        ["divStatus", "divSource", "divFullName", "divMobileNo", "divLeadButton", "divProducts"].forEach(id => {
+        [
+          "divStatus",
+          "divSource",
+          "divFullName",
+          "divMobileNo",
+          "divLeadButton",
+          "divProducts",
+        ].forEach((id) => {
           document.getElementById(id)?.classList.remove("hidden");
         });
 
@@ -1663,7 +1899,9 @@
             if (input) {
               input.value = "";
               input.dataset.selectedProductCode = "";
-              const dropdown = container.querySelector(".custom-select-dropdown");
+              const dropdown = container.querySelector(
+                ".custom-select-dropdown"
+              );
               if (dropdown) {
                 populateDropdown(dropdown, productsList);
                 dropdown.classList.add("hidden");
@@ -1675,8 +1913,12 @@
       }
 
       function hideAllErrors() {
-        document.querySelectorAll("[id^='error']").forEach(el => el.classList.add("hidden"));
-        document.querySelectorAll("input, select").forEach(el => el.classList.remove("border-red-500"));
+        document
+          .querySelectorAll("[id^='error']")
+          .forEach((el) => el.classList.add("hidden"));
+        document
+          .querySelectorAll("input, select")
+          .forEach((el) => el.classList.remove("border-red-500"));
         errorProducts.style.display = "none";
       }
 
@@ -1697,6 +1939,8 @@
         const source = document.getElementById("source").value;
         const mobileNo = document.getElementById("mobileNo").value.trim();
         const mobileRegex = /^[6-9]\d{9}$/;
+        const status = statusSelect.value;
+        const appointmentDateTimeVal = appointmentDateTimeInput.value;
 
         if (!fullName) {
           showError("fullName", "errorFullName");
@@ -1719,6 +1963,27 @@
           hideError("mobileNo", "errorMobile");
         }
 
+        if (!status) {
+          showError("status", "errorStatus");
+          valid = false;
+        } else {
+          hideError("status", "errorStatus");
+        }
+
+        if (status === "Follow Up") {
+          if (!appointmentDateTimeVal) {
+            errorAppointmentDateTime.classList.remove("hidden");
+            appointmentDateTimeInput.classList.add("border-red-500");
+            valid = false;
+          } else {
+            errorAppointmentDateTime.classList.add("hidden");
+            appointmentDateTimeInput.classList.remove("border-red-500");
+          }
+        } else {
+          errorAppointmentDateTime.classList.add("hidden");
+          appointmentDateTimeInput.classList.remove("border-red-500");
+        }
+
         // Validate product rows: product must be selected and valid
         const productRows = productTableBody.querySelectorAll("tr");
         let hasValidProduct = false;
@@ -1738,7 +2003,9 @@
             input.classList.add("border-red-500");
           } else {
             // Check if selectedCode exists in productsList
-            const found = productsList.find(p => p.product_code === selectedCode);
+            const found = productsList.find(
+              (p) => p.product_code === selectedCode
+            );
             if (!found) {
               input.classList.add("border-red-500");
             } else {
@@ -1760,25 +2027,34 @@
       async function handleCreateLead() {
         if (!validateForm()) return;
 
-        const first_name = document.getElementById("fullName").value.trim();
+        const fullName = document.getElementById("fullName").value.trim();
         const source = document.getElementById("source").value;
         const mobile_no = document.getElementById("mobileNo").value.trim();
         const status = document.getElementById("status").value.trim();
+        const appointmentDateTimeVal = appointmentDateTimeInput.value;
 
         // Collect products data as array of objects
         const custom_product_table = [];
         const productRows = productTableBody.querySelectorAll("tr");
-        productRows.forEach(row => {
+        productRows.forEach((row) => {
           const container = row.querySelector(".custom-select-container");
           if (!container) return;
           const input = container.querySelector("input.custom-select-input");
           if (input && input.dataset.selectedProductCode) {
-            custom_product_table.push({ product: input.dataset.selectedProductCode });
+            custom_product_table.push({
+              product: input.dataset.selectedProductCode,
+            });
           }
         });
 
         // Prepare payload including products array
-        const payload = { first_name, source, mobile_no, status, custom_product_table };
+        const payload = {
+          first_name: fullName,
+          source,
+          mobile_no,
+          status,
+          custom_product_table,
+        };
 
         try {
           const res = await fetch("/api/resource/Lead", {
@@ -1793,83 +2069,159 @@
 
           const result = await res.json();
 
-          if (res.ok) {
-            successMsg.classList.remove("hidden");
+          if (res.ok && result.data) {
+            // If status is Follow Up, create appointment after lead creation
+            if (status === "Follow Up") {
+              const lead_name = result.data.first_name;
+              const lead_doc_name = result.data.name;
+              const appointmentPayload = {
+                scheduled_time: appointmentDateTimeVal,
+                customer_name: lead_name,
+                customer_phone_number: mobile_no,
+                party: lead_doc_name,
+                status: "Open",
+                appointment_with: "Lead",
+              };
 
-            ["divStatus", "divSource", "divFullName", "divMobileNo", "divLeadButton", "divProducts"].forEach(id => {
-              document.getElementById(id)?.classList.add("hidden");
-            });
+              try {
+                const apptRes = await fetch("/api/resource/Appointment", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                  },
+                  body: JSON.stringify(appointmentPayload),
+                  credentials: "include",
+                });
 
-            document.getElementById("navLead")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                const apptResult = await apptRes.json();
 
-            setTimeout(() => {
-              toggleDialog(false);
-              currentSection = "lead";
-              initApp();
-            }, 1000);
+                if (apptRes.ok && apptResult.data) {
+                  successMsg.textContent =
+                    "✅ Lead and Appointment created successfully!";
+                  successMsg.classList.remove("hidden");
 
+                  [
+                    "divStatus",
+                    "divSource",
+                    "divFullName",
+                    "divMobileNo",
+                    "divLeadButton",
+                    "divProducts",
+                    "divAppointmentDateTime",
+                  ].forEach((id) => {
+                    document.getElementById(id)?.classList.add("hidden");
+                  });
+
+                  document
+                    .getElementById("navLead")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+                  setTimeout(() => {
+                    toggleDialog(false);
+                    currentSection = "lead";
+                    initApp();
+                  }, 1500);
+                } else {
+                  console.error("❌ Appointment creation error:", apptResult);
+                  alert(
+                    "❌ Appointment creation failed: " +
+                      (apptResult.message || "Unknown error")
+                  );
+                }
+              } catch (err) {
+                console.error("⚠️ Appointment network error:", err);
+                alert("⚠️ Appointment Network Error: " + err.message);
+              }
+            } else {
+              // Just lead created
+              successMsg.textContent = "✅ Lead created successfully!";
+              successMsg.classList.remove("hidden");
+
+              [
+                "divStatus",
+                "divSource",
+                "divFullName",
+                "divMobileNo",
+                "divLeadButton",
+                "divProducts",
+                "divAppointmentDateTime",
+              ].forEach((id) => {
+                document.getElementById(id)?.classList.add("hidden");
+              });
+
+              document
+                .getElementById("navLead")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+              setTimeout(() => {
+                toggleDialog(false);
+                currentSection = "lead";
+                initApp();
+              }, 1500);
+            }
           } else {
             console.error("❌ Server responded with an error:", {
               status: res.status,
               statusText: res.statusText,
-              response: result
+              response: result,
             });
             alert("❌ Error: " + (result.message || "Unknown error occurred"));
           }
-
         } catch (err) {
           console.error("⚠️ Network or parsing error:", err);
           alert("⚠️ Network Error: " + err.message);
         }
       }
 
-        // Accessibility: Keyboard navigation for list items
-        crmList.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            const item = e.target.closest('[role="button"]');
-            if (item) {
-              item.click();
-            }
+      // Accessibility: Keyboard navigation for list items
+      crmList.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          const item = e.target.closest('[role="button"]');
+          if (item) {
+            item.click();
           }
-        });
-      
-        // Update URL query parameters for section and filter
-        function updateUrl() {
-          const params = new URLSearchParams(window.location.search);
-          params.set("section", currentSection);
-          params.set("filter", currentFilter);
-          const newUrl = `${window.location.pathname}?${params.toString()}`;
-          window.history.replaceState({}, "", newUrl);
         }
+      });
 
-        // Initialize app on load
-        window.addEventListener("load", initApp);
-      
-        // Clean up on page unload
-        window.addEventListener("beforeunload", () => {
-          stopSync();
-        });
+      // Update URL query parameters for section and filter
+      function updateUrl() {
+        const params = new URLSearchParams(window.location.search);
+        params.set("section", currentSection);
+        params.set("filter", currentFilter);
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, "", newUrl);
+      }
 
-        function prettyDate(inputDate) {
-            const date = new Date(inputDate);
-            const seconds = Math.floor((new Date() - date) / 1000);
-            
-            if (isNaN(seconds)) return "Invalid date";
-            
-            if (seconds < 5) return "just now";
-            if (seconds < 60) return `${seconds} seconds ago`;
-            const minutes = Math.floor(seconds / 60);
-            if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
-            const days = Math.floor(hours / 24);
-            if (days < 30) return `${days} day${days !== 1 ? "s" : ""} ago`;
-            const months = Math.floor(days / 30);
-            if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
-            const years = Math.floor(months / 12);
-            return `${years} year${years !== 1 ? "s" : ""} ago`;
-        }
+      // Initialize app on load
+      window.addEventListener("load", initApp);
+
+      // Clean up on page unload
+      window.addEventListener("beforeunload", () => {
+        stopSync();
+      });
+
+      function prettyDate(inputDate) {
+        const date = new Date(inputDate);
+        const seconds = Math.floor((new Date() - date) / 1000);
+
+        if (isNaN(seconds)) return "Invalid date";
+
+        if (seconds < 5) return "just now";
+        if (seconds < 60) return `${seconds} seconds ago`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60)
+          return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+        const days = Math.floor(hours / 24);
+        if (days < 30) return `${days} day${days !== 1 ? "s" : ""} ago`;
+        const months = Math.floor(days / 30);
+        if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+        const years = Math.floor(months / 12);
+        return `${years} year${years !== 1 ? "s" : ""} ago`;
+      }
     </script>
   </body>
 </html>
