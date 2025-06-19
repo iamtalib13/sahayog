@@ -189,6 +189,18 @@
         margin-top: 0.25rem;
         display: none;
       }
+      /* Amount input styles */
+      .amount-input {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        box-sizing: border-box;
+      }
+      .amount-input.border-red-500 {
+        border-color: #f87171; /* Tailwind red-400 */
+      }
     </style>
     <!-- PWA Manifest -->
     <link href="manifest.json" rel="manifest" />
@@ -398,7 +410,8 @@
             <thead>
               <tr>
                 <th scope="col">Product</th>
-                <th scope="col" style="width: 3rem">Remove</th>
+                <th scope="col" style="width: 8rem">Amount</th>
+                <th scope="col" style="width: 1rem">Remove</th>
               </tr>
             </thead>
             <tbody id="productTableBody">
@@ -429,6 +442,16 @@
                     ></ul>
                   </div>
                 </td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="amount-input"
+                    placeholder="Amount"
+                    aria-label="Product amount"
+                  />
+                </td>
                 <td class="text-center">
                   <button
                     type="button"
@@ -442,7 +465,7 @@
             </tbody>
           </table>
           <p id="errorProducts" class="text-red-600 mt-1">
-            Please select at least one valid product.
+            Please select at least one valid product and enter valid amounts.
           </p>
           <button
             type="button"
@@ -1820,6 +1843,9 @@
               <ul class="custom-select-dropdown hidden" role="listbox" tabindex="-1"></ul>
             </div>
           </td>
+          <td>
+            <input type="number" min="0" step="0.01" class="amount-input" placeholder="Amount" aria-label="Product amount" />
+          </td>
           <td class="text-center">
             <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
           </td>
@@ -1882,6 +1908,7 @@
           "divMobileNo",
           "divLeadButton",
           "divProducts",
+          "divAppointmentDateTime",
         ].forEach((id) => {
           document.getElementById(id)?.classList.remove("hidden");
         });
@@ -1908,6 +1935,11 @@
                 container.setAttribute("aria-expanded", "false");
               }
             }
+          }
+          const amountInput = firstRow.querySelector("input.amount-input");
+          if (amountInput) {
+            amountInput.value = "";
+            amountInput.classList.remove("border-red-500");
           }
         }
       }
@@ -1984,7 +2016,7 @@
           appointmentDateTimeInput.classList.remove("border-red-500");
         }
 
-        // Validate product rows: product must be selected and valid
+        // Validate product rows: product must be selected and valid, amount must be positive number
         const productRows = productTableBody.querySelectorAll("tr");
         let hasValidProduct = false;
         for (const row of productRows) {
@@ -2001,6 +2033,7 @@
           const selectedCode = input.dataset.selectedProductCode || "";
           if (!selectedCode) {
             input.classList.add("border-red-500");
+            valid = false;
           } else {
             // Check if selectedCode exists in productsList
             const found = productsList.find(
@@ -2008,10 +2041,25 @@
             );
             if (!found) {
               input.classList.add("border-red-500");
+              valid = false;
             } else {
               input.classList.remove("border-red-500");
               hasValidProduct = true;
             }
+          }
+
+          const amountInput = row.querySelector("input.amount-input");
+          if (!amountInput) {
+            valid = false;
+            continue;
+          }
+          const amountVal = amountInput.value.trim();
+          const amountNum = parseFloat(amountVal);
+          if (amountVal === "" || isNaN(amountNum) || amountNum < 0) {
+            amountInput.classList.add("border-red-500");
+            valid = false;
+          } else {
+            amountInput.classList.remove("border-red-500");
           }
         }
         if (!hasValidProduct) {
@@ -2033,16 +2081,18 @@
         const status = document.getElementById("status").value.trim();
         const appointmentDateTimeVal = appointmentDateTimeInput.value;
 
-        // Collect products data as array of objects
+        // Collect products data as array of objects with amount
         const custom_product_table = [];
         const productRows = productTableBody.querySelectorAll("tr");
         productRows.forEach((row) => {
           const container = row.querySelector(".custom-select-container");
           if (!container) return;
           const input = container.querySelector("input.custom-select-input");
-          if (input && input.dataset.selectedProductCode) {
+          const amountInput = row.querySelector("input.amount-input");
+          if (input && input.dataset.selectedProductCode && amountInput) {
             custom_product_table.push({
               product: input.dataset.selectedProductCode,
+              product_amount: parseFloat(amountInput.value) || 0,
             });
           }
         });

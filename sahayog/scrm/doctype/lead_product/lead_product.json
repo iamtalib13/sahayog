@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "product",
-  "product_name"
+  "product_name",
+  "product_amount"
  ],
  "fields": [
   {
@@ -26,17 +27,25 @@
    "in_list_view": 1,
    "label": "Product Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "product_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "precision": "0"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-18 14:53:02.173622",
+ "modified": "2025-06-19 18:00:23.096157",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Lead Product",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
