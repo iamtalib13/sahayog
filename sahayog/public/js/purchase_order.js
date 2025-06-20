@@ -14,9 +14,11 @@ frappe.ui.form.on("Purchase Order", {
     if (frappe.session.user !== 'Administrator') {
       frm.set_df_property('terms', 'hidden', 1);
       frm.set_df_property('tc_name', 'hidden', 1);
+      frm.set_df_property('shipping_address_section', 'hidden', 1);
   } else {
       frm.set_df_property('terms', 'hidden', 0);
       frm.set_df_property('tc_name', 'hidden', 0);
+      frm.set_df_property('shipping_address_section', 'hidden', 0);
   }
   },
 
