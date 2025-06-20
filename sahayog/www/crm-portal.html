@@ -784,6 +784,10 @@
       const searchInput = document.getElementById("searchInput");
       const headerTitle = document.getElementById("headerTitle");
 
+      // FAB button New Lead
+      const fab = document.getElementById("fabNewEntry");
+      fab.addEventListener("click", () => toggleDialog(true));
+      
       // Dialog elements
       const dialog = document.getElementById("customDialog");
       const dialogTitle = document.getElementById("dialogTitle");
