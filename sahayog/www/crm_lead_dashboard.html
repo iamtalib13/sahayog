@@ -1,0 +1,357 @@
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<style>
+  body {
+    background: transparent;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .tab {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 0.375rem 0.375rem 0 0;
+    background: #ffffff;
+    font-weight: 600;
+    transition: background 0.3s;
+  }
+
+  .tab.active {
+    background: rgb(190, 185, 185);
+    border: 1px solid #e5e7eb;
+    border-bottom: none;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .card {
+    border-top: 3px solid;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: transparent;
+    transition: 0.2s ease-in-out;
+    cursor: pointer;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .card-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .card-title {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .section {
+    display: none;
+  }
+
+  .section.active {
+    display: block;
+  }
+
+  .calendar-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    overflow-x: auto;
+    margin: 0.5rem 1rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .calendar-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .calendar-strip {
+    display: flex;
+    gap: 0.25rem;
+    width: max-content;
+    min-width: 100%;
+    padding: 0.5rem 0;
+  }
+
+  .calendar-day {
+    flex: 0 0 calc(100vw / 7 - 0.3rem);
+    background: white;
+    border-radius: 6px;
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    box-sizing: border-box;
+    cursor: pointer;
+    white-space: normal;
+  }
+
+  .calendar-day.active {
+    background-color: #3b82f6;
+    color: white;
+  }
+
+  .event-card {
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin: 0.5rem 1rem;
+    background: white;
+    cursor: pointer;
+  }
+
+  .event-card:hover {
+    background: #f9fafb;
+  }
+
+  .scroll-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 480px) {
+    .calendar-day {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.2rem;
+    }
+
+    .calendar-strip {
+      gap: 0.2rem;
+    }
+  }
+</style>
+
+<!-- Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 1rem;">
+  <p style="font-size: 1rem; font-weight: 600; margin: 0;">
+    Welcome, <br>{{ frappe.get_fullname() }}
+  </p>
+  <div style="position: relative;">
+    <button id="plus-btn" style="font-size: 1.5rem; background: #10b981; color: white; border: none; border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer;">+</button>
+    <div id="dropdown-menu" style="display: none; position: absolute; right: 0; top: 2.5rem; background: white; border: 1px solid #e5e7eb; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 0.375rem; min-width: 150px; z-index: 1000;">
+      <div onclick="top.location.href='/app/lead/new-lead-1'" style="padding: 0.75rem 1rem; cursor: pointer;">+ Lead</div>
+      <div onclick="top.location.href='/app/appointment/new-appointment-1'" style="padding: 0.75rem 1rem; cursor: pointer;">+ Appointment</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-target="appointment-section">Appointment</div>
+  <div class="tab" data-target="lead-section">Lead</div>
+</div>
+
+<!-- Lead Section -->
+<div class="section" id="lead-section">
+  <div class="cards">
+    <div class="card" style="border-top-color: #64748b" onclick="top.location.href='/app/lead?status=Lead'">
+      <div class="card-value" id="lead-count">--</div>
+      <div class="card-title">Lead</div>
+    </div>
+    <div class="card" style="border-top-color: #10b981" onclick="top.location.href='/app/lead?status=Converted'">
+      <div class="card-value" id="converted-count">--</div>
+      <div class="card-title">Converted</div>
+    </div>
+    <div class="card" style="border-top-color: #f59e0b" onclick="top.location.href='/app/lead?status=Follow Up'">
+      <div class="card-value" id="followup-count">--</div>
+      <div class="card-title">Follow Up</div>
+    </div>
+    <div class="card" style="border-top-color: #ef4444" onclick="top.location.href='/app/lead?status=Not Interested'">
+      <div class="card-value" id="notinterested-count">--</div>
+      <div class="card-title">Not Interested</div>
+    </div>
+    <div class="card" style="border-top-color: #8b5cf6" onclick="top.location.href='/app/lead?status=Opportunity'">
+      <div class="card-value" id="opportunity-count">--</div>
+      <div class="card-title">Opportunity</div>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Section -->
+<div class="section active" id="appointment-section">
+  <div class="calendar-wrapper">
+    <div id="calendar-strip" class="calendar-strip"></div>
+  </div>
+  <div id="appointment-scroll-wrapper" class="scroll-container">
+    <div id="appointment-list"></div>
+  </div>
+</div>
+
+<script>
+  let allAppointments = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadCounts();
+    handleTabs();
+    handleDropdown();
+    await loadAppointments();
+    renderCalendar();
+    renderEvents();
+    observeAppointmentsForDateSync();
+  });
+
+  async function loadCounts() {
+    try {
+      const res = await fetch('/api/method/sahayog.scrm.api.leads_and_appointments.get_lead_appointment_count');
+      const { message: data } = await res.json();
+      const map = {
+        'lead-count': data.lead,
+        'converted-count': data.converted,
+        'followup-count': data.follow_up,
+        'notinterested-count': data.not_interested,
+        'opportunity-count': data.opportunity
+      };
+      for (let [id, count] of Object.entries(map)) {
+        document.getElementById(id).textContent = count ?? 0;
+      }
+    } catch (err) {
+      console.error('Failed to load counts:', err);
+    }
+  }
+
+  function handleTabs() {
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+  }
+
+  function handleDropdown() {
+    const plusBtn = document.getElementById("plus-btn");
+    const dropdown = document.getElementById("dropdown-menu");
+
+    plusBtn.addEventListener("click", () => {
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!plusBtn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+  }
+
+  async function loadAppointments() {
+    const res = await fetch(`/api/resource/Appointment?fields=["name","customer_name","status","scheduled_time"]&limit_page_length=1000`);
+    const { data } = await res.json();
+    allAppointments = data.sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time));
+  }
+
+  function renderCalendar() {
+    const strip = document.getElementById("calendar-strip");
+    const today = new Date();
+    strip.innerHTML = "";
+
+    for (let i = -30; i <= 30; i++) {
+      const date = new Date();
+      date.setDate(today.getDate() + i);
+      const dateStr = date.toISOString().split("T")[0];
+
+      const dayEl = document.createElement("div");
+      dayEl.className = "calendar-day";
+      dayEl.dataset.date = dateStr;
+      dayEl.innerHTML = `
+        <div>${date.toLocaleDateString("en-US", { weekday: 'short' })}</div>
+        <div>${date.getDate()}</div>
+      `;
+
+      dayEl.addEventListener("click", () => {
+        document.querySelectorAll(".calendar-day").forEach(el => el.classList.remove("active"));
+        dayEl.classList.add("active");
+        renderEvents(dateStr);
+      });
+
+      strip.appendChild(dayEl);
+
+      if (i === 0) {
+        dayEl.classList.add("active");
+        renderEvents(dateStr);
+        setTimeout(() => dayEl.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 100);
+      }
+    }
+  }
+
+  function renderEvents(selectedDate = null) {
+    const container = document.getElementById("appointment-list");
+    container.innerHTML = "";
+
+    const filtered = selectedDate
+      ? allAppointments.filter(a => a.scheduled_time.startsWith(selectedDate))
+      : allAppointments;
+
+    if (!filtered.length) {
+      container.innerHTML = "<p style='padding:1rem;'>No appointments available.</p>";
+      return;
+    }
+
+    filtered.forEach(app => {
+      const card = document.createElement("div");
+      card.className = "event-card";
+      card.setAttribute("data-date", app.scheduled_time.split("T")[0]);
+      card.onclick = () => top.location.href = `/app/appointment/${app.name}`;
+      card.innerHTML = `
+        <div><strong>${app.customer_name}</strong></div>
+        <div style="color:#6b7280;">${app.status}</div>
+        <div style="color: #6b7280; font-size: 0.9rem;">${app.scheduled_time}</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function observeAppointmentsForDateSync() {
+    const wrapper = document.getElementById("appointment-scroll-wrapper");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const date = entry.target.getAttribute("data-date");
+          const dayEl = document.querySelector(`.calendar-day[data-date="${date}"]`);
+          if (dayEl) {
+            document.querySelectorAll(".calendar-day").forEach(d => d.classList.remove("active"));
+            dayEl.classList.add("active");
+            dayEl.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+          }
+        }
+      });
+    }, {
+      root: wrapper,
+      threshold: 0.5
+    });
+
+    document.querySelectorAll(".event-card").forEach(card => observer.observe(card));
+  }
+</script>

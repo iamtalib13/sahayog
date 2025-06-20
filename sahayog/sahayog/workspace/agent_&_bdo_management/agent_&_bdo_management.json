@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Agent & BDO Management",
  "links": [],
- "modified": "2025-06-11 15:27:41.043047",
+ "modified": "2025-06-14 13:01:03.163975",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Agent & BDO Management",
@@ -33,17 +33,16 @@
  "quick_lists": [],
  "roles": [
   {
-   "role": "Trainer"
+   "role": "Trainer Head"
   }
  ],
- "sequence_id": 76.0,
+ "sequence_id": 78.0,
  "shortcuts": [
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "Meeting Summary Report",
    "link_to": "Meeting Summary Report",
-   "report_ref_doctype": "Meeting",
    "type": "Report"
   },
   {
@@ -51,7 +50,6 @@
    "doc_view": "List",
    "label": "Agent Exit Summary Report",
    "link_to": "Agent Exit Summary Report",
-   "report_ref_doctype": "Agent Activation Call Log",
    "type": "Report"
   },
   {
@@ -67,7 +65,6 @@
    "doc_view": "List",
    "label": "Attendee Participation Report",
    "link_to": "Attendee Participation Report",
-   "report_ref_doctype": "Meeting",
    "type": "Report"
   },
   {
@@ -75,7 +72,6 @@
    "doc_view": "List",
    "label": "Detailed Agent Calling Report",
    "link_to": "Detailed Agent Calling Report",
-   "report_ref_doctype": "Agent Activation Call Log",
    "type": "Report"
   },
   {
@@ -83,7 +79,6 @@
    "doc_view": "List",
    "label": "Trainer-Wise Meeting Report",
    "link_to": "Trainer-Wise Report",
-   "report_ref_doctype": "Meeting",
    "type": "Report"
   },
   {
@@ -91,7 +86,6 @@
    "doc_view": "List",
    "label": "Trainer-wise Calling Summary",
    "link_to": "Trainer-wise Calling Summary",
-   "report_ref_doctype": "Agent Activation Call Log",
    "type": "Report"
   }
  ],

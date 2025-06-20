@@ -50,9 +50,9 @@ doctype_js = {
     "Material Request": "public/js/material_request.js",
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
-    "CRM Lead": "public/js/crm_lead.js",
     "Project": "public/js/project.js",
-    "Lead":"scrm/controller/lead/lead.js"
+    "Lead":"scrm/controller/lead/lead.js",
+    "Appointment" : "scrm/controller/appointment/appointment.js"
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 
@@ -100,7 +100,6 @@ doctype_js = {
 # ]
 
 after_migrate = [
-    "sahayog.patches.custom_fields.add_custom_fields_for_crm_lead.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
@@ -127,6 +126,7 @@ after_migrate = [
     "sahayog.patches.fixtures.add_custom_html_block_for_project.execute",
     "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
     "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
+
     "sahayog.patches.fixtures.add_item_group.execute",
     "sahayog.patches.fixtures.add_warehouses.execute",
     "sahayog.patches.fixtures.add_read_role_permission.execute",
@@ -134,13 +134,11 @@ after_migrate = [
     # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
     "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
-    "sahayog.patches.fixtures.create_crm_sahayog_sla.execute",
+   
 
-    "sahayog.scrm.custom_html_block.crm_bm.execute",
-    "sahayog.scrm.custom_html_block.crm_zone_and_region_wise_data.execute",
-    "sahayog.scrm.custom_html_block.sahayog_crm_dashboard.execute",
-    "sahayog.scrm.custom_html_block.crm_cluster_head.execute",
-
+   
+    "sahayog.scrm.custom_html_block.l_zone_and_region_wise_data.execute",
+    "sahayog.scrm.custom_html_block.employee_crm.execute",
 
 ]
 # Uninstallation
@@ -177,7 +175,8 @@ after_migrate = [
 
 permission_query_conditions = {
 	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-    "CRM Lead": "sahayog.permissions.get_lead_permission_by_branch",
+    "Lead": "sahayog.permissions.get_lead_permission",
+    "Appointment": "sahayog.permissions.get_appointment_permission",
     
 }
 #
@@ -195,7 +194,6 @@ override_doctype_class = {
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
     "Item": "sahayog.override.autoname_item.CustomItem",
 
-   # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
 
 # Document Events
@@ -279,27 +277,17 @@ doc_events = {
         "autoname": "sahayog.doc_events.department.department_name"
     },
 
-    "CRM Lead": {
-        "before_insert": [
-            "sahayog.doc_events.crm_lead.set_lead_owner_branch",
-            "sahayog.doc_events.crm_lead.set_sla"
-        ],
-        "after_insert": [
-            "sahayog.doc_events.crm_lead.add_escalation_matrix_row",
-        ],
-        "on_update": [
-            "sahayog.doc_events.crm_lead.update_escalation_matrix_row",
-        ],
-        "before_save": [
-            "sahayog.doc_events.crm_lead.validate_lead_fields",
-        ]
-    },
+   
     "Lead": {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
         ]
     },
-    
+
+    "Appointment": {
+        "after_insert": "sahayog.doc_events.appointment.link_appointment_to_lead"
+    }
+
    
 }
 
@@ -307,11 +295,11 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-    "cron": {
-        "* * * * *": [
-            "sahayog.scrm.api.lead_escalation.run_escalation_check"
-        ]
-    }
+    # "cron": {
+    #     "*": [
+    #        
+    #     ]
+    # }
     # You can uncomment these if needed later:
     # "all": [
     #     "sahayog.tasks.all"

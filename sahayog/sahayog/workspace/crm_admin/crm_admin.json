@@ -1,0 +1,72 @@
+{
+ "charts": [
+  {
+   "chart_name": "L-Monthly Lead Trend",
+   "label": "Monthly Lead Trend"
+  },
+  {
+   "chart_name": "L-Status Wise Leads",
+   "label": "Status Wise Leads"
+  },
+  {
+   "chart_name": "L-Region Wise Leads",
+   "label": "Region Wise Leads"
+  },
+  {
+   "chart_name": "L-Branch Wise Leads",
+   "label": "Branch Wise Leads"
+  },
+  {
+   "chart_name": "L-Leads by Source",
+   "label": "Leads by Source"
+  },
+  {
+   "chart_name": "L-Zone Wise Leads",
+   "label": "Zone Wise Leads"
+  }
+ ],
+ "content": "[{\"id\":\"kEYUJYm7ZO\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM Admin</span>\",\"col\":12}},{\"id\":\"OeIz_ZN4i-\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Lead Trend\",\"col\":12}},{\"id\":\"3XkYymA14z\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Status Wise Leads\",\"col\":6}},{\"id\":\"TJNmMNevdA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Leads by Source\",\"col\":6}},{\"id\":\"iGoTm3xGJP\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Region Wise Leads\",\"col\":12}},{\"id\":\"4t25g3vTfZ\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zone Wise Leads\",\"col\":12}},{\"id\":\"5QkZqhd81z\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"L-Zone and Region wise Data\",\"col\":12}},{\"id\":\"5QNKGKsuPT\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Branch Wise Leads\",\"col\":12}},{\"id\":\"cGEJQmbhGS\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"hJHUFnvhaR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
+ "creation": "2025-06-16 13:51:58.067333",
+ "custom_blocks": [
+  {
+   "custom_block_name": "L-Zone and Region wise Data",
+   "label": "L-Zone and Region wise Data"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "CRM Admin",
+ "links": [],
+ "modified": "2025-06-16 17:38:46.404315",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "CRM Admin",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Employee CRM",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Sales Manager"
+  }
+ ],
+ "sequence_id": 61.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "CRM Lead Conversion Report",
+   "link_to": "CRM Lead Conversion Report",
+   "report_ref_doctype": "Lead",
+   "type": "Report"
+  }
+ ],
+ "title": "CRM Admin"
+}

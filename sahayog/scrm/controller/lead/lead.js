@@ -1,5 +1,28 @@
 frappe.ui.form.on("Lead", {
   refresh(frm) {
+    // Add "Create Appointment" button
+    if (!frm.is_new()) {
+      // Remove the default "Customer" button under the "Create" group
+      setTimeout(() => {
+        frm.remove_custom_button("Customer", "Create");
+        frm.remove_custom_button("Prospect", "Create");
+        frm.remove_custom_button("Quotation", "Create");
+        frm.remove_custom_button("Opportunity", "Create");
+        frm.remove_custom_button("Add to Prospect", "Action");
+      }, 100);
+
+      frm.add_custom_button("Create Appointment", () => {
+        frappe.new_doc("Appointment", {
+          customer_name: frm.doc.first_name,
+          customer_phone_number: frm.doc.mobile_no || frm.doc.phone || "",
+          customer_email: frm.doc.email_id || "",
+          appointment_with: "Lead",
+          party: frm.doc.name,
+          status: "Open",
+        });
+      });
+    }
+
     if (isAdmin()) return;
 
     hideFields(frm, [
@@ -15,6 +38,9 @@ frappe.ui.form.on("Lead", {
       "organization_section",
       "other_info_tab",
       "qualification_tab",
+      "address_html",
+      "contact_html",
+      "dashboard_tab",
     ]);
 
     frm.set_df_property("first_name", "label", "Full Name");
@@ -22,6 +48,14 @@ frappe.ui.form.on("Lead", {
     makeFieldsReadOnly(frm, ["lead_owner"]);
     setFilterOnFields(frm);
     setMandtatoryFields(frm, ["source", "mobile_no"]);
+  },
+  validate: function (frm) {
+    const mobile = frm.doc.mobile_no;
+    const mobile_regex = /^[6-9]\d{9}$/;
+
+    if (mobile && !mobile_regex.test(mobile)) {
+      frappe.throw(__("Please enter a valid 10-digit mobile number."));
+    }
   },
 });
 
@@ -36,6 +70,7 @@ function hideFields(frm, fields) {
 
   $("#lead-activities_tab-tab").hide();
   $("#lead-notes_tab-tab").hide();
+  $("#lead-dashboard_tab-tab").hide();
 }
 
 //  Make multiple fields read-only
@@ -55,6 +90,9 @@ function setFilterOnFields(frm) {
           "Advertisement",
           "Reference",
           "Existing Customer",
+          "Calling",
+          "Marketing Activity",
+          "TeleCalling",
         ],
       ],
     },

@@ -11,6 +11,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "contact_html",
                 "collapsible": 1,
+                
             },
             {
                 "label":"Employee ID",
@@ -22,24 +23,64 @@ def execute():
             {
                 "label": "Branch",
                 "fieldname": "custom_branch",
-                "fieldtype": "Data",
+                "fieldtype": "Link",
+                "options" : "Branch",
                 "insert_after": "custom_employee_id",
             },
 
             {
                 "label": "Region",
                 "fieldname": "custom_region",
-                "fieldtype": "Data",
+                "fieldtype": "Link",
+                "options" : "Region",
                 "insert_after": "custom_branch", 
             },
             {
                 "label": "Zone",
                 "fieldname": "custom_zone",
-                "fieldtype": "Data",
+                "fieldtype": "Link",
+                "options" : "Zone",
                 "insert_after": "custom_region",
             },
-           
-            
+            {
+                "label": "Lead Appointment",
+                "fieldname": "custom_lead_appointment_tab",
+                "fieldtype": "Tab Break",
+                "insert_after": "blog_subscriber",
+            },
+            {
+                "label": "Lead Appointments",
+                "fieldname": "custom_lead_appointments",
+                "fieldtype": "Table",
+                "options": "Lead Appointment",
+                "insert_after": "custom_lead_appointment_tab",
+                "read_only": 1,
+            }, 
+
+            {
+                "label": "Product Details",
+                "fieldname":"custom_product_details_section",
+                "fieldtype" : "Section Break",
+                "insert_after": "phone_ext",
+                
+            },
+            {
+                "label": "Product",
+                "fieldname": "custom_product_table",
+                "fieldtype": "Table",
+                "options": "Lead Product",
+                "insert_after": "custom_product_details_section",
+                
+            },
+            {
+                "label": "Remark",
+                "fieldname": "custom_remark_not_interested",
+                "fieldtype": "Small Text",
+                "insert_after": "status",
+                "depends_on": "eval:doc.status == 'Not Interested'",
+                "mandatory_depends_on": "eval:doc.status == 'Not Interested'",
+            }
+
         ],
     }
     create_custom_fields(fields)
