@@ -60,41 +60,130 @@
         background: white;
         padding: 20px;
         border-radius: 8px;
-        width: 300px;
-      }
-      .custom-dialog input,
-      .custom-dialog select {
         width: 100%;
-        margin-bottom: 12px;
+        max-width: 600px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
-      .dialog-buttons {
+      .dialog-header {
         display: flex;
         justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
       }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+      .dialog-header h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
       }
-
-      .animate-fadeIn {
-        animation: fadeIn 0.3s ease-out;
+      .dialog-close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        color: #4b5563; /* Tailwind gray-600 */
       }
-      /* Product table styles */
+      /* Tabs */
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+        margin-bottom: 1rem;
+      }
+      .tab {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #6b7280; /* Tailwind gray-500 */
+        border-bottom: 2px solid transparent;
+        user-select: none;
+      }
+      .tab[aria-selected="true"] {
+        color: #16a34a; /* Tailwind green-600 */
+        border-bottom-color: #16a34a;
+      }
+      .tab:focus {
+        outline: 2px solid #16a34a;
+        outline-offset: 2px;
+      }
+      /* Tab panels */
+      .tab-panel {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+      }
+      /* Scrollbar hidden for tab panels */
+      .tab-panel::-webkit-scrollbar {
+        display: none;
+      }
+      .tab-panel {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      /* Form fields */
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+      input[type="text"],
+      input[type="number"],
+      input[type="datetime-local"],
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #d1d5db; /* Tailwind gray-300 */
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+        box-sizing: border-box;
+        outline-offset: 2px;
+      }
+      input[type="text"]:focus,
+      input[type="number"]:focus,
+      input[type="datetime-local"]:focus,
+      select:focus,
+      textarea:focus {
+        border-color: #16a34a; /* Tailwind green-600 */
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3);
+      }
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      .border-red-500 {
+        border-color: #f87171 !important; /* Tailwind red-400 */
+      }
+      .text-red-600 {
+        color: #dc2626 !important; /* Tailwind red-600 */
+      }
+      .error-message {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        color: #dc2626;
+        display: none;
+      }
+      .error-message.visible {
+        display: block;
+      }
+      /* Products table */
       .product-table {
         width: 100%;
         border-collapse: collapse;
+        margin-bottom: 0.5rem;
       }
       .product-table th,
       .product-table td {
         border: 1px solid #d1d5db; /* Tailwind gray-300 */
         padding: 0.5rem;
         text-align: left;
+        vertical-align: middle;
       }
       .product-table th {
         background-color: #f9fafb; /* Tailwind gray-50 */
@@ -141,85 +230,82 @@
       .add-product-btn:hover {
         background-color: #15803d; /* Tailwind green-700 */
       }
-
-      /* Custom dropdown styles */
-      .custom-select-container {
-        position: relative;
+      /* Appointment table */
+      .appointment-table {
         width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0.5rem;
       }
-      .custom-select-input {
-        width: 100%;
+      .appointment-table th,
+      .appointment-table td {
+        border: 1px solid #d1d5db; /* Tailwind gray-300 */
+        padding: 0.5rem;
+        text-align: left;
+        vertical-align: middle;
+      }
+      .appointment-table th {
+        background-color: #f9fafb; /* Tailwind gray-50 */
+      }
+      .appointment-table button {
+        background-color: #dc2626; /* Tailwind red-600 */
+        color: white;
         padding: 0.25rem 0.5rem;
-        border: 1px solid #d1d5db;
         border-radius: 0.25rem;
         font-size: 0.875rem;
-        outline: none;
-        box-sizing: border-box;
-      }
-      .custom-select-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        max-height: 150px;
-        overflow-y: auto;
-        border: 1px solid #d1d5db;
-        border-top: none;
-        background: white;
-        z-index: 50;
-        border-radius: 0 0 0.25rem 0.25rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-      .custom-select-item {
-        padding: 0.25rem 0.5rem;
         cursor: pointer;
-        font-size: 0.875rem;
       }
-      .custom-select-item:hover,
-      .custom-select-item[aria-selected="true"] {
-        background-color: #d1fae5; /* Tailwind green-100 */
+      .appointment-table button:hover {
+        background-color: #b91c1c; /* Tailwind red-700 */
       }
-      .custom-select-item[aria-selected="true"] {
+      .add-appointment-btn {
+        background-color: #2563eb; /* Tailwind blue-600 */
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
         font-weight: 600;
-      }
-      /* Error message for products */
-      #errorProducts {
-        color: #dc2626; /* Tailwind red-600 */
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-        display: none;
-      }
-      /* Amount input styles */
-      .amount-input {
-        width: 100%;
-        border: 1px solid #d1d5db;
-        border-radius: 0.25rem;
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-        box-sizing: border-box;
-      }
-      .amount-input.border-red-500 {
-        border-color: #f87171; /* Tailwind red-400 */
-      }
-      /* Remark textarea styles */
-      #divRemark {
+        cursor: pointer;
         margin-top: 0.5rem;
       }
-      #remark {
-        width: 100%;
-        min-height: 80px;
-        border: 1px solid #d1d5db;
-        border-radius: 0.25rem;
-        padding: 0.5rem;
-        font-size: 0.875rem;
-        resize: vertical;
-        box-sizing: border-box;
+      .add-appointment-btn:hover {
+        background-color: #1d4ed8; /* Tailwind blue-700 */
       }
-      #errorRemark {
-        color: #dc2626; /* Tailwind red-600 */
+      /* Appointment form inside tab */
+      .appointment-form {
+        margin-top: 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        background-color: #f9fafb;
+      }
+      .appointment-form .form-group {
+        margin-bottom: 0.75rem;
+      }
+      .appointment-form button {
+        background-color: #16a34a; /* Tailwind green-600 */
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .appointment-form button:hover {
+        background-color: #15803d; /* Tailwind green-700 */
+      }
+      /* Success message */
+      #leadSuccessMsg {
         font-size: 0.875rem;
-        margin-top: 0.25rem;
-        display: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+      }
+      /* Responsive adjustments */
+      @media (max-width: 640px) {
+        .custom-dialog-content {
+          max-width: 100vw;
+          height: 100vh;
+          border-radius: 0;
+          padding: 1rem;
+        }
       }
     </style>
     <!-- PWA Manifest -->
@@ -304,139 +390,186 @@
       + New Lead
     </button>
 
-    <!-- Custom Dialog -->
+    <!-- Custom Dialog for Create/Update Lead with Tabs -->
     <div
       id="customDialog"
       class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialogTitle"
     >
-      <div
-        class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md space-y-4 animate-fadeIn max-h-[90vh] overflow-y-auto"
-      >
-        <h3 class="text-lg font-semibold">Create New Lead</h3>
+      <div class="custom-dialog-content">
+        <div class="dialog-header">
+          <h3 id="dialogTitle">Create New Lead</h3>
+          <button
+            type="button"
+            class="dialog-close-btn"
+            aria-label="Close dialog"
+            id="dialogCloseBtn"
+          >
+            &times;
+          </button>
+        </div>
 
         <p
           id="leadSuccessMsg"
           class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 hidden"
+          role="alert"
         >
           ✅ Lead and Appointment created successfully!
         </p>
 
-        <!-- Form fields in two columns -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Status -->
-          <div id="divStatus">
-            <label class="block font-medium"
-              >Status <span class="text-red-600">*</span></label
-            >
-            <select
-              id="status"
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-            >
-              <option>Lead</option>
-              <option>Follow Up</option>
-              <option>Converted</option>
-              <option>Not Interested</option>
-            </select>
-            <p id="errorStatus" class="text-sm text-red-600 hidden mt-1">
-              Please select a Status.
-            </p>
-          </div>
-
-          <!-- Source -->
-          <div id="divSource">
-            <label class="block font-medium"
-              >Source <span class="text-red-600">*</span></label
-            >
-            <select
-              id="source"
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-            >
-              <option value=""></option>
-              <option>Advertisement</option>
-              <option>Campaign</option>
-              <option>Existing Customer</option>
-              <option>Reference</option>
-              <option>Walk In</option>
-              <option>Calling</option>
-              <option>Marketing Activity</option>
-              <option>TeleCalling</option>
-            </select>
-            <p id="errorSource" class="text-sm text-red-600 hidden mt-1">
-              Please select a source.
-            </p>
-          </div>
-
-          <!-- Full Name -->
-          <div id="divFullName">
-            <label class="block font-medium"
-              >Full Name <span class="text-red-600">*</span></label
-            >
-            <input
-              type="text"
-              id="fullName"
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-            />
-            <p id="errorFullName" class="text-sm text-red-600 hidden mt-1">
-              Please enter full name.
-            </p>
-          </div>
-
-          <!-- Mobile No -->
-          <div id="divMobileNo">
-            <label class="block font-medium"
-              >Mobile No <span class="text-red-600">*</span></label
-            >
-            <input
-              type="text"
-              id="mobileNo"
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-            />
-            <p id="errorMobile" class="text-sm text-red-600 hidden mt-1">
-              Please enter a valid 10-digit mobile number.
-            </p>
-          </div>
-
-          <!-- Appointment Date & Time (conditionally shown) -->
-          <div id="divAppointmentDateTime" class="hidden sm:col-span-2">
-            <label class="block font-medium"
-              >Appointment Date & Time
-              <span class="text-red-600">*</span></label
-            >
-            <input
-              type="datetime-local"
-              id="appointmentDateTime"
-              class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-            />
-            <p
-              id="errorAppointmentDateTime"
-              class="text-sm text-red-600 hidden mt-1"
-            >
-              Please select appointment date and time.
-            </p>
-          </div>
-        </div>
-
-        <!-- Remark field for Not Interested status -->
-        <div id="divRemark" class="hidden">
-          <label for="remark" class="block font-medium"
-            >Remark <span class="text-red-600">*</span></label
+        <!-- Tabs -->
+        <div
+          role="tablist"
+          aria-label="Lead dialog tabs"
+          class="tabs"
+          id="dialogTabs"
+        >
+          <button
+            role="tab"
+            aria-selected="true"
+            aria-controls="tabLead"
+            id="tabLeadBtn"
+            tabindex="0"
+            class="tab"
+            type="button"
           >
-          <textarea
-            id="remark"
-            placeholder="Enter remark for Not Interested status"
-            class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-          ></textarea>
-          <p id="errorRemark" class="text-sm text-red-600 hidden mt-1">
-            Please enter a remark.
-          </p>
+            Lead
+          </button>
+          <button
+            role="tab"
+            aria-selected="false"
+            aria-controls="tabProducts"
+            id="tabProductsBtn"
+            tabindex="-1"
+            class="tab"
+            type="button"
+          >
+            Products
+          </button>
+          <button
+            role="tab"
+            aria-selected="false"
+            aria-controls="tabAppointments"
+            id="tabAppointmentsBtn"
+            tabindex="-1"
+            class="tab"
+            type="button"
+          >
+            Appointments
+          </button>
         </div>
 
-        <!-- Products Table -->
-        <div id="divProducts">
+        <!-- Tab Panels -->
+        <div
+          id="tabLead"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tabLeadBtn"
+          class="tab-panel"
+        >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Status -->
+            <div class="form-group" id="divStatus">
+              <label for="status"
+                >Status <span class="text-red-600">*</span></label
+              >
+              <select
+                id="status"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+              >
+                <option>Lead</option>
+                <option>Follow Up</option>
+                <option>Converted</option>
+                <option>Not Interested</option>
+              </select>
+              <p id="errorStatus" class="error-message">
+                Please select a Status.
+              </p>
+            </div>
+
+            <!-- Source -->
+            <div class="form-group" id="divSource">
+              <label for="source"
+                >Source <span class="text-red-600">*</span></label
+              >
+              <select
+                id="source"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+              >
+                <option value=""></option>
+                <option>Advertisement</option>
+                <option>Campaign</option>
+                <option>Existing Customer</option>
+                <option>Reference</option>
+                <option>Walk In</option>
+                <option>Calling</option>
+                <option>Marketing Activity</option>
+                <option>TeleCalling</option>
+              </select>
+              <p id="errorSource" class="error-message">
+                Please select a source.
+              </p>
+            </div>
+
+            <!-- Full Name -->
+            <div class="form-group" id="divFullName">
+              <label for="fullName"
+                >Full Name <span class="text-red-600">*</span></label
+              >
+              <input
+                type="text"
+                id="fullName"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+              />
+              <p id="errorFullName" class="error-message">
+                Please enter full name.
+              </p>
+            </div>
+
+            <!-- Mobile No -->
+            <div class="form-group" id="divMobileNo">
+              <label for="mobileNo"
+                >Mobile No <span class="text-red-600">*</span></label
+              >
+              <input
+                type="text"
+                id="mobileNo"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+              />
+              <p id="errorMobile" class="error-message">
+                Please enter a valid 10-digit mobile number.
+              </p>
+            </div>
+
+            <!-- Remark field for Not Interested status -->
+            <div class="form-group sm:col-span-2 hidden" id="divRemark">
+              <label for="remark"
+                >Remark <span class="text-red-600">*</span></label
+              >
+              <textarea
+                id="remark"
+                placeholder="Enter remark for Not Interested status"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+              ></textarea>
+              <p id="errorRemark" class="error-message">
+                Please enter a remark.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="tabProducts"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tabProductsBtn"
+          class="tab-panel hidden"
+        >
           <label class="block font-medium mb-1"
             >Products <span class="text-red-600">*</span></label
           >
-
           <table
             class="product-table"
             id="productTable"
@@ -512,6 +645,70 @@
           </button>
         </div>
 
+        <div
+          id="tabAppointments"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tabAppointmentsBtn"
+          class="tab-panel hidden"
+        >
+          <table
+            class="appointment-table"
+            aria-label="Appointments table"
+            id="appointmentTable"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Scheduled Time</th>
+                <th scope="col">Status</th>
+                <th scope="col" style="width: 1rem">Remove</th>
+              </tr>
+            </thead>
+            <tbody id="appointmentTableBody">
+              <!-- Appointment rows will be dynamically added here -->
+            </tbody>
+          </table>
+          <p id="errorAppointments" class="text-red-600 mt-1 hidden">
+            Please enter valid appointment details.
+          </p>
+          <div class="appointment-form" aria-label="Add new appointment form">
+            <div class="form-group">
+              <label for="newAppointmentDateTime"
+                >Appointment Date & Time
+                <span class="text-red-600">*</span></label
+              >
+              <input
+                type="datetime-local"
+                id="newAppointmentDateTime"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+              />
+              <p id="errorNewAppointmentDateTime" class="error-message">
+                Please select appointment date and time.
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="newAppointmentStatus"
+                >Status <span class="text-red-600">*</span></label
+              >
+              <select
+                id="newAppointmentStatus"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+              >
+                <option>Open</option>
+                <option>Closed</option>
+                <option>Rescheduled</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              id="addAppointmentBtn"
+              class="add-appointment-btn"
+            >
+              + Add Appointment
+            </button>
+          </div>
+        </div>
+
         <!-- Buttons -->
         <div class="flex justify-end space-x-2 pt-4" id="divLeadButton">
           <button
@@ -525,6 +722,12 @@
             class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
           >
             Create
+          </button>
+          <button
+            id="updateLead"
+            class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white hidden"
+          >
+            Update
           </button>
         </div>
       </div>
@@ -580,6 +783,58 @@
       };
       const searchInput = document.getElementById("searchInput");
       const headerTitle = document.getElementById("headerTitle");
+
+      // Dialog elements
+      const dialog = document.getElementById("customDialog");
+      const dialogTitle = document.getElementById("dialogTitle");
+      const successMsg = document.getElementById("leadSuccessMsg");
+      const productTableBody = document.getElementById("productTableBody");
+      const addProductBtn = document.getElementById("addProductBtn");
+      const errorProducts = document.getElementById("errorProducts");
+      const statusSelect = document.getElementById("status");
+      const divRemark = document.getElementById("divRemark");
+      const remarkInput = document.getElementById("remark");
+      const errorRemark = document.getElementById("errorRemark");
+      const cancelBtn = document.getElementById("cancelLead");
+      const createBtn = document.getElementById("createLead");
+      const updateBtn = document.getElementById("updateLead");
+
+      // Tabs elements
+      const tabs = {
+        lead: document.getElementById("tabLead"),
+        products: document.getElementById("tabProducts"),
+        appointments: document.getElementById("tabAppointments"),
+      };
+      const tabButtons = {
+        lead: document.getElementById("tabLeadBtn"),
+        products: document.getElementById("tabProductsBtn"),
+        appointments: document.getElementById("tabAppointmentsBtn"),
+      };
+
+      // Appointment tab elements
+      const appointmentTableBody = document.getElementById(
+        "appointmentTableBody"
+      );
+      const addAppointmentBtn = document.getElementById("addAppointmentBtn");
+      const newAppointmentDateTime = document.getElementById(
+        "newAppointmentDateTime"
+      );
+      const newAppointmentStatus = document.getElementById(
+        "newAppointmentStatus"
+      );
+      const errorAppointments = document.getElementById("errorAppointments");
+      const errorNewAppointmentDateTime = document.getElementById(
+        "errorNewAppointmentDateTime"
+      );
+
+      // Store products list globally for options
+      let productsList = [];
+
+      // Store appointments for current lead in dialog
+      let currentLeadAppointments = [];
+
+      // Current editing lead id (null if creating new)
+      let editingLeadId = null;
 
       // Current state
       let currentSection = "appointment"; // Default to appointment section
@@ -1021,6 +1276,7 @@
         });
       }
 
+      // Count items for filters
       function countItems(section, filter, items) {
         const now = new Date();
 
@@ -1068,6 +1324,7 @@
         }).length;
       }
 
+      // Render filters
       function renderFilters(section) {
         dynamicFilters.innerHTML = "";
 
@@ -1288,11 +1545,11 @@
           div.addEventListener("click", () => {
             if (section === "report" && item.link) {
               window.open(item.link, "_blank");
+            } else if (section === "lead") {
+              openEditLeadDialogByName(item.rawData.name);
             } else {
               const doctype =
-                section === "lead"
-                  ? "Lead"
-                  : section === "appointment"
+                section === "appointment"
                   ? "Appointment"
                   : section === "opportunity"
                   ? "Opportunity"
@@ -1309,148 +1566,1001 @@
         });
       }
 
-      // Show lead details
-      function showLeadDetails(lead) {
-        const date = lead.creation ? new Date(lead.creation) : new Date();
-        const details = `
-            <div class="p-4">
-              <h3 class="font-bold text-lg mb-2">Lead Details</h3>
-              <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p class="text-sm text-gray-500">Name</p>
-                  <p>${lead.lead_name || "N/A"}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Company</p>
-                  <p>${lead.company_name || "N/A"}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Email</p>
-                  <p>${lead.email_id || "N/A"}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Phone</p>
-                  <p>${lead.mobile_no || "N/A"}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Status</p>
-                  <p>${lead.status || "N/A"}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Source</p>
-                  <p>${lead.source || "N/A"}</p>
-                </div>
-              </div>
-              <p class="text-sm text-gray-500">Created On</p>
-              <p>${date.toLocaleDateString()} at ${date.toLocaleTimeString()}</p>
-              ${
-                lead.notes
-                  ? `
-              <div class="mt-4">
-                <p class="text-sm text-gray-500">Notes</p>
-                <p class="bg-gray-50 p-2 rounded">${lead.notes}</p>
-              </div>
-              `
-                  : ""
+      // Open dialog to edit lead by fetching fresh data from API
+      async function openEditLeadDialogByName(leadName) {
+        if (!leadName) {
+          alert("Invalid lead identifier.");
+          return;
+        }
+        try {
+          const response = await fetch(
+            `/api/resource/Lead/${encodeURIComponent(leadName)}`,
+            {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: "no-cache",
+            }
+          );
+          if (!response.ok) {
+            if (response.status === 403) {
+              window.location.href = `/login?redirect-to=${encodeURIComponent(
+                window.location.href
+              )}`;
+              return;
+            }
+            throw new Error(`Failed to fetch lead: ${response.status}`);
+          }
+          const data = await response.json();
+          if (!data.data) {
+            alert("Lead data not found.");
+            return;
+          }
+          // Fetch appointments for this lead
+          await fetchAppointmentsForLead(leadName);
+          openEditLeadDialog(data.data);
+        } catch (error) {
+          console.error("Error fetching lead data:", error);
+          alert("Error fetching lead data: " + error.message);
+        }
+      }
+
+      // Fetch appointments for a lead and store in currentLeadAppointments
+      async function fetchAppointmentsForLead(leadName) {
+        try {
+          const url = `/api/resource/Appointment?filters=[["party","=","${leadName}"]]`;
+          const response = await fetch(url, {
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+            },
+            cache: "no-cache",
+          });
+          if (!response.ok) {
+            if (response.status === 403) {
+              window.location.href = `/login?redirect-to=${encodeURIComponent(
+                window.location.href
+              )}`;
+              return;
+            }
+            throw new Error(`Failed to fetch appointments: ${response.status}`);
+          }
+          const data = await response.json();
+          currentLeadAppointments = data.data || [];
+          renderAppointmentTable();
+        } catch (error) {
+          console.error("Error fetching appointments:", error);
+          currentLeadAppointments = [];
+          renderAppointmentTable();
+        }
+      }
+
+      // Render appointment rows in appointment tab
+      function renderAppointmentTable() {
+        appointmentTableBody.innerHTML = "";
+        if (currentLeadAppointments.length === 0) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 3;
+          td.className = "text-center text-gray-500 py-4 select-none";
+          td.textContent = "No appointments found.";
+          tr.appendChild(td);
+          appointmentTableBody.appendChild(tr);
+          return;
+        }
+        currentLeadAppointments.forEach((appt) => {
+          const tr = document.createElement("tr");
+
+          // Scheduled Time formatted
+          const scheduledDate = appt.scheduled_time
+            ? new Date(appt.scheduled_time)
+            : null;
+          const scheduledStr = scheduledDate
+            ? scheduledDate.toLocaleString(undefined, {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "N/A";
+
+          // Status
+          const status = appt.status || "Open";
+
+          tr.innerHTML = `
+            <td>${scheduledStr}</td>
+            <td>${status}</td>
+            <td class="text-center">
+              <button type="button" class="remove-appointment-btn" aria-label="Remove appointment">&times;</button>
+            </td>
+          `;
+
+          // Remove appointment event
+          tr.querySelector(".remove-appointment-btn").addEventListener(
+            "click",
+            async () => {
+              if (!confirm("Are you sure you want to delete this appointment?"))
+                return;
+              try {
+                const res = await fetch(
+                  `/api/resource/Appointment/${encodeURIComponent(appt.name)}`,
+                  {
+                    method: "DELETE",
+                    credentials: "include",
+                  }
+                );
+                if (res.ok) {
+                  currentLeadAppointments = currentLeadAppointments.filter(
+                    (a) => a.name !== appt.name
+                  );
+                  renderAppointmentTable();
+                } else {
+                  alert("Failed to delete appointment.");
+                }
+              } catch (err) {
+                alert("Network error deleting appointment.");
               }
-            </div>
-          `;
+            }
+          );
 
-        const modal = document.createElement("div");
-        modal.className =
-          "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
-        modal.innerHTML = `
-            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
-              ${details}
-              <div class="p-4 border-t flex justify-end">
-                <button id="closeModal" class="bg-green-600 text-white px-4 py-2 rounded">Close</button>
-              </div>
-            </div>
-          `;
-
-        document.body.appendChild(modal);
-        modal.querySelector("#closeModal").addEventListener("click", () => {
-          document.body.removeChild(modal);
+          appointmentTableBody.appendChild(tr);
         });
       }
 
-      // Show appointment details
-      function showAppointmentDetails(appointment) {
-        const scheduledDate = appointment.scheduled_time
-          ? new Date(appointment.scheduled_time)
-          : new Date();
-        const duration = appointment.duration
-          ? `${appointment.duration} minutes`
-          : "N/A";
+      // Open dialog to edit lead with given lead data object
+      function openEditLeadDialog(lead) {
+        editingLeadId = lead.name || null;
+        dialogTitle.textContent = "Update Lead";
+        successMsg.classList.add("hidden");
 
-        const details = `
-            <div class="p-4">
-              <h3 class="font-bold text-lg mb-2">Appointment Details</h3>
-              <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p class="text-sm text-gray-500">With</p>
-                  <p>${appointment.customer_name || "N/A"}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Status</p>
-                  <p>${appointment.status || "N/A"}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Scheduled Time</p>
-                  <p>${scheduledDate.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500">Duration</p>
-                  <p>${duration}</p>
-                </div>
-              </div>
-              <div class="mb-4">
-                <p class="text-sm text-gray-500">Description</p>
-                <p class="bg-gray-50 p-2 rounded">${
-                  appointment.description || "No description"
-                }</p>
-              </div>
-              ${
-                appointment.notes
-                  ? `
-              <div class="mt-4">
-                <p class="text-sm text-gray-500">Notes</p>
-                <p class="bg-gray-50 p-2 rounded">${appointment.notes}</p>
-              </div>
-              `
-                  : ""
-              }
-            </div>
-          `;
+        // Show update button, hide create button
+        updateBtn.classList.remove("hidden");
+        createBtn.classList.add("hidden");
 
-        const modal = document.createElement("div");
-        modal.className =
-          "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
-        modal.innerHTML = `
-            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
-              ${details}
-              <div class="p-4 border-t flex justify-end space-x-2">
-                <button id="rescheduleBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Reschedule</button>
-                <button id="closeModal" class="bg-green-600 text-white px-4 py-2 rounded">Close</button>
-              </div>
-            </div>
-          `;
-
-        document.body.appendChild(modal);
-        modal.querySelector("#closeModal").addEventListener("click", () => {
-          document.body.removeChild(modal);
+        // Show all form fields
+        [
+          "divStatus",
+          "divSource",
+          "divFullName",
+          "divMobileNo",
+          "divLeadButton",
+          "divRemark",
+        ].forEach((id) => {
+          document.getElementById(id)?.classList.remove("hidden");
         });
 
-        // Add reschedule functionality
-        const rescheduleBtn = modal.querySelector("#rescheduleBtn");
-        if (rescheduleBtn) {
-          rescheduleBtn.addEventListener("click", () => {
-            window.open(`/app/appointment/${appointment.name}`, "_blank");
+        // Fill form fields with lead data
+        document.getElementById("fullName").value =
+          lead.first_name || lead.lead_name || "";
+        document.getElementById("source").value = lead.source || "";
+        document.getElementById("mobileNo").value = lead.mobile_no || "";
+        statusSelect.value = lead.status || "Lead";
+
+        // Show/hide remark based on status
+        if (statusSelect.value === "Not Interested") {
+          divRemark.classList.remove("hidden");
+          remarkInput.value = lead.custom_remark_not_interested || "";
+        } else {
+          divRemark.classList.add("hidden");
+          remarkInput.value = "";
+          errorRemark.classList.add("hidden");
+          remarkInput.classList.remove("border-red-500");
+        }
+
+        // Clear product rows
+        while (productTableBody.rows.length > 0) {
+          productTableBody.deleteRow(0);
+        }
+
+        // Fill products if available
+        if (
+          Array.isArray(lead.custom_product_table) &&
+          lead.custom_product_table.length > 0
+        ) {
+          lead.custom_product_table.forEach((prod, idx) => {
+            addProductRow();
+            const row = productTableBody.rows[idx];
+            if (row) {
+              const container = row.querySelector(".custom-select-container");
+              const input = container.querySelector(
+                "input.custom-select-input"
+              );
+              const dropdown = container.querySelector(
+                ".custom-select-dropdown"
+              );
+              input.value = `${prod.product} - ${
+                prod.product_name || ""
+              }`.trim();
+              input.dataset.selectedProductCode = prod.product || "";
+              input.dataset.selectedProductName = prod.product_name || "";
+              populateDropdown(dropdown, productsList);
+              dropdown.classList.add("hidden");
+              container.setAttribute("aria-expanded", "false");
+
+              const amountInput = row.querySelector("input.amount-input");
+              amountInput.value = prod.product_amount || "";
+            }
+          });
+        } else {
+          // Add one empty product row if none
+          addProductRow();
+        }
+
+        hideAllErrors();
+        toggleDialog(true);
+        activateTab("lead");
+      }
+
+      // Show/hide remark based on status
+      statusSelect.addEventListener("change", () => {
+        if (statusSelect.value === "Not Interested") {
+          divRemark.classList.remove("hidden");
+        } else {
+          divRemark.classList.add("hidden");
+          remarkInput.value = "";
+          errorRemark.classList.add("hidden");
+          remarkInput.classList.remove("border-red-500");
+        }
+      });
+
+      // Load products from API and populate all selects
+      async function loadProductsOptions() {
+        try {
+          const response = await fetch(
+            '/api/resource/Product?fields=["product_code","product_name"]&limit_page_length=1000',
+            {
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: "no-cache",
+            }
+          );
+          if (!response.ok) {
+            throw new Error(`Failed to fetch products: ${response.status}`);
+          }
+          const data = await response.json();
+          productsList = data.data || [];
+
+          // Initialize all custom selects with products
+          initializeAllCustomSelects();
+        } catch (error) {
+          console.error("Error loading products:", error);
+          productsList = [];
+          // Clear selects and show error option
+          const containers = productTableBody.querySelectorAll(
+            ".custom-select-container"
+          );
+          containers.forEach((container) => {
+            const input = container.querySelector("input.custom-select-input");
+            const dropdown = container.querySelector(".custom-select-dropdown");
+            input.value = "";
+            dropdown.innerHTML =
+              '<li class="custom-select-item" role="option" aria-selected="false">Failed to load products</li>';
+            dropdown.classList.remove("hidden");
           });
         }
       }
 
-      // Initialize app
+      // Initialize all custom selects in product rows
+      function initializeAllCustomSelects() {
+        const containers = productTableBody.querySelectorAll(
+          ".custom-select-container"
+        );
+        containers.forEach((container, index) => {
+          setupCustomSelect(container, index);
+        });
+      }
+
+      // Setup a single custom select container
+      function setupCustomSelect(container, index) {
+        const input = container.querySelector("input.custom-select-input");
+        const dropdown = container.querySelector(".custom-select-dropdown");
+        dropdown.id = `product-list-${index}`;
+        container.setAttribute("aria-owns", dropdown.id);
+
+        // Populate dropdown with all products initially
+        populateDropdown(dropdown, productsList);
+
+        // Track current highlighted index for keyboard navigation
+        let highlightedIndex = -1;
+
+        // Filter dropdown items based on input
+        input.addEventListener("input", () => {
+          const filter = input.value.trim().toLowerCase();
+          const filtered = productsList.filter((p) => {
+            const text = `${p.product_code} - ${p.product_name}`.toLowerCase();
+            return text.includes(filter);
+          });
+          populateDropdown(dropdown, filtered);
+          highlightedIndex = -1;
+          container.setAttribute("aria-expanded", "true");
+          dropdown.classList.remove("hidden");
+          input.setAttribute("aria-activedescendant", "");
+        });
+
+        // Show dropdown on focus
+        input.addEventListener("focus", () => {
+          if (dropdown.children.length > 0) {
+            dropdown.classList.remove("hidden");
+            container.setAttribute("aria-expanded", "true");
+          }
+        });
+
+        // Hide dropdown on blur (with delay to allow click)
+        input.addEventListener("blur", () => {
+          setTimeout(() => {
+            dropdown.classList.add("hidden");
+            container.setAttribute("aria-expanded", "false");
+            highlightedIndex = -1;
+            input.setAttribute("aria-activedescendant", "");
+          }, 150);
+        });
+
+        // Keyboard navigation
+        input.addEventListener("keydown", (e) => {
+          const items = dropdown.querySelectorAll(".custom-select-item");
+          if (dropdown.classList.contains("hidden")) return;
+
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (highlightedIndex < items.length - 1) {
+              highlightedIndex++;
+              updateHighlight(items, highlightedIndex, input);
+            }
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            if (highlightedIndex > 0) {
+              highlightedIndex--;
+              updateHighlight(items, highlightedIndex, input);
+            }
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && highlightedIndex < items.length) {
+              selectItem(items[highlightedIndex], container, input, dropdown);
+            }
+          } else if (e.key === "Escape") {
+            dropdown.classList.add("hidden");
+            container.setAttribute("aria-expanded", "false");
+            highlightedIndex = -1;
+            input.setAttribute("aria-activedescendant", "");
+          }
+        });
+
+        // Click on dropdown item
+        dropdown.addEventListener("mousedown", (e) => {
+          // Prevent blur on input
+          e.preventDefault();
+        });
+        dropdown.addEventListener("click", (e) => {
+          const item = e.target.closest(".custom-select-item");
+          if (item) {
+            selectItem(item, container, input, dropdown);
+          }
+        });
+
+        // Initialize with empty input and full list
+        input.value = "";
+        populateDropdown(dropdown, productsList);
+        dropdown.classList.add("hidden");
+        container.setAttribute("aria-expanded", "false");
+      }
+
+      // Populate dropdown list items
+      function populateDropdown(dropdown, items) {
+        dropdown.innerHTML = "";
+        if (items.length === 0) {
+          const li = document.createElement("li");
+          li.className = "custom-select-item";
+          li.textContent = "No products found";
+          li.setAttribute("role", "option");
+          li.setAttribute("aria-selected", "false");
+          dropdown.appendChild(li);
+          return;
+        }
+        items.forEach((product) => {
+          const li = document.createElement("li");
+          li.className = "custom-select-item";
+          li.textContent = `${product.product_code} - ${product.product_name}`;
+          li.setAttribute("role", "option");
+          li.setAttribute("aria-selected", "false");
+          li.dataset.productCode = product.product_code;
+          li.dataset.productName = product.product_name;
+          dropdown.appendChild(li);
+        });
+      }
+
+      // Update highlight on dropdown items
+      function updateHighlight(items, index, input) {
+        items.forEach((item, i) => {
+          if (i === index) {
+            item.setAttribute("aria-selected", "true");
+            item.scrollIntoView({ block: "nearest" });
+            input.setAttribute("aria-activedescendant", item.id || "");
+          } else {
+            item.setAttribute("aria-selected", "false");
+          }
+        });
+      }
+
+      // Select an item from dropdown
+      function selectItem(item, container, input, dropdown) {
+        input.value = item.textContent;
+        dropdown.classList.add("hidden");
+        container.setAttribute("aria-expanded", "false");
+        input.setAttribute("aria-activedescendant", "");
+        // Store selected product code and name in dataset for validation and update
+        input.dataset.selectedProductCode = item.dataset.productCode || "";
+        input.dataset.selectedProductName = item.dataset.productName || "";
+      }
+
+      // Add product row function
+      function addProductRow() {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>
+            <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="" aria-label="Select product">
+              <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="" aria-activedescendant="" />
+              <ul class="custom-select-dropdown hidden" role="listbox" tabindex="-1"></ul>
+            </div>
+          </td>
+          <td>
+            <input type="number" min="0" step="0.01" class="amount-input" placeholder="Amount" aria-label="Product amount" />
+          </td>
+          <td class="text-center">
+            <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
+          </td>
+        `;
+
+        productTableBody.appendChild(tr);
+
+        // Attach remove event
+        tr.querySelector(".remove-product-btn").addEventListener(
+          "click",
+          () => {
+            if (productTableBody.rows.length > 1) {
+              tr.remove();
+            }
+          }
+        );
+
+        // Setup custom select for the new row
+        const container = tr.querySelector(".custom-select-container");
+        const index =
+          productTableBody.querySelectorAll(".custom-select-container").length -
+          1;
+        setupCustomSelect(container, index);
+      }
+
+      // Remove product row event for initial row
+      productTableBody
+        .querySelectorAll(".remove-product-btn")
+        .forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const row = e.target.closest("tr");
+            if (productTableBody.rows.length > 1) {
+              row.remove();
+            }
+          });
+        });
+
+      // Add appointment row function (adds to currentLeadAppointments and re-renders)
+      async function addAppointment() {
+        const datetimeVal = newAppointmentDateTime.value;
+        const statusVal = newAppointmentStatus.value;
+
+        if (!datetimeVal) {
+          errorNewAppointmentDateTime.classList.add("visible");
+          return;
+        } else {
+          errorNewAppointmentDateTime.classList.remove("visible");
+        }
+
+        // Prepare payload for new appointment
+        const payload = {
+          scheduled_time: datetimeVal,
+          status: statusVal,
+          party: editingLeadId,
+          customer_name: document.getElementById("fullName").value.trim(),
+          customer_phone_number: document
+            .getElementById("mobileNo")
+            .value.trim(),
+          appointment_with: "Lead",
+        };
+
+        try {
+          const res = await fetch("/api/resource/Appointment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+            credentials: "include",
+          });
+
+          const result = await res.json();
+
+          if (res.ok && result.data) {
+            // Add new appointment to currentLeadAppointments and re-render
+            currentLeadAppointments.push(result.data);
+            renderAppointmentTable();
+
+            // Clear inputs
+            newAppointmentDateTime.value = "";
+            newAppointmentStatus.value = "Open";
+            errorAppointments.classList.add("hidden");
+          } else {
+            errorAppointments.textContent =
+              result.message || "Failed to add appointment.";
+            errorAppointments.classList.remove("hidden");
+          }
+        } catch (err) {
+          errorAppointments.textContent = "Network error adding appointment.";
+          errorAppointments.classList.remove("hidden");
+        }
+      }
+
+      // Dialog toggle
+      function toggleDialog(show) {
+        dialog.style.display = show ? "flex" : "none";
+        if (!show) clearForm();
+      }
+
+      // Clear form and reset dialog
+      function clearForm() {
+        editingLeadId = null;
+        dialogTitle.textContent = "Create New Lead";
+        successMsg.classList.add("hidden");
+
+        // Show create button, hide update button
+        createBtn.classList.remove("hidden");
+        updateBtn.classList.add("hidden");
+
+        document.getElementById("fullName").value = "";
+        document.getElementById("source").value = "";
+        document.getElementById("mobileNo").value = "";
+        statusSelect.value = "Lead";
+        divRemark.classList.add("hidden");
+        remarkInput.value = "";
+        errorRemark.classList.add("hidden");
+        remarkInput.classList.remove("border-red-500");
+
+        hideAllErrors();
+        errorProducts.style.display = "none";
+        errorAppointments.classList.add("hidden");
+        errorNewAppointmentDateTime.classList.remove("visible");
+
+        // Clear product rows except one
+        while (productTableBody.rows.length > 1) {
+          productTableBody.deleteRow(1);
+        }
+        // Clear inputs in the remaining row
+        const firstRow = productTableBody.rows[0];
+        if (firstRow) {
+          const container = firstRow.querySelector(".custom-select-container");
+          if (container) {
+            const input = container.querySelector("input.custom-select-input");
+            if (input) {
+              input.value = "";
+              input.dataset.selectedProductCode = "";
+              input.dataset.selectedProductName = "";
+              const dropdown = container.querySelector(
+                ".custom-select-dropdown"
+              );
+              if (dropdown) {
+                populateDropdown(dropdown, productsList);
+                dropdown.classList.add("hidden");
+                container.setAttribute("aria-expanded", "false");
+              }
+            }
+          }
+          const amountInput = firstRow.querySelector("input.amount-input");
+          if (amountInput) {
+            amountInput.value = "";
+            amountInput.classList.remove("border-red-500");
+          }
+        }
+
+        // Clear appointments
+        currentLeadAppointments = [];
+        renderAppointmentTable();
+
+        activateTab("lead");
+      }
+
+      // Hide all error messages and red borders
+      function hideAllErrors() {
+        document
+          .querySelectorAll(".error-message")
+          .forEach((el) => el.classList.remove("visible"));
+        document
+          .querySelectorAll("input, select, textarea")
+          .forEach((el) => el.classList.remove("border-red-500"));
+        errorProducts.style.display = "none";
+        errorAppointments.classList.add("hidden");
+        errorNewAppointmentDateTime.classList.remove("visible");
+      }
+
+      // Show error helper
+      function showError(fieldId, errorId) {
+        document.getElementById(errorId).classList.add("visible");
+        document.getElementById(fieldId).classList.add("border-red-500");
+      }
+
+      // Hide error helper
+      function hideError(fieldId, errorId) {
+        document.getElementById(errorId).classList.remove("visible");
+        document.getElementById(fieldId).classList.remove("border-red-500");
+      }
+
+      // Validate form fields
+      function validateForm() {
+        let valid = true;
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const source = document.getElementById("source").value;
+        const mobileNo = document.getElementById("mobileNo").value.trim();
+        const mobileRegex = /^[6-9]\d{9}$/;
+        const status = statusSelect.value;
+        const remarkVal = remarkInput.value.trim();
+
+        if (!fullName) {
+          showError("fullName", "errorFullName");
+          valid = false;
+        } else {
+          hideError("fullName", "errorFullName");
+        }
+
+        if (!source) {
+          showError("source", "errorSource");
+          valid = false;
+        } else {
+          hideError("source", "errorSource");
+        }
+
+        if (!mobileRegex.test(mobileNo)) {
+          showError("mobileNo", "errorMobile");
+          valid = false;
+        } else {
+          hideError("mobileNo", "errorMobile");
+        }
+
+        if (!status) {
+          showError("status", "errorStatus");
+          valid = false;
+        } else {
+          hideError("status", "errorStatus");
+        }
+
+        if (status === "Not Interested") {
+          if (!remarkVal) {
+            errorRemark.classList.add("visible");
+            remarkInput.classList.add("border-red-500");
+            valid = false;
+          } else {
+            errorRemark.classList.remove("visible");
+            remarkInput.classList.remove("border-red-500");
+          }
+        } else {
+          errorRemark.classList.remove("visible");
+          remarkInput.classList.remove("border-red-500");
+        }
+
+        // Validate product rows: product must be selected and valid, amount must be positive number
+        const productRows = productTableBody.querySelectorAll("tr");
+        let hasValidProduct = false;
+        for (const row of productRows) {
+          const container = row.querySelector(".custom-select-container");
+          if (!container) {
+            valid = false;
+            continue;
+          }
+          const input = container.querySelector("input.custom-select-input");
+          if (!input) {
+            valid = false;
+            continue;
+          }
+          const selectedCode = input.dataset.selectedProductCode || "";
+          if (!selectedCode) {
+            input.classList.add("border-red-500");
+            valid = false;
+          } else {
+            // Check if selectedCode exists in productsList
+            const found = productsList.find(
+              (p) => p.product_code === selectedCode
+            );
+            if (!found) {
+              input.classList.add("border-red-500");
+              valid = false;
+            } else {
+              input.classList.remove("border-red-500");
+              hasValidProduct = true;
+            }
+          }
+
+          const amountInput = row.querySelector("input.amount-input");
+          if (!amountInput) {
+            valid = false;
+            continue;
+          }
+          const amountVal = amountInput.value.trim();
+          const amountNum = parseFloat(amountVal);
+          if (amountVal === "" || isNaN(amountNum) || amountNum < 0) {
+            amountInput.classList.add("border-red-500");
+            valid = false;
+          } else {
+            amountInput.classList.remove("border-red-500");
+          }
+        }
+        if (!hasValidProduct) {
+          errorProducts.style.display = "block";
+          valid = false;
+        } else {
+          errorProducts.style.display = "none";
+        }
+
+        return valid;
+      }
+
+      // Handle create lead
+      async function handleCreateLead() {
+        if (!validateForm()) return;
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const source = document.getElementById("source").value;
+        const mobile_no = document.getElementById("mobileNo").value.trim();
+        const status = document.getElementById("status").value.trim();
+        const remarkVal = remarkInput.value.trim();
+
+        // Collect products data as array of objects with amount
+        const custom_product_table = [];
+        const productRows = productTableBody.querySelectorAll("tr");
+        productRows.forEach((row) => {
+          const container = row.querySelector(".custom-select-container");
+          if (!container) return;
+          const input = container.querySelector("input.custom-select-input");
+          const amountInput = row.querySelector("input.amount-input");
+          if (input && input.dataset.selectedProductCode && amountInput) {
+            custom_product_table.push({
+              product: input.dataset.selectedProductCode,
+              product_amount: parseFloat(amountInput.value) || 0,
+            });
+          }
+        });
+
+        // Prepare payload including products array and remark if Not Interested
+        const payload = {
+          first_name: fullName,
+          source,
+          mobile_no,
+          status,
+          custom_product_table,
+        };
+
+        if (status === "Not Interested") {
+          payload.custom_remark_not_interested = remarkVal;
+        }
+
+        try {
+          const res = await fetch("/api/resource/Lead", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+            credentials: "include",
+          });
+
+          const result = await res.json();
+
+          if (res.ok && result.data) {
+            successMsg.textContent =
+              "✅ Lead created successfully! You can add appointments in the Appointments tab.";
+            successMsg.classList.remove("hidden");
+
+            [
+              "divStatus",
+              "divSource",
+              "divFullName",
+              "divMobileNo",
+              "divLeadButton",
+              "divRemark",
+            ].forEach((id) => {
+              document.getElementById(id)?.classList.add("hidden");
+            });
+
+            document
+              .getElementById("navLead")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            setTimeout(() => {
+              toggleDialog(false);
+              currentSection = "lead";
+              initApp();
+            }, 1500);
+          } else {
+            console.error("❌ Server responded with an error:", {
+              status: res.status,
+              statusText: res.statusText,
+              response: result,
+            });
+            alert("❌ Error: " + (result.message || "Unknown error occurred"));
+          }
+        } catch (err) {
+          console.error("⚠️ Network or parsing error:", err);
+          alert("⚠️ Network Error: " + err.message);
+        }
+      }
+
+      // Handle update lead
+      async function handleUpdateLead() {
+        if (!validateForm()) return;
+        if (!editingLeadId) {
+          alert("No lead selected for update.");
+          return;
+        }
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const source = document.getElementById("source").value;
+        const mobile_no = document.getElementById("mobileNo").value.trim();
+        const status = document.getElementById("status").value.trim();
+        const remarkVal = remarkInput.value.trim();
+
+        // Collect products data as array of objects with amount and product_name
+        const custom_product_table = [];
+        const productRows = productTableBody.querySelectorAll("tr");
+        productRows.forEach((row) => {
+          const container = row.querySelector(".custom-select-container");
+          if (!container) return;
+          const input = container.querySelector("input.custom-select-input");
+          const amountInput = row.querySelector("input.amount-input");
+          if (input && input.dataset.selectedProductCode && amountInput) {
+            custom_product_table.push({
+              product: input.dataset.selectedProductCode,
+              product_name: input.dataset.selectedProductName || "",
+              product_amount: parseFloat(amountInput.value) || 0,
+            });
+          }
+        });
+
+        // Prepare payload including products array and remark if Not Interested
+        const payload = {
+          first_name: fullName,
+          source,
+          mobile_no,
+          status,
+          custom_product_table,
+        };
+
+        if (status === "Not Interested") {
+          payload.custom_remark_not_interested = remarkVal;
+        } else {
+          payload.custom_remark_not_interested = "";
+        }
+
+        try {
+          const res = await fetch(
+            `/api/resource/Lead/${encodeURIComponent(editingLeadId)}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify(payload),
+              credentials: "include",
+            }
+          );
+
+          const result = await res.json();
+
+          if (res.ok && result.data) {
+            successMsg.textContent = "✅ Lead updated successfully!";
+            successMsg.classList.remove("hidden");
+
+            [
+              "divStatus",
+              "divSource",
+              "divFullName",
+              "divMobileNo",
+              "divLeadButton",
+              "divRemark",
+            ].forEach((id) => {
+              document.getElementById(id)?.classList.add("hidden");
+            });
+
+            document
+              .getElementById("navLead")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            setTimeout(() => {
+              toggleDialog(false);
+              currentSection = "lead";
+              initApp();
+            }, 1500);
+          } else {
+            console.error("❌ Server responded with an error:", {
+              status: res.status,
+              statusText: res.statusText,
+              response: result,
+            });
+            alert("❌ Error: " + (result.message || "Unknown error occurred"));
+          }
+        } catch (err) {
+          console.error("⚠️ Network or parsing error:", err);
+          alert("⚠️ Network Error: " + err.message);
+        }
+      }
+
+      // Accessibility: Keyboard navigation for list items
+      crmList.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          const item = e.target.closest('[role="button"]');
+          if (item) {
+            item.click();
+          }
+        }
+      });
+
+      // Update URL query parameters for section and filter
+      function updateUrl() {
+        const params = new URLSearchParams(window.location.search);
+        params.set("section", currentSection);
+        params.set("filter", currentFilter);
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, "", newUrl);
+      }
+
+      // Initialize app on load
+      window.addEventListener("load", () => {
+        initApp();
+        loadProductsOptions();
+      });
+
+      // Clean up on page unload
+      window.addEventListener("beforeunload", () => {
+        stopSync();
+      });
+
+      // Event listeners for dialog buttons
+      cancelBtn.addEventListener("click", () => toggleDialog(false));
+      createBtn.addEventListener("click", handleCreateLead);
+      updateBtn.addEventListener("click", handleUpdateLead);
+      addProductBtn.addEventListener("click", addProductRow);
+      addAppointmentBtn.addEventListener("click", addAppointment);
+
+      // Tabs event listeners
+      Object.entries(tabButtons).forEach(([key, btn]) => {
+        btn.addEventListener("click", () => {
+          activateTab(key);
+        });
+      });
+
+      // Activate tab by key: "lead", "products", "appointments"
+      function activateTab(key) {
+        Object.entries(tabs).forEach(([k, panel]) => {
+          const btn = tabButtons[k];
+          if (k === key) {
+            panel.classList.remove("hidden");
+            btn.setAttribute("aria-selected", "true");
+            btn.tabIndex = 0;
+            panel.focus();
+          } else {
+            panel.classList.add("hidden");
+            btn.setAttribute("aria-selected", "false");
+            btn.tabIndex = -1;
+          }
+        });
+      }
+
+      // Initialize app function (same as before)
       async function initApp() {
         // Parse URL params for section and filter
         const params = new URLSearchParams(window.location.search);
@@ -1636,695 +2746,6 @@
         }, 300);
       });
 
-      //custom dialog for creating new lead
-      const dialog = document.getElementById("customDialog");
-      const fab = document.getElementById("fabNewEntry");
-      const cancelBtn = document.getElementById("cancelLead");
-      const createBtn = document.getElementById("createLead");
-      const successMsg = document.getElementById("leadSuccessMsg");
-      const productTableBody = document.getElementById("productTableBody");
-      const addProductBtn = document.getElementById("addProductBtn");
-      const errorProducts = document.getElementById("errorProducts");
-      const statusSelect = document.getElementById("status");
-      const appointmentDateTimeDiv = document.getElementById(
-        "divAppointmentDateTime"
-      );
-      const appointmentDateTimeInput = document.getElementById(
-        "appointmentDateTime"
-      );
-      const errorAppointmentDateTime = document.getElementById(
-        "errorAppointmentDateTime"
-      );
-      const divRemark = document.getElementById("divRemark");
-      const remarkInput = document.getElementById("remark");
-      const errorRemark = document.getElementById("errorRemark");
-
-      // Store products list globally for options
-      let productsList = [];
-
-      fab.addEventListener("click", () => {
-        toggleDialog(true);
-        loadProductsOptions();
-      });
-      cancelBtn.addEventListener("click", () => toggleDialog(false));
-      createBtn.addEventListener("click", handleCreateLead);
-      addProductBtn.addEventListener("click", addProductRow);
-
-      // Show/hide appointment date/time and remark based on status
-      statusSelect.addEventListener("change", () => {
-        if (statusSelect.value === "Follow Up") {
-          appointmentDateTimeDiv.classList.remove("hidden");
-        } else {
-          appointmentDateTimeDiv.classList.add("hidden");
-          appointmentDateTimeInput.value = "";
-          errorAppointmentDateTime.classList.add("hidden");
-        }
-        if (statusSelect.value === "Not Interested") {
-          divRemark.classList.remove("hidden");
-        } else {
-          divRemark.classList.add("hidden");
-          remarkInput.value = "";
-          errorRemark.classList.add("hidden");
-          remarkInput.classList.remove("border-red-500");
-        }
-      });
-
-      // Load products from API and populate all selects
-      async function loadProductsOptions() {
-        try {
-          const response = await fetch(
-            '/api/resource/Product?fields=["product_code","product_name"]&limit_page_length=1000',
-            {
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-              },
-              cache: "no-cache",
-            }
-          );
-          if (!response.ok) {
-            throw new Error(`Failed to fetch products: ${response.status}`);
-          }
-          const data = await response.json();
-          productsList = data.data || [];
-
-          // Initialize all custom selects with products
-          initializeAllCustomSelects();
-        } catch (error) {
-          console.error("Error loading products:", error);
-          productsList = [];
-          // Clear selects and show error option
-          const containers = productTableBody.querySelectorAll(
-            ".custom-select-container"
-          );
-          containers.forEach((container) => {
-            const input = container.querySelector("input.custom-select-input");
-            const dropdown = container.querySelector(".custom-select-dropdown");
-            input.value = "";
-            dropdown.innerHTML =
-              '<li class="custom-select-item" role="option" aria-selected="false">Failed to load products</li>';
-            dropdown.classList.remove("hidden");
-          });
-        }
-      }
-
-      // Initialize all custom selects in product rows
-      function initializeAllCustomSelects() {
-        const containers = productTableBody.querySelectorAll(
-          ".custom-select-container"
-        );
-        containers.forEach((container, index) => {
-          setupCustomSelect(container, index);
-        });
-      }
-
-      // Setup a single custom select container
-      function setupCustomSelect(container, index) {
-        const input = container.querySelector("input.custom-select-input");
-        const dropdown = container.querySelector(".custom-select-dropdown");
-        dropdown.id = `product-list-${index}`;
-        container.setAttribute("aria-owns", dropdown.id);
-
-        // Populate dropdown with all products initially
-        populateDropdown(dropdown, productsList);
-
-        // Track current highlighted index for keyboard navigation
-        let highlightedIndex = -1;
-
-        // Filter dropdown items based on input
-        input.addEventListener("input", () => {
-          const filter = input.value.trim().toLowerCase();
-          const filtered = productsList.filter((p) => {
-            const text = `${p.product_code} - ${p.product_name}`.toLowerCase();
-            return text.includes(filter);
-          });
-          populateDropdown(dropdown, filtered);
-          highlightedIndex = -1;
-          container.setAttribute("aria-expanded", "true");
-          dropdown.classList.remove("hidden");
-          input.setAttribute("aria-activedescendant", "");
-        });
-
-        // Show dropdown on focus
-        input.addEventListener("focus", () => {
-          if (dropdown.children.length > 0) {
-            dropdown.classList.remove("hidden");
-            container.setAttribute("aria-expanded", "true");
-          }
-        });
-
-        // Hide dropdown on blur (with delay to allow click)
-        input.addEventListener("blur", () => {
-          setTimeout(() => {
-            dropdown.classList.add("hidden");
-            container.setAttribute("aria-expanded", "false");
-            highlightedIndex = -1;
-            input.setAttribute("aria-activedescendant", "");
-          }, 150);
-        });
-
-        // Keyboard navigation
-        input.addEventListener("keydown", (e) => {
-          const items = dropdown.querySelectorAll(".custom-select-item");
-          if (dropdown.classList.contains("hidden")) return;
-
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            if (highlightedIndex < items.length - 1) {
-              highlightedIndex++;
-              updateHighlight(items, highlightedIndex, input);
-            }
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            if (highlightedIndex > 0) {
-              highlightedIndex--;
-              updateHighlight(items, highlightedIndex, input);
-            }
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            if (highlightedIndex >= 0 && highlightedIndex < items.length) {
-              selectItem(items[highlightedIndex], container, input, dropdown);
-            }
-          } else if (e.key === "Escape") {
-            dropdown.classList.add("hidden");
-            container.setAttribute("aria-expanded", "false");
-            highlightedIndex = -1;
-            input.setAttribute("aria-activedescendant", "");
-          }
-        });
-
-        // Click on dropdown item
-        dropdown.addEventListener("mousedown", (e) => {
-          // Prevent blur on input
-          e.preventDefault();
-        });
-        dropdown.addEventListener("click", (e) => {
-          const item = e.target.closest(".custom-select-item");
-          if (item) {
-            selectItem(item, container, input, dropdown);
-          }
-        });
-
-        // Initialize with empty input and full list
-        input.value = "";
-        populateDropdown(dropdown, productsList);
-        dropdown.classList.add("hidden");
-        container.setAttribute("aria-expanded", "false");
-      }
-
-      // Populate dropdown list items
-      function populateDropdown(dropdown, items) {
-        dropdown.innerHTML = "";
-        if (items.length === 0) {
-          const li = document.createElement("li");
-          li.className = "custom-select-item";
-          li.textContent = "No products found";
-          li.setAttribute("role", "option");
-          li.setAttribute("aria-selected", "false");
-          dropdown.appendChild(li);
-          return;
-        }
-        items.forEach((product) => {
-          const li = document.createElement("li");
-          li.className = "custom-select-item";
-          li.textContent = `${product.product_code} - ${product.product_name}`;
-          li.setAttribute("role", "option");
-          li.setAttribute("aria-selected", "false");
-          li.dataset.productCode = product.product_code;
-          dropdown.appendChild(li);
-        });
-      }
-
-      // Update highlight on dropdown items
-      function updateHighlight(items, index, input) {
-        items.forEach((item, i) => {
-          if (i === index) {
-            item.setAttribute("aria-selected", "true");
-            item.scrollIntoView({ block: "nearest" });
-            input.setAttribute("aria-activedescendant", item.id || "");
-          } else {
-            item.setAttribute("aria-selected", "false");
-          }
-        });
-      }
-
-      // Select an item from dropdown
-      function selectItem(item, container, input, dropdown) {
-        input.value = item.textContent;
-        dropdown.classList.add("hidden");
-        container.setAttribute("aria-expanded", "false");
-        input.setAttribute("aria-activedescendant", "");
-        // Store selected product code in dataset for validation
-        input.dataset.selectedProductCode = item.dataset.productCode || "";
-      }
-
-      // Add product row function
-      function addProductRow() {
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-          <td>
-            <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="" aria-label="Select product">
-              <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="" aria-activedescendant="" />
-              <ul class="custom-select-dropdown hidden" role="listbox" tabindex="-1"></ul>
-            </div>
-          </td>
-          <td>
-            <input type="number" min="0" step="0.01" class="amount-input" placeholder="Amount" aria-label="Product amount" />
-          </td>
-          <td class="text-center">
-            <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
-          </td>
-        `;
-
-        productTableBody.appendChild(tr);
-
-        // Attach remove event
-        tr.querySelector(".remove-product-btn").addEventListener(
-          "click",
-          () => {
-            if (productTableBody.rows.length > 1) {
-              tr.remove();
-            }
-          }
-        );
-
-        // Setup custom select for the new row
-        const container = tr.querySelector(".custom-select-container");
-        const index =
-          productTableBody.querySelectorAll(".custom-select-container").length -
-          1;
-        setupCustomSelect(container, index);
-      }
-
-      // Remove product row event for initial row
-      productTableBody
-        .querySelectorAll(".remove-product-btn")
-        .forEach((btn) => {
-          btn.addEventListener("click", (e) => {
-            const row = e.target.closest("tr");
-            if (productTableBody.rows.length > 1) {
-              row.remove();
-            }
-          });
-        });
-
-      function toggleDialog(show) {
-        dialog.style.display = show ? "flex" : "none";
-        if (!show) clearForm();
-      }
-
-      function clearForm() {
-        document.getElementById("fullName").value = "";
-        document.getElementById("source").value = "";
-        document.getElementById("mobileNo").value = "";
-        document.getElementById("status").value = "Lead";
-        appointmentDateTimeDiv.classList.add("hidden");
-        appointmentDateTimeInput.value = "";
-        errorAppointmentDateTime.classList.add("hidden");
-        divRemark.classList.add("hidden");
-        remarkInput.value = "";
-        errorRemark.classList.add("hidden");
-        remarkInput.classList.remove("border-red-500");
-
-        hideAllErrors();
-        successMsg.classList.add("hidden");
-        errorProducts.style.display = "none";
-
-        [
-          "divStatus",
-          "divSource",
-          "divFullName",
-          "divMobileNo",
-          "divLeadButton",
-          "divProducts",
-          "divAppointmentDateTime",
-          "divRemark",
-        ].forEach((id) => {
-          document.getElementById(id)?.classList.remove("hidden");
-        });
-
-        // Clear product rows except one
-        while (productTableBody.rows.length > 1) {
-          productTableBody.deleteRow(1);
-        }
-        // Clear inputs in the remaining row
-        const firstRow = productTableBody.rows[0];
-        if (firstRow) {
-          const container = firstRow.querySelector(".custom-select-container");
-          if (container) {
-            const input = container.querySelector("input.custom-select-input");
-            if (input) {
-              input.value = "";
-              input.dataset.selectedProductCode = "";
-              const dropdown = container.querySelector(
-                ".custom-select-dropdown"
-              );
-              if (dropdown) {
-                populateDropdown(dropdown, productsList);
-                dropdown.classList.add("hidden");
-                container.setAttribute("aria-expanded", "false");
-              }
-            }
-          }
-          const amountInput = firstRow.querySelector("input.amount-input");
-          if (amountInput) {
-            amountInput.value = "";
-            amountInput.classList.remove("border-red-500");
-          }
-        }
-      }
-
-      function hideAllErrors() {
-        document
-          .querySelectorAll("[id^='error']")
-          .forEach((el) => el.classList.add("hidden"));
-        document
-          .querySelectorAll("input, select, textarea")
-          .forEach((el) => el.classList.remove("border-red-500"));
-        errorProducts.style.display = "none";
-      }
-
-      function showError(fieldId, errorId) {
-        document.getElementById(errorId).classList.remove("hidden");
-        document.getElementById(fieldId).classList.add("border-red-500");
-      }
-
-      function hideError(fieldId, errorId) {
-        document.getElementById(errorId).classList.add("hidden");
-        document.getElementById(fieldId).classList.remove("border-red-500");
-      }
-
-      function validateForm() {
-        let valid = true;
-
-        const fullName = document.getElementById("fullName").value.trim();
-        const source = document.getElementById("source").value;
-        const mobileNo = document.getElementById("mobileNo").value.trim();
-        const mobileRegex = /^[6-9]\d{9}$/;
-        const status = statusSelect.value;
-        const appointmentDateTimeVal = appointmentDateTimeInput.value;
-        const remarkVal = remarkInput.value.trim();
-
-        if (!fullName) {
-          showError("fullName", "errorFullName");
-          valid = false;
-        } else {
-          hideError("fullName", "errorFullName");
-        }
-
-        if (!source) {
-          showError("source", "errorSource");
-          valid = false;
-        } else {
-          hideError("source", "errorSource");
-        }
-
-        if (!mobileRegex.test(mobileNo)) {
-          showError("mobileNo", "errorMobile");
-          valid = false;
-        } else {
-          hideError("mobileNo", "errorMobile");
-        }
-
-        if (!status) {
-          showError("status", "errorStatus");
-          valid = false;
-        } else {
-          hideError("status", "errorStatus");
-        }
-
-        if (status === "Follow Up") {
-          if (!appointmentDateTimeVal) {
-            errorAppointmentDateTime.classList.remove("hidden");
-            appointmentDateTimeInput.classList.add("border-red-500");
-            valid = false;
-          } else {
-            errorAppointmentDateTime.classList.add("hidden");
-            appointmentDateTimeInput.classList.remove("border-red-500");
-          }
-        } else {
-          errorAppointmentDateTime.classList.add("hidden");
-          appointmentDateTimeInput.classList.remove("border-red-500");
-        }
-
-        if (status === "Not Interested") {
-          if (!remarkVal) {
-            errorRemark.classList.remove("hidden");
-            remarkInput.classList.add("border-red-500");
-            valid = false;
-          } else {
-            errorRemark.classList.add("hidden");
-            remarkInput.classList.remove("border-red-500");
-          }
-        } else {
-          errorRemark.classList.add("hidden");
-          remarkInput.classList.remove("border-red-500");
-        }
-
-        // Validate product rows: product must be selected and valid, amount must be positive number
-        const productRows = productTableBody.querySelectorAll("tr");
-        let hasValidProduct = false;
-        for (const row of productRows) {
-          const container = row.querySelector(".custom-select-container");
-          if (!container) {
-            valid = false;
-            continue;
-          }
-          const input = container.querySelector("input.custom-select-input");
-          if (!input) {
-            valid = false;
-            continue;
-          }
-          const selectedCode = input.dataset.selectedProductCode || "";
-          if (!selectedCode) {
-            input.classList.add("border-red-500");
-            valid = false;
-          } else {
-            // Check if selectedCode exists in productsList
-            const found = productsList.find(
-              (p) => p.product_code === selectedCode
-            );
-            if (!found) {
-              input.classList.add("border-red-500");
-              valid = false;
-            } else {
-              input.classList.remove("border-red-500");
-              hasValidProduct = true;
-            }
-          }
-
-          const amountInput = row.querySelector("input.amount-input");
-          if (!amountInput) {
-            valid = false;
-            continue;
-          }
-          const amountVal = amountInput.value.trim();
-          const amountNum = parseFloat(amountVal);
-          if (amountVal === "" || isNaN(amountNum) || amountNum < 0) {
-            amountInput.classList.add("border-red-500");
-            valid = false;
-          } else {
-            amountInput.classList.remove("border-red-500");
-          }
-        }
-        if (!hasValidProduct) {
-          errorProducts.style.display = "block";
-          valid = false;
-        } else {
-          errorProducts.style.display = "none";
-        }
-
-        return valid;
-      }
-
-      async function handleCreateLead() {
-        if (!validateForm()) return;
-
-        const fullName = document.getElementById("fullName").value.trim();
-        const source = document.getElementById("source").value;
-        const mobile_no = document.getElementById("mobileNo").value.trim();
-        const status = document.getElementById("status").value.trim();
-        const appointmentDateTimeVal = appointmentDateTimeInput.value;
-        const remarkVal = remarkInput.value.trim();
-
-        // Collect products data as array of objects with amount
-        const custom_product_table = [];
-        const productRows = productTableBody.querySelectorAll("tr");
-        productRows.forEach((row) => {
-          const container = row.querySelector(".custom-select-container");
-          if (!container) return;
-          const input = container.querySelector("input.custom-select-input");
-          const amountInput = row.querySelector("input.amount-input");
-          if (input && input.dataset.selectedProductCode && amountInput) {
-            custom_product_table.push({
-              product: input.dataset.selectedProductCode,
-              product_amount: parseFloat(amountInput.value) || 0,
-            });
-          }
-        });
-
-        // Prepare payload including products array and remark if Not Interested
-        const payload = {
-          first_name: fullName,
-          source,
-          mobile_no,
-          status,
-          custom_product_table,
-        };
-
-        if (status === "Not Interested") {
-          payload.custom_remark_not_interested = remarkVal;
-        }
-
-        try {
-          const res = await fetch("/api/resource/Lead", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
-            credentials: "include",
-          });
-
-          const result = await res.json();
-
-          if (res.ok && result.data) {
-            // If status is Follow Up, create appointment after lead creation
-            if (status === "Follow Up") {
-              const lead_name = result.data.first_name;
-              const lead_doc_name = result.data.name;
-              const appointmentPayload = {
-                scheduled_time: appointmentDateTimeVal,
-                customer_name: lead_name,
-                customer_phone_number: mobile_no,
-                party: lead_doc_name,
-                status: "Open",
-                appointment_with: "Lead",
-              };
-
-              try {
-                const apptRes = await fetch("/api/resource/Appointment", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                  },
-                  body: JSON.stringify(appointmentPayload),
-                  credentials: "include",
-                });
-
-                const apptResult = await apptRes.json();
-
-                if (apptRes.ok && apptResult.data) {
-                  successMsg.textContent =
-                    "✅ Lead and Appointment created successfully!";
-                  successMsg.classList.remove("hidden");
-
-                  [
-                    "divStatus",
-                    "divSource",
-                    "divFullName",
-                    "divMobileNo",
-                    "divLeadButton",
-                    "divProducts",
-                    "divAppointmentDateTime",
-                    "divRemark",
-                  ].forEach((id) => {
-                    document.getElementById(id)?.classList.add("hidden");
-                  });
-
-                  document
-                    .getElementById("navLead")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-                  setTimeout(() => {
-                    toggleDialog(false);
-                    currentSection = "lead";
-                    initApp();
-                  }, 1500);
-                } else {
-                  console.error("❌ Appointment creation error:", apptResult);
-                  alert(
-                    "❌ Appointment creation failed: " +
-                      (apptResult.message || "Unknown error")
-                  );
-                }
-              } catch (err) {
-                console.error("⚠️ Appointment network error:", err);
-                alert("⚠️ Appointment Network Error: " + err.message);
-              }
-            } else {
-              // Just lead created
-              successMsg.textContent = "✅ Lead created successfully!";
-              successMsg.classList.remove("hidden");
-
-              [
-                "divStatus",
-                "divSource",
-                "divFullName",
-                "divMobileNo",
-                "divLeadButton",
-                "divProducts",
-                "divAppointmentDateTime",
-                "divRemark",
-              ].forEach((id) => {
-                document.getElementById(id)?.classList.add("hidden");
-              });
-
-              document
-                .getElementById("navLead")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-              setTimeout(() => {
-                toggleDialog(false);
-                currentSection = "lead";
-                initApp();
-              }, 1500);
-            }
-          } else {
-            console.error("❌ Server responded with an error:", {
-              status: res.status,
-              statusText: res.statusText,
-              response: result,
-            });
-            alert("❌ Error: " + (result.message || "Unknown error occurred"));
-          }
-        } catch (err) {
-          console.error("⚠️ Network or parsing error:", err);
-          alert("⚠️ Network Error: " + err.message);
-        }
-      }
-
-      // Accessibility: Keyboard navigation for list items
-      crmList.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          const item = e.target.closest('[role="button"]');
-          if (item) {
-            item.click();
-          }
-        }
-      });
-
-      // Update URL query parameters for section and filter
-      function updateUrl() {
-        const params = new URLSearchParams(window.location.search);
-        params.set("section", currentSection);
-        params.set("filter", currentFilter);
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
-
-      // Initialize app on load
-      window.addEventListener("load", initApp);
-
-      // Clean up on page unload
-      window.addEventListener("beforeunload", () => {
-        stopSync();
-      });
-
       function prettyDate(inputDate) {
         const date = new Date(inputDate);
         const seconds = Math.floor((new Date() - date) / 1000);
@@ -2345,6 +2766,13 @@
         const years = Math.floor(months / 12);
         return `${years} year${years !== 1 ? "s" : ""} ago`;
       }
+
+      // Close dialog button
+      document
+        .getElementById("dialogCloseBtn")
+        .addEventListener("click", () => {
+          toggleDialog(false);
+        });
     </script>
   </body>
 </html>

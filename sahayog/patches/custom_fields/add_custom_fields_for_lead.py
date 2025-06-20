@@ -43,21 +43,6 @@ def execute():
                 "insert_after": "custom_region",
             },
             {
-                "label": "Lead Appointment",
-                "fieldname": "custom_lead_appointment_tab",
-                "fieldtype": "Tab Break",
-                "insert_after": "blog_subscriber",
-            },
-            {
-                "label": "Lead Appointments",
-                "fieldname": "custom_lead_appointments",
-                "fieldtype": "Table",
-                "options": "Lead Appointment",
-                "insert_after": "custom_lead_appointment_tab",
-                "read_only": 1,
-            }, 
-
-            {
                 "label": "Product Details",
                 "fieldname":"custom_product_details_section",
                 "fieldtype" : "Section Break",
