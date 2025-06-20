@@ -7,3 +7,4 @@
 sahayog.patches.add_roles
 
 sahayog.patches.set_lead_status_options
+sahayog.patches.custom_fields.add_custom_fields_for_item
