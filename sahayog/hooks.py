@@ -417,6 +417,10 @@ fixtures = [
         "dt": "Prodtech",
         
     },
+     {
+        "dt": "Item Department",
+        
+    },
     {
         "dt": "Module",
         
