@@ -193,7 +193,7 @@ override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
-    
+    "Item": "sahayog.override.autoname_item.CustomItem",
 
    # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
 }
@@ -298,7 +298,8 @@ doc_events = {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
         ]
-    }
+    },
+    
    
 }
 
