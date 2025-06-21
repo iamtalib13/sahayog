@@ -22,6 +22,7 @@
   "module": "Sahayog Project",
   "name": "LOI",
   "page_number": "Hide",
+  "pdf_generator": null,
   "print_format_builder": 0,
   "print_format_builder_beta": 0,
   "print_format_type": "Jinja",

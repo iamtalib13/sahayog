@@ -191,8 +191,9 @@ permission_query_conditions = {
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
     "User": "sahayog.override.user.CustomUser",
-   
-   # "Material Request": "sahayog.override.item_description_blank.CustomMaterialRequest"
+    "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
+    "Item": "sahayog.override.autoname_item.CustomItem",
+
 }
 
 # Document Events
@@ -281,11 +282,7 @@ doc_events = {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
         ]
-    },
-    "Appointment": {
-        "after_insert": "sahayog.doc_events.appointment.link_appointment_to_lead"
-    }
-   
+    },   
 }
 
 # Scheduled Tasks
@@ -412,6 +409,10 @@ fixtures = [
     },
     {
         "dt": "Prodtech",
+        
+    },
+     {
+        "dt": "Item Department",
         
     },
     {

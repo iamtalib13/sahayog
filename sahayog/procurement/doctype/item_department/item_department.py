@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class LeadAppointment(Document):
+class ItemDepartment(Document):
 	pass
