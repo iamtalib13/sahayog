@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee Portal Login</title>
+  <link rel="stylesheet" href="/assets/css/frappe-web.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1e40af;
+      --error-color: #dc2626;
+      --success-color: #16a34a;
+      --text-color: #1f2937;
+      --border-color: #d1d5db;
+      --light-bg: #f9fafb;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background-color: var(--light-bg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 480px;
+      padding: 1rem;
+    }
+    
+    .login-box {
+      background-color: #fff;
+      padding: 2.5rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary-color), #4f46e5);
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .login-header h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+    }
+    
+    .login-header p {
+      color: #6b7280;
+      font-size: 0.9375rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      font-size: 0.9375rem;
+    }
+    
+    .input-wrapper {
+      position: relative;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 0.875rem 1rem 0.875rem 2.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background-color: #f8fafc;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 1.1rem;
+    }
+    
+    .password-toggle {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    
+    .error-message {
+      color: var(--error-color);
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: none;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .error-message i {
+      font-size: 0.9rem;
+    }
+    
+    .login-button {
+      width: 100%;
+      padding: 1rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      margin-top: 0.5rem;
+    }
+    
+    .login-button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .login-button:active {
+      transform: scale(0.98);
+    }
+    
+    .login-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    
+    .login-footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .login-footer a:hover {
+      text-decoration: underline;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 0.5rem;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .login-box {
+        padding: 1.75rem 1.5rem;
+      }
+      
+      .login-header h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h2>Sahayog CRM</h2>
+        <p>Enter your credentials to access your CRM</p>
+      </div>
+      
+      <form id="crmLoginForm" novalidate>
+        <div class="form-group">
+          <label for="employee_id">Employee ID</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user input-icon"></i>
+            <input 
+              type="text" 
+              id="employee_id" 
+              name="employee_id" 
+              placeholder="Enter your employee ID" 
+              required 
+              autocomplete="username"
+            />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              placeholder="Enter your password" 
+              required 
+              autocomplete="current-password"
+            />
+            <button type="button" class="password-toggle" id="togglePassword">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="error-message" id="loginError">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>Invalid credentials. Please try again.</span>
+        </div>
+        
+        <button type="submit" class="login-button" id="loginButton">
+          <span id="buttonText">Login</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginForm = document.getElementById('crmLoginForm');
+      const togglePassword = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+      const loginError = document.getElementById('loginError');
+      const loginButton = document.getElementById('loginButton');
+      const buttonText = document.getElementById('buttonText');
+      
+      // Toggle password visibility
+      togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+      });
+      
+      // Form submission
+      loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        loginButton.disabled = true;
+        buttonText.innerHTML = '<span class="loading"></span> Logging in...';
+        
+        const employee_id = document.getElementById('employee_id').value.trim();
+        const password = document.getElementById('password').value;
+        
+        try {
+          const response = await fetch('/api/method/login', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+              usr: employee_id,
+              pwd: password
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.message === 'Logged In') {
+            // Success - redirect or reload
+            window.location.href = '/crm-portal'; // Or reload as in original
+          } else {
+            // Show error
+            loginError.style.display = 'flex';
+            passwordInput.focus();
+            
+            // Shake animation for error feedback
+            loginForm.style.transform = 'translateX(0)';
+            loginForm.offsetHeight; // Trigger reflow
+            loginForm.style.transform = 'translateX(-5px)';
+            setTimeout(() => {
+              loginForm.style.transform = 'translateX(5px)';
+              setTimeout(() => {
+                loginForm.style.transform = 'translateX(0)';
+              }, 50);
+            }, 50);
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          loginError.querySelector('span').textContent = 'Network error. Please try again.';
+          loginError.style.display = 'flex';
+        } finally {
+          // Reset button state
+          loginButton.disabled = false;
+          buttonText.textContent = 'Login';
+        }
+      });
+      
+      // Clear error when typing
+      const inputs = [document.getElementById('employee_id'), passwordInput];
+      inputs.forEach(input => {
+        input.addEventListener('input', () => {
+          if (loginError.style.display === 'flex') {
+            loginError.style.display = 'none';
+          }
+        });
+      });
+      
+      // Focus first input on page load
+      document.getElementById('employee_id').focus();
+    });
+  </script>
+</body>
+</html>
