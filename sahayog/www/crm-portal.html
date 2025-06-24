@@ -17,10 +17,10 @@
     />
     <style>
       .editable-active {
-    border: 2px solid #3b82f6 !important; /* Tailwind blue-500 */
-    background-color: #e0f2fe !important; /* light blue */
-    transition: all 0.2s ease-in-out;
-  }
+        border: 2px solid #3b82f6 !important; /* Tailwind blue-500 */
+        background-color: #e0f2fe !important; /* light blue */
+        transition: all 0.2s ease-in-out;
+      }
     
       /* For WebKit browsers (Chrome, Safari, Edge) */
       *::-webkit-scrollbar {
@@ -47,42 +47,42 @@
       }
       /* Dialog background blur */
       body.dialog-open {
-  overflow: hidden;
-}
+        overflow: hidden;
+      }
 
       /* Dialog */
       .custom-dialog {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  justify-content: center;
-  align-items: center;
-  /* Add these properties to ensure it stays centered */
-  overflow-y: auto; /* Allow scrolling if content is taller than viewport */
-  padding: 20px; /* Add some padding around the dialog */
-}
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        /* Add these properties to ensure it stays centered */
+        overflow-y: auto; /* Allow scrolling if content is taller than viewport */
+        padding: 20px; /* Add some padding around the dialog */
+      }
 
-.custom-dialog-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90vw;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  animation: dialogZoomIn 0.3s ease-out;
-  /* Remove any positioning properties that might affect centering */
-  top: auto; /* Remove if present */
-  left: auto; /* Remove if present */
-  transform: none; /* Remove if present */
-  margin: 0 auto; /* Center horizontally */
-}
+      .custom-dialog-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90vw;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        animation: dialogZoomIn 0.3s ease-out;
+        /* Remove any positioning properties that might affect centering */
+        top: auto; /* Remove if present */
+        left: auto; /* Remove if present */
+        transform: none; /* Remove if present */
+        margin: 0 auto; /* Center horizontally */
+      }
 
       .dialog-header {
         display: flex;
@@ -317,14 +317,14 @@
       }
       /* Responsive adjustments */
       @media (max-width: 640px) {
-  .custom-dialog-content {
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
-    border-radius: 0;
-  }
-}
+        .custom-dialog-content {
+          width: 100%;
+          height: 100%;
+          max-width: none;
+          max-height: none;
+          border-radius: 0;
+        }
+      }
       #deleteConfirmDialog.fade-in {
         animation: fadeIn 0.3s ease-out;
       }
@@ -339,16 +339,15 @@
         }
       }
       @keyframes dialogZoomIn {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
+        from {
+          transform: scale(0.95);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
     </style>
     <!-- PWA Manifest -->
     <link href="manifest.json" rel="manifest" />
@@ -459,61 +458,264 @@
       + New Lead
     </button>
 
-    <!-- Custom Dialog for Create/Update Lead with Tabs -->
+    <!-- Create Lead Dialog (Simplified) -->
+<div
+id="createLeadDialog"
+class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
+role="dialog"
+aria-modal="true"
+aria-labelledby="createLeadDialogTitle"
+>
+<div class="custom-dialog-content">
+  <div class="dialog-header">
+    <h3 id="createLeadDialogTitle">Create New Lead</h3>
+    <button
+      type="button"
+      class="dialog-close-btn"
+      aria-label="Close dialog"
+      id="createLeadDialogCloseBtn"
+    >
+      &times;
+    </button>
+  </div>
+  <p
+    id="createLeadSuccessMsg"
+    class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 mb-3 hidden text-center"
+    role="alert"
+  >
+    ✅ Success message here.
+  </p>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <!-- Status -->
+    <div class="form-group" id="divCreateStatus">
+      <label for="createStatus"
+        >Status <span class="text-red-600">*</span></label
+      >
+      <select
+        id="createStatus"
+        class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+      >
+        <option>Lead</option>
+        <option>Follow Up</option>
+        <option>Converted</option>
+        <option>Not Interested</option>
+      </select>
+      <p id="errorCreateStatus" class="error-message">
+        Please select a Status.
+      </p>
+    </div>
+
+    <!-- Source -->
+    <div class="form-group" id="divCreateSource">
+      <label for="createSource"
+        >Source <span class="text-red-600">*</span></label
+      >
+      <select
+        id="createSource"
+        class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+      >
+        <option value=""></option>
+        <option>Advertisement</option>
+        <option>Campaign</option>
+        <option>Existing Customer</option>
+        <option>Reference</option>
+        <option>Walk In</option>
+        <option>Calling</option>
+        <option>Marketing Activity</option>
+        <option>TeleCalling</option>
+      </select>
+      <p id="errorCreateSource" class="error-message">
+        Please select a source.
+      </p>
+    </div>
+
+    <!-- Full Name -->
+    <div class="form-group" id="divCreateFullName">
+      <label for="createFullName"
+        >Full Name <span class="text-red-600">*</span></label
+      >
+      <input
+        type="text"
+        id="createFullName"
+        class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+      />
+      <p id="errorCreateFullName" class="error-message">
+        Please enter full name.
+      </p>
+    </div>
+
+    <!-- Mobile No -->
+    <div class="form-group" id="divCreateMobileNo">
+      <label for="createMobileNo"
+        >Mobile No <span class="text-red-600">*</span></label
+      >
+      <input
+        type="text"
+        id="createMobileNo"
+        class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+      />
+      <p id="errorCreateMobile" class="error-message">
+        Please enter a valid 10-digit mobile number.
+      </p>
+    </div>
+
+    <!-- Remark field for Not Interested status -->
+    <div class="form-group sm:col-span-2 hidden" id="divCreateRemark">
+      <label for="createRemark"
+        >Remark <span class="text-red-600">*</span></label
+      >
+      <textarea
+        id="createRemark"
+        placeholder="Enter remark for Not Interested status"
+        class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+      ></textarea>
+      <p id="errorCreateRemark" class="error-message">
+        Please enter a remark.
+      </p>
+    </div>
+
+    <!-- Appointment section (shown only when status is Follow Up) -->
+    <div class="form-group sm:col-span-2 hidden" id="divCreateAppointment">
+      <label for="createAppointmentDateTime"
+        >Appointment Date & Time <span class="text-red-600">*</span></label
+      >
+      <input
+        type="datetime-local"
+        id="createAppointmentDateTime"
+        class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
+      />
+      <p id="errorCreateAppointmentDateTime" class="error-message">
+        Please select appointment date and time.
+      </p>
+    </div>
+
+    <!-- Products Table -->
+    <div class="form-group sm:col-span-2">
+      <label class="block font-medium mb-1"
+        >Products <span class="text-red-600">*</span></label
+      >
+      <table
+        class="product-table"
+        id="createProductTable"
+        aria-label="Products table"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col" style="width: 8rem">Amount</th>
+            <th scope="col" style="width: 1rem">Remove</th>
+          </tr>
+        </thead>
+        <tbody id="createProductTableBody">
+          <tr>
+            <td>
+              <div
+                class="custom-select-container"
+                tabindex="0"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                role="combobox"
+                aria-owns="create-product-list-0"
+                aria-label="Select product"
+              >
+                <input
+                  type="text"
+                  class="custom-select-input"
+                  placeholder="Search product..."
+                  aria-autocomplete="list"
+                  aria-controls="create-product-list-0"
+                  aria-activedescendant=""
+                />
+                <ul
+                  class="custom-select-dropdown hidden"
+                  role="listbox"
+                  id="create-product-list-0"
+                  tabindex="-1"
+                ></ul>
+              </div>
+            </td>
+            <td>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                class="amount-input"
+                placeholder="Amount"
+                aria-label="Product amount"
+              />
+            </td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="remove-product-btn"
+                aria-label="Remove product row"
+              >
+                &times;
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p id="errorCreateProducts" class="text-red-600 mt-1 hidden">
+        Please select at least one valid product and enter valid amounts.
+      </p>
+      <button
+        type="button"
+        id="addCreateProductBtn"
+        class="add-product-btn"
+        aria-label="Add product row"
+      >
+        + Add Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="flex justify-end space-x-2 pt-4" id="divCreateLeadButton">
+    <button
+      id="cancelCreateLead"
+      class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+    >
+      Cancel
+    </button>
+    <button
+      id="submitCreateLead"
+      class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
+    >
+      Create
+    </button>
+  </div>
+</div>
+</div>
+
+    <!-- Update Lead Dialog (With Tabs) -->
     <div
-    id="customDialog"
-    class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="dialogTitle"
+      id="updateLeadDialog"
+      class="custom-dialog fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="updateLeadDialogTitle"
     >
       <div class="custom-dialog-content">
         <div class="dialog-header">
-          <h3 id="dialogTitle">Create New Lead</h3>
+          <h3 id="updateLeadDialogTitle">Update Lead</h3>
           <button
             type="button"
             class="dialog-close-btn"
             aria-label="Close dialog"
-            id="dialogCloseBtn"
+            id="updateLeadDialogCloseBtn"
           >
             &times;
           </button>
         </div>
-       <p
-  id="globalSuccessMsg"
-  class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 mb-3 hidden text-center"
-  role="alert"
->
-  ✅ Success message here.
-</p>
-        <div
-        id="deleteConfirmDialog"
-        class="fixed inset-0 hidden z-60 flex items-center justify-center bg-black bg-opacity-50"
+        <p
+          id="updateLeadSuccessMsg"
+          class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 mb-3 hidden text-center"
+          role="alert"
         >
-        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm animate-fade-in relative">
-          <!-- Dialog Heading & Message -->
-          <h3 class="text-lg font-semibold mb-4">Confirm Deletion</h3>
-          <p class="text-gray-700 mb-6">
-            Are you sure you want to delete this appointment?
-          </p>
-        
-          <!-- Action Buttons -->
-          <div class="flex justify-end space-x-2">
-            <button
-              id="cancelDeleteBtn"
-              class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-            >
-              Cancel
-            </button>
-            <button
-              id="confirmDeleteBtn"
-              class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
+          ✅ Success message here.
+        </p>
 
         <!-- Tabs -->
         <div
@@ -814,14 +1016,8 @@
             Cancel
           </button>
           <button
-            id="createLead"
-            class="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
-          >
-            Create
-          </button>
-          <button
             id="updateLead"
-            class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white hidden"
+            class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
           >
             Update
           </button>
@@ -829,142 +1025,169 @@
       </div>
     </div>
 
-    <!-- Custom Dialog for Create/Update Appointment with Tabs -->
-     <!-- Custom Dialog for Viewing/Editing Appointment -->
-     <div
-     id="appointmentDialog"
-     class="fixed inset-0 hidden flex items-center justify-center bg-black bg-opacity-50 z-50"
-     role="dialog"
-     aria-modal="true"
-     aria-labelledby="appointmentDialogTitle"
-   >
-     <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-auto p-6 overflow-y-auto max-h-[90vh]">
-       <!-- Dialog Header -->
-       <div class="flex justify-between items-center border-b pb-3 mb-4">
-         <h3 id="appointmentDialogTitle" class="text-lg font-semibold">
-           Edit Appointment
-         </h3>
-         <button
-           id="appointmentDialogCloseBtn"
-           type="button"
-           class="text-gray-500 hover:text-gray-700 text-2xl"
-           aria-label="Close dialog"
-         >
-           &times;
-         </button>
-       </div>
-   
-       <!-- Success Message -->
-       <p
-         id="appointmentSuccessMsg"
-         class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 mb-3 hidden text-center"
-         role="alert"
-       >
-         ✅ Appointment updated successfully.
-       </p>
-   
-       <!-- Form -->
-       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-         <!-- Customer Name -->
-         <div class="form-group">
-           <label for="appointmentCustomerName">Customer Name</label>
-           <input
-             type="text"
-             id="appointmentCustomerName"
-             readonly
-             class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-           />
-         </div>
-   
-         <!-- Customer Phone -->
-         <div class="form-group">
-           <label for="appointmentCustomerPhone">Phone Number</label>
-           <input
-             type="text"
-             id="appointmentCustomerPhone"
-             readonly
-             class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-           />
-         </div>
-   
-         <!-- Scheduled Time -->
-         <div class="form-group">
-           <label for="appointmentScheduledTime">Scheduled Time</label>
-           <input
-             type="datetime-local"
-             id="appointmentScheduledTime"
-             readonly
-             class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-           />
-         </div>
-   
-         <!-- Status -->
-         <div class="form-group">
-           <label for="appointmentStatus">Status</label>
-           <select
-             id="appointmentStatus"
-             disabled
-             class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-           >
-             <option value="Open">Open</option>
-             <option value="Closed">Closed</option>
-             <option value="Rescheduled">Rescheduled</option>
-           </select>
-         </div>
-   
-         <!-- Party -->
-         <div class="form-group sm:col-span-2">
-           <label for="appointmentParty">Party</label>
-           <input
-             type="text"
-             id="appointmentParty"
-             readonly
-             class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-           />
-         </div>
-   
-         <!-- Customer Email -->
-         <div class="form-group sm:col-span-2">
-           <label for="appointmentCustomerEmail">Customer Email</label>
-           <input
-             type="email"
-             id="appointmentCustomerEmail"
-             readonly
-             class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-           />
-         </div>
-   
-         <!-- Customer Details -->
-         <div class="form-group sm:col-span-2">
-           <label for="appointmentCustomerDetails">Customer Details</label>
-           <textarea
-             id="appointmentCustomerDetails"
-             rows="3"
-             readonly
-             class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-           ></textarea>
-         </div>
-       </div>
-   
-       <!-- Buttons -->
-       <div class="flex justify-end gap-2 mt-6">
-         <button
-           id="cancelAppointmentBtn"
-           class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-         >
-           Cancel
-         </button>
-         <button
-           id="updateAppointmentBtn"
-           class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-         >
-           Edit
-         </button>
-       </div>
-     </div>
-   </div>
-   
+    <!-- Delete Confirmation Dialog -->
+    <div
+      id="deleteConfirmDialog"
+      class="fixed inset-0 hidden z-60 flex items-center justify-center bg-black bg-opacity-50"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm animate-fade-in relative">
+        <!-- Dialog Heading & Message -->
+        <h3 class="text-lg font-semibold mb-4">Confirm Deletion</h3>
+        <p class="text-gray-700 mb-6">
+          Are you sure you want to delete this appointment?
+        </p>
+      
+        <!-- Action Buttons -->
+        <div class="flex justify-end space-x-2">
+          <button
+            id="cancelDeleteBtn"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            id="confirmDeleteBtn"
+            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
 
+    <!-- Custom Dialog for Viewing/Editing Appointment -->
+    <div
+      id="appointmentDialog"
+      class="fixed inset-0 hidden flex items-center justify-center bg-black bg-opacity-50 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="appointmentDialogTitle"
+    >
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-auto p-6 overflow-y-auto max-h-[90vh]">
+        <!-- Dialog Header -->
+        <div class="flex justify-between items-center border-b pb-3 mb-4">
+          <h3 id="appointmentDialogTitle" class="text-lg font-semibold">
+            Edit Appointment
+          </h3>
+          <button
+            id="appointmentDialogCloseBtn"
+            type="button"
+            class="text-gray-500 hover:text-gray-700 text-2xl"
+            aria-label="Close dialog"
+          >
+            &times;
+          </button>
+        </div>
+    
+        <!-- Success Message -->
+        <p
+          id="appointmentSuccessMsg"
+          class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 mb-3 hidden text-center"
+          role="alert"
+        >
+          ✅ Appointment updated successfully.
+        </p>
+    
+        <!-- Form -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Customer Name -->
+          <div class="form-group">
+            <label for="appointmentCustomerName">Customer Name</label>
+            <input
+              type="text"
+              id="appointmentCustomerName"
+              readonly
+              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
+            />
+          </div>
+    
+          <!-- Customer Phone -->
+          <div class="form-group">
+            <label for="appointmentCustomerPhone">Phone Number</label>
+            <input
+              type="text"
+              id="appointmentCustomerPhone"
+              readonly
+              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
+            />
+          </div>
+    
+          <!-- Scheduled Time -->
+          <div class="form-group">
+            <label for="appointmentScheduledTime">Scheduled Time</label>
+            <input
+              type="datetime-local"
+              id="appointmentScheduledTime"
+              readonly
+              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
+            />
+          </div>
+    
+          <!-- Status -->
+          <div class="form-group">
+            <label for="appointmentStatus">Status</label>
+            <select
+              id="appointmentStatus"
+              disabled
+              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
+            >
+              <option value="Open">Open</option>
+              <option value="Closed">Closed</option>
+              <option value="Rescheduled">Rescheduled</option>
+            </select>
+          </div>
+    
+          <!-- Party -->
+          <div class="form-group sm:col-span-2">
+            <label for="appointmentParty">Party</label>
+            <input
+              type="text"
+              id="appointmentParty"
+              readonly
+              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
+            />
+          </div>
+    
+          <!-- Customer Email -->
+          <div class="form-group sm:col-span-2">
+            <label for="appointmentCustomerEmail">Customer Email</label>
+            <input
+              type="email"
+              id="appointmentCustomerEmail"
+              readonly
+              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
+            />
+          </div>
+    
+          <!-- Customer Details -->
+          <div class="form-group sm:col-span-2">
+            <label for="appointmentCustomerDetails">Customer Details</label>
+            <textarea
+              id="appointmentCustomerDetails"
+              rows="3"
+              readonly
+              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
+            ></textarea>
+          </div>
+        </div>
+    
+        <!-- Buttons -->
+        <div class="flex justify-end gap-2 mt-6">
+          <button
+            id="cancelAppointmentBtn"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            id="updateAppointmentBtn"
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Bottom Navigation for CRM -->
     <nav
@@ -1002,6 +1225,7 @@
       </button>
     </nav>
     <script>
+      
       // Configuration
       const SYNC_INTERVAL = 5000; // 5 seconds
       const LONG_POLL_TIMEOUT = 30000; // 30 seconds
@@ -1019,12 +1243,28 @@
 
       // FAB button New Lead
       const fab = document.getElementById("fabNewEntry");
-      fab.addEventListener("click", () => toggleDialog(true));
+      fab.addEventListener("click", () => toggleCreateLeadDialog(true));
       
       // Dialog elements
-      const dialog = document.getElementById("customDialog");
-      const dialogTitle = document.getElementById("dialogTitle");
-      const successMsg = document.getElementById("globalSuccessMsg");
+      const createLeadDialog = document.getElementById("createLeadDialog");
+      const updateLeadDialog = document.getElementById("updateLeadDialog");
+      
+      // Create Lead Dialog elements
+      const createLeadDialogTitle = document.getElementById("createLeadDialogTitle");
+      const createLeadSuccessMsg = document.getElementById("createLeadSuccessMsg");
+      const createStatusSelect = document.getElementById("createStatus");
+      const divCreateRemark = document.getElementById("divCreateRemark");
+      const createRemarkInput = document.getElementById("createRemark");
+      const errorCreateRemark = document.getElementById("errorCreateRemark");
+      const cancelCreateBtn = document.getElementById("cancelCreateLead");
+      const submitCreateBtn = document.getElementById("submitCreateLead");
+      const divCreateAppointment = document.getElementById("divCreateAppointment");
+      const createAppointmentDateTime = document.getElementById("createAppointmentDateTime");
+      const errorCreateAppointmentDateTime = document.getElementById("errorCreateAppointmentDateTime");
+
+      // Update Lead Dialog elements
+      const updateLeadDialogTitle = document.getElementById("updateLeadDialogTitle");
+      const updateLeadSuccessMsg = document.getElementById("updateLeadSuccessMsg");
       const productTableBody = document.getElementById("productTableBody");
       const addProductBtn = document.getElementById("addProductBtn");
       const errorProducts = document.getElementById("errorProducts");
@@ -1033,10 +1273,9 @@
       const remarkInput = document.getElementById("remark");
       const errorRemark = document.getElementById("errorRemark");
       const cancelBtn = document.getElementById("cancelLead");
-      const createBtn = document.getElementById("createLead");
       const updateBtn = document.getElementById("updateLead");
 
-      // Tabs elements
+      // Tabs elements for update dialog
       const tabs = {
         lead: document.getElementById("tabLead"),
         products: document.getElementById("tabProducts"),
@@ -1049,20 +1288,12 @@
       };
 
       // Appointment tab elements
-      const appointmentTableBody = document.getElementById(
-        "appointmentTableBody"
-      );
+      const appointmentTableBody = document.getElementById("appointmentTableBody");
       const addAppointmentBtn = document.getElementById("addAppointmentBtn");
-      const newAppointmentDateTime = document.getElementById(
-        "newAppointmentDateTime"
-      );
-      const newAppointmentStatus = document.getElementById(
-        "newAppointmentStatus"
-      );
+      const newAppointmentDateTime = document.getElementById("newAppointmentDateTime");
+      const newAppointmentStatus = document.getElementById("newAppointmentStatus");
       const errorAppointments = document.getElementById("errorAppointments");
-      const errorNewAppointmentDateTime = document.getElementById(
-        "errorNewAppointmentDateTime"
-      );
+      const errorNewAppointmentDateTime = document.getElementById("errorNewAppointmentDateTime");
 
       // Store products list globally for options
       let productsList = [];
@@ -1642,517 +1873,222 @@
 
       // Render list items
       function renderList(section, filter, searchText) {
-  crmList.innerHTML = "";
+        crmList.innerHTML = "";
 
-  let items = [];
-  if (section === "lead") {
-    items = leadData;
-  } else if (section === "appointment") {
-    items = appointmentData;
-  } else if (section === "opportunity") {
-    items = opportunityData;
-  } else if (section === "report") {
-    items = [
-      {
-        title: "My Leads Report",
-        subtitle: "View detailed lead analytics",
-        link: "/app/query-report/My%20Leads%20Report",
-        img: "https://placehold.co/40x40/png?text=R1",
-        alt: "Leads Report icon, stylized letter R1 in blue on white background",
-      },
-      {
-        title: "My Appointments Report",
-        subtitle: "Monitor your appointment trends",
-        link: "/app/query-report/My%20Appointments",
-        img: "https://placehold.co/40x40/png?text=R2",
-        alt: "Appointments Report icon, stylized letter R2 in blue on white background",
-      },
-    ];
-  }
-
-  if (
-    section === "lead" ||
-    section === "appointment" ||
-    section === "opportunity"
-  ) {
-    items = items.filter((item) => {
-      const matchesSearch =
-        !searchText ||
-        item.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.subtitle.toLowerCase().includes(searchText.toLowerCase());
-
-      if (section === "appointment") {
-        const now = new Date();
-        const scheduledDate = item.rawData.scheduled_time
-          ? new Date(item.rawData.scheduled_time)
-          : null;
-
-        switch (filter) {
-          case "All":
-            return matchesSearch;
-          case "Due":
-            return (
-              matchesSearch &&
-              scheduledDate &&
-              scheduledDate < now &&
-              item.status !== "Closed"
-            );
-          case "Upcoming":
-            return (
-              matchesSearch &&
-              scheduledDate &&
-              scheduledDate > now &&
-              item.status !== "Closed"
-            );
-          case "Open":
-            return matchesSearch && item.status === "Open";
-          case "Closed":
-            return matchesSearch && item.status === "Closed";
-          case "Today":
-            if (!scheduledDate) return false;
-            const today = new Date();
-            return (
-              matchesSearch &&
-              scheduledDate.getDate() === today.getDate() &&
-              scheduledDate.getMonth() === today.getMonth() &&
-              scheduledDate.getFullYear() === today.getFullYear()
-            );
-          default:
-            return matchesSearch;
+        let items = [];
+        if (section === "lead") {
+          items = leadData;
+        } else if (section === "appointment") {
+          items = appointmentData;
+        } else if (section === "opportunity") {
+          items = opportunityData;
+        } else if (section === "report") {
+          items = [
+            {
+              title: "My Leads Report",
+              subtitle: "View detailed lead analytics",
+              link: "/app/query-report/My%20Leads%20Report",
+              img: "https://placehold.co/40x40/png?text=R1",
+              alt: "Leads Report icon, stylized letter R1 in blue on white background",
+            },
+            {
+              title: "My Appointments Report",
+              subtitle: "Monitor your appointment trends",
+              link: "/app/query-report/My%20Appointments",
+              img: "https://placehold.co/40x40/png?text=R2",
+              alt: "Appointments Report icon, stylized letter R2 in blue on white background",
+            },
+          ];
         }
-      } else {
-        const matchesFilter = filter === "All" || item.status === filter;
-        return matchesFilter && matchesSearch;
-      }
-    });
 
-    items.sort((a, b) => {
-      const dateA = new Date(a.rawData.modified || a.rawData.creation || 0);
-      const dateB = new Date(b.rawData.modified || b.rawData.creation || 0);
-      return dateB - dateA;
-    });
-  }
+        if (
+          section === "lead" ||
+          section === "appointment" ||
+          section === "opportunity"
+        ) {
+          items = items.filter((item) => {
+            const matchesSearch =
+              !searchText ||
+              item.title.toLowerCase().includes(searchText.toLowerCase()) ||
+              item.subtitle.toLowerCase().includes(searchText.toLowerCase());
 
-  if (items.length === 0) {
-    const noDataDiv = document.createElement("div");
-    noDataDiv.className = "text-center text-gray-500 py-10 select-none";
-    noDataDiv.textContent = "No records found.";
-    crmList.appendChild(noDataDiv);
-    return;
-  }
+            if (section === "appointment") {
+              const now = new Date();
+              const scheduledDate = item.rawData.scheduled_time
+                ? new Date(item.rawData.scheduled_time)
+                : null;
 
-  items.forEach((item) => {
-    const div = document.createElement("div");
-    div.className =
-      "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
-    div.tabIndex = 0;
-    div.setAttribute("role", "button");
-    div.setAttribute("aria-label", item.title + ", " + item.subtitle);
+              switch (filter) {
+                case "All":
+                  return matchesSearch;
+                case "Due":
+                  return (
+                    matchesSearch &&
+                    scheduledDate &&
+                    scheduledDate < now &&
+                    item.status !== "Closed"
+                  );
+                case "Upcoming":
+                  return (
+                    matchesSearch &&
+                    scheduledDate &&
+                    scheduledDate > now &&
+                    item.status !== "Closed"
+                  );
+                case "Open":
+                  return matchesSearch && item.status === "Open";
+                case "Closed":
+                  return matchesSearch && item.status === "Closed";
+                case "Today":
+                  if (!scheduledDate) return false;
+                  const today = new Date();
+                  return (
+                    matchesSearch &&
+                    scheduledDate.getDate() === today.getDate() &&
+                    scheduledDate.getMonth() === today.getMonth() &&
+                    scheduledDate.getFullYear() === today.getFullYear()
+                  );
+                default:
+                  return matchesSearch;
+              }
+            } else {
+              const matchesFilter = filter === "All" || item.status === filter;
+              return matchesFilter && matchesSearch;
+            }
+          });
 
-    div.innerHTML = `
-      <div class="flex items-center space-x-3 flex-1 min-w-0">
-        <img src="${item.img}" alt="${item.alt}" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
-        <div class="min-w-0">
-          <p class="font-semibold text-base leading-5 select-text truncate">${item.title}</p>
-          <p class="text-gray-500 text-sm truncate select-text">${item.subtitle}</p>
-          ${
-            item.statusClass
-              ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
-              : ""
-          }
-        </div>
-      </div>
-      ${
-        item.lastUpdated
-          ? `<div class="text-xs text-gray-500 select-none whitespace-nowrap ml-2">${item.lastUpdated}</div>`
-          : ""
-      }
-    `;
-
-    div.addEventListener("click", () => {
-      if (section === "report" && item.link) {
-        window.open(item.link, "_blank");
-      } else if (section === "lead") {
-        openEditLeadDialogByName(item.rawData.name);
-      } else if (section === "appointment") {
-        console.log("Appointment Name:", item.rawData.name);
-
-        openEditAppointmentDialogByName(item.rawData.name);
-      } else if (section === "opportunity") {
-        const name = item.rawData?.name;
-        if (name) {
-          window.top.location.href = `/app/opportunity/${name}`;
+          items.sort((a, b) => {
+            const dateA = new Date(a.rawData.modified || a.rawData.creation || 0);
+            const dateB = new Date(b.rawData.modified || b.rawData.creation || 0);
+            return dateB - dateA;
+          });
         }
+
+        if (items.length === 0) {
+          const noDataDiv = document.createElement("div");
+          noDataDiv.className = "text-center text-gray-500 py-10 select-none";
+          noDataDiv.textContent = "No records found.";
+          crmList.appendChild(noDataDiv);
+          return;
+        }
+
+        items.forEach((item) => {
+          const div = document.createElement("div");
+          div.className =
+            "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
+          div.tabIndex = 0;
+          div.setAttribute("role", "button");
+          div.setAttribute("aria-label", item.title + ", " + item.subtitle);
+
+          div.innerHTML = `
+            <div class="flex items-center space-x-3 flex-1 min-w-0">
+              <img src="${item.img}" alt="${item.alt}" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
+              <div class="min-w-0">
+                <p class="font-semibold text-base leading-5 select-text truncate">${item.title}</p>
+                <p class="text-gray-500 text-sm truncate select-text">${item.subtitle}</p>
+                ${
+                  item.statusClass
+                    ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
+                    : ""
+                }
+              </div>
+            </div>
+            ${
+              item.lastUpdated
+                ? `<div class="text-xs text-gray-500 select-none whitespace-nowrap ml-2">${item.lastUpdated}</div>`
+                : ""
+            }
+          `;
+
+          div.addEventListener("click", () => {
+            if (section === "report" && item.link) {
+              window.open(item.link, "_blank");
+            } else if (section === "lead") {
+              openEditLeadDialogByName(item.rawData.name);
+            } else if (section === "appointment") {
+              console.log("Appointment Name:", item.rawData.name);
+
+              openEditAppointmentDialogByName(item.rawData.name);
+            } else if (section === "opportunity") {
+              const name = item.rawData?.name;
+              if (name) {
+                window.top.location.href = `/app/opportunity/${name}`;
+              }
+            }
+          });
+
+          crmList.appendChild(div);
+        });
       }
-    });
-
-    crmList.appendChild(div);
-  });
-}
-
 
       // Open dialog to edit lead by fetching fresh data from API
       async function openEditLeadDialogByName(leadName) {
-        if (!leadName) {
-          alert("Invalid lead identifier.");
-          return;
-        }
-        try {
-          const response = await fetch(
-            `/api/resource/Lead/${encodeURIComponent(leadName)}`,
-            {
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-              },
-              cache: "no-cache",
-            }
-          );
-          if (!response.ok) {
-            if (response.status === 403) {
-              window.location.href = `/login?redirect-to=${encodeURIComponent(
-                window.location.href
-              )}`;
-              return;
-            }
-            throw new Error(`Failed to fetch lead: ${response.status}`);
-          }
-          const data = await response.json();
-          if (!data.data) {
-            alert("Lead data not found.");
-            return;
-          }
-          // Fetch appointments for this lead
-          console.log("Fetching appointments for lead:", leadName);
-          await fetchAppointmentsForLead(leadName);
-          openEditLeadDialog(data.data);
-        } catch (error) {
-          console.error("Error fetching lead data:", error);
-          alert("Error fetching lead data: " + error.message);
-        }
-      }
-
-      async function openEditAppointmentDialogByName(appointmentName) {
-  if (!appointmentName) {
-    alert("Invalid appointment selected.");
+  if (!leadName) {
+    console.error("Invalid lead identifier.");
+    alert("Invalid lead selected.");
     return;
   }
 
-  const url = `/api/resource/Appointment/${appointmentName}`;
-  console.log("Fetching appointment from:", url);
-
   try {
-    const response = await fetch(url, {
-      credentials: "include",
-      headers: {
-        Accept: "application/json"
-      },
-      cache: "no-cache"
-    });
+    // Show loading state
+    const leadItem = document.querySelector(`[data-lead-name="${leadName}"]`);
+    if (leadItem) {
+      leadItem.classList.add('loading');
+    }
+
+    const response = await fetch(
+      `/api/resource/Lead/${encodeURIComponent(leadName)}`,
+      {
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-cache",
+      }
+    );
 
     if (!response.ok) {
-      const text = await response.text();
-      console.error("Fetch failed", response.status, text);
-      alert("Could not load appointment data.");
-      return;
+      if (response.status === 403) {
+        window.location.href = `/login?redirect-to=${encodeURIComponent(
+          window.location.href
+        )}`;
+        return;
+      }
+      throw new Error(`Failed to fetch lead: ${response.status}`);
     }
 
     const data = await response.json();
-    const doc = data.data;
-    console.log("Fetched appointment data:", doc);
-
-    // Fill the dialog fields
-    document.getElementById("appointmentCustomerName").value = doc.customer_name || "---";
-    document.getElementById("appointmentCustomerPhone").value = doc.customer_phone_number || "---";
-    document.getElementById("appointmentScheduledTime").value = doc.scheduled_time
-      ? doc.scheduled_time.slice(0, 16) // For datetime-local input
-      : "";
-    document.getElementById("appointmentStatus").value = doc.status || "---";
-
-    // ✅ New fields
-    document.getElementById("appointmentParty").value = doc.party || "---";
-    document.getElementById("appointmentCustomerEmail").value = doc.customer_email || "---";
-    document.getElementById("appointmentCustomerDetails").value = doc.customer_details || "---";
-
-    // Store the name globally for update reference
-    window.currentAppointmentName = doc.name;
-
-    // Show dialog
-    document.getElementById("appointmentDialog").classList.remove("hidden");
-  } catch (err) {
-    console.error("Error fetching appointment:", err);
-    alert("Could not load appointment data.");
-  }
-}
-const appointmentDialog = document.getElementById("appointmentDialog");
-const appointmentDialogCloseBtn = document.getElementById("appointmentDialogCloseBtn");
-const cancelAppointmentBtn = document.getElementById("cancelAppointmentBtn");
-const updateAppointmentBtn = document.getElementById("updateAppointmentBtn");
-
-let isEditing = false;
-
-// Fields allowed for editing
-const editableFields = [
-  "appointmentScheduledTime",
-  "appointmentStatus"
-];
-
-// Toggle editable state + visual cue
-function toggleEditableFields(editable) {
-  editableFields.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.readOnly = !editable;
-      el.disabled = !editable;
-
-      if (editable) {
-        el.classList.add("editable-active");
-      } else {
-        el.classList.remove("editable-active");
-      }
-    }
-  });
-}
-
-// Close dialog
-function closeAppointmentDialog() {
-  appointmentDialog.classList.add("hidden");
-  isEditing = false;
-  toggleEditableFields(false);
-  updateAppointmentBtn.textContent = "Edit";
-  document.getElementById("appointmentSuccessMsg").classList.add("hidden");
-}
-
-// Event Listeners
-appointmentDialogCloseBtn.addEventListener("click", closeAppointmentDialog);
-cancelAppointmentBtn.addEventListener("click", closeAppointmentDialog);
-
-// Handle Edit/Update
-updateAppointmentBtn.addEventListener("click", async function () {
-  if (!isEditing) {
-    // Enter edit mode
-    isEditing = true;
-    toggleEditableFields(true);
-    updateAppointmentBtn.textContent = "Update";
-  } else {
-    // Save changes
-    const name = window.currentAppointmentName;
-    if (!name) {
-      alert("Invalid appointment name");
-      return;
+    if (!data.data) {
+      throw new Error("Lead data not found in response");
     }
 
-    const updatedData = {
-      scheduled_time: document.getElementById("appointmentScheduledTime").value,
-      status: document.getElementById("appointmentStatus").value
-    };
-
-    try {
-      const response = await fetch(`/api/resource/Appointment/${name}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify({ data: updatedData }),
-        credentials: "include"
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Update failed:", errorText);
-        alert("Update failed. See console for details.");
-        return;
-      }
-
-      document.getElementById("appointmentSuccessMsg").classList.remove("hidden");
-      isEditing = false;
-      toggleEditableFields(false);
-      updateAppointmentBtn.textContent = "Edit";
-    } catch (err) {
-      console.error("Error during update:", err);
-      alert("Update failed.");
+    // Ensure dialog elements exist before proceeding
+    if (!document.getElementById('updateLeadDialog')) {
+      throw new Error("Update lead dialog not found in DOM");
     }
-  }
-});
 
+    // Fetch appointments for this lead
+    console.log("Fetching appointments for lead:", leadName);
+    await fetchAppointmentsForLead(leadName);
+    openEditLeadDialog(data.data);
 
-      // Fetch appointments for a lead and store in currentLeadAppointments
-      async function fetchAppointmentsForLead(leadName) {
-        try {
-          const filters = JSON.stringify([["party", "=", leadName]]);
-          const fields = JSON.stringify([
-            "name",
-            "scheduled_time",
-            "status",
-            "customer_name",
-            "customer_phone_number",
-            "customer_details",
-            "customer_email",
-            "party",
-            "creation",
-            "modified"
-          ]);
-        
-          const url = `/api/resource/Appointment?filters=${encodeURIComponent(filters)}&fields=${encodeURIComponent(fields)}`;
-          console.log("Fetching appointments from:", url);
-        
-          const response = await fetch(url, {
-            credentials: "include",
-            headers: {
-              Accept: "application/json",
-            },
-            cache: "no-cache",
-          });
-        
-          if (!response.ok) {
-            if (response.status === 403) {
-              window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.href)}`;
-              return;
-            }
-            throw new Error(`Failed to fetch appointments: ${response.status}`);
-          }
-        
-          const data = await response.json();
-          console.log("Appointment response:", data);
-        
-          currentLeadAppointments = data.data || [];
-          renderAppointmentTable();
-        } catch (error) {
-          console.error("Error fetching appointments:", error);
-          currentLeadAppointments = [];
-          renderAppointmentTable();
-        }
-      }
-    
-
-      // Render appointment rows in appointment tab
-      function renderAppointmentTable() {
-  appointmentTableBody.innerHTML = "";
-
-  if (currentLeadAppointments.length === 0) {
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = 3;
-    td.className = "text-center text-gray-500 py-4 select-none";
-    td.textContent = "No appointments found.";
-    tr.appendChild(td);
-    appointmentTableBody.appendChild(tr);
-    return;
-  }
-
-  currentLeadAppointments.forEach((appt) => {
-    const tr = document.createElement("tr");
-
-    // Format scheduled time
-    const scheduledDate = appt.scheduled_time
-      ? new Date(appt.scheduled_time)
-      : null;
-    const scheduledStr = scheduledDate
-      ? scheduledDate.toLocaleString(undefined, {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
-      : "N/A";
-
-    const status = appt.status || "Open";
-
-    tr.innerHTML = `
-      <td>${scheduledStr}</td>
-      <td>${status}</td>
-      <td class="text-center">
-        <button type="button" class="remove-appointment-btn" aria-label="Remove appointment">&times;</button>
-      </td>
-    `;
-
-    tr.querySelector(".remove-appointment-btn").addEventListener("click", () => {
-      showDeleteConfirmationDialog(appt);  // Use custom popup
-    });
-
-    appointmentTableBody.appendChild(tr);
-  });
-}
-
-let appointmentToDelete = null;
-
-function showDeleteConfirmationDialog(appt) {
-  appointmentToDelete = appt;
-  document.getElementById("deleteConfirmDialog").classList.remove("hidden");
-}
-
-function hideDeleteConfirmationDialog() {
-  document.getElementById("deleteConfirmDialog").classList.add("hidden");
-  appointmentToDelete = null;
-}
-
-document.getElementById("cancelDeleteBtn").addEventListener("click", hideDeleteConfirmationDialog);
-
-function showSuccessMessage(msg) {
-  const msgElem = document.getElementById("globalSuccessMsg");
-  if (!msgElem) return;
-
-  msgElem.textContent = `✅ ${msg}`;
-  msgElem.classList.remove("hidden");
-
-  setTimeout(() => {
-    msgElem.classList.add("hidden");
-  }, 2500); // hide after 2.5 seconds
-}
-
-document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
-  if (!appointmentToDelete) return;
-
-  try {
-    const res = await fetch(
-      `/api/resource/Appointment/${encodeURIComponent(appointmentToDelete.name)}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      }
-    );
-    if (res.ok) {
-      currentLeadAppointments = currentLeadAppointments.filter(
-        (a) => a.name !== appointmentToDelete.name
-      );
-      renderAppointmentTable();
-      showSuccessMessage("Appointment deleted successfully!");
-    } else {
-      alert("Failed to delete appointment.");
-    }
-  } catch (err) {
-    alert("Network error deleting appointment.");
+  } catch (error) {
+    console.error("Error fetching lead data:", error);
+    alert(`Error loading lead: ${error.message}`);
   } finally {
-    hideDeleteConfirmationDialog();
+    // Remove loading state
+    const leadItem = document.querySelector(`[data-lead-name="${leadName}"]`);
+    if (leadItem) {
+      leadItem.classList.remove('loading');
+    }
   }
-});
-
-
+}
 
       // Open dialog to edit lead with given lead data object
       function openEditLeadDialog(lead) {
         editingLeadId = lead.name || null;
-        dialogTitle.textContent = "Update Lead";
-        successMsg.classList.add("hidden");
-
-        // Show update button, hide create button
-        updateBtn.classList.remove("hidden");
-        createBtn.classList.add("hidden");
-
-        // Show all form fields
-        [
-          "divStatus",
-          "divSource",
-          "divFullName",
-          "divMobileNo",
-          "divLeadButton",
-          "divRemark",
-        ].forEach((id) => {
-          document.getElementById(id)?.classList.remove("hidden");
-        });
+        updateLeadDialogTitle.textContent = "Update Lead";
+        updateLeadSuccessMsg.classList.add("hidden");
 
         // Fill form fields with lead data
         document.getElementById("fullName").value =
@@ -2212,11 +2148,25 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
         }
 
         hideAllErrors();
-        toggleDialog(true);
+        toggleUpdateLeadDialog(true);
         activateTab("lead");
       }
 
-      // Show/hide remark based on status
+      // Show/hide remark based on status in create dialog
+      createStatusSelect.addEventListener("change", () => {
+        if (createStatusSelect.value === "Not Interested") {
+          divCreateRemark.classList.remove("hidden");
+          divCreateAppointment.classList.add("hidden");
+        } else if (createStatusSelect.value === "Follow Up") {
+          divCreateRemark.classList.add("hidden");
+          divCreateAppointment.classList.remove("hidden");
+        } else {
+          divCreateRemark.classList.add("hidden");
+          divCreateAppointment.classList.add("hidden");
+        }
+      });
+
+      // Show/hide remark based on status in update dialog
       statusSelect.addEventListener("change", () => {
         if (statusSelect.value === "Not Interested") {
           divRemark.classList.remove("hidden");
@@ -2227,6 +2177,7 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
           remarkInput.classList.remove("border-red-500");
         }
       });
+
 
       // Load products from API and populate all selects
       async function loadProductsOptions() {
@@ -2246,35 +2197,11 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
           }
           const data = await response.json();
           productsList = data.data || [];
-
-          // Initialize all custom selects with products
-          initializeAllCustomSelects();
+          console.log("Loaded products:", productsList);
         } catch (error) {
           console.error("Error loading products:", error);
           productsList = [];
-          // Clear selects and show error option
-          const containers = productTableBody.querySelectorAll(
-            ".custom-select-container"
-          );
-          containers.forEach((container) => {
-            const input = container.querySelector("input.custom-select-input");
-            const dropdown = container.querySelector(".custom-select-dropdown");
-            input.value = "";
-            dropdown.innerHTML =
-              '<li class="custom-select-item" role="option" aria-selected="false">Failed to load products</li>';
-            dropdown.classList.remove("hidden");
-          });
         }
-      }
-
-      // Initialize all custom selects in product rows
-      function initializeAllCustomSelects() {
-        const containers = productTableBody.querySelectorAll(
-          ".custom-select-container"
-        );
-        containers.forEach((container, index) => {
-          setupCustomSelect(container, index);
-        });
       }
 
       // Setup a single custom select container
@@ -2420,44 +2347,43 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
       }
 
       // Add product row function
-      function addProductRow() {
-        const tr = document.createElement("tr");
+      function addProductRow(tableBodySelector, listIdPrefix) {
+  const productTableBody = document.querySelector(tableBodySelector);
+  if (!productTableBody) {
+    console.warn(`Element '${tableBodySelector}' not found. Skipping addProductRow.`);
+    return;
+  }
 
-        tr.innerHTML = `
-          <td>
-            <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="" aria-label="Select product">
-              <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="" aria-activedescendant="" />
-              <ul class="custom-select-dropdown hidden" role="listbox" tabindex="-1"></ul>
-            </div>
-          </td>
-          <td>
-            <input type="number" min="0" step="0.01" class="amount-input" placeholder="Amount" aria-label="Product amount" />
-          </td>
-          <td class="text-center">
-            <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
-          </td>
-        `;
+  const rowIndex = productTableBody.querySelectorAll("tr").length;
 
-        productTableBody.appendChild(tr);
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>
+      <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="${listIdPrefix}-${rowIndex}" aria-label="Select product">
+        <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="${listIdPrefix}-${rowIndex}" aria-activedescendant="" />
+        <ul class="custom-select-dropdown hidden" role="listbox" id="${listIdPrefix}-${rowIndex}" tabindex="-1"></ul>
+      </div>
+    </td>
+    <td>
+      <input type="number" min="0" step="0.01" class="amount-input" placeholder="Amount" aria-label="Product amount" />
+    </td>
+    <td class="text-center">
+      <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
+    </td>
+  `;
 
+  productTableBody.appendChild(tr);
 
-        // Attach remove event
-        tr.querySelector(".remove-product-btn").addEventListener(
-          "click",
-          () => {
-            if (productTableBody.rows.length > 1) {
-              tr.remove();
-            }
-          }
-        );
+  // Remove row logic
+  tr.querySelector(".remove-product-btn").addEventListener("click", () => {
+    if (productTableBody.rows.length > 1) tr.remove();
+  });
 
-        // Setup custom select for the new row
-        const container = tr.querySelector(".custom-select-container");
-        const index =
-          productTableBody.querySelectorAll(".custom-select-container").length -
-          1;
-        setupCustomSelect(container, index);
-      }
+  // Setup dropdown
+  const container = tr.querySelector(".custom-select-container");
+  setupCustomSelect(container, rowIndex);
+}
+
 
       // Remove product row event for initial row
       productTableBody
@@ -2470,6 +2396,186 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
             }
           });
         });
+
+        // Setup all existing custom selects inside a table body
+function setupAllCustomSelects(tableBodySelector) {
+  const containers = document.querySelectorAll(`${tableBodySelector} .custom-select-container`);
+  containers.forEach((container, index) => {
+    setupCustomSelect(container, index);
+  });
+}
+
+// Initialize after DOM is loaded
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadProductsOptions(); // Load product list once
+
+  // Setup selects for existing rows
+  setupAllCustomSelects("#createProductTableBody");
+  setupAllCustomSelects("#productTableBody");
+
+  // Add new row in "Create Lead" dialog
+  document.getElementById("addCreateProductBtn").addEventListener("click", () => {
+    addProductRow("#createProductTableBody", "create-product-list");
+  });
+
+  // Add new row in "Update Lead" dialog
+  document.getElementById("addProductBtn").addEventListener("click", () => {
+    addProductRow("#productTableBody", "product-list");
+  });
+});
+
+
+      // Fetch appointments for a lead and store in currentLeadAppointments
+      async function fetchAppointmentsForLead(leadName) {
+        try {
+          const filters = JSON.stringify([["party", "=", leadName]]);
+          const fields = JSON.stringify([
+            "name",
+            "scheduled_time",
+            "status",
+            "customer_name",
+            "customer_phone_number",
+            "customer_details",
+            "customer_email",
+            "party",
+            "creation",
+            "modified"
+          ]);
+        
+          const url = `/api/resource/Appointment?filters=${encodeURIComponent(filters)}&fields=${encodeURIComponent(fields)}`;
+          console.log("Fetching appointments from:", url);
+        
+          const response = await fetch(url, {
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+            },
+            cache: "no-cache",
+          });
+        
+          if (!response.ok) {
+            if (response.status === 403) {
+              window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.href)}`;
+              return;
+            }
+            throw new Error(`Failed to fetch appointments: ${response.status}`);
+          }
+        
+          const data = await response.json();
+          console.log("Appointment response:", data);
+        
+          currentLeadAppointments = data.data || [];
+          renderAppointmentTable();
+        } catch (error) {
+          console.error("Error fetching appointments:", error);
+          currentLeadAppointments = [];
+          renderAppointmentTable();
+        }
+      }
+    
+      // Render appointment rows in appointment tab
+      function renderAppointmentTable() {
+        appointmentTableBody.innerHTML = "";
+
+        if (currentLeadAppointments.length === 0) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 3;
+          td.className = "text-center text-gray-500 py-4 select-none";
+          td.textContent = "No appointments found.";
+          tr.appendChild(td);
+          appointmentTableBody.appendChild(tr);
+          return;
+        }
+
+        currentLeadAppointments.forEach((appt) => {
+          const tr = document.createElement("tr");
+
+          // Format scheduled time
+          const scheduledDate = appt.scheduled_time
+            ? new Date(appt.scheduled_time)
+            : null;
+          const scheduledStr = scheduledDate
+            ? scheduledDate.toLocaleString(undefined, {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "N/A";
+
+          const status = appt.status || "Open";
+
+          tr.innerHTML = `
+            <td>${scheduledStr}</td>
+            <td>${status}</td>
+            <td class="text-center">
+              <button type="button" class="remove-appointment-btn" aria-label="Remove appointment">&times;</button>
+            </td>
+          `;
+
+          tr.querySelector(".remove-appointment-btn").addEventListener("click", () => {
+            showDeleteConfirmationDialog(appt);  // Use custom popup
+          });
+
+          appointmentTableBody.appendChild(tr);
+        });
+      }
+
+      let appointmentToDelete = null;
+
+      function showDeleteConfirmationDialog(appt) {
+        appointmentToDelete = appt;
+        document.getElementById("deleteConfirmDialog").classList.remove("hidden");
+      }
+
+      function hideDeleteConfirmationDialog() {
+        document.getElementById("deleteConfirmDialog").classList.add("hidden");
+        appointmentToDelete = null;
+      }
+
+      document.getElementById("cancelDeleteBtn").addEventListener("click", hideDeleteConfirmationDialog);
+
+      function showSuccessMessage(msg) {
+        const msgElem = document.getElementById("globalSuccessMsg");
+        if (!msgElem) return;
+
+        msgElem.textContent = `✅ ${msg}`;
+        msgElem.classList.remove("hidden");
+
+        setTimeout(() => {
+          msgElem.classList.add("hidden");
+        }, 2500); // hide after 2.5 seconds
+      }
+
+      document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+        if (!appointmentToDelete) return;
+
+        try {
+          const res = await fetch(
+            `/api/resource/Appointment/${encodeURIComponent(appointmentToDelete.name)}`,
+            {
+              method: "DELETE",
+              credentials: "include",
+            }
+          );
+          if (res.ok) {
+            currentLeadAppointments = currentLeadAppointments.filter(
+              (a) => a.name !== appointmentToDelete.name
+            );
+            renderAppointmentTable();
+            showSuccessMessage("Appointment deleted successfully!");
+          } else {
+            alert("Failed to delete appointment.");
+          }
+        } catch (err) {
+          alert("Network error deleting appointment.");
+        } finally {
+          hideDeleteConfirmationDialog();
+        }
+      });
 
       // Add appointment row function (adds to currentLeadAppointments and re-renders)
       async function addAppointment() {
@@ -2530,21 +2636,43 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
         }
       }
 
-      // Dialog toggle
-      function toggleDialog(show) {
-        dialog.style.display = show ? "flex" : "none";
-        if (!show) clearForm();
+      // Create Lead Dialog toggle
+      function toggleCreateLeadDialog(show) {
+        createLeadDialog.style.display = show ? "flex" : "none";
+        if (show) {
+          initCreateLeadDialog();
+        } else {
+          clearCreateLeadForm();
+        }
+      }
+      
+
+      // Update Lead Dialog toggle
+      function toggleUpdateLeadDialog(show) {
+        updateLeadDialog.style.display = show ? "flex" : "none";
+        if (!show) clearUpdateLeadForm();
       }
 
-      // Clear form and reset dialog
-      function clearForm() {
-        editingLeadId = null;
-        dialogTitle.textContent = "Create New Lead";
-        successMsg.classList.add("hidden");
+      // Clear create lead form
+      function clearCreateLeadForm() {
+        document.getElementById("createFullName").value = "";
+        document.getElementById("createSource").value = "";
+        document.getElementById("createMobileNo").value = "";
+        createStatusSelect.value = "Lead";
+        divCreateRemark.classList.add("hidden");
+        createRemarkInput.value = "";
+        errorCreateRemark.classList.add("hidden");
+        createRemarkInput.classList.remove("border-red-500");
+        divCreateAppointment.classList.add("hidden");
+        createAppointmentDateTime.value = "";
+        errorCreateAppointmentDateTime.classList.remove("visible");
+      }
 
-        // Show create button, hide update button
-        createBtn.classList.remove("hidden");
-        updateBtn.classList.add("hidden");
+      // Clear update lead form
+      function clearUpdateLeadForm() {
+        editingLeadId = null;
+        updateLeadDialogTitle.textContent = "Update Lead";
+        updateLeadSuccessMsg.classList.add("hidden");
 
         document.getElementById("fullName").value = "";
         document.getElementById("source").value = "";
@@ -2554,11 +2682,6 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
         remarkInput.value = "";
         errorRemark.classList.add("hidden");
         remarkInput.classList.remove("border-red-500");
-
-        hideAllErrors();
-        errorProducts.style.display = "none";
-        errorAppointments.classList.add("hidden");
-        errorNewAppointmentDateTime.classList.remove("visible");
 
         // Clear product rows except one
         while (productTableBody.rows.length > 1) {
@@ -2623,8 +2746,206 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
         document.getElementById(fieldId).classList.remove("border-red-500");
       }
 
-      // Validate form fields
-      function validateForm() {
+      // Create Lead Dialog elements
+const createProductTableBody = document.getElementById("createProductTableBody");
+const addCreateProductBtn = document.getElementById("addCreateProductBtn");
+const errorCreateProducts = document.getElementById("errorCreateProducts");
+
+// Initialize create lead dialog when opening
+function initCreateLeadDialog() {
+  // Clear any existing product rows except the first one
+  while (createProductTableBody.rows.length > 1) {
+    createProductTableBody.deleteRow(1);
+  }
+  
+  // Setup the first product row
+  const firstRow = createProductTableBody.rows[0];
+  if (firstRow) {
+    const container = firstRow.querySelector(".custom-select-container");
+    if (container) {
+      const input = container.querySelector("input.custom-select-input");
+      const dropdown = container.querySelector(".custom-select-dropdown");
+      input.value = "";
+      input.dataset.selectedProductCode = "";
+      input.dataset.selectedProductName = "";
+      populateDropdown(dropdown, productsList);
+      dropdown.classList.add("hidden");
+      container.setAttribute("aria-expanded", "false");
+    }
+    const amountInput = firstRow.querySelector("input.amount-input");
+    if (amountInput) {
+      amountInput.value = "";
+    }
+  }
+  
+  // Hide error messages
+  errorCreateProducts.style.display = "none";
+}
+
+// Add product row to create dialog
+function addCreateProductRow() {
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+    <td>
+      <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="" aria-label="Select product">
+        <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="" aria-activedescendant="" />
+        <ul class="custom-select-dropdown hidden" role="listbox" tabindex="-1"></ul>
+      </div>
+    </td>
+    <td>
+      <input type="number" min="0" step="0.01" class="amount-input" placeholder="Amount" aria-label="Product amount" />
+    </td>
+    <td class="text-center">
+      <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
+    </td>
+  `;
+
+  createProductTableBody.appendChild(tr);
+
+  // Attach remove event
+  tr.querySelector(".remove-product-btn").addEventListener(
+    "click",
+    () => {
+      if (createProductTableBody.rows.length > 1) {
+        tr.remove();
+      }
+    }
+  );
+
+  // Setup custom select for the new row
+  const container = tr.querySelector(".custom-select-container");
+  const index =
+    createProductTableBody.querySelectorAll(".custom-select-container").length -
+    1;
+  setupCustomSelect(container, index, "create");
+}
+
+// Event listener for add product button in create dialog
+addCreateProductBtn.addEventListener("click", addCreateProductRow);
+
+      // Validate create lead form
+      function validateCreateLeadForm() {
+  let valid = true;
+
+  const fullName = document.getElementById("createFullName").value.trim();
+  const source = document.getElementById("createSource").value;
+  const mobileNo = document.getElementById("createMobileNo").value.trim();
+  const mobileRegex = /^[6-9]\d{9}$/;
+  const status = createStatusSelect.value;
+  const remarkVal = createRemarkInput.value.trim();
+  const appointmentDateTime = createAppointmentDateTime.value;
+
+  // Validate Full Name
+  if (!fullName) {
+    showError("createFullName", "errorCreateFullName");
+    valid = false;
+  } else {
+    hideError("createFullName", "errorCreateFullName");
+  }
+
+  // Validate Source
+  if (!source) {
+    showError("createSource", "errorCreateSource");
+    valid = false;
+  } else {
+    hideError("createSource", "errorCreateSource");
+  }
+
+  // Validate Mobile Number
+  if (!mobileRegex.test(mobileNo)) {
+    showError("createMobileNo", "errorCreateMobile");
+    valid = false;
+  } else {
+    hideError("createMobileNo", "errorCreateMobile");
+  }
+
+  // Validate Status
+  if (!status) {
+    showError("createStatus", "errorCreateStatus");
+    valid = false;
+  } else {
+    hideError("createStatus", "errorCreateStatus");
+  }
+
+  // Validate Remark if status is "Not Interested"
+  if (status === "Not Interested") {
+    if (!remarkVal) {
+      errorCreateRemark.classList.add("visible");
+      createRemarkInput.classList.add("border-red-500");
+      valid = false;
+    } else {
+      errorCreateRemark.classList.remove("visible");
+      createRemarkInput.classList.remove("border-red-500");
+    }
+  } else {
+    errorCreateRemark.classList.remove("visible");
+    createRemarkInput.classList.remove("border-red-500");
+  }
+
+  // Validate Appointment if status is "Follow Up"
+  if (status === "Follow Up") {
+    if (!appointmentDateTime) {
+      errorCreateAppointmentDateTime.classList.add("visible");
+      valid = false;
+    } else {
+      errorCreateAppointmentDateTime.classList.remove("visible");
+    }
+  }
+
+  // Validate Products
+  const productRows = createProductTableBody.querySelectorAll("tr");
+  let hasValidProduct = false;
+
+  for (const row of productRows) {
+    const container = row.querySelector(".custom-select-container");
+    const input = container?.querySelector("input.custom-select-input");
+
+    if (!input) {
+      valid = false;
+      continue;
+    }
+
+    const selectedCode = input.dataset.selectedProductCode || "";
+    if (!selectedCode) {
+      input.classList.add("border-red-500");
+      valid = false;
+    } else {
+      const found = productsList.find((p) => p.product_code === selectedCode);
+      if (!found) {
+        input.classList.add("border-red-500");
+        valid = false;
+      } else {
+        input.classList.remove("border-red-500");
+        hasValidProduct = true;
+      }
+    }
+
+    const amountInput = row.querySelector("input.amount-input");
+    const amountVal = amountInput?.value.trim();
+    const amountNum = parseFloat(amountVal);
+
+    if (!amountInput || amountVal === "" || isNaN(amountNum) || amountNum < 0) {
+      amountInput?.classList.add("border-red-500");
+      valid = false;
+    } else {
+      amountInput.classList.remove("border-red-500");
+    }
+  }
+
+  if (!hasValidProduct) {
+    errorCreateProducts.style.display = "block";
+    valid = false;
+  } else {
+    errorCreateProducts.style.display = "none";
+  }
+
+  return valid;
+}
+
+
+      // Validate update lead form
+      function validateUpdateLeadForm() {
         let valid = true;
 
         const fullName = document.getElementById("fullName").value.trim();
@@ -2734,96 +3055,109 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
 
       // Handle create lead
       async function handleCreateLead() {
-        if (!validateForm()) return;
+  if (!validateCreateLeadForm()) return;
 
-        const fullName = document.getElementById("fullName").value.trim();
-        const source = document.getElementById("source").value;
-        const mobile_no = document.getElementById("mobileNo").value.trim();
-        const status = document.getElementById("status").value.trim();
-        const remarkVal = remarkInput.value.trim();
+  const fullName = document.getElementById("createFullName").value.trim();
+  const source = document.getElementById("createSource").value;
+  const mobile_no = document.getElementById("createMobileNo").value.trim();
+  const status = document.getElementById("createStatus").value.trim();
+  const remarkVal = createRemarkInput.value.trim();
+  const appointmentDateTime = createAppointmentDateTime.value;
 
-        // Collect products data as array of objects with amount
-        const custom_product_table = [];
-        const productRows = productTableBody.querySelectorAll("tr");
-        productRows.forEach((row) => {
-          const container = row.querySelector(".custom-select-container");
-          if (!container) return;
-          const input = container.querySelector("input.custom-select-input");
-          const amountInput = row.querySelector("input.amount-input");
-          if (input && input.dataset.selectedProductCode && amountInput) {
-            custom_product_table.push({
-              product: input.dataset.selectedProductCode,
-              product_amount: parseFloat(amountInput.value) || 0,
-            });
-          }
-        });
+  // Collect products data
+  const custom_product_table = [];
+  const productRows = createProductTableBody.querySelectorAll("tr");
+  productRows.forEach((row) => {
+    const container = row.querySelector(".custom-select-container");
+    if (!container) return;
+    const input = container.querySelector("input.custom-select-input");
+    const amountInput = row.querySelector("input.amount-input");
+    if (input && input.dataset.selectedProductCode && amountInput) {
+      custom_product_table.push({
+        product: input.dataset.selectedProductCode,
+        product_name: input.dataset.selectedProductName || "",
+        product_amount: parseFloat(amountInput.value) || 0,
+      });
+    }
+  });
 
-        // Prepare payload including products array and remark if Not Interested
-        const payload = {
-          first_name: fullName,
-          source,
-          mobile_no,
-          status,
-          custom_product_table,
+  // Prepare payload
+  const payload = {
+    first_name: fullName,
+    source,
+    mobile_no,
+    status,
+    custom_product_table,
+  };
+
+  if (status === "Not Interested") {
+    payload.custom_remark_not_interested = remarkVal;
+  }
+
+  try {
+    // First create the lead
+    const res = await fetch("/api/resource/Lead", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      credentials: "include",
+    });
+
+    const result = await res.json();
+
+    if (res.ok && result.data) {
+      const leadName = result.data.name;
+      
+      // If status is Follow Up, create appointment
+      if (status === "Follow Up" && appointmentDateTime) {
+        const appointmentPayload = {
+          scheduled_time: appointmentDateTime,
+          status: "Open", // Default status for new appointments
+          party: leadName,
+          customer_name: fullName,
+          customer_phone_number: mobile_no,
+          appointment_with: "Lead",
         };
 
-        if (status === "Not Interested") {
-          payload.custom_remark_not_interested = remarkVal;
-        }
-
-        try {
-          const res = await fetch("/api/resource/Lead", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
-            credentials: "include",
-          });
-
-          const result = await res.json();
-
-          if (res.ok && result.data) {
-            showSuccessMessage("Lead created successfully! You can now add appointments.");
-
-            [
-              "divStatus",
-              "divSource",
-              "divFullName",
-              "divMobileNo",
-              "divLeadButton",
-              "divRemark",
-            ].forEach((id) => {
-              document.getElementById(id)?.classList.add("hidden");
-            });
-
-            document
-              .getElementById("navLead")
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-            setTimeout(() => {
-              toggleDialog(false);
-              currentSection = "lead";
-              initApp();
-            }, 1500);
-          } else {
-            console.error("❌ Server responded with an error:", {
-              status: res.status,
-              statusText: res.statusText,
-              response: result,
-            });
-            alert("❌ Error: " + (result.message || "Unknown error occurred"));
-          }
-        } catch (err) {
-          console.error("⚠️ Network or parsing error:", err);
-          alert("⚠️ Network Error: " + err.message);
-        }
+        await fetch("/api/resource/Appointment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(appointmentPayload),
+          credentials: "include",
+        });
       }
+
+      createLeadSuccessMsg.textContent = "Lead created successfully!";
+      createLeadSuccessMsg.classList.remove("hidden");
+
+      setTimeout(() => {
+        toggleCreateLeadDialog(false);
+        currentSection = "lead";
+        initApp();
+      }, 1500);
+    } else {
+      console.error("❌ Server responded with an error:", {
+        status: res.status,
+        statusText: res.statusText,
+        response: result,
+      });
+      alert("❌ Error: " + (result.message || "Unknown error occurred"));
+    }
+  } catch (err) {
+    console.error("⚠️ Network or parsing error:", err);
+    alert("⚠️ Network Error: " + err.message);
+  }
+}
 
       // Handle update lead
       async function handleUpdateLead() {
-        if (!validateForm()) return;
+        if (!validateUpdateLeadForm()) return;
         if (!editingLeadId) {
           alert("No lead selected for update.");
           return;
@@ -2884,24 +3218,11 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
           const result = await res.json();
 
           if (res.ok && result.data) {
-            showSuccessMessage("Lead Updated successfully!");
-            [
-              "divStatus",
-              "divSource",
-              "divFullName",
-              "divMobileNo",
-              "divLeadButton",
-              "divRemark",
-            ].forEach((id) => {
-              document.getElementById(id)?.classList.add("hidden");
-            });
-
-            document
-              .getElementById("navLead")
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            updateLeadSuccessMsg.textContent = "Lead updated successfully!";
+            updateLeadSuccessMsg.classList.remove("hidden");
 
             setTimeout(() => {
-              toggleDialog(false);
+              toggleUpdateLeadDialog(false);
               currentSection = "lead";
               initApp();
             }, 1500);
@@ -2950,9 +3271,12 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
         stopSync();
       });
 
-      // Event listeners for dialog buttons
-      cancelBtn.addEventListener("click", () => toggleDialog(false));
-      createBtn.addEventListener("click", handleCreateLead);
+      // Event listeners for create lead dialog buttons
+      cancelCreateBtn.addEventListener("click", () => toggleCreateLeadDialog(false));
+      submitCreateBtn.addEventListener("click", handleCreateLead);
+
+      // Event listeners for update lead dialog buttons
+      cancelBtn.addEventListener("click", () => toggleUpdateLeadDialog(false));
       updateBtn.addEventListener("click", handleUpdateLead);
       addProductBtn.addEventListener("click", addProductRow);
       addAppointmentBtn.addEventListener("click", addAppointment);
@@ -3188,38 +3512,217 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
         return `${years} year${years !== 1 ? "s" : ""} ago`;
       }
 
-      // Close dialog button
+      // Close dialog buttons
       document
-        .getElementById("dialogCloseBtn")
+        .getElementById("createLeadDialogCloseBtn")
         .addEventListener("click", () => {
-          toggleDialog(false);
+          toggleCreateLeadDialog(false);
         });
 
-        const logoutConfirmDialog = document.getElementById("logoutConfirmDialog");
-        const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
-        const confirmLogoutBtn = document.getElementById("confirmLogoutBtn");
+      document
+        .getElementById("updateLeadDialogCloseBtn")
+        .addEventListener("click", () => {
+          toggleUpdateLeadDialog(false);
+        });
+
+      const logoutConfirmDialog = document.getElementById("logoutConfirmDialog");
+      const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
+      const confirmLogoutBtn = document.getElementById("confirmLogoutBtn");
+          
+      function confirmLogout() {
+        logoutConfirmDialog.classList.remove("hidden");
+      }
+    
+      cancelLogoutBtn.addEventListener("click", () => {
+        logoutConfirmDialog.classList.add("hidden");
+      });
+    
+      confirmLogoutBtn.addEventListener("click", () => {
+        fetch("/api/method/logout", {
+          method: "POST",
+          credentials: "include"
+        })
+        .then(() => {
+          window.location.href = "/crm-portal";
+        })
+        .catch((err) => {
+          console.error("Logout failed:", err);
+          alert("Logout failed. Please try again.");
+        });
+      });
+
+      // Appointment dialog functions
+      const appointmentDialog = document.getElementById("appointmentDialog");
+      const appointmentDialogCloseBtn = document.getElementById("appointmentDialogCloseBtn");
+      const cancelAppointmentBtn = document.getElementById("cancelAppointmentBtn");
+      const updateAppointmentBtn = document.getElementById("updateAppointmentBtn");
+
+      let isEditing = false;
+
+      // Fields allowed for editing
+      const editableFields = [
+        "appointmentScheduledTime",
+        "appointmentStatus"
+      ];
+
+      // Toggle editable state + visual cue
+      function toggleEditableFields(editable) {
+        editableFields.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.readOnly = !editable;
+            el.disabled = !editable;
+
+            if (editable) {
+              el.classList.add("editable-active");
+            } else {
+              el.classList.remove("editable-active");
+            }
+          }
+        });
+      }
+
+      // Close dialog
+      function closeAppointmentDialog() {
+        appointmentDialog.classList.add("hidden");
+        isEditing = false;
+        toggleEditableFields(false);
+        updateAppointmentBtn.textContent = "Edit";
+        document.getElementById("appointmentSuccessMsg").classList.add("hidden");
+      }
+
+      // Event Listeners
+      appointmentDialogCloseBtn.addEventListener("click", closeAppointmentDialog);
+      cancelAppointmentBtn.addEventListener("click", closeAppointmentDialog);
+
+      // Handle Edit/Update
+      updateAppointmentBtn.addEventListener("click", async function () {
+        if (!isEditing) {
+          // Enter edit mode
+          isEditing = true;
+          toggleEditableFields(true);
+          updateAppointmentBtn.textContent = "Update";
+        } else {
+          // Save changes
+          const name = window.currentAppointmentName;
+          if (!name) {
+            alert("Invalid appointment name");
+            return;
+          }
+
+          const updatedData = {
+            scheduled_time: document.getElementById("appointmentScheduledTime").value,
+            status: document.getElementById("appointmentStatus").value
+          };
+
+          try {
+            const response = await fetch(`/api/resource/Appointment/${name}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json"
+              },
+              body: JSON.stringify({ data: updatedData }),
+              credentials: "include"
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error("Update failed:", errorText);
+              alert("Update failed. See console for details.");
+              return;
+            }
+
+            // Show success message
+            document.getElementById("appointmentSuccessMsg").classList.remove("hidden");
             
-        function confirmLogout() {
-          logoutConfirmDialog.classList.remove("hidden");
+            // Exit edit mode
+            isEditing = false;
+            toggleEditableFields(false);
+            updateAppointmentBtn.textContent = "Edit";
+            
+            // Refresh the appointments list
+            if (editingLeadId) {
+              await fetchAppointmentsForLead(editingLeadId);
+            }
+            
+            // Refresh the main appointments list if we're in that section
+            if (currentSection === "appointment") {
+              const rawAppointments = await fetchAppointments();
+              appointmentData = processAppointmentData(rawAppointments);
+              renderList(currentSection, currentFilter, searchInput.value.trim());
+            }
+          } catch (err) {
+            console.error("Error during update:", err);
+            alert("Update failed.");
+          }
         }
-      
-        cancelLogoutBtn.addEventListener("click", () => {
-          logoutConfirmDialog.classList.add("hidden");
-        });
-      
-        confirmLogoutBtn.addEventListener("click", () => {
-          fetch("/api/method/logout", {
-            method: "POST",
-            credentials: "include"
-          })
-          .then(() => {
-            window.location.href = "/crm-portal";
-          })
-          .catch((err) => {
-            console.error("Logout failed:", err);
-            alert("Logout failed. Please try again.");
+      });
+
+      // Open appointment dialog for viewing/editing
+      async function openEditAppointmentDialogByName(appointmentName) {
+        if (!appointmentName) {
+          alert("Invalid appointment selected.");
+          return;
+        }
+
+        const url = `/api/resource/Appointment/${appointmentName}`;
+        console.log("Fetching appointment from:", url);
+
+        try {
+          const response = await fetch(url, {
+            credentials: "include",
+            headers: {
+              Accept: "application/json"
+            },
+            cache: "no-cache"
           });
-        });
+
+          if (!response.ok) {
+            const text = await response.text();
+            console.error("Fetch failed", response.status, text);
+            alert("Could not load appointment data.");
+            return;
+          }
+
+          const data = await response.json();
+          const doc = data.data;
+          console.log("Fetched appointment data:", doc);
+
+          // Fill the dialog fields
+          document.getElementById("appointmentCustomerName").value = doc.customer_name || "---";
+          document.getElementById("appointmentCustomerPhone").value = doc.customer_phone_number || "---";
+          
+          // Format datetime for display
+          if (doc.scheduled_time) {
+            const scheduledDate = new Date(doc.scheduled_time);
+            const formattedDate = scheduledDate.toISOString().slice(0, 16);
+            document.getElementById("appointmentScheduledTime").value = formattedDate;
+          } else {
+            document.getElementById("appointmentScheduledTime").value = "";
+          }
+          
+          document.getElementById("appointmentStatus").value = doc.status || "Open";
+          document.getElementById("appointmentParty").value = doc.party || "---";
+          document.getElementById("appointmentCustomerEmail").value = doc.customer_email || "---";
+          document.getElementById("appointmentCustomerDetails").value = doc.customer_details || "---";
+
+          // Store the name globally for update reference
+          window.currentAppointmentName = doc.name;
+
+          // Reset edit mode
+          isEditing = false;
+          toggleEditableFields(false);
+          updateAppointmentBtn.textContent = "Edit";
+          document.getElementById("appointmentSuccessMsg").classList.add("hidden");
+
+          // Show dialog
+          appointmentDialog.classList.remove("hidden");
+        } catch (err) {
+          console.error("Error fetching appointment:", err);
+          alert("Could not load appointment data.");
+        }
+      }
     </script>
   </body>
 </html>
