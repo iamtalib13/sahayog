@@ -422,8 +422,8 @@
 
       <!-- Custom Logout Confirmation Dialog -->
       <div id="logoutConfirmDialog"
-        class="fixed inset-0 hidden z-50 bg-black bg-opacity-50 flex justify-center items-start pt-32"
-      >
+        class="fixed inset-0 hidden z-[1100] bg-black bg-opacity-50 flex justify-center items-start pt-32">
+
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
           <h2 class="text-lg font-semibold mb-4 text-gray-800">Confirm Logout</h2>
           <p class="text-sm text-gray-600 mb-6">Are you sure you want to logout?</p>
@@ -1007,19 +1007,6 @@ aria-labelledby="createLeadDialogTitle"
                 Please select appointment date and time.
               </p>
             </div>
-            <div class="form-group">
-              <label for="newAppointmentStatus"
-                >Status <span class="text-red-600">*</span></label
-              >
-              <select
-                id="newAppointmentStatus"
-                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-              >
-                <option>Open</option>
-                <option>Closed</option>
-                <option>Rescheduled</option>
-              </select>
-            </div>
             <button
               type="button"
               id="addAppointmentBtn"
@@ -1049,10 +1036,8 @@ aria-labelledby="createLeadDialogTitle"
     </div>
 
     <!-- Delete Confirmation Dialog -->
-    <div
-      id="deleteConfirmDialog"
-      class="fixed inset-0 hidden z-60 flex items-center justify-center bg-black bg-opacity-50"
-    >
+    <div id="deleteConfirmDialog"
+     class="fixed inset-0 hidden z-[1000] flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm animate-fade-in relative">
         <!-- Dialog Heading & Message -->
         <h3 class="text-lg font-semibold mb-4">Confirm Deletion</h3>
@@ -1161,35 +1146,13 @@ aria-labelledby="createLeadDialogTitle"
     
           <!-- Party -->
           <div class="form-group sm:col-span-2">
-            <label for="appointmentParty">Party</label>
+            <label for="appointmentParty">Lead</label>
             <input
               type="text"
               id="appointmentParty"
               readonly
               class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
             />
-          </div>
-    
-          <!-- Customer Email -->
-          <div class="form-group sm:col-span-2">
-            <label for="appointmentCustomerEmail">Customer Email</label>
-            <input
-              type="email"
-              id="appointmentCustomerEmail"
-              readonly
-              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-            />
-          </div>
-    
-          <!-- Customer Details -->
-          <div class="form-group sm:col-span-2">
-            <label for="appointmentCustomerDetails">Customer Details</label>
-            <textarea
-              id="appointmentCustomerDetails"
-              rows="3"
-              readonly
-              class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
-            ></textarea>
           </div>
         </div>
     
@@ -1324,7 +1287,6 @@ aria-labelledby="createLeadDialogTitle"
       const appointmentTableBody = document.getElementById("appointmentTableBody");
       const addAppointmentBtn = document.getElementById("addAppointmentBtn");
       const newAppointmentDateTime = document.getElementById("newAppointmentDateTime");
-      const newAppointmentStatus = document.getElementById("newAppointmentStatus");
       const errorAppointments = document.getElementById("errorAppointments");
       const errorNewAppointmentDateTime = document.getElementById("errorNewAppointmentDateTime");
 
@@ -2572,6 +2534,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("cancelDeleteBtn").addEventListener("click", hideDeleteConfirmationDialog);
 
       function showSuccessMessage(msg) {
+        console.log("Success message:", msg);
         const msgElem = document.getElementById("globalSuccessMsg");
         if (!msgElem) return;
 
@@ -2613,7 +2576,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Add appointment row function (adds to currentLeadAppointments and re-renders)
       async function addAppointment() {
         const datetimeVal = newAppointmentDateTime.value;
-        const statusVal = newAppointmentStatus.value;
 
         if (!datetimeVal) {
           errorNewAppointmentDateTime.classList.add("visible");
@@ -2625,7 +2587,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Prepare payload for new appointment
         const payload = {
           scheduled_time: datetimeVal,
-          status: statusVal,
+          status: "Open",
           party: editingLeadId,
           customer_name: document.getElementById("fullName").value.trim(),
           customer_phone_number: document
@@ -2654,7 +2616,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             // Clear inputs
             newAppointmentDateTime.value = "";
-            newAppointmentStatus.value = "Open";
             errorAppointments.classList.add("hidden");
             showSuccessMessage("Appointment created successfully!");
 
@@ -3625,8 +3586,13 @@ function initCreateLeadDialog() {
             }
 
             // Show success message
-            document.getElementById("appointmentSuccessMsg").classList.remove("hidden");
-            
+            const msgEl = document.getElementById("appointmentSuccessMsg");
+            msgEl.classList.remove("hidden");
+
+            setTimeout(() => {
+              msgEl.classList.add("hidden");
+            }, 2500); // hides after 2500 (2.5 seconds)
+
             // Exit edit mode
             isEditing = false;
             toggleEditableFields(false);
@@ -3695,8 +3661,6 @@ function initCreateLeadDialog() {
           
           document.getElementById("appointmentStatus").value = doc.status || "Open";
           document.getElementById("appointmentParty").value = doc.party || "---";
-          document.getElementById("appointmentCustomerEmail").value = doc.customer_email || "---";
-          document.getElementById("appointmentCustomerDetails").value = doc.customer_details || "---";
 
           // Store the name globally for update reference
           window.currentAppointmentName = doc.name;
