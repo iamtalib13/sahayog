@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"fdNlMpiw0a\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM-RM</span>\",\"col\":12}},{\"id\":\"TtUJC1F00N\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Region Lead Report\",\"col\":3}}]",
+ "content": "[{\"id\":\"fdNlMpiw0a\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM-RM</span>\",\"col\":12}},{\"id\":\"TtUJC1F00N\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Region Lead Report\",\"col\":3}},{\"id\":\"03V9f5rVWo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
  "creation": "2025-06-25 13:19:36.504633",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "CRM-RM",
  "links": [],
- "modified": "2025-06-25 13:22:34.087489",
+ "modified": "2025-06-25 17:55:04.118542",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM-RM",
@@ -28,6 +28,14 @@
  ],
  "sequence_id": 83.0,
  "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "CRM Lead Conversion Report",
+   "link_to": "CRM Lead Conversion Report",
+   "report_ref_doctype": "Lead",
+   "type": "Report"
+  },
   {
    "color": "Grey",
    "doc_view": "List",
