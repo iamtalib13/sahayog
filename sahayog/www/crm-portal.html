@@ -386,37 +386,39 @@
       </h1>
         <!-- Refresh Button -->
         <!-- Button Container (optional for spacing) -->
-<div class="flex items-center space-x-4 text-gray-700">
+        <div class="flex items-center space-x-4 text-gray-700">
 
-  <!-- Refresh Button -->
-  <button
-    aria-label="Refresh Page"
-    class="focus:outline-none hover:text-black"
-    onclick="location.reload()"
-  >
-    <i class="fas fa-sync-alt"></i>
-  </button>
-
-  <!-- Main Menu Button -->
-  <button
-    id="mainMenuBtn"
-    aria-label="Main Menu"
-    onclick="window.top.location.href='/app/employee-crm'"
-    class="focus:outline-none hidden hover:text-black"
-  >
-    <i class="fas fa-home"></i>
-  </button>
-
-  <!-- Logout Button -->
-  <button
-    aria-label="Logout"
-    onclick="confirmLogout()"
-    class="focus:outline-none hover:text-black"
-  >
-    <i class="fas fa-sign-out-alt"></i>
-  </button>
-
-</div>
+          <!-- Refresh Button -->
+          <button
+            aria-label="Refresh Page"
+            class="focus:outline-none hover:text-black"
+            onclick="location.reload()"
+          >
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        
+          <!-- Main Menu Button
+          <button
+            id="mainMenuBtn"
+            aria-label="Main Menu"
+            onclick="window.top.location.href='/app/employee-crm'"
+            class="focus:outline-none hidden hover:text-black"
+          >
+            <i class="fas fa-home"></i>
+          </button> -->
+        
+          <!-- Logout Button -->
+          <button
+            id="logoutBtn"
+            aria-label="Logout"
+            onclick="confirmLogout()"
+            class="focus:outline-none hidden hover:text-black"
+          >
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        
+        </div>
+        
 
       <!-- Custom Logout Confirmation Dialog -->
       <div id="logoutConfirmDialog"
@@ -1154,7 +1156,6 @@ aria-labelledby="createLeadDialogTitle"
             >
               <option value="Open">Open</option>
               <option value="Closed">Closed</option>
-              <option value="Rescheduled">Rescheduled</option>
             </select>
           </div>
     
@@ -1251,10 +1252,12 @@ aria-labelledby="createLeadDialogTitle"
       console.log("Current path:", path);
       // Make sure it is ONLY visible on `/crm-portal` or starts with `/crm-portal`
       if (path === "/crm-portal" || path.startsWith("/crm-portal/")) {
-        document.getElementById("mainMenuBtn").classList.remove("hidden");
+        // document.getElementById("mainMenuBtn").classList.remove("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
       } else {
         // Optional: Just ensure it's always hidden elsewhere
-        document.getElementById("mainMenuBtn").classList.add("hidden");
+        // document.getElementById("mainMenuBtn").classList.add("hidden");
+        document.getElementById("logoutBtn").classList.add("hidden");
       }
       // Configuration
       const SYNC_INTERVAL = 5000; // 5 seconds
