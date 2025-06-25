@@ -1,7 +1,7 @@
 // Copyright (c) 2025, Developer Team and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Conversion Report"] = {
+frappe.query_reports["CRM Lead Conversion Report"] = {
 	"filters": [
 
 	]
