@@ -2119,71 +2119,71 @@ aria-labelledby="createLeadDialogTitle"
 
       // Open dialog to edit lead with given lead data object
       function openEditLeadDialog(lead) {
-        editingLeadId = lead.name || null;
-        updateLeadDialogTitle.textContent = "Update Lead";
-        updateLeadSuccessMsg.classList.add("hidden");
+  editingLeadId = lead.name || null;
+  updateLeadDialogTitle.textContent = "Update Lead";
+  updateLeadSuccessMsg.classList.add("hidden");
 
-        // Fill form fields with lead data
-        document.getElementById("fullName").value =
-          lead.first_name || lead.lead_name || "";
-        document.getElementById("source").value = lead.source || "";
-        document.getElementById("mobileNo").value = lead.mobile_no || "";
-        statusSelect.value = lead.status || "Lead";
+  // Fill form fields with lead data
+  document.getElementById("fullName").value =
+    lead.first_name || lead.lead_name || "";
+  document.getElementById("source").value = lead.source || "";
+  document.getElementById("mobileNo").value = lead.mobile_no || "";
+  statusSelect.value = lead.status || "Lead";
 
-        // Show/hide remark based on status
-        if (statusSelect.value === "Not Interested") {
-          divRemark.classList.remove("hidden");
-          remarkInput.value = lead.custom_remark_not_interested || "";
-        } else {
-          divRemark.classList.add("hidden");
-          remarkInput.value = "";
-          errorRemark.classList.add("hidden");
-          remarkInput.classList.remove("border-red-500");
-        }
+  // Show/hide remark based on status
+  if (statusSelect.value === "Not Interested") {
+    divRemark.classList.remove("hidden");
+    remarkInput.value = lead.custom_remark_not_interested || "";
+  } else {
+    divRemark.classList.add("hidden");
+    remarkInput.value = "";
+    errorRemark.classList.add("hidden");
+    remarkInput.classList.remove("border-red-500");
+  }
 
-        // Clear product rows
-        while (productTableBody.rows.length > 0) {
-          productTableBody.deleteRow(0);
-        }
+  // Clear product rows
+  while (productTableBody.rows.length > 0) {
+    productTableBody.deleteRow(0);
+  }
 
-        // Fill products if available
-        if (
-          Array.isArray(lead.custom_product_table) &&
-          lead.custom_product_table.length > 0
-        ) {
-          lead.custom_product_table.forEach((prod, idx) => {
-            addProductRow();
-            const row = productTableBody.rows[idx];
-            if (row) {
-              const container = row.querySelector(".custom-select-container");
-              const input = container.querySelector(
-                "input.custom-select-input"
-              );
-              const dropdown = container.querySelector(
-                ".custom-select-dropdown"
-              );
-              input.value = `${prod.product} - ${
-                prod.product_name || ""
-              }`.trim();
-              input.dataset.selectedProductCode = prod.product || "";
-              input.dataset.selectedProductName = prod.product_name || "";
-              populateDropdown(dropdown, productsList);
-              dropdown.classList.add("hidden");
-              container.setAttribute("aria-expanded", "false");
+  // Fill products if available
+  if (
+    Array.isArray(lead.custom_product_table) &&
+    lead.custom_product_table.length > 0
+  ) {
+    lead.custom_product_table.forEach((prod) => {
+      // Add product row
+      addProductRow("#productTableBody", "productList");
 
-              const amountInput = row.querySelector("input.amount-input");
-              amountInput.value = prod.product_amount || "";
-            }
-          });
-        } else {
-          // Add one empty product row if none
-          addProductRow();
-        }
+      // Select the latest added row (last child)
+      const row = productTableBody.lastElementChild;
+      if (row) {
+        const container = row.querySelector(".custom-select-container");
+        const input = container.querySelector("input.custom-select-input");
+        const dropdown = container.querySelector(".custom-select-dropdown");
 
-        hideAllErrors();
-        toggleUpdateLeadDialog(true);
-        activateTab("lead");
+        input.value = `${prod.product} - ${prod.product_name || ""}`.trim();
+        input.dataset.selectedProductCode = prod.product || "";
+        input.dataset.selectedProductName = prod.product_name || "";
+
+        populateDropdown(dropdown, productsList);
+        dropdown.classList.add("hidden");
+        container.setAttribute("aria-expanded", "false");
+
+        const amountInput = row.querySelector("input.amount-input");
+        amountInput.value = prod.product_amount || "";
       }
+    });
+  } else {
+    // Add one empty product row if none
+    addProductRow("#productTableBody", "productList");
+  }
+
+  hideAllErrors();
+  toggleUpdateLeadDialog(true);
+  activateTab("lead");
+}
+
 
       // Show/hide remark based on status in create dialog
       createStatusSelect.addEventListener("change", () => {
