@@ -25,7 +25,7 @@
    "label": "Zone Wise Leads"
   }
  ],
- "content": "[{\"id\":\"kEYUJYm7ZO\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM Admin</span>\",\"col\":12}},{\"id\":\"OeIz_ZN4i-\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Lead Trend\",\"col\":12}},{\"id\":\"3XkYymA14z\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Status Wise Leads\",\"col\":6}},{\"id\":\"TJNmMNevdA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Leads by Source\",\"col\":6}},{\"id\":\"iGoTm3xGJP\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Region Wise Leads\",\"col\":12}},{\"id\":\"4t25g3vTfZ\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zone Wise Leads\",\"col\":12}},{\"id\":\"5QkZqhd81z\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"L-Zone and Region wise Data\",\"col\":12}},{\"id\":\"5QNKGKsuPT\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Branch Wise Leads\",\"col\":12}},{\"id\":\"cGEJQmbhGS\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"hJHUFnvhaR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}},{\"id\":\"BXTTY57uj6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Lead Report\",\"col\":3}}]",
+ "content": "[{\"id\":\"kEYUJYm7ZO\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM Admin</span>\",\"col\":12}},{\"id\":\"BXTTY57uj6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Lead Report\",\"col\":3}},{\"id\":\"hJHUFnvhaR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}},{\"id\":\"Lrye003JDg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Product Wise Business Summary\",\"col\":3}},{\"id\":\"OeIz_ZN4i-\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Lead Trend\",\"col\":12}},{\"id\":\"3XkYymA14z\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Status Wise Leads\",\"col\":6}},{\"id\":\"TJNmMNevdA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Leads by Source\",\"col\":6}},{\"id\":\"iGoTm3xGJP\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Region Wise Leads\",\"col\":12}},{\"id\":\"4t25g3vTfZ\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Zone Wise Leads\",\"col\":12}},{\"id\":\"5QkZqhd81z\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"L-Zone and Region wise Data\",\"col\":12}},{\"id\":\"5QNKGKsuPT\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Branch Wise Leads\",\"col\":12}}]",
  "creation": "2025-06-16 13:51:58.067333",
  "custom_blocks": [
   {
@@ -43,7 +43,7 @@
  "is_hidden": 0,
  "label": "CRM Admin",
  "links": [],
- "modified": "2025-06-25 14:12:32.128105",
+ "modified": "2025-06-25 22:12:45.991381",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM Admin",
@@ -59,6 +59,14 @@
  ],
  "sequence_id": 61.0,
  "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Product Wise Business Summary",
+   "link_to": "Product Wise Business Summary",
+   "report_ref_doctype": "Lead",
+   "type": "Report"
+  },
   {
    "color": "Grey",
    "doc_view": "List",
