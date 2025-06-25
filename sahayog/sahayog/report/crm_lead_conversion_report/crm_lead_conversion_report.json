@@ -12,7 +12,7 @@
  "json": "{}",
  "letter_head": "Sahayog Purchase Order",
  "letterhead": null,
- "modified": "2025-06-25 15:40:58.660371",
+ "modified": "2025-06-25 17:58:54.083936",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM Lead Conversion Report",
@@ -24,6 +24,12 @@
  "roles": [
   {
    "role": "Sales Manager"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "System Manager"
   }
  ],
  "timeout": 0
