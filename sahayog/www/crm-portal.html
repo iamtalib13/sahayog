@@ -384,19 +384,40 @@
       >
         Sahayog CRM - Appointment
       </h1>
-      <div class="flex space-x-5 text-black text-xl">
-        <button
-          aria-label="Refresh Page"
-          class="focus:outline-none"
-          onclick="location.reload()"
-        >
-          <i class="fas fa-sync-alt"></i>
-        </button>
-        <!-- Logout Button -->
-        <button aria-label="Logout" onclick="confirmLogout()" class="focus:outline-none">
-          <i class="fas fa-sign-out-alt text-red-600"></i>
-        </button>
-      </div>
+        <!-- Refresh Button -->
+        <!-- Button Container (optional for spacing) -->
+<div class="flex items-center space-x-4 text-gray-700">
+
+  <!-- Refresh Button -->
+  <button
+    aria-label="Refresh Page"
+    class="focus:outline-none hover:text-black"
+    onclick="location.reload()"
+  >
+    <i class="fas fa-sync-alt"></i>
+  </button>
+
+  <!-- Main Menu Button -->
+  <button
+    id="mainMenuBtn"
+    aria-label="Main Menu"
+    onclick="window.top.location.href='/app/employee-crm'"
+    class="focus:outline-none hidden hover:text-black"
+  >
+    <i class="fas fa-home"></i>
+  </button>
+
+  <!-- Logout Button -->
+  <button
+    aria-label="Logout"
+    onclick="confirmLogout()"
+    class="focus:outline-none hover:text-black"
+  >
+    <i class="fas fa-sign-out-alt"></i>
+  </button>
+
+</div>
+
       <!-- Custom Logout Confirmation Dialog -->
       <div id="logoutConfirmDialog"
         class="fixed inset-0 hidden z-50 bg-black bg-opacity-50 flex justify-center items-start pt-32"
@@ -1225,7 +1246,16 @@ aria-labelledby="createLeadDialogTitle"
       </button>
     </nav>
     <script>
-      
+      // Show the main menu button only if current path is exactly /crm-portal
+      const path = window.top.location.pathname;
+      console.log("Current path:", path);
+      // Make sure it is ONLY visible on `/crm-portal` or starts with `/crm-portal`
+      if (path === "/crm-portal" || path.startsWith("/crm-portal/")) {
+        document.getElementById("mainMenuBtn").classList.remove("hidden");
+      } else {
+        // Optional: Just ensure it's always hidden elsewhere
+        document.getElementById("mainMenuBtn").classList.add("hidden");
+      }
       // Configuration
       const SYNC_INTERVAL = 5000; // 5 seconds
       const LONG_POLL_TIMEOUT = 30000; // 30 seconds
@@ -2781,48 +2811,6 @@ function initCreateLeadDialog() {
   // Hide error messages
   errorCreateProducts.style.display = "none";
 }
-
-// Add product row to create dialog
-function addCreateProductRow() {
-  const tr = document.createElement("tr");
-
-  tr.innerHTML = `
-    <td>
-      <div class="custom-select-container" tabindex="0" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-owns="" aria-label="Select product">
-        <input type="text" class="custom-select-input" placeholder="Search product..." aria-autocomplete="list" aria-controls="" aria-activedescendant="" />
-        <ul class="custom-select-dropdown hidden" role="listbox" tabindex="-1"></ul>
-      </div>
-    </td>
-    <td>
-      <input type="number" min="0" step="0.01" class="amount-input" placeholder="Amount" aria-label="Product amount" />
-    </td>
-    <td class="text-center">
-      <button type="button" class="remove-product-btn" aria-label="Remove product row">&times;</button>
-    </td>
-  `;
-
-  createProductTableBody.appendChild(tr);
-
-  // Attach remove event
-  tr.querySelector(".remove-product-btn").addEventListener(
-    "click",
-    () => {
-      if (createProductTableBody.rows.length > 1) {
-        tr.remove();
-      }
-    }
-  );
-
-  // Setup custom select for the new row
-  const container = tr.querySelector(".custom-select-container");
-  const index =
-    createProductTableBody.querySelectorAll(".custom-select-container").length -
-    1;
-  setupCustomSelect(container, index, "create");
-}
-
-// Event listener for add product button in create dialog
-addCreateProductBtn.addEventListener("click", addCreateProductRow);
 
       // Validate create lead form
       function validateCreateLeadForm() {

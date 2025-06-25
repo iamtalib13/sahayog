@@ -1,268 +1,375 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Employee Portal Login</title>
-  <link rel="stylesheet" href="/assets/css/frappe-web.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login Page PWA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --primary-color: #2563eb;
-      --primary-hover: #1e40af;
-      --error-color: #dc2626;
-      --success-color: #16a34a;
-      --text-color: #1f2937;
-      --border-color: #d1d5db;
-      --light-bg: #f9fafb;
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
     }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background-color: var(--light-bg);
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb;
+      margin: 0;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      color: var(--text-color);
-      line-height: 1.6;
+      padding: 1.5rem;
+      overflow: hidden; /* prevent scroll */
     }
-    
-    .login-container {
+    main {
       width: 100%;
-      max-width: 480px;
-      padding: 1rem;
-    }
-    
-    .login-box {
-      background-color: #fff;
-      padding: 2.5rem;
-      border-radius: 0.75rem;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-      width: 100%;
-      position: relative;
+      max-width: 420px;
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      outline-offset: 2px;
+      max-height: 100vh;
+      transition: transform 0.1s ease;
     }
-    
-    .login-box::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 6px;
-      background: linear-gradient(90deg, var(--primary-color), #4f46e5);
-    }
-    
-    .login-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    
-    .login-header h2 {
-      font-size: 1.75rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--text-color);
-    }
-    
-    .login-header p {
-      color: #6b7280;
-      font-size: 0.9375rem;
-    }
-    
-    .form-group {
-      margin-bottom: 1.5rem;
+    .top-section {
       position: relative;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      font-size: 0.9375rem;
-    }
-    
-    .input-wrapper {
-      position: relative;
-    }
-    
-    .form-group input {
-      width: 100%;
-      padding: 0.875rem 1rem 0.875rem 2.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 0.5rem;
-      font-size: 1rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      background-color: #f8fafc;
-    }
-    
-    .form-group input:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-    
-    .input-icon {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #9ca3af;
-      font-size: 1.1rem;
-    }
-    
-    .password-toggle {
-      position: absolute;
-      right: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: #9ca3af;
-      cursor: pointer;
-      font-size: 1.1rem;
-    }
-    
-    .error-message {
-      color: var(--error-color);
-      font-size: 0.875rem;
-      margin-top: 0.5rem;
-      display: none;
+      background: linear-gradient(-45deg, #2aa673, #1f8a5f, #1e3a8a, #2563eb);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      padding: 2.5rem 1.5rem 6rem 1.5rem;
+      border-top-left-radius: 1.5rem;
+      border-top-right-radius: 1.5rem;
+      display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 0.25rem;
+      min-height: 160px;
+      overflow: visible;
     }
-    
-    .error-message i {
-      font-size: 0.9rem;
-    }
-    
-    .login-button {
-      width: 100%;
-      padding: 1rem;
-      background-color: var(--primary-color);
+    .back-btn {
+      position: absolute;
+      top: 1.5rem;
+      left: 1.5rem;
       color: white;
+      font-size: 1.25rem;
+      background: transparent;
       border: none;
-      border-radius: 0.5rem;
-      font-size: 1rem;
-      font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-      margin-top: 0.5rem;
+      padding: 0;
+      line-height: 1;
+      z-index: 20;
     }
-    
-    .login-button:hover {
-      background-color: var(--primary-hover);
+    .back-btn:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
     }
-    
-    .login-button:active {
-      transform: scale(0.98);
+    .logo-img {
+      position: relative;
+      width: 200px; /* increased size */
+      height: auto;
+      z-index: 10;
+      user-select: none;
+      pointer-events: none;
     }
-    
-    .login-footer {
+    .white-curve {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3rem;
+      background: white;
+      border-top-left-radius: 1.5rem;
+      border-top-right-radius: 1.5rem;
+      transform: translateY(50%);
+      z-index: 5;
+    }
+    .content {
+      padding: 4rem 1.5rem 2.5rem 1.5rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      max-height: calc(100vh - 160px);
+    }
+    .title {
       text-align: center;
-      margin-top: 1.5rem;
+      font-weight: 600;
+      font-size: 1.125rem;
+      color: #374151;
+      margin-bottom: 1.5rem;
+      user-select: none;
+    }
+    .error-message {
+      display: none;
+      background-color: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+      border-radius: 0.375rem;
+      padding: 0.5rem 1rem;
+      margin-bottom: 1rem;
       font-size: 0.875rem;
-      color: #6b7280;
+      align-items: center;
+      gap: 0.5rem;
+      user-select: none;
     }
-    
-    .login-footer a {
-      color: var(--primary-color);
+    .error-message svg {
+      flex-shrink: 0;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex-grow: 1;
+    }
+    label {
+      font-size: 0.75rem;
+      color: #2aa673;
+      margin-bottom: 0.25rem;
+      user-select: none;
+      display: block;
+    }
+    input[type='text'],
+    input[type='password'] {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      color: #4b5563;
+      outline-offset: 2px;
+      transition: border-color 0.2s ease;
+    }
+    input[type='text']::placeholder {
+      color: #9ca3af;
+    }
+    input[type='password']::placeholder {
+      color: #d1d5db;
+    }
+    input[type='text']:focus,
+    input[type='password']:focus {
+      border-color: #2aa673;
+      box-shadow: 0 0 0 2px rgba(42, 166, 115, 0.3);
+      outline: none;
+    }
+    .checkbox-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      user-select: none;
+      margin-bottom: 1.5rem;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+    .checkbox-label input[type='checkbox'] {
+      width: 1rem;
+      height: 1rem;
+      border-radius: 9999px;
+      border: 1px solid #d1d5db;
+      accent-color: #2aa673;
+      cursor: pointer;
+    }
+    .checkbox-label input[type='checkbox']:focus-visible {
+      outline: 2px solid #2aa673;
+      outline-offset: 2px;
+    }
+    .forgot-link {
+      color: #2aa673;
       text-decoration: none;
-      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
     }
-    
-    .login-footer a:hover {
+    .forgot-link:hover,
+    .forgot-link:focus-visible {
       text-decoration: underline;
+      outline: none;
     }
-    
-    .loading {
-      display: inline-block;
-      width: 1.25rem;
-      height: 1.25rem;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s ease-in-out infinite;
-      margin-right: 0.5rem;
+    button[type='submit'] {
+      background-color: #2aa673;
+      color: white;
+      font-weight: 600;
+      padding: 0.75rem 0;
+      border-radius: 9999px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      user-select: none;
+      border: none;
     }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    button[type='submit']:hover,
+    button[type='submit']:focus-visible {
+      background-color: #24935a;
+      outline: none;
     }
-    
-    /* Responsive adjustments */
-    @media (max-width: 480px) {
-      .login-box {
-        padding: 1.75rem 1.5rem;
+    .register-text {
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      text-align: center;
+      user-select: none;
+    }
+    .register-text a {
+      color: #2aa673;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .register-text a:hover,
+    .register-text a:focus-visible {
+      text-decoration: underline;
+      outline: none;
+    }
+    @media (min-width: 768px) {
+      body {
+        background-color: #f3f4f6;
+        padding: 4rem;
       }
-      
-      .login-header h2 {
-        font-size: 1.5rem;
+      main {
+        max-width: 480px;
+        border-radius: 2rem;
+      }
+      .top-section {
+        min-height: 180px;
+        padding-bottom: 7rem;
+      }
+      .white-curve {
+        height: 4rem;
+        transform: translateY(60%);
+      }
+      .logo-img {
+        width: 240px; /* increased size for larger screens */
+      }
+      .title {
+        font-size: 1.25rem;
+      }
+      input[type='text'],
+      input[type='password'] {
+        font-size: 1.125rem;
+        padding: 0.75rem 1rem;
+      }
+      button[type='submit'] {
+        font-size: 1.125rem;
+        padding: 1rem 0;
+      }
+      .content {
+        max-height: calc(100vh - 180px);
+      }
+    }
+    /* Loading spinner */
+    .loading {
+      border: 2px solid transparent;
+      border-top: 2px solid white;
+      border-right: 2px solid white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="login-box">
-      <div class="login-header">
-        <h2>Sahayog CRM</h2>
-        <p>Enter your credentials to access your CRM</p>
+  <main id="crmLoginForm" role="main" aria-label="Login form container" tabindex="-1">
+    <section class="top-section" aria-hidden="true">
+      <button aria-label="Go back" class="back-btn" type="button">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      </button>
+      <img
+        src="https://sahayogmultistate.com/wp-content/uploads/2024/05/Sahayog-Website-Logo-1-1.png"
+        alt="Sahayog Multistate Logo"
+        class="logo-img"
+        decoding="async"
+        loading="lazy"
+        width="200"
+        height="auto"
+        draggable="false"
+      />
+      <div class="white-curve"></div>
+    </section>
+    <section class="content">
+      <h1 class="title">Login to your account</h1>
+      <div id="loginError" class="error-message" role="alert" aria-live="assertive">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Invalid Employee ID or Password.</span>
       </div>
-      
-      <form id="crmLoginForm" novalidate>
-        <div class="form-group">
+      <form novalidate>
+        <div>
           <label for="employee_id">Employee ID</label>
-          <div class="input-wrapper">
-            <i class="fas fa-user input-icon"></i>
-            <input 
-              type="text" 
-              id="employee_id" 
-              name="employee_id" 
-              placeholder="Enter your employee ID" 
-              required 
-              autocomplete="username"
-            />
-          </div>
+          <input
+            type="text"
+            id="employee_id"
+            name="employee_id"
+            placeholder="Enter your Employee ID"
+            autocomplete="username"
+            required
+            aria-required="true"
+          />
         </div>
-        
-        <div class="form-group">
-          <label for="password">Password</label>
-          <div class="input-wrapper">
-            <i class="fas fa-lock input-icon"></i>
-            <input 
-              type="password" 
-              id="password" 
-              name="password" 
-              placeholder="Enter your password" 
-              required 
-              autocomplete="current-password"
-            />
-            <button type="button" class="password-toggle" id="togglePassword">
-              <i class="fas fa-eye"></i>
-            </button>
-          </div>
+        <div class="relative">
+          <label for="password" class="sr-only">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Password"
+            autocomplete="current-password"
+            required
+            aria-required="true"
+          />
+          <button
+            type="button"
+            id="togglePassword"
+            aria-label="Toggle password visibility"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#2aa673] rounded"
+            tabindex="0"
+          >
+            <i class="fas fa-eye"></i>
+          </button>
         </div>
-        
-        <div class="error-message" id="loginError">
-          <i class="fas fa-exclamation-circle"></i>
-          <span>Invalid credentials. Please try again.</span>
+        <div class="checkbox-row">
+          <label class="checkbox-label" for="remember">
+            <input type="checkbox" id="remember" name="remember" />
+            <span>Remember me</span>
+          </label>
+          <a href="#" class="forgot-link" tabindex="0">Forgot Password?</a>
         </div>
-        
-        <button type="submit" class="login-button" id="loginButton">
+        <button id="loginButton" type="submit" aria-live="polite" aria-busy="false">
           <span id="buttonText">Login</span>
         </button>
       </form>
-    </div>
-  </div>
+      <p class="register-text">
+        Don’t have an account?
+        <a href="#" tabindex="0">Register here</a>
+      </p>
+    </section>
+  </main>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -272,29 +379,30 @@
       const loginError = document.getElementById('loginError');
       const loginButton = document.getElementById('loginButton');
       const buttonText = document.getElementById('buttonText');
-      
+
       // Toggle password visibility
       togglePassword.addEventListener('click', function() {
         const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
         passwordInput.setAttribute('type', type);
         this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
       });
-      
+
       // Form submission
       loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         // Show loading state
         loginButton.disabled = true;
-        buttonText.innerHTML = '<span class="loading"></span> Logging in...';
-        
+        loginButton.setAttribute('aria-busy', 'true');
+        buttonText.innerHTML = '<span class="loading" aria-hidden="true"></span> Logging in...';
+
         const employee_id = document.getElementById('employee_id').value.trim();
-        const password = document.getElementById('password').value;
-        
+        const password = passwordInput.value;
+
         try {
           const response = await fetch('/api/method/login', {
             method: 'POST',
-            headers: { 
+            headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
               'X-Requested-With': 'XMLHttpRequest'
             },
@@ -303,9 +411,9 @@
               pwd: password
             })
           });
-          
+
           const data = await response.json();
-          
+
           if (data.message === 'Logged In') {
             // Success - redirect or reload
             window.location.href = '/crm-portal'; // Or reload as in original
@@ -313,7 +421,7 @@
             // Show error
             loginError.style.display = 'flex';
             passwordInput.focus();
-            
+
             // Shake animation for error feedback
             loginForm.style.transform = 'translateX(0)';
             loginForm.offsetHeight; // Trigger reflow
@@ -332,10 +440,11 @@
         } finally {
           // Reset button state
           loginButton.disabled = false;
+          loginButton.setAttribute('aria-busy', 'false');
           buttonText.textContent = 'Login';
         }
       });
-      
+
       // Clear error when typing
       const inputs = [document.getElementById('employee_id'), passwordInput];
       inputs.forEach(input => {
@@ -345,7 +454,7 @@
           }
         });
       });
-      
+
       // Focus first input on page load
       document.getElementById('employee_id').focus();
     });
