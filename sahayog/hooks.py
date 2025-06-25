@@ -127,6 +127,8 @@ after_migrate = [
     "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
     "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
 
+    "sahayog.patches.add_roles.execute",
+
     "sahayog.patches.fixtures.add_item_group.execute",
     "sahayog.patches.fixtures.add_warehouses.execute",
     "sahayog.patches.fixtures.add_read_role_permission.execute",
