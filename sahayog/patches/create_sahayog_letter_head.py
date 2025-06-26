@@ -16,7 +16,7 @@ def execute():
     
     <div class="print-header">
         <div style="text-align: left; margin-bottom: 10px;">
-            <img src="/files/Sahayog.png" alt="Company Logo" style="height: 70px; width: auto;">
+            <img src="/assets/sahayog/images/sahayoglogo.svg" alt="Company Logo" style="height: 70px; width: auto;">
             <hr>
         </div>
     </div>
