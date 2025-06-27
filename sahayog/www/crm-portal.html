@@ -11,10 +11,16 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
       rel="stylesheet"
     />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto&amp;display=swap"
-      rel="stylesheet"
-    />
+    <!-- Google Fonts Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Google Fonts: Open Sans, PT Sans, Ubuntu -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
+    rel="stylesheet"
+  />
+
     <style>
       .editable-active {
         border: 2px solid #3b82f6 !important; /* Tailwind blue-500 */
@@ -33,11 +39,11 @@
         -ms-overflow-style: none; /* Internet Explorer 10+ */
       }
 
-      body {
-        font-family: "Roboto", sans-serif;
-        overscroll-behavior-y: contain;
-        background-color: transparent; /* Add this */
-      }
+    body {
+      font-family: "Open Sans", "PT Sans", "Ubuntu", sans-serif;
+      overscroll-behavior-y: contain;
+      background-color: transparent;
+    }
       main {
         padding-bottom: 4.5rem; /* space for fixed bottom nav */
       }
@@ -309,10 +315,26 @@
       /* Success message */
       #globalSuccessMsg {
         font-size: 0.875rem;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        pointer-events: none;
       }
+
+      #globalSuccessMsg.visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+      #globalSuccessMsg {
+        transform: translateX(100%);
+      }
+
+      #globalSuccessMsg.visible {
+        transform: translateX(0);
+      }
+
       /* Responsive adjustments */
       @media (max-width: 640px) {
         .custom-dialog-content {
@@ -372,6 +394,20 @@
     </script>
   </head>
   <body class="bg-white text-gray-900 min-h-screen flex flex-col">
+    <!-- Fullscreen Loading Overlay -->
+    <div
+    id="leadLoadingOverlay"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-xl font-semibold z-50 hidden"
+    >
+    Creating...
+    </div>
+    <div
+      id="globalSuccessMsg"
+      class="fixed bottom-6 right-6 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded shadow-lg z-[1000]"
+      role="alert"
+    >
+      ✅ Lead created successfully!
+    </div>
     <!-- Header -->
     <header
       class="flex justify-between items-center px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-30"
@@ -499,14 +535,6 @@ aria-labelledby="createLeadDialogTitle"
       &times;
     </button>
   </div>
-  <p
-    id="createLeadSuccessMsg"
-    class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 mb-3 hidden text-center"
-    role="alert"
-  >
-    ✅ Success message here.
-  </p>
-
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <!-- Status -->
     <div class="form-group" id="divCreateStatus">
@@ -730,14 +758,6 @@ aria-labelledby="createLeadDialogTitle"
             &times;
           </button>
         </div>
-        <p
-          id="updateLeadSuccessMsg"
-          class="text-green-600 bg-green-50 border border-green-200 rounded px-3 py-2 mb-3 hidden text-center"
-          role="alert"
-        >
-          ✅ Success message here.
-        </p>
-
         <!-- Tabs -->
         <div
           role="tablist"
@@ -1242,10 +1262,12 @@ aria-labelledby="createLeadDialogTitle"
       // Dialog elements
       const createLeadDialog = document.getElementById("createLeadDialog");
       const updateLeadDialog = document.getElementById("updateLeadDialog");
+
+      const successMsg = document.getElementById("globalSuccessMsg");
+
       
       // Create Lead Dialog elements
       const createLeadDialogTitle = document.getElementById("createLeadDialogTitle");
-      const createLeadSuccessMsg = document.getElementById("createLeadSuccessMsg");
       const createStatusSelect = document.getElementById("createStatus");
       const divCreateRemark = document.getElementById("divCreateRemark");
       const createRemarkInput = document.getElementById("createRemark");
@@ -1258,7 +1280,6 @@ aria-labelledby="createLeadDialogTitle"
 
       // Update Lead Dialog elements
       const updateLeadDialogTitle = document.getElementById("updateLeadDialogTitle");
-      const updateLeadSuccessMsg = document.getElementById("updateLeadSuccessMsg");
       const productTableBody = document.getElementById("productTableBody");
       const addProductBtn = document.getElementById("addProductBtn");
       const errorProducts = document.getElementById("errorProducts");
@@ -1596,18 +1617,20 @@ aria-labelledby="createLeadDialogTitle"
             case "converted":
               statusClass = "bg-green-100 text-green-800";
               break;
-            case "opportunity":
+            case "lead":
               statusClass = "bg-blue-100 text-blue-800";
               break;
             case "not interested":
               statusClass = "bg-red-100 text-red-800";
+            case "follow up":
+              statusClass = "bg-orange-100 text-orange-800";
               break;
             default:
               statusClass = "bg-gray-100 text-gray-800";
           }
 
           return {
-            title: `Lead: ${lead.lead_name || "Unnamed Lead"}`,
+            title: `${lead.lead_name || "Unnamed Lead"}`,
             subtitle: `${lead.email_id || ""} • ${lead.mobile_no || ""}`,
             lastUpdated: modifiedString,
             status: status,
@@ -1656,7 +1679,7 @@ aria-labelledby="createLeadDialogTitle"
             case "open":
               statusClass = "bg-red-100 text-red-800";
               break;
-            case "rescheduled":
+            case "unverified":
               statusClass = "bg-yellow-100 text-yellow-800";
               break;
             default:
@@ -1793,7 +1816,7 @@ aria-labelledby="createLeadDialogTitle"
         if (section === "lead") {
           filters = ["All", "Lead", "Converted", "Follow Up", "Not Interested"];
         } else if (section === "appointment") {
-          filters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+          filters = ["All","Today", "Due", "Upcoming", "Open", "Closed",];
         } else if (section === "opportunity") {
           filters = [
             "All",
@@ -1978,7 +2001,7 @@ aria-labelledby="createLeadDialogTitle"
               <img src="${item.img}" alt="${item.alt}" class="w-10 h-10 rounded-full object-cover" loading="lazy" />
               <div class="min-w-0">
                 <p class="font-semibold text-base leading-5 select-text truncate">${item.title}</p>
-                <p class="text-gray-500 text-sm truncate select-text">${item.subtitle}</p>
+                <p class="text-gray-500 text-sm truncate select-text mb-1.5">${item.subtitle}</p>
                 ${
                   item.statusClass
                     ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
@@ -2081,7 +2104,7 @@ aria-labelledby="createLeadDialogTitle"
       function openEditLeadDialog(lead) {
   editingLeadId = lead.name || null;
   updateLeadDialogTitle.textContent = "Update Lead";
-  updateLeadSuccessMsg.classList.add("hidden");
+  globalSuccessMsg.classList.add("hidden");
 
   // Fill form fields with lead data
   document.getElementById("fullName").value =
@@ -2664,7 +2687,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       function clearUpdateLeadForm() {
         editingLeadId = null;
         updateLeadDialogTitle.textContent = "Update Lead";
-        updateLeadSuccessMsg.classList.add("hidden");
+        globalSuccessMsg.classList.add("hidden");
 
         document.getElementById("fullName").value = "";
         document.getElementById("source").value = "";
@@ -3003,9 +3026,13 @@ function initCreateLeadDialog() {
         return valid;
       }
 
-      // Handle create lead
+      let isCreatingLead = false;
       async function handleCreateLead() {
+  if (isCreatingLead) return;
   if (!validateCreateLeadForm()) return;
+
+  isCreatingLead = true;
+  document.getElementById("leadLoadingOverlay").classList.remove("hidden");
 
   const fullName = document.getElementById("createFullName").value.trim();
   const source = document.getElementById("createSource").value;
@@ -3014,15 +3041,13 @@ function initCreateLeadDialog() {
   const remarkVal = createRemarkInput.value.trim();
   const appointmentDateTime = createAppointmentDateTime.value;
 
-  // Collect products data
   const custom_product_table = [];
   const productRows = createProductTableBody.querySelectorAll("tr");
   productRows.forEach((row) => {
     const container = row.querySelector(".custom-select-container");
-    if (!container) return;
-    const input = container.querySelector("input.custom-select-input");
+    const input = container?.querySelector("input.custom-select-input");
     const amountInput = row.querySelector("input.amount-input");
-    if (input && input.dataset.selectedProductCode && amountInput) {
+    if (input?.dataset.selectedProductCode && amountInput) {
       custom_product_table.push({
         product: input.dataset.selectedProductCode,
         product_name: input.dataset.selectedProductName || "",
@@ -3031,7 +3056,6 @@ function initCreateLeadDialog() {
     }
   });
 
-  // Prepare payload
   const payload = {
     first_name: fullName,
     source,
@@ -3045,7 +3069,6 @@ function initCreateLeadDialog() {
   }
 
   try {
-    // First create the lead
     const res = await fetch("/api/resource/Lead", {
       method: "POST",
       headers: {
@@ -3060,12 +3083,12 @@ function initCreateLeadDialog() {
 
     if (res.ok && result.data) {
       const leadName = result.data.name;
-      
-      // If status is Follow Up, create appointment
+      toggleCreateLeadDialog(false);
+
       if (status === "Follow Up" && appointmentDateTime) {
         const appointmentPayload = {
           scheduled_time: appointmentDateTime,
-          status: "Open", // Default status for new appointments
+          status: "Open",
           party: leadName,
           customer_name: fullName,
           customer_phone_number: mobile_no,
@@ -3083,20 +3106,85 @@ function initCreateLeadDialog() {
         });
       }
 
-      createLeadSuccessMsg.textContent = "Lead created successfully!";
-      createLeadSuccessMsg.classList.remove("hidden");
-
-      setTimeout(() => {
-        toggleCreateLeadDialog(false);
-        currentSection = "lead";
-        initApp();
-      }, 1500);
+      showGlobalSuccess("✅ Lead created successfully!");
+      currentSection = "lead";
+      initApp();
     } else {
-      console.error("❌ Server responded with an error:", {
-        status: res.status,
-        statusText: res.statusText,
-        response: result,
+      alert("❌ Error: " + (result.message || "Unknown error occurred"));
+    }
+  } catch (err) {
+    alert("⚠️ Network Error: " + err.message);
+  } finally {
+    isCreatingLead = false;
+    document.getElementById("leadLoadingOverlay").classList.add("hidden");
+  }
+}
+
+
+
+      // Handle update lead
+      async function handleUpdateLead() {
+  if (!validateUpdateLeadForm()) return;
+  if (!editingLeadId) {
+    alert("No lead selected for update.");
+    return;
+  }
+
+  const fullName = document.getElementById("fullName").value.trim();
+  const source = document.getElementById("source").value;
+  const mobile_no = document.getElementById("mobileNo").value.trim();
+  const status = document.getElementById("status").value.trim();
+  const remarkVal = remarkInput.value.trim();
+
+  const custom_product_table = [];
+  const productRows = productTableBody.querySelectorAll("tr");
+  productRows.forEach((row) => {
+    const container = row.querySelector(".custom-select-container");
+    const input = container?.querySelector("input.custom-select-input");
+    const amountInput = row.querySelector("input.amount-input");
+    if (input?.dataset.selectedProductCode && amountInput) {
+      custom_product_table.push({
+        product: input.dataset.selectedProductCode,
+        product_name: input.dataset.selectedProductName || "",
+        product_amount: parseFloat(amountInput.value) || 0,
       });
+    }
+  });
+
+  const payload = {
+    first_name: fullName,
+    source,
+    mobile_no,
+    status,
+    custom_product_table,
+  };
+
+  payload.custom_remark_not_interested =
+    status === "Not Interested" ? remarkVal : "";
+
+  try {
+    const res = await fetch(
+      `/api/resource/Lead/${encodeURIComponent(editingLeadId)}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      }
+    );
+
+    const result = await res.json();
+
+    if (res.ok && result.data) {
+      toggleUpdateLeadDialog(false);
+      showGlobalSuccess("✅ Lead updated successfully!");
+      currentSection = "lead";
+      initApp();
+    } else {
+      console.error("❌ Server responded with an error:", result);
       alert("❌ Error: " + (result.message || "Unknown error occurred"));
     }
   } catch (err) {
@@ -3105,90 +3193,21 @@ function initCreateLeadDialog() {
   }
 }
 
-      // Handle update lead
-      async function handleUpdateLead() {
-        if (!validateUpdateLeadForm()) return;
-        if (!editingLeadId) {
-          alert("No lead selected for update.");
-          return;
-        }
+function showGlobalSuccess(message) {
+  const successMsg = document.getElementById("globalSuccessMsg");
+  successMsg.textContent = message;
+  successMsg.classList.remove("hidden");
+  void successMsg.offsetWidth; // Trigger reflow
+  successMsg.classList.add("visible");
 
-        const fullName = document.getElementById("fullName").value.trim();
-        const source = document.getElementById("source").value;
-        const mobile_no = document.getElementById("mobileNo").value.trim();
-        const status = document.getElementById("status").value.trim();
-        const remarkVal = remarkInput.value.trim();
+  setTimeout(() => {
+    successMsg.classList.remove("visible");
+    setTimeout(() => {
+      successMsg.classList.add("hidden");
+    }, 300); // Match transition time in CSS
+  }, 3000);
+}
 
-        // Collect products data as array of objects with amount and product_name
-        const custom_product_table = [];
-        const productRows = productTableBody.querySelectorAll("tr");
-        productRows.forEach((row) => {
-          const container = row.querySelector(".custom-select-container");
-          if (!container) return;
-          const input = container.querySelector("input.custom-select-input");
-          const amountInput = row.querySelector("input.amount-input");
-          if (input && input.dataset.selectedProductCode && amountInput) {
-            custom_product_table.push({
-              product: input.dataset.selectedProductCode,
-              product_name: input.dataset.selectedProductName || "",
-              product_amount: parseFloat(amountInput.value) || 0,
-            });
-          }
-        });
-
-        // Prepare payload including products array and remark if Not Interested
-        const payload = {
-          first_name: fullName,
-          source,
-          mobile_no,
-          status,
-          custom_product_table,
-        };
-
-        if (status === "Not Interested") {
-          payload.custom_remark_not_interested = remarkVal;
-        } else {
-          payload.custom_remark_not_interested = "";
-        }
-
-        try {
-          const res = await fetch(
-            `/api/resource/Lead/${encodeURIComponent(editingLeadId)}`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              body: JSON.stringify(payload),
-              credentials: "include",
-            }
-          );
-
-          const result = await res.json();
-
-          if (res.ok && result.data) {
-            updateLeadSuccessMsg.textContent = "Lead updated successfully!";
-            updateLeadSuccessMsg.classList.remove("hidden");
-
-            setTimeout(() => {
-              toggleUpdateLeadDialog(false);
-              currentSection = "lead";
-              initApp();
-            }, 1500);
-          } else {
-            console.error("❌ Server responded with an error:", {
-              status: res.status,
-              statusText: res.statusText,
-              response: result,
-            });
-            alert("❌ Error: " + (result.message || "Unknown error occurred"));
-          }
-        } catch (err) {
-          console.error("⚠️ Network or parsing error:", err);
-          alert("⚠️ Network Error: " + err.message);
-        }
-      }
 
       // Accessibility: Keyboard navigation for list items
       crmList.addEventListener("keydown", (e) => {
@@ -3538,7 +3557,6 @@ function initCreateLeadDialog() {
         isEditing = false;
         toggleEditableFields(false);
         updateAppointmentBtn.textContent = "Edit";
-        document.getElementById("appointmentSuccessMsg").classList.add("hidden");
       }
 
       // Event Listeners
@@ -3547,135 +3565,132 @@ function initCreateLeadDialog() {
 
       // Handle Edit/Update
       updateAppointmentBtn.addEventListener("click", async function () {
-        if (!isEditing) {
-          // Enter edit mode
-          isEditing = true;
-          toggleEditableFields(true);
-          updateAppointmentBtn.textContent = "Update";
-        } else {
-          // Save changes
-          const name = window.currentAppointmentName;
-          if (!name) {
-            alert("Invalid appointment name");
-            return;
-          }
+  if (!isEditing) {
+    // Enter edit mode
+    isEditing = true;
+    toggleEditableFields(true);
+    updateAppointmentBtn.textContent = "Update";
+  } else {
+    // Save changes
+    const name = window.currentAppointmentName;
+    if (!name) {
+      alert("Invalid appointment name");
+      return;
+    }
 
-          const updatedData = {
-            scheduled_time: document.getElementById("appointmentScheduledTime").value,
-            status: document.getElementById("appointmentStatus").value
-          };
+    const updatedData = {
+      scheduled_time: document.getElementById("appointmentScheduledTime").value,
+      status: document.getElementById("appointmentStatus").value
+    };
 
-          try {
-            const response = await fetch(`/api/resource/Appointment/${name}`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json"
-              },
-              body: JSON.stringify({ data: updatedData }),
-              credentials: "include"
-            });
-
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error("Update failed:", errorText);
-              alert("Update failed. See console for details.");
-              return;
-            }
-
-            // Show success message
-            const msgEl = document.getElementById("appointmentSuccessMsg");
-            msgEl.classList.remove("hidden");
-
-            setTimeout(() => {
-              msgEl.classList.add("hidden");
-            }, 2500); // hides after 2500 (2.5 seconds)
-
-            // Exit edit mode
-            isEditing = false;
-            toggleEditableFields(false);
-            updateAppointmentBtn.textContent = "Edit";
-            
-            // Refresh the appointments list
-            if (editingLeadId) {
-              await fetchAppointmentsForLead(editingLeadId);
-            }
-            
-            // Refresh the main appointments list if we're in that section
-            if (currentSection === "appointment") {
-              const rawAppointments = await fetchAppointments();
-              appointmentData = processAppointmentData(rawAppointments);
-              renderList(currentSection, currentFilter, searchInput.value.trim());
-            }
-          } catch (err) {
-            console.error("Error during update:", err);
-            alert("Update failed.");
-          }
-        }
+    try {
+      const response = await fetch(`/api/resource/Appointment/${name}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({ data: updatedData }),
+        credentials: "include"
       });
 
-      // Open appointment dialog for viewing/editing
-      async function openEditAppointmentDialogByName(appointmentName) {
-        if (!appointmentName) {
-          alert("Invalid appointment selected.");
-          return;
-        }
-
-        const url = `/api/resource/Appointment/${appointmentName}`;
-        console.log("Fetching appointment from:", url);
-
-        try {
-          const response = await fetch(url, {
-            credentials: "include",
-            headers: {
-              Accept: "application/json"
-            },
-            cache: "no-cache"
-          });
-
-          if (!response.ok) {
-            const text = await response.text();
-            console.error("Fetch failed", response.status, text);
-            alert("Could not load appointment data.");
-            return;
-          }
-
-          const data = await response.json();
-          const doc = data.data;
-          console.log("Fetched appointment data:", doc);
-
-          // Fill the dialog fields
-          document.getElementById("appointmentCustomerName").value = doc.customer_name || "---";
-          document.getElementById("appointmentCustomerPhone").value = doc.customer_phone_number || "---";
-          
-          // Format datetime for display
-          if (doc.scheduled_time) {
-            const scheduledDate = new Date(doc.scheduled_time);
-            const formattedDate = scheduledDate.toISOString().slice(0, 16);
-            document.getElementById("appointmentScheduledTime").value = formattedDate;
-          } else {
-            document.getElementById("appointmentScheduledTime").value = "";
-          }
-          
-          document.getElementById("appointmentStatus").value = doc.status || "Open";
-          document.getElementById("appointmentParty").value = doc.party || "---";
-
-          // Store the name globally for update reference
-          window.currentAppointmentName = doc.name;
-
-          // Reset edit mode
-          isEditing = false;
-          toggleEditableFields(false);
-          updateAppointmentBtn.textContent = "Edit";
-          document.getElementById("appointmentSuccessMsg").classList.add("hidden");
-
-          // Show dialog
-          appointmentDialog.classList.remove("hidden");
-        } catch (err) {
-          console.error("Error fetching appointment:", err);
-          alert("Could not load appointment data.");
-        }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Update failed:", errorText);
+        alert("Update failed. See console for details.");
+        return;
       }
+
+      // Show global success message and hide dialog
+      closeAppointmentDialog();
+      const msgEl = document.getElementById("globalSuccessMsg");
+      msgEl.textContent = "✅ Appointment updated successfully!";
+      msgEl.classList.add("visible");
+
+      setTimeout(() => {
+        msgEl.classList.remove("visible");
+      }, 3000); // hides after 3 seconds
+
+      // Exit edit mode
+      isEditing = false;
+      toggleEditableFields(false);
+      updateAppointmentBtn.textContent = "Edit";
+
+      // Refresh appointments
+      if (editingLeadId) {
+        await fetchAppointmentsForLead(editingLeadId);
+      }
+
+      if (currentSection === "appointment") {
+        const rawAppointments = await fetchAppointments();
+        appointmentData = processAppointmentData(rawAppointments);
+        renderList(currentSection, currentFilter, searchInput.value.trim());
+      }
+    } catch (err) {
+      console.error("Error during update:", err);
+      alert("Update failed.");
+    }
+  }
+});
+
+
+      async function openEditAppointmentDialogByName(appointmentName) {
+  if (!appointmentName) {
+    alert("Invalid appointment selected.");
+    return;
+  }
+
+  const url = `/api/resource/Appointment/${appointmentName}`;
+  console.log("Fetching appointment from:", url);
+
+  try {
+    const response = await fetch(url, {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      cache: "no-cache",
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Fetch failed", response.status, text);
+      alert("Could not load appointment data.");
+      return;
+    }
+
+    const data = await response.json();
+    const doc = data.data;
+    console.log("Fetched appointment data:", doc);
+
+    document.getElementById("appointmentCustomerName").value = doc.customer_name || "---";
+    document.getElementById("appointmentCustomerPhone").value = doc.customer_phone_number || "---";
+    document.getElementById("appointmentParty").value = doc.party || "---";
+    document.getElementById("appointmentStatus").value = doc.status || "Open";
+
+    // Set datetime
+    if (doc.scheduled_time) {
+      const scheduledDate = new Date(doc.scheduled_time);
+      const formattedDate = scheduledDate.toISOString().slice(0, 16);
+      document.getElementById("appointmentScheduledTime").value = formattedDate;
+    } else {
+      document.getElementById("appointmentScheduledTime").value = "";
+    }
+
+    window.currentAppointmentName = doc.name;
+
+    isEditing = false;
+    toggleEditableFields(false);
+    updateAppointmentBtn.textContent = "Edit";
+
+    // Hide global success msg (if previously shown)
+    document.getElementById("globalSuccessMsg").classList.remove("visible");
+
+    appointmentDialog.classList.remove("hidden");
+  } catch (err) {
+    console.error("Error fetching appointment:", err);
+    alert("Could not load appointment data.");
+  }
+}
+
     </script>
   </body>
 </html>
