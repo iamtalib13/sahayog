@@ -1171,6 +1171,14 @@ aria-labelledby="createLeadDialogTitle"
               readonly
               class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
             />
+            <button
+              type="button"
+              id="goToLeadBtn"
+              class="text-blue-600 underline"
+            >
+              View Lead Details
+            </button>
+            
           </div>
         </div>
     
@@ -2099,6 +2107,25 @@ aria-labelledby="createLeadDialogTitle"
     }
   }
 }
+
+document.getElementById("goToLeadBtn").addEventListener("click", () => {
+  const leadName = document.getElementById("appointmentParty").value;
+
+  if (!leadName) {
+    alert("Lead reference not found.");
+    return;
+  }
+
+  // Close the appointment dialog
+  document.getElementById("appointmentDialog").classList.add("hidden");
+
+  // Set the current section to lead so tab switches correctly
+  currentSection = "lead";
+
+  // Open the lead dialog
+  openEditLeadDialogByName(leadName);
+});
+
 
       // Open dialog to edit lead with given lead data object
       function openEditLeadDialog(lead) {
