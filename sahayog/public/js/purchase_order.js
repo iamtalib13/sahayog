@@ -34,21 +34,6 @@ frappe.ui.form.on("Purchase Order", {
       frm.set_value("custom_sahayog_status", "Draft");
     }
   },
-  // onload: function(frm) {
-  //   if (frappe.session.user !== 'Administrator') {
-  //       const style = document.createElement('style');
-  //       style.innerHTML = `
-  //           .row-check.sortable-handle.col {
-  //               display: none !important;
-  //           }
-  //           button.btn.btn-xs.btn-secondary.grid-add-row {
-  //               display: none !important;
-  //           }
-  //       `;
-  //       document.head.appendChild(style);
-  //   }
-  // },
-
   custom_request_for: function (frm) {
     frm.trigger("store_query");
     frm.trigger("branch_query");
