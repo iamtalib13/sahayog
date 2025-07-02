@@ -1,0 +1,54 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"QdoGGaSC_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM BM</span>\",\"col\":12}},{\"id\":\"ws-JT3-2jo\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Branch Leads\",\"col\":4}},{\"id\":\"4x8tYFBFgI\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"0JzCPZGcPy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Lead Report\",\"col\":3}},{\"id\":\"XAQn6Hc2TJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
+ "creation": "2025-06-24 17:25:46.336252",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "CRM BM",
+ "links": [],
+ "modified": "2025-06-25 17:54:00.004624",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "CRM BM",
+ "number_cards": [
+  {
+   "label": "Branch Leads",
+   "number_card_name": "Branch Leads"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "Employee CRM",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Branch Manager"
+  }
+ ],
+ "sequence_id": 82.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "CRM Lead Conversion Report",
+   "link_to": "CRM Lead Conversion Report",
+   "report_ref_doctype": "Lead",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Branch Lead Report",
+   "link_to": "Lead Report",
+   "report_ref_doctype": "Lead",
+   "type": "Report"
+  }
+ ],
+ "title": "CRM BM"
+}

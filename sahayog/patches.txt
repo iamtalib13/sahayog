@@ -4,8 +4,9 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
-sahayog.patches.add_roles
 
 sahayog.patches.set_lead_status_options
+sahayog.patches.create_sahayog_letter_head
 sahayog.patches.custom_fields.add_custom_fields_for_item
 sahayog.patches.property_setter_item
+sahayog.patches.set_purchase_order_item_listview_columns

@@ -1,0 +1,458 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login Page PWA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
+  <style>
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      overflow: hidden; /* prevent scroll */
+    }
+    main {
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      outline-offset: 2px;
+      max-height: 100vh;
+      transition: transform 0.1s ease;
+    }
+    .top-section {
+      position: relative;
+      background: linear-gradient(-45deg, #2aa673, #1f8a5f, #1e3a8a, #2563eb);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      padding: 2.5rem 1.5rem 6rem 1.5rem;
+      border-top-left-radius: 1.5rem;
+      border-top-right-radius: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 160px;
+      overflow: visible;
+    }
+    .back-btn {
+      position: absolute;
+      top: 1.5rem;
+      left: 1.5rem;
+      color: white;
+      font-size: 1.25rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      z-index: 20;
+    }
+    .back-btn:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+    .logo-img {
+      position: relative;
+      width: 200px; /* increased size */
+      height: auto;
+      z-index: 10;
+      user-select: none;
+      pointer-events: none;
+    }
+    .white-curve {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3rem;
+      background: white;
+      border-top-left-radius: 1.5rem;
+      border-top-right-radius: 1.5rem;
+      transform: translateY(50%);
+      z-index: 5;
+    }
+    .content {
+      padding: 4rem 1.5rem 2.5rem 1.5rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      max-height: calc(100vh - 160px);
+    }
+    .title {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.125rem;
+      color: #374151;
+      margin-bottom: 1.5rem;
+      user-select: none;
+    }
+    .error-message {
+      display: none;
+      background-color: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+      border-radius: 0.375rem;
+      padding: 0.5rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      align-items: center;
+      gap: 0.5rem;
+      user-select: none;
+    }
+    .error-message svg {
+      flex-shrink: 0;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex-grow: 1;
+    }
+    label {
+      font-size: 0.75rem;
+      color: #2aa673;
+      margin-bottom: 0.25rem;
+      user-select: none;
+      display: block;
+    }
+    input[type='text'],
+    input[type='password'] {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      color: #4b5563;
+      outline-offset: 2px;
+      transition: border-color 0.2s ease;
+    }
+    input[type='text']::placeholder {
+      color: #9ca3af;
+    }
+    input[type='password']::placeholder {
+      color: #d1d5db;
+    }
+    input[type='text']:focus,
+    input[type='password']:focus {
+      border-color: #2aa673;
+      box-shadow: 0 0 0 2px rgba(42, 166, 115, 0.3);
+      outline: none;
+    }
+    .checkbox-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      user-select: none;
+      margin-bottom: 1.5rem;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+    .checkbox-label input[type='checkbox'] {
+      width: 1rem;
+      height: 1rem;
+      border-radius: 9999px;
+      border: 1px solid #d1d5db;
+      accent-color: #2aa673;
+      cursor: pointer;
+    }
+    .checkbox-label input[type='checkbox']:focus-visible {
+      outline: 2px solid #2aa673;
+      outline-offset: 2px;
+    }
+    .forgot-link {
+      color: #2aa673;
+      text-decoration: none;
+      cursor: pointer;
+      user-select: none;
+    }
+    .forgot-link:hover,
+    .forgot-link:focus-visible {
+      text-decoration: underline;
+      outline: none;
+    }
+    button[type='submit'] {
+      background-color: #2aa673;
+      color: white;
+      font-weight: 600;
+      padding: 0.75rem 0;
+      border-radius: 9999px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      user-select: none;
+      border: none;
+    }
+    button[type='submit']:hover,
+    button[type='submit']:focus-visible {
+      background-color: #24935a;
+      outline: none;
+    }
+    .register-text {
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      text-align: center;
+      user-select: none;
+    }
+    .register-text a {
+      color: #2aa673;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .register-text a:hover,
+    .register-text a:focus-visible {
+      text-decoration: underline;
+      outline: none;
+    }
+    @media (min-width: 768px) {
+      body {
+        background-color: #f3f4f6;
+        padding: 4rem;
+      }
+      main {
+        max-width: 480px;
+        border-radius: 2rem;
+      }
+      .top-section {
+        min-height: 180px;
+        padding-bottom: 7rem;
+      }
+      .white-curve {
+        height: 4rem;
+        transform: translateY(60%);
+      }
+      .logo-img {
+        width: 240px; /* increased size for larger screens */
+      }
+      .title {
+        font-size: 1.25rem;
+      }
+      input[type='text'],
+      input[type='password'] {
+        font-size: 1.125rem;
+        padding: 0.75rem 1rem;
+      }
+      button[type='submit'] {
+        font-size: 1.125rem;
+        padding: 1rem 0;
+      }
+      .content {
+        max-height: calc(100vh - 180px);
+      }
+    }
+    /* Loading spinner */
+    .loading {
+      border: 2px solid transparent;
+      border-top: 2px solid white;
+      border-right: 2px solid white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="crmLoginForm" role="main" aria-label="Login form container" tabindex="-1">
+    <section class="top-section" aria-hidden="true">
+      <button aria-label="Go back" class="back-btn" type="button">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      </button>
+      <img
+        src="https://sahayogmultistate.com/wp-content/uploads/2024/05/Sahayog-Website-Logo-1-1.png"
+        alt="Sahayog Multistate Logo"
+        class="logo-img"
+        decoding="async"
+        loading="lazy"
+        width="200"
+        height="auto"
+        draggable="false"
+      />
+      <div class="white-curve"></div>
+    </section>
+    <section class="content">
+      <h1 class="title">Login to your account</h1>
+      <div id="loginError" class="error-message" role="alert" aria-live="assertive">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Invalid Employee ID or Password.</span>
+      </div>
+      <form novalidate>
+        <div>
+          <label for="employee_id">Employee ID</label>
+          <input
+            type="text"
+            id="employee_id"
+            name="employee_id"
+            placeholder="Enter your Employee ID"
+            autocomplete="username"
+            required
+            aria-required="true"
+          />
+        </div>
+        <div class="relative">
+          <label for="password" class="sr-only">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Password"
+            autocomplete="current-password"
+            required
+            aria-required="true"
+          />
+          <button
+            type="button"
+            id="togglePassword"
+            aria-label="Toggle password visibility"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#2aa673] rounded"
+            tabindex="0"
+          >
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <div class="checkbox-row">
+          <label class="checkbox-label" for="remember">
+            <input type="checkbox" id="remember" name="remember" />
+            <span>Remember me</span>
+          </label>
+        </div>
+        <button id="loginButton" type="submit" aria-live="polite" aria-busy="false">
+          <span id="buttonText">Login</span>
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginForm = document.getElementById('crmLoginForm');
+      const togglePassword = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+      const loginError = document.getElementById('loginError');
+      const loginButton = document.getElementById('loginButton');
+      const buttonText = document.getElementById('buttonText');
+
+      // Toggle password visibility
+      togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+      });
+
+      // Form submission
+      loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Show loading state
+        loginButton.disabled = true;
+        loginButton.setAttribute('aria-busy', 'true');
+        buttonText.innerHTML = '<span class="loading" aria-hidden="true"></span> Logging in...';
+
+        const employee_id = document.getElementById('employee_id').value.trim();
+        const password = passwordInput.value;
+
+        try {
+          const response = await fetch('/api/method/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+              usr: employee_id,
+              pwd: password
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.message === 'Logged In') {
+            // Success - redirect or reload
+            window.location.href = '/crm-portal'; // Or reload as in original
+          } else {
+            // Show error
+            loginError.style.display = 'flex';
+            passwordInput.focus();
+
+            // Shake animation for error feedback
+            loginForm.style.transform = 'translateX(0)';
+            loginForm.offsetHeight; // Trigger reflow
+            loginForm.style.transform = 'translateX(-5px)';
+            setTimeout(() => {
+              loginForm.style.transform = 'translateX(5px)';
+              setTimeout(() => {
+                loginForm.style.transform = 'translateX(0)';
+              }, 50);
+            }, 50);
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          loginError.querySelector('span').textContent = 'Network error. Please try again.';
+          loginError.style.display = 'flex';
+        } finally {
+          // Reset button state
+          loginButton.disabled = false;
+          loginButton.setAttribute('aria-busy', 'false');
+          buttonText.textContent = 'Login';
+        }
+      });
+
+      // Clear error when typing
+      const inputs = [document.getElementById('employee_id'), passwordInput];
+      inputs.forEach(input => {
+        input.addEventListener('input', () => {
+          if (loginError.style.display === 'flex') {
+            loginError.style.display = 'none';
+          }
+        });
+      });
+
+      // Focus first input on page load
+      document.getElementById('employee_id').focus();
+    });
+  </script>
+</body>
+</html>

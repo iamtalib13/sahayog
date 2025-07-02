@@ -15,7 +15,7 @@ def execute():
                 "label": "Request For",
                 "reqd": 1,
             },
-                
+            
 
             {
                 "fieldname": "custom_branch",
