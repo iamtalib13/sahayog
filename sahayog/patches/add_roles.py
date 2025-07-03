@@ -27,6 +27,7 @@ def execute():
         "Team Leader - SMBG",
         "BDOs",
         "BDEs",
+        "ticket cancel user",
     ]
 
     for role in roles:
