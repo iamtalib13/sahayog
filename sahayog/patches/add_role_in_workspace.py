@@ -33,6 +33,7 @@ def execute():
         "ERPNext Integrations",
         "Build",
         "Home",
+        "LMS"
     ]
 
     for name in workspace_names:
