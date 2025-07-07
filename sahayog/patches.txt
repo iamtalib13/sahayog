@@ -9,3 +9,5 @@ sahayog.patches.set_lead_status_options
 sahayog.patches.create_sahayog_letter_head
 sahayog.patches.custom_fields.add_custom_fields_for_item
 sahayog.patches.property_setter_item
+sahayog.patches.set_purchase_order_item_listview_columns
+sahayog.patches.add_role_in_workspace

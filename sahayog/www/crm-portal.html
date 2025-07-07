@@ -1171,6 +1171,14 @@ aria-labelledby="createLeadDialogTitle"
               readonly
               class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100"
             />
+            <button
+              type="button"
+              id="goToLeadBtn"
+              class="text-blue-600 underline"
+            >
+              View Lead Details
+            </button>
+            
           </div>
         </div>
     
@@ -2099,6 +2107,25 @@ aria-labelledby="createLeadDialogTitle"
     }
   }
 }
+
+document.getElementById("goToLeadBtn").addEventListener("click", () => {
+  const leadName = document.getElementById("appointmentParty").value;
+
+  if (!leadName) {
+    alert("Lead reference not found.");
+    return;
+  }
+
+  // Close the appointment dialog
+  document.getElementById("appointmentDialog").classList.add("hidden");
+
+  // Set the current section to lead so tab switches correctly
+  currentSection = "lead";
+
+  // Open the lead dialog
+  openEditLeadDialogByName(leadName);
+});
+
 
       // Open dialog to edit lead with given lead data object
       function openEditLeadDialog(lead) {
@@ -3634,7 +3661,7 @@ function showGlobalSuccess(message) {
 });
 
 
-      async function openEditAppointmentDialogByName(appointmentName) {
+async function openEditAppointmentDialogByName(appointmentName) {
   if (!appointmentName) {
     alert("Invalid appointment selected.");
     return;
@@ -3661,8 +3688,30 @@ function showGlobalSuccess(message) {
     const doc = data.data;
     console.log("Fetched appointment data:", doc);
 
-    document.getElementById("appointmentCustomerName").value = doc.customer_name || "---";
-    document.getElementById("appointmentCustomerPhone").value = doc.customer_phone_number || "---";
+    // ✅ Fetch updated lead details using party (lead name)
+    let lead = null;
+    if (doc.party) {
+      const leadRes = await fetch(`/api/resource/Lead/${encodeURIComponent(doc.party)}`, {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+        cache: "no-cache",
+      });
+
+      if (leadRes.ok) {
+        const leadData = await leadRes.json();
+        lead = leadData.data;
+      } else {
+        console.warn("Could not fetch lead details for", doc.party);
+      }
+    }
+
+    // Set values using fetched lead or fallback to appointment values
+    document.getElementById("appointmentCustomerName").value =
+      lead?.first_name || lead?.lead_name || doc.customer_name || "---";
+
+    document.getElementById("appointmentCustomerPhone").value =
+      lead?.mobile_no || doc.customer_phone_number || "---";
+
     document.getElementById("appointmentParty").value = doc.party || "---";
     document.getElementById("appointmentStatus").value = doc.status || "Open";
 
@@ -3681,12 +3730,11 @@ function showGlobalSuccess(message) {
     toggleEditableFields(false);
     updateAppointmentBtn.textContent = "Edit";
 
-    // Hide global success msg (if previously shown)
     document.getElementById("globalSuccessMsg").classList.remove("visible");
-
     appointmentDialog.classList.remove("hidden");
+
   } catch (err) {
-    console.error("Error fetching appointment:", err);
+    console.error("Error fetching appointment or lead:", err);
     alert("Could not load appointment data.");
   }
 }
