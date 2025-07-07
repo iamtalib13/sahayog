@@ -1,6 +1,12 @@
 # Copyright (c) 2025, Developer Team and contributors
 # For license information, please see license.txt
 
+# Copyright (c) 2025, Developer Team and contributors
+# For license information, please see license.txt
+
+# Copyright (c) 2025, Developer Team and contributors
+# For license information, please see license.txt
+
 from frappe.utils import format_datetime
 import frappe
 
@@ -24,14 +30,14 @@ def execute(filters=None):
             lead_filters["custom_region"] = employee.custom_region
         else:
             frappe.throw("Your Employee record is missing branch/zone/region info.")
-
-    # User-selected filters (apply in addition to role-based filters)
-    if filters.get("custom_branch"):
-        lead_filters["custom_branch"] = filters["custom_branch"]
-    if filters.get("custom_zone"):
-        lead_filters["custom_zone"] = filters["custom_zone"]
-    if filters.get("custom_region"):
-        lead_filters["custom_region"] = filters["custom_region"]
+    else:
+        # Admin/system managers can use filters freely
+        if filters.get("custom_branch"):
+            lead_filters["custom_branch"] = filters["custom_branch"]
+        if filters.get("custom_zone"):
+            lead_filters["custom_zone"] = filters["custom_zone"]
+        if filters.get("custom_region"):
+            lead_filters["custom_region"] = filters["custom_region"]
 
     # Date filter range
     from_date = filters.get("from_date")
@@ -50,18 +56,12 @@ def execute(filters=None):
 
     # Add full name and format creation datetime
     for lead in leads:
-        if lead.get("lead_owner"):
-            full_name = frappe.db.get_value("User", lead["lead_owner"], "full_name")
-        else:
-            full_name = ""
-
+        full_name = frappe.db.get_value("User", lead["lead_owner"], "full_name") if lead.get("lead_owner") else ""
         lead["employee_name"] = full_name or lead.get("lead_owner") or ""
 
-        # Format the creation date
         if lead.get("creation"):
-            lead["creation"] = format_datetime(lead["creation"], "MMM dd, yyyy hh:mm a")  # e.g., Jun 25, 2025 02:45 PM
+            lead["creation"] = format_datetime(lead["creation"], "MMM dd, yyyy hh:mm a")
 
-    # Columns
     columns = [
         {"label": "Lead Name", "fieldname": "lead_name", "fieldtype": "Data", "width": 200},
         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
@@ -69,7 +69,7 @@ def execute(filters=None):
         {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 220},
         {"label": "Branch", "fieldname": "custom_branch", "fieldtype": "Link", "options": "Branch", "width": 150},
         {"label": "Region", "fieldname": "custom_region", "fieldtype": "Link", "options": "Region", "width": 120},
-		{"label": "Zone", "fieldname": "custom_zone", "fieldtype": "Link", "options": "Zone", "width": 120},
+        {"label": "Zone", "fieldname": "custom_zone", "fieldtype": "Link", "options": "Zone", "width": 120},
         {"label": "Created On", "fieldname": "creation", "fieldtype": "Data", "width": 180},
     ]
 
