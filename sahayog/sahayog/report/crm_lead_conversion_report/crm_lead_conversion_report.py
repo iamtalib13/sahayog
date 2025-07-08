@@ -19,7 +19,8 @@ def execute(filters=None):
     lead_conditions = ""
 
     # Apply role-based access
-    if "Administrator" not in roles and "System Manager" not in roles and "Admin" not in roles:
+    full_access_roles = ["Administrator", "System Manager", "Admin", "Sales Manager"]
+    if not any(role in roles for role in full_access_roles):
         if "Branch Manager" in roles and employee and employee.branch:
             lead_conditions += f" AND l.custom_branch = {frappe.db.escape(employee.branch)}"
         elif "Zonal Manager" in roles and employee and employee.custom_zone:
@@ -28,6 +29,7 @@ def execute(filters=None):
             lead_conditions += f" AND l.custom_region = {frappe.db.escape(employee.custom_region)}"
         else:
             frappe.throw("Your Employee record is missing branch/zone/region info.")
+    
 
     # Apply user filters
     if filters.get("custom_branch"):
