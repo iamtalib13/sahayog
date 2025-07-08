@@ -3,6 +3,20 @@
 
 frappe.query_reports["Lead Report"] = {
   onload: function (report) {
+    // Skip for unrestricted roles
+    const unrestricted_roles = [
+      "Administrator",
+      "System Manager",
+      "Admin",
+      "Sales Manager",
+    ];
+    const user_roles = frappe.user_roles;
+
+    if (unrestricted_roles.some((role) => user_roles.includes(role))) {
+      return;
+    }
+
+    // For restricted users, get employee and set filters
     frappe.call({
       method: "frappe.client.get",
       args: {
@@ -14,21 +28,19 @@ frappe.query_reports["Lead Report"] = {
       callback: function (r) {
         if (r.message) {
           const employee = r.message;
-          const roles = frappe.user_roles;
 
-          if (roles.includes("Zonal Manager") && employee.custom_zone) {
+          if (user_roles.includes("Zonal Manager") && employee.custom_zone) {
             report.set_filter_value("custom_zone", employee.custom_zone);
-            report.page.set_filter_read_only("custom_zone", 1);
-          }
-
-          if (roles.includes("Regional Manager") && employee.custom_region) {
+            report.page.set_filter_read_only("custom_zone", true);
+          } else if (
+            user_roles.includes("Regional Manager") &&
+            employee.custom_region
+          ) {
             report.set_filter_value("custom_region", employee.custom_region);
-            report.page.set_filter_read_only("custom_region", 1);
-          }
-
-          if (roles.includes("Branch Manager") && employee.branch) {
+            report.page.set_filter_read_only("custom_region", true);
+          } else if (user_roles.includes("Branch Manager") && employee.branch) {
             report.set_filter_value("custom_branch", employee.branch);
-            report.page.set_filter_read_only("custom_branch", 1);
+            report.page.set_filter_read_only("custom_branch", true);
           }
         }
       },
@@ -43,16 +55,16 @@ frappe.query_reports["Lead Report"] = {
       options: "Branch",
     },
     {
-      fieldname: "custom_zone",
-      label: "Zone",
-      fieldtype: "Link",
-      options: "Zone",
-    },
-    {
       fieldname: "custom_region",
       label: "Region",
       fieldtype: "Link",
       options: "Region",
+    },
+    {
+      fieldname: "custom_zone",
+      label: "Zone",
+      fieldtype: "Link",
+      options: "Zone",
     },
     {
       fieldname: "from_date",
