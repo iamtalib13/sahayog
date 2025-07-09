@@ -1,8 +1,12 @@
+let progress_status_shown = false;
 frappe.ui.form.on("Branch Proposal", {
   refresh: function (frm) {
-    // Only trigger if form is not new and rendering hasn't already occurred
-    if (!frm._progress_status_shown && !frm.is_new()) {
-      frm._progress_status_shown = true;
+    // Reset flag on every refresh
+    progress_status_shown = false;
+
+    // Show only for saved docs (not new) and only once per refresh
+    if (!frm.is_new() && !progress_status_shown) {
+      progress_status_shown = true;
       frm.trigger("progress_status");
     }
   },
