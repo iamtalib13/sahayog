@@ -29,6 +29,8 @@ def execute():
         "BDOs",
         "BDEs",
         "ticket cancel user",
+        "CBS Support Executive",
+        "CBS Support Manager",
 
         # ✅ Remaining 107 roles (no duplicates)
         "AGM",
