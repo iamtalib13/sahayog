@@ -1,10 +1,20 @@
 frappe.ui.form.on("Branch Proposal", {
   refresh: function (frm) {
     if (!frm.is_new()) {
+      frm._progress_status_shown = false; // Reset flag on existing docs
       frm.trigger("progress_status");
+    } else {
+      if (!frm._progress_status_shown) {
+        frm.trigger("progress_status");
+        frm._progress_status_shown = true;
+      }
     }
   },
   progress_status: function (frm) {
+    // Prevent multiple calls
+    if (frm._progress_status_shown) return;
+    frm._progress_status_shown = true;
+
     const state = (frm.doc.workflow_state || "").toLowerCase();
 
     // Color definitions
