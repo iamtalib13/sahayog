@@ -1,15 +1,12 @@
 frappe.ui.form.on("Branch Proposal", {
   refresh: function (frm) {
-    // Always trigger, but prevent double execution
+    // Only trigger if form is not new and rendering hasn't already occurred
     if (!frm._progress_status_shown && !frm.is_new()) {
+      frm._progress_status_shown = true;
       frm.trigger("progress_status");
     }
   },
   progress_status: function (frm) {
-    // Stop if already shown
-    if (frm._progress_status_shown) return;
-    frm._progress_status_shown = true;
-
     const state = (frm.doc.workflow_state || "").toLowerCase();
 
     // Color definitions
