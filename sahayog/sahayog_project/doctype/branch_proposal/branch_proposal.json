@@ -9,10 +9,12 @@
   "state",
   "city",
   "status",
+  "potential_business",
+  "city_population",
   "column_break_duon",
   "number_of_branches",
-  "city_population",
   "remark",
+  "competitor",
   "section_break_btoi",
   "planned_branches",
   "total_estimated_cost",
@@ -105,13 +107,24 @@
    "label": "Total Estimated Cost",
    "non_negative": 1,
    "precision": "2"
+  },
+  {
+   "fieldname": "potential_business",
+   "fieldtype": "Currency",
+   "label": "Potential Business (Yearly) "
+  },
+  {
+   "description": "Saparated by comma or newline",
+   "fieldname": "competitor",
+   "fieldtype": "Small Text",
+   "label": "Competitor"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-09 10:52:09.145455",
+ "modified": "2025-07-09 17:07:32.977627",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Branch Proposal",
