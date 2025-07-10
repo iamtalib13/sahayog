@@ -405,3 +405,32 @@ def check_loi_docstatus_for_task_2(doc, method):
                     )
         else:
             frappe.msgprint(_(f"No Letter of Intent found for project {project}"))
+
+# Custom autonaming for Task documents for preventing duplicates
+def task_custom_autoname(doc, method):
+    prefix = "TASK-" + frappe.utils.now_datetime().strftime("%Y") + "-"
+    last_number = get_last_task_number(prefix)
+    
+    while True:
+        new_name = f"{prefix}{str(last_number).zfill(5)}"
+        if not frappe.db.exists("Task", new_name):
+            doc.name = new_name
+            break
+        last_number += 1
+
+def get_last_task_number(prefix):
+    # Find the max existing number for the year
+    latest = frappe.db.sql(f"""
+        SELECT name FROM `tabTask`
+        WHERE name LIKE %s
+        ORDER BY name DESC
+        LIMIT 1
+    """, (prefix + "%",), as_dict=True)
+
+    if latest:
+        num_part = latest[0]["name"].replace(prefix, "")
+        try:
+            return int(num_part) + 1
+        except ValueError:
+            return 1
+    return 1

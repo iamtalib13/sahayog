@@ -230,22 +230,22 @@ doc_events = {
             "sahayog.doc_events.user.capital_user_name",   
         ],
     },
-    "Task": {
-
-        "after_insert": [
-            "sahayog.doc_events.task.create_letter_of_intent",   
-        ],
-        "on_update": [
-            "sahayog.doc_events.task.update_branch_status_trigger",
+   "Task": {
+        "autoname": [
+            "sahayog.doc_events.task.task_custom_autoname"
         ],
         "validate": [
             "sahayog.doc_events.task.validate_location_status",
             "sahayog.doc_events.task.validate_agreement_status",
-            "sahayog.doc_events.task.check_loi_docstatus_for_task_2",
-            
+            "sahayog.doc_events.task.check_loi_docstatus_for_task_2"
         ],
-        
-    },  
+        "on_update": [
+            "sahayog.doc_events.task.update_branch_status_trigger"
+        ],
+        "after_insert": [
+            "sahayog.doc_events.task.create_letter_of_intent"
+        ]
+    },
     
     "Sahayog Settings": {
         "on_update": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template",
