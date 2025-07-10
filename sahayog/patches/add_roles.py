@@ -2,8 +2,8 @@ import frappe
 
 def execute():
     roles = [
-        # ✅ Existing 25 roles you already added
         "Trainer",
+        "Business Head",
         "Trainer Head",
         "Procurement User",
         "Branch Manager",
@@ -31,8 +31,6 @@ def execute():
         "ticket cancel user",
         "CBS Support Executive",
         "CBS Support Manager",
-
-        # ✅ Remaining 107 roles (no duplicates)
         "AGM",
         "Academics User",
         "Accounts Executive",
