@@ -1,5 +1,5 @@
 frappe.ui.form.on("Task", {
-  refresh: function(frm) {
+  refresh: function (frm) {
     frm.trigger("hide_fields");
     frm.trigger("set_readonly_fields");
     frm.trigger("collapsible_false");
@@ -37,8 +37,7 @@ frappe.ui.form.on("Task", {
     }
   },
 
-  onload: function (frm) {
-  },
+  onload: function (frm) {},
 
   async hide_fields(frm) {
     const fields_to_hide = [
@@ -50,7 +49,7 @@ frappe.ui.form.on("Task", {
       "issue",
       "priority",
       "type",
-      "sb_depends_on"
+      "sb_depends_on",
     ];
 
     const allowed_roles = ["System Manager", "Administrator"];
@@ -99,36 +98,38 @@ frappe.ui.form.on("Task", {
 
 // html field
 frappe.ui.form.on("Task", {
-    refresh: function(frm) {
-        if (frm.doc.subject === "Task 1: Acquisition of the Property") {
-            // Render custom UI
-            frm.fields_dict.custom_location_details.$wrapper.closest('.form-group').hide();
-            render_custom_location_ui_for_task(frm);
+  refresh: function (frm) {
+    if (frm.doc.subject === "Task 1 : Acquisition of the Property") {
+      // Render custom UI
+      frm.fields_dict.custom_location_details.$wrapper
+        .closest(".form-group")
+        .hide();
+      render_custom_location_ui_for_task(frm);
 
-            // Add CSS
-            add_custom_css();
-        }
+      // Add CSS
+      add_custom_css();
     }
+  },
 });
 
 // Custom UI render
 function render_custom_location_ui_for_task(frm) {
-    frm.refresh_field('custom_location_details_html');
-    const table = frm.doc.custom_location_details || [];
-    const grouped = {};
+  frm.refresh_field("custom_location_details_html");
+  const table = frm.doc.custom_location_details || [];
+  const grouped = {};
 
-    table.forEach(row => {
-        if (!row.location_name) return;
-        if (!grouped[row.location_name]) grouped[row.location_name] = [];
-        grouped[row.location_name].push({
-            image: row.location_image,
-            name: row.name,
-            docname: row.name,
-            status: row.status
-        });
+  table.forEach((row) => {
+    if (!row.location_name) return;
+    if (!grouped[row.location_name]) grouped[row.location_name] = [];
+    grouped[row.location_name].push({
+      image: row.location_image,
+      name: row.name,
+      docname: row.name,
+      status: row.status,
     });
+  });
 
-    let html = `
+  let html = `
         <div class="location-album-container">
             <div class="location-album-header">
                 <button class="btn btn-sm btn-primary" id="add-location">
@@ -137,322 +138,418 @@ function render_custom_location_ui_for_task(frm) {
             </div>
             <div class="location-gallery">`;
 
-    let row_num = 1;
+  let row_num = 1;
 
-    for (let location in grouped) {
-        if (!location) continue;
-        
-        const currentStatus = getCurrentLocationStatus(frm, location);
+  for (let location in grouped) {
+    if (!location) continue;
 
-        html += `
-            <div class="location-block" data-location="${encodeURIComponent(location)}">
+    const currentStatus = getCurrentLocationStatus(frm, location);
+
+    html += `
+            <div class="location-block" data-location="${encodeURIComponent(
+              location
+            )}">
                 <div class="location-header">
                     <h5>${row_num++}. ${frappe.utils.escape_html(location)}</h5>
             
-                    ${frappe.user.has_role("Project Manager") ? `
+                    ${
+                      frappe.user.has_role("Project Manager")
+                        ? `
                     <div class="location-status">
-                        <select class="form-control status-select" data-location="${encodeURIComponent(location)}">
-                            <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
-                            <option value="Approved" ${currentStatus === 'Approved' ? 'selected' : ''}>Approved</option>
-                            <option value="Rejected" ${currentStatus === 'Rejected' ? 'selected' : ''}>Rejected</option>
-                            ${currentStatus === 'Mixed' ? '<option value="Mixed" selected>Mixed Status</option>' : ''}
+                        <select class="form-control status-select" data-location="${encodeURIComponent(
+                          location
+                        )}">
+                            <option value="Pending" ${
+                              currentStatus === "Pending" ? "selected" : ""
+                            }>Pending</option>
+                            <option value="Approved" ${
+                              currentStatus === "Approved" ? "selected" : ""
+                            }>Approved</option>
+                            <option value="Rejected" ${
+                              currentStatus === "Rejected" ? "selected" : ""
+                            }>Rejected</option>
+                            ${
+                              currentStatus === "Mixed"
+                                ? '<option value="Mixed" selected>Mixed Status</option>'
+                                : ""
+                            }
                         </select>
-                    </div>` : ''}
+                    </div>`
+                        : ""
+                    }
                     
-                    <button class="btn btn-xs btn-default edit-location" data-location="${encodeURIComponent(location)}">
+                    <button class="btn btn-xs btn-default edit-location" data-location="${encodeURIComponent(
+                      location
+                    )}">
                         <i class="fa fa-edit"></i> Edit Location
                     </button>
                 </div>
                 <div class="location-images-container">`;
-                    
 
-        grouped[location].forEach(item => {
-            const file = item.image || "";
-            console.log('Processing file:', file);
-            const is_video = file.toLowerCase().endsWith('.mp4');
+    grouped[location].forEach((item) => {
+      const file = item.image || "";
+      console.log("Processing file:", file);
+      const is_video = file.toLowerCase().endsWith(".mp4");
 
-            html += `
+      html += `
                 <div class="media-thumbnail" data-status="${item.status}">
                     <a href="${file}" target="_blank" class="media-link">
-                        ${is_video
-                        ? `<video src="${file}" width="100%" height="100%" muted></video>`
-                        : `<img src="${file}" width="100%" height="100%" alt="${frappe.utils.escape_html(item.name)}">`
+                        ${
+                          is_video
+                            ? `<video src="${file}" width="100%" height="100%" muted></video>`
+                            : `<img src="${file}" width="100%" height="100%" alt="${frappe.utils.escape_html(
+                                item.name
+                              )}">`
                         }
                         <div class="media-overlay"></div>
                     </a>
-                    <a href="#" data-docname="${item.docname}" class="delete-img">
+                    <a href="#" data-docname="${
+                      item.docname
+                    }" class="delete-img">
                         <i class="fa fa-trash"></i>
                     </a>
-                    <div class="status-badge ${item.status.toLowerCase()}">${item.status}</div>
+                    <div class="status-badge ${item.status.toLowerCase()}">${
+        item.status
+      }</div>
                 </div>`;
-        });
+    });
 
-        html += `
+    html += `
                 </div>
                 <div class="location-actions">
-                    <button class="btn btn-sm btn-outline-primary upload-images" data-location="${encodeURIComponent(location)}">
+                    <button class="btn btn-sm btn-outline-primary upload-images" data-location="${encodeURIComponent(
+                      location
+                    )}">
                         <i class="fa fa-upload"></i> Upload Media
                     </button>
                 </div>
             </div>`;
-    }
+  }
 
-    html += `</div></div>`;
+  html += `</div></div>`;
 
-    frm.fields_dict.custom_location_details_html.$wrapper.html(html);
+  frm.fields_dict.custom_location_details_html.$wrapper.html(html);
 
-    // Event bindings
-    frm.fields_dict.custom_location_details_html.$wrapper.find('#add-location').on('click', function() {
-        add_new_location_for_task(frm);
+  // Event bindings
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find("#add-location")
+    .on("click", function () {
+      add_new_location_for_task(frm);
     });
 
-    frm.fields_dict.custom_location_details_html.$wrapper.find('.edit-location').on('click', function(e) {
-        e.preventDefault();
-        const old_location = decodeURIComponent($(this).data('location'));
-        edit_location_name_for_task(frm, old_location);
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".edit-location")
+    .on("click", function (e) {
+      e.preventDefault();
+      const old_location = decodeURIComponent($(this).data("location"));
+      edit_location_name_for_task(frm, old_location);
     });
 
-    frm.fields_dict.custom_location_details_html.$wrapper.find('.upload-images').on('click', function(e) {
-        e.preventDefault();
-        const location = decodeURIComponent($(this).data('location'));
-        upload_media_files_for_task(frm, location);
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".upload-images")
+    .on("click", function (e) {
+      e.preventDefault();
+      const location = decodeURIComponent($(this).data("location"));
+      upload_media_files_for_task(frm, location);
     });
 
-    frm.fields_dict.custom_location_details_html.$wrapper.find('.delete-img').on('click', function (e) {
-        e.preventDefault();
-        const docname = $(this).data('docname');
-    
-        frappe.confirm(__('Are you sure you want to delete this item?'), () => {
-            delete_media_item_for_task(frm, docname);
-        });
-    });
-    
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".delete-img")
+    .on("click", function (e) {
+      e.preventDefault();
+      const docname = $(this).data("docname");
 
-    // Status change handler
-    frm.fields_dict.custom_location_details_html.$wrapper.find('.status-select').on('change', function() {
-        const location = decodeURIComponent($(this).data('location'));
-        const new_status = $(this).val();
-        
-        // Show loading indicator
-        const $select = $(this);
-        $select.prop('disabled', true);
-        
-        update_status_for_location(frm, location, new_status)
-            .catch(() => {
-                // Error handling is done in update_status_for_location
-            });
+      frappe.confirm(__("Are you sure you want to delete this item?"), () => {
+        delete_media_item_for_task(frm, docname);
+      });
+    });
+
+  // Status change handler
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".status-select")
+    .on("change", function () {
+      const location = decodeURIComponent($(this).data("location"));
+      const new_status = $(this).val();
+
+      // Show loading indicator
+      const $select = $(this);
+      $select.prop("disabled", true);
+
+      update_status_for_location(frm, location, new_status).catch(() => {
+        // Error handling is done in update_status_for_location
+      });
     });
 }
 
 // Helper function to get current location status
 function getCurrentLocationStatus(frm, location) {
-    const child_table = frm.doc.custom_location_details || [];
-    const statuses = [...new Set(child_table
-        .filter(row => row.location_name === location)
-        .map(row => row.status)
-    )];
-    return statuses.length === 1 ? statuses[0] : 'Mixed';
+  const child_table = frm.doc.custom_location_details || [];
+  const statuses = [
+    ...new Set(
+      child_table
+        .filter((row) => row.location_name === location)
+        .map((row) => row.status)
+    ),
+  ];
+  return statuses.length === 1 ? statuses[0] : "Mixed";
 }
 
 // Function to update status for all items in a location
 function update_status_for_location(frm, location, new_status) {
-    if (new_status === 'Mixed') return Promise.resolve();
-    
-    const child_table = frm.doc.custom_location_details || [];
-    let updates = [];
-    
-    child_table.forEach(row => {
-        if (row.location_name === location && row.status !== new_status) {
-            updates.push(() => {
-                return frappe.model.set_value(row.doctype, row.name, 'status', new_status);
-            });
-        }
+  if (new_status === "Mixed") return Promise.resolve();
+
+  const child_table = frm.doc.custom_location_details || [];
+  let updates = [];
+
+  child_table.forEach((row) => {
+    if (row.location_name === location && row.status !== new_status) {
+      updates.push(() => {
+        return frappe.model.set_value(
+          row.doctype,
+          row.name,
+          "status",
+          new_status
+        );
+      });
+    }
+  });
+
+  if (updates.length === 0) return Promise.resolve();
+
+  // Execute all updates sequentially
+  return updates
+    .reduce((p, fn) => p.then(fn), Promise.resolve())
+    .then(() => {
+      frm.refresh_field("custom_location_details");
+      render_custom_location_ui_for_task(frm);
+      return frm.save();
+    })
+    .then(() => {
+      frappe.show_alert(
+        {
+          message: __("Status updated for all items in this location"),
+          indicator: "green",
+        },
+        3
+      );
+    })
+    .catch((err) => {
+      console.error("Error updating status:", err);
+      frappe.msgprint({
+        title: __("Error"),
+        message: __("Failed to update status"),
+        indicator: "red",
+      });
+      // Re-render to show correct status
+      render_custom_location_ui_for_task(frm);
+      throw err; // Re-throw to allow caller to handle
     });
-    
-    if (updates.length === 0) return Promise.resolve();
-    
-    // Execute all updates sequentially
-    return updates.reduce((p, fn) => p.then(fn), Promise.resolve())
-        .then(() => {
-            frm.refresh_field('custom_location_details');
-            render_custom_location_ui_for_task(frm);
-            return frm.save();
-        })
-        .then(() => {
-            frappe.show_alert({ message: __('Status updated for all items in this location'), indicator: 'green' }, 3);
-        })
-        .catch((err) => {
-            console.error('Error updating status:', err);
-            frappe.msgprint({ 
-                title: __('Error'), 
-                message: __('Failed to update status'), 
-                indicator: 'red' 
-            });
-            // Re-render to show correct status
-            render_custom_location_ui_for_task(frm);
-            throw err; // Re-throw to allow caller to handle
-        });
 }
 
 function add_new_location_for_task(frm) {
-    frappe.prompt([{
-        label: 'Location Name',
-        fieldname: 'location_name',
-        fieldtype: 'Data',
+  frappe.prompt(
+    [
+      {
+        label: "Location Name",
+        fieldname: "location_name",
+        fieldtype: "Data",
         reqd: true,
-        description: 'Enter a name for the new location'
-    }], (values) => {
-        if (!values.location_name) return;
-        frappe.show_alert({ message: __('Preparing uploader...'), indicator: 'blue' }, 3);
-        setTimeout(() => {
-            upload_media_files_for_task(frm, values.location_name);
-        }, 300);
-    }, __('Add New Location'), __('Add'));
+        description: "Enter a name for the new location",
+      },
+    ],
+    (values) => {
+      if (!values.location_name) return;
+      frappe.show_alert(
+        { message: __("Preparing uploader..."), indicator: "blue" },
+        3
+      );
+      setTimeout(() => {
+        upload_media_files_for_task(frm, values.location_name);
+      }, 300);
+    },
+    __("Add New Location"),
+    __("Add")
+  );
 }
 
 function edit_location_name_for_task(frm, old_location) {
-    frappe.prompt([{
-        label: 'New Location Name',
-        fieldname: 'new_location_name',
-        fieldtype: 'Data',
+  frappe.prompt(
+    [
+      {
+        label: "New Location Name",
+        fieldname: "new_location_name",
+        fieldtype: "Data",
         reqd: true,
-        default: old_location
-    }], (values) => {
-        if (!values.new_location_name || values.new_location_name === old_location) return;
+        default: old_location,
+      },
+    ],
+    (values) => {
+      if (
+        !values.new_location_name ||
+        values.new_location_name === old_location
+      )
+        return;
 
-        let updates = [];
-        (frm.doc.custom_location_details || []).forEach(row => {
-            if (row.location_name === old_location) {
-                updates.push(() => {
-                    return frappe.model.set_value(row.doctype, row.name, 'location_name', values.new_location_name);
-                });
-            }
+      let updates = [];
+      (frm.doc.custom_location_details || []).forEach((row) => {
+        if (row.location_name === old_location) {
+          updates.push(() => {
+            return frappe.model.set_value(
+              row.doctype,
+              row.name,
+              "location_name",
+              values.new_location_name
+            );
+          });
+        }
+      });
+
+      if (updates.length === 0) return;
+
+      // Execute all updates sequentially
+      updates
+        .reduce((p, fn) => p.then(fn), Promise.resolve())
+        .then(() => {
+          frm.refresh_field("custom_location_details");
+          render_custom_location_ui_for_task(frm);
+          return frm.save();
+        })
+        .then(() => {
+          frappe.show_alert(
+            { message: __("Location name updated"), indicator: "green" },
+            3
+          );
+        })
+        .catch((err) => {
+          console.error("Error updating location:", err);
+          frappe.msgprint({
+            title: __("Error"),
+            message: __("Failed to update location name"),
+            indicator: "red",
+          });
         });
-
-        if (updates.length === 0) return;
-
-        // Execute all updates sequentially
-        updates.reduce((p, fn) => p.then(fn), Promise.resolve())
-            .then(() => {
-                frm.refresh_field('custom_location_details');
-                render_custom_location_ui_for_task(frm);
-                return frm.save();
-            })
-            .then(() => {
-                frappe.show_alert({ message: __('Location name updated'), indicator: 'green' }, 3);
-            })
-            .catch((err) => {
-                console.error('Error updating location:', err);
-                frappe.msgprint({ 
-                    title: __('Error'), 
-                    message: __('Failed to update location name'), 
-                    indicator: 'red' 
-                });
-            });
-    }, __('Edit Location Name'), __('Update'));
+    },
+    __("Edit Location Name"),
+    __("Update")
+  );
 }
 
 function upload_media_files_for_task(frm, location) {
-    new frappe.ui.FileUploader({
-        allow_multiple: true,
-        restrictions: {
-            allowed_file_types: ['image/*', 'video/mp4']
-        },
-        async on_success(file) {
-            try {
-                // 1. Set file as public
-                await frappe.call({
-                    method: 'frappe.client.set_value',
-                    args: {
-                        doctype: 'File',
-                        name: file.name,
-                        fieldname: {
-                            is_private: 0
-                        }
-                    }
-                });
+  new frappe.ui.FileUploader({
+    allow_multiple: true,
+    restrictions: {
+      allowed_file_types: ["image/*", "video/mp4"],
+    },
+    async on_success(file) {
+      try {
+        // 1. Set file as public
+        await frappe.call({
+          method: "frappe.client.set_value",
+          args: {
+            doctype: "File",
+            name: file.name,
+            fieldname: {
+              is_private: 0,
+            },
+          },
+        });
 
-                // 2. Refetch the file to get updated file_url
-                const r = await frappe.call({
-                    method: 'frappe.client.get',
-                    args: {
-                        doctype: 'File',
-                        name: file.name
-                    }
-                });
+        // 2. Refetch the file to get updated file_url
+        const r = await frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "File",
+            name: file.name,
+          },
+        });
 
-                const updated_file = r.message;
+        const updated_file = r.message;
 
-                // 3. Add child row with updated file_url
-                const new_row = frm.add_child('custom_location_details');
-                new_row.location_name = location;
-                new_row.location_image = updated_file.file_url; // ✅ updated URL
-                new_row.status = 'Pending';
-                frm.refresh_field('custom_location_details');
+        // 3. Add child row with updated file_url
+        const new_row = frm.add_child("custom_location_details");
+        new_row.location_name = location;
+        new_row.location_image = updated_file.file_url; // ✅ updated URL
+        new_row.status = "Pending";
+        frm.refresh_field("custom_location_details");
 
-                render_custom_location_ui_for_task(frm);
-                frm.save()
-                    .then(() => {
-                        frappe.show_alert({ message: __('Media uploaded successfully'), indicator: 'green' }, 3);
-                    })
-                    .catch((err) => {
-                        console.error('Error saving after upload:', err);
-                        frappe.msgprint({ 
-                            title: __('Upload Error'), 
-                            message: __('Media uploaded but failed to save document'), 
-                            indicator: 'red' 
-                        });
-                    });
-                    console.log(`Uploaded and attached file: ${updated_file.file_url}`);
-            } catch (err) {
-                console.error('Error in upload success flow:', err);
-                frappe.msgprint(__('Failed to attach uploaded media. See console for details.'));
-            }
-        },
-        on_error(error) {
-            frappe.msgprint({ 
-                title: __('Upload Error'), 
-                message: error.message || __('An error occurred'), 
-                indicator: 'red' 
+        render_custom_location_ui_for_task(frm);
+        frm
+          .save()
+          .then(() => {
+            frappe.show_alert(
+              {
+                message: __("Media uploaded successfully"),
+                indicator: "green",
+              },
+              3
+            );
+          })
+          .catch((err) => {
+            console.error("Error saving after upload:", err);
+            frappe.msgprint({
+              title: __("Upload Error"),
+              message: __("Media uploaded but failed to save document"),
+              indicator: "red",
             });
-        }
-    });
+          });
+        console.log(`Uploaded and attached file: ${updated_file.file_url}`);
+      } catch (err) {
+        console.error("Error in upload success flow:", err);
+        frappe.msgprint(
+          __("Failed to attach uploaded media. See console for details.")
+        );
+      }
+    },
+    on_error(error) {
+      frappe.msgprint({
+        title: __("Upload Error"),
+        message: error.message || __("An error occurred"),
+        indicator: "red",
+      });
+    },
+  });
 }
 
 function delete_media_item_for_task(frm, docname) {
-    const grid = frm.get_field('custom_location_details').grid;
-    const grid_row = grid.grid_rows.find(row => row.doc.name === docname);
+  const grid = frm.get_field("custom_location_details").grid;
+  const grid_row = grid.grid_rows.find((row) => row.doc.name === docname);
 
-    if (grid_row) {
-        // Remove the row directly using the grid_row's remove method
-        grid_row.remove();
+  if (grid_row) {
+    // Remove the row directly using the grid_row's remove method
+    grid_row.remove();
 
-        // Refresh the field and custom UI
-        frm.refresh_field('custom_location_details');
-        render_custom_location_ui_for_task(frm);
+    // Refresh the field and custom UI
+    frm.refresh_field("custom_location_details");
+    render_custom_location_ui_for_task(frm);
 
-        // Save the form after deletion
-        frm.save().then(() => {
-            frappe.show_alert({ message: __('Item deleted successfully'), indicator: 'green' }, 3);
-        }).catch(err => {
-            console.error('Save failed:', err);
-            frappe.msgprint({
-                title: __('Error'),
-                message: __('Item removed but save failed.'),
-                indicator: 'red'
-            });
-        });
-    } else {
+    // Save the form after deletion
+    frm
+      .save()
+      .then(() => {
+        frappe.show_alert(
+          { message: __("Item deleted successfully"), indicator: "green" },
+          3
+        );
+      })
+      .catch((err) => {
+        console.error("Save failed:", err);
         frappe.msgprint({
-            title: __('Not Found'),
-            message: __('Row not found in grid.'),
-            indicator: 'red'
+          title: __("Error"),
+          message: __("Item removed but save failed."),
+          indicator: "red",
         });
-    }
+      });
+  } else {
+    frappe.msgprint({
+      title: __("Not Found"),
+      message: __("Row not found in grid."),
+      indicator: "red",
+    });
+  }
 }
 
 function add_custom_css() {
-    const css = `
+  const css = `
         .location-album-container {
             padding: 15px;
         }
@@ -599,6 +696,6 @@ function add_custom_css() {
             cursor: wait;
         }
     `;
-    
-    frappe.dom.set_style(css);
+
+  frappe.dom.set_style(css);
 }
