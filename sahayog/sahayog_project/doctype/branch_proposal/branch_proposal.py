@@ -42,3 +42,30 @@ class BranchProposal(Document):
                     frappe.throw(
                         f"Branch Name '{row.branch_name}' in Planned Branches should contain only alphabets and spaces."
                     )
+
+    def on_submit(self):
+        self.create_projects_for_branches()
+
+    def create_projects_for_branches(self):
+        created_projects = []
+
+        for row in self.planned_branches:
+            project = frappe.new_doc("Project")
+            project.project_name = row.branch_name
+            project.custom_zone = row.zone
+            project.custom_region = row.region
+            project.custom_division = row.division
+            project.estimated_costing = row.estimated_cost
+            project.branch_proposal = self.name
+            project.project_template = "New Branch Setup"
+            project.branch_status = "Not Started"
+            project.insert(ignore_permissions=True)
+
+            created_projects.append(project.name)
+
+        if created_projects:
+            frappe.msgprint(
+                ("Projects created for Branch Proposal:") + "<br>" + "<br>".join(created_projects),
+                title="Success",
+                indicator="green"
+            )

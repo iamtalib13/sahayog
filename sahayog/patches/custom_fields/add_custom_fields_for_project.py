@@ -70,10 +70,8 @@ def execute():
                 "insert_after": "custom_branch_col_3",
                 "label": "Division",
                 "options":"Division",
-                "reqd":1,
-               
+                "reqd":1,  
             },
-
             {
                 "fieldname": "custom_project_warehouse",
                 "fieldtype": "Link",
@@ -81,7 +79,18 @@ def execute():
                 "label": "Project Warehouse",
                 "options":"Warehouse",
                 
+            },
+            {
+                "fieldname": "branch_proposal",
+                "fieldtype": "Link",
+                "insert_after": "custom_project_warehouse",
+                "label": "Branch Proposal",
+                "options": "Branch Proposal",
+                "read_only": 1,
+                "depends_on": "eval:doc.branch_proposal"
             }
+            
+
             
             
             
