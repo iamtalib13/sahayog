@@ -66,7 +66,7 @@ def execute():
                 "fieldtype": "Int",
                 "insert_after": "subject",
                 "label": "Sequence",
-               
+                "depends_on": "eval:doc.is_template == 1",               
             },
         ],
     }
