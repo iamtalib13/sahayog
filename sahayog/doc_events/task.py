@@ -350,7 +350,7 @@ def update_branch_status_trigger(doc, method):
         frappe.msgprint(f"An error occurred while triggering the branch status update for Project: {str(e)}")
 
 def validate_location_status(doc, method):
-    if doc.subject == "Task 1: Acquisition of the Property" and doc.status == "Completed":
+    if doc.subject == "Task 1 : Acquisition of the Property" and doc.status == "Completed":
         approved_locations = set()
         
         for location in doc.custom_location_details:
