@@ -8,7 +8,7 @@
  "field_order": [
   "branch_name",
   "zone",
-  "rregion",
+  "region",
   "division",
   "estimated_cost"
  ],
@@ -29,14 +29,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "rregion",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Rregion",
-   "options": "Region",
-   "reqd": 1
-  },
-  {
    "fieldname": "division",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -52,13 +44,21 @@
    "non_negative": 1,
    "precision": "2",
    "reqd": 1
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Region",
+   "options": "Region",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-09 10:48:29.745501",
+ "modified": "2025-07-10 10:35:44.585606",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Planned Branch",
