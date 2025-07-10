@@ -131,12 +131,15 @@ function render_custom_location_ui_for_task(frm) {
 
   let html = `
         <div class="location-album-container">
-            <div class="location-album-header">
-                <button class="btn btn-sm btn-primary" id="add-location">
-                    <i class="fa fa-plus"></i> Add New Location
-                </button>
-            </div>
-            <div class="location-gallery">`;
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th style="width: 150px;">Location</th>
+                        <th>Images</th>
+                        <th style="width: 100px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
   let row_num = 1;
 
@@ -146,87 +149,106 @@ function render_custom_location_ui_for_task(frm) {
     const currentStatus = getCurrentLocationStatus(frm, location);
 
     html += `
-            <div class="location-block" data-location="${encodeURIComponent(
-              location
-            )}">
-                <div class="location-header">
-                    <h5>${row_num++}. ${frappe.utils.escape_html(location)}</h5>
-            
-                    ${
-                      frappe.user.has_role("Project Manager")
-                        ? `
-                    <div class="location-status">
-                        <select class="form-control status-select" data-location="${encodeURIComponent(
-                          location
-                        )}">
-                            <option value="Pending" ${
-                              currentStatus === "Pending" ? "selected" : ""
-                            }>Pending</option>
-                            <option value="Approved" ${
-                              currentStatus === "Approved" ? "selected" : ""
-                            }>Approved</option>
-                            <option value="Rejected" ${
-                              currentStatus === "Rejected" ? "selected" : ""
-                            }>Rejected</option>
-                            ${
-                              currentStatus === "Mixed"
-                                ? '<option value="Mixed" selected>Mixed Status</option>'
-                                : ""
-                            }
-                        </select>
-                    </div>`
-                        : ""
-                    }
-                    
-                    <button class="btn btn-xs btn-default edit-location" data-location="${encodeURIComponent(
-                      location
-                    )}">
-                        <i class="fa fa-edit"></i> Edit Location
-                    </button>
-                </div>
-                <div class="location-images-container">`;
+                    <tr data-location="${encodeURIComponent(location)}">
+                        <td>
+                            <div class="location-header">
+                                <h5 class="editable-location" data-location="${encodeURIComponent(
+                                  location
+                                )}">
+                                    ${row_num++}. ${frappe.utils.escape_html(
+      location
+    )}
+                                </h5>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="location-images-container">`;
 
     grouped[location].forEach((item) => {
       const file = item.image || "";
-      console.log("Processing file:", file);
       const is_video = file.toLowerCase().endsWith(".mp4");
 
       html += `
-                <div class="media-thumbnail" data-status="${item.status}">
-                    <a href="${file}" target="_blank" class="media-link">
-                        ${
-                          is_video
-                            ? `<video src="${file}" width="100%" height="100%" muted></video>`
-                            : `<img src="${file}" width="100%" height="100%" alt="${frappe.utils.escape_html(
-                                item.name
-                              )}">`
-                        }
-                        <div class="media-overlay"></div>
-                    </a>
-                    <a href="#" data-docname="${
-                      item.docname
-                    }" class="delete-img">
-                        <i class="fa fa-trash"></i>
-                    </a>
-                    <div class="status-badge ${item.status.toLowerCase()}">${
-        item.status
-      }</div>
-                </div>`;
+                                <div class="media-thumbnail" data-status="${
+                                  item.status
+                                }">
+                                    <a href="${file}" target="_blank" class="media-link">
+                                        ${
+                                          is_video
+                                            ? `<video src="${file}" width="100%" height="100%" muted></video>`
+                                            : `<img src="${file}" width="100%" height="100%" alt="${frappe.utils.escape_html(
+                                                item.name
+                                              )}">`
+                                        }
+                                        <div class="media-overlay"></div>
+                                    </a>
+                                    <a href="#" data-docname="${
+                                      item.docname
+                                    }" class="delete-img">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </div>`;
     });
 
     html += `
-                </div>
-                <div class="location-actions">
-                    <button class="btn btn-sm btn-outline-primary upload-images" data-location="${encodeURIComponent(
-                      location
-                    )}">
-                        <i class="fa fa-upload"></i> Upload Media
-                    </button>
-                </div>
-            </div>`;
+                            </div>
+                            <div class="location-actions">
+                                <button class="btn btn-sm btn-outline-primary upload-images" data-location="${encodeURIComponent(
+                                  location
+                                )}">
+                                    <i class="fa fa-upload"></i> Upload Media
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="status-selection-container">`;
+
+    if (frappe.user.has_role("Project Manager")) {
+      html += `
+                                <select class="form-control status-select" data-location="${encodeURIComponent(
+                                  location
+                                )}">
+                                    <option value="Pending" ${
+                                      currentStatus === "Pending"
+                                        ? "selected"
+                                        : ""
+                                    }>Pending</option>
+                                    <option value="Approved" ${
+                                      currentStatus === "Approved"
+                                        ? "selected"
+                                        : ""
+                                    }>Approved</option>
+                                    <option value="Rejected" ${
+                                      currentStatus === "Rejected"
+                                        ? "selected"
+                                        : ""
+                                    }>Rejected</option>
+                                    ${
+                                      currentStatus === "Mixed"
+                                        ? '<option value="Mixed" selected>Mixed Status</option>'
+                                        : ""
+                                    }
+                                </select>`;
+    } else {
+      html += `
+                                <span class="status-badge ${currentStatus.toLowerCase()}">${currentStatus}</span>`;
+    }
+
+    html += `
+                            </div>
+                        </td>
+                    </tr>`;
   }
 
-  html += `</div></div>`;
+  html += `
+                </tbody>
+            </table>
+            <div class="add-location-container">
+                <button class="btn btn-sm btn-primary" id="add-location">
+                    <i class="fa fa-plus"></i> Add New Location
+                </button>
+            </div>
+        </div>`;
 
   frm.fields_dict.custom_location_details_html.$wrapper.html(html);
 
@@ -237,8 +259,9 @@ function render_custom_location_ui_for_task(frm) {
       add_new_location_for_task(frm);
     });
 
+  // Click handler for editable location names
   frm.fields_dict.custom_location_details_html.$wrapper
-    .find(".edit-location")
+    .find(".editable-location")
     .on("click", function (e) {
       e.preventDefault();
       const old_location = decodeURIComponent($(this).data("location"));
@@ -549,56 +572,65 @@ function delete_media_item_for_task(frm, docname) {
 }
 
 function add_custom_css() {
-  const css = `
+  const css = ` 
         .location-album-container {
-            padding: 15px;
+            border-radius: 8px;       
+        }
+        table {
+            width: 100%;
+            table-layout: auto;
         }
         
-        .location-album-header {
-            margin-bottom: 20px;
+        table th, table td {
+            vertical-align: top;
+            padding: 10px;
         }
         
-        .location-block {
-            margin-bottom: 30px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            border: 1px solid #e5e5e5;
+        /* Fixed width columns */
+        table th:first-child,
+        table td:first-child {
+            width: 100px;
+        }
+        
+        table th:last-child,
+        table td:last-child {
+            width: 100px;
+        }
+        
+        /* Make middle column take remaining space */
+        table td:nth-child(2) {
+            width: auto;
+            min-width: 300px;
         }
         
         .location-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            gap: 10px;
+            margin-bottom: 10px;
         }
         
-        .location-header h5 {
-            margin: 0;
-            flex: 1;
+        .editable-location {
+            cursor: pointer;
+            color: #1a5276;
+            font-weight: 500;
+            transition: all 0.2s;
+            padding: 8px;
+            border-radius: 4px;
         }
         
-        .location-status {
-            min-width: 150px;
-        }
-        
-        .location-status select {
-            height: 28px;
-            padding: 3px 6px;
-            font-size: 12px;
+        .editable-location:hover {
+            background-color: #ebf5fb;
+            text-decoration: underline;
         }
         
         .location-images-container {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin-bottom: 15px;
         }
         
         .media-thumbnail {
             position: relative;
-            width: 70px;
-            height: 70px;
+            width: 50px;
+            height: 50px;
             border-radius: 8px;
             overflow: hidden;
             border: 1px solid #ddd;
@@ -665,18 +697,21 @@ function add_custom_css() {
         
         .location-actions {
             text-align: right;
+            margin-top: 10px;
+        }
+        
+        .status-select {
+            width: 100%;
+            padding: 5px;
         }
         
         .status-badge {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            font-size: 10px;
-            text-align: center;
-            padding: 2px;
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
             color: white;
-            background: #6c757d;
         }
         
         .status-badge.pending {
@@ -690,10 +725,20 @@ function add_custom_css() {
         .status-badge.rejected {
             background: #dc3545;
         }
+        
+        .status-badge.mixed {
+            background: #ffc107;
+            color: #212529;
+        }
 
         .status-select:disabled {
             opacity: 0.7;
             cursor: wait;
+        }
+
+        .add-location-container {
+            margin-top: 20px;
+            text-align: right;
         }
     `;
 
