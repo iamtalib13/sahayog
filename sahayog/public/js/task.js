@@ -191,17 +191,17 @@ function render_custom_location_ui_for_task(frm) {
     });
 
     html += `
-                            </div>
-                            <div class="location-actions">
-                                <button class="btn btn-sm btn-outline-primary upload-images" data-location="${encodeURIComponent(
-                                  location
-                                )}">
-                                    <i class="fa fa-upload"></i> Upload Media
-                                </button>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="status-selection-container">`;
+            <div class="media-thumbnail upload-thumbnail" data-location="${encodeURIComponent(
+              location
+            )}">
+                <div class="upload-icon">
+                  <i class="fa fa-plus"></i>
+                </div>
+              </div>
+            </div>
+            </td>
+            <td>
+            <div class="status-selection-container">`;
 
     if (frappe.user.has_role("Project Manager")) {
       html += `
@@ -268,8 +268,9 @@ function render_custom_location_ui_for_task(frm) {
       edit_location_name_for_task(frm, old_location);
     });
 
+  // Add thumbnail-style upload button click handler
   frm.fields_dict.custom_location_details_html.$wrapper
-    .find(".upload-images")
+    .find(".upload-thumbnail")
     .on("click", function (e) {
       e.preventDefault();
       const location = decodeURIComponent($(this).data("location"));
@@ -286,6 +287,52 @@ function render_custom_location_ui_for_task(frm) {
         delete_media_item_for_task(frm, docname);
       });
     });
+
+  // Apply background color initially and on change
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".status-select")
+    .each(function () {
+      applyStatusSelectColor(this);
+    })
+    .on("change", function () {
+      applyStatusSelectColor(this);
+    });
+
+  function applyStatusSelectColor(selectEl) {
+    const val = selectEl.value;
+
+    let bg = "";
+    let textColor = "#fff"; // default white
+
+    switch (val) {
+      case "Pending":
+        bg = "#6c757d";
+        break;
+      case "Approved":
+        bg = "#28a745";
+        break;
+      case "Rejected":
+        bg = "#dc3545";
+        break;
+      case "Mixed":
+        bg = "#ffc107";
+        textColor = "#212529"; // black text on yellow
+        break;
+      default:
+        bg = "";
+        textColor = "#212529";
+        break;
+    }
+
+    // This applies background ONLY to selected view, not dropdown
+    if (bg) {
+      selectEl.style.backgroundImage = `linear-gradient(${bg}, ${bg})`;
+    } else {
+      selectEl.style.backgroundImage = "";
+    }
+
+    selectEl.style.color = textColor;
+  }
 
   // Status change handler
   frm.fields_dict.custom_location_details_html.$wrapper
@@ -695,15 +742,41 @@ function add_custom_css() {
             color: white;
         }
         
-        .location-actions {
-            text-align: right;
-            margin-top: 10px;
+        .upload-thumbnail {
+          background-color: #f8f9fa;
+          border: 2px dashed #aaa;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #6c757d;
+          font-size: 20px;
         }
+
+        .upload-thumbnail:hover {
+          background-color: #e9ecef;
+          border-color: #007bff;
+          color: #007bff;
+        }
+
+        .upload-icon i {
+          pointer-events: none;
+        }
+
         
         .status-select {
             width: 100%;
             padding: 5px;
         }
+        .status-select {
+          transition: background-image 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Style <option> dropdown text */
+        .status-select option {
+          color: #212529 !important; /* Force black text in dropdown */
+        }
+        
         
         .status-badge {
             display: inline-block;
