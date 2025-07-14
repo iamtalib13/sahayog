@@ -442,8 +442,8 @@ fixtures = [
             "name",
             "in",
             {
-				"Sahayog Projects"
-				
+				"Sahayog Projects",
+                "Sahayog Home"
 			}
         ]
     ]},
