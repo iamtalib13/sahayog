@@ -14,12 +14,12 @@
   "column_break_duon",
   "number_of_branches",
   "remark",
-  "competitor",
   "section_break_btoi",
   "planned_branches",
   "total_estimated_cost",
+  "amended_from",
   "section_break_q7ms",
-  "amended_from"
+  "competitors"
  ],
  "fields": [
   {
@@ -114,17 +114,17 @@
    "label": "Potential Business (Yearly) "
   },
   {
-   "description": "Saparated by comma or newline",
-   "fieldname": "competitor",
-   "fieldtype": "Small Text",
-   "label": "Competitor"
+   "fieldname": "competitors",
+   "fieldtype": "Table",
+   "label": "Possible Competitors",
+   "options": "Branch Competitor"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-09 17:07:32.977627",
+ "modified": "2025-07-14 10:59:38.570507",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Branch Proposal",
