@@ -103,7 +103,6 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
-    "sahayog.patches.custom_fields.add_custom_fields_for_file.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_request_for_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation_item.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",    
