@@ -70,7 +70,7 @@ frappe.query_reports["Lead Report"] = {
       fieldname: "from_date",
       label: "From Date",
       fieldtype: "Date",
-      default: frappe.datetime.add_months(frappe.datetime.get_today(), -1),
+      default: frappe.datetime.get_today(),
     },
     {
       fieldname: "to_date",
