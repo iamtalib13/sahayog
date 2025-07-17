@@ -8,6 +8,7 @@
  "field_order": [
   "location_name",
   "status",
+  "estimate_rent",
   "location_image"
  ],
  "fields": [
@@ -30,17 +31,24 @@
    "fieldtype": "Attach",
    "in_list_view": 1,
    "label": "Location Image"
+  },
+  {
+   "fieldname": "estimate_rent",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Estimate Rent"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-31 10:28:04.723184",
+ "modified": "2025-07-16 15:46:11.980155",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Location Details",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

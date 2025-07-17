@@ -100,10 +100,10 @@
       }
 
       .avatar {
-        width: 96px;
-        height: 96px;
-        min-width: 96px;
-        min-height: 96px;
+        width: 70px;
+        height: 70px;
+        min-width: 70px;
+        min-height: 70px;
         border-radius: 50%;
         background-color: #2563eb;
         display: flex;
@@ -112,7 +112,7 @@
         font-size: 36px;
         color: white;
         font-weight: bold;
-        overflow: hidden;
+        overflow: visible; /* ✅ This allows the lock button to show outside */
         box-sizing: border-box;
         flex-shrink: 0;
       }
@@ -137,7 +137,6 @@
       }
 
       .profile-name {
-        font-size: 1.25rem;
         font-weight: 700;
         color: var(--text);
         margin: 0;
@@ -190,33 +189,6 @@
           padding-bottom: 5rem !important;
         }
       }
-
-      .welcome-section {
-        margin-bottom: 2.5rem;
-      }
-
-      .welcome-message {
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        color: var(--text);
-        letter-spacing: 0.02em;
-      }
-
-      @media (max-width: 480px) {
-        .welcome-message {
-          font-size: 1.375rem !important;
-        }
-      }
-
-      .welcome-subtext {
-        font-size: 1.125rem;
-        color: var(--text-light);
-        margin: 0;
-        font-weight: 500;
-        letter-spacing: 0.01em;
-      }
-
       .quick-actions .grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -283,27 +255,140 @@
           font-size: 0.75rem;
         }
       }
+
+      #password-modal {
+        transition: opacity 0.3s ease;
+      }
+
+      #password-modal .bg-white {
+        animation: slideDown 0.3s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="app-container" role="main">
       <header class="app-header">
         <div class="profile-section">
-          <div class="avatar" id="avatar-placeholder">
+          <div class="avatar relative group" id="avatar-placeholder">
             <div id="avatar-initial" class="avatar-initial">A</div>
+
+            <!-- Lock icon attached button -->
+            <button
+              id="change-password-btn"
+              title="Change Password"
+              class="absolute -bottom-1 -right-1 z-50 w-6 h-6 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center text-white text-[10px] shadow-md border-2 border-white hover:scale-110 transition-all"
+            >
+              <i class="fas fa-lock text-[10px]"></i>
+              <!-- Hover label -->
+              <span
+                class="absolute bottom-full mb-1 px-2 py-[2px] text-[10px] leading-tight bg-gray-800 text-white rounded shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                style="white-space: nowrap"
+              >
+                Change Password
+              </span>
+            </button>
+          </div>
+          <!-- Password Modal -->
+          <div
+            id="password-modal"
+            class="fixed inset-0 bg-black bg-opacity-50 z-[999] hidden"
+          >
+            <div
+              class="bg-white w-full h-full md:h-auto md:max-w-md md:rounded-lg md:mt-8 md:mx-auto overflow-y-auto"
+            >
+              <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                  <h2 class="text-xl font-bold text-gray-800">
+                    Change Password
+                  </h2>
+                  <button
+                    onclick="hidePasswordModal()"
+                    class="text-gray-500 hover:text-gray-700"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+
+                <!-- Error Message Container -->
+                <div id="password-errors" class="mb-4 hidden">
+                  <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex">
+                      <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-500"></i>
+                      </div>
+                      <div class="ml-3">
+                        <p id="error-message" class="text-sm text-red-700"></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >New Password</label
+                    >
+                    <input
+                      id="new-password"
+                      type="password"
+                      class="w-full border rounded px-3 py-2"
+                      placeholder="Enter new password"
+                    />
+                    <p class="mt-1 text-xs text-gray-500">
+                      Password must be at least 8 characters
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Confirm Password</label
+                    >
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      class="w-full border rounded px-3 py-2"
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-2">
+                  <button
+                    onclick="hidePasswordModal()"
+                    class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onclick="submitPasswordChange()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    Update Password
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="profile-info">
-            <h1 class="profile-name" id="emp_name">Admin</h1>
+            <p class="profile-greeting" id="greeting-message"></p>
+            <p class="profile-name" id="emp_name">Admin</p>
             <span class="profile-role" id="emp_designation">Admin</span>
           </div>
         </div>
       </header>
       <main class="app-main">
-        <section class="welcome-section" aria-label="Welcome message">
-          <h2 class="welcome-message" id="greeting-message"></h2>
-          <p>Welcome to Sahayog Support</p>
-        </section>
         <section class="quick-actions" aria-label="Quick action cards">
           <div class="grid">
             <a
@@ -395,27 +480,6 @@
       </main>
     </div>
     <script>
-      // Function to get time-based greeting
-      function getGreeting() {
-        const hour = new Date().getHours();
-        if (hour < 12) return "Good morning";
-        if (hour < 18) return "Good afternoon";
-        return "Good evening";
-      }
-
-      // Function to update greeting with employee name
-      function updateGreeting(employeeName) {
-        const greeting = getGreeting();
-        const greetingElement = document.getElementById("greeting-message");
-        if (employeeName && employeeName !== "Admin") {
-          greetingElement.textContent = `${greeting}, ${
-            employeeName.split(" ")[0]
-          }!`;
-        } else {
-          greetingElement.textContent = `${greeting}!`;
-        }
-      }
-
       async function fetchEmployeeDetails() {
         try {
           // Step 1: Get the current logged-in user
@@ -427,7 +491,21 @@
 
           if (!userId) return;
 
-          // Step 2: Fetch employee details
+          // Greeting based on time
+          const greeting = getTimeBasedGreeting();
+
+          // 🛑 Special case: Administrator
+          if (userId === "Administrator") {
+            document.getElementById("emp_name").textContent = "Administrator";
+            document.getElementById("emp_designation").textContent = "-";
+            document.getElementById("avatar-initial").textContent = "A";
+            document.getElementById(
+              "greeting-message"
+            ).textContent = `${greeting}, Administrator`;
+            return;
+          }
+
+          // Step 2: Fetch employee details for regular users
           const filters = encodeURIComponent(
             JSON.stringify([["user_id", "=", userId]])
           );
@@ -447,23 +525,33 @@
               emp.designation || "N/A";
 
             // Set first letter in avatar
-            const initial = emp.employee_name
-              ? emp.employee_name.trim().charAt(0).toUpperCase()
-              : "U";
+            const initial = employeeName.trim().charAt(0).toUpperCase();
             document.getElementById("avatar-initial").textContent = initial;
 
-            // Update greeting with employee name
-            updateGreeting(employeeName);
+            // Set greeting
+            document.getElementById(
+              "greeting-message"
+            ).textContent = `${greeting},`;
           } else {
             document.getElementById("emp_name").textContent = "Not Found";
             document.getElementById("emp_designation").textContent = "-";
             document.getElementById("avatar-initial").textContent = "?";
-            updateGreeting();
+            document.getElementById(
+              "greeting-message"
+            ).textContent = `${greeting},`;
           }
         } catch (error) {
           console.error("Failed to load employee details:", error);
-          updateGreeting();
         }
+      }
+
+      // Helper to get greeting based on time
+      function getTimeBasedGreeting() {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 17) return "Good Afternoon";
+        if (hour < 21) return "Good Evening";
+        return "Good Night";
       }
 
       fetchEmployeeDetails();
@@ -501,6 +589,98 @@
           });
         }
       });
+
+      // Show/hide modal
+      function showPasswordModal() {
+        document.getElementById("password-modal").classList.remove("hidden");
+        document.body.style.overflow = "hidden"; // Prevent scrolling
+      }
+
+      function hidePasswordModal() {
+        document.getElementById("password-modal").classList.add("hidden");
+        document.body.style.overflow = "auto"; // Re-enable scrolling
+        // Clear inputs
+        document.getElementById("new-password").value = "";
+        document.getElementById("confirm-password").value = "";
+        // Hide errors
+        document.getElementById("password-errors").classList.add("hidden");
+      }
+
+      // Show error message
+      function showError(message) {
+        const errorContainer = document.getElementById("password-errors");
+        const errorMessage = document.getElementById("error-message");
+        errorMessage.textContent = message;
+        errorContainer.classList.remove("hidden");
+      }
+
+      // Validate password
+      function validatePassword() {
+        const newPassword = document.getElementById("new-password").value;
+        const confirmPassword =
+          document.getElementById("confirm-password").value;
+
+        if (!newPassword || !confirmPassword) {
+          showError("All fields are required");
+          return false;
+        }
+
+        if (newPassword.length < 8) {
+          showError("Password must be at least 8 characters");
+          return false;
+        }
+
+        if (newPassword !== confirmPassword) {
+          showError("Passwords do not match");
+          return false;
+        }
+
+        return true;
+      }
+
+      // Submit password change
+      function submitPasswordChange() {
+        // Hide any previous errors
+        document.getElementById("password-errors").classList.add("hidden");
+
+        // Validate first
+        if (!validatePassword()) {
+          return;
+        }
+        const newPassword = document.getElementById("new-password").value;
+
+        fetch("/api/method/frappe.core.doctype.user.user.update_password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Frappe-CSRF-Token": frappe.csrf_token,
+          },
+          body: JSON.stringify({
+            new_password: newPassword,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.message === "Password updated") {
+              alert("Password changed successfully");
+              hidePasswordModal();
+            } else {
+              showError(data.message || "Failed to update password");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showError("Something went wrong. Please try again.");
+          });
+      }
+
+      // Make sure the button click handler is set
+      document
+        .getElementById("change-password-btn")
+        .addEventListener("click", function (e) {
+          e.stopPropagation();
+          showPasswordModal();
+        });
     </script>
   </body>
 </html>
