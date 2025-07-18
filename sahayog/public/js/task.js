@@ -205,21 +205,28 @@ function render_custom_location_ui_for_task(frm) {
             </div>
             </td>
             <td>
-                  <div style="display: flex; flex-direction: column; align-items: start; gap: 4px;">
-                    <div style="display: flex; align-items: center; gap: 4px;">
-                      <span style="font-size: 16px; color: #555;">₹</span>
-                      <input type="number"
-                             class="form-control estimate-rent-input"
-                             data-location="${encodeURIComponent(location)}"
-                             value="${currentRent || ""}"
-                             placeholder="Enter rent"
-                             style="flex: 1; max-width: 120px;">
-                    </div>
-                    <div class="amount-in-words"
-                         data-location="${encodedLocation}"
-                         style="font-size: 12px; color: #555;">
-                    </div>
-                  </div>
+              <div style="display: flex; flex-direction: column; align-items: start; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span style="font-size: 16px; color: #555;">₹</span>
+                  <input type="text"
+                         class="form-control estimate-rent-input"
+                         data-location="${encodeURIComponent(location)}"
+                         value="${
+                           currentRent ? formatCurrencyInput(currentRent) : ""
+                         }"
+                         placeholder="Enter rent"
+                         style="flex: 1; max-width: 120px;">
+                </div>
+                <div class="amount-in-words"
+                     data-location="${encodedLocation}"
+                     style="font-size: 12px; color: #555;">
+                     ${
+                       currentRent
+                         ? numberToWords(parseInt(currentRent)) + " Rupees only"
+                         : ""
+                     }
+                </div>
+              </div>
             </td>
             <td>
             <div class="status-selection-container">`;
@@ -281,7 +288,6 @@ function render_custom_location_ui_for_task(frm) {
     });
 
   // Click handler for editable location names
-
   frm.fields_dict.custom_location_details_html.$wrapper
     .find(".location-input")
     .on("change", function () {
@@ -297,7 +303,8 @@ function render_custom_location_ui_for_task(frm) {
     .on("click", function (e) {
       e.preventDefault();
       const location = decodeURIComponent($(this).data("location"));
-      upload_media_files_for_task(frm, location);
+      const currentRent = getCurrentLocationRent(frm, location);
+      upload_media_files_for_task(frm, location, currentRent);
     });
 
   frm.fields_dict.custom_location_details_html.$wrapper
@@ -311,110 +318,52 @@ function render_custom_location_ui_for_task(frm) {
       });
     });
 
-  // This should be placed inside `frappe.ui.form.on(...)` and after the HTML is set
+  // Number to words conversion on input change
+  // Replace the existing estimate-rent-input event handlers with this:
   frm.fields_dict.custom_location_details_html.$wrapper
     .find(".estimate-rent-input")
-    .on("change", function () {
+    .off("input change blur") // Remove any existing handlers
+    .on("input", function () {
       const input = $(this);
-      const location = decodeURIComponent(input.attr("data-location")); // for logs
-      const new_rent = input.val();
+      const formatted = formatCurrencyInput(input.val());
+      if (formatted !== input.val()) {
+        // Set cursor position
+        const cursorPos = input[0].selectionStart;
+        input.val(formatted);
+        // Adjust cursor position after formatting
+        const diff = formatted.length - input.val().length;
+        input[0].setSelectionRange(cursorPos + diff, cursorPos + diff);
+      }
 
-      const encodedLocation = input.attr("data-location");
-
-      // Safely escape the selector using CSS.escape()
-      const safeSelector = `.amount-in-words[data-location="${CSS.escape(
-        encodedLocation
-      )}"]`;
-
+      // Update words in real-time
+      const encodedLocation = input.data("location");
       const wordSpan =
         frm.fields_dict.custom_location_details_html.$wrapper.find(
-          safeSelector
+          `.amount-in-words[data-location="${CSS.escape(encodedLocation)}"]`
         );
 
       if (wordSpan.length) {
-        wordSpan.html(
-          `<strong>${numberToWords(parseInt(new_rent))} only</strong>`
-        );
-        console.log("✅ Rent words updated for:", location);
-        console.log(numberToWords(parseInt(new_rent)), "for", location);
-      } else {
-        console.warn("⚠️ Words span not found for location:", location);
+        const numericValue = parseCurrencyInput(input.val());
+        if (numericValue) {
+          const amountInWords =
+            numberToWords(Math.floor(numericValue)) + " Rupees only";
+          wordSpan.text(amountInWords);
+        } else {
+          wordSpan.text("");
+        }
       }
+    })
+    .on("blur", function () {
+      const input = $(this);
+      const location = decodeURIComponent(input.data("location"));
+      const numericValue = parseCurrencyInput(input.val());
 
-      update_rent_for_location(frm, location, new_rent);
+      // Format properly on blur
+      input.val(formatCurrencyInput(numericValue));
+
+      // Update the database
+      update_rent_for_location(frm, location, numericValue);
     });
-
-  // Number to words function
-  function numberToWords(num) {
-    num = parseInt(num);
-    if (isNaN(num) || num === 0) return "Zero Rupees";
-
-    const a = [
-      "",
-      "One",
-      "Two",
-      "Three",
-      "Four",
-      "Five",
-      "Six",
-      "Seven",
-      "Eight",
-      "Nine",
-      "Ten",
-      "Eleven",
-      "Twelve",
-      "Thirteen",
-      "Fourteen",
-      "Fifteen",
-      "Sixteen",
-      "Seventeen",
-      "Eighteen",
-      "Nineteen",
-    ];
-    const b = [
-      "",
-      "",
-      "Twenty",
-      "Thirty",
-      "Forty",
-      "Fifty",
-      "Sixty",
-      "Seventy",
-      "Eighty",
-      "Ninety",
-    ];
-
-    const convert = (n) => {
-      if (n < 20) return a[n];
-      if (n < 100)
-        return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
-      if (n < 1000)
-        return (
-          a[Math.floor(n / 100)] +
-          " Hundred " +
-          (n % 100 ? convert(n % 100) : "")
-        );
-      if (n < 100000)
-        return (
-          convert(Math.floor(n / 1000)) +
-          " Thousand " +
-          (n % 1000 ? convert(n % 1000) : "")
-        );
-      if (n < 10000000)
-        return (
-          convert(Math.floor(n / 100000)) +
-          " Lakh " +
-          (n % 100000 ? convert(n % 100000) : "")
-        );
-      return (
-        convert(Math.floor(n / 10000000)) +
-        " Crore " +
-        (n % 10000000 ? convert(n % 10000000) : "")
-      );
-    };
-
-    return convert(num).trim() + " Rupees";
-  }
 
   // Apply background color initially and on change
   frm.fields_dict.custom_location_details_html.$wrapper
@@ -428,14 +377,12 @@ function render_custom_location_ui_for_task(frm) {
 
   function applyStatusSelectColor(selectEl) {
     const val = selectEl.value;
-
     let bg = "";
     let textColor = "#fff"; // default black
 
     switch (val) {
       case "Pending":
         bg = "#6c757d";
-
         break;
       case "Approved":
         bg = "#28a745";
@@ -477,6 +424,77 @@ function render_custom_location_ui_for_task(frm) {
       });
     });
 }
+
+// Number to words function
+function numberToWords(num) {
+  if (!num || isNaN(num)) return "";
+  num = parseInt(num);
+  if (num === 0) return "Zero";
+
+  const a = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ];
+  const b = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
+
+  const convert = (n) => {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+    if (n < 1000)
+      return (
+        a[Math.floor(n / 100)] + " Hundred " + (n % 100 ? convert(n % 100) : "")
+      );
+    if (n < 100000)
+      return (
+        convert(Math.floor(n / 1000)) +
+        " Thousand " +
+        (n % 1000 ? convert(n % 1000) : "")
+      );
+    if (n < 10000000)
+      return (
+        convert(Math.floor(n / 100000)) +
+        " Lakh " +
+        (n % 100000 ? convert(n % 100000) : "")
+      );
+    return (
+      convert(Math.floor(n / 10000000)) +
+      " Crore " +
+      (n % 10000000 ? convert(n % 10000000) : "")
+    );
+  };
+
+  return convert(num).trim();
+}
+
 // Helper function to get current location status
 function getCurrentLocationStatus(frm, location) {
   const child_table = frm.doc.custom_location_details || [];
@@ -505,6 +523,24 @@ function getCurrentLocationRent(frm, location) {
   return rents.length === 1 ? rents[0] : "";
 }
 
+// Add these helper functions somewhere in your code
+// Add these helper functions
+function formatCurrencyInput(value) {
+  if (!value) return "";
+  // Convert to number first to remove any existing formatting
+  const num = parseFloat(value.toString().replace(/,/g, ""));
+  // Format with commas and no decimal places
+  return num.toLocaleString("en-IN", {
+    maximumFractionDigits: 0,
+  });
+}
+
+function parseCurrencyInput(formattedValue) {
+  if (!formattedValue) return 0;
+  // Remove all non-digit characters
+  const numStr = formattedValue.replace(/\D/g, "");
+  return parseInt(numStr) || 0;
+}
 // Function to update status for all items in a location
 function update_status_for_location(frm, location, new_status) {
   if (new_status === "Mixed") return Promise.resolve();
@@ -636,16 +672,19 @@ function update_location_name_inline(frm, old_location, new_location) {
 }
 
 function update_rent_for_location(frm, location, new_rent) {
-  let updates = [];
+  // Ensure new_rent is a number (in case it comes from formatted input)
+  const numericRent =
+    typeof new_rent === "string" ? parseCurrencyInput(new_rent) : new_rent;
 
+  let updates = [];
   (frm.doc.custom_location_details || []).forEach((row) => {
-    if (row.location_name === location && row.estimate_rent != new_rent) {
+    if (row.location_name === location && row.estimate_rent != numericRent) {
       updates.push(() => {
         return frappe.model.set_value(
           row.doctype,
           row.name,
           "estimate_rent",
-          new_rent
+          numericRent
         );
       });
     }
@@ -676,7 +715,7 @@ function update_rent_for_location(frm, location, new_rent) {
     });
 }
 
-function upload_media_files_for_task(frm, location) {
+function upload_media_files_for_task(frm, location, estimate_rent) {
   new frappe.ui.FileUploader({
     allow_multiple: true,
     restrictions: {
@@ -707,14 +746,17 @@ function upload_media_files_for_task(frm, location) {
 
         const updated_file = r.message;
 
-        // 3. Add child row with updated file_url
+        // 3. Add child row with updated file_url and estimate rent
         const new_row = frm.add_child("custom_location_details");
         new_row.location_name = location;
-        new_row.location_image = updated_file.file_url; // ✅ updated URL
+        new_row.location_image = updated_file.file_url;
+        new_row.estimate_rent = estimate_rent || 0; // default to 0 if undefined
         new_row.status = "Pending";
+
         frm.refresh_field("custom_location_details");
 
         render_custom_location_ui_for_task(frm);
+
         frm
           .save()
           .then(() => {
@@ -734,6 +776,7 @@ function upload_media_files_for_task(frm, location) {
               indicator: "red",
             });
           });
+
         console.log(`Uploaded and attached file: ${updated_file.file_url}`);
       } catch (err) {
         console.error("Error in upload success flow:", err);
@@ -792,13 +835,32 @@ function delete_media_item_for_task(frm, docname) {
 
 function add_custom_css() {
   const css = ` 
-  .estimate-rent-input::-webkit-outer-spin-button,
+  .estimate-rent-input {
+  font-size: 13px;
+  width: 100%;
+  padding: 8px 10px;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  transition: all 0.2s;
+  text-align: right;
+}
+
+.estimate-rent-input:focus {
+  outline: none;
+  background-color: #fff;
+  border-color: #5cb85c;
+  box-shadow: 0 0 0 2px rgba(92, 184, 92, 0.1);
+}
+
+/* Remove spinner arrows */
+.estimate-rent-input::-webkit-outer-spin-button,
 .estimate-rent-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Remove arrows in number input for Firefox */
+/* Firefox */
 .estimate-rent-input[type="number"] {
   -moz-appearance: textfield;
 }
