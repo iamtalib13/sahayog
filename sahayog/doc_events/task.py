@@ -15,7 +15,7 @@ def create_letter_of_intent(doc, method):
     subject = doc.subject
     task = doc.name
 
-    if subject == 'Task 2: Letter of Intent' and project:
+    if subject == 'Task 2 : Letter of Intent' and project:
         # Create a new Letter of Intent document
         letter_of_intent = frappe.new_doc('Letter of Intent')
         letter_of_intent.project = project
@@ -386,7 +386,7 @@ def check_loi_docstatus_for_task_2(doc, method):
         return
 
     # ✅ Ab actual validation sirf Task 2 ke liye chale
-    if doc.subject == 'Task 2: Letter of Intent':
+    if doc.subject == 'Task 2 : Letter of Intent':
         project = doc.project
 
         # LOI fetch karo project ke basis pe
