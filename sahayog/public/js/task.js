@@ -6,7 +6,7 @@ frappe.ui.form.on("Task", {
 
     let project = frm.doc.project;
 
-    if (frm.doc.subject == "Task 2: Letter of Intent") {
+    if (frm.doc.subject == "Task 2 : Letter of Intent") {
       // Add the Create LOI button
       let createButton = frm.add_custom_button(__("Create LOI"), function () {
         frappe.new_doc("Letter of Intent", null, {
