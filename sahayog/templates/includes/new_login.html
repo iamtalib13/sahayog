@@ -1,0 +1,456 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login Page PWA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(to right, #f0f2f5, #e0e7ff);
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem 3rem;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        color: #006767;
+        user-select: none;
+      }
+      header {
+        margin-bottom: 3rem;
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        max-width: 480px;
+      }
+      .logo-img {
+        width: 260px;
+        height: auto;
+        pointer-events: none;
+        user-select: none;
+        filter: drop-shadow(0 0 4px rgba(0, 103, 103, 0.3));
+      }
+      h1.title {
+        font-weight: 700;
+        font-size: 1.75rem;
+        margin-bottom: 2rem;
+        text-align: center;
+        width: 100%;
+        max-width: 480px;
+      }
+      #loginError {
+        display: none;
+        background-color: #fdecea;
+        color: #b91c1c;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 0 8px rgba(185, 28, 28, 0.3);
+        font-weight: 600;
+        width: 100%;
+        max-width: 480px;
+        animation: fadeIn 0.5s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      #loginError svg {
+        flex-shrink: 0;
+        stroke: #b91c1c;
+        width: 20px;
+        height: 20px;
+      }
+      form {
+        width: 100%;
+        max-width: 480px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+      label {
+        font-size: 0.875rem;
+        color: #006767;
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        user-select: none;
+        display: block;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        border: 1.5px solid #d1d5db;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        color: #111827;
+        outline-offset: 2px;
+        transition: border-color 0.2s ease;
+        font-weight: 600;
+        background-color: #fafafa;
+      }
+      input[type="text"]::placeholder,
+      input[type="password"]::placeholder {
+        color: #9ca3af;
+        font-weight: 500;
+      }
+      input[type="text"]:focus,
+      input[type="password"]:focus {
+        border-color: #006767;
+        background-color: white;
+        outline: none;
+        box-shadow: 0 0 6px #006767aa;
+      }
+      .relative {
+        position: relative;
+      }
+      #togglePassword {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        font-size: 1.125rem;
+        transition: color 0.2s ease;
+        user-select: none;
+      }
+      #togglePassword:hover,
+      #togglePassword:focus-visible {
+        color: #006767;
+        outline: none;
+      }
+      .checkbox-row {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #4b5563;
+        user-select: none;
+        gap: 0.5rem;
+        font-weight: 500;
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        color: #4b5563;
+        user-select: none;
+      }
+      .checkbox-label input[type="checkbox"] {
+        width: 1.125rem;
+        height: 1.125rem;
+        border-radius: 0.375rem;
+        border: 1.5px solid #d1d5db;
+        accent-color: #006767;
+        cursor: pointer;
+        background-color: white;
+        transition: border-color 0.2s ease;
+      }
+      .checkbox-label input[type="checkbox"]:focus-visible {
+        outline: 2px solid #006767;
+        outline-offset: 2px;
+      }
+      button[type="submit"] {
+        background-color: #006767;
+        color: white;
+        font-weight: 700;
+        padding: 0.75rem 0;
+        border-radius: 9999px;
+        font-size: 1.125rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        user-select: none;
+        border: none;
+        box-shadow: 0 4px 12px rgb(0 103 103 / 0.4);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        max-width: 480px;
+      }
+      button[type="submit"]:hover,
+      button[type="submit"]:focus-visible {
+        background-color: #004d4d;
+        outline: none;
+        box-shadow: 0 6px 16px rgb(0 77 77 / 0.6);
+        transform: translateY(-2px);
+      }
+      .loading {
+        border: 2px solid transparent;
+        border-top: 2px solid white;
+        border-right: 2px solid white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 0.5rem;
+        animation: spin 0.75s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (min-width: 768px) {
+        body {
+          padding: 3rem 2rem 4rem;
+        }
+        header {
+          max-width: 600px;
+        }
+        .logo-img {
+          width: 320px;
+        }
+        h1.title {
+          font-size: 2rem;
+          max-width: 600px;
+          margin-bottom: 2.5rem;
+        }
+        #loginError {
+          max-width: 600px;
+        }
+        form {
+          max-width: 600px;
+        }
+        input[type="text"],
+        input[type="password"] {
+          font-size: 1.125rem;
+          padding: 1rem 1.25rem;
+        }
+        button[type="submit"] {
+          font-size: 1.25rem;
+          padding: 1rem 0;
+          max-width: 600px;
+        }
+        .checkbox-row {
+          font-size: 1rem;
+        }
+      }
+    </style>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#006767" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Sahayog Login" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  </head>
+  <body>
+    <header>
+      <img
+        src="https://sahayogmultistate.com/wp-content/uploads/2024/05/5x1-Logo-PNG-2048x410.png"
+        alt="Sahayog Multistate company logo with green and blue text on transparent background, minimal style"
+        class="logo-img"
+        decoding="async"
+        loading="lazy"
+        width="640"
+        height="140"
+        draggable="false"
+      />
+    </header>
+    <h1 class="title">Login to your account</h1>
+    <div
+      id="loginError"
+      class="error-message"
+      role="alert"
+      aria-live="assertive"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 flex-shrink-0"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span>Invalid Employee ID or Password.</span>
+    </div>
+    <form novalidate>
+      <div>
+        <label for="employee_id">Employee ID</label>
+        <input
+          type="text"
+          id="employee_id"
+          name="employee_id"
+          placeholder="Enter your Employee ID"
+          autocomplete="username"
+          required
+          aria-required="true"
+          aria-describedby="employeeIdHelp"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+        <small id="employeeIdHelp" class="text-gray-500"
+          >Enter your Employee ID</small
+        >
+      </div>
+      <div class="relative">
+        <label for="password">Password</label>
+        <label for="password" class="sr-only">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Password"
+          autocomplete="current-password"
+          required
+          aria-required="true"
+          aria-describedby="passwordHelp"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+        <small id="passwordHelp" class="text-gray-500"
+          >Enter your password.</small
+        >
+        <button
+          type="button"
+          id="togglePassword"
+          aria-label="Toggle password visibility"
+          tabindex="0"
+        >
+          <i class="fas fa-eye"></i>
+        </button>
+      </div>
+      <div class="checkbox-row">
+        <label class="checkbox-label" for="remember">
+          <input type="checkbox" id="remember" name="remember" />
+          <span>Remember me</span>
+        </label>
+      </div>
+      <button
+        id="loginButton"
+        type="submit"
+        aria-live="polite"
+        aria-busy="false"
+      >
+        <span id="buttonText">Login</span>
+      </button>
+    </form>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const loginForm = document.querySelector("form");
+        const togglePassword = document.getElementById("togglePassword");
+        const passwordInput = document.getElementById("password");
+        const loginError = document.getElementById("loginError");
+        const loginButton = document.getElementById("loginButton");
+        const buttonText = document.getElementById("buttonText");
+
+        togglePassword.addEventListener("click", function () {
+          const type =
+            passwordInput.getAttribute("type") === "password"
+              ? "text"
+              : "password";
+          passwordInput.setAttribute("type", type);
+          this.innerHTML =
+            type === "password"
+              ? '<i class="fas fa-eye"></i>'
+              : '<i class="fas fa-eye-slash"></i>';
+        });
+
+        loginForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          loginButton.disabled = true;
+          loginButton.setAttribute("aria-busy", "true");
+          buttonText.innerHTML =
+            '<span class="loading" aria-hidden="true"></span> Logging in...';
+
+          const employee_id = document
+            .getElementById("employee_id")
+            .value.trim();
+          const password = passwordInput.value;
+
+          try {
+            const response = await fetch("/api/method/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: new URLSearchParams({
+                usr: employee_id,
+                pwd: password,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (data.message === "Logged In") {
+              window.location.href = "/crm-portal";
+            } else {
+              loginError.querySelector("span").textContent =
+                data.message || "Invalid Employee ID or Password.";
+              loginError.style.display = "flex";
+              passwordInput.focus();
+
+              loginForm.style.transform = "translateX(0)";
+              loginForm.offsetHeight;
+              loginForm.style.transform = "translateX(-5px)";
+              setTimeout(() => {
+                loginForm.style.transform = "translateX(5px)";
+                setTimeout(() => {
+                  loginForm.style.transform = "translateX(0)";
+                }, 50);
+              }, 50);
+            }
+          } catch (error) {
+            console.error("Login error:", error);
+            loginError.querySelector("span").textContent =
+              "Network error. Please try again.";
+            loginError.style.display = "flex";
+          } finally {
+            loginButton.disabled = false;
+            loginButton.setAttribute("aria-busy", "false");
+            buttonText.textContent = "Login";
+          }
+        });
+
+        [document.getElementById("employee_id"), passwordInput].forEach(
+          (input) => {
+            input.addEventListener("input", () => {
+              if (loginError.style.display === "flex") {
+                loginError.style.display = "none";
+              }
+            });
+          }
+        );
+
+        document.getElementById("employee_id").focus();
+      });
+    </script>
+  </body>
+</html>

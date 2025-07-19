@@ -288,6 +288,17 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
+    "cron": {
+        # 🕔 Run daily at 5:00 AM — Early morning summary
+        "0 5 * * *": [
+            "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
+        ],
+
+        # 🕥 Run daily at 10:30 AM — Mid-morning follow-up summary
+        "30 10 * * *": [
+            "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
+        ],
+    }
     # "cron": {
     #     "*": [
     #        
@@ -439,8 +450,8 @@ fixtures = [
             "name",
             "in",
             {
-				"Sahayog Projects"
-				
+				"Sahayog Projects",
+                "Sahayog Home"
 			}
         ]
     ]},

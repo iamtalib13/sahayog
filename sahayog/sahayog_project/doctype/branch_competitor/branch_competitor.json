@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-07-12 13:32:11.195510",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "competitor_name",
+  "type_of_institution",
+  "branch_count"
+ ],
+ "fields": [
+  {
+   "description": "Name of the competing institution",
+   "fieldname": "competitor_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Competitor Name"
+  },
+  {
+   "fieldname": "type_of_institution",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type of Institution",
+   "options": "\nBank\nNBFC\nCo\u2011operative\nMicrofinance\nOther"
+  },
+  {
+   "fieldname": "branch_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Number of Branches"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-07-12 13:44:21.742739",
+ "modified_by": "Administrator",
+ "module": "Sahayog Project",
+ "name": "Branch Competitor",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

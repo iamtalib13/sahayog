@@ -1,0 +1,686 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#2563eb" name="theme-color" />
+    <meta content="Sahayog Support System Dashboard" name="description" />
+    <title>Support System</title>
+    <link href="manifest.json" rel="manifest" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom properties for colors and shadows */
+      :root {
+        --primary: #2563eb;
+        --primary-light: #dbeafe;
+        --secondary: #4f46e5;
+        --text: #1f2937;
+        --text-light: #6b7280;
+        --background: #f9fafb;
+        --card-bg: #ffffff;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --radius: 16px;
+        --radius-sm: 12px;
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: auto;
+        scrollbar-width: none; /* Firefox */
+      }
+
+      /* Chrome, Safari, Edge (Webkit) */
+      body::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        background-color: var(--background);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        line-height: 1.5;
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+      }
+
+      .app-container {
+        width: 100%;
+        max-width: 1200px;
+        background-color: white;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        position: relative;
+      }
+
+      @media (max-width: 480px) {
+        .app-container {
+          max-width: 480px;
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+      }
+
+      .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 2rem;
+      }
+
+      @media (max-width: 480px) {
+        .app-header {
+          padding-left: 1rem !important;
+          padding-right: 1rem !important;
+        }
+      }
+
+      .profile-section {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+      }
+
+      .avatar {
+        width: 70px;
+        height: 70px;
+        min-width: 70px;
+        min-height: 70px;
+        border-radius: 50%;
+        background-color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        color: white;
+        font-weight: bold;
+        overflow: visible; /* ✅ This allows the lock button to show outside */
+        box-sizing: border-box;
+        flex-shrink: 0;
+      }
+
+      .avatar-initial {
+        user-select: none;
+        line-height: 1;
+      }
+
+      @media (max-width: 480px) {
+        .avatar {
+          width: 64px;
+          height: 64px;
+          min-width: 64px;
+          min-height: 64px;
+          font-size: 28px;
+        }
+      }
+      .profile-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .profile-name {
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+        letter-spacing: 0.02em;
+      }
+
+      .profile-role {
+        font-size: 0.875rem;
+        color: var(--text-light);
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.75rem;
+      }
+
+      .icon-button {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 9999px;
+        border: none;
+        background-color: transparent;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.25s, color 0.25s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .icon-button:hover {
+        background-color: var(--primary-light);
+        color: var(--primary);
+        box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+      }
+
+      main.app-main {
+        flex: 1;
+        padding: 2rem 2rem 6rem;
+        max-width: 100%;
+      }
+
+      @media (max-width: 480px) {
+        main.app-main {
+          padding-left: 1rem !important;
+          padding-right: 1rem !important;
+          padding-bottom: 5rem !important;
+        }
+      }
+      .quick-actions .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 1rem;
+      }
+
+      .action-card {
+        background-color: var(--card-bg);
+        border-radius: var(--radius);
+        padding: 1rem;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        aspect-ratio: 1;
+        user-select: none;
+      }
+
+      .action-card:hover {
+        transform: translateY(-0.3rem);
+        box-shadow: 0 12px 20px -4px rgba(37, 99, 235, 0.3),
+          0 6px 10px -4px rgba(37, 99, 235, 0.2);
+      }
+
+      .card-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.75rem;
+        font-size: 1.25rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      .card-title {
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-align: center;
+        line-height: 1.15;
+        letter-spacing: 0.02em;
+      }
+
+      @media (max-width: 480px) {
+        .quick-actions .grid {
+          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+          gap: 0.75rem;
+        }
+
+        .card-icon {
+          width: 2rem;
+          height: 2rem;
+          font-size: 1rem;
+        }
+
+        .card-title {
+          font-size: 0.75rem;
+        }
+      }
+
+      #password-modal {
+        transition: opacity 0.3s ease;
+      }
+
+      #password-modal .bg-white {
+        animation: slideDown 0.3s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container" role="main">
+      <header class="app-header">
+        <div class="profile-section">
+          <div class="avatar relative group" id="avatar-placeholder">
+            <div id="avatar-initial" class="avatar-initial">A</div>
+
+            <!-- Lock icon attached button -->
+            <button
+              id="change-password-btn"
+              title="Change Password"
+              class="absolute -bottom-1 -right-1 z-50 w-6 h-6 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center text-white text-[10px] shadow-md border-2 border-white hover:scale-110 transition-all"
+            >
+              <i class="fas fa-lock text-[10px]"></i>
+              <!-- Hover label -->
+              <span
+                class="absolute bottom-full mb-1 px-2 py-[2px] text-[10px] leading-tight bg-gray-800 text-white rounded shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                style="white-space: nowrap"
+              >
+                Change Password
+              </span>
+            </button>
+          </div>
+          <!-- Password Modal -->
+          <div
+            id="password-modal"
+            class="fixed inset-0 bg-black bg-opacity-50 z-[999] hidden"
+          >
+            <div
+              class="bg-white w-full h-full md:h-auto md:max-w-md md:rounded-lg md:mt-8 md:mx-auto overflow-y-auto"
+            >
+              <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                  <h2 class="text-xl font-bold text-gray-800">
+                    Change Password
+                  </h2>
+                  <button
+                    onclick="hidePasswordModal()"
+                    class="text-gray-500 hover:text-gray-700"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+
+                <!-- Error Message Container -->
+                <div id="password-errors" class="mb-4 hidden">
+                  <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex">
+                      <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-500"></i>
+                      </div>
+                      <div class="ml-3">
+                        <p id="error-message" class="text-sm text-red-700"></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >New Password</label
+                    >
+                    <input
+                      id="new-password"
+                      type="password"
+                      class="w-full border rounded px-3 py-2"
+                      placeholder="Enter new password"
+                    />
+                    <p class="mt-1 text-xs text-gray-500">
+                      Password must be at least 8 characters
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Confirm Password</label
+                    >
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      class="w-full border rounded px-3 py-2"
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-2">
+                  <button
+                    onclick="hidePasswordModal()"
+                    class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onclick="submitPasswordChange()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    Update Password
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-info">
+            <p class="profile-greeting" id="greeting-message"></p>
+            <p class="profile-name" id="emp_name">Admin</p>
+            <span class="profile-role" id="emp_designation">Admin</span>
+          </div>
+        </div>
+      </header>
+      <main class="app-main">
+        <section class="quick-actions" aria-label="Quick action cards">
+          <div class="grid">
+            <a
+              class="action-card ticket"
+              href="/app/my-tickets"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#e5def0] text-[#7e3af2] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-ticket-alt"></i>
+              </div>
+              <h3 class="card-title">Tickets</h3>
+            </a>
+            <a
+              class="action-card asset"
+              href="/app/asset-requisition"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#d6edd9] text-[#16a34a] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-laptop"></i>
+              </div>
+              <h3 class="card-title">Assets</h3>
+            </a>
+            <a
+              class="action-card crm"
+              href="/crm-portal/"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#d0e8ff] text-[#2563eb] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-users"></i>
+              </div>
+              <h3 class="card-title">CRM</h3>
+            </a>
+            <a
+              class="action-card pms"
+              href="http://182.19.71.132:81/pms-login"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#f6f0d8] text-[#d97706] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <h3 class="card-title">PMS</h3>
+            </a>
+            <a
+              class="action-card operations"
+              href="/policies"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#d2fbf1] text-[#0d9488] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-cog"></i>
+              </div>
+              <h3 class="card-title">Operations</h3>
+            </a>
+            <a
+              class="action-card audit"
+              href="/app/audit-management"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#e1e5f2] text-[#4f46e5] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-clipboard-check"></i>
+              </div>
+              <h3 class="card-title">Audit</h3>
+            </a>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      async function fetchEmployeeDetails() {
+        try {
+          // Step 1: Get the current logged-in user
+          const userRes = await fetch(
+            "/api/method/frappe.auth.get_logged_user"
+          );
+          const userData = await userRes.json();
+          const userId = userData.message;
+
+          if (!userId) return;
+
+          // Greeting based on time
+          const greeting = getTimeBasedGreeting();
+
+          // 🛑 Special case: Administrator
+          if (userId === "Administrator") {
+            document.getElementById("emp_name").textContent = "Administrator";
+            document.getElementById("emp_designation").textContent = "-";
+            document.getElementById("avatar-initial").textContent = "A";
+            document.getElementById(
+              "greeting-message"
+            ).textContent = `${greeting}, Administrator`;
+            return;
+          }
+
+          // Step 2: Fetch employee details for regular users
+          const filters = encodeURIComponent(
+            JSON.stringify([["user_id", "=", userId]])
+          );
+          const fields = encodeURIComponent(
+            JSON.stringify(["employee_name", "designation"])
+          );
+          const empRes = await fetch(
+            `/api/resource/Employee?filters=${filters}&fields=${fields}`
+          );
+          const empData = await empRes.json();
+
+          if (empData.data && empData.data.length > 0) {
+            const emp = empData.data[0];
+            const employeeName = emp.employee_name || "N/A";
+            document.getElementById("emp_name").textContent = employeeName;
+            document.getElementById("emp_designation").textContent =
+              emp.designation || "N/A";
+
+            // Set first letter in avatar
+            const initial = employeeName.trim().charAt(0).toUpperCase();
+            document.getElementById("avatar-initial").textContent = initial;
+
+            // Set greeting
+            document.getElementById(
+              "greeting-message"
+            ).textContent = `${greeting},`;
+          } else {
+            document.getElementById("emp_name").textContent = "Not Found";
+            document.getElementById("emp_designation").textContent = "-";
+            document.getElementById("avatar-initial").textContent = "?";
+            document.getElementById(
+              "greeting-message"
+            ).textContent = `${greeting},`;
+          }
+        } catch (error) {
+          console.error("Failed to load employee details:", error);
+        }
+      }
+
+      // Helper to get greeting based on time
+      function getTimeBasedGreeting() {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 17) return "Good Afternoon";
+        if (hour < 21) return "Good Evening";
+        return "Good Night";
+      }
+
+      fetchEmployeeDetails();
+
+      // Function to handle link clicks
+      function handleLinkClick(event) {
+        event.preventDefault();
+        const url = event.currentTarget.getAttribute("href");
+        if (url) {
+          if (window.top) {
+            window.top.location.href = url;
+          } else {
+            window.location.href = url;
+          }
+        }
+      }
+
+      // Attach click handlers to all action-card links
+      document.addEventListener("DOMContentLoaded", function () {
+        const actionCards = document.querySelectorAll(".action-card");
+        actionCards.forEach((card) => {
+          card.addEventListener("click", handleLinkClick);
+        });
+        // Register service worker for PWA
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker
+              .register("/sw.js")
+              .then((registration) => {
+                console.log("ServiceWorker registration successful");
+              })
+              .catch((err) => {
+                console.log("ServiceWorker registration failed: ", err);
+              });
+          });
+        }
+      });
+
+      // Show/hide modal
+      function showPasswordModal() {
+        document.getElementById("password-modal").classList.remove("hidden");
+        document.body.style.overflow = "hidden"; // Prevent scrolling
+      }
+
+      function hidePasswordModal() {
+        document.getElementById("password-modal").classList.add("hidden");
+        document.body.style.overflow = "auto"; // Re-enable scrolling
+        // Clear inputs
+        document.getElementById("new-password").value = "";
+        document.getElementById("confirm-password").value = "";
+        // Hide errors
+        document.getElementById("password-errors").classList.add("hidden");
+      }
+
+      // Show error message
+      function showError(message) {
+        const errorContainer = document.getElementById("password-errors");
+        const errorMessage = document.getElementById("error-message");
+        errorMessage.textContent = message;
+        errorContainer.classList.remove("hidden");
+      }
+
+      // Validate password
+      function validatePassword() {
+        const newPassword = document.getElementById("new-password").value;
+        const confirmPassword =
+          document.getElementById("confirm-password").value;
+
+        if (!newPassword || !confirmPassword) {
+          showError("All fields are required");
+          return false;
+        }
+
+        if (newPassword.length < 8) {
+          showError("Password must be at least 8 characters");
+          return false;
+        }
+
+        if (newPassword !== confirmPassword) {
+          showError("Passwords do not match");
+          return false;
+        }
+
+        return true;
+      }
+
+      // Submit password change
+      function submitPasswordChange() {
+        // Hide any previous errors
+        document.getElementById("password-errors").classList.add("hidden");
+
+        // Validate first
+        if (!validatePassword()) {
+          return;
+        }
+        const newPassword = document.getElementById("new-password").value;
+
+        fetch("/api/method/frappe.core.doctype.user.user.update_password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Frappe-CSRF-Token": frappe.csrf_token,
+          },
+          body: JSON.stringify({
+            new_password: newPassword,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.message === "Password updated") {
+              alert("Password changed successfully");
+              hidePasswordModal();
+            } else {
+              showError(data.message || "Failed to update password");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showError("Something went wrong. Please try again.");
+          });
+      }
+
+      // Make sure the button click handler is set
+      document
+        .getElementById("change-password-btn")
+        .addEventListener("click", function (e) {
+          e.stopPropagation();
+          showPasswordModal();
+        });
+    </script>
+  </body>
+</html>

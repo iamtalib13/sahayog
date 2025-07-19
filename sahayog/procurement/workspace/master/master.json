@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Master",
  "links": [],
- "modified": "2025-06-14 13:01:01.028822",
+ "modified": "2025-07-14 16:29:37.539104",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Master",
@@ -27,7 +27,7 @@
    "role": "Purchase Manager"
   }
  ],
- "sequence_id": 5.0,
+ "sequence_id": 25.0,
  "shortcuts": [],
  "title": "Master"
 }
