@@ -13,12 +13,12 @@
  {
   "docstatus": 0,
   "doctype": "Custom HTML Block",
-  "html": "<iframe src=\"/homepage\" width=\"100%\" height=\"610px\" style=\"border: none;\"></iframe>",
-  "modified": "2025-07-14 13:40:48.317248",
+  "html": "<div style=\"text-align: right;\">\n  <a href=\"javascript:void(0)\" id=\"change-password-btn\" style=\"color: #007bff; text-decoration: underline; cursor: pointer;\">\n    Change Password\n  </a>\n</div>\n<iframe src=\"/homepage\" width=\"100%\" height=\"610px\" style=\"border: none;\"></iframe>",
+  "modified": "2025-07-22 12:49:35.222810",
   "name": "Sahayog Home",
   "private": 0,
   "roles": [],
-  "script": null,
+  "script": "root_element.querySelector('#change-password-btn').addEventListener('click', function () {\n    console.log(\"Change Password clicked\");\n\n    const d = new frappe.ui.Dialog({\n        title: 'Change Your Password',\n        fields: [\n            {\n                label: 'Old Password',\n                fieldname: 'old_password',\n                fieldtype: 'Password',\n                reqd: 1\n            },\n            {\n                label: 'New Password',\n                fieldname: 'new_password',\n                fieldtype: 'Password',\n                reqd: 1\n            },\n            {\n                label: 'Confirm Password',\n                fieldname: 'confirm_password',\n                fieldtype: 'Password',\n                reqd: 1\n            }\n        ],\n        primary_action_label: 'Change Password',\n        primary_action(values) {\n            if (values.new_password !== values.confirm_password) {\n                frappe.msgprint(__('New and Confirm Passwords do not match'));\n                return;\n            }\n\n            frappe.call({\n                method: 'sahayog.api.reset_password.custom_change_password',\n                args: {\n                    old_password: values.old_password,\n                    new_password: values.new_password\n                },\n                callback: function (r) {\n                    if (r.message?.status === \"success\") {\n                        frappe.msgprint({\n                            title: __('Success'),\n                            message: r.message.message || __('Password updated successfully.'),\n                            indicator: 'green'\n                        });\n                        d.hide(); // hide dialog on success\n                    } else if (r.message?.status === \"error\") {\n                        frappe.msgprint({\n                            title: __('Error'),\n                            message: r.message.message || __('Something went wrong'),\n                            indicator: 'red'\n                        });\n                    }\n                },\n                error: function () {\n                    // do nothing or show generic message if needed\n                    // Commented out to suppress \"Unknown error\" messages\n                    // frappe.msgprint(__('Failed to update password'));\n                }\n            });\n        }\n    });\n\n    d.show();\n});\n",
   "style": null
  }
 ]
