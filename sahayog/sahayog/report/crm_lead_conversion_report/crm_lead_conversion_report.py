@@ -59,7 +59,7 @@ def execute(filters=None):
         emp = frappe.db.get_value(
             "Employee",
             {"user_id": stat.user_id},
-            ["name", "employee_name", "branch", "custom_region", "custom_zone"],
+            ["name", "employee_name", "branch", "custom_region", "custom_zone", "designation"],
             as_dict=True
         )
         if not emp:
@@ -81,6 +81,7 @@ def execute(filters=None):
         data.append({
             "name": emp.name,
             "employee_name": emp.employee_name,
+            "designation": emp.designation,
             "branch": emp.branch,
             "custom_region": emp.custom_region,
             "custom_zone": emp.custom_zone,
@@ -95,6 +96,7 @@ def execute(filters=None):
     columns = [
         {"label": "Employee ID", "fieldname": "name", "fieldtype": "Link", "options": "Employee", "width": 120},
         {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 220},
+        {"label": "Designation", "fieldname": "designation", "fieldtype": "Data", "width": 160}, 
         {"label": "Branch", "fieldname": "branch", "fieldtype": "Link", "options": "Branch", "width": 120},
         {"label": "Region", "fieldname": "custom_region", "fieldtype": "Link", "options": "Region", "width": 120},
         {"label": "Zone", "fieldname": "custom_zone", "fieldtype": "Link", "options": "Zone", "width": 120},
