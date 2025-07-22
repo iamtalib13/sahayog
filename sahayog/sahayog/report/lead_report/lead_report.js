@@ -11,7 +11,7 @@ frappe.query_reports["Lead Report"] = {
       fieldname: "from_date",
       label: "From Date",
       fieldtype: "Date",
-      default: frappe.datetime.get_today(),
+      default: frappe.datetime.month_start(frappe.datetime.get_today()), // ✅ 1st of current month
       reqd: 1,
     },
     {
