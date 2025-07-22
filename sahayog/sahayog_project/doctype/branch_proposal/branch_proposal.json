@@ -1,0 +1,166 @@
+{
+ "actions": [],
+ "autoname": "format:BP-{DD}{MM}{YY}-{###}",
+ "creation": "2025-07-08 10:38:20.789479",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "proposal_title",
+  "state",
+  "city",
+  "status",
+  "potential_business",
+  "city_population",
+  "column_break_duon",
+  "number_of_branches",
+  "remark",
+  "area_classification",
+  "section_break_btoi",
+  "planned_branches",
+  "total_estimated_cost",
+  "amended_from",
+  "section_break_q7ms",
+  "competitors"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_q7ms",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Branch Proposal",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "proposal_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Proposal Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Autocomplete",
+   "in_list_view": 1,
+   "label": "State",
+   "options": "\nMaharashtra\nMadhya Pradesh\nTelangana\nHimachal Pradesh",
+   "reqd": 1
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "City",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_duon",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "number_of_branches",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Number of Branches",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Small Text",
+   "label": "Remark",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_btoi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "planned_branches",
+   "fieldtype": "Table",
+   "label": "Planned Branches",
+   "options": "Planned Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "city_population",
+   "fieldtype": "Int",
+   "label": "City Population",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Draft\nPending From CFO\nApproved\nRejected\nCancelled"
+  },
+  {
+   "fieldname": "total_estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Total Estimated Cost",
+   "non_negative": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "potential_business",
+   "fieldtype": "Currency",
+   "label": "Potential Business (Yearly) "
+  },
+  {
+   "fieldname": "competitors",
+   "fieldtype": "Table",
+   "label": "Possible Competitors",
+   "options": "Branch Competitor"
+  },
+  {
+   "fieldname": "area_classification",
+   "fieldtype": "Select",
+   "label": "Area Classification",
+   "options": "\nRural\nSemi-Urban\nUrban",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Project",
+   "link_doctype": "Project",
+   "link_fieldname": "branch_proposal"
+  }
+ ],
+ "modified": "2025-07-17 17:51:50.030204",
+ "modified_by": "Administrator",
+ "module": "Sahayog Project",
+ "name": "Branch Proposal",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

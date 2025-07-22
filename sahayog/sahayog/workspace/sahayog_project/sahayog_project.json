@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"go0CSk53PB\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog Projects\",\"col\":12}}]",
+ "content": "[{\"id\":\"-JjV7o74y5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Proposal\",\"col\":3}},{\"id\":\"go0CSk53PB\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog Projects\",\"col\":12}}]",
  "creation": "2025-02-08 10:29:55.166799",
  "custom_blocks": [
   {
@@ -12,13 +12,12 @@
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
- "icon": "",
  "idx": 0,
- "indicator_color": "",
+ "indicator_color": "green",
  "is_hidden": 0,
  "label": "Sahayog Project",
  "links": [],
- "modified": "2025-06-14 13:01:02.936217",
+ "modified": "2025-07-14 16:29:38.602195",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Project",
@@ -33,12 +32,18 @@
   },
   {
    "role": "Task Manager"
-  },
-  {
-   "role": "CFO"
   }
  ],
- "sequence_id": 68.0,
- "shortcuts": [],
+ "sequence_id": 52.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Branch Proposal",
+   "link_to": "Branch Proposal",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
  "title": "Sahayog Project"
 }

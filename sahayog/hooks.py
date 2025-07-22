@@ -103,7 +103,6 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
-    "sahayog.patches.custom_fields.add_custom_fields_for_file.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_request_for_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation_item.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",    
@@ -114,30 +113,28 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
-    "sahayog.patches.fixtures.add_region.execute",
-    "sahayog.patches.fixtures.add_division.execute",
-    "sahayog.patches.fixtures.add_zone.execute",
-    "sahayog.patches.fixtures.add_module_profile.execute",
-    "sahayog.patches.fixtures.add_role_profile.execute",
-    "sahayog.patches.fixtures.hr_setting.execute",
-    "sahayog.patches.fixtures.set_view_setting_of_project.execute",
-    "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
+    # "sahayog.patches.fixtures.add_region.execute",
+    # "sahayog.patches.fixtures.add_division.execute",
+    # "sahayog.patches.fixtures.add_zone.execute",
+    # "sahayog.patches.fixtures.add_module_profile.execute",
+    # "sahayog.patches.fixtures.add_role_profile.execute",
+    # "sahayog.patches.fixtures.hr_setting.execute",
+    # "sahayog.patches.fixtures.set_view_setting_of_project.execute",
+    # "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
-    "sahayog.patches.fixtures.add_custom_html_block_for_project.execute",
-    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
+
+#    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
     "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
 
-    "sahayog.patches.add_roles.execute",
+    # "sahayog.patches.add_roles.execute",
 
-    "sahayog.patches.fixtures.add_item_group.execute",
-    "sahayog.patches.fixtures.add_warehouses.execute",
-    "sahayog.patches.fixtures.add_read_role_permission.execute",
-    "sahayog.patches.fixtures.add_role_profile_for_stock_user.execute",
+    # "sahayog.patches.fixtures.add_item_group.execute",
+    # "sahayog.patches.fixtures.add_warehouses.execute",
+    # "sahayog.patches.fixtures.add_read_role_permission.execute",
+    # "sahayog.patches.fixtures.add_role_profile_for_stock_user.execute",
     # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
-    "sahayog.patches.fixtures.add_custom_workflow_state.execute",
+    # "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
-   
-
    
     "sahayog.scrm.custom_html_block.l_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.employee_crm.execute",
@@ -230,22 +227,22 @@ doc_events = {
             "sahayog.doc_events.user.capital_user_name",   
         ],
     },
-    "Task": {
-
-        "after_insert": [
-            "sahayog.doc_events.task.create_letter_of_intent",   
-        ],
-        "on_update": [
-            "sahayog.doc_events.task.update_branch_status_trigger",
+   "Task": {
+        "autoname": [
+            "sahayog.doc_events.task.task_custom_autoname"
         ],
         "validate": [
             "sahayog.doc_events.task.validate_location_status",
             "sahayog.doc_events.task.validate_agreement_status",
-            "sahayog.doc_events.task.check_loi_docstatus_for_task_2",
-            
+            "sahayog.doc_events.task.check_loi_docstatus_for_task_2"
         ],
-        
-    },  
+        "on_update": [
+            "sahayog.doc_events.task.update_branch_status_trigger"
+        ],
+        "after_insert": [
+            "sahayog.doc_events.task.create_letter_of_intent"
+        ]
+    },
     
     "Sahayog Settings": {
         "on_update": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template",
@@ -291,6 +288,17 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
+    "cron": {
+        # 🕔 Run daily at 5:00 AM — Early morning summary
+        "0 5 * * *": [
+            "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
+        ],
+
+        # 🕥 Run daily at 10:30 AM — Mid-morning follow-up summary
+        "30 10 * * *": [
+            "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
+        ],
+    }
     # "cron": {
     #     "*": [
     #        
@@ -426,6 +434,25 @@ fixtures = [
     {
         "dt": "Custom DocPerm",
         "filters": [["parent", "=", "Issue Register"]]
-    }
+    },
 
+     {
+        "dt": "Task",
+        "filters": [["is_template", "=", "1"]]
+    },
+
+    {
+        "dt": "Project Template",
+        
+    },
+    {"dt": "Custom HTML Block", "filters": [
+        [
+            "name",
+            "in",
+            {
+				"Sahayog Projects",
+                "Sahayog Home"
+			}
+        ]
+    ]},
 ]
