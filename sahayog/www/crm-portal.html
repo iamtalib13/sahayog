@@ -1,5 +1,3 @@
-{% if frappe.session.user != "Guest" %}
-
 <html class="scroll-smooth" lang="en">
   <head>
     <meta name="csrf-token" content="{{ csrf_token }}" />
@@ -501,12 +499,30 @@
     </div>
     <!-- Dynamic Filters -->
     <div
-      class="filters-scroll flex space-x-2 px-4 py-2 overflow-x-auto border-b border-gray-200 bg-white sticky top-[104px] z-20"
-      id="dynamicFilters"
-    ></div>
+      id="dynamicFiltersContainer"
+      class="flex justify-between items-center px-4 py-2 bg-white sticky top-[104px] z-20 border-b border-gray-200"
+    >
+      <div
+        class="filters-scroll flex space-x-2 px-4 py-2 overflow-x-auto border-b border-gray-200 bg-white sticky top-[104px] z-20"
+        id="dynamicFilters"
+      ></div>
+      <!--Count Display-->
+      <div id="itemsCount" class="text-xs text-gray-600 select-none"></div>
+    </div>
+
     <!-- Main Content Area -->
     <main class="flex-1 overflow-y-auto px-4 space-y-4 pb-24" id="app">
       <section class="space-y-4" id="crm-list"></section>
+      <!-- Load More Button  -->
+      <div id="loadMoreContainer">
+        <button
+          id="loadMoreBtn"
+          class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-400"
+          type="button"
+        >
+          Load More
+        </button>
+      </div>
     </main>
 
     <!-- Floating Action Button -->
@@ -1264,6 +1280,7 @@
       // Configuration
       const SYNC_INTERVAL = 5000; // 5 seconds
       const LONG_POLL_TIMEOUT = 30000; // 30 seconds
+      const PAGE_SIZE = 20; // Number of docs per page for list
 
       // Elements
       const crmList = document.getElementById("crm-list");
@@ -1275,6 +1292,8 @@
       };
       const searchInput = document.getElementById("searchInput");
       const headerTitle = document.getElementById("headerTitle");
+      const loadMoreBtn = document.getElementById("loadMoreBtn");
+      const itemsCount = document.getElementById("itemsCount");
 
       // FAB button New Lead
       const fab = document.getElementById("fabNewEntry");
@@ -1365,6 +1384,10 @@
       let longPollRequest = null;
       let isSyncing = false;
 
+      // Pagination state for list rendering
+      let currentPage = 1;
+      let filteredItems = [];
+
       // EventSource for real-time updates (if supported)
       let eventSource = null;
 
@@ -1425,21 +1448,27 @@
         if (currentSection === "lead") {
           fetchLeads(true).then((leads) => {
             leadData = processLeadData(leads);
-            renderList(currentSection, currentFilter, searchInput.value.trim());
+            currentPage = 1;
+            applyFilterAndSearch();
+            renderListPage();
             renderFilters(currentSection);
             updateUrl();
           });
         } else if (currentSection === "appointment") {
           fetchAppointments(true).then((appointments) => {
             appointmentData = processAppointmentData(appointments);
-            renderList(currentSection, currentFilter, searchInput.value.trim());
+            currentPage = 1;
+            applyFilterAndSearch();
+            renderListPage();
             renderFilters(currentSection);
             updateUrl();
           });
         } else if (currentSection === "opportunity") {
           fetchOpportunity(true).then((opportunities) => {
             opportunityData = processOpportunityData(opportunities);
-            renderList(currentSection, currentFilter, searchInput.value.trim());
+            currentPage = 1;
+            applyFilterAndSearch();
+            renderListPage();
             renderFilters(currentSection);
             updateUrl();
           });
@@ -1658,6 +1687,7 @@
               break;
             case "not interested":
               statusClass = "bg-red-100 text-red-800";
+              break;
             case "follow up":
               statusClass = "bg-orange-100 text-orange-800";
               break;
@@ -1910,7 +1940,9 @@
             btn.setAttribute("aria-pressed", "true");
 
             currentFilter = filter;
-            renderList(currentSection, currentFilter, searchInput.value.trim());
+            currentPage = 1;
+            applyFilterAndSearch();
+            renderListPage();
             updateUrl();
           });
 
@@ -1923,18 +1955,16 @@
         }
       }
 
-      // Render list items
-      function renderList(section, filter, searchText) {
-        crmList.innerHTML = "";
-
+      // Apply filter and search to get filteredItems array
+      function applyFilterAndSearch() {
         let items = [];
-        if (section === "lead") {
+        if (currentSection === "lead") {
           items = leadData;
-        } else if (section === "appointment") {
+        } else if (currentSection === "appointment") {
           items = appointmentData;
-        } else if (section === "opportunity") {
+        } else if (currentSection === "opportunity") {
           items = opportunityData;
-        } else if (section === "report") {
+        } else if (currentSection === "report") {
           items = [
             {
               title: "My Leads Report",
@@ -1954,23 +1984,25 @@
         }
 
         if (
-          section === "lead" ||
-          section === "appointment" ||
-          section === "opportunity"
+          currentSection === "lead" ||
+          currentSection === "appointment" ||
+          currentSection === "opportunity"
         ) {
-          items = items.filter((item) => {
+          const searchText = searchInput.value.trim().toLowerCase();
+
+          filteredItems = items.filter((item) => {
             const matchesSearch =
               !searchText ||
-              item.title.toLowerCase().includes(searchText.toLowerCase()) ||
-              item.subtitle.toLowerCase().includes(searchText.toLowerCase());
+              item.title.toLowerCase().includes(searchText) ||
+              item.subtitle.toLowerCase().includes(searchText);
 
-            if (section === "appointment") {
+            if (currentSection === "appointment") {
               const now = new Date();
               const scheduledDate = item.rawData.scheduled_time
                 ? new Date(item.rawData.scheduled_time)
                 : null;
 
-              switch (filter) {
+              switch (currentFilter) {
                 case "All":
                   return matchesSearch;
                 case "Due":
@@ -2004,12 +2036,13 @@
                   return matchesSearch;
               }
             } else {
-              const matchesFilter = filter === "All" || item.status === filter;
+              const matchesFilter =
+                currentFilter === "All" || item.status === currentFilter;
               return matchesFilter && matchesSearch;
             }
           });
 
-          items.sort((a, b) => {
+          filteredItems.sort((a, b) => {
             const dateA = new Date(
               a.rawData.modified || a.rawData.creation || 0
             );
@@ -2018,17 +2051,30 @@
             );
             return dateB - dateA;
           });
+        } else {
+          filteredItems = items;
         }
+      }
 
-        if (items.length === 0) {
+      // Render a page of list items with Load More button
+      function renderListPage() {
+        crmList.innerHTML = "";
+
+        if (filteredItems.length === 0) {
           const noDataDiv = document.createElement("div");
           noDataDiv.className = "text-center text-gray-500 py-10 select-none";
           noDataDiv.textContent = "No records found.";
           crmList.appendChild(noDataDiv);
+          itemsCount.textContent = "Showing 0 of 0";
+          loadMoreBtn.style.display = "none";
           return;
         }
 
-        items.forEach((item) => {
+        const startIndex = 0;
+        const endIndex = currentPage * PAGE_SIZE;
+        const itemsToShow = filteredItems.slice(0, endIndex);
+
+        itemsToShow.forEach((item) => {
           const div = document.createElement("div");
           div.className =
             "flex items-center justify-between border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer bg-white";
@@ -2063,15 +2109,15 @@
           `;
 
           div.addEventListener("click", () => {
-            if (section === "report" && item.link) {
+            if (currentSection === "report" && item.link) {
               window.open(item.link, "_blank");
-            } else if (section === "lead") {
+            } else if (currentSection === "lead") {
               openEditLeadDialogByName(item.rawData.name);
-            } else if (section === "appointment") {
+            } else if (currentSection === "appointment") {
               console.log("Appointment Name:", item.rawData.name);
 
               openEditAppointmentDialogByName(item.rawData.name);
-            } else if (section === "opportunity") {
+            } else if (currentSection === "opportunity") {
               const name = item.rawData?.name;
               if (name) {
                 window.top.location.href = `/app/opportunity/${name}`;
@@ -2081,7 +2127,25 @@
 
           crmList.appendChild(div);
         });
+
+        // Update items count display
+        itemsCount.textContent = `Showing ${itemsToShow.length} of ${filteredItems.length}`;
+
+        // Show or hide Load More button
+        if (itemsToShow.length < filteredItems.length) {
+          loadMoreBtn.style.display = "inline-block";
+        } else {
+          loadMoreBtn.style.display = "none";
+        }
       }
+
+      // Load more button click handler
+      loadMoreBtn.addEventListener("click", () => {
+        console.log("Load More clicked, currentPage:", currentPage);
+        currentPage++;
+        renderListPage();
+        console.log("After Load More, currentPage:", currentPage);
+      });
 
       // Open dialog to edit lead by fetching fresh data from API
       async function openEditLeadDialogByName(leadName) {
@@ -3217,6 +3281,7 @@
 
             showGlobalSuccess("✅ Lead created successfully!");
             currentSection = "lead";
+            currentPage = 1;
             initApp();
           } else {
             alert("❌ Error: " + (result.message || "Unknown error occurred"));
@@ -3289,6 +3354,7 @@
             toggleUpdateLeadDialog(false);
             showGlobalSuccess("✅ Lead updated successfully!");
             currentSection = "lead";
+            currentPage = 1;
             initApp();
           } else {
             console.error("❌ Server responded with an error:", result);
@@ -3419,7 +3485,7 @@
             "Not Interested",
           ];
         } else if (currentSection === "appointment") {
-          validFilters = ["Today", "Due", "Upcoming", "Open", "Closed", "All"];
+          validFilters = ["All", "Today", "Due", "Upcoming", "Open", "Closed"];
         } else if (currentSection === "opportunity") {
           validFilters = [
             "All",
@@ -3439,8 +3505,10 @@
           currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
         }
 
+        currentPage = 1;
+        applyFilterAndSearch();
         renderFilters(currentSection);
-        renderList(currentSection, currentFilter, "");
+        renderListPage();
         updateHeaderTitle(currentSection);
 
         Object.entries(navButtons).forEach(([key, btn]) => {
@@ -3483,12 +3551,12 @@
             ];
           } else if (currentSection === "appointment") {
             validFilters = [
+              "All",
               "Today",
               "Due",
               "Upcoming",
               "Open",
               "Closed",
-              "All",
             ];
           } else if (currentSection === "opportunity") {
             validFilters = [
@@ -3522,8 +3590,10 @@
             opportunityData = processOpportunityData(rawOpportunities);
           }
 
+          currentPage = 1;
+          applyFilterAndSearch();
           renderFilters(currentSection);
-          renderList(currentSection, currentFilter, "");
+          renderListPage();
           updateHeaderTitle(currentSection);
 
           Object.values(navButtons).forEach((b) => {
@@ -3564,7 +3634,9 @@
       searchInput.addEventListener("input", () => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-          renderList(currentSection, currentFilter, searchInput.value.trim());
+          currentPage = 1;
+          applyFilterAndSearch();
+          renderListPage();
         }, 300);
       });
 
@@ -3741,11 +3813,9 @@
             if (currentSection === "appointment") {
               const rawAppointments = await fetchAppointments();
               appointmentData = processAppointmentData(rawAppointments);
-              renderList(
-                currentSection,
-                currentFilter,
-                searchInput.value.trim()
-              );
+              currentPage = 1;
+              applyFilterAndSearch();
+              renderListPage();
             }
           } catch (err) {
             console.error("Error during update:", err);
@@ -3841,4 +3911,3 @@
     </script>
   </body>
 </html>
-{% else %} {% include "templates/includes/new_login.html" %} {% endif %}
