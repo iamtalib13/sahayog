@@ -3,6 +3,12 @@ frappe.ui.form.on("Task", {
     frm.trigger("hide_fields");
     frm.trigger("set_readonly_fields");
     frm.trigger("collapsible_false");
+    if (
+      !frappe.has_role("System Manager") &&
+      !frappe.has_role("Administrator")
+    ) {
+      frm.set_df_property("sb_depends_on", "hidden", 1);
+    }
 
     let project = frm.doc.project;
 
