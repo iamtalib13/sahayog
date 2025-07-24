@@ -33,14 +33,14 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "completed_on",
                 "label": "Agreement Details",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3: Agreement and Handover'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3 : Agreement and Handover'",
             },
             {
                 "fieldname": "custom_agreement",
                 "fieldtype": "Attach",
                 "insert_after": "custom_agreement_details_section",
                 "label": "Agreement Attatchment",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3: Agreement and Handover'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3 : Agreement and Handover'",
                
             },
              {
@@ -48,7 +48,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "custom_agreement",
                 "label": "Supplier Details",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4: Vendor Allocation'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 5 : Infrastructure Development Work'",
                
             },
             {
@@ -57,7 +57,7 @@ def execute():
                 "options": "Allow Supplier",
                 "insert_after": "custom_supplier_details_section",
                 "label": "Allow Supplier",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4: Vendor Allocation'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 5 : Infrastructure Development Work'",
                
             },
                {
