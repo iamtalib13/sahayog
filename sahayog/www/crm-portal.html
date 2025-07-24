@@ -3523,9 +3523,11 @@
 
         // Initialize real-time sync
         if (isEventSourceSupported()) {
-          initEventSource();
+          // Commenting out the realtime polling event call as requested
+          // initEventSource();
+          // startPolling();
         } else {
-          startPolling();
+          // startPolling();
         }
 
         updateUrl();
