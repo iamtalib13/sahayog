@@ -9,7 +9,7 @@ def get_all_projects():
         # Fetch all projects with relevant fields
         projects = frappe.get_all(
             "Project", 
-            fields=["name","project_name", "custom_branch_status", "custom_region", "custom_zone","custom_division","percent_complete"]
+            fields=["name","project_name", "custom_branch_status", "custom_region", "custom_zone","custom_division","percent_complete","branch_proposal"]
         )
         print(projects)  # Print fetched projects to the console
         return projects
@@ -41,7 +41,7 @@ def get_all_tasks(project_name):
                 title=f"Child records for {task['name']}",
                 message=f"{frappe.as_json(child_records)}"
             )
-            
+
             task["manpower_recruitment_table"] = child_records
 
         return tasks

@@ -8,6 +8,13 @@ frappe.ui.form.on("Task", {
       !frappe.user.has_role("Administrator")
     ) {
       frm.set_df_property("sb_depends_on", "hidden", 1);
+      frm.set_df_property("description", "hidden", 1);
+      frm.set_df_property("expected_time", "hidden", 1);
+      frm.set_df_property("progress", "hidden", 1);
+      frm.set_df_property("is_milestone", "hidden", 1);
+      frm.set_df_property("actual_time", "hidden", 1);
+      frm.set_df_property("sb_more_info", "hidden", 1);
+      frm.set_df_property("sb_costing", "hidden", 1);
     }
 
     let project = frm.doc.project;
