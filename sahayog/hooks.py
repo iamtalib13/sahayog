@@ -234,14 +234,18 @@ doc_events = {
         "validate": [
             "sahayog.doc_events.task.validate_location_status",
             "sahayog.doc_events.task.validate_agreement_status",
-            "sahayog.doc_events.task.check_loi_docstatus_for_task_2"
+            "sahayog.doc_events.task.check_loi_docstatus_for_task_2",
+            "sahayog.doc_events.task.prevent_completion_if_manpower_incomplete"
         ],
         "on_update": [
             "sahayog.doc_events.task.update_branch_status_trigger"
         ],
         "after_insert": [
             "sahayog.doc_events.task.create_letter_of_intent"
-        ]
+        ],
+        "before_save": [
+            "sahayog.doc_events.task.fetch_manpower_settings"
+        ],
     },
     
     "Sahayog Settings": {
