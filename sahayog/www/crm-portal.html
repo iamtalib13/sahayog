@@ -500,14 +500,19 @@
     <!-- Dynamic Filters -->
     <div
       id="dynamicFiltersContainer"
-      class="flex justify-between items-center px-4 py-2 bg-white sticky top-[104px] z-20 border-b border-gray-200"
+      class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center px-4 py-2 bg-white sticky top-[104px] z-20 border-b border-gray-200 space-y-2 sm:space-y-0"
     >
+      <!-- Filters -->
       <div
-        class="filters-scroll flex space-x-2 px-4 py-2 overflow-x-auto border-b border-gray-200 bg-white sticky top-[104px] z-20"
         id="dynamicFilters"
+        class="filters-scroll flex space-x-2 overflow-x-auto w-full sm:w-auto border-b border-gray-200 bg-white"
       ></div>
-      <!--Count Display-->
-      <div id="itemsCount" class="text-xs text-gray-600 select-none"></div>
+
+      <!-- Count Display -->
+      <div
+        id="itemsCount"
+        class="text-xs text-gray-600 select-none ml-auto"
+      ></div>
     </div>
 
     <!-- Main Content Area -->
