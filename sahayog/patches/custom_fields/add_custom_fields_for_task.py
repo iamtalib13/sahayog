@@ -67,6 +67,30 @@ def execute():
                 "label": "Sequence",
                 "depends_on": "eval:doc.is_template == 1",               
             },
+
+            {
+                "fieldname": "custom_manpower_section",
+                "fieldtype": "Section Break",
+                "insert_after": "custom_allow_supplier",
+                "label": "Manpower Recruitment",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'",
+            },
+             {
+              "fieldname": "manpower_fetched",
+              "fieldtype": "Check",
+              "insert_after": "custom_manpower_section",
+              "label": "Manpower Fetched ?",
+              "default": 0,
+              "depends_on": "eval:frappe.user.has_role('System Manager') && !doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'"
+            },
+            {
+                "fieldname": "manpower_recruitment_table",
+                "fieldtype": "Table",
+                "insert_after": "manpower_fetched",
+                "label": "Manpower Table",
+                "options": "Manpower Recruitment",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'",
+            },
         ],
     }
     create_custom_fields(fields)
