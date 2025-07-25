@@ -23,14 +23,29 @@ def get_all_tasks(project_name):
     Fetch all tasks for a specific project.
     """
     try:
-        # Fetch tasks where the project field matches the passed project_name
         tasks = frappe.get_all(
             "Task", 
-            filters={"project": project_name},  # Add filter for the project field
-            fields=["name","subject","exp_start_date", "exp_end_date", "status", "modified","project","custom_agreement"]
+            filters={"project": project_name},
+            fields=["name", "subject", "exp_start_date", "exp_end_date", "status", "modified", "project", "custom_agreement"]
         )
-        print(tasks)  # Print fetched tasks to the console
+
+        # Now, fetch child table records for each task
+        for task in tasks:
+            child_records = frappe.get_all(
+                "Manpower Recruitment",  # Replace with your actual child doctype name
+                filters={"parent": task["name"], "parenttype": "Task"},
+                fields=["hirable_designation", "standard_employee_count", "hired_till_now","status"]  # Replace with your actual fields
+            )
+            frappe.logger().info(f"Child records for {task['name']}: {child_records}")
+            frappe.log_error(
+                title=f"Child records for {task['name']}",
+                message=f"{frappe.as_json(child_records)}"
+            )
+            
+            task["manpower_recruitment_table"] = child_records
+
         return tasks
+
     except Exception as e:
         frappe.throw(f"Error fetching tasks: {str(e)}")
 
