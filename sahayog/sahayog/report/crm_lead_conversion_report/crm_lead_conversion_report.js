@@ -8,7 +8,7 @@ frappe.query_reports["CRM Lead Conversion Report"] = {
       fieldname: "from_date",
       label: "From Date",
       fieldtype: "Date",
-      default: frappe.datetime.month_start(frappe.datetime.get_today()), // ✅ 1st of current month
+      default: frappe.datetime.get_today(), // ✅ Today
     },
     {
       fieldname: "to_date",
