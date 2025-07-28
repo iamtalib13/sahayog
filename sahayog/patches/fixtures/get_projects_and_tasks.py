@@ -11,16 +11,14 @@ def get_all_projects():
             "Project", 
             fields=["name","project_name", "custom_branch_status", "custom_region", "custom_zone","custom_division","percent_complete","branch_proposal"]
         )
-        print(projects)  # Print fetched projects to the console
         return projects
     except Exception as e:
         frappe.throw(f"Error fetching projects: {str(e)}")
 
-
 @frappe.whitelist()
 def get_all_tasks(project_name):
     """
-    Fetch all tasks for a specific project.
+    Fetch all tasks for a specific project, including child table records.
     """
     try:
         tasks = frappe.get_all(
@@ -29,25 +27,30 @@ def get_all_tasks(project_name):
             fields=["name", "subject", "exp_start_date", "exp_end_date", "status", "modified", "project", "custom_agreement"]
         )
 
-        # Now, fetch child table records for each task
         for task in tasks:
-            child_records = frappe.get_all(
-                "Manpower Recruitment",  # Replace with your actual child doctype name
-                filters={"parent": task["name"], "parenttype": "Task"},
-                fields=["hirable_designation", "standard_employee_count", "hired_till_now","status"]  # Replace with your actual fields
-            )
-            frappe.logger().info(f"Child records for {task['name']}: {child_records}")
-            frappe.log_error(
-                title=f"Child records for {task['name']}",
-                message=f"{frappe.as_json(child_records)}"
-            )
+            # Fetch Location Details records only for Task 1
+            if task["subject"] and "Task 1 : Acquisition of the Property" in task["subject"]:
+                location_details = frappe.get_all(
+                    "Location Details",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["location_name", "estimate_rent", "location_image", "status"]  # Adjust fields as needed
+                )
+                task["location_details_table"] = location_details
 
-            task["manpower_recruitment_table"] = child_records
+            # Fetch Manpower Recruitment records for Task 4
+            if task["subject"] and "Task 4 : Manpower Recruitment" in task["subject"]:
+                manpower_records = frappe.get_all(
+                    "Manpower Recruitment",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["hirable_designation", "standard_employee_count", "hired_till_now", "status"]
+                )
+                task["manpower_recruitment_table"] = manpower_records
 
         return tasks
 
     except Exception as e:
         frappe.throw(f"Error fetching tasks: {str(e)}")
+
 
  
 @frappe.whitelist()
