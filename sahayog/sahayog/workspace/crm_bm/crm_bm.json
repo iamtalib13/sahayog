@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "CRM BM",
  "links": [],
- "modified": "2025-07-14 16:29:38.976383",
+ "modified": "2025-07-29 17:12:04.956210",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM BM",
@@ -36,16 +36,15 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "CRM Lead Conversion Report",
-   "link_to": "CRM Lead Conversion Report",
-   "report_ref_doctype": "Lead",
-   "type": "Report"
+   "label": "Branch Lead Report",
+   "link_to": "crm-lead-management",
+   "type": "Page"
   },
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Branch Lead Report",
-   "link_to": "Lead Report",
+   "label": "CRM Lead Conversion Report",
+   "link_to": "CRM Lead Conversion Report",
    "report_ref_doctype": "Lead",
    "type": "Report"
   }

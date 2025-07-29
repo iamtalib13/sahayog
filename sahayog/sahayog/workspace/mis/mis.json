@@ -1,0 +1,37 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"KZSasXlI2D\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"BDO Performance\",\"col\":12}}]",
+ "creation": "2025-07-29 11:55:21.592080",
+ "custom_blocks": [
+  {
+   "custom_block_name": "BDO Performance",
+   "label": "BDO Performance"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "MIS",
+ "links": [],
+ "modified": "2025-07-29 12:11:47.266317",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "MIS",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "MIS User"
+  }
+ ],
+ "sequence_id": 88.0,
+ "shortcuts": [],
+ "title": "MIS"
+}
