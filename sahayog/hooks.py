@@ -451,7 +451,8 @@ fixtures = [
             "in",
             {
 				"Sahayog Projects",
-                "Sahayog Home"
+                "Sahayog Home",
+                "BDO Peformance"
 			}
         ]
     ]},

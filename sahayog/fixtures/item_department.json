@@ -1,5 +1,12 @@
 [
  {
+  "department": null,
+  "docstatus": 0,
+  "doctype": "Item Department",
+  "modified": "2025-06-20 15:45:13.162814",
+  "name": "Purchase"
+ },
+ {
   "department": "IT",
   "docstatus": 0,
   "doctype": "Item Department",

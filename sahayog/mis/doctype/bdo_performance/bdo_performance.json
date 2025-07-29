@@ -1,0 +1,269 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "format:{name1}-{branch_name}-{empid}",
+ "creation": "2025-07-24 11:00:53.108227",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zone_name",
+  "region_name",
+  "district_name",
+  "branch_name",
+  "empid",
+  "name1",
+  "designation_name",
+  "join_dur",
+  "inactive",
+  "active",
+  "total_ssagnt",
+  "new_ssagnt",
+  "new_rd_ac",
+  "new_rd_amt",
+  "new_smbg_ac",
+  "new_smbg_amt",
+  "total_rdsmbg_ac",
+  "total_rdsmbg_amt",
+  "dam_ac",
+  "dam_amt",
+  "fd_ac",
+  "fd_atm",
+  "fd_6m_ac",
+  "fd_6m_amt",
+  "mis_ac",
+  "mis_amt",
+  "total_fd_ac",
+  "total_fd_amt",
+  "rddemand",
+  "rdcolle",
+  "smbg_demand",
+  "smbg_colle",
+  "total_rdsmbg_demand",
+  "total_rdsmbg_collection"
+ ],
+ "fields": [
+  {
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name"
+  },
+  {
+   "fieldname": "region_name",
+   "fieldtype": "Data",
+   "label": "Region Name"
+  },
+  {
+   "fieldname": "district_name",
+   "fieldtype": "Data",
+   "label": "District Name"
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name"
+  },
+  {
+   "fieldname": "empid",
+   "fieldtype": "Data",
+   "label": "EmpID"
+  },
+  {
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "designation_name",
+   "fieldtype": "Data",
+   "label": "Designation Name"
+  },
+  {
+   "fieldname": "join_dur",
+   "fieldtype": "Data",
+   "label": "Join dur"
+  },
+  {
+   "fieldname": "inactive",
+   "fieldtype": "Int",
+   "label": "Inactive"
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Int",
+   "label": "Active"
+  },
+  {
+   "fieldname": "total_ssagnt",
+   "fieldtype": "Int",
+   "label": "Total ss/Agnt"
+  },
+  {
+   "fieldname": "new_ssagnt",
+   "fieldtype": "Int",
+   "label": "New Ss/Agnt"
+  },
+  {
+   "fieldname": "new_rd_ac",
+   "fieldtype": "Int",
+   "label": "NEW RD AC"
+  },
+  {
+   "fieldname": "new_rd_amt",
+   "fieldtype": "Currency",
+   "label": "NEW RD AMT"
+  },
+  {
+   "fieldname": "new_smbg_ac",
+   "fieldtype": "Int",
+   "label": "NEW SMBG AC"
+  },
+  {
+   "fieldname": "new_smbg_amt",
+   "fieldtype": "Currency",
+   "label": "NEW SMBG AMT"
+  },
+  {
+   "fieldname": "total_rdsmbg_ac",
+   "fieldtype": "Int",
+   "label": "TOTAL RD/SMBG AC"
+  },
+  {
+   "fieldname": "total_rdsmbg_amt",
+   "fieldtype": "Currency",
+   "label": "TOTAL RD/SMBG AMT"
+  },
+  {
+   "fieldname": "dam_ac",
+   "fieldtype": "Int",
+   "label": "DAM AC"
+  },
+  {
+   "fieldname": "dam_amt",
+   "fieldtype": "Currency",
+   "label": "DAM AMT"
+  },
+  {
+   "fieldname": "fd_ac",
+   "fieldtype": "Int",
+   "label": "FD AC"
+  },
+  {
+   "fieldname": "fd_atm",
+   "fieldtype": "Currency",
+   "label": "FD ATM"
+  },
+  {
+   "fieldname": "fd_6m_ac",
+   "fieldtype": "Int",
+   "label": "FD 6M AC"
+  },
+  {
+   "fieldname": "fd_6m_amt",
+   "fieldtype": "Currency",
+   "label": "FD 6M AMT"
+  },
+  {
+   "fieldname": "mis_ac",
+   "fieldtype": "Int",
+   "label": "MIS AC"
+  },
+  {
+   "fieldname": "mis_amt",
+   "fieldtype": "Currency",
+   "label": "MIS AMT"
+  },
+  {
+   "fieldname": "total_fd_ac",
+   "fieldtype": "Int",
+   "label": "TOTAL FD AC"
+  },
+  {
+   "fieldname": "total_fd_amt",
+   "fieldtype": "Currency",
+   "label": "TOTAL FD AMT"
+  },
+  {
+   "fieldname": "rddemand",
+   "fieldtype": "Currency",
+   "label": "RDDemand"
+  },
+  {
+   "fieldname": "rdcolle",
+   "fieldtype": "Currency",
+   "label": "RDColle"
+  },
+  {
+   "fieldname": "smbg_demand",
+   "fieldtype": "Currency",
+   "label": "SMBG Demand"
+  },
+  {
+   "fieldname": "smbg_colle",
+   "fieldtype": "Currency",
+   "label": "SMBG Colle"
+  },
+  {
+   "fieldname": "total_rdsmbg_demand",
+   "fieldtype": "Currency",
+   "label": "TOTAL RD/SMBG DEMAND"
+  },
+  {
+   "fieldname": "total_rdsmbg_collection",
+   "fieldtype": "Currency",
+   "label": "TOTAL RD/SMBG COLLECTION"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-24 13:27:29.065462",
+ "modified_by": "Administrator",
+ "module": "MIS",
+ "name": "BDO Performance",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Mis Admin",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Mis Employee",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
