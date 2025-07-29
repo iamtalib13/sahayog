@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Employee KPI Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        font-family: "Inter", sans-serif;
+        background: #fff;
+        color: #1f2937;
+        padding: 0px;
+      }
+      .dashboard {
+        max-width: 1100px;
+        margin: auto;
+        background: white;
+        border-radius: 0px;
+        padding: 5px;
+        height: 100vh;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .header p {
+        margin: 6px 0;
+        color: #6b7280;
+        font-size: 16px;
+      }
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        margin-bottom: 30px;
+        font-size: 15px;
+        color: #374151;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 20px;
+      }
+      .card {
+        border-radius: 16px;
+        padding: 8px 14px;
+        /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        text-align: left;
+        min-height: 50px;
+        border: 1px solid #374151;
+      }
+      .card h2 {
+        font-size: 20px;
+        margin: 10px 0;
+        font-weight: 700;
+      }
+      .card p {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .donut {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto;
+        position: relative;
+      }
+      .donut svg {
+        transform: rotate(-90deg);
+      }
+      .donut-center {
+        position: absolute;
+        top: 35%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 18px;
+        font-weight: bold;
+        color: #0e0808;
+      }
+      @media (max-width: 600px) {
+        .card h2 {
+          font-size: 22px;
+        }
+      }
+      .percent {
+        font-size: 28px;
+        font-weight: 700;
+        color: #000;
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard">
+      <div class="header">
+        <p style="text-align: right; color: #6b7280; font-size: 16px">
+          Last Update: <span id="date">01-01-1991</span>
+        </p>
+        <h1 id="employee_name">Data Is Not available</h1>
+        <p id="branch_designation"></p>
+      </div>
+      <div class="info-grid" id="info-grid"></div>
+      <div class="grid">
+        <div class="card blue">
+          <p>Active FD Accounts vs Collection</p>
+          <h2><span id="fd_ac">0</span>/ ₹<span id="fd_atm">0</span></h2>
+        </div>
+        <div class="card blue">
+          <p>Active 6M FD Accounts vs Collection</p>
+          <h2><span id="fd_6m_ac">0</span>/ ₹<span id="fd_6m_amt">0</span></h2>
+        </div>
+        <div class="card green">
+          <p>DAM Account Count & Collection</p>
+          <h2><span id="dam_ac">0</span> / ₹<span id="dam_amt">0</span></h2>
+        </div>
+        <div class="card">
+          <div class="card-title">RD Demand vs Collection</div>
+          <h2>
+            <span id="rd_demand">0</span> / ₹<span id="rd_collection">0</span>
+          </h2>
+        </div>
+        <div class="card orange">
+          <p>New SMBG</p>
+          <h2 id="new_smbg_ac">0</h2>
+          <p>₹<span id="new_smbg_amt">0</span></p>
+        </div>
+        <div class="card pink">
+          <p>New RD Opened</p>
+          <h2 id="new_rd_ac">0</h2>
+          <p>₹<span id="new_rd_amt">0</span></p>
+        </div>
+        <div class="card red">
+          <p>MIS Collection</p>
+          <h2>₹<span id="mis_amt">0</span></h2>
+        </div>
+        <div class="card gray">
+          <p>Achieved DAM Collection</p>
+          <h2 id="achieved_percent">0%</h2>
+        </div>
+      </div>
+    </div>
+    <script>
+      async function loadKPI() {
+        try {
+          const res = await fetch(
+            "/api/method/sahayog.mis.doctype.bdo_performance.bdo_performance.get_employee_api"
+          );
+          const data = await res.json();
+          const kpi = data.message;
+          if (data && data.message) {
+            const modified = new Date(data.message.modified);
+
+            // Extract day, month, and year
+            const day = modified.getDate();
+            const month = modified.getMonth() + 1; // Month is zero-indexed
+            const year = modified.getFullYear();
+
+            // Format as "25/7/2025"
+            const formatted = `${day}/${month}/${year}`;
+
+            document.getElementById("date").textContent = formatted;
+          }
+          document.getElementById("employee_name").textContent = kpi.name1;
+          document.getElementById(
+            "branch_designation"
+          ).textContent = `${kpi.branch_name} – ${kpi.designation_name}`;
+          const infoHtml = `
+          <div><strong>Zone:</strong> ${kpi.zone_name}</div>
+          <div><strong>Region:</strong> ${kpi.region_name}</div>
+          <div><strong>District:</strong> ${kpi.district_name}</div>
+          <div><strong>Emp ID:</strong> ${kpi.empid}</div>
+          <div><strong>Join Duration:</strong> ${kpi.join_dur}</div>
+          <div><strong>SSA Agents:</strong> ${kpi.total_ssagnt} (New: ${kpi.new_ssagnt})</div>
+          <div><strong>Active:</strong> ${kpi.active}</div>
+          <div><strong>Inactive:</strong> ${kpi.inactive}</div>
+        `;
+          document.getElementById("info-grid").innerHTML = infoHtml;
+          document.getElementById("fd_ac").textContent = kpi.fd_ac || 0;
+          document.getElementById("fd_atm").textContent = kpi.fd_atm || 0;
+
+          document.getElementById("fd_6m_ac").textContent = kpi.fd_6m_ac || 0;
+          document.getElementById("fd_6m_amt").textContent = kpi.fd_6m_amt || 0;
+
+          document.getElementById("dam_ac").textContent = kpi.dam_ac || 0;
+          document.getElementById("dam_amt").textContent = formatMoney(
+            kpi.dam_amt
+          );
+
+          document.getElementById("rd_demand").textContent = formatMoney(
+            kpi.total_rdsmbg_demand
+          );
+          document.getElementById("rd_collection").textContent = formatMoney(
+            kpi.total_rdsmbg_collection
+          );
+
+          document.getElementById("new_smbg_ac").textContent =
+            kpi.new_smbg_ac || 0;
+          document.getElementById("new_smbg_amt").textContent = formatMoney(
+            kpi.new_smbg_amt
+          );
+
+          document.getElementById("new_rd_ac").textContent = kpi.new_rd_ac || 0;
+          document.getElementById("new_rd_amt").textContent = formatMoney(
+            kpi.new_rd_amt
+          );
+
+          document.getElementById("mis_amt").textContent = formatMoney(
+            kpi.mis_amt
+          );
+          document.getElementById(
+            "achieved_percent"
+          ).textContent = `${kpi.percent_achieved}%`;
+        } catch (err) {
+          console.error("Error fetching KPI data:", err);
+        }
+      }
+      function formatMoney(value) {
+        return (value || 0).toLocaleString("en-IN", {
+          maximumFractionDigits: 0,
+        });
+      }
+      loadKPI();
+    </script>
+  </body>
+</html>

@@ -1,9 +1,6 @@
 frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
   frappe.require(
-    [
-      "https://cdn.jsdelivr.net/npm/chart.js",
-      "https://cdn.jsdelivr.net/npm/clusterize.js@0.18.1/clusterize.min.js",
-    ],
+    ["/assets/sahayog/js/chart.min.js", "/assets/sahayog/js/clusterize.min.js"],
     async () => {
       let page = frappe.ui.make_app_page({
         parent: wrapper,

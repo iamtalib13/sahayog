@@ -31,7 +31,7 @@
  "is_hidden": 0,
  "label": "CRM Admin",
  "links": [],
- "modified": "2025-07-19 10:51:47.292772",
+ "modified": "2025-07-29 17:18:51.034487",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM Admin",
@@ -50,16 +50,15 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Product Wise Business Summary",
-   "link_to": "Product Wise Business Summary",
-   "report_ref_doctype": "Lead",
-   "type": "Report"
+   "label": "Lead Report",
+   "link_to": "crm-lead-management",
+   "type": "Page"
   },
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Lead Report",
-   "link_to": "Lead Report",
+   "label": "Product Wise Business Summary",
+   "link_to": "Product Wise Business Summary",
    "report_ref_doctype": "Lead",
    "type": "Report"
   },
