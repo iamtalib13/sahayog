@@ -171,6 +171,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           border: 1px solid #e0e6ed;
           border-radius: 8px;
           overflow: hidden;
+          position: relative;
         }
         .lead-table {
           width: 100%;
@@ -303,6 +304,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           margin: 0;
           color: #6c7680;
           font-size: 14px;
+        }
+        .loading-indicator {
+          text-align: center;
+          padding: 10px;
+          color: #6c7680;
+          font-size: 14px;
+          display: none;
         }
       </style>
 
@@ -455,6 +463,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               </thead>
               <tbody id="lead-content"></tbody>
             </table>
+            <div id="loading-indicator" class="loading-indicator">
+              <i class="fa fa-spinner fa-spin"></i> Loading more leads...
+            </div>
           </div>
           <div class="p-3 text-center bg-light">
             <small id="record-count" class="text-muted">Showing 0 of 0 records</small>
@@ -468,13 +479,15 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       let employeeMap = {};
       let analyticsData = [];
       let columnFilters = {};
+      let isLoading = false;
+      let hasMoreLeads = true;
+      let currentPage = 1;
+      const pageSize = 50; // Number of leads to load per page
 
       // Initialize column filters
       for (let i = 0; i < 13; i++) {
         columnFilters[i] = "";
       }
-
-      // Fetch and render leads on page load
 
       // Update URL with current filters
       function updateURL() {
@@ -837,6 +850,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       }
 
       async function fetchAndRenderLeads() {
+        currentPage = 1;
+        hasMoreLeads = true;
+        currentLeads = [];
+
         let from_date = $("#from-date").val();
         let to_date = $("#to-date").val();
 
@@ -847,58 +864,126 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         if (from_date) filters.push(["creation", ">=", fromDateTime]);
         if (to_date) filters.push(["creation", "<=", toDateTime]);
 
-        let leads = await frappe.db.get_list("Lead", {
-          fields: [
-            "name",
-            "status",
-            "lead_owner",
-            "creation",
-            "custom_branch as branch",
-            "source",
-            "lead_name",
-            "custom_region as region",
-            "custom_zone as zone",
-            "mobile_no as contact",
-          ],
-          filters: filters,
-        });
+        // Reset the table
+        if (clusterize) {
+          clusterize.clear();
+        }
 
-        currentLeads = leads;
+        // Show loading indicator
+        $("#loading-indicator").show();
 
-        const stats = {
-          total_leads: leads.length,
-          converted: leads.filter((l) => l.status === "Converted").length,
-          follow_up: leads.filter((l) => l.status === "Follow Up").length,
-          not_interested: leads.filter((l) => l.status === "Not Interested")
-            .length,
-        };
-
-        employeeMap = {};
-
-        // Fetch employee details in bulk
-        const uniqueOwners = [...new Set(leads.map((lead) => lead.lead_owner))];
-        const employees = await frappe.db.get_list("Employee", {
-          fields: ["name", "employee_name", "user_id", "designation"],
-          filters: [["user_id", "in", uniqueOwners]],
-        });
-
-        // Create employee map
-        employees.forEach((emp) => {
-          employeeMap[emp.user_id] = {
-            name: emp.employee_name,
-            id: emp.name,
-            designation: emp.designation || "-",
-          };
-        });
-
-        // Update cards
-        $("#total-leads").text(stats.total_leads);
-        $("#converted-leads").text(stats.converted);
-        $("#follow-up-leads").text(stats.follow_up);
-        $("#not-interested-leads").text(stats.not_interested);
-
-        render_lead_list(leads);
+        await fetchLeadsPage(currentPage, filters);
         updateURL();
+      }
+
+      async function fetchLeadsPage(page, filters) {
+        if (isLoading || !hasMoreLeads) return;
+
+        isLoading = true;
+        $("#loading-indicator").show();
+
+        try {
+          const leads = await frappe.db.get_list("Lead", {
+            fields: [
+              "name",
+              "status",
+              "lead_owner",
+              "creation",
+              "custom_branch as branch",
+              "source",
+              "lead_name",
+              "custom_region as region",
+              "custom_zone as zone",
+              "mobile_no as contact",
+            ],
+            filters: filters,
+            limit_start: (page - 1) * pageSize,
+            limit: pageSize,
+            order_by: "creation desc",
+          });
+
+          if (leads.length < pageSize) {
+            hasMoreLeads = false;
+          }
+
+          if (page === 1) {
+            currentLeads = leads;
+          } else {
+            currentLeads = [...currentLeads, ...leads];
+          }
+
+          // Update employee map if needed
+          if (page === 1) {
+            employeeMap = {};
+            const uniqueOwners = [
+              ...new Set(leads.map((lead) => lead.lead_owner)),
+            ];
+            const employees = await frappe.db.get_list("Employee", {
+              fields: ["name", "employee_name", "user_id", "designation"],
+              filters: [["user_id", "in", uniqueOwners]],
+            });
+
+            employees.forEach((emp) => {
+              employeeMap[emp.user_id] = {
+                name: emp.employee_name,
+                id: emp.name,
+                designation: emp.designation || "-",
+              };
+            });
+          }
+
+          const stats = {
+            total_leads: currentLeads.length,
+            converted: currentLeads.filter((l) => l.status === "Converted")
+              .length,
+            follow_up: currentLeads.filter((l) => l.status === "Follow Up")
+              .length,
+            not_interested: currentLeads.filter(
+              (l) => l.status === "Not Interested"
+            ).length,
+          };
+
+          // Update cards
+          $("#total-leads").text(stats.total_leads);
+          $("#converted-leads").text(stats.converted);
+          $("#follow-up-leads").text(stats.follow_up);
+          $("#not-interested-leads").text(stats.not_interested);
+
+          render_lead_list(currentLeads);
+          currentPage++;
+        } catch (error) {
+          console.error("Error fetching leads:", error);
+          frappe.msgprint("Error loading leads. Please try again.");
+        } finally {
+          isLoading = false;
+          $("#loading-indicator").hide();
+        }
+      }
+
+      function setupInfiniteScroll() {
+        const tableContainer = $(".lead-table-container")[0];
+
+        tableContainer.addEventListener("scroll", () => {
+          const { scrollTop, scrollHeight, clientHeight } = tableContainer;
+
+          // Check if we're near the bottom of the table
+          if (
+            scrollTop + clientHeight >= scrollHeight - 100 &&
+            !isLoading &&
+            hasMoreLeads
+          ) {
+            let from_date = $("#from-date").val();
+            let to_date = $("#to-date").val();
+            let fromDateTime = `${from_date} 00:00:00.000000`;
+            let toDateTime = `${to_date} 23:59:59.999999`;
+
+            let filters = [];
+            if (from_date) filters.push(["creation", ">=", fromDateTime]);
+            if (to_date) filters.push(["creation", "<=", toDateTime]);
+
+            fetchLeadsPage(currentPage, filters);
+          }
+        });
       }
 
       function render_lead_list(leads) {
@@ -945,6 +1030,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               },
             },
           });
+
+          // Setup infinite scroll after Clusterize is initialized
+          setupInfiniteScroll();
         } else {
           clusterize.update(rows);
         }
