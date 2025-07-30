@@ -370,7 +370,7 @@ def validate_location_status(doc, method):
 
 
 def validate_agreement_status(doc, method):
-    if doc.subject == "Task 3: Agreement and Handover" and doc.status == "Completed":
+    if doc.subject == "Task 3 : Agreement and Handover" and doc.status == "Completed":
         # Check if the custom_agreement field is empty or None
         if not doc.custom_agreement:
             frappe.throw(_("Cannot mark the task as 'Completed' until the Agreement is provided."))
@@ -434,3 +434,56 @@ def get_last_task_number(prefix):
         except ValueError:
             return 1
     return 1
+
+#Task 4 : Manpower Recruitment validations
+def fetch_manpower_settings(doc, method):
+    if doc.subject == "Task 4 : Manpower Recruitment" and not doc.is_template:
+        if not doc.manpower_fetched:
+            settings = frappe.get_single("Manpower Recruitment Setting")
+            doc.manpower_recruitment_table = []
+
+            for row in settings.manpower_recruitment_table:
+                doc.append("manpower_recruitment_table", {
+                    "standard_employee_count": row.standard_employee_count,
+                    "hirable_designation": row.hirable_designation
+                })
+            
+            doc.manpower_fetched = 1  # Mark as fetched
+            
+def prevent_completion_if_manpower_incomplete(doc, method):
+    if doc.subject != "Task 4 : Manpower Recruitment" or doc.is_template:
+        return
+
+    if doc.status == "Completed":
+        errors = []
+
+        for i, row in enumerate(doc.manpower_recruitment_table, start=1):
+            if not row.hired_till_now or row.hired_till_now <= 0:
+                errors.append(
+                    f"Row {i} ({row.hirable_designation}): ✅ 'Hired Till Now' must be greater than 0."
+                )
+
+            if row.status not in ["In Process", "Hired"]:
+                errors.append(
+                    f"Row {i} ({row.hirable_designation}): ✅ Status must be 'In Process' or 'Hired'."
+                )
+
+        if errors:
+            frappe.throw(
+                """<b>Please update the hiring details before completing this task.</b><br><br>
+                Make sure the following conditions are met for all rows in the manpower table:<br>
+                ✅ <b>Status</b> must be set to <b>In Process</b> or <b>Hired</b>.<br>
+                ✅ <b>Hired Till Now</b> must be greater than <b>0</b>.<br><br>
+
+                <button onclick="document.getElementById('manpower-errors').style.display='block'" 
+                        style="background-color:#007bff;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">
+                    View Issues
+                </button>
+
+                <div id="manpower-errors" style="display:none;margin-top:10px;">
+                    <b>Issues found:</b><br>
+                    {}
+                </div>
+                """.format("<br>".join(errors)),
+                title="Hiring Data Incomplete"
+            )

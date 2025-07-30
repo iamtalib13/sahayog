@@ -3,6 +3,19 @@ frappe.ui.form.on("Task", {
     frm.trigger("hide_fields");
     frm.trigger("set_readonly_fields");
     frm.trigger("collapsible_false");
+    if (
+      !frappe.user.has_role("System Manager") &&
+      !frappe.user.has_role("Administrator")
+    ) {
+      frm.set_df_property("sb_depends_on", "hidden", 1);
+      frm.set_df_property("description", "hidden", 1);
+      frm.set_df_property("expected_time", "hidden", 1);
+      frm.set_df_property("progress", "hidden", 1);
+      frm.set_df_property("is_milestone", "hidden", 1);
+      frm.set_df_property("actual_time", "hidden", 1);
+      frm.set_df_property("sb_more_info", "hidden", 1);
+      frm.set_df_property("sb_costing", "hidden", 1);
+    }
 
     let project = frm.doc.project;
 
@@ -20,6 +33,7 @@ frappe.ui.form.on("Task", {
         .get_value("Letter of Intent", { project: project }, "name")
         .then((response) => {
           if (response && response.message && response.message.name) {
+            console.log("LOI exists for project:", project);
             // Hide or disable the Create LOI button
             createButton.hide(); // Or use `createButton.disable();` if you prefer to disable instead of hide
             if (frm.doc.status != "Template") {

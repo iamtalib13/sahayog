@@ -18,20 +18,20 @@ def execute(filters=None):
 
     lead_conditions = ""
 
-    # Apply role-based access
+    # 🔓 Full access roles
     full_access_roles = ["Administrator", "System Manager", "Admin", "Sales Manager"]
     if not any(role in roles for role in full_access_roles):
         if "Branch Manager" in roles and employee and employee.branch:
             lead_conditions += f" AND l.custom_branch = {frappe.db.escape(employee.branch)}"
+        elif "Regional Manager" in roles and employee and employee.custom_region and employee.custom_zone:
+            lead_conditions += f" AND l.custom_region = {frappe.db.escape(employee.custom_region)}"
+            lead_conditions += f" AND l.custom_zone = {frappe.db.escape(employee.custom_zone)}"
         elif "Zonal Manager" in roles and employee and employee.custom_zone:
             lead_conditions += f" AND l.custom_zone = {frappe.db.escape(employee.custom_zone)}"
-        elif "Regional Manager" in roles and employee and employee.custom_region:
-            lead_conditions += f" AND l.custom_region = {frappe.db.escape(employee.custom_region)}"
         else:
-            frappe.throw("Your Employee record is missing branch/zone/region info.")
-    
+            frappe.throw("Your Employee record is missing branch, region, or zone info.")
 
-    # Apply user filters
+    # 🔎 User filters (manual filters from UI)
     if filters.get("custom_branch"):
         lead_conditions += f" AND l.custom_branch = {frappe.db.escape(filters['custom_branch'])}"
     if filters.get("custom_zone"):
@@ -42,8 +42,10 @@ def execute(filters=None):
         from_date = getdate(filters["from_date"])
         to_date = getdate(filters["to_date"])
         lead_conditions += f" AND DATE(l.creation) BETWEEN '{from_date}' AND '{to_date}'"
+    else:
+        frappe.throw("From Date and To Date are required.")
 
-    # Query stats
+    # 📊 Query
     lead_stats = frappe.db.sql(f"""
         SELECT
             l.owner AS user_id,
@@ -68,7 +70,6 @@ def execute(filters=None):
         raw_rate = (stat.converted_leads / stat.total_leads) * 100 if stat.total_leads else 0
         conversion_rate = round(raw_rate, 2)
 
-        # Assign color
         if conversion_rate >= 70:
             color = "green"
         elif conversion_rate >= 40:
@@ -90,7 +91,7 @@ def execute(filters=None):
             "conversion_rate": color_html,
         })
 
-    # Sort by raw conversion rate descending
+    # 📈 Sort by conversion rate (descending)
     data.sort(key=lambda x: float(x["conversion_rate"].split('>')[1].split('%')[0]), reverse=True)
 
     columns = [

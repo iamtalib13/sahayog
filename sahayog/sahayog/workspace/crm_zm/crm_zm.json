@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "CRM-ZM",
  "links": [],
- "modified": "2025-07-14 16:29:39.013344",
+ "modified": "2025-07-29 17:13:53.324736",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM-ZM",
@@ -32,9 +32,8 @@
    "color": "Grey",
    "doc_view": "List",
    "label": "Lead Report",
-   "link_to": "Lead Report",
-   "report_ref_doctype": "Lead",
-   "type": "Report"
+   "link_to": "crm-lead-management",
+   "type": "Page"
   },
   {
    "color": "Grey",
