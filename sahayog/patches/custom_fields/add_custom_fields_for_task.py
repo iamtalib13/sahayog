@@ -91,6 +91,29 @@ def execute():
                 "options": "Manpower Recruitment",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'",
             },
+            {
+              "fieldname": "custom_it_checklist_section",
+              "fieldtype": "Section Break",
+              "insert_after": "custom_allow_supplier",
+              "label": "IT Checklist",
+              "depends_on": "eval:!doc.is_template && (doc.subject == 'Task 6 : IT Hardware Installation' || doc.subject == 'Task 7 : IT Software Installation')"
+            },
+            {
+              "fieldname": "if_checklist_fetched",
+              "fieldtype": "Check",
+              "insert_after": "custom_it_checklist_section",
+              "label": "IT Checklist Fetched?",
+              "default": 0,
+              "depends_on": "eval:frappe.user.has_role('System Manager') && !doc.is_template && (doc.subject == 'Task 6 : IT Hardware Installation' || doc.subject == 'Task 7 : IT Software Installation')"
+            },
+            {
+              "fieldname": "it_checklist_table",
+              "fieldtype": "Table",
+              "insert_after": "if_checklist_fetched",
+              "label": "IT Checklist Table",
+              "options": "IT Checklist",
+              "depends_on": "eval:!doc.is_template && (doc.subject == 'Task 6 : IT Hardware Installation' || doc.subject == 'Task 7 : IT Software Installation')"
+            }
         ],
     }
     create_custom_fields(fields)
