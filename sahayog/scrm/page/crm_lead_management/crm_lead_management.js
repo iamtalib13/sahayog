@@ -21,7 +21,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           border: none;
           background-color: #ffffff;
           color: #2e3338;
-          padding: 16px;
           height: 100px;
           border-radius: 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -68,7 +67,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           display: none;
           backdrop-filter: blur(5px);
         }
-        .chart-modal {
+        .analytics-modal {
           position: fixed;
           top: 50%;
           left: 50%;
@@ -77,14 +76,14 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           padding: 24px;
           border-radius: 8px;
           z-index: 1050;
-          width: 85%;
-          max-width: 1000px;
+          width: 90%;
+          max-width: 1200px;
           max-height: 85vh;
           overflow: auto;
           display: none;
           box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .chart-modal .close-btn {
+        .analytics-modal .close-btn {
           position: absolute;
           top: 16px;
           right: 16px;
@@ -100,7 +99,68 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           justify-content: center;
           line-height: 1;
         }
-		
+        .analytics-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 16px;
+        }
+        .analytics-table th,
+        .analytics-table td {
+          padding: 12px;
+          text-align: left;
+          border-bottom: 1px solid #e0e6ed;
+        }
+        .analytics-table th {
+          background: #f5f7fa;
+          font-weight: 600;
+          color: #2e3338;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+        .analytics-table tbody tr:hover {
+          background: #f8f9fb;
+        }
+        .conversion-rate {
+          font-weight: 600;
+        }
+        .conversion-rate.high {
+          color: #28a745;
+        }
+        .conversion-rate.medium {
+          color: #ffa00a;
+        }
+        .conversion-rate.low {
+          color: #ff5858;
+        }
+        .progress-bar {
+          width: 100%;
+          height: 20px;
+          background: #e0e6ed;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #ff5858 0%, #ffa00a 50%, #28a745 100%);
+          transition: width 0.3s ease;
+        }
+        .analytics-export-btn {
+          position: absolute;
+          top: 16px;
+          right: 60px;
+          background: #ffffff;
+          border: 1px solid #d1d8dd;
+          padding: 8px 16px;
+          border-radius: 4px;
+          font-size: 14px;
+          cursor: pointer;
+          font-weight: 500;
+        }
+        .analytics-export-btn:hover {
+          background: #f5f7fa;
+        }
+        
         .filter-container {
           background: #f5f7fa;
           padding: 16px;
@@ -169,6 +229,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         }
         .btn-analytics:hover {
           background: #4a50d1;
+          color: #ffff;
         }
         .btn-filter {
           background: #ffffff;
@@ -207,21 +268,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         .row-number {
           color: #6c7680;
           font-weight: 500;
-		  
-        }
-        .chart-export-btn {
-          position: absolute;
-          top: 16px;
-          right: 60px;
-          background: #ffffff;
-          border: 1px solid #d1d8dd;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          cursor: pointer;
-        }
-        .chart-export-btn:hover {
-          background: #f5f7fa;
         }
         .table-header {
           position: sticky;
@@ -229,9 +275,35 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           z-index: 20;
           background: #f5f7fa;
         }
-		.hidden {
-		  	display: none;
-		}
+        .table {
+          margin: 0;
+        }
+        .hidden {
+          display: none;
+        }
+        .analytics-summary {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .summary-card {
+          background: #f8f9fb;
+          padding: 16px;
+          border-radius: 8px;
+          text-align: center;
+        }
+        .summary-card h4 {
+          margin: 0 0 8px 0;
+          color: #2e3338;
+          font-size: 24px;
+          font-weight: 600;
+        }
+        .summary-card p {
+          margin: 0;
+          color: #6c7680;
+          font-size: 14px;
+        }
       </style>
 
       <div class="row mb-4">
@@ -269,40 +341,63 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         </div>
       </div>
 
-      <div class="modal-overlay" id="chart-overlay"></div>
-      <div class="chart-modal" id="chart-modal">
-        <span class="close-btn" id="close-chart">&times;</span>
-        <button class="chart-export-btn" id="export-chart">
-          <i class="fa fa-download mr-1"></i> Export as PNG
+      <div class="modal-overlay" id="analytics-overlay"></div>
+      <div class="analytics-modal" id="analytics-modal">
+        <span class="close-btn" id="close-analytics">&times;</span>
+        <button class="analytics-export-btn" id="export-analytics">
+          <i class="fa fa-download mr-1"></i> Export Analytics
         </button>
-        <div class="card-body" style="overflow-x: auto; height: 70vh;">
-          <canvas id="employee-lead-chart" style="min-width: 800px;"></canvas>
+        <h4 style="margin: 0 0 24px 0; font-weight: 600; color: #2e3338;">Employee Conversion Rate Analytics</h4>
+        <p id="analytics-date-range" style="color: #6c7680; margin-bottom: 16px;"></p>
+
+        <div class="analytics-summary" id="analytics-summary">
+          <!-- Summary cards will be populated here -->
+        </div>
+        
+        <div style="max-height: 60vh; overflow-y: auto;">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Employee Name</th>
+                <th>Employee ID</th>
+                <th>Designation</th>
+                <th>Branch</th>
+                <th style="width: 100px;">Total Leads</th>
+                <th style="width: 100px;">Converted</th>
+                <th style="width: 100px;">Follow Up</th>
+                <th style="width: 120px;">Not Interested</th>
+                <th style="width: 120px;">Conversion Rate</th>
+                <th style="width: 150px;">Progress</th>
+              </tr>
+            </thead>
+            <tbody id="analytics-table-body">
+              <!-- Analytics data will be populated here -->
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div class="card" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
         <div class="card-header d-flex justify-content-between align-items-center" style="border: none; background: none;">
-        	<div class="d-flex justify-content-between align-items-center">  
-				<h5 class="mb-0" style="font-weight: 600;">Lead List</h5>
-			  	<div id="date-filters" class="date-filters d-flex align-items-center">
-			  		<div class="col-md-6">
-        	    	  <label class="small text-muted mb-1">From Date</label>
-        	    	  <input type="date" class="form-control form-control-sm" id="from-date" value="${
-                    urlParams.get("from_date") || today
-                  }">
-        	    	</div>
-        	    	<div class="col-md-6">
-        	    	  <label class="small text-muted mb-1">To Date</label>
-        	    	  <input type="date" class="form-control form-control-sm" id="to-date" value="${
-                    urlParams.get("to_date") || today
-                  }">
-        	    	</div>
-				</div>
-			</div>
+          <div class="d-flex justify-content-between align-items-center">  
+            <h5 class="mb-0" style="font-weight: 600;">Lead List</h5>
+            <div id="date-filters" class="date-filters d-flex align-items-center ml-3">
+              <div class="d-flex align-items-center">
+                <span class="small text-muted mr-2">From Date</span>
+                <input type="date" class="form-control form-control-sm" id="from-date" style="width: 120px;" value="${
+                  urlParams.get("from_date") || today
+                }">
+              </div>
+              <div class="d-flex align-items-center ml-2">
+                <span class="small text-muted mr-2">To Date</span>
+                <input type="date" class="form-control form-control-sm" id="to-date" style="width: 120px;" value="${
+                  urlParams.get("to_date") || today
+                }">
+              </div>
+            </div>
+          </div>
           <div>
-            <!--<button class="btn btn-sm btn-filter mr-2" id="toggle-filters">
-              <i class="fa fa-filter mr-1"></i> Filters
-            </button>-->
             <button class="btn btn-sm btn-analytics mr-2" id="view-analytics">
               <i class="fa fa-chart-bar mr-1"></i> Analytics
             </button>
@@ -321,7 +416,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               </button>
             </div>
           </div>
-          
         </div>
 
         <div class="card-body p-0">
@@ -332,15 +426,15 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   <th width="60">Sr.No.</th>
                   <th class="hidden">Lead Name</th>
                   <th>Customer</th>
-				  <th width="110">Contact</th>
+                  <th width="110">Contact</th>
                   <th>Source</th>
                   <th>Employee Name</th>
                   <th>Employee ID</th>
                   <th>Designation</th>
                   <th>Branch</th>
                   <th>Status</th>
-				  <th>Region</th>
-				  <th>Zone</th>
+                  <th>Region</th>
+                  <th>Zone</th>
                   <th>Created On</th>
                 </tr>
                 <tr class="filter-row">
@@ -348,15 +442,15 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   <th class="hidden"><input type="text" id="col-1-filter" placeholder="Filter Lead" class="col-filter"></th>
                   <th><input type="text" id="col-2-filter" placeholder="Filter Customer" class="col-filter"></th>
                   <th width="110"><input type="text" id="col-3-filter" placeholder="Filter Contact" class="col-filter"></th>
-				  <th><input type="text" id="col-4-filter" placeholder="Filter Source" class="col-filter"></th>
+                  <th><input type="text" id="col-4-filter" placeholder="Filter Source" class="col-filter"></th>
                   <th><input type="text" id="col-5-filter" placeholder="Filter Employee" class="col-filter"></th>
                   <th><input type="text" id="col-6-filter" placeholder="Filter ID" class="col-filter"></th>
                   <th><input type="text" id="col-7-filter" placeholder="Filter Designation" class="col-filter"></th>
                   <th><input type="text" id="col-8-filter" placeholder="Filter Branch" class="col-filter"></th>
                   <th><input type="text" id="col-9-filter" placeholder="Filter Status" class="col-filter"></th>
                   <th><input type="text" id="col-10-filter" placeholder="Filter Region" class="col-filter"></th>
-				  <th><input type="text" id="col-11-filter" placeholder="Filter Zone" class="col-filter"></th>
-				  <th><input type="text" id="col-12-filter" placeholder="Filter Date" class="col-filter"></th>
+                  <th><input type="text" id="col-11-filter" placeholder="Filter Zone" class="col-filter"></th>
+                  <th><input type="text" id="col-12-filter" placeholder="Filter Date" class="col-filter"></th>
                 </tr>
               </thead>
               <tbody id="lead-content"></tbody>
@@ -372,13 +466,15 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       let clusterize;
       let currentLeads = [];
       let employeeMap = {};
-      let chartInstance = null;
+      let analyticsData = [];
       let columnFilters = {};
 
       // Initialize column filters
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 13; i++) {
         columnFilters[i] = "";
       }
+
+      // Fetch and render leads on page load
 
       // Update URL with current filters
       function updateURL() {
@@ -386,17 +482,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
         const fromDate = $("#from-date").val();
         const toDate = $("#to-date").val();
-        const status = $("#filter-status").val();
-        const employee = $("#filter-employee").val();
-        const branch = $("#filter-branch").val();
-        const source = $("#filter-source").val();
 
         if (fromDate && fromDate !== today) params.set("from_date", fromDate);
         if (toDate && toDate !== today) params.set("to_date", toDate);
-        if (status) params.set("status", status);
-        if (employee) params.set("employee", employee);
-        if (branch) params.set("branch", branch);
-        if (source) params.set("source", source);
 
         const newUrl =
           window.location.pathname +
@@ -404,42 +492,71 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         window.history.replaceState({}, "", newUrl);
       }
 
-      // Toggle filters visibility
-      $("#toggle-filters").on("click", function () {
-        $("#filter-container").slideToggle();
-        $(this).toggleClass("active");
-        updateURL();
-      });
-
-      // Close filters
-      $("#close-filters").on("click", function () {
-        $("#filter-container").slideUp();
-        $("#toggle-filters").removeClass("active");
-        updateURL();
-      });
-
-      // Show chart modal
+      // Show analytics modal
       $("#view-analytics").on("click", function () {
-        $("#chart-overlay").show();
-        $("#chart-modal").show();
+        generateAnalyticsData();
+        $("#analytics-overlay").show();
+        $("#analytics-modal").show();
       });
 
-      // Close chart modal
-      $("#close-chart, #chart-overlay").on("click", function () {
-        $("#chart-overlay").hide();
-        $("#chart-modal").hide();
+      // Close analytics modal
+      $("#close-analytics, #analytics-overlay").on("click", function () {
+        $("#analytics-overlay").hide();
+        $("#analytics-modal").hide();
       });
 
-      // Export Chart as PNG
-      $("#export-chart").on("click", function () {
-        if (chartInstance) {
-          const link = document.createElement("a");
-          link.download = "lead-conversion-chart.png";
-          link.href = document
-            .getElementById("employee-lead-chart")
-            .toDataURL("image/png");
-          link.click();
+      // Export Analytics as CSV
+      $("#export-analytics").on("click", function () {
+        if (analyticsData.length === 0) {
+          frappe.msgprint("No analytics data to export");
+          return;
         }
+
+        const csvData = analyticsData.map((row, index) => ({
+          "#": index + 1,
+          "Employee Name": row.employeeName,
+          "Employee ID": row.employeeId,
+          Designation: row.designation,
+          Branch: row.branch,
+          "Total Leads": row.totalLeads,
+          Converted: row.converted,
+          "Follow Up": row.followUp,
+          "Not Interested": row.notInterested,
+          "Conversion Rate": row.conversionRate + "%",
+        }));
+
+        const headers = Object.keys(csvData[0]);
+        let csvContent = headers.join(",") + "\n";
+
+        csvData.forEach((row) => {
+          csvContent +=
+            headers
+              .map((header) => {
+                let value = row[header] || "";
+                if (typeof value === "string" && value.includes(",")) {
+                  value = `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+              })
+              .join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `lead_analytics_${frappe.datetime.get_today()}.csv`
+        );
+        link.style.visibility = "hidden";
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       });
 
       // Export CSV function (only filtered data)
@@ -459,12 +576,15 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             "#": index + 1,
             "Lead Name": lead.name,
             Customer: lead.lead_name || "-",
+            Contact: lead.contact || "-",
             Source: lead.source || "-",
             "Employee Name": emp ? emp.name : lead.lead_owner,
             "Employee ID": emp ? emp.id : "-",
             Designation: emp ? emp.designation : "-",
             Branch: lead.branch || "-",
             Status: lead.status,
+            Region: lead.region || "-",
+            Zone: lead.zone || "-",
             "Created On": formatDateTimeForDisplay(lead.creation),
           };
         });
@@ -519,11 +639,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       }
 
       function getFilteredLeads(leads) {
-        const statusFilter = $("#filter-status").val()?.toLowerCase();
-        const empFilter = $("#filter-employee").val()?.toLowerCase();
-        const branchFilter = $("#filter-branch").val()?.toLowerCase();
-        const sourceFilter = $("#filter-source").val()?.toLowerCase();
-
         return leads.filter((l) => {
           const emp = employeeMap[l.lead_owner];
           const empName = emp?.name || l.lead_owner;
@@ -535,34 +650,28 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             "", // # column is handled separately
             l.name.toLowerCase(),
             (l.lead_name || "").toLowerCase(),
+            (l.contact || "").toLowerCase(),
             (l.source || "").toLowerCase(),
             empName.toLowerCase(),
             empId.toLowerCase(),
             empDesignation.toLowerCase(),
             (l.branch || "").toLowerCase(),
             l.status.toLowerCase(),
+            (l.region || "").toLowerCase(),
+            (l.zone || "").toLowerCase(),
             formatDateTimeForDisplay(l.creation).toLowerCase(),
           ];
 
           const columnFilterPassed = Object.entries(columnFilters).every(
             ([col, filter]) => {
               if (!filter) return true;
-              return rowValues[col].includes(filter.toLowerCase());
+              return (
+                rowValues[col] && rowValues[col].includes(filter.toLowerCase())
+              );
             }
           );
 
-          return (
-            columnFilterPassed &&
-            (!statusFilter || l.status.toLowerCase().includes(statusFilter)) &&
-            (!empFilter ||
-              empName.toLowerCase().includes(empFilter) ||
-              empId.toLowerCase().includes(empFilter) ||
-              empDesignation.toLowerCase().includes(empFilter)) &&
-            (!branchFilter ||
-              (l.branch || "").toLowerCase().includes(branchFilter)) &&
-            (!sourceFilter ||
-              (l.source || "").toLowerCase().includes(sourceFilter))
-          );
+          return columnFilterPassed;
         });
       }
 
@@ -572,6 +681,160 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         columnFilters[colIndex] = $(this).val();
         render_lead_list(currentLeads);
       });
+
+      function generateAnalyticsData() {
+        const employeeStats = {};
+
+        // Process each lead to build employee statistics
+        currentLeads.forEach((lead) => {
+          const emp = employeeMap[lead.lead_owner];
+          const empKey = lead.lead_owner;
+
+          if (!employeeStats[empKey]) {
+            employeeStats[empKey] = {
+              employeeName: emp ? emp.name : lead.lead_owner,
+              employeeId: emp ? emp.id : "-",
+              designation: emp ? emp.designation : "-",
+              branch: lead.branch || "-",
+              totalLeads: 0,
+              converted: 0,
+              followUp: 0,
+              notInterested: 0,
+              conversionRate: 0,
+            };
+          }
+
+          employeeStats[empKey].totalLeads++;
+
+          switch (lead.status) {
+            case "Converted":
+              employeeStats[empKey].converted++;
+              break;
+            case "Follow Up":
+              employeeStats[empKey].followUp++;
+              break;
+            case "Not Interested":
+              employeeStats[empKey].notInterested++;
+              break;
+          }
+        });
+
+        // Calculate conversion rates and prepare data
+        analyticsData = Object.values(employeeStats).map((emp) => {
+          emp.conversionRate =
+            emp.totalLeads > 0
+              ? Math.round((emp.converted / emp.totalLeads) * 100)
+              : 0;
+          return emp;
+        });
+
+        // Sort by conversion rate descending
+        analyticsData.sort((a, b) => b.conversionRate - a.conversionRate);
+
+        const fromDate = $("#from-date").val();
+        const toDate = $("#to-date").val();
+
+        let fromDateText = fromDate
+          ? frappe.datetime.str_to_user(fromDate)
+          : "N/A";
+        let toDateText = toDate ? frappe.datetime.str_to_user(toDate) : "N/A";
+
+        $("#analytics-date-range").text(
+          `Date Range: ${fromDateText} to ${toDateText}`
+        );
+
+        renderAnalyticsTable();
+        renderAnalyticsSummary();
+      }
+
+      function renderAnalyticsSummary() {
+        const totalEmployees = analyticsData.length;
+        const avgConversionRate =
+          analyticsData.length > 0
+            ? Math.round(
+                analyticsData.reduce(
+                  (sum, emp) => sum + emp.conversionRate,
+                  0
+                ) / analyticsData.length
+              )
+            : 0;
+        const topPerformer = analyticsData.length > 0 ? analyticsData[0] : null;
+        const totalConverted = analyticsData.reduce(
+          (sum, emp) => sum + emp.converted,
+          0
+        );
+
+        const summaryHtml = `
+          <div class="summary-card">
+            <h4>${totalEmployees}</h4>
+            <p>Total Employees</p>
+          </div>
+          <div class="summary-card">
+            <h4>${avgConversionRate}%</h4>
+            <p>Average Conversion Rate</p>
+          </div>
+          <div class="summary-card">
+            <h4>${totalConverted}</h4>
+            <p>Total Conversions</p>
+          </div>
+          <div class="summary-card">
+            <h4>${topPerformer ? topPerformer.employeeName : "-"}</h4>
+            <p>Top Performer (${
+              topPerformer ? topPerformer.conversionRate : 0
+            }%)</p>
+          </div>
+        `;
+
+        $("#analytics-summary").html(summaryHtml);
+      }
+
+      function renderAnalyticsTable() {
+        const tableBody = $("#analytics-table-body");
+
+        if (analyticsData.length === 0) {
+          tableBody.html(
+            '<tr><td colspan="11" class="text-center">No data available</td></tr>'
+          );
+          return;
+        }
+
+        const rows = analyticsData
+          .map((emp, index) => {
+            const rateClass =
+              emp.conversionRate >= 70
+                ? "high"
+                : emp.conversionRate >= 40
+                ? "medium"
+                : "low";
+
+            return `
+            <tr>
+              <td>${index + 1}</td>
+              <td><strong>${emp.employeeName}</strong></td>
+              <td>${emp.employeeId}</td>
+              <td>${emp.designation}</td>
+              <td>${emp.branch}</td>
+              <td><strong>${emp.totalLeads}</strong></td>
+              <td>${emp.converted}</td>
+              <td>${emp.followUp}</td>
+              <td>${emp.notInterested}</td>
+              <td><span class="conversion-rate ${rateClass}">${
+              emp.conversionRate
+            }%</span></td>
+              <td>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${
+                    emp.conversionRate
+                  }%"></div>
+                </div>
+              </td>
+            </tr>
+          `;
+          })
+          .join("");
+
+        tableBody.html(rows);
+      }
 
       async function fetchAndRenderLeads() {
         let from_date = $("#from-date").val();
@@ -583,18 +846,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         let filters = [];
         if (from_date) filters.push(["creation", ">=", fromDateTime]);
         if (to_date) filters.push(["creation", "<=", toDateTime]);
-
-        if (from_date && to_date) {
-          let from = frappe.datetime.str_to_obj(from_date);
-          let to = frappe.datetime.str_to_obj(to_date);
-          let fromStr = frappe.datetime.str_to_user(from_date);
-          let toStr = frappe.datetime.str_to_user(to_date);
-          $("#date-range-subtitle").text(
-            `Showing data from ${fromStr} to ${toStr}`
-          );
-        } else {
-          $("#date-range-subtitle").text("");
-        }
 
         let leads = await frappe.db.get_list("Lead", {
           fields: [
@@ -610,7 +861,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             "mobile_no as contact",
           ],
           filters: filters,
-          limit: 500,
         });
 
         currentLeads = leads;
@@ -624,14 +874,12 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         };
 
         employeeMap = {};
-        const chartData = {};
 
         // Fetch employee details in bulk
         const uniqueOwners = [...new Set(leads.map((lead) => lead.lead_owner))];
         const employees = await frappe.db.get_list("Employee", {
           fields: ["name", "employee_name", "user_id", "designation"],
           filters: [["user_id", "in", uniqueOwners]],
-          limit: 100,
         });
 
         // Create employee map
@@ -643,63 +891,12 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           };
         });
 
-        // Prepare chart data (only total and converted)
-        for (let lead of leads) {
-          let empKey = employeeMap[lead.lead_owner]
-            ? employeeMap[lead.lead_owner].name
-            : lead.lead_owner;
-
-          if (!chartData[empKey]) {
-            chartData[empKey] = {
-              total: 0,
-              converted: 0,
-            };
-          }
-          chartData[empKey].total++;
-
-          if (lead.status === "Converted") chartData[empKey].converted++;
-        }
-
         // Update cards
         $("#total-leads").text(stats.total_leads);
         $("#converted-leads").text(stats.converted);
         $("#follow-up-leads").text(stats.follow_up);
         $("#not-interested-leads").text(stats.not_interested);
 
-        // Format chart data for stacked bar (total and converted)
-        const chartFormatted = {
-          labels: Object.keys(chartData),
-          datasets: [
-            {
-              label: "Total Leads",
-              data: Object.values(chartData).map((e) => e.total),
-              backgroundColor: "#7AB8FF", // Soft blue
-              datalabels: {
-                display: false,
-              },
-            },
-            {
-              label: "Converted",
-              data: Object.values(chartData).map((e) => e.converted),
-              backgroundColor: "#77DD77", // Soft green
-              datalabels: {
-                display: true,
-                formatter: function (value, context) {
-                  const total = context.dataset.data[context.dataIndex];
-                  const converted =
-                    context.chart.data.datasets[1].data[context.dataIndex];
-                  const percentage = Math.round((converted / total) * 100) || 0;
-                  return `${converted} (${percentage}%)`;
-                },
-                color: "#2e3338",
-                anchor: "end",
-                align: "top",
-              },
-            },
-          ],
-        };
-
-        render_bar_chart(chartFormatted);
         render_lead_list(leads);
         updateURL();
       }
@@ -719,8 +916,8 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   ${lead.name}
                 </span>
               </td>
-              <td >${lead.lead_name || "-"}</td>
-			  <td width="110">${lead.contact || "-"}</td>
+              <td>${lead.lead_name || "-"}</td>
+              <td width="110">${lead.contact || "-"}</td>
               <td>${lead.source || "-"}</td>
               <td>${emp ? emp.name : lead.lead_owner}</td>
               <td>${emp ? emp.id : "-"}</td>
@@ -729,8 +926,8 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               <td><span class="badge ${getStatusBadgeClass(lead.status)}">${
             lead.status
           }</span></td>
-		  		<td>${lead.region || "-"}</td>
-		  		<td>${lead.zone || "-"}</td>
+              <td>${lead.region || "-"}</td>
+              <td>${lead.zone || "-"}</td>
               <td>${formatDateTimeForDisplay(lead.creation)}</td>
             </tr>
           `;
@@ -774,127 +971,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       $("#from-date, #to-date").on("change", function () {
         fetchAndRenderLeads();
       });
-
-      // Apply other filters on input
-      $("#filter-status, #filter-employee, #filter-branch, #filter-source").on(
-        "input",
-        function () {
-          render_lead_list(currentLeads);
-          updateURL();
-        }
-      );
-
-      function render_bar_chart(data) {
-        let ctx = document
-          .getElementById("employee-lead-chart")
-          .getContext("2d");
-
-        if (chartInstance) {
-          chartInstance.destroy();
-        }
-
-        // Register plugin to display data labels
-        Chart.register({
-          id: "datalabels",
-          afterDatasetsDraw(chart) {
-            const ctx = chart.ctx;
-            chart.data.datasets.forEach((dataset, i) => {
-              if (dataset.datalabels && dataset.datalabels.display) {
-                const meta = chart.getDatasetMeta(i);
-                meta.data.forEach((bar, index) => {
-                  const data = dataset.data[index];
-                  if (data > 0) {
-                    const label = dataset.datalabels.formatter
-                      ? dataset.datalabels.formatter(data, {
-                          datasetIndex: i,
-                          dataIndex: index,
-                          chart: chart,
-                        })
-                      : data;
-
-                    const x = bar.x;
-                    const y = bar.y - 5;
-
-                    ctx.font = "12px Arial";
-                    ctx.fillStyle = dataset.datalabels.color || "#666";
-                    ctx.textAlign = "center";
-                    ctx.fillText(label, x, y);
-                  }
-                });
-              }
-            });
-          },
-        });
-
-        chartInstance = new Chart(ctx, {
-          type: "bar",
-          data: data,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: "top",
-                labels: {
-                  boxWidth: 12,
-                  padding: 20,
-                  font: {
-                    size: 13,
-                  },
-                },
-              },
-              tooltip: {
-                mode: "index",
-                intersect: false,
-                callbacks: {
-                  label: function (context) {
-                    let label = context.dataset.label || "";
-                    if (label) {
-                      label += ": ";
-                    }
-                    if (context.datasetIndex === 1) {
-                      const total =
-                        context.chart.data.datasets[0].data[context.dataIndex];
-                      const converted = context.raw;
-                      const percentage =
-                        Math.round((converted / total) * 100) || 0;
-                      label += `${converted} (${percentage}% of ${total})`;
-                    } else {
-                      label += context.raw;
-                    }
-                    return label;
-                  },
-                },
-              },
-            },
-            scales: {
-              x: {
-                stacked: true,
-                grid: {
-                  display: false,
-                },
-                ticks: {
-                  maxRotation: 45,
-                  minRotation: 45,
-                  font: {
-                    size: 11,
-                  },
-                },
-              },
-              y: {
-                stacked: true,
-                beginAtZero: true,
-                grid: {
-                  drawBorder: false,
-                },
-                ticks: {
-                  precision: 0,
-                },
-              },
-            },
-          },
-        });
-      }
 
       // Initial load
       fetchAndRenderLeads();
