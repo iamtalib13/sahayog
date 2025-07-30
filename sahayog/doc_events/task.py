@@ -487,3 +487,64 @@ def prevent_completion_if_manpower_incomplete(doc, method):
                 """.format("<br>".join(errors)),
                 title="Hiring Data Incomplete"
             )
+
+#Validations for above :
+#Task 6 : IT Hardware Installation
+#Task 7 : IT Software Installation 
+
+def fetch_it_checklist_settings(doc, method):
+    if doc.subject not in ["Task 6 : IT Hardware Installation", "Task 7 : IT Software Installation"]:
+        return
+
+    if doc.is_template or doc.if_checklist_fetched:
+        return
+
+    category = "Hardware" if doc.subject == "Task 6 : IT Hardware Installation" else "Software"
+
+    settings = frappe.get_single("IT Checklist Setting")
+    doc.it_checklist_table = []
+
+    for row in settings.it_checklist:
+        if row.category == category:
+            doc.append("it_checklist_table", {
+                "activity": row.activity,
+                "category": row.category,
+                "status": "Pending"  # Default status if needed
+            })
+
+    doc.if_checklist_fetched = 1
+
+
+def prevent_completion_if_it_checklist_incomplete(doc, method):
+    if doc.subject not in ["Task 6 : IT Hardware Installation", "Task 7 : IT Software Installation"]:
+        return
+
+    if doc.is_template or doc.status != "Completed":
+        return
+
+    errors = []
+
+    for i, row in enumerate(doc.it_checklist_table, start=1):
+        if row.status not in ["In-Progress", "Completed"]:
+            errors.append(
+                f"Row {i}: Status must be 'In-Progress' or 'Completed'."
+            )
+
+    if errors:
+        frappe.throw(
+            """<b>Please complete the IT Checklist before marking this task as completed.</b><br><br>
+            Make sure the following condition is met for all rows in the IT Checklist Table:<br>
+            ✅ <b>Status</b> must be <b>In-Progress</b> or <b>Completed</b>.<br><br>
+
+            <button onclick="document.getElementById('it-errors').style.display='block'" 
+                    style="background-color:#007bff;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">
+                View Issues
+            </button>
+
+            <div id="it-errors" style="display:none;margin-top:10px;">
+                <b>Issues found:</b><br>
+                {}
+            </div>
+            """.format("<br>".join(errors)),
+            title="Incomplete IT Checklist"
+        )
