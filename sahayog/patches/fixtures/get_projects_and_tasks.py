@@ -57,7 +57,7 @@ def get_all_tasks(project_name):
                 task["it_checklist_table"] = frappe.get_all(
                     "IT Checklist",
                     filters={"parent": task["name"], "parenttype": "Task"},
-                    fields=["activity", "category", "status"]
+                    fields=["activity", "category", "status","installation_phase"]
                 )
 
         return tasks
