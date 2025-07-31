@@ -351,6 +351,66 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+
+        /* Export Progress Modal Styles */
+        .export-progress-modal {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 30px;
+          border-radius: 12px;
+          z-index: 1060;
+          width: 90%;
+          max-width: 450px;
+          display: none;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+          text-align: center;
+        }
+        .export-progress-modal h4 {
+          margin: 0 0 20px 0;
+          color: #2e3338;
+          font-weight: 600;
+        }
+        .export-progress-bar {
+          width: 100%;
+          height: 8px;
+          background: #e0e6ed;
+          border-radius: 4px;
+          overflow: hidden;
+          margin: 20px 0;
+        }
+        .export-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #5e64ff, #4a50d1);
+          transition: width 0.3s ease;
+          border-radius: 4px;
+        }
+        .export-progress-text {
+          margin: 15px 0;
+          color: #6c7680;
+          font-size: 14px;
+        }
+        .export-progress-percentage {
+          font-weight: 600;
+          color: #2e3338;
+          font-size: 16px;
+          margin-bottom: 10px;
+        }
+        .export-cancel-btn {
+          background: #ffffff;
+          color: #6c7680;
+          border: 1px solid #d1d8dd;
+          padding: 8px 20px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: 500;
+          margin-top: 15px;
+        }
+        .export-cancel-btn:hover {
+          background: #f5f7fa;
+        }
       </style>
 
       <div class="row mb-4">
@@ -423,6 +483,18 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Export Progress Modal -->
+      <div class="modal-overlay" id="export-progress-overlay"></div>
+      <div class="export-progress-modal" id="export-progress-modal">
+        <h4>Exporting Data</h4>
+        <div class="export-progress-percentage" id="export-progress-percentage">0%</div>
+        <div class="export-progress-bar">
+          <div class="export-progress-fill" id="export-progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="export-progress-text" id="export-progress-text">Preparing export...</div>
+        <button class="export-cancel-btn" id="export-cancel-btn">Cancel</button>
       </div>
 
       <div class="card" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
@@ -524,6 +596,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       let totalLeadsCount = 0;
       const pageSize = 50;
       let scrollTimeout;
+      let exportCancelled = false;
 
       // Initialize column filters
       for (let i = 0; i < 13; i++) {
@@ -545,6 +618,40 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           (params.toString() ? "?" + params.toString() : "");
         window.history.replaceState({}, "", newUrl);
       }
+
+      // Progress modal functions
+      function showExportProgress() {
+        exportCancelled = false;
+        $("#export-progress-overlay").show();
+        $("#export-progress-modal").show();
+        updateExportProgress(0, "Preparing export...");
+      }
+
+      function hideExportProgress() {
+        $("#export-progress-overlay").hide();
+        $("#export-progress-modal").hide();
+      }
+
+      function updateExportProgress(percentage, text) {
+        $("#export-progress-percentage").text(percentage + "%");
+        $("#export-progress-fill").css("width", percentage + "%");
+        $("#export-progress-text").text(text);
+      }
+
+      // Cancel export functionality
+      $("#export-cancel-btn").on("click", function () {
+        exportCancelled = true;
+        hideExportProgress();
+        frappe.msgprint("Export cancelled by user.");
+      });
+
+      // Close progress modal on overlay click
+      $("#export-progress-overlay").on("click", function () {
+        if (confirm("Are you sure you want to cancel the export?")) {
+          exportCancelled = true;
+          hideExportProgress();
+        }
+      });
 
       // Function to get date filters for database queries
       function getDateFilters() {
@@ -626,24 +733,153 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         }
       }
 
-      // Function to update employee mapping for new leads
+      // **ENHANCED: Function to fetch all employees at once for better mapping**
+      async function fetchAllEmployees() {
+        try {
+          console.log("Fetching all employees for mapping...");
+
+          const employees = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Employee",
+              fields: [
+                "name",
+                "employee_name",
+                "user_id",
+                "designation",
+                "branch",
+                "employee_number",
+                "first_name",
+                "last_name",
+              ],
+              limit_page_length: 0, // Get all employees
+              as_dict: true,
+            },
+          });
+
+          const empMap = {};
+          const employeeList = employees.message || [];
+
+          console.log(`Found ${employeeList.length} employees to map`);
+
+          employeeList.forEach((emp) => {
+            if (emp.user_id) {
+              // Use multiple fallback options for employee name
+              const empName =
+                emp.employee_name ||
+                (emp.first_name && emp.last_name
+                  ? `${emp.first_name} ${emp.last_name}`
+                  : null) ||
+                emp.first_name ||
+                emp.user_id;
+
+              empMap[emp.user_id] = {
+                name: empName,
+                id: emp.name,
+                user_id: emp.user_id, // Include user_id for mapping
+                employee_number: emp.employee_number || emp.name,
+                designation: emp.designation || "-",
+                branch: emp.branch || "-",
+              };
+            }
+          });
+
+          console.log(
+            `Successfully mapped ${Object.keys(empMap).length} employees`
+          );
+          return empMap;
+        } catch (error) {
+          console.error("Error fetching all employees:", error);
+          frappe.msgprint(`Error loading employee data: ${error.message}`);
+          return {};
+        }
+      }
+
+      // **IMPROVED: Updated employee mapping for new leads with better error handling**
       async function updateEmployeeMapping(newLeads) {
         const newOwners = [...new Set(newLeads.map((lead) => lead.lead_owner))];
-        const unknownOwners = newOwners.filter((owner) => !employeeMap[owner]);
+        const unknownOwners = newOwners.filter(
+          (owner) => owner && !employeeMap[owner]
+        );
 
         if (unknownOwners.length > 0) {
-          const employees = await frappe.db.get_list("Employee", {
-            fields: ["name", "employee_name", "user_id", "designation"],
-            filters: [["user_id", "in", unknownOwners]],
-          });
+          console.log(
+            `Fetching data for ${unknownOwners.length} unknown employees:`,
+            unknownOwners
+          );
 
-          employees.forEach((emp) => {
-            employeeMap[emp.user_id] = {
-              name: emp.employee_name,
-              id: emp.name,
-              designation: emp.designation || "-",
-            };
-          });
+          try {
+            const employees = await frappe.call({
+              method: "frappe.client.get_list",
+              args: {
+                doctype: "Employee",
+                fields: [
+                  "name",
+                  "employee_name",
+                  "user_id",
+                  "designation",
+                  "branch",
+                  "employee_number",
+                  "first_name",
+                  "last_name",
+                ],
+                filters: [["user_id", "in", unknownOwners]],
+                as_dict: true,
+              },
+            });
+
+            const employeeList = employees.message || [];
+
+            employeeList.forEach((emp) => {
+              const empName =
+                emp.employee_name ||
+                (emp.first_name && emp.last_name
+                  ? `${emp.first_name} ${emp.last_name}`
+                  : null) ||
+                emp.first_name ||
+                emp.user_id;
+
+              employeeMap[emp.user_id] = {
+                name: empName,
+                id: emp.name,
+                user_id: emp.user_id, // Include user_id for mapping
+                employee_number: emp.employee_number || emp.name,
+                designation: emp.designation || "-",
+                branch: emp.branch || "-",
+              };
+              console.log(`Mapped employee: ${emp.user_id} -> ${empName}`);
+            });
+
+            // Add fallback for employees still not found
+            unknownOwners.forEach((owner) => {
+              if (!employeeMap[owner]) {
+                console.warn(`Employee not found for user_id: ${owner}`);
+                employeeMap[owner] = {
+                  name: owner,
+                  id: "-",
+                  user_id: owner, // Include user_id for mapping
+                  employee_number: "-",
+                  designation: "Not Found",
+                  branch: "Not Found",
+                };
+              }
+            });
+          } catch (error) {
+            console.error("Error updating employee mapping:", error);
+            // Add fallback for all unknown owners
+            unknownOwners.forEach((owner) => {
+              if (!employeeMap[owner]) {
+                employeeMap[owner] = {
+                  name: owner,
+                  id: "-",
+                  user_id: owner, // Include user_id for mapping
+                  employee_number: "-",
+                  designation: "Error",
+                  branch: "Error",
+                };
+              }
+            });
+          }
         }
       }
 
@@ -677,7 +913,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         });
       }
 
-      // Updated fetchLeadsPage function
+      // Updated fetchLeadsPage function with improved limits
       async function fetchLeadsPage(page) {
         if (isLoading || !hasMoreLeads) return;
 
@@ -703,6 +939,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             filters: filters,
             limit_start: (page - 1) * pageSize,
             limit: pageSize,
+            limit_page_length: 0, // Remove default 20 record limit
             order_by: "creation desc",
           });
 
@@ -730,13 +967,17 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         }
       }
 
-      // Updated render_lead_list function without Clusterize
+      // **IMPROVED: Updated render function to better handle employee data**
       function render_lead_list(leads) {
         const filteredLeads = getFilteredLeads(leads);
 
         const rows = filteredLeads
           .map((lead, index) => {
             const emp = employeeMap[lead.lead_owner];
+            const empName = emp ? emp.name : lead.lead_owner || "Unknown";
+            const empId = emp ? emp.id : "-";
+            const empDesignation = emp ? emp.designation : "-";
+
             return `
             <tr>
               <td width="60" class="row-number">${index + 1}</td>
@@ -750,9 +991,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               <td>${lead.lead_name || "-"}</td>
               <td width="110">${lead.contact || "-"}</td>
               <td>${lead.source || "-"}</td>
-              <td>${emp ? emp.name : lead.lead_owner}</td>
-              <td>${emp ? emp.id : "-"}</td>
-              <td>${emp ? emp.designation : "-"}</td>
+              <td>${empName}</td>
+              <td>${empId}</td>
+              <td>${empDesignation}</td>
               <td>${lead.branch || "-"}</td>
               <td><span class="badge ${getStatusBadgeClass(lead.status)}">${
               lead.status
@@ -765,30 +1006,32 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           })
           .join("");
 
-        // Direct DOM manipulation instead of Clusterize
         const tbody = document.getElementById("lead-content");
         if (tbody) tbody.innerHTML = rows;
 
-        // Update record count
         $("#record-count").text(
           `Showing ${filteredLeads.length} of ${totalLeadsCount} records (${currentLeads.length} loaded)`
         );
 
-        // Setup infinite scroll after rendering
         if (currentLeads.length > 0) setupInfiniteScroll();
       }
 
+      // **IMPROVED: Initial load with employee data**
       async function fetchAndRenderLeads() {
         currentPage = 1;
         hasMoreLeads = true;
         currentLeads = [];
-        employeeMap = {}; // Reset employee map
-        isLoading = false; // Reset loading state
+        isLoading = false;
 
         const tbody = document.getElementById("lead-content");
         if (tbody) tbody.innerHTML = "";
 
         $("#loading-indicator").show();
+
+        // **Load employee data first if not already loaded**
+        if (Object.keys(employeeMap).length === 0) {
+          employeeMap = await fetchAllEmployees();
+        }
 
         await fetchLeadCounts();
         await fetchLeadsPage(currentPage);
@@ -813,9 +1056,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       function getFilteredLeads(leads) {
         return leads.filter((l) => {
           const emp = employeeMap[l.lead_owner];
-          const empName = emp?.name || l.lead_owner;
-          const empId = emp?.id || "";
-          const empDesignation = emp?.designation || "";
+          const empName = emp ? emp.name : l.lead_owner || "Unknown";
+          const empId = emp ? emp.id : "-";
+          const empDesignation = emp ? emp.designation : "-";
 
           const rowValues = [
             "", // # column is handled separately
@@ -929,44 +1172,231 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         document.body.removeChild(link);
       });
 
-      // Export CSV function (only filtered data and with date filters applied)
-      // Export CSV function (fetching all records based on date filters and applying column filters)
+      // **COMPLETELY REWRITTEN Export CSV function with comprehensive employee mapping**
       $("#export-csv").on("click", async function () {
         try {
+          showExportProgress();
+          updateExportProgress(5, "Initializing export...");
+
+          if (exportCancelled) return;
+
+          // **CRITICAL: Load ALL employee data first**
+          updateExportProgress(10, "Loading complete employee database...");
+          employeeMap = await fetchAllEmployees();
+
+          if (Object.keys(employeeMap).length === 0) {
+            hideExportProgress();
+            frappe.msgprint(
+              "Warning: No employee data found. Employee names and IDs may not appear correctly in the export."
+            );
+            // Continue with export but warn user
+          }
+
           const filters = getDateFilters();
 
-          // Get all leads with date filters, up to 10000
-          const fullLeads = await frappe.db.get_list("Lead", {
-            fields: [
-              "name",
-              "status",
-              "lead_owner",
-              "creation",
-              "custom_branch as branch",
-              "source",
-              "lead_name",
-              "custom_region as region",
-              "custom_zone as zone",
-              "mobile_no as contact",
-            ],
+          // Get total count
+          const totalCount = await frappe.db.count("Lead", {
             filters: filters,
-            limit: 10000,
-            order_by: "creation desc",
           });
 
-          if (!fullLeads || fullLeads.length === 0) {
+          if (totalCount === 0) {
+            hideExportProgress();
             frappe.msgprint("No leads found for the selected filters.");
             return;
           }
 
-          await updateEmployeeMapping(fullLeads);
+          updateExportProgress(
+            20,
+            `Found ${totalCount} leads. Starting data fetch...`
+          );
+
+          if (exportCancelled) return;
+
+          let allLeads = [];
+          const batchSize = 200; // Smaller batch size for reliability
+          const totalBatches = Math.ceil(totalCount / batchSize);
+          const maxRecords = 50000;
+
+          if (totalCount > maxRecords) {
+            hideExportProgress();
+            frappe.msgprint(
+              `Dataset too large (${totalCount} records). Maximum export limit is ${maxRecords} records. Please apply date filters to reduce the dataset size.`
+            );
+            return;
+          }
+
+          // Fetch leads in batches
+          for (let i = 0; i < totalBatches; i++) {
+            if (exportCancelled) return;
+
+            const batchProgress = 20 + (i / totalBatches) * 40;
+            updateExportProgress(
+              Math.round(batchProgress),
+              `Fetching batch ${i + 1} of ${totalBatches} (${
+                allLeads.length
+              }/${totalCount} records)`
+            );
+
+            try {
+              const response = await frappe.call({
+                method: "frappe.client.get_list",
+                args: {
+                  doctype: "Lead",
+                  fields: [
+                    "name",
+                    "status",
+                    "lead_owner",
+                    "creation",
+                    "custom_branch",
+                    "source",
+                    "lead_name",
+                    "custom_region",
+                    "custom_zone",
+                    "mobile_no",
+                  ],
+                  filters: filters,
+                  limit_start: i * batchSize,
+                  limit_page_length: batchSize,
+                  order_by: "creation desc",
+                  as_dict: true,
+                },
+                freeze: false,
+              });
+
+              const batchLeads = response.message || [];
+
+              const transformedLeads = batchLeads.map((lead) => ({
+                name: lead.name,
+                status: lead.status,
+                lead_owner: lead.lead_owner,
+                creation: lead.creation,
+                branch: lead.custom_branch,
+                source: lead.source,
+                lead_name: lead.lead_name,
+                region: lead.custom_region,
+                zone: lead.custom_zone,
+                contact: lead.mobile_no,
+              }));
+
+              allLeads = [...allLeads, ...transformedLeads];
+
+              // Delay to prevent server overload
+              await new Promise((resolve) => setTimeout(resolve, 150));
+            } catch (batchError) {
+              console.error(`Error in batch ${i + 1}:`, batchError);
+              updateExportProgress(
+                Math.round(batchProgress),
+                `Error in batch ${i + 1}, continuing...`
+              );
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          }
+
+          if (exportCancelled) return;
+
+          if (allLeads.length === 0) {
+            hideExportProgress();
+            frappe.msgprint("No leads found for the selected filters.");
+            return;
+          }
+
+          updateExportProgress(65, "Processing employee information...");
+
+          // **CRITICAL: Ensure ALL employee mappings are complete**
+          const uniqueOwners = [
+            ...new Set(allLeads.map((lead) => lead.lead_owner).filter(Boolean)),
+          ];
+          const missingOwners = uniqueOwners.filter(
+            (owner) => !employeeMap[owner]
+          );
+
+          if (missingOwners.length > 0) {
+            updateExportProgress(
+              70,
+              `Fetching additional employee data for ${missingOwners.length} employees...`
+            );
+
+            // Process missing employees in smaller chunks
+            const chunkSize = 50;
+            for (let i = 0; i < missingOwners.length; i += chunkSize) {
+              if (exportCancelled) return;
+
+              const chunk = missingOwners.slice(i, i + chunkSize);
+
+              try {
+                const employees = await frappe.call({
+                  method: "frappe.client.get_list",
+                  args: {
+                    doctype: "Employee",
+                    fields: [
+                      "name",
+                      "employee_name",
+                      "user_id",
+                      "designation",
+                      "branch",
+                      "employee_number",
+                      "first_name",
+                      "last_name",
+                    ],
+                    filters: [["user_id", "in", chunk]],
+                    as_dict: true,
+                  },
+                });
+
+                const employeeList = employees.message || [];
+
+                employeeList.forEach((emp) => {
+                  const empName =
+                    emp.employee_name ||
+                    (emp.first_name && emp.last_name
+                      ? `${emp.first_name} ${emp.last_name}`
+                      : null) ||
+                    emp.first_name ||
+                    emp.user_id;
+
+                  employeeMap[emp.user_id] = {
+                    name: empName,
+                    id: emp.name,
+                    user_id: emp.user_id,
+                    employee_number: emp.employee_number || emp.name,
+                    designation: emp.designation || "-",
+                    branch: emp.branch || "-",
+                  };
+                  console.log(
+                    `CSV Export - Mapped: ${emp.user_id} -> ${empName}`
+                  );
+                });
+              } catch (empError) {
+                console.error("Error fetching chunk of employees:", empError);
+              }
+            }
+
+            // Final fallback for any still missing employees
+            missingOwners.forEach((owner) => {
+              if (!employeeMap[owner]) {
+                console.warn(
+                  `CSV Export - Employee mapping still missing for: ${owner}`
+                );
+                employeeMap[owner] = {
+                  name: owner,
+                  id: "Not Found",
+                  user_id: owner,
+                  employee_number: "Not Found",
+                  designation: "Not Found",
+                  branch: "Not Found",
+                };
+              }
+            });
+          }
+
+          updateExportProgress(75, "Applying filters...");
 
           // Apply column filters
-          const filteredLeads = fullLeads.filter((lead) => {
+          const filteredLeads = allLeads.filter((lead) => {
             const emp = employeeMap[lead.lead_owner];
-            const empName = emp ? emp.name : lead.lead_owner;
-            const empId = emp ? emp.id : "";
-            const empDesignation = emp ? emp.designation : "";
+            const empName = emp ? emp.name : lead.lead_owner || "Unknown";
+            const empId = emp ? emp.id : "-";
+            const empDesignation = emp ? emp.designation : "-";
 
             const rowValues = [
               "",
@@ -993,62 +1423,136 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           });
 
           if (filteredLeads.length === 0) {
+            hideExportProgress();
             frappe.msgprint("No data available for the current filters.");
             return;
           }
 
-          const data = filteredLeads.map((lead, index) => {
-            const emp = employeeMap[lead.lead_owner];
-            return {
-              "#": index + 1,
-              "Lead Name": lead.name,
-              Customer: lead.lead_name || "-",
-              Contact: lead.contact || "-",
-              Source: lead.source || "-",
-              "Employee Name": emp ? emp.name : lead.lead_owner,
-              "Employee ID": emp ? emp.id : "-",
-              Designation: emp ? emp.designation : "-",
-              Branch: lead.branch || "-",
-              Status: lead.status,
-              Region: lead.region || "-",
-              Zone: lead.zone || "-",
-              "Created On": formatDateTimeForDisplay(lead.creation),
-            };
-          });
+          updateExportProgress(85, "Generating CSV data...");
 
-          // Convert to CSV
-          const headers = Object.keys(data[0]);
+          // Generate CSV
+          const headers = [
+            "#",
+            "Lead Name",
+            "Customer",
+            "Contact",
+            "Source",
+            "Employee Name",
+            "Employee ID",
+            "Employee Number",
+            "User ID", // Include User ID column
+            "Designation",
+            "Branch",
+            "Status",
+            "Region",
+            "Zone",
+            "Created On",
+          ];
+
           let csvContent = headers.join(",") + "\n";
-          data.forEach((row) => {
-            csvContent +=
-              headers
-                .map((header) => {
-                  let value = row[header] || "";
-                  if (typeof value === "string" && value.includes(",")) {
-                    value = `"${value.replace(/"/g, '""')}"`;
-                  }
-                  return value;
-                })
-                .join(",") + "\n";
-          });
 
-          // Download
+          // Process leads in chunks for CSV generation
+          const csvChunkSize = 500;
+          for (let i = 0; i < filteredLeads.length; i += csvChunkSize) {
+            if (exportCancelled) return;
+
+            const chunk = filteredLeads.slice(i, i + csvChunkSize);
+            const chunkContent = chunk
+              .map((lead, index) => {
+                const emp = employeeMap[lead.lead_owner];
+
+                // Debug logging for mapping issues
+                if (!emp && lead.lead_owner) {
+                  console.warn(
+                    `No employee mapping found for lead_owner: ${lead.lead_owner}`
+                  );
+                } else if (emp) {
+                  console.log(
+                    `Successfully mapped lead_owner: ${lead.lead_owner} -> Employee: ${emp.name} (ID: ${emp.id})`
+                  );
+                }
+
+                const data = {
+                  "#": i + index + 1,
+                  "Lead Name": lead.name || "-",
+                  Customer: lead.lead_name || "-",
+                  Contact: lead.contact || "-",
+                  Source: lead.source || "-",
+                  "Employee Name": emp
+                    ? emp.name
+                    : lead.lead_owner || "Unknown",
+                  "Employee ID": emp ? emp.id : "Not Found",
+                  "Employee Number": emp ? emp.employee_number : "Not Found",
+                  "User ID": emp ? emp.user_id : lead.lead_owner || "Not Found",
+                  Designation: emp ? emp.designation : "Not Found",
+                  Branch: (emp ? emp.branch : null) || lead.branch || "-",
+                  Status: lead.status || "-",
+                  Region: lead.region || "-",
+                  Zone: lead.zone || "-",
+                  "Created On": formatDateTimeForDisplay(lead.creation),
+                };
+
+                return headers
+                  .map((header) => {
+                    let value = data[header] || "";
+                    if (typeof value === "string" && value.includes(",")) {
+                      value = `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                  })
+                  .join(",");
+              })
+              .join("\n");
+
+            csvContent += chunkContent + "\n";
+
+            const csvProgress =
+              85 + ((i + csvChunkSize) / filteredLeads.length) * 10;
+            updateExportProgress(
+              Math.round(csvProgress),
+              `Processing records ${i + 1} to ${Math.min(
+                i + csvChunkSize,
+                filteredLeads.length
+              )} of ${filteredLeads.length}...`
+            );
+          }
+
+          updateExportProgress(95, "Creating download file...");
+
           const blob = new Blob([csvContent], {
             type: "text/csv;charset=utf-8;",
           });
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = `leads_${frappe.datetime.get_today()}.csv`;
+          link.download = `leads_complete_${frappe.datetime.get_today()}_${
+            filteredLeads.length
+          }_records.csv`;
+
           document.body.appendChild(link);
+          updateExportProgress(100, "Download starting...");
           link.click();
+
           setTimeout(() => {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-          }, 100);
+            hideExportProgress();
+
+            // Show detailed completion message
+            frappe.msgprint({
+              title: "Export Completed Successfully",
+              message: `Successfully exported ${filteredLeads.length} leads!`,
+              indicator: "green",
+            });
+          }, 1000);
         } catch (error) {
           console.error("Export error:", error);
-          frappe.msgprint("An error occurred while exporting.");
+          hideExportProgress();
+          frappe.msgprint({
+            title: "Export Failed",
+            message: `An error occurred while exporting: ${error.message}. Please try again with a smaller date range.`,
+            indicator: "red",
+          });
         }
       });
 
