@@ -14,7 +14,7 @@ def get_all_projects():
         return projects
     except Exception as e:
         frappe.throw(f"Error fetching projects: {str(e)}")
-
+        
 @frappe.whitelist()
 def get_all_tasks(project_name):
     """
@@ -24,27 +24,41 @@ def get_all_tasks(project_name):
         tasks = frappe.get_all(
             "Task", 
             filters={"project": project_name},
-            fields=["name", "subject", "exp_start_date", "exp_end_date", "status", "modified", "project", "custom_agreement"]
+            fields=["name", "subject", "exp_start_date", "exp_end_date", "status", "modified", "project"]
         )
 
         for task in tasks:
-            # Fetch Location Details records only for Task 1
-            if task["subject"] and "Task 1 : Acquisition of the Property" in task["subject"]:
-                location_details = frappe.get_all(
+            subject = task["subject"]
+
+            # Task 1: Location Details
+            if "Task 1 : Acquisition of the Property" in subject:
+                task["location_details_table"] = frappe.get_all(
                     "Location Details",
                     filters={"parent": task["name"], "parenttype": "Task"},
-                    fields=["location_name", "estimate_rent", "location_image", "status"]  # Adjust fields as needed
+                    fields=["location_name", "estimate_rent", "location_image", "status"]
                 )
-                task["location_details_table"] = location_details
 
-            # Fetch Manpower Recruitment records for Task 4
-            if task["subject"] and "Task 4 : Manpower Recruitment" in task["subject"]:
-                manpower_records = frappe.get_all(
+            # Task 3: Custom Agreement
+            if "Task 3 : Agreement and Handover" in subject:
+                task["custom_agreement"] = frappe.db.get_value(
+                    "Task", task["name"], "custom_agreement"
+                )
+
+            # Task 4: Manpower Recruitment
+            if "Task 4 : Manpower Recruitment" in subject:
+                task["manpower_recruitment_table"] = frappe.get_all(
                     "Manpower Recruitment",
                     filters={"parent": task["name"], "parenttype": "Task"},
                     fields=["hirable_designation", "standard_employee_count", "hired_till_now", "status"]
                 )
-                task["manpower_recruitment_table"] = manpower_records
+
+            # Task 6 or 7: IT Checklist
+            if subject in ["Task 6 : IT Hardware Installation", "Task 7 : IT Software Installation"]:
+                task["it_checklist_table"] = frappe.get_all(
+                    "IT Checklist",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["activity", "category", "status"]
+                )
 
         return tasks
 
