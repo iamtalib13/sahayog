@@ -665,18 +665,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           // Check if we're near the bottom (within 200px)
           const isNearBottom = scrollTop + clientHeight >= scrollHeight - 200;
 
-          console.log("Scroll event:", {
-            scrollTop,
-            scrollHeight,
-            clientHeight,
-            isNearBottom,
-            isLoading,
-            hasMoreLeads,
-            currentPage,
-          });
-
           if (isNearBottom && !isLoading && hasMoreLeads) {
-            console.log("Triggering load for page:", currentPage);
             fetchLeadsPage(currentPage);
           }
         }
@@ -690,20 +679,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
       // Updated fetchLeadsPage function
       async function fetchLeadsPage(page) {
-        if (isLoading || !hasMoreLeads) {
-          console.log(
-            "Skipping fetch - isLoading:",
-            isLoading,
-            "hasMoreLeads:",
-            hasMoreLeads
-          );
-          return;
-        }
+        if (isLoading || !hasMoreLeads) return;
 
         isLoading = true;
         $("#loading-indicator").show();
-
-        console.log(`Fetching page ${page} with pageSize ${pageSize}`);
 
         try {
           const filters = getDateFilters();
@@ -727,12 +706,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             order_by: "creation desc",
           });
 
-          console.log(`Fetched ${leads.length} leads for page ${page}`);
-
-          if (leads.length < pageSize) {
-            hasMoreLeads = false;
-            console.log("No more leads available");
-          }
+          if (leads.length < pageSize) hasMoreLeads = false;
 
           // Update employee mapping for new leads
           await updateEmployeeMapping(leads);
@@ -740,20 +714,16 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           if (page === 1) {
             currentLeads = leads;
           } else {
-            // Append new leads to existing ones
             currentLeads = [...currentLeads, ...leads];
           }
 
           render_lead_list(currentLeads);
 
-          // Only increment page if we successfully loaded data
-          if (leads.length > 0) {
-            currentPage++;
-          }
+          if (leads.length > 0) currentPage++;
         } catch (error) {
           console.error("Error fetching leads:", error);
           frappe.msgprint("Error loading leads. Please try again.");
-          hasMoreLeads = false; // Stop trying to load more on error
+          hasMoreLeads = false;
         } finally {
           isLoading = false;
           $("#loading-indicator").hide();
@@ -797,9 +767,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
         // Direct DOM manipulation instead of Clusterize
         const tbody = document.getElementById("lead-content");
-        if (tbody) {
-          tbody.innerHTML = rows;
-        }
+        if (tbody) tbody.innerHTML = rows;
 
         // Update record count
         $("#record-count").text(
@@ -807,33 +775,22 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         );
 
         // Setup infinite scroll after rendering
-        if (currentLeads.length > 0) {
-          setupInfiniteScroll();
-        }
+        if (currentLeads.length > 0) setupInfiniteScroll();
       }
 
       async function fetchAndRenderLeads() {
-        console.log("Starting fresh lead fetch");
-
         currentPage = 1;
         hasMoreLeads = true;
         currentLeads = [];
         employeeMap = {}; // Reset employee map
         isLoading = false; // Reset loading state
 
-        // Clear the table
         const tbody = document.getElementById("lead-content");
-        if (tbody) {
-          tbody.innerHTML = "";
-        }
+        if (tbody) tbody.innerHTML = "";
 
-        // Show loading indicator
         $("#loading-indicator").show();
 
-        // First fetch the counts from database
         await fetchLeadCounts();
-
-        // Then fetch the first page of leads
         await fetchLeadsPage(currentPage);
         updateURL();
       }
@@ -848,7 +805,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         const minutes = String(dateObj.getMinutes()).padStart(2, "0");
         const ampm = hours >= 12 ? "PM" : "AM";
         hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
+        hours = hours ? hours : 12;
 
         return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
       }
@@ -860,7 +817,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           const empId = emp?.id || "";
           const empDesignation = emp?.designation || "";
 
-          // Check column filters
           const rowValues = [
             "", // # column is handled separately
             l.name.toLowerCase(),
@@ -877,16 +833,12 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             formatDateTimeForDisplay(l.creation).toLowerCase(),
           ];
 
-          const columnFilterPassed = Object.entries(columnFilters).every(
-            ([col, filter]) => {
-              if (!filter) return true;
-              return (
-                rowValues[col] && rowValues[col].includes(filter.toLowerCase())
-              );
-            }
-          );
-
-          return columnFilterPassed;
+          return Object.entries(columnFilters).every(([col, filter]) => {
+            if (!filter) return true;
+            return (
+              rowValues[col] && rowValues[col].includes(filter.toLowerCase())
+            );
+          });
         });
       }
 
@@ -977,14 +929,14 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         document.body.removeChild(link);
       });
 
-      // Export CSV function (only filtered data)
-      // Simplified Export CSV function without messages/indicators
+      // Export CSV function (only filtered data and with date filters applied)
+      // Export CSV function (fetching all records based on date filters and applying column filters)
       $("#export-csv").on("click", async function () {
         try {
-          // Get fresh data with current filters
           const filters = getDateFilters();
 
-          const allLeads = await frappe.db.get_list("Lead", {
+          // Get all leads with date filters, up to 10000
+          const fullLeads = await frappe.db.get_list("Lead", {
             fields: [
               "name",
               "status",
@@ -998,14 +950,54 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               "mobile_no as contact",
             ],
             filters: filters,
+            limit: 10000,
             order_by: "creation desc",
           });
 
-          // Update employee mapping
-          await updateEmployeeMapping(allLeads);
+          if (!fullLeads || fullLeads.length === 0) {
+            frappe.msgprint("No leads found for the selected filters.");
+            return;
+          }
 
-          // Prepare CSV data
-          const data = allLeads.map((lead, index) => {
+          await updateEmployeeMapping(fullLeads);
+
+          // Apply column filters
+          const filteredLeads = fullLeads.filter((lead) => {
+            const emp = employeeMap[lead.lead_owner];
+            const empName = emp ? emp.name : lead.lead_owner;
+            const empId = emp ? emp.id : "";
+            const empDesignation = emp ? emp.designation : "";
+
+            const rowValues = [
+              "",
+              lead.name.toLowerCase(),
+              (lead.lead_name || "").toLowerCase(),
+              (lead.contact || "").toLowerCase(),
+              (lead.source || "").toLowerCase(),
+              empName.toLowerCase(),
+              empId.toLowerCase(),
+              empDesignation.toLowerCase(),
+              (lead.branch || "").toLowerCase(),
+              lead.status.toLowerCase(),
+              (lead.region || "").toLowerCase(),
+              (lead.zone || "").toLowerCase(),
+              formatDateTimeForDisplay(lead.creation).toLowerCase(),
+            ];
+
+            return Object.entries(columnFilters).every(([col, filter]) => {
+              if (!filter) return true;
+              return (
+                rowValues[col] && rowValues[col].includes(filter.toLowerCase())
+              );
+            });
+          });
+
+          if (filteredLeads.length === 0) {
+            frappe.msgprint("No data available for the current filters.");
+            return;
+          }
+
+          const data = filteredLeads.map((lead, index) => {
             const emp = employeeMap[lead.lead_owner];
             return {
               "#": index + 1,
@@ -1024,9 +1016,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             };
           });
 
-          if (data.length === 0) return;
-
-          // Generate CSV content
+          // Convert to CSV
           const headers = Object.keys(data[0]);
           let csvContent = headers.join(",") + "\n";
           data.forEach((row) => {
@@ -1042,7 +1032,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 .join(",") + "\n";
           });
 
-          // Trigger download
+          // Download
           const blob = new Blob([csvContent], {
             type: "text/csv;charset=utf-8;",
           });
@@ -1052,20 +1042,19 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           link.download = `leads_${frappe.datetime.get_today()}.csv`;
           document.body.appendChild(link);
           link.click();
-
-          // Clean up
           setTimeout(() => {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
           }, 100);
         } catch (error) {
           console.error("Export error:", error);
+          frappe.msgprint("An error occurred while exporting.");
         }
       });
+
       function generateAnalyticsData() {
         const employeeStats = {};
 
-        // Process each lead to build employee statistics
         currentLeads.forEach((lead) => {
           const emp = employeeMap[lead.lead_owner];
           const empKey = lead.lead_owner;
@@ -1099,7 +1088,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           }
         });
 
-        // Calculate conversion rates and prepare data
         analyticsData = Object.values(employeeStats).map((emp) => {
           emp.conversionRate =
             emp.totalLeads > 0
@@ -1108,7 +1096,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           return emp;
         });
 
-        // Sort by conversion rate descending
         analyticsData.sort((a, b) => b.conversionRate - a.conversionRate);
 
         const fromDate = $("#from-date").val();
