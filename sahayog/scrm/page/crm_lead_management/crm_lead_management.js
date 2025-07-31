@@ -482,6 +482,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       let isLoading = false;
       let hasMoreLeads = true;
       let currentPage = 1;
+      let totalLeadsCount = 0; // Add this to track total count from DB
       const pageSize = 50; // Number of leads to load per page
 
       // Initialize column filters
@@ -503,6 +504,86 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           window.location.pathname +
           (params.toString() ? "?" + params.toString() : "");
         window.history.replaceState({}, "", newUrl);
+      }
+
+      // Function to get date filters for database queries
+      function getDateFilters() {
+        let from_date = $("#from-date").val();
+        let to_date = $("#to-date").val();
+
+        let filters = [];
+        if (from_date) {
+          let fromDateTime = `${from_date} 00:00:00.000000`;
+          filters.push(["creation", ">=", fromDateTime]);
+        }
+        if (to_date) {
+          let toDateTime = `${to_date} 23:59:59.999999`;
+          filters.push(["creation", "<=", toDateTime]);
+        }
+
+        return filters;
+      }
+
+      // Function to get counts from database
+      async function fetchLeadCounts() {
+        const dateFilters = getDateFilters();
+
+        try {
+          // Get total count
+          const totalCount = await frappe.db.count("Lead", {
+            filters: dateFilters,
+          });
+
+          // Get converted count
+          const convertedFilters = [
+            ...dateFilters,
+            ["status", "=", "Converted"],
+          ];
+          const convertedCount = await frappe.db.count("Lead", {
+            filters: convertedFilters,
+          });
+
+          // Get follow up count
+          const followUpFilters = [
+            ...dateFilters,
+            ["status", "=", "Follow Up"],
+          ];
+          const followUpCount = await frappe.db.count("Lead", {
+            filters: followUpFilters,
+          });
+
+          // Get not interested count
+          const notInterestedFilters = [
+            ...dateFilters,
+            ["status", "=", "Not Interested"],
+          ];
+          const notInterestedCount = await frappe.db.count("Lead", {
+            filters: notInterestedFilters,
+          });
+
+          // Update the cards with actual counts from database
+          $("#total-leads").text(totalCount);
+          $("#converted-leads").text(convertedCount);
+          $("#follow-up-leads").text(followUpCount);
+          $("#not-interested-leads").text(notInterestedCount);
+
+          totalLeadsCount = totalCount;
+
+          return {
+            total: totalCount,
+            converted: convertedCount,
+            followUp: followUpCount,
+            notInterested: notInterestedCount,
+          };
+        } catch (error) {
+          console.error("Error fetching lead counts:", error);
+          return {
+            total: 0,
+            converted: 0,
+            followUp: 0,
+            notInterested: 0,
+          };
+        }
       }
 
       // Show analytics modal
@@ -854,16 +935,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         hasMoreLeads = true;
         currentLeads = [];
 
-        let from_date = $("#from-date").val();
-        let to_date = $("#to-date").val();
-
-        let fromDateTime = `${from_date} 00:00:00.000000`;
-        let toDateTime = `${to_date} 23:59:59.999999`;
-
-        let filters = [];
-        if (from_date) filters.push(["creation", ">=", fromDateTime]);
-        if (to_date) filters.push(["creation", "<=", toDateTime]);
-
         // Reset the table
         if (clusterize) {
           clusterize.clear();
@@ -872,17 +943,23 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         // Show loading indicator
         $("#loading-indicator").show();
 
-        await fetchLeadsPage(currentPage, filters);
+        // First fetch the counts from database
+        await fetchLeadCounts();
+
+        // Then fetch the first page of leads
+        await fetchLeadsPage(currentPage);
         updateURL();
       }
 
-      async function fetchLeadsPage(page, filters) {
+      async function fetchLeadsPage(page) {
         if (isLoading || !hasMoreLeads) return;
 
         isLoading = true;
         $("#loading-indicator").show();
 
         try {
+          const filters = getDateFilters();
+
           const leads = await frappe.db.get_list("Lead", {
             fields: [
               "name",
@@ -932,23 +1009,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             });
           }
 
-          const stats = {
-            total_leads: currentLeads.length,
-            converted: currentLeads.filter((l) => l.status === "Converted")
-              .length,
-            follow_up: currentLeads.filter((l) => l.status === "Follow Up")
-              .length,
-            not_interested: currentLeads.filter(
-              (l) => l.status === "Not Interested"
-            ).length,
-          };
-
-          // Update cards
-          $("#total-leads").text(stats.total_leads);
-          $("#converted-leads").text(stats.converted);
-          $("#follow-up-leads").text(stats.follow_up);
-          $("#not-interested-leads").text(stats.not_interested);
-
           render_lead_list(currentLeads);
           currentPage++;
         } catch (error) {
@@ -972,16 +1032,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             !isLoading &&
             hasMoreLeads
           ) {
-            let from_date = $("#from-date").val();
-            let to_date = $("#to-date").val();
-            let fromDateTime = `${from_date} 00:00:00.000000`;
-            let toDateTime = `${to_date} 23:59:59.999999`;
-
-            let filters = [];
-            if (from_date) filters.push(["creation", ">=", fromDateTime]);
-            if (to_date) filters.push(["creation", "<=", toDateTime]);
-
-            fetchLeadsPage(currentPage, filters);
+            fetchLeadsPage(currentPage);
           }
         });
       }
@@ -1037,8 +1088,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           clusterize.update(rows);
         }
 
+        // Update record count to show filtered vs total from database
         $("#record-count").text(
-          `Showing ${filteredLeads.length} of ${leads.length} records`
+          `Showing ${filteredLeads.length} of ${totalLeadsCount} records (${currentLeads.length} loaded)`
         );
       }
 
