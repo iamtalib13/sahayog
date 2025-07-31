@@ -509,6 +509,7 @@ def fetch_it_checklist_settings(doc, method):
             doc.append("it_checklist_table", {
                 "activity": row.activity,
                 "category": row.category,
+                "installation_phase": row.installation_phase,
                 "status": "Pending"  # Default status if needed
             })
 
