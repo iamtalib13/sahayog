@@ -172,10 +172,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           border-radius: 8px;
           overflow: hidden;
           position: relative;
+          max-height: 600px;
+          overflow-y: auto;
         }
         .lead-table {
           width: 100%;
           border-collapse: collapse;
+          margin: 0;
         }
         .lead-table thead th {
           background: #f5f7fa;
@@ -185,11 +188,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           position: sticky;
           top: 0;
           z-index: 10;
+          padding: 12px 8px;
         }
         .lead-table thead tr.filter-row th {
           top: 40px;
           padding: 0;
           background: #f5f7fa;
+          z-index: 9;
         }
         .lead-table thead tr.filter-row input {
           width: 100%;
@@ -204,14 +209,17 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           border-bottom: 1px solid #5e64ff;
         }
         .lead-table tbody {
-          display: block;
-          overflow-y: auto;
-          max-height: 500px;
+          display: table-row-group;
         }
-        .lead-table thead, .lead-table tbody tr {
-          display: table;
-          width: 100%;
-          table-layout: fixed;
+        .lead-table tbody tr {
+          display: table-row;
+        }
+        .lead-table tbody td {
+          padding: 12px 8px;
+          border-bottom: 1px solid #f0f2f5;
+        }
+        .lead-table tbody tr:hover {
+          background: #f8f9fb;
         }
         .btn-export {
           background: #ffffff;
@@ -230,7 +238,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         }
         .btn-analytics:hover {
           background: #4a50d1;
-          color: #ffff;
+          color: #ffffff;
         }
         .btn-filter {
           background: #ffffff;
@@ -248,15 +256,31 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         }
         .badge-success {
           background-color: #28a745;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
         }
         .badge-warning {
           background-color: #ffa00a;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
         }
         .badge-danger {
           background-color: #ff5858;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
         }
         .badge-secondary {
           background-color: #6c7680;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
         }
         .lead-link {
           color: #5e64ff;
@@ -306,11 +330,26 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           font-size: 14px;
         }
         .loading-indicator {
+          position: sticky;
+          bottom: 0;
+          background: #f8f9fa;
+          border-top: 1px solid #e0e6ed;
+          padding: 15px;
           text-align: center;
-          padding: 10px;
           color: #6c7680;
           font-size: 14px;
+          z-index: 5;
           display: none;
+        }
+        .loading-indicator.show {
+          display: block;
+        }
+        .fa-spinner {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       </style>
 
@@ -474,7 +513,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       </div>
     `);
 
-      let clusterize;
+      // Variables
       let currentLeads = [];
       let employeeMap = {};
       let analyticsData = [];
@@ -482,8 +521,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       let isLoading = false;
       let hasMoreLeads = true;
       let currentPage = 1;
-      let totalLeadsCount = 0; // Add this to track total count from DB
-      const pageSize = 50; // Number of leads to load per page
+      let totalLeadsCount = 0;
+      const pageSize = 50;
+      let scrollTimeout;
 
       // Initialize column filters
       for (let i = 0; i < 13; i++) {
@@ -586,6 +626,290 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         }
       }
 
+      // Function to update employee mapping for new leads
+      async function updateEmployeeMapping(newLeads) {
+        const newOwners = [...new Set(newLeads.map((lead) => lead.lead_owner))];
+        const unknownOwners = newOwners.filter((owner) => !employeeMap[owner]);
+
+        if (unknownOwners.length > 0) {
+          const employees = await frappe.db.get_list("Employee", {
+            fields: ["name", "employee_name", "user_id", "designation"],
+            filters: [["user_id", "in", unknownOwners]],
+          });
+
+          employees.forEach((emp) => {
+            employeeMap[emp.user_id] = {
+              name: emp.employee_name,
+              id: emp.name,
+              designation: emp.designation || "-",
+            };
+          });
+        }
+      }
+
+      // Fixed infinite scroll setup
+      function setupInfiniteScroll() {
+        const tableContainer = document.querySelector(".lead-table-container");
+
+        if (!tableContainer) {
+          console.error("Table container not found for infinite scroll");
+          return;
+        }
+
+        // Remove any existing scroll listeners
+        tableContainer.removeEventListener("scroll", handleScroll);
+
+        function handleScroll() {
+          const { scrollTop, scrollHeight, clientHeight } = tableContainer;
+
+          // Check if we're near the bottom (within 200px)
+          const isNearBottom = scrollTop + clientHeight >= scrollHeight - 200;
+
+          console.log("Scroll event:", {
+            scrollTop,
+            scrollHeight,
+            clientHeight,
+            isNearBottom,
+            isLoading,
+            hasMoreLeads,
+            currentPage,
+          });
+
+          if (isNearBottom && !isLoading && hasMoreLeads) {
+            console.log("Triggering load for page:", currentPage);
+            fetchLeadsPage(currentPage);
+          }
+        }
+
+        // Throttle scroll events to improve performance
+        tableContainer.addEventListener("scroll", () => {
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(handleScroll, 100);
+        });
+      }
+
+      // Updated fetchLeadsPage function
+      async function fetchLeadsPage(page) {
+        if (isLoading || !hasMoreLeads) {
+          console.log(
+            "Skipping fetch - isLoading:",
+            isLoading,
+            "hasMoreLeads:",
+            hasMoreLeads
+          );
+          return;
+        }
+
+        isLoading = true;
+        $("#loading-indicator").show();
+
+        console.log(`Fetching page ${page} with pageSize ${pageSize}`);
+
+        try {
+          const filters = getDateFilters();
+
+          const leads = await frappe.db.get_list("Lead", {
+            fields: [
+              "name",
+              "status",
+              "lead_owner",
+              "creation",
+              "custom_branch as branch",
+              "source",
+              "lead_name",
+              "custom_region as region",
+              "custom_zone as zone",
+              "mobile_no as contact",
+            ],
+            filters: filters,
+            limit_start: (page - 1) * pageSize,
+            limit: pageSize,
+            order_by: "creation desc",
+          });
+
+          console.log(`Fetched ${leads.length} leads for page ${page}`);
+
+          if (leads.length < pageSize) {
+            hasMoreLeads = false;
+            console.log("No more leads available");
+          }
+
+          // Update employee mapping for new leads
+          await updateEmployeeMapping(leads);
+
+          if (page === 1) {
+            currentLeads = leads;
+          } else {
+            // Append new leads to existing ones
+            currentLeads = [...currentLeads, ...leads];
+          }
+
+          render_lead_list(currentLeads);
+
+          // Only increment page if we successfully loaded data
+          if (leads.length > 0) {
+            currentPage++;
+          }
+        } catch (error) {
+          console.error("Error fetching leads:", error);
+          frappe.msgprint("Error loading leads. Please try again.");
+          hasMoreLeads = false; // Stop trying to load more on error
+        } finally {
+          isLoading = false;
+          $("#loading-indicator").hide();
+        }
+      }
+
+      // Updated render_lead_list function without Clusterize
+      function render_lead_list(leads) {
+        const filteredLeads = getFilteredLeads(leads);
+
+        const rows = filteredLeads
+          .map((lead, index) => {
+            const emp = employeeMap[lead.lead_owner];
+            return `
+            <tr>
+              <td width="60" class="row-number">${index + 1}</td>
+              <td class="hidden">
+                <span class="lead-link" onclick="frappe.set_route('Form/Lead/${
+                  lead.name
+                }')">
+                  ${lead.name}
+                </span>
+              </td>
+              <td>${lead.lead_name || "-"}</td>
+              <td width="110">${lead.contact || "-"}</td>
+              <td>${lead.source || "-"}</td>
+              <td>${emp ? emp.name : lead.lead_owner}</td>
+              <td>${emp ? emp.id : "-"}</td>
+              <td>${emp ? emp.designation : "-"}</td>
+              <td>${lead.branch || "-"}</td>
+              <td><span class="badge ${getStatusBadgeClass(lead.status)}">${
+              lead.status
+            }</span></td>
+              <td>${lead.region || "-"}</td>
+              <td>${lead.zone || "-"}</td>
+              <td>${formatDateTimeForDisplay(lead.creation)}</td>
+            </tr>
+          `;
+          })
+          .join("");
+
+        // Direct DOM manipulation instead of Clusterize
+        const tbody = document.getElementById("lead-content");
+        if (tbody) {
+          tbody.innerHTML = rows;
+        }
+
+        // Update record count
+        $("#record-count").text(
+          `Showing ${filteredLeads.length} of ${totalLeadsCount} records (${currentLeads.length} loaded)`
+        );
+
+        // Setup infinite scroll after rendering
+        if (currentLeads.length > 0) {
+          setupInfiniteScroll();
+        }
+      }
+
+      async function fetchAndRenderLeads() {
+        console.log("Starting fresh lead fetch");
+
+        currentPage = 1;
+        hasMoreLeads = true;
+        currentLeads = [];
+        employeeMap = {}; // Reset employee map
+        isLoading = false; // Reset loading state
+
+        // Clear the table
+        const tbody = document.getElementById("lead-content");
+        if (tbody) {
+          tbody.innerHTML = "";
+        }
+
+        // Show loading indicator
+        $("#loading-indicator").show();
+
+        // First fetch the counts from database
+        await fetchLeadCounts();
+
+        // Then fetch the first page of leads
+        await fetchLeadsPage(currentPage);
+        updateURL();
+      }
+
+      function formatDateTimeForDisplay(datetime) {
+        const dateObj = frappe.datetime.str_to_obj(datetime);
+        const day = String(dateObj.getDate()).padStart(2, "0");
+        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const year = dateObj.getFullYear();
+
+        let hours = dateObj.getHours();
+        const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+
+        return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+      }
+
+      function getFilteredLeads(leads) {
+        return leads.filter((l) => {
+          const emp = employeeMap[l.lead_owner];
+          const empName = emp?.name || l.lead_owner;
+          const empId = emp?.id || "";
+          const empDesignation = emp?.designation || "";
+
+          // Check column filters
+          const rowValues = [
+            "", // # column is handled separately
+            l.name.toLowerCase(),
+            (l.lead_name || "").toLowerCase(),
+            (l.contact || "").toLowerCase(),
+            (l.source || "").toLowerCase(),
+            empName.toLowerCase(),
+            empId.toLowerCase(),
+            empDesignation.toLowerCase(),
+            (l.branch || "").toLowerCase(),
+            l.status.toLowerCase(),
+            (l.region || "").toLowerCase(),
+            (l.zone || "").toLowerCase(),
+            formatDateTimeForDisplay(l.creation).toLowerCase(),
+          ];
+
+          const columnFilterPassed = Object.entries(columnFilters).every(
+            ([col, filter]) => {
+              if (!filter) return true;
+              return (
+                rowValues[col] && rowValues[col].includes(filter.toLowerCase())
+              );
+            }
+          );
+
+          return columnFilterPassed;
+        });
+      }
+
+      function getStatusBadgeClass(status) {
+        switch (status) {
+          case "Converted":
+            return "badge-success";
+          case "Follow Up":
+            return "badge-warning";
+          case "Not Interested":
+            return "badge-danger";
+          default:
+            return "badge-secondary";
+        }
+      }
+
+      // Set up column filter event handlers
+      $(".col-filter").on("input", function () {
+        const colIndex = parseInt(this.id.split("-")[1]);
+        columnFilters[colIndex] = $(this).val();
+        render_lead_list(currentLeads);
+      });
+
       // Show analytics modal
       $("#view-analytics").on("click", function () {
         generateAnalyticsData();
@@ -654,128 +978,90 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       });
 
       // Export CSV function (only filtered data)
-      $("#export-csv").on("click", function () {
-        if (currentLeads.length === 0) {
-          frappe.msgprint("No data to export");
-          return;
+      // Simplified Export CSV function without messages/indicators
+      $("#export-csv").on("click", async function () {
+        try {
+          // Get fresh data with current filters
+          const filters = getDateFilters();
+
+          const allLeads = await frappe.db.get_list("Lead", {
+            fields: [
+              "name",
+              "status",
+              "lead_owner",
+              "creation",
+              "custom_branch as branch",
+              "source",
+              "lead_name",
+              "custom_region as region",
+              "custom_zone as zone",
+              "mobile_no as contact",
+            ],
+            filters: filters,
+            order_by: "creation desc",
+          });
+
+          // Update employee mapping
+          await updateEmployeeMapping(allLeads);
+
+          // Prepare CSV data
+          const data = allLeads.map((lead, index) => {
+            const emp = employeeMap[lead.lead_owner];
+            return {
+              "#": index + 1,
+              "Lead Name": lead.name,
+              Customer: lead.lead_name || "-",
+              Contact: lead.contact || "-",
+              Source: lead.source || "-",
+              "Employee Name": emp ? emp.name : lead.lead_owner,
+              "Employee ID": emp ? emp.id : "-",
+              Designation: emp ? emp.designation : "-",
+              Branch: lead.branch || "-",
+              Status: lead.status,
+              Region: lead.region || "-",
+              Zone: lead.zone || "-",
+              "Created On": formatDateTimeForDisplay(lead.creation),
+            };
+          });
+
+          if (data.length === 0) return;
+
+          // Generate CSV content
+          const headers = Object.keys(data[0]);
+          let csvContent = headers.join(",") + "\n";
+          data.forEach((row) => {
+            csvContent +=
+              headers
+                .map((header) => {
+                  let value = row[header] || "";
+                  if (typeof value === "string" && value.includes(",")) {
+                    value = `"${value.replace(/"/g, '""')}"`;
+                  }
+                  return value;
+                })
+                .join(",") + "\n";
+          });
+
+          // Trigger download
+          const blob = new Blob([csvContent], {
+            type: "text/csv;charset=utf-8;",
+          });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `leads_${frappe.datetime.get_today()}.csv`;
+          document.body.appendChild(link);
+          link.click();
+
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }, 100);
+        } catch (error) {
+          console.error("Export error:", error);
         }
-
-        // Get filtered leads
-        const filteredLeads = getFilteredLeads(currentLeads);
-
-        // Prepare the data for export
-        const data = filteredLeads.map((lead, index) => {
-          const emp = employeeMap[lead.lead_owner];
-          return {
-            "#": index + 1,
-            "Lead Name": lead.name,
-            Customer: lead.lead_name || "-",
-            Contact: lead.contact || "-",
-            Source: lead.source || "-",
-            "Employee Name": emp ? emp.name : lead.lead_owner,
-            "Employee ID": emp ? emp.id : "-",
-            Designation: emp ? emp.designation : "-",
-            Branch: lead.branch || "-",
-            Status: lead.status,
-            Region: lead.region || "-",
-            Zone: lead.zone || "-",
-            "Created On": formatDateTimeForDisplay(lead.creation),
-          };
-        });
-
-        const headers = Object.keys(data[0]);
-        let csvContent = headers.join(",") + "\n";
-
-        data.forEach((row) => {
-          csvContent +=
-            headers
-              .map((header) => {
-                let value = row[header] || "";
-                if (typeof value === "string" && value.includes(",")) {
-                  value = `"${value.replace(/"/g, '""')}"`;
-                }
-                return value;
-              })
-              .join(",") + "\n";
-        });
-
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-
-        link.setAttribute("href", url);
-        link.setAttribute(
-          "download",
-          `leads_${frappe.datetime.get_today()}.csv`
-        );
-        link.style.visibility = "hidden";
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
       });
-
-      function formatDateTimeForDisplay(datetime) {
-        const dateObj = frappe.datetime.str_to_obj(datetime);
-        const day = String(dateObj.getDate()).padStart(2, "0");
-        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const year = dateObj.getFullYear();
-
-        let hours = dateObj.getHours();
-        const minutes = String(dateObj.getMinutes()).padStart(2, "0");
-        const ampm = hours >= 12 ? "PM" : "AM";
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-
-        return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
-      }
-
-      function getFilteredLeads(leads) {
-        return leads.filter((l) => {
-          const emp = employeeMap[l.lead_owner];
-          const empName = emp?.name || l.lead_owner;
-          const empId = emp?.id || "";
-          const empDesignation = emp?.designation || "";
-
-          // Check column filters
-          const rowValues = [
-            "", // # column is handled separately
-            l.name.toLowerCase(),
-            (l.lead_name || "").toLowerCase(),
-            (l.contact || "").toLowerCase(),
-            (l.source || "").toLowerCase(),
-            empName.toLowerCase(),
-            empId.toLowerCase(),
-            empDesignation.toLowerCase(),
-            (l.branch || "").toLowerCase(),
-            l.status.toLowerCase(),
-            (l.region || "").toLowerCase(),
-            (l.zone || "").toLowerCase(),
-            formatDateTimeForDisplay(l.creation).toLowerCase(),
-          ];
-
-          const columnFilterPassed = Object.entries(columnFilters).every(
-            ([col, filter]) => {
-              if (!filter) return true;
-              return (
-                rowValues[col] && rowValues[col].includes(filter.toLowerCase())
-              );
-            }
-          );
-
-          return columnFilterPassed;
-        });
-      }
-
-      // Set up column filter event handlers
-      $(".col-filter").on("input", function () {
-        const colIndex = parseInt(this.id.split("-")[1]);
-        columnFilters[colIndex] = $(this).val();
-        render_lead_list(currentLeads);
-      });
-
       function generateAnalyticsData() {
         const employeeStats = {};
 
@@ -928,183 +1214,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           .join("");
 
         tableBody.html(rows);
-      }
-
-      async function fetchAndRenderLeads() {
-        currentPage = 1;
-        hasMoreLeads = true;
-        currentLeads = [];
-
-        // Reset the table
-        if (clusterize) {
-          clusterize.clear();
-        }
-
-        // Show loading indicator
-        $("#loading-indicator").show();
-
-        // First fetch the counts from database
-        await fetchLeadCounts();
-
-        // Then fetch the first page of leads
-        await fetchLeadsPage(currentPage);
-        updateURL();
-      }
-
-      async function fetchLeadsPage(page) {
-        if (isLoading || !hasMoreLeads) return;
-
-        isLoading = true;
-        $("#loading-indicator").show();
-
-        try {
-          const filters = getDateFilters();
-
-          const leads = await frappe.db.get_list("Lead", {
-            fields: [
-              "name",
-              "status",
-              "lead_owner",
-              "creation",
-              "custom_branch as branch",
-              "source",
-              "lead_name",
-              "custom_region as region",
-              "custom_zone as zone",
-              "mobile_no as contact",
-            ],
-            filters: filters,
-            limit_start: (page - 1) * pageSize,
-            limit: pageSize,
-            order_by: "creation desc",
-          });
-
-          if (leads.length < pageSize) {
-            hasMoreLeads = false;
-          }
-
-          if (page === 1) {
-            currentLeads = leads;
-          } else {
-            currentLeads = [...currentLeads, ...leads];
-          }
-
-          // Update employee map if needed
-          if (page === 1) {
-            employeeMap = {};
-            const uniqueOwners = [
-              ...new Set(leads.map((lead) => lead.lead_owner)),
-            ];
-            const employees = await frappe.db.get_list("Employee", {
-              fields: ["name", "employee_name", "user_id", "designation"],
-              filters: [["user_id", "in", uniqueOwners]],
-            });
-
-            employees.forEach((emp) => {
-              employeeMap[emp.user_id] = {
-                name: emp.employee_name,
-                id: emp.name,
-                designation: emp.designation || "-",
-              };
-            });
-          }
-
-          render_lead_list(currentLeads);
-          currentPage++;
-        } catch (error) {
-          console.error("Error fetching leads:", error);
-          frappe.msgprint("Error loading leads. Please try again.");
-        } finally {
-          isLoading = false;
-          $("#loading-indicator").hide();
-        }
-      }
-
-      function setupInfiniteScroll() {
-        const tableContainer = $(".lead-table-container")[0];
-
-        tableContainer.addEventListener("scroll", () => {
-          const { scrollTop, scrollHeight, clientHeight } = tableContainer;
-
-          // Check if we're near the bottom of the table
-          if (
-            scrollTop + clientHeight >= scrollHeight - 100 &&
-            !isLoading &&
-            hasMoreLeads
-          ) {
-            fetchLeadsPage(currentPage);
-          }
-        });
-      }
-
-      function render_lead_list(leads) {
-        const filteredLeads = getFilteredLeads(leads);
-
-        const rows = filteredLeads.map((lead, index) => {
-          const emp = employeeMap[lead.lead_owner];
-          return `
-            <tr>
-              <td width="60" class="row-number">${index + 1}</td>
-              <td class="hidden">
-                <span class="lead-link" onclick="frappe.set_route('Form/Lead/${
-                  lead.name
-                }')">
-                  ${lead.name}
-                </span>
-              </td>
-              <td>${lead.lead_name || "-"}</td>
-              <td width="110">${lead.contact || "-"}</td>
-              <td>${lead.source || "-"}</td>
-              <td>${emp ? emp.name : lead.lead_owner}</td>
-              <td>${emp ? emp.id : "-"}</td>
-              <td>${emp ? emp.designation : "-"}</td>
-              <td>${lead.branch || "-"}</td>
-              <td><span class="badge ${getStatusBadgeClass(lead.status)}">${
-            lead.status
-          }</span></td>
-              <td>${lead.region || "-"}</td>
-              <td>${lead.zone || "-"}</td>
-              <td>${formatDateTimeForDisplay(lead.creation)}</td>
-            </tr>
-          `;
-        });
-
-        if (!clusterize) {
-          clusterize = new Clusterize({
-            rows: rows,
-            scrollId: "lead-content",
-            contentElem: document.getElementById("lead-content"),
-            callbacks: {
-              clusterChanged: function () {
-                // Ensure the header stays in sync with the table width
-                $(".lead-table thead").width($(".lead-table").width());
-              },
-            },
-          });
-
-          // Setup infinite scroll after Clusterize is initialized
-          setupInfiniteScroll();
-        } else {
-          clusterize.update(rows);
-        }
-
-        // Update record count to show filtered vs total from database
-        $("#record-count").text(
-          `Showing ${filteredLeads.length} of ${totalLeadsCount} records (${currentLeads.length} loaded)`
-        );
-      }
-
-      function getStatusBadgeClass(status) {
-        switch (status) {
-          case "Converted":
-            return "badge-success";
-          case "Follow Up":
-            return "badge-warning";
-          case "Not Interested":
-            return "badge-danger";
-          default:
-            return "badge-secondary";
-        }
       }
 
       // Auto-apply filters when date changes
