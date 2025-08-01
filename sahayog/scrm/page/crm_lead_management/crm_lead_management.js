@@ -1787,32 +1787,33 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 ) / analyticsData.length
               )
             : 0;
-        const topPerformer = analyticsData.length > 0 ? analyticsData[0] : null;
         const totalConverted = analyticsData.reduce(
           (sum, emp) => sum + emp.converted,
           0
         );
+        const totalLeads = analyticsData.reduce(
+          (sum, emp) => sum + emp.totalLeads,
+          0
+        );
 
         const summaryHtml = `
-          <div class="summary-card">
-            <h4>${totalEmployees}</h4>
-            <p>Total Employees</p>
-          </div>
-          <div class="summary-card">
-            <h4>${avgConversionRate}%</h4>
-            <p>Average Conversion Rate</p>
-          </div>
-          <div class="summary-card">
-            <h4>${totalConverted}</h4>
-            <p>Total Conversions</p>
-          </div>
-          <div class="summary-card">
-            <h4>${topPerformer ? topPerformer.employeeName : "-"}</h4>
-            <p>Top Performer (${
-              topPerformer ? topPerformer.conversionRate : 0
-            }%)</p>
-          </div>
-        `;
+    <div class="summary-card">
+      <h4>${totalEmployees}</h4>
+      <p>Total Employees</p>
+    </div>
+    <div class="summary-card">
+      <h4>${avgConversionRate}%</h4>
+      <p>Average Conversion Rate</p>
+    </div>
+    <div class="summary-card">
+      <h4>${totalLeads}</h4>
+      <p>Total Leads Analyzed</p>
+    </div>
+    <div class="summary-card">
+      <h4>${totalConverted}</h4>
+      <p>Total Conversions</p>
+    </div>
+  `;
 
         $("#analytics-summary").html(summaryHtml);
       }
