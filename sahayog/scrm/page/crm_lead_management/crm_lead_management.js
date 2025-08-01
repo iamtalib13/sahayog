@@ -411,6 +411,18 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         .export-cancel-btn:hover {
           background: #f5f7fa;
         }
+
+        /* Analytics Loading Styles */
+        .analytics-loading {
+          text-align: center;
+          padding: 40px;
+          color: #6c7680;
+        }
+        .analytics-loading i {
+          font-size: 24px;
+          margin-bottom: 16px;
+          display: block;
+        }
       </style>
 
       <div class="row mb-4">
@@ -457,31 +469,39 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         <h4 style="margin: 0 0 24px 0; font-weight: 600; color: #2e3338;">Employee Conversion Rate Analytics</h4>
         <p id="analytics-date-range" style="color: #6c7680; margin-bottom: 16px;"></p>
 
-        <div class="analytics-summary" id="analytics-summary">
-          <!-- Summary cards will be populated here -->
+        <div id="analytics-loading" class="analytics-loading" style="display: none;">
+          <i class="fa fa-spinner fa-spin"></i>
+          <div>Loading analytics data...</div>
+          <small>Please wait while we fetch all leads for analysis</small>
         </div>
-        
-        <div style="max-height: 60vh; overflow-y: auto;">
-          <table class="analytics-table">
-            <thead>
-              <tr>
-                <th style="width: 50px;">#</th>
-                <th>Employee Name</th>
-                <th>Employee ID</th>
-                <th>Designation</th>
-                <th>Branch</th>
-                <th style="width: 100px;">Total Leads</th>
-                <th style="width: 100px;">Converted</th>
-                <th style="width: 100px;">Follow Up</th>
-                <th style="width: 120px;">Not Interested</th>
-                <th style="width: 120px;">Conversion Rate</th>
-                <th style="width: 150px;">Progress</th>
-              </tr>
-            </thead>
-            <tbody id="analytics-table-body">
-              <!-- Analytics data will be populated here -->
-            </tbody>
-          </table>
+
+        <div id="analytics-content" style="display: none;">
+          <div class="analytics-summary" id="analytics-summary">
+            <!-- Summary cards will be populated here -->
+          </div>
+          
+          <div style="max-height: 60vh; overflow-y: auto;">
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th>Employee Name</th>
+                  <th>Employee ID</th>
+                  <th>Designation</th>
+                  <th>Branch</th>
+                  <th style="width: 100px;">Total Leads</th>
+                  <th style="width: 100px;">Converted</th>
+                  <th style="width: 100px;">Follow Up</th>
+                  <th style="width: 120px;">Not Interested</th>
+                  <th style="width: 120px;">Conversion Rate</th>
+                  <th style="width: 150px;">Progress</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-table-body">
+                <!-- Analytics data will be populated here -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1105,11 +1125,211 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         render_lead_list(currentLeads);
       });
 
+      // **COMPLETELY REWRITTEN: Analytics function to fetch ALL leads for analysis**
+      async function generateAnalyticsData() {
+        try {
+          // Show loading state
+          $("#analytics-loading").show();
+          $("#analytics-content").hide();
+
+          const filters = getDateFilters();
+
+          console.log("Starting analytics generation for all leads...");
+
+          // Fetch ALL leads for analytics (not just paginated ones)
+          let allAnalyticsLeads = [];
+          const batchSize = 500;
+          let batchStart = 0;
+          let hasMore = true;
+
+          // Get total count first
+          const totalCount = await frappe.db.count("Lead", {
+            filters: filters,
+          });
+
+          console.log(`Total leads for analytics: ${totalCount}`);
+
+          if (totalCount === 0) {
+            $("#analytics-loading").hide();
+            $("#analytics-content").show();
+            $("#analytics-table-body").html(
+              '<tr><td colspan="11" class="text-center">No data available for the selected date range</td></tr>'
+            );
+            renderAnalyticsSummary([]);
+            return;
+          }
+
+          // Fetch all leads in batches
+          while (hasMore) {
+            try {
+              console.log(
+                `Fetching analytics batch starting from ${batchStart}`
+              );
+
+              const batchLeads = await frappe.call({
+                method: "frappe.client.get_list",
+                args: {
+                  doctype: "Lead",
+                  fields: [
+                    "name",
+                    "status",
+                    "lead_owner",
+                    "creation",
+                    "custom_branch",
+                    "source",
+                    "lead_name",
+                    "custom_region",
+                    "custom_zone",
+                    "mobile_no",
+                  ],
+                  filters: filters,
+                  limit_start: batchStart,
+                  limit_page_length: batchSize,
+                  order_by: "creation desc",
+                  as_dict: true,
+                },
+              });
+
+              const leads = batchLeads.message || [];
+
+              if (leads.length === 0) {
+                hasMore = false;
+                break;
+              }
+
+              // Transform the leads to match our expected structure
+              const transformedLeads = leads.map((lead) => ({
+                name: lead.name,
+                status: lead.status,
+                lead_owner: lead.lead_owner,
+                creation: lead.creation,
+                branch: lead.custom_branch,
+                source: lead.source,
+                lead_name: lead.lead_name,
+                region: lead.custom_region,
+                zone: lead.custom_zone,
+                contact: lead.mobile_no,
+              }));
+
+              allAnalyticsLeads = [...allAnalyticsLeads, ...transformedLeads];
+
+              // Update employee mapping for new leads
+              await updateEmployeeMapping(transformedLeads);
+
+              batchStart += batchSize;
+
+              // If we got fewer records than requested, we've reached the end
+              if (leads.length < batchSize) {
+                hasMore = false;
+              }
+
+              // Prevent infinite loops - safety check
+              if (allAnalyticsLeads.length >= totalCount) {
+                hasMore = false;
+              }
+            } catch (batchError) {
+              console.error("Error in analytics batch:", batchError);
+              hasMore = false;
+            }
+          }
+
+          console.log(`Loaded ${allAnalyticsLeads.length} leads for analytics`);
+
+          // Generate analytics from ALL leads
+          const employeeStats = {};
+
+          allAnalyticsLeads.forEach((lead) => {
+            const emp = employeeMap[lead.lead_owner];
+            const empKey = lead.lead_owner || "unknown";
+
+            if (!employeeStats[empKey]) {
+              employeeStats[empKey] = {
+                employeeName: emp ? emp.name : lead.lead_owner || "Unknown",
+                employeeId: emp ? emp.id : "-",
+                designation: emp ? emp.designation : "-",
+                branch: emp ? emp.branch : lead.branch || "-",
+                totalLeads: 0,
+                converted: 0,
+                followUp: 0,
+                notInterested: 0,
+                conversionRate: 0,
+              };
+            }
+
+            employeeStats[empKey].totalLeads++;
+
+            switch (lead.status) {
+              case "Converted":
+                employeeStats[empKey].converted++;
+                break;
+              case "Follow Up":
+                employeeStats[empKey].followUp++;
+                break;
+              case "Not Interested":
+                employeeStats[empKey].notInterested++;
+                break;
+            }
+          });
+
+          // Calculate conversion rates
+          analyticsData = Object.values(employeeStats).map((emp) => {
+            emp.conversionRate =
+              emp.totalLeads > 0
+                ? Math.round((emp.converted / emp.totalLeads) * 100)
+                : 0;
+            return emp;
+          });
+
+          // Sort by conversion rate descending
+          analyticsData.sort((a, b) => {
+            // First sort by conversion rate
+            if (b.conversionRate !== a.conversionRate) {
+              return b.conversionRate - a.conversionRate;
+            }
+            // If conversion rates are equal, sort by total leads
+            return b.totalLeads - a.totalLeads;
+          });
+
+          console.log(
+            `Generated analytics for ${analyticsData.length} employees`
+          );
+
+          // Update date range display
+          const fromDate = $("#from-date").val();
+          const toDate = $("#to-date").val();
+
+          let fromDateText = fromDate
+            ? frappe.datetime.str_to_user(fromDate)
+            : "N/A";
+          let toDateText = toDate ? frappe.datetime.str_to_user(toDate) : "N/A";
+
+          $("#analytics-date-range").text(
+            `Date Range: ${fromDateText} to ${toDateText} | Total Leads Analyzed: ${allAnalyticsLeads.length}`
+          );
+
+          // Hide loading and show content
+          $("#analytics-loading").hide();
+          $("#analytics-content").show();
+
+          // Render the analytics
+          renderAnalyticsTable();
+          renderAnalyticsSummary();
+        } catch (error) {
+          console.error("Error generating analytics:", error);
+          $("#analytics-loading").hide();
+          frappe.msgprint({
+            title: "Analytics Error",
+            message: `Failed to generate analytics: ${error.message}`,
+            indicator: "red",
+          });
+        }
+      }
+
       // Show analytics modal
       $("#view-analytics").on("click", function () {
-        generateAnalyticsData();
         $("#analytics-overlay").show();
         $("#analytics-modal").show();
+        generateAnalyticsData();
       });
 
       // Close analytics modal
@@ -1555,68 +1775,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           });
         }
       });
-
-      function generateAnalyticsData() {
-        const employeeStats = {};
-
-        currentLeads.forEach((lead) => {
-          const emp = employeeMap[lead.lead_owner];
-          const empKey = lead.lead_owner;
-
-          if (!employeeStats[empKey]) {
-            employeeStats[empKey] = {
-              employeeName: emp ? emp.name : lead.lead_owner,
-              employeeId: emp ? emp.id : "-",
-              designation: emp ? emp.designation : "-",
-              branch: lead.branch || "-",
-              totalLeads: 0,
-              converted: 0,
-              followUp: 0,
-              notInterested: 0,
-              conversionRate: 0,
-            };
-          }
-
-          employeeStats[empKey].totalLeads++;
-
-          switch (lead.status) {
-            case "Converted":
-              employeeStats[empKey].converted++;
-              break;
-            case "Follow Up":
-              employeeStats[empKey].followUp++;
-              break;
-            case "Not Interested":
-              employeeStats[empKey].notInterested++;
-              break;
-          }
-        });
-
-        analyticsData = Object.values(employeeStats).map((emp) => {
-          emp.conversionRate =
-            emp.totalLeads > 0
-              ? Math.round((emp.converted / emp.totalLeads) * 100)
-              : 0;
-          return emp;
-        });
-
-        analyticsData.sort((a, b) => b.conversionRate - a.conversionRate);
-
-        const fromDate = $("#from-date").val();
-        const toDate = $("#to-date").val();
-
-        let fromDateText = fromDate
-          ? frappe.datetime.str_to_user(fromDate)
-          : "N/A";
-        let toDateText = toDate ? frappe.datetime.str_to_user(toDate) : "N/A";
-
-        $("#analytics-date-range").text(
-          `Date Range: ${fromDateText} to ${toDateText}`
-        );
-
-        renderAnalyticsTable();
-        renderAnalyticsSummary();
-      }
 
       function renderAnalyticsSummary() {
         const totalEmployees = analyticsData.length;
