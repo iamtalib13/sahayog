@@ -17,7 +17,7 @@
  "is_hidden": 0,
  "label": "Employee CRM",
  "links": [],
- "modified": "2025-07-14 16:29:38.927000",
+ "modified": "2025-08-02 12:57:35.886943",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Employee CRM",
@@ -31,7 +31,7 @@
    "role": "Sales User"
   }
  ],
- "sequence_id": 62.0,
+ "sequence_id": 76.0,
  "shortcuts": [
   {
    "color": "Grey",

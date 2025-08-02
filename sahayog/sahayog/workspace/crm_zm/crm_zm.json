@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "CRM-ZM",
  "links": [],
- "modified": "2025-07-29 17:13:53.324736",
+ "modified": "2025-08-02 12:57:35.924825",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM-ZM",
@@ -26,7 +26,7 @@
    "role": "Zonal Manager"
   }
  ],
- "sequence_id": 66.0,
+ "sequence_id": 79.0,
  "shortcuts": [
   {
    "color": "Grey",

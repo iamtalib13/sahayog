@@ -54,7 +54,6 @@
       .card {
         border-radius: 16px;
         padding: 8px 14px;
-        /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); */
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -62,7 +61,7 @@
         overflow: hidden;
         text-align: left;
         min-height: 50px;
-        border: 1px solid #374151;
+        border: 1px solid #cdcdcd;
       }
       .card h2 {
         font-size: 20px;
@@ -73,24 +72,6 @@
         margin: 0;
         font-size: 12px;
         font-weight: 500;
-      }
-      .donut {
-        width: 100px;
-        height: 100px;
-        margin: 0 auto;
-        position: relative;
-      }
-      .donut svg {
-        transform: rotate(-90deg);
-      }
-      .donut-center {
-        position: absolute;
-        top: 35%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        font-weight: bold;
-        color: #0e0808;
       }
       @media (max-width: 600px) {
         .card h2 {
@@ -109,7 +90,7 @@
     <div class="dashboard">
       <div class="header">
         <p style="text-align: right; color: #6b7280; font-size: 16px">
-          Last Update: <span id="date">01-01-1991</span>
+          Last Update: <span id="date"></span>
         </p>
         <h1 id="employee_name">Data Is Not available</h1>
         <p id="branch_designation"></p>
@@ -158,82 +139,148 @@
       async function loadKPI() {
         try {
           const res = await fetch(
-            "/api/method/sahayog.mis.doctype.bdo_performance.bdo_performance.get_employee_api"
+            "/api/method/sahayog.mis.doctype.bdo_performance.bdo_performance.get_user_mis_data"
           );
           const data = await res.json();
-          const kpi = data.message;
-          if (data && data.message) {
-            const modified = new Date(data.message.modified);
 
-            // Extract day, month, and year
-            const day = modified.getDate();
-            const month = modified.getMonth() + 1; // Month is zero-indexed
-            const year = modified.getFullYear();
+          console.log("API Response:", data);
 
-            // Format as "25/7/2025"
-            const formatted = `${day}/${month}/${year}`;
+          if (data.message && data.message.success) {
+            const kpiData = data.message.data;
+            console.log("KPI Data:", kpiData);
 
-            document.getElementById("date").textContent = formatted;
+            // Update last updated date
+            if (data.message.last_updated) {
+              const updateDate = new Date(data.message.last_updated);
+              const day = updateDate.getDate();
+              const month = updateDate.getMonth() + 1;
+              const year = updateDate.getFullYear();
+              const formatted = `${day}/${month}/${year}`;
+              document.getElementById("date").textContent = formatted;
+            }
+
+            // Update header information
+            document.getElementById("employee_name").textContent =
+              kpiData.Name || kpiData.name || "N/A";
+            document.getElementById("branch_designation").textContent = `${
+              kpiData["Branch Name"] || kpiData.branch_name || "N/A"
+            } – ${
+              kpiData["Designation Name"] || kpiData.designation_name || "N/A"
+            }`;
+
+            // Update info grid
+            const infoHtml = `
+              <div><strong>Zone:</strong> ${
+                kpiData["Zone Name"] || kpiData.zone_name || "N/A"
+              }</div>
+              <div><strong>Region:</strong> ${
+                kpiData["Region Name"] || kpiData.region_name || "N/A"
+              }</div>
+              <div><strong>District:</strong> ${
+                kpiData["District Name"] || kpiData.district_name || "N/A"
+              }</div>
+              <div><strong>Emp ID:</strong> ${
+                kpiData.EmpID || kpiData.emp_id || "N/A"
+              }</div>
+              <div><strong>Join Duration:</strong> ${
+                kpiData["Join dur"] || kpiData.join_duration || "N/A"
+              }</div>
+              <div><strong>SSA Agents:</strong> ${
+                kpiData["Total ss/Agnt"] || kpiData.total_agents || 0
+              } (New: ${
+              kpiData["New Ss/Agnt"] || kpiData.new_agents || 0
+            })</div>
+              <div><strong>Active:</strong> ${
+                kpiData.Active || kpiData.active || 0
+              }</div>
+              <div><strong>Inactive:</strong> ${
+                kpiData.Inactive || kpiData.inactive || 0
+              }</div>
+            `;
+            document.getElementById("info-grid").innerHTML = infoHtml;
+
+            // Update KPI cards with MIS data
+            // FD Accounts and Amount
+            document.getElementById("fd_ac").textContent =
+              kpiData["FD AC"] || kpiData.fd_accounts || 0;
+            document.getElementById("fd_atm").textContent = formatMoney(
+              kpiData["FD AMT"] || kpiData.fd_amount || 0
+            );
+
+            // 6M FD Accounts and Amount
+            document.getElementById("fd_6m_ac").textContent =
+              kpiData["FD 6M AC"] || kpiData.fd_6m_accounts || 0;
+            document.getElementById("fd_6m_amt").textContent = formatMoney(
+              kpiData["FD 6M AMT"] || kpiData.fd_6m_amount || 0
+            );
+
+            // DAM Accounts and Amount
+            document.getElementById("dam_ac").textContent =
+              kpiData["DAM AC"] || kpiData.dam_accounts || 0;
+            document.getElementById("dam_amt").textContent = formatMoney(
+              kpiData["DAM AMT"] || kpiData.dam_amount || 0
+            );
+
+            // RD Demand and Collection
+            document.getElementById("rd_demand").textContent = formatMoney(
+              kpiData["TOTAL RD/SMBG DEMAND"] ||
+                kpiData.total_rd_smbg_demand ||
+                0
+            );
+            document.getElementById("rd_collection").textContent = formatMoney(
+              kpiData["TOTAL RD/SMBG COLLECTION"] ||
+                kpiData.total_rd_smbg_collection ||
+                0
+            );
+
+            // New SMBG
+            document.getElementById("new_smbg_ac").textContent =
+              kpiData["NEW SMBG AC"] || kpiData.new_smbg_accounts || 0;
+            document.getElementById("new_smbg_amt").textContent = formatMoney(
+              kpiData["NEW SMBG AMT"] || kpiData.new_smbg_amount || 0
+            );
+
+            // New RD
+            document.getElementById("new_rd_ac").textContent =
+              kpiData["NEW RD AC"] || kpiData.new_rd_accounts || 0;
+            document.getElementById("new_rd_amt").textContent = formatMoney(
+              kpiData["NEW RD AMT"] || kpiData.new_rd_amount || 0
+            );
+
+            // MIS Amount
+            document.getElementById("mis_amt").textContent = formatMoney(
+              kpiData["MIS AMT"] || kpiData.mis_amount || 0
+            );
+
+            // Calculate achievement percentage if needed
+            const damAmount = parseFloat(kpiData["DAM AMT"] || 0);
+            const achievedPercent =
+              damAmount > 0 ? Math.round((damAmount / 100000) * 100) : 0; // Adjust calculation as needed
+            document.getElementById(
+              "achieved_percent"
+            ).textContent = `${achievedPercent}%`;
+          } else {
+            console.error(
+              "Error in response:",
+              data.message?.message || "Unknown error"
+            );
+            document.getElementById("employee_name").textContent =
+              "Error loading data";
           }
-          document.getElementById("employee_name").textContent = kpi.name1;
-          document.getElementById(
-            "branch_designation"
-          ).textContent = `${kpi.branch_name} – ${kpi.designation_name}`;
-          const infoHtml = `
-          <div><strong>Zone:</strong> ${kpi.zone_name}</div>
-          <div><strong>Region:</strong> ${kpi.region_name}</div>
-          <div><strong>District:</strong> ${kpi.district_name}</div>
-          <div><strong>Emp ID:</strong> ${kpi.empid}</div>
-          <div><strong>Join Duration:</strong> ${kpi.join_dur}</div>
-          <div><strong>SSA Agents:</strong> ${kpi.total_ssagnt} (New: ${kpi.new_ssagnt})</div>
-          <div><strong>Active:</strong> ${kpi.active}</div>
-          <div><strong>Inactive:</strong> ${kpi.inactive}</div>
-        `;
-          document.getElementById("info-grid").innerHTML = infoHtml;
-          document.getElementById("fd_ac").textContent = kpi.fd_ac || 0;
-          document.getElementById("fd_atm").textContent = kpi.fd_atm || 0;
-
-          document.getElementById("fd_6m_ac").textContent = kpi.fd_6m_ac || 0;
-          document.getElementById("fd_6m_amt").textContent = kpi.fd_6m_amt || 0;
-
-          document.getElementById("dam_ac").textContent = kpi.dam_ac || 0;
-          document.getElementById("dam_amt").textContent = formatMoney(
-            kpi.dam_amt
-          );
-
-          document.getElementById("rd_demand").textContent = formatMoney(
-            kpi.total_rdsmbg_demand
-          );
-          document.getElementById("rd_collection").textContent = formatMoney(
-            kpi.total_rdsmbg_collection
-          );
-
-          document.getElementById("new_smbg_ac").textContent =
-            kpi.new_smbg_ac || 0;
-          document.getElementById("new_smbg_amt").textContent = formatMoney(
-            kpi.new_smbg_amt
-          );
-
-          document.getElementById("new_rd_ac").textContent = kpi.new_rd_ac || 0;
-          document.getElementById("new_rd_amt").textContent = formatMoney(
-            kpi.new_rd_amt
-          );
-
-          document.getElementById("mis_amt").textContent = formatMoney(
-            kpi.mis_amt
-          );
-          document.getElementById(
-            "achieved_percent"
-          ).textContent = `${kpi.percent_achieved}%`;
         } catch (err) {
           console.error("Error fetching KPI data:", err);
+          document.getElementById("employee_name").textContent =
+            "Error loading data";
         }
       }
+
       function formatMoney(value) {
-        return (value || 0).toLocaleString("en-IN", {
+        const numValue = parseFloat(value) || 0;
+        return numValue.toLocaleString("en-IN", {
           maximumFractionDigits: 0,
         });
       }
+
       loadKPI();
     </script>
   </body>

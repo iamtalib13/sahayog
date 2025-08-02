@@ -8,6 +8,7 @@
  "field_order": [
   "report_name",
   "report_attachment",
+  "analytics_chart",
   "column_break_pksx",
   "last_updated_date",
   "is_active"
@@ -38,12 +39,19 @@
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active"
+  },
+  {
+   "fieldname": "analytics_chart",
+   "fieldtype": "Select",
+   "label": "Analytics Chart",
+   "options": "\nBDO Performance"
   }
  ],
  "grid_page_length": 50,
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-29 12:25:03.928915",
+ "modified": "2025-08-02 13:29:32.381950",
  "modified_by": "Administrator",
  "module": "MIS",
  "name": "MIS Report",

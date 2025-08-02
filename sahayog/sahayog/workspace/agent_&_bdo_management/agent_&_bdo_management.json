@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Agent & BDO Management",
  "links": [],
- "modified": "2025-07-14 16:29:38.872625",
+ "modified": "2025-08-02 12:57:35.859647",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Agent & BDO Management",
@@ -36,7 +36,7 @@
    "role": "Trainer Head"
   }
  ],
- "sequence_id": 60.0,
+ "sequence_id": 74.0,
  "shortcuts": [
   {
    "color": "Grey",

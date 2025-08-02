@@ -18,7 +18,7 @@
  "is_hidden": 0,
  "label": "Employee ESS",
  "links": [],
- "modified": "2025-07-14 16:29:36.859656",
+ "modified": "2025-08-02 12:57:34.681977",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Employee ESS",
@@ -32,7 +32,7 @@
    "role": "Employee"
   }
  ],
- "sequence_id": 3.0,
+ "sequence_id": 4.0,
  "shortcuts": [],
  "title": "Employee ESS"
 }

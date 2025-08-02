@@ -9,231 +9,516 @@ frappe.pages["mis-dashboard"].on_page_load = function (wrapper) {
       "/assets/sahayog/css/select2.min.css",
     ],
     () => {
-      const page = frappe.ui.make_app_page({
-        parent: wrapper,
-        title: "MIS Dashboard",
-        single_column: true,
-      });
-
-      let hotInstance = null;
-
-      $(wrapper).find(".layout-main-section").html(`
-        <style>
-          .handsontable {
-            font-size: 13px;
-          }
-          .ht_master .htCore thead th {
-            position: sticky;
-            top: 0;
-            background: #fff;
-            z-index: 2;
-          }
-          #export-btn {
-            display: none;
-            float: right;
-            margin-bottom: 10px;
-          }
-          #report-table-container {
-            padding: 10px;
-          }
-          #hot-table-wrapper {
-            overflow-x: auto;
-            border: 1px solid #ddd;
-            padding: 5px;
-          }
-        </style>
-
-        <div class="mis-dashboard-controls" style="margin-bottom: 20px;">
-          <select id="mis-report-dropdown" class="form-control" style="width: 80%; margin-bottom: 10px;"></select>
-          <button id="get-report-btn" class="btn btn-primary">Get Report</button>
-        </div>
-
-        <div id="report-table-container">
-          <button id="export-btn" class="btn btn-secondary">Export CSV</button>
-          <div id="hot-table"></div>
-        </div>
-      `);
-
-      // Populate report dropdown
-      frappe.db
-        .get_list("MIS Report", {
-          fields: ["name", "last_updated_date"],
-          filters: { is_active: 1 },
-          limit: 100,
-        })
-        .then((reports) => {
-          const dropdown = $("#mis-report-dropdown");
-          dropdown.empty().append(`<option></option>`);
-
-          reports.forEach((report) => {
-            dropdown.append(
-              `<option value="${report.name}" data-last-updated="${report.last_updated_date}">
-                ${report.name}
-              </option>`
-            );
-          });
-
-          dropdown.select2({
-            placeholder: "Search MIS Report",
-            allowClear: true,
-            width: "resolve",
-            templateResult: formatOption,
-            templateSelection: formatSelection,
-            escapeMarkup: (markup) => markup,
-          });
-        });
-
-      function formatOption(option) {
-        if (!option.id) return option.text;
-
-        const name = option.text;
-        const updatedRaw = option.element?.dataset?.lastUpdated;
-        const formattedDate = updatedRaw
-          ? frappe.datetime.str_to_user(updatedRaw)
-          : "N/A";
-
-        return `
-          <div>
-            <div>${name}</div>
-            <div style="font-size: 11px;">${formattedDate}</div>
-          </div>
-        `;
-      }
-
-      function formatSelection(option) {
-        return option.text;
-      }
-
-      // Load selected report
-      $(wrapper).on("click", "#get-report-btn", () => {
-        const selectedReport = $("#mis-report-dropdown").val();
-        if (!selectedReport) return frappe.msgprint("Please select a report");
-
-        frappe.db.get_doc("MIS Report", selectedReport).then((doc) => {
-          const fileUrl = doc.report_attachment;
-          const reportName = selectedReport;
-          const lastUpdated = frappe.datetime.str_to_user(
-            doc.last_updated_date
-          );
-
-          if (!fileUrl) return frappe.msgprint("No attachment found.");
-
-          const ext = fileUrl.split(".").pop().toLowerCase();
-
-          fetch(fileUrl)
-            .then((res) => {
-              if (!res.ok) throw new Error("Failed to fetch file.");
-              return ext === "csv"
-                ? res
-                    .text()
-                    .then((text) =>
-                      parseCSVtoTable(text, reportName, lastUpdated)
-                    )
-                : ["xlsx", "xls"].includes(ext)
-                ? res
-                    .arrayBuffer()
-                    .then((buffer) =>
-                      parseExcelToTable(buffer, reportName, lastUpdated)
-                    )
-                : frappe.msgprint("Unsupported file format.");
-            })
-            .catch((err) => {
-              console.error(err);
-              frappe.msgprint("Failed to load file content");
-            });
-        });
-      });
-
-      function parseCSVtoTable(csvText, reportName, lastUpdated) {
-        const data = Papa.parse(csvText.trim(), { skipEmptyLines: true }).data;
-        renderTable(data, reportName, lastUpdated);
-      }
-
-      function parseExcelToTable(arrayBuffer, reportName, lastUpdated) {
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-        renderTable(data, reportName, lastUpdated);
-      }
-
-      function renderTable(data, reportName, lastUpdated) {
-        const container = document.getElementById("hot-table");
-        container.innerHTML = "";
-
-        if (!data?.length) {
-          container.innerHTML = "<p>No data found.</p>";
-          $("#export-btn").hide();
-          return;
-        }
-
-        $("#export-btn").show();
-
-        const colHeaders = data[0];
-        const rowData = data.slice(1);
-
-        const metadataHTML = `
-          <div style="margin-bottom: 10px;">
-            <h3 style="margin: 0;">${reportName || "N/A"}</h3>
-            <div style="margin-top: 2px;"><small><strong>Last Updated:</strong> ${
-              lastUpdated || "N/A"
-            }</small></div>
-          </div>
-        `;
-
-        container.innerHTML = metadataHTML;
-
-        const scrollWrapper = document.createElement("div");
-        scrollWrapper.id = "hot-table-wrapper";
-
-        const hotContainer = document.createElement("div");
-        scrollWrapper.appendChild(hotContainer);
-        container.appendChild(scrollWrapper);
-
-        hotInstance = new Handsontable(hotContainer, {
-          data: rowData,
-          colHeaders,
-          rowHeaders: true,
-          width: "100%",
-          height: 400,
-          licenseKey: "non-commercial-and-evaluation",
-          filters: true,
-          dropdownMenu: {
-            items: {
-              filter_by_condition: {},
-              filter_by_value: {},
-              filter_action_bar: {},
-            },
-          },
-          contextMenu: {
-            items: {
-              filter_by_condition: {},
-              filter_by_value: {},
-              filter_action_bar: {},
-            },
-          },
-          readOnly: true,
-          stretchH: "all",
-          autoWrapRow: true,
-        });
-      }
-
-      // Export CSV
-      $(wrapper).on("click", "#export-btn", () => {
-        if (!hotInstance) return frappe.msgprint("Please load a report first.");
-
-        const exportPlugin = hotInstance.getPlugin("exportFile");
-
-        exportPlugin.downloadFile("csv", {
-          bom: true,
-          columnHeaders: true,
-          exportHiddenColumns: false,
-          exportHiddenRows: false,
-          fileExtension: "csv",
-          filename: `report_[YYYY]-[MM]-[DD]`,
-          mimeType: "text/csv",
-          rowHeaders: true,
-        });
-      });
+      new MISDashboard(wrapper);
     }
   );
 };
+
+class MISDashboard {
+  constructor(wrapper) {
+    this.wrapper = wrapper;
+    this.hotInstance = null;
+    this.currentReportData = null;
+
+    this.setupPage();
+    this.renderUI();
+    this.bindEvents();
+    this.loadReports();
+  }
+
+  setupPage() {
+    this.page = frappe.ui.make_app_page({
+      parent: this.wrapper,
+      title: "MIS Dashboard",
+      single_column: true,
+    });
+  }
+
+  renderUI() {
+    const styles = `
+      <style>
+        /* Minimal Container */
+        .mis-container { 
+          padding: 12px;
+          background: #f8fafc;
+          min-height: 100vh;
+        }
+
+        /* Compact Header */
+        .mis-header {
+          background: linear-gradient(135deg, #006767 0%, #004d4d 100%);
+          color: white;
+          padding: 16px 20px;
+          border-radius: 8px;
+          margin-bottom: 12px;
+          box-shadow: 0 2px 8px rgba(0, 103, 103, 0.2);
+        }
+        .mis-header h1 {
+          font-size: 20px;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        /* Compact Controls */
+        .mis-controls { 
+          background: white;
+          padding: 16px; 
+          border-radius: 8px; 
+          margin-bottom: 12px;
+          box-shadow: 0 1px 3px rgba(0, 103, 103, 0.1);
+          border: 1px solid #e2e8f0;
+        }
+
+        /* Inline Controls Layout */
+        .controls-row {
+          display: flex;
+          gap: 12px;
+          align-items: end;
+        }
+        .controls-select {
+          flex: 1;
+        }
+        .controls-button {
+          flex-shrink: 0;
+        }
+
+        /* Compact Select2 */
+        .select2-container--default .select2-selection--single {
+          height: 36px !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 6px !important;
+          padding: 0 12px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+          line-height: 34px !important;
+          font-size: 14px !important;
+        }
+        .select2-container--default.select2-container--focus .select2-selection--single {
+          border-color: #006767 !important;
+        }
+
+        /* Compact Button */
+        .btn-load-report {
+          background: #006767;
+          border: none;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s;
+          height: 36px;
+        }
+        .btn-load-report:hover { background: #004d4d; }
+
+        /* Compact Report Info */
+        .mis-report-info {
+          background: #006767;
+          color: white;
+          padding: 12px 16px;
+          border-radius: 6px;
+          margin-bottom: 12px;
+          display: none;
+          font-size: 14px;
+        }
+        .mis-report-title { 
+          font-weight: 600; 
+          margin-bottom: 4px;
+        }
+
+        /* Minimal Table Container */
+        .mis-table-container {
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 1px 3px rgba(0, 103, 103, 0.1);
+          border: 1px solid #e2e8f0;
+          overflow: hidden;
+        }
+
+        /* Compact Table Header */
+        .mis-table-header {
+          background: #f8fafc;
+          padding: 12px 16px;
+          border-bottom: 1px solid #e2e8f0;
+          display: none;
+        }
+
+        /* Compact Export Button */
+        .mis-export-btn {
+          background: #10b981;
+          border: none;
+          color: white;
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-size: 13px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .mis-export-btn:hover { background: #059669; }
+
+        /* Table with Scrollbars */
+        #table-content {
+          height: calc(100vh - 220px);
+          overflow: auto;
+        }
+        
+        /* Handsontable Optimizations */
+        .handsontable { 
+          font-size: 12px;
+        }
+        .ht_master .htCore thead th {
+          background: #006767 !important;
+          color: white !important;
+          font-weight: 500 !important;
+          font-size: 12px !important;
+          padding: 8px !important;
+          position: sticky !important;
+          top: 0 !important;
+          z-index: 10 !important;
+        }
+        .ht_master .htCore tbody td {
+          padding: 6px 8px !important;
+          font-size: 12px !important;
+        }
+        .ht_master .htCore tbody tr:nth-child(even) {
+          background-color: #f9fafb;
+        }
+
+        /* Custom Scrollbars for Table */
+        #table-content::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        #table-content::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 4px;
+        }
+        #table-content::-webkit-scrollbar-thumb {
+          background: #006767;
+          border-radius: 4px;
+        }
+        #table-content::-webkit-scrollbar-thumb:hover {
+          background: #004d4d;
+        }
+
+        /* Handsontable Scrollbars */
+        .ht_master .wtHolder::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .ht_master .wtHolder::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        .ht_master .wtHolder::-webkit-scrollbar-thumb {
+          background: #006767;
+          border-radius: 4px;
+        }
+
+        /* Minimal States */
+        .loading-indicator, .no-data {
+          text-align: center;
+          padding: 40px 20px;
+          font-size: 14px;
+          color: #64748b;
+        }
+        .loading-spinner {
+          width: 24px;
+          height: 24px;
+          border: 2px solid #e2e8f0;
+          border-top: 2px solid #006767;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+          .controls-row {
+            flex-direction: column;
+            gap: 8px;
+          }
+          .btn-load-report {
+            width: 100%;
+          }
+        }
+      </style>
+    `;
+
+    const html = `
+      ${styles}
+      <div class="mis-container">
+
+        <div class="mis-controls">
+          <div class="controls-row">
+            <div class="controls-select">
+              <select id="mis-report-dropdown" class="form-control" style="width: 100%;"></select>
+            </div>
+            <div class="controls-button">
+              <button id="load-report-btn" class="btn-load-report">
+                Load Report
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mis-report-info" id="report-info">
+          <div class="mis-report-title" id="report-title"></div>
+          <div class="mis-report-meta" id="report-meta"></div>
+        </div>
+
+        <div class="mis-table-container">
+          <div class="mis-table-header" id="table-header">
+            <button id="export-btn" class="mis-export-btn">
+              Export CSV
+            </button>
+          </div>
+          <div id="table-content">
+            <div class="no-data">Select a report to view data</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    $(this.wrapper).find(".layout-main-section").html(html);
+  }
+
+  bindEvents() {
+    $(this.wrapper).on("click", "#load-report-btn", () =>
+      this.loadSelectedReport()
+    );
+    $(this.wrapper).on("click", "#export-btn", () => this.exportCSV());
+  }
+
+  async loadReports() {
+    try {
+      const reports = await frappe.db.get_list("MIS Report", {
+        fields: ["name", "last_updated_date"],
+        filters: { is_active: 1 },
+        limit: 100,
+      });
+
+      this.populateDropdown(reports);
+    } catch (error) {
+      console.error("Failed to load reports:", error);
+      frappe.msgprint("Failed to load reports");
+    }
+  }
+
+  populateDropdown(reports) {
+    const dropdown = $("#mis-report-dropdown");
+    dropdown.empty().append(`<option value="">Select report...</option>`);
+
+    reports.forEach((report) => {
+      dropdown.append(
+        `<option value="${report.name}" data-last-updated="${report.last_updated_date}">
+          ${report.name}
+        </option>`
+      );
+    });
+
+    dropdown.select2({
+      placeholder: "Search reports...",
+      allowClear: true,
+      width: "100%",
+      templateResult: this.formatDropdownOption,
+      templateSelection: this.formatDropdownSelection,
+      escapeMarkup: (markup) => markup,
+    });
+  }
+
+  formatDropdownOption(option) {
+    if (!option.id) return option.text;
+
+    const updatedDate = option.element?.dataset?.lastUpdated;
+    const formattedDate = updatedDate
+      ? frappe.datetime.str_to_user(updatedDate)
+      : "N/A";
+
+    return `
+      <div style="padding: 4px 0;">
+        <div style="font-weight: 500;">${option.text}</div>
+        <div style="font-size: 11px; color: #64748b;">Updated: ${formattedDate}</div>
+      </div>
+    `;
+  }
+
+  formatDropdownSelection(option) {
+    return option.text;
+  }
+
+  async loadSelectedReport() {
+    const selectedReport = $("#mis-report-dropdown").val();
+    if (!selectedReport) {
+      frappe.msgprint("Please select a report");
+      return;
+    }
+
+    this.showLoading();
+
+    try {
+      const doc = await frappe.db.get_doc("MIS Report", selectedReport);
+      await this.processReportFile(doc);
+    } catch (error) {
+      console.error("Failed to load report:", error);
+      frappe.msgprint("Failed to load report");
+      this.showNoData("Failed to load report");
+    }
+  }
+
+  async processReportFile(doc) {
+    const {
+      report_attachment: fileUrl,
+      name: reportName,
+      last_updated_date,
+    } = doc;
+
+    if (!fileUrl) {
+      frappe.msgprint("No file attachment found");
+      this.showNoData("No file found");
+      return;
+    }
+
+    const fileExtension = fileUrl.split(".").pop().toLowerCase();
+
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to fetch file");
+
+      let data;
+      if (fileExtension === "csv") {
+        const text = await response.text();
+        data = this.parseCSV(text);
+      } else if (["xlsx", "xls"].includes(fileExtension)) {
+        const buffer = await response.arrayBuffer();
+        data = this.parseExcel(buffer);
+      } else {
+        frappe.msgprint("Unsupported file format");
+        this.showNoData("Unsupported format");
+        return;
+      }
+
+      this.renderReport(data, reportName, last_updated_date);
+    } catch (error) {
+      console.error("File processing error:", error);
+      frappe.msgprint("Failed to process file");
+      this.showNoData("Processing failed");
+    }
+  }
+
+  parseCSV(csvText) {
+    return Papa.parse(csvText.trim(), { skipEmptyLines: true }).data;
+  }
+
+  parseExcel(arrayBuffer) {
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  }
+
+  renderReport(data, reportName, lastUpdated) {
+    if (!data?.length) {
+      this.showNoData("No data found");
+      return;
+    }
+
+    this.currentReportData = data;
+    this.updateReportInfo(reportName, lastUpdated);
+    this.renderTable(data);
+    this.showTableHeader();
+  }
+
+  updateReportInfo(reportName, lastUpdated) {
+    $("#report-title").text(reportName);
+    $("#report-meta").text(
+      `Updated: ${frappe.datetime.str_to_user(lastUpdated) || "N/A"}`
+    );
+    $("#report-info").show();
+  }
+
+  renderTable(data) {
+    const container = document.getElementById("table-content");
+    container.innerHTML = '<div id="handsontable-container"></div>';
+
+    const [headers, ...rows] = data;
+
+    this.hotInstance = new Handsontable(
+      document.getElementById("handsontable-container"),
+      {
+        data: rows,
+        colHeaders: headers,
+        rowHeaders: true,
+        width: "100%",
+        height: "100%",
+        licenseKey: "non-commercial-and-evaluation",
+        filters: true,
+        dropdownMenu: [
+          "filter_by_condition",
+          "filter_by_value",
+          "filter_action_bar",
+        ],
+        contextMenu: [
+          "filter_by_condition",
+          "filter_by_value",
+          "filter_action_bar",
+        ],
+        readOnly: true,
+        stretchH: "all",
+        manualColumnResize: true,
+        manualRowResize: true,
+        scrollbarX: true,
+        scrollbarY: true,
+      }
+    );
+  }
+
+  showLoading() {
+    $("#table-content").html(`
+      <div class="loading-indicator">
+        <div class="loading-spinner"></div>
+        <div>Loading...</div>
+      </div>
+    `);
+    $("#report-info").hide();
+    $("#table-header").hide();
+  }
+
+  showNoData(message = "No data") {
+    $("#table-content").html(`<div class="no-data">${message}</div>`);
+    $("#report-info").hide();
+    $("#table-header").hide();
+  }
+
+  showTableHeader() {
+    $("#table-header").show();
+  }
+
+  exportCSV() {
+    if (!this.hotInstance) {
+      frappe.msgprint("No data to export");
+      return;
+    }
+
+    const exportPlugin = this.hotInstance.getPlugin("exportFile");
+    const reportName = $("#report-title")
+      .text()
+      .replace(/[^a-z0-9]/gi, "_")
+      .toLowerCase();
+
+    exportPlugin.downloadFile("csv", {
+      bom: true,
+      columnHeaders: true,
+      exportHiddenColumns: false,
+      exportHiddenRows: false,
+      fileExtension: "csv",
+      filename: `${reportName}_[YYYY]-[MM]-[DD]`,
+      mimeType: "text/csv",
+      rowHeaders: false,
+    });
+  }
+}
