@@ -149,7 +149,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-07-14 16:29:38.768459",
+ "modified": "2025-08-02 12:57:35.786021",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Procurement",
@@ -163,7 +163,7 @@
    "role": "Procurement User"
   }
  ],
- "sequence_id": 57.0,
+ "sequence_id": 69.0,
  "shortcuts": [
   {
    "color": "Grey",

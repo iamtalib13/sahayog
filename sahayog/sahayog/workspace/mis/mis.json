@@ -17,7 +17,7 @@
  "is_hidden": 0,
  "label": "MIS",
  "links": [],
- "modified": "2025-07-29 12:11:47.266317",
+ "modified": "2025-08-02 12:57:35.990882",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "MIS",
@@ -31,7 +31,7 @@
    "role": "MIS User"
   }
  ],
- "sequence_id": 88.0,
+ "sequence_id": 84.0,
  "shortcuts": [],
  "title": "MIS"
 }

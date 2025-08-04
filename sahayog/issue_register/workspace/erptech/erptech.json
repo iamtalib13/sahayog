@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "ERPTech",
  "links": [],
- "modified": "2025-07-14 16:29:38.737466",
+ "modified": "2025-08-02 12:57:35.764420",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "ERPTech",
@@ -23,7 +23,7 @@
  "public": 1,
  "quick_lists": [],
  "roles": [],
- "sequence_id": 56.0,
+ "sequence_id": 67.0,
  "shortcuts": [
   {
    "color": "Grey",

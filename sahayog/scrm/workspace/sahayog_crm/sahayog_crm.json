@@ -18,7 +18,7 @@
  "is_hidden": 0,
  "label": "Sahayog CRM",
  "links": [],
- "modified": "2025-07-14 16:29:39.045321",
+ "modified": "2025-08-02 12:57:35.977430",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Sahayog CRM",
@@ -32,7 +32,7 @@
    "role": "System Manager"
   }
  ],
- "sequence_id": 68.0,
+ "sequence_id": 83.0,
  "shortcuts": [],
  "title": "Sahayog CRM"
 }

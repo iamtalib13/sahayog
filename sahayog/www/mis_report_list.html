@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MIS Report – Dynamic List View</title>
+
+    <!-- ── Minimal styling that mimics the Desk list view ─────────────────── -->
+    <style>
+      body {
+        margin: 0;
+        font: 14px/1.5 "Inter", Arial, sans-serif;
+        color: #495057;
+      }
+      .card {
+        border: 1px solid #dfe3e8;
+        border-radius: 4px;
+        background: #fff;
+      }
+      .card header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid #e3e6eb;
+        padding: 8px 12px;
+      }
+      .card header input {
+        height: 24px;
+        border: 1px solid #dfe3e8;
+        border-radius: 3px;
+        padding: 0 6px;
+        font-size: 12px;
+        color: #6c757d;
+        width: 120px;
+      }
+      .filter-btn {
+        font-size: 12px;
+        padding: 2px 10px;
+        border: 1px solid #dfe3e8;
+        border-radius: 3px;
+        background: #fff;
+        cursor: default;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 12px;
+        white-space: nowrap;
+      }
+      th {
+        font-weight: 500;
+        font-size: 12px;
+        color: #6c757d;
+        background: #f1f3f5;
+      }
+      tr:not(:last-child) {
+        border-bottom: 1px solid #e3e6eb;
+      }
+      tr:hover td {
+        background: #fafbfc;
+      }
+      .checkbox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .checkbox input {
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+      }
+      .tick {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        background: url("data:image/svg+xml,%3Csvg fill='%2366bb6a' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.173 12.727a.75.75 0 0 1-1.06 0L2.47 10.085a.75.75 0 0 1 1.06-1.06l2.114 2.113 4.826-4.826a.75.75 0 0 1 1.06 1.06z'/%3E%3C/svg%3E")
+          center/12px no-repeat;
+        background-color: #e9fbe9;
+      }
+      .loading {
+        padding: 1.5rem;
+        text-align: center;
+        color: #6c757d;
+        font-size: 13px;
+      }
+      .error {
+        color: #d6336c;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card" style="max-width: 960px; margin: 24px auto">
+      <!-- Top bar (search box + Filter pill + order indicator)  -->
+      <header>
+        <input type="text" value="ID" disabled />
+        <span class="filter-btn">Filter ✕</span>
+        <span style="margin-left: auto; font-size: 12px; color: #6c757d"
+          >Last Updated On</span
+        >
+      </header>
+
+      <!-- Loading placeholder -->
+      <div id="state" class="loading">Loading reports…</div>
+
+      <!-- Dynamic table -->
+      <table id="mis-table" style="display: none">
+        <thead>
+          <tr>
+            <th class="checkbox">
+              <input type="checkbox" />
+            </th>
+            <th style="min-width: 240px">ID</th>
+            <th>Last Updated Date</th>
+            <th style="width: 90px">Is Active</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      /* -------- Helpers --------------------------------------------------- */
+      const qs = (sel) => document.querySelector(sel);
+      const esc = (str) => new Option(str).innerHTML; // simple HTML-escape
+      const fmt = (s) => new Date(s).toLocaleDateString("en-GB"); // dd/mm/yyyy
+
+      function getCSRF() {
+        // 1) meta tag
+        const m = document.querySelector('meta[name="csrf-token"]');
+        if (m) return m.content;
+        // 2) frappe global
+        if (window.frappe && frappe.csrf_token) return frappe.csrf_token;
+        // 3) cookie
+        const c = (document.cookie || "")
+          .split(";")
+          .find((c) => c.trim().startsWith("csrf_token="));
+        return c ? decodeURIComponent(c.split("=")[1]) : "";
+      }
+
+      /* -------- Fetch & render data --------------------------------------- */
+      async function loadReports() {
+        try {
+          const headers = { "Content-Type": "application/json" };
+          const token = getCSRF();
+          if (token) headers["X-Frappe-CSRF-Token"] = token;
+
+          const params = new URLSearchParams({
+            fields: JSON.stringify(["name", "modified", "is_active"]),
+            order_by: "modified desc",
+          });
+          const res = await fetch(`/api/resource/MIS Report?${params}`, {
+            credentials: "same-origin",
+            headers,
+          });
+
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          const { data: rows = [] } = await res.json();
+          if (!rows.length) throw new Error("No reports found");
+
+          // build rows
+          const tbody = qs("#mis-table tbody");
+          rows.forEach((r) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td class="checkbox"><input type="checkbox"></td>
+            <td style="min-width: 240px">${esc(r.name)}</td>
+            <td>${fmt(r.modified)}</td>
+            <td class="checkbox">${
+              r.is_active ? '<span class="tick"></span>' : ""
+            }</td>`;
+            tbody.appendChild(tr);
+          });
+
+          qs("#mis-table").style.display = "";
+          qs("#state").remove();
+        } catch (e) {
+          qs("#state").className = "loading error";
+          qs("#state").textContent = "Error: " + e.message;
+          console.error(e);
+        }
+      }
+
+      /* -------- Run on load ---------------------------------------------- */
+      document.readyState === "loading"
+        ? document.addEventListener("DOMContentLoaded", loadReports)
+        : loadReports();
+    </script>
+  </body>
+</html>

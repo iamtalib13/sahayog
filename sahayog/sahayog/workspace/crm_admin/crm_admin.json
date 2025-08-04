@@ -31,7 +31,7 @@
  "is_hidden": 0,
  "label": "CRM Admin",
  "links": [],
- "modified": "2025-07-29 17:18:51.034487",
+ "modified": "2025-08-02 12:57:35.937751",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM Admin",
@@ -45,7 +45,7 @@
    "role": "Sales Manager"
   }
  ],
- "sequence_id": 69.0,
+ "sequence_id": 80.0,
  "shortcuts": [
   {
    "color": "Grey",
