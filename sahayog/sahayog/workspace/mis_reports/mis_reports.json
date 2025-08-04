@@ -1,0 +1,37 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"EVlEsBPZUT\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">MIS Reports</span>\",\"col\":12}},{\"id\":\"1lW--jljDa\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MIS Report Dashboard\",\"col\":3}}]",
+ "creation": "2025-08-02 12:56:47.952773",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "MIS Reports",
+ "links": [],
+ "modified": "2025-08-04 16:00:27.070159",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "MIS Reports",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "MIS",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 86.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "MIS Report Dashboard",
+   "link_to": "mis-dashboard",
+   "type": "Page"
+  }
+ ],
+ "title": "MIS Reports"
+}

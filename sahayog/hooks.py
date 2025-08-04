@@ -459,6 +459,7 @@ fixtures = [
 				"Sahayog Projects",
                 "Sahayog Home",
                 "BDO Performance",
+                "MIS Report List",
 			}
         ]
     ]},
