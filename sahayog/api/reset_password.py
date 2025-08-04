@@ -36,3 +36,21 @@ def custom_change_password(old_password: str, new_password: str):
             "status": "error",
             "message": _("Could not update password. Please try again later.")
         }
+
+
+@frappe.whitelist()
+def set_company_email(email):
+    if not frappe.session.user:
+        return "error"
+
+    if not email.endswith("@sahayogmultistate.com"):
+        return _("Invalid email domain.")
+
+    employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
+    if not employee:
+        return _("Employee record not found.")
+
+    frappe.db.set_value("Employee", employee, "company_email", email)
+    frappe.db.commit()
+
+    return "success"
