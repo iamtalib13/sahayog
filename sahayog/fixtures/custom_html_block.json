@@ -2,6 +2,17 @@
  {
   "docstatus": 0,
   "doctype": "Custom HTML Block",
+  "html": "<iframe\n  src=\"/mis_report_list\"\n  width=\"100%\"\n  height=\"600px\"\n  style=\"border: none; margin: 0; padding: 0; width: 100%; max-width: 100%;\"\n></iframe>\n",
+  "modified": "2025-08-02 15:28:15.461525",
+  "name": "MIS Report List",
+  "private": 0,
+  "roles": [],
+  "script": "// // Get the iframe element\n// const iframe = root_element.querySelector('iframe[src=\"/app/mis-report\"]');\n\n// iframe.addEventListener('load', function() {\n//     try {\n//         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;\n        \n//         const style = iframeDoc.createElement('style');\n//         style.textContent = `\n//             /* Hide the header navbar */\n//             header.navbar.navbar-expand {\n//                 display: none !important;\n//             }\n            \n//             /* Keep sticky-top visible but modify its content - button on LEFT side */\n//             .sticky-top { \n//                 display: flex !important;\n//                 justify-content: flex-start !important;\n//                 align-items: center !important;\n//                 padding: 10px 15px !important;\n//                 background: #ffffff !important;\n//                 border-bottom: 1px solid #dee2e6 !important;\n//                 min-height: 50px !important;\n//             }\n            \n//             /* Hide other unwanted buttons */\n//             button.btn.btn-default.icon-btn {\n//                 display: none !important;\n//             }\n            \n//             button.btn.btn-primary.btn-sm.primary-action {\n//                 display: none !important;\n//             }\n//         `;\n//         iframeDoc.head.appendChild(style);\n        \n//         // Replace sticky-top content with Add New button\n//         setTimeout(() => {\n//             const stickyTop = iframeDoc.querySelector('.sticky-top');\n//             if (stickyTop) {\n//                 // Clear existing content\n//                 stickyTop.innerHTML = '';\n                \n//                 // Create Add New button\n//                 const addNewBtn = iframeDoc.createElement('button');\n//                 addNewBtn.textContent = '+ Add New';\n//                 addNewBtn.className = 'btn btn-primary';\n//                 addNewBtn.style.cssText = `\n//                     background: #007bff;\n//                     color: white;\n//                     border: none;\n//                     padding: 8px 20px;\n//                     border-radius: 4px;\n//                     cursor: pointer;\n//                     font-weight: 500;\n//                 `;\n                \n//                 addNewBtn.onclick = function() {\n//                     // Navigate to your specific MIS Report URL\n//                     window.parent.location.href = '/app/mis-report/new-mis-report-mtdxromdfn';\n//                 };\n                \n//                 stickyTop.appendChild(addNewBtn);\n//             }\n//         }, 100);\n        \n//         console.log('Successfully added navigation to MIS Report form');\n//     } catch (error) {\n//         console.error('Cross-origin restriction - cannot access iframe content');\n//     }\n// });\n",
+  "style": ""
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Custom HTML Block",
   "html": "<iframe src=\"/bdo\" width=\"100%\" height=\"1000px\" style=\"border: none;\"></iframe>",
   "modified": "2025-07-29 11:57:34.631009",
   "name": "BDO Performance",
