@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"EVlEsBPZUT\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">MIS Reports</span>\",\"col\":12}},{\"id\":\"1lW--jljDa\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MIS Report Dashboard\",\"col\":3}}]",
+ "content": "[{\"id\":\"EVlEsBPZUT\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Praman Reports</span>\",\"col\":12}},{\"id\":\"1lW--jljDa\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Praman Report Dashboard\",\"col\":3}}]",
  "creation": "2025-08-02 12:56:47.952773",
  "custom_blocks": [],
  "docstatus": 0,
@@ -11,15 +11,15 @@
  "idx": 0,
  "indicator_color": "",
  "is_hidden": 0,
- "label": "MIS Reports",
+ "label": "Praman Reports",
  "links": [],
- "modified": "2025-08-04 16:00:27.070159",
+ "modified": "2025-08-06 11:56:50.174651",
  "modified_by": "Administrator",
  "module": "Sahayog",
- "name": "MIS Reports",
+ "name": "Praman Reports",
  "number_cards": [],
  "owner": "Administrator",
- "parent_page": "MIS",
+ "parent_page": "Praman",
  "public": 1,
  "quick_lists": [],
  "roles": [],
@@ -28,10 +28,10 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "MIS Report Dashboard",
+   "label": "Praman Report Dashboard",
    "link_to": "mis-dashboard",
    "type": "Page"
   }
  ],
- "title": "MIS Reports"
+ "title": "Praman Reports"
 }
