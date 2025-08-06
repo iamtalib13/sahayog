@@ -12,15 +12,16 @@
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
+ "icon": "",
  "idx": 0,
- "indicator_color": "green",
+ "indicator_color": "",
  "is_hidden": 0,
- "label": "MIS",
+ "label": "Praman",
  "links": [],
- "modified": "2025-08-02 12:57:35.990882",
+ "modified": "2025-08-05 15:34:19.760763",
  "modified_by": "Administrator",
  "module": "Sahayog",
- "name": "MIS",
+ "name": "Praman",
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
@@ -33,5 +34,5 @@
  ],
  "sequence_id": 84.0,
  "shortcuts": [],
- "title": "MIS"
+ "title": "Praman"
 }

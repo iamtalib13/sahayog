@@ -1,6 +1,9 @@
 # Copyright (c) 2025, Developer Team and contributors
 # For license information, please see license.txt
 
+# Copyright (c) 2025, Developer Team and contributors
+# For license information, please see license.txt
+
 import frappe
 from frappe.model.document import Document
 from frappe import _
@@ -10,7 +13,7 @@ import re
 import csv
 
 class BDOPerformance(Document):
-	pass
+    pass
 
 # Try to import openpyxl for Excel support
 try:
@@ -30,7 +33,10 @@ def get_user_mis_data():
         
         # Special handling for Administrator
         if current_user == 'Administrator':
-            return 
+            return {
+                'success': False,
+                'message': 'Administrator access not allowed'
+            }
         
         # Extract Employee ID from user email
         emp_id = extract_emp_id_from_email(current_user)
@@ -44,12 +50,12 @@ def get_user_mis_data():
         # Get the MIS Report record
         mis_report = frappe.get_all(
             'MIS Report',
-            fields=['name', 'report_name', 'report_attachment', 'last_updated_date'],
+            fields=['name', 'report_name', 'report_attachment', 'start_date', 'end_date', 'modified'],
             filters={
                 'analytics_chart': 'BDO Performance',
                 'is_active': 1
             },
-            order_by='last_updated_date desc',
+            order_by='modified desc',
             limit=1
         )
         
@@ -118,7 +124,9 @@ def parse_csv_for_user(file_content, emp_id, report, current_user):
                     'user': current_user,
                     'emp_id': emp_id,
                     'report_name': report.report_name,
-                    'last_updated': report.last_updated_date
+                    'start_date': report.start_date,  # Added this
+                    'end_date': report.end_date,      # Added this
+                    'last_updated': report.modified   # Changed from last_updated_date to modified
                 }
         
         return {
@@ -166,7 +174,9 @@ def parse_excel_for_user(file_content, emp_id, report, current_user):
                     'user': current_user,
                     'emp_id': emp_id,
                     'report_name': report.report_name,
-                    'last_updated': report.last_updated_date
+                    'start_date': report.start_date,  # Added this
+                    'end_date': report.end_date,      # Added this
+                    'last_updated': report.modified   # Changed from last_updated_date to modified
                 }
         
         return {
@@ -181,9 +191,9 @@ def parse_excel_for_user(file_content, emp_id, report, current_user):
 
 def find_emp_id_column(headers):
     """Find employee ID column index"""
-    possible_emp_columns = ['emp_id', 'empid', 'employee_id', 'employee', 'id']
+    possible_emp_columns = ['emp_id', 'empid', 'employee_id', 'employee', 'id', 'EmpID']
     for i, header in enumerate(headers):
-        if header and header.lower() in possible_emp_columns:
+        if header and header.lower().strip() in [col.lower() for col in possible_emp_columns]:
             return i
     return None
 
@@ -201,6 +211,7 @@ def extract_emp_id_from_email(email):
     except Exception as e:
         frappe.log_error(f"Error extracting emp_id from email {email}: {str(e)}")
         return None
+
 
 # @frappe.whitelist()
 # def get_employee_kpi():
