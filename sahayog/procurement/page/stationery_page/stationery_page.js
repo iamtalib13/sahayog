@@ -1073,7 +1073,7 @@ async function render_outward_form() {
   document.getElementById("submit_outward").addEventListener("click", submit_outward);
 
 }
-// SUBMIT OUTWARD FUNCTION & This function collects all data and submits the outward entry
+// SUBMIT OUTWARD FUNCTION & This function collects all data and submits the outward  entry
 async function submit_outward() {
   const supplier = document.getElementById("supplier").value;
   const type = document.getElementById("type").value;
