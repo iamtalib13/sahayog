@@ -11,3 +11,5 @@ sahayog.patches.custom_fields.add_custom_fields_for_item
 sahayog.patches.property_setter_item
 sahayog.patches.set_purchase_order_item_listview_columns
 sahayog.patches.add_role_in_workspace
+
+sahayog.patches.set_employee_create_user_permission_default
