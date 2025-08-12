@@ -20,6 +20,9 @@ app_license = "mit"
 # 		"has_permission": "sahayog.api.permission.has_app_permission"
 # 	}
 # ]
+website_route_rules = [
+    {"from_route": "/me", "to_route": "me"},
+]
 
 # Includes in <head>
 # ------------------
