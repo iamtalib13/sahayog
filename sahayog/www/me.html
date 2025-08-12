@@ -1,0 +1,117 @@
+{% extends "templates/web.html" %} {% block title %}{{ _("Already Logged In")
+}}{% endblock %} {% block page_content %}
+
+<div class="msh-logged-in-page">
+  <div class="msh-content">
+    <div class="msh-icon">✓</div>
+    <h3 class="msh-title">{{ _("You are already logged in") }}</h3>
+    <p class="msh-subtitle">{{ _("Your session is active and secure") }}</p>
+    <a href="/app" class="msh-btn" id="mshBtn">{{ _("Open MySahayog.com") }}</a>
+    <small class="msh-timer-text"
+      >{{ _("Auto-redirect in") }} <span id="mshTimer">5</span>{{ _("s")
+      }}</small
+    >
+  </div>
+</div>
+
+<style>
+  .msh-logged-in-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    padding: 20px;
+    background: transparent;
+    text-align: center;
+  }
+  .msh-content {
+    max-width: 400px;
+    width: 100%;
+    padding: 40px 30px;
+  }
+  .msh-icon {
+    font-size: 48px;
+    color: #28a745;
+    margin-bottom: 20px;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(40, 167, 69, 0.1);
+    margin: 0 auto 20px;
+  }
+  .msh-title {
+    color: #36414c;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0 0 15px;
+  }
+  .msh-subtitle {
+    color: #8d99a6;
+    margin: 0 0 25px;
+    font-size: 16px;
+  }
+  .msh-btn {
+    display: inline-block;
+    background: #007bff;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+  .msh-btn:hover {
+    background: #0056b3;
+    color: #fff;
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+  .msh-timer-text {
+    color: #8d99a6;
+    font-size: 14px;
+    margin-top: 20px;
+    display: block;
+  }
+  #mshTimer {
+    font-weight: 600;
+    color: #007bff;
+  }
+  .msh-btn.msh-loading {
+    background: #6c757d;
+    pointer-events: none;
+  }
+  @media (max-width: 768px) {
+    .msh-content {
+      padding: 30px 20px;
+    }
+    .msh-btn {
+      width: 100%;
+      max-width: 280px;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    let t = 5,
+      i = setInterval(() => {
+        document.getElementById("mshTimer").textContent = --t;
+        if (t <= 0) {
+          clearInterval(i);
+          location.href = "/app";
+        }
+      }, 1000);
+    document.getElementById("mshBtn").onclick = function (e) {
+      e.preventDefault();
+      clearInterval(i);
+      this.textContent = "Opening...";
+      this.className += " msh-loading";
+      setTimeout(() => (location.href = "/app"), 300);
+    };
+  })();
+</script>
+{% endblock %}
