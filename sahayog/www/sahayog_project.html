@@ -1498,13 +1498,14 @@
           })
           .then((res) => {
             if (res.message) {
-              console.log("API Response:", res.message);
+              console.log("Project API Response:", res.message);
 
               // Transform API data into the dummy data shape
               data = {
                 projects: res.message.map((p, index) => ({
                   id: index + 1, // or use a unique field from API like p.name
-                  name: p.project_name || p.name || "Unnamed",
+                  project_name: p.project_name,
+                  name: p.name,
                   zone: p.custom_zone || "-",
                   state: p.custom_region || "-",
                   status: p.custom_branch_status || "-",
@@ -1720,7 +1721,9 @@
 
         list.innerHTML = "";
         data.projects
-          .filter((p) => !search || p.name.toLowerCase().includes(search))
+          .filter(
+            (p) => !search || p.project_name.toLowerCase().includes(search)
+          )
           .filter((p) => !zoneFilter || p.zone === zoneFilter)
           .filter((p) => !statusFilter || p.status === statusFilter)
           .filter((p) => !stateFilter || p.state === stateFilter)
@@ -1729,20 +1732,10 @@
             div.className =
               "project-card" + (p.id === selectedProjectId ? " active" : "");
 
-            // Add click event here
             div.onclick = () => {
-              // Select this project (sets selectedProjectId)
               selectProject(p.id);
+              $id("tasksHeader").textContent = `${p.project_name} - Tasks`;
 
-              // Re-render projects to update active state immediately
-              renderProjects();
-
-              // Show loading message for tasks
-              $id("taskList").innerHTML =
-                '<p style="text-align:center; color:#888;">Loading tasks...</p>';
-              $id("tasksHeader").textContent = `${p.name} - Tasks`;
-
-              // Fetch tasks for the active project
               fetch(
                 `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_all_tasks?project_name=${encodeURIComponent(
                   p.name
@@ -1750,74 +1743,60 @@
               )
                 .then((res) => res.json())
                 .then((response) => {
-                  console.log("Tasks API Response:", response);
+                  const tasks = response.message || [];
 
-                  if (Array.isArray(response)) {
-                    p.tasks = response;
-                  } else if (response.message) {
-                    p.tasks = response.message;
-                  } else {
-                    p.tasks = [];
-                  }
-
-                  // Update project tasks in global data
-                  const index = data.projects.findIndex(
-                    (proj) => proj.id === p.id
+                  renderTasksPanel(p, tasks); // ✅ pass project + tasks
+                  console.log(
+                    "Fetched tasks for project:",
+                    p.project_name,
+                    tasks
                   );
-                  if (index !== -1) {
-                    data.projects[index].tasks = p.tasks;
-                  }
-
-                  // Render updated tasks
-                  renderTasksPanel();
                 })
                 .catch((err) => {
                   console.error("Error fetching tasks:", err);
-                  p.tasks = [];
-                  renderTasksPanel();
+                  renderTasksPanel(p, []); // send empty if error
                 });
             };
 
             const progressPercentage = calculateProjectProgress(p);
 
             div.innerHTML = `
-        <div class="project-header">
-          <div>
-            <div class="project-title">${p.name}</div>
-            <div class="project-state">${p.state}</div>
-          </div>
-          <div>
-            ${
-              p.status === "Under Development"
-                ? '<span class="project-status-pill dev">Under Dev</span>'
-                : p.status === "Completed"
-                ? '<span class="project-status-pill completed">Complete</span>'
-                : '<span class="project-status-pill not-started">Not Started</span>'
-            }
-          </div>
-        </div>
-        
-        <div class="project-progress-section">
-          <div class="project-progress-header">
-            <span class="project-progress-label">Progress</span>
-            <span class="project-progress-percentage">${progressPercentage}%</span>
-          </div>
-          <div class="project-progress-bar">
-            <div class="project-progress-fill" style="width: ${progressPercentage}%;"></div>
-          </div>
-        </div>
-        
-        <div class="tags">
-          <div class="tag">${p.zone}</div>
-          <div class="tag">${p.state}</div>
-        </div>
-      `;
-
+                <div class="project-header">
+                    <div>
+                        <div class="project-title">${p.project_name}</div>
+                        <div class="project-state">${p.state}</div>
+                    </div>
+                    <div>
+                        ${
+                          p.status === "Under Development"
+                            ? '<span class="project-status-pill dev">Under Dev</span>'
+                            : p.status === "Completed"
+                            ? '<span class="project-status-pill completed">Complete</span>'
+                            : '<span class="project-status-pill not-started">Not Started</span>'
+                        }
+                    </div>
+                </div>
+                
+                <div class="project-progress-section">
+                    <div class="project-progress-header">
+                        <span class="project-progress-label">Progress</span>
+                        <span class="project-progress-percentage">${progressPercentage}%</span>
+                    </div>
+                    <div class="project-progress-bar">
+                        <div class="project-progress-fill" style="width: ${progressPercentage}%;"></div>
+                    </div>
+                </div>
+                
+                <div class="tags">
+                    <div class="tag">${p.zone}</div>
+                    <div class="tag">${p.state}</div>
+                </div>
+            `;
             list.appendChild(div);
           });
 
         if (currentView === "project") {
-          renderTasksPanel();
+          renderTasksPanel(null, []); // empty placeholder if no project selected
         }
       }
 
@@ -1862,19 +1841,13 @@
         return (index + 1).toString();
       }
 
-      function renderTasksPanel() {
-        if (currentView === "task") {
-          renderAllTasks();
-          return;
-        }
-
+      function renderTasksPanel(project = getSelectedProject(), tasks = null) {
         const header = $id("tasksHeader");
         const tList = $id("taskList");
         const progressSummary = $id("progressSummary");
         const progressSummaryText = $id("progressSummaryText");
         const progressSummaryFill = $id("progressSummaryFill");
 
-        const project = getSelectedProject();
         if (!project) {
           header.textContent = "Select a project to view tasks";
           tList.innerHTML = "";
@@ -1882,31 +1855,32 @@
           return;
         }
 
-        header.textContent = `${project.name} - Tasks`;
+        header.textContent = `${project.project_name || project.name} - Tasks`;
+
+        // If tasks are passed in, use them; else fallback to project.tasks
+        const projectTasks = tasks || project.tasks || [];
 
         // Calculate progress
-        const completedTasks = project.tasks.filter(
+        const completedTasks = projectTasks.filter(
           (t) => t.status === "Completed"
         ).length;
-        const totalTasks = project.tasks.length;
+        const totalTasks = projectTasks.length;
         const progressPercent =
           totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-        // Update progress summary
         progressSummaryText.textContent = `${completedTasks} of ${totalTasks} tasks completed (${Math.round(
           progressPercent
         )}%)`;
         progressSummaryFill.style.width = `${progressPercent}%`;
         progressSummary.style.display = "block";
 
-        // Render tasks with inline progress
         tList.innerHTML = "";
-        if (project.tasks.length === 0) {
+        if (projectTasks.length === 0) {
           tList.innerHTML = '<div class="empty">No tasks available.</div>';
           return;
         }
 
-        project.tasks.forEach((t, index) => {
+        projectTasks.forEach((t, index) => {
           const it = document.createElement("div");
           const progressClass = getProgressClass(t.status);
           it.className = `task-item ${progressClass}`;
@@ -1922,22 +1896,22 @@
 
           it.innerHTML = `
             <div class="task-progress-circle ${progressClass}">
-              ${getProgressContent(t.status, index)}
+                ${getProgressContent(t.status, index)}
             </div>
             <div class="task-content">
-              <div class="task-title">${t.title}</div>
-              <div class="task-meta">
-                <div class="task-end-date">Due: ${endDate}</div>
-                <div class="task-assigned-to">Assigned to ${
-                  assignedUser.name
-                }</div>
-              </div>
+                <div class="task-title">${t.title}</div>
+                <div class="task-meta">
+                    <div class="task-end-date">Due: ${endDate}</div>
+                    <div class="task-assigned-to">Assigned to ${
+                      assignedUser.name
+                    }</div>
+                </div>
             </div>
             <div class="task-right">
-              <div class="badge ${badgeClass}">${badgeText}</div>
-              <div class="task-updated">${timeAgo(t.updated)}</div>
+                <div class="badge ${badgeClass}">${badgeText}</div>
+                <div class="task-updated">${timeAgo(t.updated)}</div>
             </div>
-          `;
+        `;
           tList.appendChild(it);
         });
       }
