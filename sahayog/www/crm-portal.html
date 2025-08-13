@@ -2211,23 +2211,27 @@
         itemsCount.textContent = `Showing ${itemsToShow.length} of ${filteredItems.length}`;
 
         // Show or hide Load More button
-        if (itemsToShow.length < filteredItems.length) {
+        const hasMoreFiltered = itemsToShow.length < filteredItems.length;
+
+        let canFetchMoreFromServer = false;
+        if (currentSection === "lead") {
+          canFetchMoreFromServer =
+            filteredItems.length >= currentPage * PAGE_SIZE &&
+            allLeadData.length >= leadOffset;
+        } else if (currentSection === "appointment") {
+          canFetchMoreFromServer =
+            filteredItems.length >= currentPage * PAGE_SIZE &&
+            allAppointmentData.length >= appointmentOffset;
+        } else if (currentSection === "opportunity") {
+          canFetchMoreFromServer =
+            filteredItems.length >= currentPage * PAGE_SIZE &&
+            allOpportunityData.length >= opportunityOffset;
+        }
+
+        if (hasMoreFiltered || canFetchMoreFromServer) {
           loadMoreBtn.style.display = "inline-block";
         } else {
-          // If we have shown all filtered items, check if more data can be fetched from server
-          let canFetchMore = false;
-          if (currentSection === "lead") {
-            canFetchMore = allLeadData.length >= leadOffset;
-          } else if (currentSection === "appointment") {
-            canFetchMore = allAppointmentData.length >= appointmentOffset;
-          } else if (currentSection === "opportunity") {
-            canFetchMore = allOpportunityData.length >= opportunityOffset;
-          }
-          if (canFetchMore) {
-            loadMoreBtn.style.display = "inline-block";
-          } else {
-            loadMoreBtn.style.display = "none";
-          }
+          loadMoreBtn.style.display = "none";
         }
       }
 
