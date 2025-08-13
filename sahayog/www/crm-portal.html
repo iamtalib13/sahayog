@@ -505,7 +505,7 @@
       <!-- Filters -->
       <div
         id="dynamicFilters"
-        class="filters-scroll flex space-x-2 overflow-x-auto w-full sm:w-auto border-b border-gray-200 bg-white"
+        class="filters-scroll flex space-x-2 overflow-x-auto w-full sm:w-auto border-gray-200 bg-white"
       ></div>
 
       <!-- Count Display -->
@@ -519,7 +519,7 @@
     <main class="flex-1 overflow-y-auto px-4 space-y-4 pb-24" id="app">
       <section class="space-y-4" id="crm-list"></section>
       <!-- Load More Button  -->
-      <div id="loadMoreContainer">
+      <div id="loadMoreContainer" class="text-center">
         <button
           id="loadMoreBtn"
           class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-400"
@@ -839,22 +839,38 @@
         >
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Status -->
-            <div class="form-group" id="divStatus">
-              <label for="status"
-                >Status <span class="text-red-600">*</span></label
-              >
-              <select
-                id="status"
-                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400"
-              >
-                <option>Lead</option>
-                <option>Follow Up</option>
-                <option>Converted</option>
-                <option>Not Interested</option>
-              </select>
-              <p id="errorStatus" class="error-message">
-                Please select a Status.
-              </p>
+            <div class="form-group flex items-center space-x-2" id="divStatus">
+              <div class="flex-1 min-w-0">
+                <label for="status"
+                  >Status <span class="text-red-600">*</span></label
+                >
+                <select
+                  id="status"
+                  class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-green-400 w-full"
+                >
+                  <option>Lead</option>
+                  <option>Follow Up</option>
+                  <option>Converted</option>
+                  <option>Not Interested</option>
+                </select>
+                <p id="errorStatus" class="error-message">
+                  Please select a Status.
+                </p>
+              </div>
+              <div class="flex-shrink-0">
+                <label
+                  class="block font-semibold text-sm mb-1"
+                  for="branchDisplay"
+                  >Branch</label
+                >
+                <input
+                  type="text"
+                  id="branchDisplay"
+                  readonly
+                  class="border border-gray-300 rounded px-3 py-2 bg-gray-100 w-36 text-sm"
+                  aria-label="Branch"
+                />
+              </div>
             </div>
 
             <!-- Source -->
@@ -1343,6 +1359,7 @@
       const errorRemark = document.getElementById("errorRemark");
       const cancelBtn = document.getElementById("cancelLead");
       const updateBtn = document.getElementById("updateLead");
+      const branchDisplay = document.getElementById("branchDisplay");
 
       // Tabs elements for update dialog
       const tabs = {
@@ -1392,6 +1409,16 @@
       // Pagination state for list rendering
       let currentPage = 1;
       let filteredItems = [];
+
+      // Pagination offsets for API fetching
+      let leadOffset = 0;
+      let appointmentOffset = 0;
+      let opportunityOffset = 0;
+
+      // Store all fetched data for each section
+      let allLeadData = [];
+      let allAppointmentData = [];
+      let allOpportunityData = [];
 
       // EventSource for real-time updates (if supported)
       let eventSource = null;
@@ -1451,8 +1478,12 @@
       // Handle data updates
       const handleDataUpdate = () => {
         if (currentSection === "lead") {
+          // Reset offset and fetch first page again
+          leadOffset = 0;
+          allLeadData = [];
           fetchLeads(true).then((leads) => {
-            leadData = processLeadData(leads);
+            allLeadData = leads;
+            leadData = processLeadData(allLeadData);
             currentPage = 1;
             applyFilterAndSearch();
             renderListPage();
@@ -1460,8 +1491,11 @@
             updateUrl();
           });
         } else if (currentSection === "appointment") {
+          appointmentOffset = 0;
+          allAppointmentData = [];
           fetchAppointments(true).then((appointments) => {
-            appointmentData = processAppointmentData(appointments);
+            allAppointmentData = appointments;
+            appointmentData = processAppointmentData(allAppointmentData);
             currentPage = 1;
             applyFilterAndSearch();
             renderListPage();
@@ -1469,8 +1503,11 @@
             updateUrl();
           });
         } else if (currentSection === "opportunity") {
+          opportunityOffset = 0;
+          allOpportunityData = [];
           fetchOpportunity(true).then((opportunities) => {
-            opportunityData = processOpportunityData(opportunities);
+            allOpportunityData = opportunities;
+            opportunityData = processOpportunityData(allOpportunityData);
             currentPage = 1;
             applyFilterAndSearch();
             renderListPage();
@@ -1531,12 +1568,12 @@
         });
       };
 
-      // Fetch leads from Frappe REST API using session cookies
+      // Fetch leads from Frappe REST API using session cookies with pagination
       async function fetchLeads(forceRefresh = false) {
         try {
-          const limit = 1000;
-          let offset = 0;
-          let allLeads = [];
+          const limit = PAGE_SIZE;
+          let offset = forceRefresh ? 0 : leadOffset;
+          let allLeads = forceRefresh ? [] : allLeadData.slice();
 
           while (true) {
             const baseUrl = `/api/resource/Lead?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
@@ -1566,8 +1603,17 @@
 
             allLeads.push(...data.data);
 
-            if (data.data.length < limit) break; // No more pages
+            if (data.data.length < limit) break; // No more pages or partial page
             offset += limit;
+            if (!forceRefresh) break; // Only fetch one page on normal calls
+          }
+
+          if (!forceRefresh) {
+            leadOffset += PAGE_SIZE;
+            allLeadData = allLeads;
+          } else {
+            leadOffset = allLeads.length;
+            allLeadData = allLeads;
           }
 
           lastSyncTimestamp = new Date().toISOString();
@@ -1578,12 +1624,12 @@
         }
       }
 
-      // Fetch appointments from Frappe REST API
+      // Fetch appointments from Frappe REST API with pagination
       async function fetchAppointments(forceRefresh = false) {
         try {
-          const limit = 1000;
-          let offset = 0;
-          let allAppointments = [];
+          const limit = PAGE_SIZE;
+          let offset = forceRefresh ? 0 : appointmentOffset;
+          let allAppointments = forceRefresh ? [] : allAppointmentData.slice();
 
           while (true) {
             const baseUrl = `/api/resource/Appointment?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
@@ -1614,6 +1660,15 @@
 
             if (data.data.length < limit) break;
             offset += limit;
+            if (!forceRefresh) break; // Only fetch one page on normal calls
+          }
+
+          if (!forceRefresh) {
+            appointmentOffset += PAGE_SIZE;
+            allAppointmentData = allAppointments;
+          } else {
+            appointmentOffset = allAppointments.length;
+            allAppointmentData = allAppointments;
           }
 
           lastSyncTimestamp = new Date().toISOString();
@@ -1626,9 +1681,9 @@
 
       async function fetchOpportunity(forceRefresh = false) {
         try {
-          const limit = 1000;
-          let offset = 0;
-          let allOpportunities = [];
+          const limit = PAGE_SIZE;
+          let offset = forceRefresh ? 0 : opportunityOffset;
+          let allOpportunities = forceRefresh ? [] : allOpportunityData.slice();
 
           while (true) {
             const baseUrl = `/api/resource/Opportunity?fields=["*"]&limit_start=${offset}&limit_page_length=${limit}`;
@@ -1659,6 +1714,15 @@
 
             if (data.data.length < limit) break;
             offset += limit;
+            if (!forceRefresh) break; // Only fetch one page on normal calls
+          }
+
+          if (!forceRefresh) {
+            opportunityOffset += PAGE_SIZE;
+            allOpportunityData = allOpportunities;
+          } else {
+            opportunityOffset = allOpportunities.length;
+            allOpportunityData = allOpportunities;
           }
 
           lastSyncTimestamp = new Date().toISOString();
@@ -1700,12 +1764,16 @@
               statusClass = "bg-gray-100 text-gray-800";
           }
 
+          // Get branch from custom_branch field, fallback empty string
+          const branch = lead.custom_branch || "";
+
           return {
             title: `${lead.lead_name || "Unnamed Lead"}`,
             subtitle: `${lead.email_id || ""} • ${lead.mobile_no || ""}`,
             lastUpdated: modifiedString,
             status: status,
             statusClass: statusClass,
+            branch: branch,
             img: "https://placehold.co/40x40/png?text=L",
             alt: "Lead icon, a stylized letter L in green on white background",
             rawData: lead,
@@ -2087,6 +2155,12 @@
           div.setAttribute("role", "button");
           div.setAttribute("aria-label", item.title + ", " + item.subtitle);
 
+          // Compose branch badge if available (only for leads)
+          let branchBadge = "";
+          if (item.branch && currentSection === "lead") {
+            branchBadge = `<span class="ml-2 text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 select-none">${item.branch}</span>`;
+          }
+
           div.innerHTML = `
             <div class="flex items-center space-x-3 flex-1 min-w-0">
               <img src="${item.img}" alt="${
@@ -2101,8 +2175,8 @@
                 }</p>
                 ${
                   item.statusClass
-                    ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>`
-                    : ""
+                    ? `<span class="text-xs px-2 py-1 rounded-full ${item.statusClass}">${item.status}</span>${branchBadge}`
+                    : branchBadge
                 }
               </div>
             </div>
@@ -2140,14 +2214,40 @@
         if (itemsToShow.length < filteredItems.length) {
           loadMoreBtn.style.display = "inline-block";
         } else {
-          loadMoreBtn.style.display = "none";
+          // If we have shown all filtered items, check if more data can be fetched from server
+          let canFetchMore = false;
+          if (currentSection === "lead") {
+            canFetchMore = allLeadData.length >= leadOffset;
+          } else if (currentSection === "appointment") {
+            canFetchMore = allAppointmentData.length >= appointmentOffset;
+          } else if (currentSection === "opportunity") {
+            canFetchMore = allOpportunityData.length >= opportunityOffset;
+          }
+          if (canFetchMore) {
+            loadMoreBtn.style.display = "inline-block";
+          } else {
+            loadMoreBtn.style.display = "none";
+          }
         }
       }
 
       // Load more button click handler
-      loadMoreBtn.addEventListener("click", () => {
+      loadMoreBtn.addEventListener("click", async () => {
         console.log("Load More clicked, currentPage:", currentPage);
+        // Try to fetch next page from server for current section
+        if (currentSection === "lead") {
+          const newLeads = await fetchLeads();
+          leadData = processLeadData(allLeadData);
+        } else if (currentSection === "appointment") {
+          const newAppointments = await fetchAppointments();
+          appointmentData = processAppointmentData(allAppointmentData);
+        } else if (currentSection === "opportunity") {
+          const newOpportunities = await fetchOpportunity();
+          opportunityData = processOpportunityData(allOpportunityData);
+        }
+
         currentPage++;
+        applyFilterAndSearch();
         renderListPage();
         console.log("After Load More, currentPage:", currentPage);
       });
@@ -2259,6 +2359,9 @@
           errorRemark.classList.add("hidden");
           remarkInput.classList.remove("border-red-500");
         }
+
+        // Set branch display readonly input
+        branchDisplay.value = lead.custom_branch || "";
 
         // Clear product rows
         while (productTableBody.rows.length > 0) {
@@ -2859,6 +2962,7 @@
         remarkInput.value = "";
         errorRemark.classList.add("hidden");
         remarkInput.classList.remove("border-red-500");
+        branchDisplay.value = "";
 
         // Clear product rows except one
         while (productTableBody.rows.length > 1) {
@@ -3287,6 +3391,8 @@
             showGlobalSuccess("✅ Lead created successfully!");
             currentSection = "lead";
             currentPage = 1;
+            leadOffset = 0;
+            allLeadData = [];
             initApp();
           } else {
             alert("❌ Error: " + (result.message || "Unknown error occurred"));
@@ -3360,6 +3466,8 @@
             showGlobalSuccess("✅ Lead updated successfully!");
             currentSection = "lead";
             currentPage = 1;
+            leadOffset = 0;
+            allLeadData = [];
             initApp();
           } else {
             console.error("❌ Server responded with an error:", result);
@@ -3467,15 +3575,23 @@
           currentSection = "appointment";
         }
 
-        // Fetch data for current section
+        // Reset offsets and data arrays
+        leadOffset = 0;
+        appointmentOffset = 0;
+        opportunityOffset = 0;
+        allLeadData = [];
+        allAppointmentData = [];
+        allOpportunityData = [];
+
+        // Fetch first page data for current section
         if (currentSection === "lead") {
-          const rawLeads = await fetchLeads();
+          const rawLeads = await fetchLeads(true);
           leadData = processLeadData(rawLeads);
         } else if (currentSection === "appointment") {
-          const rawAppointments = await fetchAppointments();
+          const rawAppointments = await fetchAppointments(true);
           appointmentData = processAppointmentData(rawAppointments);
         } else if (currentSection === "opportunity") {
-          const rawOpportunities = await fetchOpportunity();
+          const rawOpportunities = await fetchOpportunity(true);
           opportunityData = processOpportunityData(rawOpportunities);
         }
 
@@ -3580,20 +3696,22 @@
           }
           currentFilter = validFilters.length > 0 ? validFilters[0] : "All";
 
-          if (currentSection === "lead" && leadData.length === 0) {
-            const rawLeads = await fetchLeads();
+          // Reset offsets and data arrays
+          leadOffset = 0;
+          appointmentOffset = 0;
+          opportunityOffset = 0;
+          allLeadData = [];
+          allAppointmentData = [];
+          allOpportunityData = [];
+
+          if (currentSection === "lead") {
+            const rawLeads = await fetchLeads(true);
             leadData = processLeadData(rawLeads);
-          } else if (
-            currentSection === "appointment" &&
-            appointmentData.length === 0
-          ) {
-            const rawAppointments = await fetchAppointments();
+          } else if (currentSection === "appointment") {
+            const rawAppointments = await fetchAppointments(true);
             appointmentData = processAppointmentData(rawAppointments);
-          } else if (
-            currentSection === "opportunity" &&
-            opportunityData.length === 0
-          ) {
-            const rawOpportunities = await fetchOpportunity();
+          } else if (currentSection === "opportunity") {
+            const rawOpportunities = await fetchOpportunity(true);
             opportunityData = processOpportunityData(rawOpportunities);
           }
 
@@ -3818,7 +3936,7 @@
             }
 
             if (currentSection === "appointment") {
-              const rawAppointments = await fetchAppointments();
+              const rawAppointments = await fetchAppointments(true);
               appointmentData = processAppointmentData(rawAppointments);
               currentPage = 1;
               applyFilterAndSearch();
