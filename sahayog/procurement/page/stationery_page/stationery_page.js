@@ -1,7 +1,17 @@
 frappe.pages['stationery-page'].on_page_load = function(wrapper) {
+    const clusterizeScript = document.createElement("script");
+  clusterizeScript.src = "https://cdn.jsdelivr.net/npm/clusterize.js@0.18.1/clusterize.min.js";
+  document.head.appendChild(clusterizeScript);
+
+  // ✅ Optional: Clusterize CSS
+  const clusterizeCSS = document.createElement("link");
+  clusterizeCSS.rel = "stylesheet";
+  clusterizeCSS.href = "https://cdn.jsdelivr.net/npm/clusterize.js@0.18.1/clusterize.min.css";
+  document.head.appendChild(clusterizeCSS);
+
   const page = frappe.ui.make_app_page({
     parent: wrapper,
-    title: 'Stationery Management',
+    title: 'Inventory Management',
     single_column: true
   });
 
@@ -17,7 +27,7 @@ frappe.pages['stationery-page'].on_page_load = function(wrapper) {
         </div>
       </div>
       <div class="col-md-10">
-        <div id="content" class="p-3 bg-white shadow-sm border rounded">
+        <div id="content" class="p-3 bg-white shadow-sm border rounded" >
           <!-- View will be loaded here -->
         </div>
       </div>
@@ -53,122 +63,250 @@ function render_dashboard() {
       <span id="tab-stock-ledger" style="cursor: pointer; padding-bottom: 4px; color: #555;">
         📜 Stock Ledger
       </span>
+      <span id="asset-valuation" style="cursor: pointer; padding-bottom: 4px; color: #555;">
+        💰 Asset Valuation
+      </span>
     </div>
     <div id="section-area" class="pt-3"></div>
   `;
 
   const tabStockBalance = document.getElementById("tab-stock-balance");
   const tabStockLedger = document.getElementById("tab-stock-ledger");
+  const tabAssetValuation = document.getElementById("asset-valuation");
 
   // Default view
   render_stock_balance();
 
   tabStockBalance.addEventListener("click", () => {
-    setActiveTab(tabStockBalance, tabStockLedger);
+    setActiveTab(tabStockBalance, tabStockLedger, tabAssetValuation);
     render_stock_balance();
   });
 
   tabStockLedger.addEventListener("click", () => {
-    setActiveTab(tabStockLedger, tabStockBalance);
+    setActiveTab(tabStockLedger, tabStockBalance, tabAssetValuation);
     render_stock_ledger();
   });
 
-  function setActiveTab(active, inactive) {
+  tabAssetValuation.addEventListener("click", () => {
+    setActiveTab(tabAssetValuation, tabStockBalance, tabStockLedger);
+    render_asset_valuation();
+  });
+
+  function setActiveTab(active, ...others) {
     active.style.fontWeight = "bold";
     active.style.borderBottom = "3px solid black";
     active.style.color = "black";
 
-    inactive.style.fontWeight = "normal";
-    inactive.style.borderBottom = "none";
-    inactive.style.color = "#555";
+    others.forEach(tab => {
+      tab.style.fontWeight = "normal";
+      tab.style.borderBottom = "none";
+      tab.style.color = "#555";
+    });
   }
+}
+// This function fetches asset valuation entries and renders them in a new tab
+function render_asset_valuation(itemCode = null, location = null) {
+  const section = document.getElementById("section-area");
+  section.innerHTML = "<h4>Loading Asset Valuation...</h4>";
+
+  frappe.call({
+    method: "sahayog.api.stationery_api.get_asset_entries",
+    args: {
+      item_code: itemCode,
+      location: location
+    },
+    callback: function (r) {
+
+      if (r.message && r.message.length > 0) {
+
+        // Generate table rows
+        const rows = r.message.map(asset => `
+          <tr>
+            <td>${asset.item_code || ""}</td>
+            <td>${asset.asset_name || ""}</td>
+            <td>${asset.location || ""}</td>
+            <td>${asset.purchase_receipt || ""}</td>
+            <td>${asset.purchase_invoice || ""}</td>
+            <td>${asset.purchase_date || ""}</td>
+            <td>${asset.available_for_use_date || ""}</td>
+            <td>${asset.gross_purchase_amount || ""}</td>
+          </tr>
+        `).join("");
+
+        // Inject card + table HTML
+        section.innerHTML = `
+          <div class="card mt-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title">Asset Valuation</h5>
+                <span class="badge bg-primary">${r.message.length} Records</span>
+                <div class="d-flex justify-content-end" style="gap: 8px; padding-left: 10px;">
+                  <button id="refresh-asset" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">Refresh</button>
+                  <button id="export-asset" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">⬇ Export Excel</button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered" id="asset-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Item Code</th>
+                      <th>Asset Name</th>
+                      <th>Location</th>
+                      <th>Purchase Receipt</th>
+                      <th>Purchase Invoice</th>
+                      <th>Purchase Date</th>
+                      <th>Available for Use Date</th>
+                      <th>Gross Purchase Amount</th>
+                    </tr>
+                    <tr class="search-row">
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search Item Code"></th>
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search Asset Name"></th>
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search Location"></th>
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search PR"></th>
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search PI"></th>
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search Purchase Date"></th>
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search Available Date"></th>
+                      <th><input type="text" class="form-control form-control-sm" placeholder="Search Amount"></th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Search filter per column
+        document.querySelectorAll("#asset-table thead tr.search-row input").forEach((input, colIndex) => {
+          input.addEventListener("keyup", function () {
+            const filter = this.value.toLowerCase();
+            document.querySelectorAll("#asset-table tbody tr").forEach(row => {
+              const cell = row.cells[colIndex];
+              if (cell) {
+                const text = cell.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? "" : "none";
+              }
+            });
+          });
+        });
+
+        // Button actions
+        document.getElementById("refresh-asset").addEventListener("click", () => {
+          render_asset_valuation(itemCode, location);
+        });
+        document.getElementById("export-asset").addEventListener("click", () => {
+          exportTableToCSV("asset-table", "Asset_Valuation.csv");
+        });
+
+      } else {
+        section.innerHTML = "<p class='text-danger'>❌ No Asset Entries Found</p>";
+      }
+    }
+  });
 }
 // Show stock balance on button click
 async function render_stock_balance() {
   const section = document.getElementById("section-area");
   section.innerHTML = "<h4>Loading Stock Balance...</h4>";
 
-  // Get stock balance from Bin
-  const stock_data = await frappe.db.get_list("Bin", {
-    fields: ["item_code", "warehouse", "actual_qty", "valuation_rate"],
-    limit: 100
-  });
+  frappe.call({
+    method: "sahayog.api.stationery_api.get_stock_balance_data", // no /api/method/ prefix
+    args: {
+      // Optional — pass filters if needed
+      company: null,
+      from_date: null,
+      to_date: null,
+      item_code: null,
+      warehouse: null
+    },
+    callback: function (response) {
+      console.log("Stock Balance API response:", response);
 
-  // Get item details
-  const items = await frappe.db.get_list("Item", {
-    fields: ["name", "item_name", "description", "stock_uom"],
-    limit: 1000
-  });
-
-  const itemMap = Object.fromEntries(items.map(i => [i.name, i]));
-
-  const rows = stock_data.map((bin, index) => {
-    const item = itemMap[bin.item_code] || {};
-    return `
-      <tr class="stock-row" data-item-code="${bin.item_code}">
-        <td>${index + 1}</td>
-        <td>${bin.item_code}</td>
-        <td>${item.item_name || "-"}</td>
-        <td>${bin.warehouse}</td>
-        <td>${bin.actual_qty}</td>
-        <td>${bin.valuation_rate || "-"}</td>
-      </tr>
-    `;
-  }).join("");
-
-  section.innerHTML = `
-    <div class="card mt-3">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="card-title">Stock Balance Report</h5>
-          <button id="refresh-stock" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">Refresh</button>
-        </div>
-        <table class="table table-bordered table-hover table-striped" id="stock-table">
-          <thead>
-            <tr>
-              <th>Sr.no</th>
-              <th>Item Code</th>
-              <th>Item Name</th>
-              <th>Warehouse</th>
-              <th>Actual Qty</th>
-              <th>Rate</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-
-        <!-- Export Button at Bottom Right -->
-        <div class="d-flex justify-content-end mt-3">
-          <button id="export-stock" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">⬇ Export CSV</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Refresh button handler
-  document.getElementById("refresh-stock").addEventListener("click", render_stock_balance);
-
-  // Export button handler
-  document.getElementById("export-stock").addEventListener("click", function () {
-    exportTableToCSV("stock_balance.csv");
-  });
-
-  // Row click to show item details
-  document.querySelectorAll(".stock-row").forEach(row => {
-    row.addEventListener("click", () => {
-      const code = row.dataset.itemCode;
-      const item = itemMap[code];
-
-      if (item) {
-        showItemDetails(item);
-      } else {
-        alert("Item details not found.");
+      if (!response.message || !response.message.data || response.message.data.length === 0) {
+        section.innerHTML = "<h4>No stock data found</h4>";
+        return;
       }
-    });
+
+      const stockData = response.message.data;
+
+      // Generate table rows
+      const rows = stockData.map((item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${item.item_code || ""}</td>
+          <td>${item.item_name || ""}</td>
+          <td>${item.warehouse || ""}</td>
+          <td style="text-align:center; ${item.bal_qty >= 0 ? "color:green" : "color:red"}">
+            ${item.bal_qty ?? ""}
+          </td>
+          <td>${item.val_rate ?? ""}</td>
+        </tr>
+      `).join("");
+
+      // Render the card + table
+      section.innerHTML = `
+        <div class="card mt-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title">Stock Balance Report</h5>
+              <div class="d-flex justify-content-end" style="gap: 8px; padding-right: 2px;">
+                <button id="refresh-stock" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">Refresh</button>
+                <button id="export-stock" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">⬇ Export Excel</button>
+              </div>
+            </div>
+            <table class="table table-bordered table-hover table-striped text-center" id="stock-table">
+              <thead>
+                <tr>
+                  <th>Sr.no</th>
+                  <th>Item Code</th>
+                  <th>Item Name</th>
+                  <th>Warehouse</th>
+                  <th>Actual Qty</th>
+                  <th>Rate</th>
+                </tr>
+                <tr>
+                  <th><input type="text" class="form-control form-control-sm" disabled></th>
+                  <th><input type="text" class="form-control form-control-sm" placeholder="Search Item Code"></th>
+                  <th><input type="text" class="form-control form-control-sm" placeholder="Search Item Name"></th>
+                  <th><input type="text" class="form-control form-control-sm" placeholder="Search Warehouse"></th>
+                  <th><input type="text" class="form-control form-control-sm" placeholder="Search Qty"></th>
+                  <th><input type="text" class="form-control form-control-sm" placeholder="Search Rate"></th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // Column search
+      document.querySelectorAll("#stock-table thead tr:nth-child(2) input").forEach((input, colIndex) => {
+        input.addEventListener("keyup", () => {
+          const filter = input.value.toLowerCase();
+          document.querySelectorAll("#stock-table tbody tr").forEach(row => {
+            const cell = row.cells[colIndex];
+            if (cell) {
+              const text = cell.textContent.toLowerCase();
+              row.style.display = text.includes(filter) ? "" : "none";
+            }
+          });
+        });
+      });
+
+      // Button actions
+      document.getElementById("refresh-stock").addEventListener("click", render_stock_balance);
+      document.getElementById("export-stock").addEventListener("click", () => {
+        exportTableToCSV("stock-table", "Stock_Report.csv");
+      });
+    },
+    error: function (err) {
+      console.error("Error fetching stock balance:", err);
+      section.innerHTML = "<h4>Error loading stock data</h4>";
+    }
   });
 }
 // Helper function: Export HTML Table to CSV
-function exportTableToCSV(filename) {
+function exportTableToCSV0(filename) {
   const table = document.getElementById("stock-table");
   const rows = Array.from(table.querySelectorAll("tr"));
   let csvContent = rows.map(row => {
@@ -182,56 +320,137 @@ function exportTableToCSV(filename) {
   link.download = filename;
   link.click();
 }
+function exportTableToCSV(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) {
+    console.error(`Table with id "${tableId}" not found.`);
+    return;
+  }
+
+  const rows = Array.from(table.querySelectorAll("tr"));
+  let csvContent = rows.map(row => {
+    const cols = Array.from(row.querySelectorAll("th, td"));
+    return cols.map(col => `"${col.innerText.replace(/"/g, '""')}"`).join(",");
+  }).join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 // This function fetches stock ledger entries and renders them in a table
 async function render_stock_ledger() {
-  const section = document.getElementById("section-area");
-  section.innerHTML = "<h4>Loading Stock Ledger...</h4>";
+    const section = document.getElementById("section-area");
+    section.innerHTML = "<h4>Loading Stock Ledger...</h4>";
 
-  try {
-    const ledgerEntries = await frappe.db.get_list("Stock Ledger Entry", {
-      fields: ["name", "item_code", "warehouse", "posting_date", "actual_qty", "voucher_type"],
-      order_by: "posting_date desc",
-      limit: 20
-    });
+    try {
+        const ledgerEntries = await frappe.db.get_list("Stock Ledger Entry", {
+            fields: ["name", "item_code", "warehouse", "posting_date", "actual_qty", "voucher_type"],
+            order_by: "posting_date desc",
+            limit: 20
+        });
 
-    const rows = ledgerEntries.map(entry => `
-      <tr>
-        <td>${entry.posting_date}</td>
-        <td>${entry.item_code}</td>
-        <td>${entry.warehouse}</td>
-        <td>${entry.actual_qty}</td>
-        <td>${entry.voucher_type}</td>
-      </tr>
-    `).join("");
+        const qtyStyles = {
+            positive: { bg: "#E8F5E9", color: "#4CAF50" },
+            negative: { bg: "#FFEBEE", color: "#F44336" }
+        };
 
-    section.innerHTML = `
-      <div class="card mt-3">
-        <div class="card-body">
-         <div class="d-flex justify-content-between align-items-center mb-3"> 
-          <h5 class="card-title">Recent Stock Ledger Entries</h5>
-          <button id="refresh-stock" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">Refresh</button>
-         </div>
-          <table class="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Item Code</th>
-                <th>Warehouse</th>
-                <th>Qty</th>
-                <th>Voucher Type</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>
-    `;
-    document.getElementById("refresh-stock").addEventListener("click", render_stock_ledger);
+        const rows = ledgerEntries.map(entry => {
+            const style = entry.actual_qty >= 0 ? qtyStyles.positive : qtyStyles.negative;
+            return `
+            <tr>
+                <td>${entry.posting_date}</td>
+                <td>${entry.item_code}</td>
+                <td>${entry.warehouse}</td>
+                <td>${entry.voucher_type}</td>
+                <td class="qty-cell">
+                    <span style="
+                        background:${style.bg};
+                        color:${style.color};
+                        padding:3px 10px;
+                        border-radius:999px;
+                        font-size:0.85rem;
+                        font-weight:500;
+                        display:inline-block;
+                        min-width:50px;
+                        text-align:center;">
+                        ${entry.actual_qty}
+                    </span>
+                </td>
+            </tr>`;
+        }).join("");
 
-  } catch (error) {
-    section.innerHTML = "<p class='text-danger'>❌ Failed to load Stock Ledger entries</p>";
-    console.error(error);
-  }
+        section.innerHTML = `
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title">Recent Stock Ledger Entries</h5>
+                    <div class="d-flex justify-content-end" style="gap: 8px; padding-right: 2px;">
+                        <button id="refresh-stock" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">Refresh</button>
+                        <button id="export-stock-Ledger" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">⬇ Export Excel</button>
+                    </div>
+                </div>
+                <table class="table table-striped table-hover" id="ledger-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Item Code</th>
+                            <th>Warehouse</th>
+                            <th>Voucher Type</th>
+                            <th class="qty-cell">Qty</th>
+                        </tr>
+                        <tr class="search-row">
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Search Date"></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Search Item"></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Search Warehouse"></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Search Voucher"></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Search Qty"></th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>`;
+
+        // Align Qty column center
+        const styleTag = document.createElement("style");
+        styleTag.innerHTML = `
+            #ledger-table th.qty-cell, 
+            #ledger-table td.qty-cell { text-align: center; }
+            .search-row input { width: 100%; padding: 2px 5px; font-size: 0.8rem; }
+        `;
+        document.head.appendChild(styleTag);
+
+        // Search filter functionality per column
+        document.querySelectorAll(".search-row input").forEach((input, colIndex) => {
+            input.addEventListener("keyup", function () {
+                const filter = this.value.toLowerCase();
+                const table = document.getElementById("ledger-table");
+                const rows = table.querySelectorAll("tbody tr");
+
+                rows.forEach(row => {
+                    const cell = row.getElementsByTagName("td")[colIndex];
+                    if (cell) {
+                        const txtValue = cell.textContent || cell.innerText;
+                        row.style.display = txtValue.toLowerCase().includes(filter) ? "" : "none";
+                    }
+                });
+            });
+        });
+
+        // Buttons
+        document.getElementById("refresh-stock").addEventListener("click", render_stock_ledger);
+        document.getElementById("export-stock-Ledger").addEventListener("click", function () {
+            exportTableToCSV("ledger-table", "Stock_Ledger.csv");
+        });
+
+    } catch (error) {
+        section.innerHTML = "<p class='text-danger'>❌ Failed to load Stock Ledger entries</p>";
+        console.error(error);
+    }
 }
 // This function shows item details in a popup
 function showItemDetails(item) {
@@ -682,22 +901,23 @@ async function render_inward_list() {
   const receipts = await frappe.db.get_list("Purchase Receipt", {
     fields: ["name", "supplier", "posting_date", "status"],
     order_by: "creation desc",
-    limit: 100
+    limit: 1000
   });
 
   const statusStyles = {
-    Draft: { text: "Draft", bg: "#FFF4E5", color: "#FF9800" ,border: "1px solid #FF9800" },       // Soft orange
-    Submitted: { text: "Submitted", bg: "#E8F5E9", color: "#4CAF50" ,border: "1px solid #4caf50" }  // Soft green
+    Draft: { text: "Draft", bg: "#FFF4E5", color: "#FF9800" },
+    Submitted: { text: "Submitted", bg: "#E8F5E9", color: "#4CAF50" }
   };
 
-  const rows = receipts.map(r => {
+  // Generate all rows
+  let allRows = receipts.map(r => {
     const style = statusStyles[r.status] || statusStyles.Submitted;
     return `
       <tr class="receipt-row" data-name="${r.name}">
         <td>${r.name}</td>
         <td>${r.supplier}</td>
         <td>${r.posting_date}</td>
-        <td>
+        <td style="text-align:center;">
           <span style="
             background:${style.bg};
             color:${style.color};
@@ -705,157 +925,244 @@ async function render_inward_list() {
             border-radius:999px;
             font-size:0.85rem;
             font-weight:500;
+            display:inline-block;
+            min-width:80px;
+            text-align:center;
           ">${style.text}</span>
         </td>
       </tr>
     `;
-  }).join("");
+  });
 
+  // HTML structure with proper alignment
   section.innerHTML = `
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">Recent Inward Entries</h5>
-        <table class="table table-hover table-striped">
-          <thead>
-            <tr>
-              <th>PR No</th>
-              <th>Supplier</th>
-              <th>Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <div class="d-flex justify-content-between align-items-center mb-3">       
+          <h5 class="card-title">Recent Inward Entries</h5>
+          <div class="d-flex justify-content-end" style="gap: 8px; padding-right: 2px;">
+            <button id="refresh-Inward" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">Refresh</button>
+            <button id="export-Inward-list" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">⬇ Export Excel</button>
+          </div>  
+        </div>     
+
+        <div class="clusterize">
+          <table class="table table-hover table-striped mb-0">
+            <thead>
+              <tr>
+                <th>PR No</th>
+                <th>Supplier</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+              <tr class="search-row">
+                <th><input type="text" class="form-control form-control-sm" placeholder="Search PR No" /></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Search Supplier" /></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Search Date" /></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Search Status" /></th>
+              </tr>
+            </thead>
+          </table>
+
+          <div id="scroll-area" class="clusterize-scroll">
+            <table class="table table-hover table-striped" id="inward-table">
+              <tbody id="content-area" class="clusterize-content">
+                <tr><td colspan="4">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
-  // Click handlers for details
-  document.querySelectorAll(".receipt-row").forEach(row => {
-    row.addEventListener("click", async () => {
-      const name = row.dataset.name;
-      const doc = await frappe.db.get_doc("Purchase Receipt", name);
-      showPurchaseReceiptDetails(doc);
+  // Initialize Clusterize
+  let clusterize = new Clusterize({
+    rows: allRows,
+    scrollId: 'scroll-area',
+    contentId: 'content-area',
+    tag: 'tr'
+  });
+
+  // Multi-column search filtering
+  document.querySelectorAll(".search-row input").forEach((input, colIndex) => {
+    input.addEventListener("keyup", function () {
+      const filters = Array.from(document.querySelectorAll(".search-row input"))
+                           .map(inp => inp.value.toLowerCase());
+
+      const filteredRows = receipts
+        .filter(r => {
+          const style = statusStyles[r.status] || statusStyles.Submitted;
+          const rowData = [
+            r.name.toLowerCase(),
+            r.supplier.toLowerCase(),
+            r.posting_date.toLowerCase(),
+            style.text.toLowerCase()
+          ];
+          return filters.every((f, i) => !f || rowData[i].includes(f));
+        })
+        .map(r => {
+          const style = statusStyles[r.status] || statusStyles.Submitted;
+          return `
+            <tr class="receipt-row" data-name="${r.name}">
+              <td>${r.name}</td>
+              <td>${r.supplier}</td>
+              <td>${r.posting_date}</td>
+              <td style="text-align:center;">
+                <span style="
+                  background:${style.bg};
+                  color:${style.color};
+                  padding:3px 10px;
+                  border-radius:999px;
+                  font-size:0.85rem;
+                  font-weight:500;
+                  display:inline-block;
+                  min-width:80px;
+                  text-align:center;
+                ">${style.text}</span>
+              </td>
+            </tr>
+          `;
+        });
+
+      clusterize.update(filteredRows);
     });
   });
+
+  // Buttons
+  document.getElementById("refresh-Inward")
+    .addEventListener("click", render_inward_list);
+
+  document.getElementById("export-Inward-list")
+    .addEventListener("click", function () {
+      exportTableToCSV("inward-table", "Inward_Report.csv");
+    });
+
+  // Row click handling
+  setTimeout(() => {
+    document.querySelectorAll(".receipt-row").forEach(row => {
+      row.addEventListener("click", async () => {
+        const name = row.dataset.name;
+        const doc = await frappe.db.get_doc("Purchase Receipt", name);
+        showPurchaseReceiptDetails(doc);
+      });
+    });
+  }, 100);
 }
 // This function shows purchase receipt details in a popup & It formats the items in a table and displays total quantities and amounts
 function showPurchaseReceiptDetails(doc) {
-  const itemsTable = doc.items.map(i => `
+  // Status badge
+  const statusBadge = doc.docstatus === 0
+    ? `<span class="badge bg-primary">Draft</span>`
+    : `<span class="badge bg-success">Submitted</span>`;
+
+  // Build rows
+  let itemsRows = doc.items.map((item, index) => `
     <tr>
-      <td>${i.item_code}</td>
-      <td>${i.item_name}</td>
-      <td>${i.qty}</td>
-      <td>${i.rate}</td>
-      <td>${i.amount}</td>
+      <td class="text-center">${index + 1}</td>
+      <td>${item.item_code}</td>
+      <td><input type="number" class="form-control form-control-sm qty-input" id="qty-${index}" value="${item.qty}" min="0"></td>
+      <td><input type="number" class="form-control form-control-sm rate-input" id="rate-${index}" value="${item.rate}" min="0"></td>
+      <td id="amount-${index}" class="text-end">₹ ${(item.qty * item.rate).toFixed(2)}</td>
     </tr>
   `).join("");
 
-  // Action buttons based on status
-  let actionButtons = "";
-  if (doc.docstatus === 0) {
-    actionButtons = `<button class="btn btn-primary btn-sm" id="submit-pr-btn">🚀 Submit</button>`;
-  } else if (doc.docstatus === 1) {
-    actionButtons = `<button class="btn btn-danger btn-sm" id="cancel-pr-btn">🗑️ Cancel</button>`;
-  }
+  // HTML
+  const html = `
+    <div class="card shadow-sm">
+      <div class="card-header d-flex align-items-center">
+        <h5 class="mb-0">Purchase Receipt: ${doc.name}</h5>
+        ${statusBadge}
+      </div>
+      <div class="card-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label"><strong>Supplier</strong></label>
+            <input type="text" class="form-control" value="${doc.supplier}" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label"><strong>Invoice Date</strong></label>
+            <input type="date" class="form-control" value="${doc.posting_date}">
+          </div>
+        </div>
 
-const html = `
-  <div class="row mb-2">
-    <div class="col-6 border-end">
-      <p><strong>PR No:</strong> ${doc.name}</p>
-    </div>
-    <div class="col-6">
-      <p><strong>Date:</strong> ${doc.posting_date}</p>
-    </div>
-  </div>
-  <div class="row mb-2">
-    <div class="col-6 border-end">
-      <p><strong>Supplier:</strong> ${doc.supplier}</p>
-    </div>
-    <div class="col-6">
-      <p><strong>Status:</strong> ${doc.status}</p>
-    </div>
-  </div>
-  <hr>
-  <h5>Items:</h5>
-  <table class="table table-bordered table-sm">
-    <thead>
-      <tr>
-        <th>Item Code</th>
-        <th>Name</th>
-        <th>Qty</th>
-        <th>Rate</th>
-        <th>Amount</th>
-      </tr>
-    </thead>
-    <tbody>${itemsTable}</tbody>
-  </table>
-  <p><strong>Total Qty:</strong> ${doc.total_qty}</p>
-  <p><strong>Total Amount:</strong> ₹${doc.grand_total}</p>
-  <hr>
-  ${actionButtons}
-`;
+        <table class="table table-bordered table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width: 50px;">No.</th>
+              <th>Item Code</th>
+              <th style="width: 150px;">Accepted Quantity</th>
+              <th style="width: 150px;">Rate (INR)</th>
+              <th class="text-end" style="width: 150px;">Amount (INR)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsRows}
+          </tbody>
+        </table>
 
-  frappe.msgprint({
-    title: `Purchase Receipt: ${doc.name}`,
-    message: html,
-    wide: true,
-    indicator: doc.docstatus === 1 ? 'green' : 'blue'
+        <div class="text-end mt-3">
+          <button class="btn btn-success" id="submit-inward-btn">
+            <i class="fa fa-check"></i> Submit Inward Entry
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Render
+  document.getElementById("inward-section").innerHTML = html;
+
+  // ✅ Update amounts live
+  doc.items.forEach((_, index) => {
+    const qtyInput = document.getElementById(`qty-${index}`);
+    const rateInput = document.getElementById(`rate-${index}`);
+    const amountCell = document.getElementById(`amount-${index}`);
+
+    const updateAmount = () => {
+      let qty = parseFloat(qtyInput.value) || 0;
+      let rate = parseFloat(rateInput.value) || 0;
+      amountCell.textContent = `₹ ${(qty * rate).toFixed(2)}`;
+    };
+
+    qtyInput.addEventListener("input", updateAmount);
+    rateInput.addEventListener("input", updateAmount);
   });
 
-  setTimeout(() => {
-    const submitBtn = document.getElementById("submit-pr-btn");
-    const cancelBtn = document.getElementById("cancel-pr-btn");
-
-    // ✅ Handle Submit
-if (submitBtn) {
-  submitBtn.addEventListener("click", async () => {
+  // ✅ Handle submit
+  document.getElementById("submit-inward-btn").addEventListener("click", async () => {
     try {
-      // 1. Get full doc first
-      const prDoc = await frappe.db.get_doc("Purchase Receipt", doc.name);
+      let items = doc.items.map((item, index) => ({
+        item_code: item.item_code,
+        qty: parseFloat(document.getElementById(`qty-${index}`).value) || 0,
+        rate: parseFloat(document.getElementById(`rate-${index}`).value) || 0
+      }));
 
-      // 2. Submit the document
+      if (!items.some(i => i.qty > 0)) {
+        frappe.msgprint("Please add at least one valid item before submitting.");
+        return;
+      }
+
       await frappe.call({
-        method: "frappe.client.submit",
+        method: "frappe.client.insert",
         args: {
-          doc: prDoc
+          doc: {
+            doctype: "Stock Entry",
+            stock_entry_type: "Material Receipt",
+            docstatus: 0, // Draft
+            supplier: doc.supplier,
+            posting_date: doc.posting_date,
+            items: items
+          }
         }
       });
 
-      frappe.msgprint({
-        message: "✅ Purchase Receipt submitted!",
-        indicator: "green"
-      });
-      refreshPRList(); // 🔄 Refresh List
+      frappe.msgprint("✅ Inward Entry submitted successfully!");
     } catch (err) {
-      frappe.msgprint({ message: "❌ Failed to submit.", indicator: "red" });
+      frappe.msgprint("❌ Error submitting inward entry.");
       console.error(err);
     }
   });
-}
-    // 🗑️ Handle Cancel
-if (cancelBtn) {
-  cancelBtn.addEventListener("click", async () => {
-    try {
-      const prDoc = await frappe.db.get_doc("Purchase Receipt", doc.name);
-      await frappe.call({
-        method: "frappe.client.cancel",
-        args: {
-          doc: prDoc
-        }
-      });
-
-      frappe.msgprint({
-        message: "❌ Purchase Receipt cancelled!",
-        indicator: "orange"
-      });
-      refreshPRList(); // 🔄 Refresh List
-    } catch (err) {
-      frappe.show_alert({ message: "❌ Failed to cancel.", indicator: "red" }, 5);
-    }
-  });
-}
-  }, 200);
 }
 // OUTWARD FORM RENDER FUNCTION
 async function render_outward() {
@@ -906,7 +1213,7 @@ async function render_outward_list() {
   const section = document.getElementById("outward-section");
   section.innerHTML = "<h4>Loading Outward Records...</h4>";
 
-  // Fetch Stock Entry records with type "Material Issue"
+  // Fetch Outward (Material Issue) records
   const stockEntries = await frappe.db.get_list("Stock Entry", {
     fields: ["name", "stock_entry_type", "posting_date", "docstatus"],
     filters: { stock_entry_type: "Material Issue" },
@@ -914,26 +1221,50 @@ async function render_outward_list() {
     limit: 100
   });
 
-  const rows = stockEntries.map(entry => {
-    // Determine status label and badge color
-    let displayStatus = entry.docstatus === 0 ? "Draft" : "Submitted";
-    let badgeClass = entry.docstatus === 0 ? "secondary" : "success";
+  const statusStyles = {
+    Draft: { text: "Draft", bg: "#FFF4E5", color: "#FF9800" },
+    Submitted: { text: "Submitted", bg: "#E8F5E9", color: "#4CAF50" }
+  };
 
+  // Build data rows
+  const allRows = stockEntries.map(entry => {
+    const statusKey = entry.docstatus === 0 ? "Draft" : "Submitted";
+    const style = statusStyles[statusKey];
     return `
       <tr class="stock-entry-row" data-name="${entry.name}">
         <td>${entry.name}</td>
         <td>${entry.stock_entry_type}</td>
         <td>${entry.posting_date}</td>
-        <td><span class="badge bg-${badgeClass}">${displayStatus}</span></td>
+        <td style="text-align:center;">
+          <span style="
+            background:${style.bg};
+            color:${style.color};
+            padding:3px 10px;
+            border-radius:999px;
+            font-size:0.85rem;
+            font-weight:500;
+            display:inline-block;
+            min-width:80px;
+            text-align:center;
+          ">${style.text}</span>
+        </td>
       </tr>
     `;
-  }).join("");
+  });
 
+  // Table with header and search row
   section.innerHTML = `
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">Recent Outward Entries</h5>
-        <table class="table table-hover table-striped table-bordered">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title">Recent Outward Entries</h5>
+          <div class="d-flex justify-content-end" style="gap: 8px; padding-right: 2px;">
+            <button id="refresh-Outward" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">Refresh</button>
+            <button id="export-Outward-list" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">⬇ Export Excel</button>
+          </div>   
+        </div>
+
+        <table class="table table-hover table-striped table-bordered" id="outward-table">
           <thead>
             <tr>
               <th>Stock Entry No</th>
@@ -941,14 +1272,82 @@ async function render_outward_list() {
               <th>Date</th>
               <th>Status</th>
             </tr>
+            <tr class="search-row">
+              <th><input type="text" class="form-control form-control-sm" placeholder="Search Stock Entry No" /></th>
+              <th><input type="text" class="form-control form-control-sm" placeholder="Search Type" /></th>
+              <th><input type="text" class="form-control form-control-sm" placeholder="Search Date" /></th>
+              <th><input type="text" class="form-control form-control-sm" placeholder="Search Status" /></th>
+            </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>${allRows.join("")}</tbody>
         </table>
       </div>
     </div>
   `;
 
-  // Click to view details
+  // Column-based filtering (multi-column)
+  document.querySelectorAll(".search-row input").forEach((input, colIndex) => {
+    input.addEventListener("keyup", function () {
+      const filters = Array.from(document.querySelectorAll(".search-row input"))
+                           .map(inp => inp.value.toLowerCase());
+
+      const filteredRows = stockEntries
+        .filter(entry => {
+          const statusKey = entry.docstatus === 0 ? "Draft" : "Submitted";
+          const style = statusStyles[statusKey];
+          const rowData = [
+            entry.name.toLowerCase(),
+            entry.stock_entry_type.toLowerCase(),
+            entry.posting_date.toLowerCase(),
+            style.text.toLowerCase()
+          ];
+          return filters.every((f, i) => !f || rowData[i].includes(f));
+        })
+        .map(entry => {
+          const statusKey = entry.docstatus === 0 ? "Draft" : "Submitted";
+          const style = statusStyles[statusKey];
+          return `
+            <tr class="stock-entry-row" data-name="${entry.name}">
+              <td>${entry.name}</td>
+              <td>${entry.stock_entry_type}</td>
+              <td>${entry.posting_date}</td>
+              <td style="text-align:center;">
+                <span style="
+                  background:${style.bg};
+                  color:${style.color};
+                  padding:3px 10px;
+                  border-radius:999px;
+                  font-size:0.85rem;
+                  font-weight:500;
+                  display:inline-block;
+                  min-width:80px;
+                  text-align:center;
+                ">${style.text}</span>
+              </td>
+            </tr>
+          `;
+        });
+
+      document.querySelector("#outward-table tbody").innerHTML = filteredRows.join("");
+
+      // Reattach click events for new rows
+      document.querySelectorAll(".stock-entry-row").forEach(row => {
+        row.addEventListener("click", async () => {
+          const name = row.dataset.name;
+          const doc = await frappe.db.get_doc("Stock Entry", name);
+          showStockEntryDetails(doc);
+        });
+      });
+    });
+  });
+
+  // Refresh & Export buttons
+  document.getElementById("refresh-Outward").addEventListener("click", render_outward_list);
+  document.getElementById("export-Outward-list").addEventListener("click", function () {
+    exportTableToCSV("outward-table", "Outward_Report.csv");
+  });
+
+  // Row click events
   document.querySelectorAll(".stock-entry-row").forEach(row => {
     row.addEventListener("click", async () => {
       const name = row.dataset.name;
@@ -957,173 +1356,155 @@ async function render_outward_list() {
     });
   });
 }
-
+//show outward form  function
 async function render_outward_form() {
-  const content = document.getElementById("outward-section");
+    const content = document.getElementById("outward-section");
+    content.innerHTML = "<h4>Loading...</h4>";
 
-  const suppliers = await frappe.db.get_list("Supplier", { fields: ["name"] });
-  const items = await frappe.db.get_list("Item", { fields: ["name"] });
+    try {
+        const res = await fetch("/api/method/sahayog.api.stationery_api.get_stock_entry_items");
+        const data = await res.json();
 
-  const supplierOptions = suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join("");
-  const itemOptions = items.map(i => `<option value="${i.name}">${i.name}</option>`).join("");
-
-  const typeOptions = `
-    <option value="Purchase Order" selected>Purchase Order</option>
-    <option value="Work Order">Work Order</option>
-  `;
-
-  const requestForOptions = `
-    <option value="Branch" selected>Branch</option>
-    <option value="Project">Project</option>
-    <option value="Store Use">Store</option>
-  `;
-
-  content.innerHTML = `
-    <h4>Stock Outward Entry</h4>
-
-    <div class="row g-3 mb-3">
-      <div class="col-md-2">
-        <input type="text" class="form-control" id="invoice_no" placeholder="Invoice No." required />
-      </div>
-      <div class="col-md-2">
-        <input type="date" class="form-control" id="invoice_date" value="${new Date().toISOString().split('T')[0]}" required />
-      </div>
-    </div>
-
-    <div class="row g-3 mb-3">
-      <div class="col-md-3">
-        <select class="form-control" id="supplier" required>
-          <option value="">Select Supplier</option>
-          ${supplierOptions}
-        </select>
-      </div>
-      <div class="col-md-3">
-        <select class="form-control" id="type" required>
-          <option value="">Select Type</option>
-          ${typeOptions}
-        </select>
-      </div>
-      <div class="col-md-3">
-        <select class="form-control" id="request_for" required>
-          ${requestForOptions}
-        </select>
-      </div>
-    </div>
-
-    <table class="table table-bordered" id="inward-table">
-      <thead>
-        <tr>
-          <th>Sr.no</th>
-          <th>Product</th>
-          <th>Qty</th>
-          <th>Rate</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <form id="inward-form" class="row g-3 mb-3">
-      <div class="col-md-3">
-        <select class="form-control" id="product" required>
-          <option value="">Select Product</option>
-          ${itemOptions}
-        </select>
-      </div>
-      <div class="col-md-2">
-        <input type="number" class="form-control" placeholder="Qty" id="quantity" required />
-      </div>
-      <div class="col-md-2">
-        <input type="number" class="form-control" placeholder="Rate" id="rate" required />
-      </div>
-      <div class="col-md-2">
-        <button type="submit" class="btn btn-primary w-100">Add</button>
-      </div>
-    </form>
-
-    <div class="mb-3">
-      <button id="submit_outward" class="btn btn-success">Submit Outward Entry</button>
-    </div>
-  `;
-
-  let counter = 1;
-  document.getElementById("inward-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const product = document.getElementById("product").value;
-    const quantity = parseFloat(document.getElementById("quantity").value);
-    const rate = parseFloat(document.getElementById("rate").value);
-    const total = quantity * rate;
-
-    const row = `
-      <tr>
-        <td>${counter++}</td>
-        <td>${product}</td>
-        <td>${quantity}</td>
-        <td>${rate}</td>
-        <td>${total}</td>
-      </tr>
-    `;
-
-    document.querySelector("#inward-table tbody").insertAdjacentHTML("beforeend", row);
-    this.reset();
-  });
-
-  // 🔁 Submit button logic changed to call custom submit_outward function
-  document.getElementById("submit_outward").addEventListener("click", submit_outward);
-
-}
-// SUBMIT OUTWARD FUNCTION & This function collects all data and submits the outward  entry
-async function submit_outward() {
-  const supplier = document.getElementById("supplier").value;
-  const type = document.getElementById("type").value;
-  const requestFor = document.getElementById("request_for").value;
-  const invoice_no = document.getElementById("invoice_no").value;
-  const invoice_date = document.getElementById("invoice_date").value;
-  const rows = document.querySelectorAll("#inward-table tbody tr");
-
-  if (!supplier || !type || !requestFor || !invoice_no || !invoice_date) {
-    alert("Please fill all header fields before submitting.");
-    return;
-  }
-
-  if (rows.length === 0) {
-    alert("Please add at least one product row.");
-    return;
-  }
-
-  const items = Array.from(rows).map(row => {
-    const cells = row.querySelectorAll("td");
-    return {
-      item_code: cells[1].innerText,
-      qty: parseFloat(cells[2].innerText),
-      basic_rate: parseFloat(cells[3].innerText)
-    };
-  });
-
-  try {
-    const res = await frappe.call({
-      method: "frappe.client.insert",
-      args: {
-        doc: {
-          doctype: "Stock Entry",
-          purpose: "Material Issue",
-          posting_date: invoice_date,
-          custom_bill_no: invoice_no,
-          custom_po_wo: type,
-          custom_request_for: requestFor,
-          custom_supplier: supplier,
-          items: items
+        if (!data.message || !Array.isArray(data.message)) {
+            content.innerHTML = "<h4>No stock items found</h4>";
+            return;
         }
-      }
-    });
 
-    frappe.msgprint(`✅ Stock Entry <b>${res.message.name}</b> created successfully`);
-    document.getElementById("content").innerHTML = ""; // clear form
-  } catch (err) {
-    console.error(err);
-    frappe.msgprint("❌ Failed to submit Outward Entry");
-  }
+        const stockItems = data.message;
+        const rateLookup = {};
+        const itemOptions = stockItems.map(i => {
+            rateLookup[i.item_code] = i.basic_rate;
+            return `<option value="${i.item_code}">${i.item_code} - ${i.item_name}</option>`;
+        }).join("");
+
+        content.innerHTML = `
+            <h4>Stock Outward Entry</h4>
+            <label class="form-label">Stock Entry Type:</label>
+            <div class="mb-3" style="display: flex; gap: 10px;">
+                <input type="text" class="form-control" value="Material Issue" readonly />
+                <input type="date" class="form-control" id="invoice_date" value="${new Date().toISOString().split('T')[0]}" required />
+            </div>
+
+            <table class="table table-bordered" id="inward-table">
+                <thead>
+                    <tr>
+                        <th>Sr.no</th>
+                        <th>Item Code</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <form id="inward-form" class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <select class="form-control" id="item_code" required>
+                        <option value="">Select Item</option>
+                        ${itemOptions}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Qty" id="quantity" required />
+                </div>
+                <input type="hidden" id="uom" value="Nos" />
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Rate" id="rate" readonly />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Add</button>
+                </div>
+            </form>
+
+            <div class="mb-3">
+                <button id="submit_outward" class="btn btn-success">Submit Outward Entry</button>
+            </div>
+        `;
+
+        let counter = 1;
+        let outwardItems = [];
+
+        document.getElementById("item_code").addEventListener("change", function () {
+            const selectedItem = this.value;
+            document.getElementById("rate").value = rateLookup[selectedItem] || "";
+        });
+
+        document.getElementById("inward-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const itemCode = document.getElementById("item_code").value;
+            const quantity = parseFloat(document.getElementById("quantity").value);
+            const rate = parseFloat(document.getElementById("rate").value);
+            const total = quantity * rate;
+
+            if (!itemCode || isNaN(quantity) || quantity <= 0 || isNaN(rate) || rate <= 0) {
+                frappe.msgprint("Please enter valid item details.");
+                return;
+            }
+
+            outwardItems.push({
+                item_code: itemCode,
+                qty: quantity,
+                rate: rate,
+                total: total
+            });
+
+            const row = `
+                <tr>
+                    <td>${counter++}</td>
+                    <td>${itemCode}</td>
+                    <td>${quantity}</td>
+                    <td>${rate}</td>
+                    <td>${total.toFixed(2)}</td>
+                </tr>
+            `;
+            document.querySelector("#inward-table tbody").insertAdjacentHTML("beforeend", row);
+
+            this.reset();
+            document.getElementById("rate").value = "";
+        });
+
+        document.getElementById("submit_outward").addEventListener("click", function () {
+            submit_outward(outwardItems);
+        });
+
+    } catch (err) {
+        console.error(err);
+        content.innerHTML = "<h4>Error loading form</h4>";
+    }
+}
+// ✅ Updated to accept outwardItems from the form
+async function submit_outward(outwardItems) {
+    if (!outwardItems || outwardItems.length === 0) {
+        frappe.msgprint("Please add at least one valid item before submitting.");
+        return;
+    }
+
+    const stockEntryData = {
+        doctype: "Stock Entry",
+        stock_entry_type: "Material Issue",
+        items: outwardItems.map(it => ({
+            item_code: it.item_code,
+            qty: it.qty,
+            basic_rate: it.rate,
+            s_warehouse: "Store - Stationary Gondia" // Change as per your setup
+        }))
+    };
+
+    try {
+        frappe.show_alert("Submitting outward entry...", 5);
+
+        const response = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc: stockEntryData }
+        });
+
+        frappe.msgprint(`Outward Entry created successfully: ${response.message.name}`);
+    } catch (error) {
+        console.error("Error creating Stock Entry:", error);
+        frappe.msgprint("Error submitting outward entry.");
+    }
 }
 
 };
