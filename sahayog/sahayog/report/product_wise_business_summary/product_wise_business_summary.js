@@ -25,5 +25,29 @@ frappe.query_reports["Product Wise Business Summary"] = {
       default: "Converted",
       reqd: 0,
     },
+    {
+      fieldname: "zone",
+      label: "Zone",
+      fieldtype: "Link",
+      options: "Zone", // Adjust this to match your actual Zone doctype name
+      reqd: 0,
+      description: "Filter by Zone",
+    },
+    {
+      fieldname: "region",
+      label: "Region",
+      fieldtype: "Link",
+      options: "Region", // Adjust this to match your actual Region doctype name
+      reqd: 0,
+      description: "Filter by Region",
+    },
+    {
+      fieldname: "branch",
+      label: "Branch",
+      fieldtype: "Link",
+      options: "Branch", // Adjust this to match your actual Branch doctype name
+      reqd: 0,
+      description: "Filter by Branch",
+    },
   ],
 };
