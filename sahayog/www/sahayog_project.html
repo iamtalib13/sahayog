@@ -730,17 +730,36 @@
         position: relative;
       }
 
-      .task-progress-circle.pending {
+      .task-progress-circle.open {
         background: var(--surface);
         color: var(--on-surface-variant);
         border-color: var(--outline-variant);
       }
 
-      .task-progress-circle.in-progress {
+      .task-progress-circle.working {
         background: var(--warning-container);
         color: var(--on-tertiary-container);
         border-color: var(--warning);
         animation: pulse 2s infinite;
+      }
+
+      .task-progress-circle.pending {
+        background: var(--tertiary-container);
+        color: var(--on-tertiary-container);
+        border-color: var(--tertiary);
+      }
+
+      .task-progress-circle.overdue {
+        background: var(--error);
+        color: var(--on-error);
+        border-color: var(--error);
+        animation: shake 0.5s ease-in-out;
+      }
+
+      .task-progress-circle.template {
+        background: var(--secondary-container);
+        color: var(--on-secondary-container);
+        border-color: var(--secondary);
       }
 
       .task-progress-circle.completed {
@@ -750,11 +769,10 @@
         box-shadow: 0 0 15px rgba(0, 102, 61, 0.3);
       }
 
-      .task-progress-circle.overdue {
-        background: var(--error);
-        color: var(--on-error);
-        border-color: var(--error);
-        animation: shake 0.5s ease-in-out;
+      .task-progress-circle.cancelled {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border-color: var(--outline-variant);
       }
 
       /* Content section */
@@ -780,7 +798,7 @@
         gap: 4px;
       }
 
-      .task-end-date {
+      .task-dates {
         color: var(--on-surface-variant);
         font-size: 12px;
         line-height: 1.3;
@@ -986,30 +1004,41 @@
         line-height: 1;
       }
 
-      .badge.not {
+      .badge.open {
         background: var(--surface-variant);
         color: var(--on-surface-variant);
         border: 1px solid var(--outline-variant);
       }
 
-      .badge.in {
+      .badge.working {
         background: var(--warning-container);
+        color: var(--on-warning-container);
+      }
+
+      .badge.pending {
+        background: var(--tertiary-container);
         color: var(--on-tertiary-container);
       }
 
-      .badge.done {
-        background: var(--success-container);
-        color: var(--on-primary-container);
-      }
-
-      .badge.over {
+      .badge.overdue {
         background: var(--error-container);
         color: var(--on-error-container);
       }
 
-      .badge.dev {
-        background: var(--tertiary-container);
-        color: var(--on-tertiary-container);
+      .badge.template {
+        background: var(--secondary-container);
+        color: var(--on-secondary-container);
+      }
+
+      .badge.completed {
+        background: var(--success-container);
+        color: var(--on-primary-container);
+      }
+
+      .badge.cancelled {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border: 1px solid var(--outline-variant);
       }
 
       /* ------------------------ Task Form with Assigned To ------------------------ */
@@ -1829,16 +1858,41 @@
       }
 
       function getProgressClass(status) {
-        if (status === "Completed") return "completed";
-        if (status === "In Progress") return "in-progress";
-        if (status === "Overdue") return "overdue";
-        return "pending";
+        if (!status) return "open";
+
+        const s = status.toLowerCase();
+        if (s === "open") return "open";
+        if (s === "working") return "working";
+        if (s === "pending review") return "pending";
+        if (s === "overdue") return "overdue";
+        if (s === "template") return "template";
+        if (s === "completed") return "completed";
+        if (s === "cancelled") return "cancelled";
+
+        return "open"; // fallback
       }
 
       function getProgressContent(status, index) {
-        if (status === "Completed") return "✓";
-        if (status === "Overdue") return "!";
-        return (index + 1).toString();
+        if (!status) return (index + 1).toString();
+
+        switch (status.toLowerCase()) {
+          case "completed":
+            return "✓"; // check mark for done
+          case "overdue":
+            return "!"; // warning
+          case "cancelled":
+            return "✕"; // cross mark
+          case "working":
+            return "⟳"; // progress symbol
+          case "pending review":
+            return "…"; // ellipsis for pending
+          case "template":
+            return "T"; // template indicator
+          case "open":
+            return (index + 1).toString(); // show sequence number
+          default:
+            return (index + 1).toString();
+        }
       }
 
       function renderTasksPanel(project = getSelectedProject(), tasks = null) {
@@ -1858,7 +1912,14 @@
         header.textContent = `${project.project_name || project.name} - Tasks`;
 
         // If tasks are passed in, use them; else fallback to project.tasks
-        const projectTasks = tasks || project.tasks || [];
+        let projectTasks = tasks || project.tasks || [];
+
+        // Sort by name
+        projectTasks = projectTasks.sort((a, b) => {
+          const nameA = (a.name || "").toLowerCase();
+          const nameB = (b.name || "").toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
 
         // Calculate progress
         const completedTasks = projectTasks.filter(
@@ -1885,33 +1946,45 @@
           const progressClass = getProgressClass(t.status);
           it.className = `task-item ${progressClass}`;
           it.onclick = () => {
-            selectTask(t.id);
+            selectTask(t.name);
           };
 
           let badgeClass = getStatusClass(t.status);
           let badgeText = t.status;
 
-          const endDate = t.end ? formatDate(t.end) : "No due date";
+          const startDate = t.exp_start_date
+            ? formatDate(t.exp_start_date)
+            : "No start date";
+          const endDate = t.exp_end_date
+            ? formatDate(t.exp_end_date)
+            : "No due date";
+
+          const modifiedPretty = timeAgo(t.modified);
+          const modifiedExact = formatDate(t.modified);
+
           const assignedUser = getUserById(t.assignedTo);
 
           it.innerHTML = `
-            <div class="task-progress-circle ${progressClass}">
-                ${getProgressContent(t.status, index)}
-            </div>
-            <div class="task-content">
-                <div class="task-title">${t.title}</div>
-                <div class="task-meta">
-                    <div class="task-end-date">Due: ${endDate}</div>
-                    <div class="task-assigned-to">Assigned to ${
-                      assignedUser.name
-                    }</div>
-                </div>
-            </div>
-            <div class="task-right">
-                <div class="badge ${badgeClass}">${badgeText}</div>
-                <div class="task-updated">${timeAgo(t.updated)}</div>
-            </div>
-        `;
+      <div class="task-progress-circle ${progressClass}">
+          ${getProgressContent(t.status, index)}
+      </div>
+      <div class="task-content">
+          <div class="task-title">${t.subject}</div>
+          <div class="task-meta">
+              <div class="task-dates">
+                 <span title="Expected Start Date">${startDate}</span> > 
+                 <span title="Expected End Date">${endDate}</span>
+              </div>
+              <div class="task-assigned-to">Assigned to ${
+                assignedUser.name
+              }</div>
+          </div>
+      </div>
+      <div class="task-right">
+          <div class="badge ${badgeClass}">${badgeText}</div>
+          <div class="task-updated" title="Last Modified : ${modifiedExact}">${modifiedPretty}</div>
+      </div>
+    `;
           tList.appendChild(it);
         });
       }
@@ -1964,7 +2037,9 @@
           let badgeClass = getStatusClass(t.status);
           let badgeText = t.status;
 
-          const endDate = t.end ? formatDate(t.end) : "No due date";
+          const endDate = t.exp_end_date
+            ? formatDate(t.exp_end_date)
+            : "No due date";
           const assignedUser = getUserById(t.assignedTo);
 
           it.innerHTML = `
@@ -1984,7 +2059,7 @@
             </div>
             <div class="task-right">
               <div class="badge ${badgeClass}">${badgeText}</div>
-              <div class="task-updated">${timeAgo(t.updated)}</div>
+              <div class="task-updated">${timeAgo(t.modified)}</div>
             </div>
           `;
           tList.appendChild(it);
@@ -2124,21 +2199,30 @@
       }
 
       function getStatusClass(status) {
-        if (/overdue/i.test(status)) return "over";
-        if (/in progress/i.test(status)) return "in";
-        if (/complete/i.test(status)) return "done";
-        if (/under development/i.test(status)) return "dev";
-        return "not";
+        if (!status) return "open";
+
+        const s = status.toLowerCase();
+
+        if (s === "open") return "open";
+        if (s === "working") return "working";
+        if (s === "pending review") return "pending";
+        if (s === "overdue") return "overdue";
+        if (s === "template") return "template";
+        if (s === "completed") return "completed";
+        if (s === "cancelled") return "cancelled";
+
+        return "open"; // fallback
       }
 
       function formatDate(dateStr) {
         if (!dateStr) return "";
         const date = new Date(dateStr);
-        return date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
+
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0"); // months are 0-based
+        const year = date.getFullYear();
+
+        return `${day}-${month}-${year}`;
       }
 
       /* ------------------------ Event Listeners ------------------------ */
@@ -2279,14 +2363,20 @@
       });
 
       /* ------------------------ Utilities ------------------------ */
-      function timeAgo(ts) {
-        if (!ts) return "just now";
+      function timeAgo(dateStr) {
+        if (!dateStr) return "just now";
+
+        const ts = new Date(dateStr).getTime(); // convert to timestamp
         const s = Math.floor((Date.now() - ts) / 1000);
+
         if (s < 60) return `${s}s ago`;
         if (s < 3600) return `${Math.floor(s / 60)}m ago`;
         if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+        if (s < 172800) return "Yesterday";
+
         return `${Math.floor(s / 86400)}d ago`;
       }
+
       /* ------------------------ Enhanced Task Form Functions ------------------------ */
 
       // Task-specific data templates
@@ -3088,14 +3178,15 @@
       }
 
       // Update the existing renderTaskForm function call to include event handlers
-      function selectTask(id) {
-        selectedTaskId = id;
+      function selectTask(name) {
+        console.log("clicked task id:", name);
+        selectedTaskId = name;
 
         let task = null;
         let project = null;
 
         for (let p of data.projects) {
-          const foundTask = p.tasks.find((t) => t.id === id);
+          const foundTask = p.tasks.find((t) => t.name === name);
           if (foundTask) {
             task = foundTask;
             project = p;
