@@ -1947,6 +1947,7 @@
           it.className = `task-item ${progressClass}`;
           it.onclick = () => {
             selectTask(t.name);
+            renderTasksPanel(project, projectTasks);
           };
 
           let badgeClass = getStatusClass(t.status);
@@ -2031,7 +2032,7 @@
           const progressClass = getProgressClass(t.status);
           it.className = `task-item ${progressClass}`;
           it.onclick = () => {
-            selectTask(t.id);
+            selectTask(t.name);
           };
 
           let badgeClass = getStatusClass(t.status);
@@ -2066,119 +2067,64 @@
         });
       }
 
-      function selectTask(id) {
-        selectedTaskId = id;
-
-        // Find the task and its project
-        let task = null;
-        let project = null;
-
-        for (let p of data.projects) {
-          const foundTask = p.tasks.find((t) => t.id === id);
-          if (foundTask) {
-            task = foundTask;
-            project = p;
-            break;
-          }
-        }
-
-        if (task && project) {
-          renderTaskForm(task, project);
-          $id("lastUpdated").textContent =
-            "Last updated: " + timeAgo(task.updated);
-          $id("taskFormContainer").style.display = "block";
-          $id("emptyForm").style.display = "none";
-        }
-
-        if (currentView === "project") {
-          renderTasksPanel();
-        } else {
-          renderAllTasks();
-        }
-      }
-
       function renderTaskForm(task, project) {
         const container = $id("taskFormContainer");
-        const assignedUser = getUserById(task.assignedTo);
 
         container.innerHTML = `
-          <div style="padding: 20px;">
-            <h2 style="margin-bottom: 20px; color: var(--on-surface);">${
-              task.title
-            }</h2>
-            
-            <div class="form-field-group">
-              <label class="form-field-label">Project</label>
-              <input type="text" class="form-field-input" value="${
-                project.name
-              }" readonly style="background: var(--surface-variant);" />
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-              <div class="form-field-group">
-                <label class="form-field-label">Start Date</label>
-                <input type="date" id="taskStartDate" class="form-field-input" value="${
-                  task.start || ""
-                }" />
-              </div>
-              
-              <div class="form-field-group">
-                <label class="form-field-label">End Date</label>
-                <input type="date" id="taskEndDate" class="form-field-input" value="${
-                  task.end || ""
-                }" />
-              </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-              <div class="form-field-group">
-                <label class="form-field-label">Status</label>
-                <select id="taskStatus" class="form-field-input">
-                  <option ${
-                    task.status === "Not Started" ? "selected" : ""
-                  }>Not Started</option>
-                  <option ${
-                    task.status === "In Progress" ? "selected" : ""
-                  }>In Progress</option>
-                  <option ${
-                    task.status === "Completed" ? "selected" : ""
-                  }>Completed</option>
-                  <option ${
-                    task.status === "Overdue" ? "selected" : ""
-                  }>Overdue</option>
-                </select>
-              </div>
-              
-              <div class="form-field-group">
-                <label class="form-field-label">Assigned To</label>
-                <select id="taskAssignedTo" class="form-field-input">
-                  ${USERS.map(
-                    (user) =>
-                      `<option value="${user.id}" ${
-                        task.assignedTo === user.id ? "selected" : ""
-                      }>${user.name} (${user.role})</option>`
-                  ).join("")}
-                </select>
-                <div class="assigned-user-avatar">Currently assigned to ${
-                  assignedUser.name
-                }</div>
-              </div>
-            </div>
-            
-            <div class="form-field-group">
-              <label class="form-field-label">Notes</label>
-              <textarea id="taskNotes" class="form-field-input" rows="4" placeholder="Add task notes...">${
-                task.notes || ""
-              }</textarea>
-            </div>
-            
-            <p style="color: var(--on-surface-variant); font-size: 14px; margin-top: 20px;">
-              Task-specific form fields would be rendered here based on task type: <strong>${
-                task.type
-              }</strong>
-            </p>
-          </div>
-        `;
+    <div style="padding: 20px;">
+      <h2 style="margin-bottom: 20px; color: var(--on-surface);">
+        ${task.subject || "Untitled Task"}
+      </h2>
+
+      <!-- Project Name -->
+      <div class="form-field-group">
+        <label class="form-field-label">Project</label>
+        <input type="text" class="form-field-input" value="${project.name}" 
+               readonly style="background: var(--surface-variant);" />
+      </div>
+
+      <!-- Dates -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-field-group">
+          <label class="form-field-label">Start Date</label>
+          <input type="date" id="taskStartDate" class="form-field-input" 
+                 value="${task.exp_start_date || ""}" />
+        </div>
+        
+        <div class="form-field-group">
+          <label class="form-field-label">End Date</label>
+          <input type="date" id="taskEndDate" class="form-field-input" 
+                 value="${task.exp_end_date || ""}" />
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="form-field-group" style="margin-bottom: 16px;">
+        <label class="form-field-label">Status</label>
+        <select id="taskStatus" class="form-field-input">
+          <option ${task.status === "Open" ? "selected" : ""}>Open</option>
+          <option ${
+            task.status === "Working" ? "selected" : ""
+          }>Working</option>
+          <option ${
+            task.status === "Completed" ? "selected" : ""
+          }>Completed</option>
+          <option ${
+            task.status === "Cancelled" ? "selected" : ""
+          }>Cancelled</option>
+        </select>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-field-group">
+        <label class="form-field-label">Notes</label>
+        <textarea id="taskNotes" class="form-field-input" rows="4" 
+                  placeholder="Add task notes...">${
+                    task.description || ""
+                  }</textarea>
+      </div>
+    </div>
+  `;
       }
 
       function clearForm() {
@@ -2563,100 +2509,100 @@
         };
       }
 
-      // Enhanced task form renderer
-      function renderTaskForm(task, project) {
-        const container = $id("taskFormContainer");
-        const assignedUser = getUserById(task.assignedTo);
+      //     // Enhanced task form renderer
+      //     function renderTaskForm(task, project) {
+      //       const container = $id("taskFormContainer");
+      //       const assignedUser = getUserById(task.assignedTo);
 
-        const commonFormHtml = `
-    <div style="padding: 20px;">
-      <!-- Task Header with Assigned User -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h2 style="margin: 0; color: var(--on-surface); font-size: 20px;">${
-          task.title
-        }</h2>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 12px; color: var(--on-surface-variant);">Assigned to:</span>
-          <div class="assigned-user-display">
-            <span class="assigned-user-name">${assignedUser.name}</span>
-            <button class="btn-icon edit-assignment-btn" title="Change Assignment">✏️</button>
-          </div>
-        </div>
-      </div>
+      //       const commonFormHtml = `
+      //   <div style="padding: 20px;">
+      //     <!-- Task Header with Assigned User -->
+      //     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      //       <h2 style="margin: 0; color: var(--on-surface); font-size: 20px;">${
+      //         task.title
+      //       }</h2>
+      //       <div style="display: flex; align-items: center; gap: 8px;">
+      //         <span style="font-size: 12px; color: var(--on-surface-variant);">Assigned to:</span>
+      //         <div class="assigned-user-display">
+      //           <span class="assigned-user-name">${assignedUser.name}</span>
+      //           <button class="btn-icon edit-assignment-btn" title="Change Assignment">✏️</button>
+      //         </div>
+      //       </div>
+      //     </div>
 
-      <!-- Compact Common Fields Row -->
-      <div class="common-fields-row">
-        <div class="form-field-group">
-          <label class="form-field-label">Project</label>
-          <input type="text" class="form-field-input" value="${
-            project.name
-          }" readonly />
-        </div>
-        
-        <div class="form-field-group">
-          <label class="form-field-label">Start Date</label>
-          <input type="date" id="taskStartDate" class="form-field-input" value="${
-            task.start || ""
-          }" />
-        </div>
-        
-        <div class="form-field-group">
-          <label class="form-field-label">End Date</label>
-          <input type="date" id="taskEndDate" class="form-field-input" value="${
-            task.end || ""
-          }" />
-        </div>
-        
-        <div class="form-field-group">
-          <label class="form-field-label">Status</label>
-          <select id="taskStatus" class="form-field-input">
-            <option ${
-              task.status === "Not Started" ? "selected" : ""
-            }>Not Started</option>
-            <option ${
-              task.status === "In Progress" ? "selected" : ""
-            }>In Progress</option>
-            <option ${
-              task.status === "Completed" ? "selected" : ""
-            }>Completed</option>
-            <option ${
-              task.status === "Overdue" ? "selected" : ""
-            }>Overdue</option>
-          </select>
-        </div>
-      </div>
+      //     <!-- Compact Common Fields Row -->
+      //     <div class="common-fields-row">
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">Project</label>
+      //         <input type="text" class="form-field-input" value="${
+      //           project.name
+      //         }" readonly />
+      //       </div>
 
-      <!-- Separator -->
-      <hr style="margin: 24px 0; border: none; height: 1px; background: var(--outline-variant);">
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">Start Date</label>
+      //         <input type="date" id="taskStartDate" class="form-field-input" value="${
+      //           task.start || ""
+      //         }" />
+      //       </div>
 
-      <!-- Task-Specific Content -->
-      <div class="task-specific-content">
-        ${renderTaskSpecificContent(task)}
-      </div>
-    </div>
-  `;
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">End Date</label>
+      //         <input type="date" id="taskEndDate" class="form-field-input" value="${
+      //           task.end || ""
+      //         }" />
+      //       </div>
 
-        container.innerHTML = commonFormHtml;
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">Status</label>
+      //         <select id="taskStatus" class="form-field-input">
+      //           <option ${
+      //             task.status === "Not Started" ? "selected" : ""
+      //           }>Not Started</option>
+      //           <option ${
+      //             task.status === "In Progress" ? "selected" : ""
+      //           }>In Progress</option>
+      //           <option ${
+      //             task.status === "Completed" ? "selected" : ""
+      //           }>Completed</option>
+      //           <option ${
+      //             task.status === "Overdue" ? "selected" : ""
+      //           }>Overdue</option>
+      //         </select>
+      //       </div>
+      //     </div>
 
-        // Add event listener for assignment change
-        container
-          .querySelector(".edit-assignment-btn")
-          .addEventListener("click", () => {
-            showUserAssignmentPopup(task.assignedTo, (newUserId) => {
-              task.assignedTo = newUserId;
-              const newUser = getUserById(newUserId);
-              container.querySelector(".assigned-user-name").textContent =
-                newUser.name;
-              task.updated = Date.now();
-              saveData();
-              if (currentView === "project") {
-                renderTasksPanel();
-              } else {
-                renderAllTasks();
-              }
-            });
-          });
-      }
+      //     <!-- Separator -->
+      //     <hr style="margin: 24px 0; border: none; height: 1px; background: var(--outline-variant);">
+
+      //     <!-- Task-Specific Content -->
+      //     <div class="task-specific-content">
+      //       ${renderTaskSpecificContent(task)}
+      //     </div>
+      //   </div>
+      // `;
+
+      //       container.innerHTML = commonFormHtml;
+
+      //       // Add event listener for assignment change
+      //       container
+      //         .querySelector(".edit-assignment-btn")
+      //         .addEventListener("click", () => {
+      //           showUserAssignmentPopup(task.assignedTo, (newUserId) => {
+      //             task.assignedTo = newUserId;
+      //             const newUser = getUserById(newUserId);
+      //             container.querySelector(".assigned-user-name").textContent =
+      //               newUser.name;
+      //             task.updated = Date.now();
+      //             saveData();
+      //             if (currentView === "project") {
+      //               renderTasksPanel();
+      //             } else {
+      //               renderAllTasks();
+      //             }
+      //           });
+      //         });
+      //     }
 
       // Render task-specific content based on task type
       function renderTaskSpecificContent(task) {
@@ -3178,36 +3124,44 @@
       }
 
       // Update the existing renderTaskForm function call to include event handlers
-      function selectTask(name) {
-        console.log("clicked task id:", name);
-        selectedTaskId = name;
+      function selectTask(taskName) {
+        console.log("clicked task id:", taskName);
+        selectedTaskId = taskName;
 
-        let task = null;
-        let project = null;
+        fetch(
+          `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+            taskName
+          )}`
+        )
+          .then((res) => res.json())
+          .then((response) => {
+            console.log("Full API Response:", response);
 
-        for (let p of data.projects) {
-          const foundTask = p.tasks.find((t) => t.name === name);
-          if (foundTask) {
-            task = foundTask;
-            project = p;
-            break;
-          }
-        }
+            const task = response.message;
+            if (!task) {
+              console.error("Task not found in response");
+              return;
+            }
 
-        if (task && project) {
-          renderTaskForm(task, project);
-          attachTaskFormEventHandlers(task); // Add this line
-          $id("lastUpdated").textContent =
-            "Last updated: " + timeAgo(task.updated);
-          $id("taskFormContainer").style.display = "block";
-          $id("emptyForm").style.display = "none";
-        }
+            console.log("Task to render:", task);
 
-        if (currentView === "project") {
-          renderTasksPanel();
-        } else {
-          renderAllTasks();
-        }
+            const project = data.projects.find((p) => p.name === task.project);
+            if (!project) {
+              console.error("Project not found for task");
+              return;
+            }
+
+            renderTaskForm(task, project);
+            attachTaskFormEventHandlers(task);
+
+            $id("lastUpdated").textContent =
+              "Last updated: " + timeAgo(task.modified);
+            $id("taskFormContainer").style.display = "block";
+            $id("emptyForm").style.display = "none";
+          })
+          .catch((err) => {
+            console.error("Error fetching task details:", err);
+          });
       }
 
       /* ------------------------ Init ------------------------ */
