@@ -24,6 +24,8 @@ frappe.pages['stationery-page'].on_page_load = function(wrapper) {
           <a class="list-group-item list-group-item-action active" data-view="dashboard">Stock Dashboard</a>
           <a class="list-group-item list-group-item-action" data-view="inward">Stock Inward</a>
           <a class="list-group-item list-group-item-action" data-view="outward">Stock Outward</a>
+          <a class="list-group-item list-group-item-action" data-view="asset">Asset</a>
+          
         </div>
       </div>
       <div class="col-md-10">
@@ -50,6 +52,8 @@ frappe.pages['stationery-page'].on_page_load = function(wrapper) {
       render_inward();
     } else if (view === "outward") {
       render_outward();
+    }else if (view === "asset") {
+      asset_movements();
     }
   }
 // DASHBOARD RENDER FUNCTION & This function fetches live stock data from ERPNext and renders it
@@ -1474,7 +1478,7 @@ async function render_outward_form() {
         content.innerHTML = "<h4>Error loading form</h4>";
     }
 }
-// ✅ Updated to accept outwardItems from the form
+// Updated to accept outwardItems from the form
 async function submit_outward(outwardItems) {
     if (!outwardItems || outwardItems.length === 0) {
         frappe.msgprint("Please add at least one valid item before submitting.");
@@ -1505,6 +1509,279 @@ async function submit_outward(outwardItems) {
         console.error("Error creating Stock Entry:", error);
         frappe.msgprint("Error submitting outward entry.");
     }
+}
+// This function initializes the asset movements page with tabs for asset valuation, asset movement list, and asset movement form
+async function asset_movements() {
+  const content = document.getElementById("content");
+  content.innerHTML = `
+    <div style="border-bottom: 1px solid #ccc; display: flex; gap: 40px; padding-bottom: 8px;">
+      <span id="tab-list" style="cursor: pointer; padding-bottom: 4px; font-weight: bold; border-bottom: 3px solid black;">
+        📄 Asset Valuation
+      </span>
+      <span id="tab-asset-movement" style="cursor: pointer; padding-bottom: 4px; color: #555;">
+        ➕ Asset Movement
+      </span>
+      <span id="tab-form" style="cursor: pointer; padding-bottom: 4px; color: #555;">
+        ➕ Form
+      </span>
+    </div>
+    <div id="section-area" class="pt-3"></div>
+  `;
+
+  const tabList = document.getElementById("tab-list");
+  const tabAssetMovement = document.getElementById("tab-asset-movement");
+  const tabForm = document.getElementById("tab-form");
+
+  // Default load
+  render_asset_valuation();
+
+  // Tab click events
+  tabList.addEventListener("click", () => {
+    setActiveTab(tabList, [tabAssetMovement, tabForm]);
+    render_asset_valuation();
+  });
+
+  tabAssetMovement.addEventListener("click", () => {
+    setActiveTab(tabAssetMovement, [tabList, tabForm]);
+    asset_movment_list();
+  });
+
+  tabForm.addEventListener("click", () => {
+    setActiveTab(tabForm, [tabList, tabAssetMovement]);
+    render_asset_movement_form();
+  });
+
+  tabForm.addEventListener("click", () => {
+    setActiveTab(tabForm, [tabList, tabAssetMovement]);
+    // You can replace this with your form rendering function
+    console.log("Form tab clicked");
+  });
+
+  function setActiveTab(activeTab, otherTabs) {
+    // Active tab styles
+    activeTab.style.fontWeight = "bold";
+    activeTab.style.borderBottom = "3px solid black";
+    activeTab.style.color = "black";
+
+    // Inactive tabs styles
+    otherTabs.forEach(tab => {
+      tab.style.fontWeight = "normal";
+      tab.style.borderBottom = "none";
+      tab.style.color = "#555";
+    });
+  }
+}
+// This function fetches asset valuation data and renders it in a table
+async function asset_movment_list() {
+  const section = document.getElementById("section-area");
+  section.innerHTML = `<p class="text-gray-500">Loading outward asset movements...</p>`;
+
+  try {
+    const res = await fetch(
+      "/api/method/sahayog.api.stationery_api.get_asset_movements",
+      { method: "GET" }
+    );
+    const data = await res.json();
+
+    if (!data.message || data.message.length === 0) {
+      section.innerHTML = `<p class="text-gray-500">No outward asset records found.</p>`;
+      return;
+    }
+
+    let html = `<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">`;
+    data.message.forEach(item => {
+      html += `
+        <div class="border rounded-lg p-4 shadow hover:shadow-lg transition bg-white">
+          <h3 class="font-semibold text-lg text-gray-800 mb-1">${item.asset_name || "Unnamed Asset"}</h3>
+          <p class="text-sm text-gray-600">ID: ${item.asset_id || "-"}</p>
+          <p class="text-sm text-gray-600">From: ${item.source_location || "-"}</p>
+          <p class="text-sm text-gray-600">To: ${item.target_location || "-"}</p>
+          <p class="text-sm text-gray-500 mt-2">Date: ${item.date || "-"}</p>
+        </div>
+      `;
+    });
+    html += `</div>`;
+
+    section.innerHTML = html;
+  } catch (error) {
+    console.error("Error loading outward list:", error);
+    section.innerHTML = `<p class="text-red-500">Failed to load outward records.</p>`;
+  }
+}
+// This function renders the asset movement form with options for purpose, assets, and locations
+async function render_asset_movement_form(selectedPurpose = "") {
+  const section = document.getElementById("section-area");
+
+  // Fetch assets and locations from ERPNext
+  const purposes = ["Transfer", "Repair", "Sale", "Disposal"]; // You can also fetch from DocType if needed
+  const assets = await frappe.db.get_list("Asset", {
+    fields: ["name", "asset_name", "item_code"],
+    limit: 1000
+  });
+  const locations = await frappe.db.get_list("Location", {
+    fields: ["name"],
+    limit: 500
+  });
+
+  // Build options
+  const purposeOptions = purposes.map(p =>
+    `<option value="${p}" ${selectedPurpose === p ? "selected" : ""}>${p}</option>`
+  ).join("");
+
+  const assetOptions = assets.map(a =>
+    `<option value="${a.name}">${a.name} - ${a.asset_name || ""} (${a.item_code || ""})</option>`
+  ).join("");
+
+  const locationOptions = locations.map(l =>
+    `<option value="${l.name}">${l.name}</option>`
+  ).join("");
+
+  section.innerHTML = `
+  <div class="card">
+    <div class="card-body">
+      <h4>Asset Movement Entry</h4>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label for="purpose" class="form-label">Purpose</label>
+          <select class="form-control" id="purpose" required>
+            <option value="">Select Purpose</option>
+            ${purposeOptions}
+          </select>
+        </div>
+      </div>
+
+      <table class="table table-bordered" id="asset-movement-table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all"></th>
+            <th>No.</th>
+            <th>Asset</th>
+            <th>From Location</th>
+            <th>To Location</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <button id="add-delete-btn" class="btn btn-sm btn-primary">➕ Add</button>
+      </div>
+      
+      <div class="mt-3">
+        <button id="submit-asset-movement" class="btn btn-success">Submit Asset Movement</button>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="asset-list">${assetOptions}</datalist>
+  <datalist id="location-list">${locationOptions}</datalist>
+  `;
+
+  const tbody = document.querySelector("#asset-movement-table tbody");
+  const addDeleteBtn = document.getElementById("add-delete-btn");
+
+  // Add row
+  function addRow() {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input type="checkbox" class="row-check"></td>
+      <td></td>
+      <td><input type="search" list="asset-list" class="form-control asset-input" placeholder="Search Asset" required /></td>
+      <td><input type="search" list="location-list" class="form-control from-location" placeholder="From Location" required /></td>
+      <td><input type="search" list="location-list" class="form-control to-location" placeholder="To Location" required /></td>
+      <td><input type="number" class="form-control quantity" value="1" min="1" required /></td>
+    `;
+    tbody.appendChild(row);
+    updateSrNumbers();
+  }
+
+  // Select all checkbox
+  document.getElementById("select-all").addEventListener("change", function () {
+    document.querySelectorAll(".row-check").forEach(chk => chk.checked = this.checked);
+    toggleAddDelete();
+  });
+
+  // Checkbox change
+  tbody.addEventListener("change", function (e) {
+    if (e.target.classList.contains("row-check")) {
+      toggleAddDelete();
+    }
+  });
+
+  // Toggle button
+  function toggleAddDelete() {
+    const anyChecked = document.querySelectorAll(".row-check:checked").length > 0;
+    addDeleteBtn.textContent = anyChecked ? "🗑 Delete" : "➕ Add";
+    addDeleteBtn.className = anyChecked ? "btn btn-sm btn-danger" : "btn btn-sm btn-primary";
+  }
+
+  // Add/Delete button click
+  addDeleteBtn.addEventListener("click", function () {
+    if (addDeleteBtn.textContent.includes("Delete")) {
+      document.querySelectorAll(".row-check:checked").forEach(chk => chk.closest("tr").remove());
+      updateSrNumbers();
+      toggleAddDelete();
+    } else {
+      addRow();
+    }
+  });
+
+  // Update serial numbers
+  function updateSrNumbers() {
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach((row, idx) => {
+      row.cells[1].innerText = idx + 1;
+    });
+  }
+
+  // Submit
+  document.getElementById("submit-asset-movement").addEventListener("click", async function () {
+    const purpose = document.getElementById("purpose").value;
+
+    if (!purpose) {
+      frappe.show_alert({ message: "⚠ Please select purpose.", indicator: "red" }, 5);
+      return;
+    }
+
+    const rows = tbody.querySelectorAll("tr");
+    if (rows.length === 0) {
+      frappe.show_alert({ message: "⚠ Please add at least one asset row.", indicator: "red" }, 5);
+      return;
+    }
+
+    const assetData = Array.from(rows).map(row => ({
+      asset: row.cells[2].querySelector("input").value,
+      from_location: row.cells[3].querySelector("input").value,
+      to_location: row.cells[4].querySelector("input").value,
+      quantity: parseInt(row.cells[5].querySelector("input").value) || 1
+    }));
+
+    try {
+      const res = await frappe.call({
+        method: "frappe.client.insert",
+        args: {
+          doc: {
+            doctype: "Asset Movement",
+            purpose: purpose,
+            assets: assetData
+          }
+        }
+      });
+
+      frappe.show_alert({ message: ` Asset Movement <b>${res.message.name}</b> created successfully`, indicator: "green" }, 5);
+      
+      render_asset_movement_form(purpose);
+
+    } catch (err) {
+      console.error(err);
+      frappe.show_alert({ message: "❌ Failed to submit Asset Movement", indicator: "red" }, 5);
+    }
+  });
+
+  // Default row
+  addRow();
 }
 
 };
