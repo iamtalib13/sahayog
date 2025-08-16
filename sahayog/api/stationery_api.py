@@ -157,3 +157,69 @@ def get_asset_entries(item_code=None, location=None):
 
     
     return entries
+
+# //api/method/sahayog.api.stationery_api.get_asset_movements
+@frappe.whitelist()
+def get_asset_movements(company=None, asset=None, purpose=None):
+    """
+    Asset Movement records fetch karta hai specified filters ke saath.
+    Optional filters: company, asset, purpose
+    """
+    # Master record filters
+    master_filters = {}
+    if company:
+        master_filters["company"] = company
+    if purpose:
+        master_filters["purpose"] = purpose
+
+    # Master table se records lo
+    master_records = frappe.get_all(
+        "Asset Movement",
+        filters=master_filters,
+        fields=["name", "company", "purpose", "transaction_date"],
+        order_by="transaction_date desc"
+    )
+
+    results = []
+
+    for record in master_records:
+        # Child table fetch karo
+        child_filters = {"parent": record.name}
+        if asset:
+            child_filters["asset"] = asset
+
+        assets = frappe.get_all(
+            "Asset Movement Item",
+            filters=child_filters,
+            fields=["asset"]
+        )
+
+        for a in assets:
+            results.append({
+                "company": record.company,
+                "purpose": record.purpose,
+                "transaction_date": record.transaction_date,
+                "asset": a.asset
+            })
+
+    # Debug print
+    if results:
+        headers = ["Company", "Purpose", "Transaction Date", "Asset"]
+        print("-" * 100)
+        print("{:<25} {:<20} {:<20} {:<25}".format(*headers))
+        print("-" * 100)
+        for r in results:
+            print("{:<25} {:<20} {:<20} {:<25}".format(
+                r.get("company", ""),
+                r.get("purpose", ""),
+                str(r.get("transaction_date", "")),
+                r.get("asset", "")
+            ))
+        print("-" * 100)
+    else:
+        print("No asset movements found.")
+
+    return results
+
+
+
