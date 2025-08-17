@@ -8,7 +8,1396 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="sahayog_project.css" />
+    <style>
+      /* ------------------------ Custom Theme based on #006767 ------------------------ */
+      :root {
+        /* Light theme - Based on #006767 */
+        --bg: #f8fafa;
+        --surface: #ffffff;
+        --surface-variant: #f0f7f7;
+        --surface-container: #f4f9f9;
+        --surface-container-high: #eef5f5;
+        --primary: #006767;
+        --primary-container: #b3e0e0;
+        --on-primary: #ffffff;
+        --on-primary-container: #003333;
+        --secondary: #4a6767;
+        --secondary-container: #cce6e6;
+        --on-secondary: #ffffff;
+        --on-secondary-container: #1a2626;
+        --tertiary: #006767;
+        --tertiary-container: #b3e0e0;
+        --on-tertiary: #ffffff;
+        --on-tertiary-container: #003333;
+        --error: #ba1a1a;
+        --error-container: #ffdad6;
+        --on-error: #ffffff;
+        --on-error-container: #410002;
+        --outline: #6b7979;
+        --outline-variant: #bfcccc;
+        --on-surface: #191c1c;
+        --on-surface-variant: #3f4848;
+        --inverse-surface: #2e3131;
+        --inverse-on-surface: #eff1f1;
+        --success: #00663d;
+        --success-container: #7dffb3;
+        --warning: #8a4f00;
+        --warning-container: #ffdcc0;
+        --shadow: rgba(0, 103, 103, 0.15);
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --glass-border: rgba(0, 103, 103, 0.2);
+        --blur-bg: rgba(0, 0, 0, 0.4);
+        --elevation-1: 0px 1px 2px 0px rgba(0, 103, 103, 0.3),
+          0px 1px 3px 1px rgba(0, 103, 103, 0.15);
+        --elevation-2: 0px 1px 2px 0px rgba(0, 103, 103, 0.3),
+          0px 2px 6px 2px rgba(0, 103, 103, 0.15);
+        --elevation-3: 0px 4px 8px 3px rgba(0, 103, 103, 0.15),
+          0px 1px 3px 0px rgba(0, 103, 103, 0.3);
+        --radius-small: 8px;
+        --radius-medium: 12px;
+        --radius-large: 16px;
+        --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+      }
+
+      [data-theme="dark"] {
+        /* Dark theme - Based on #006767 */
+        --bg: #0f1313;
+        --surface: #191c1c;
+        --surface-variant: #3f4848;
+        --surface-container: #1f2323;
+        --surface-container-high: #2a2d2d;
+        --primary: #4db3b3;
+        --primary-container: #004d4d;
+        --on-primary: #003333;
+        --on-primary-container: #b3e0e0;
+        --secondary: #b0cccc;
+        --secondary-container: #334848;
+        --on-secondary: #1a2626;
+        --on-secondary-container: #cce6e6;
+        --tertiary: #4db3b3;
+        --tertiary-container: #004d4d;
+        --on-tertiary: #003333;
+        --on-tertiary-container: #b3e0e0;
+        --error: #ffb4ab;
+        --error-container: #93000a;
+        --on-error: #690005;
+        --on-error-container: #ffdad6;
+        --outline: #899393;
+        --outline-variant: #3f4848;
+        --on-surface: #e1e3e3;
+        --on-surface-variant: #bfcccc;
+        --inverse-surface: #e1e3e3;
+        --inverse-on-surface: #2e3131;
+        --success: #61d99d;
+        --success-container: #00502d;
+        --warning: #ffb77c;
+        --warning-container: #693800;
+        --shadow: rgba(0, 0, 0, 0.4);
+        --glass-bg: rgba(25, 28, 28, 0.8);
+        --glass-border: rgba(77, 179, 179, 0.2);
+        --blur-bg: rgba(0, 0, 0, 0.6);
+        --elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15),
+          0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+        --elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15),
+          0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+        --elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15),
+          0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+      }
+
+      /* ------------------------ Base Layout ------------------------ */
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: var(--font-family);
+        background: var(--bg);
+        color: var(--on-surface);
+        line-height: 1.6;
+      }
+
+      .app {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* ------------------------ Blur Effect ------------------------ */
+      .blur-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--blur-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .blur-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* ------------------------ Custom Scrollbar ------------------------ */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--surface-variant);
+        border-radius: var(--radius-small);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--primary);
+        border-radius: var(--radius-small);
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--secondary);
+      }
+
+      /* ------------------------ Top Bar with View Switch ------------------------ */
+      .topbar {
+        min-height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--outline-variant);
+        box-shadow: var(--elevation-1);
+        gap: 16px;
+        flex-shrink: 0;
+      }
+
+      .brand {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .brand .logo {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-medium);
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-container)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--on-primary);
+        font-weight: 700;
+        font-size: 20px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--on-surface);
+      }
+
+      .brand .subtitle {
+        font-size: 14px;
+        color: var(--on-surface-variant);
+        font-weight: 400;
+      }
+
+      /* View Switch Toggle */
+      .view-switch {
+        display: flex;
+        background: var(--surface-variant);
+        border-radius: var(--radius-large);
+        padding: 4px;
+        gap: 2px;
+      }
+
+      .view-switch-btn {
+        padding: 8px 16px;
+        border-radius: var(--radius-medium);
+        border: none;
+        background: transparent;
+        color: var(--on-surface-variant);
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 14px;
+        font-family: var(--font-family);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .view-switch-btn.active {
+        background: var(--primary);
+        color: var(--on-primary);
+        box-shadow: var(--elevation-1);
+      }
+
+      .view-switch-btn:hover:not(.active) {
+        background: var(--surface-container-high);
+        color: var(--on-surface);
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .controls .theme-label {
+        font-size: 14px;
+        color: var(--on-surface-variant);
+        margin-right: 8px;
+      }
+
+      /* ------------------------ Workspace Layout - Dynamic ------------------------ */
+      .workspace {
+        display: grid;
+        gap: 0;
+        height: calc(100vh - 64px);
+        overflow: hidden;
+      }
+
+      .workspace.project-view {
+        grid-template-columns: 320px 400px 1fr;
+      }
+
+      .workspace.task-view {
+        grid-template-columns: 500px 1fr; /* Only task list and form */
+      }
+
+      .panel {
+        background: var(--surface);
+        border-right: 1px solid var(--outline-variant);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      .panel:last-child {
+        border-right: none;
+      }
+
+      .panel .head {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--outline-variant);
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--on-surface);
+        background: var(--surface-container);
+        flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .panel .body {
+        padding: 16px 24px;
+        overflow-y: auto;
+        flex: 1;
+        height: 100%;
+      }
+
+      /* Hide project panel in task view */
+      .workspace.task-view #projectsPanel {
+        display: none;
+      }
+
+      /* Expand task panel in task view */
+      .workspace.task-view #tasksPanel {
+        width: 500px;
+      }
+
+      /* ------------------------ Theme Toggle Button ------------------------ */
+      .theme-toggle {
+        position: relative;
+        width: 60px;
+        height: 30px;
+        background: var(--outline-variant);
+        border-radius: 15px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        padding: 3px;
+      }
+
+      .theme-toggle::before {
+        content: "";
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        background: var(--surface);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        box-shadow: var(--elevation-1);
+        left: 3px;
+      }
+
+      [data-theme="dark"] .theme-toggle {
+        background: var(--primary);
+      }
+
+      [data-theme="dark"] .theme-toggle::before {
+        transform: translateX(30px);
+      }
+
+      .theme-toggle-label {
+        position: absolute;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        pointer-events: none;
+      }
+
+      .theme-toggle-sun {
+        left: 6px;
+        opacity: 1;
+      }
+
+      .theme-toggle-moon {
+        right: 6px;
+        opacity: 0;
+      }
+
+      [data-theme="dark"] .theme-toggle-sun {
+        opacity: 0;
+      }
+
+      [data-theme="dark"] .theme-toggle-moon {
+        opacity: 1;
+      }
+
+      /* ------------------------ Buttons ------------------------ */
+      .btn {
+        padding: 12px 24px;
+        border-radius: var(--radius-large);
+        border: none;
+        background: var(--primary);
+        color: var(--on-primary);
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 14px;
+        font-family: var(--font-family);
+        transition: all 0.2s ease;
+        box-shadow: var(--elevation-1);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn:hover {
+        box-shadow: var(--elevation-2);
+        transform: translateY(-1px);
+      }
+
+      .btn-small {
+        padding: 8px 16px;
+        font-size: 12px;
+      }
+
+      .btn-icon {
+        padding: 8px;
+        border-radius: var(--radius-medium);
+        background: transparent;
+        color: var(--on-surface-variant);
+        border: 1px solid var(--outline-variant);
+      }
+
+      .btn-icon:hover {
+        background: var(--surface-variant);
+        color: var(--primary);
+      }
+
+      .ghost {
+        background: transparent;
+        border: 1px solid var(--outline);
+        color: var(--on-surface);
+        box-shadow: none;
+      }
+
+      .ghost:hover {
+        background: var(--surface-variant);
+        box-shadow: var(--elevation-1);
+      }
+
+      /* ------------------------ Form Elements ------------------------ */
+      .search-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        align-items: center;
+      }
+
+      .search-input {
+        flex: 1;
+        padding: 12px 16px;
+        border-radius: var(--radius-medium);
+        border: 1px solid var(--outline);
+        background: var(--surface);
+        color: var(--on-surface);
+        font-family: var(--font-family);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(0, 103, 103, 0.2);
+      }
+
+      /* ------------------------ Project Cards with Progress Bar ------------------------ */
+      .project-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 18px;
+        border-radius: var(--radius-medium);
+        border: 1px solid var(--outline-variant);
+        margin-bottom: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--surface);
+      }
+
+      .project-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--elevation-2);
+        border-color: var(--primary);
+      }
+
+      .project-card.active {
+        border-color: var(--primary);
+        background: var(--primary-container);
+        box-shadow: var(--elevation-2);
+      }
+
+      .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .project-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--on-surface);
+        line-height: 1.3;
+        margin-bottom: 4px;
+      }
+
+      .project-card.active .project-title {
+        color: var(--on-primary-container);
+      }
+
+      .project-state {
+        font-size: 12px;
+        color: var(--on-surface-variant);
+        line-height: 1.2;
+      }
+
+      .project-card.active .project-state {
+        color: var(--on-primary-container);
+      }
+
+      .project-status-pill {
+        padding: 4px 8px;
+        border-radius: var(--radius-large);
+        font-weight: 600;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .project-status-pill.dev {
+        background: var(--tertiary-container);
+        color: var(--on-tertiary-container);
+      }
+
+      .project-status-pill.not-started {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border: 1px solid var(--outline-variant);
+      }
+
+      .project-status-pill.completed {
+        background: var(--success-container);
+        color: var(--on-primary-container);
+      }
+
+      /* Progress Bar in Project Card */
+      .project-progress-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .project-progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .project-progress-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--on-surface-variant);
+      }
+
+      .project-card.active .project-progress-label {
+        color: var(--on-primary-container);
+      }
+
+      .project-progress-percentage {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary);
+      }
+
+      .project-card.active .project-progress-percentage {
+        color: var(--on-primary-container);
+      }
+
+      .project-progress-bar {
+        height: 6px;
+        background: var(--outline-variant);
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .project-card.active .project-progress-bar {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .project-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--success), var(--primary));
+        border-radius: 3px;
+        transition: width 0.5s ease;
+        position: relative;
+      }
+
+      .project-card.active .project-progress-fill {
+        background: linear-gradient(
+          90deg,
+          var(--on-primary-container),
+          rgba(255, 255, 255, 0.8)
+        );
+      }
+
+      /* Animated progress fill effect */
+      .project-progress-fill::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent
+        );
+        animation: progressGlow 2s ease-in-out infinite;
+      }
+
+      @keyframes progressGlow {
+        0% {
+          transform: translateX(-100%);
+        }
+        50% {
+          transform: translateX(100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
+      .tags {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .tag {
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: var(--radius-large);
+        background: var(--secondary-container);
+        color: var(--on-secondary-container);
+        font-weight: 500;
+        line-height: 1;
+      }
+
+      .project-card.active .tag {
+        background: rgba(255, 255, 255, 0.2);
+        color: var(--on-primary-container);
+      }
+
+      /* ------------------------ Inline Progress Task Items with Assigned To ------------------------ */
+      .task-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--outline-variant);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: var(--radius-small);
+        margin-bottom: 2px;
+        position: relative;
+        border: 1px solid transparent; /* default border invisible */
+        transition: all 0.5s ease;
+      }
+
+      .task-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--elevation-2);
+        border: 1px solid var(--primary); /* 4 side border */
+      }
+
+      .task-item.active {
+        border-color: var(--primary);
+        background: var(--primary-container);
+        box-shadow: var(--elevation-2);
+      }
+
+      .task-item:last-child {
+        border-bottom: none;
+      }
+
+      .task-item:last-child::after {
+        display: none;
+      }
+
+      /* Connecting Line between tasks */
+      .task-item::after {
+        content: "";
+        position: absolute;
+        left: 27px;
+        top: 64px;
+        bottom: -16px;
+        width: 2px;
+        background: var(--outline-variant);
+        z-index: 1;
+      }
+
+      .task-item.completed::after {
+        background: linear-gradient(
+          to bottom,
+          var(--success),
+          var(--outline-variant)
+        );
+      }
+
+      .task-item.in-progress::after {
+        background: linear-gradient(
+          to bottom,
+          var(--warning),
+          var(--outline-variant)
+        );
+      }
+
+      /* Progress Circle - Inline with Task */
+      .task-progress-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+        border: 3px solid transparent;
+        z-index: 2;
+        position: relative;
+      }
+
+      .task-progress-circle.open {
+        background: var(--surface);
+        color: var(--on-surface-variant);
+        border-color: var(--outline-variant);
+      }
+
+      .task-progress-circle.working {
+        background: var(--warning-container);
+        color: var(--on-tertiary-container);
+        border-color: var(--warning);
+        animation: pulse 2s infinite;
+      }
+
+      .task-progress-circle.pending {
+        background: var(--tertiary-container);
+        color: var(--on-tertiary-container);
+        border-color: var(--tertiary);
+      }
+
+      .task-progress-circle.overdue {
+        background: var(--error);
+        color: var(--on-error);
+        border-color: var(--error);
+        animation: shake 0.5s ease-in-out;
+      }
+
+      .task-progress-circle.template {
+        background: var(--secondary-container);
+        color: var(--on-secondary-container);
+        border-color: var(--secondary);
+      }
+
+      .task-progress-circle.completed {
+        background: var(--success);
+        color: var(--on-primary);
+        border-color: var(--success);
+        box-shadow: 0 0 15px rgba(0, 102, 61, 0.3);
+      }
+
+      .task-progress-circle.cancelled {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border-color: var(--outline-variant);
+      }
+
+      /* Content section */
+      .task-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .task-title {
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--on-surface);
+        line-height: 1.3;
+        margin: 0;
+      }
+
+      .task-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .task-dates {
+        color: var(--on-surface-variant);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .task-assigned-to {
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .task-assigned-to::before {
+        content: "👤";
+        font-size: 10px;
+      }
+
+      .task-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .task-updated {
+        font-size: 11px;
+        color: var(--on-surface-variant);
+      }
+
+      /* Animations */
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(138, 79, 0, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(138, 79, 0, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(138, 79, 0, 0);
+        }
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-2px);
+        }
+        75% {
+          transform: translateX(2px);
+        }
+      }
+      /* Enhanced Task Form Styles */
+      .common-fields-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .assigned-user-display {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--primary-container);
+        padding: 6px 12px;
+        border-radius: var(--radius-large);
+      }
+
+      .assigned-user-name {
+        font-weight: 500;
+        color: var(--on-primary-container);
+      }
+
+      .task-form-section {
+        background: var(--surface-variant);
+        border-radius: var(--radius-medium);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .location-item,
+      .manpower-item,
+      .checklist-item {
+        background: var(--surface);
+        border-radius: var(--radius-small);
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--outline-variant);
+      }
+
+      .location-fields,
+      .manpower-counts {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin: 12px 0;
+      }
+
+      .assignment-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .assignment-popup.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .assignment-popup-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      .assignment-popup-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--surface);
+        border-radius: var(--radius-large);
+        width: 400px;
+        max-width: 90vw;
+        max-height: 80vh;
+        overflow: hidden;
+      }
+
+      .user-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        cursor: pointer;
+        border-radius: var(--radius-small);
+        margin-bottom: 4px;
+      }
+
+      .user-option:hover {
+        background: var(--surface-variant);
+      }
+
+      .user-option.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+      }
+
+      /* Progress Summary */
+      .progress-summary {
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-medium);
+        padding: 16px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .progress-summary-text {
+        font-weight: 600;
+        color: var(--primary);
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+
+      .progress-summary-bar {
+        height: 6px;
+        background: var(--outline-variant);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .progress-summary-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--success), var(--primary));
+        transition: width 0.5s ease;
+        border-radius: 3px;
+      }
+
+      /* Badges */
+      .badge {
+        padding: 4px 8px;
+        border-radius: var(--radius-large);
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1;
+      }
+
+      .badge.open {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border: 1px solid var(--outline-variant);
+      }
+
+      .badge.working {
+        background: var(--warning-container);
+        color: var(--on-warning-container);
+      }
+
+      .badge.pending {
+        background: var(--tertiary-container);
+        color: var(--on-tertiary-container);
+      }
+
+      .badge.overdue {
+        background: var(--error-container);
+        color: var(--on-error-container);
+      }
+
+      .badge.template {
+        background: var(--secondary-container);
+        color: var(--on-secondary-container);
+      }
+
+      .badge.completed {
+        background: var(--success-container);
+        color: var(--on-primary-container);
+      }
+
+      .badge.cancelled {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border: 1px solid var(--outline-variant);
+      }
+
+      /* ------------------------ Task Form with Assigned To ------------------------ */
+      .form-panel-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+      }
+
+      .form-panel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 80px;
+      }
+
+      .form-field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+
+      .form-field-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--on-surface);
+      }
+
+      .form-field-input {
+        padding: 12px 16px;
+        border-radius: var(--radius-medium);
+        border: 1px solid var(--outline);
+        background: var(--surface);
+        color: var(--on-surface);
+        font-family: var(--font-family);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .form-field-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(0, 103, 103, 0.2);
+      }
+
+      .assigned-user-avatar {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        padding: 6px 12px;
+        border-radius: var(--radius-large);
+        font-size: 12px;
+        font-weight: 500;
+        margin-top: 8px;
+      }
+
+      .assigned-user-avatar::before {
+        content: "👤";
+        font-size: 14px;
+      }
+
+      /* Fixed Save Section */
+      .fixed-save-section {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid var(--glass-border);
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 100;
+      }
+
+      .save-button-enhanced {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: var(--on-primary);
+        border: none;
+        padding: 14px 32px;
+        border-radius: var(--radius-large);
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--elevation-2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .save-button-enhanced:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--elevation-3);
+      }
+
+      .empty {
+        padding: 48px 24px;
+        text-align: center;
+        color: var(--on-surface-variant);
+        font-size: 15px;
+        line-height: 1.6;
+      }
+
+      /* Filter Modal */
+      .filter-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 400px;
+        max-width: 90vw;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-large);
+        box-shadow: var(--elevation-3);
+        z-index: 1001;
+        opacity: 0;
+        visibility: hidden;
+        transform: translate(-50%, -50%) scale(0.8);
+        transition: all 0.3s ease;
+      }
+
+      .filter-modal.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      .filter-modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--outline-variant);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .filter-modal-title {
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--on-surface);
+      }
+
+      .filter-modal-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: var(--on-surface-variant);
+        cursor: pointer;
+        padding: 4px;
+      }
+
+      .filter-modal-body {
+        padding: 24px;
+      }
+
+      .filter-group {
+        margin-bottom: 20px;
+      }
+
+      .filter-group:last-child {
+        margin-bottom: 0;
+      }
+
+      .filter-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--on-surface);
+        margin-bottom: 8px;
+      }
+
+      .filter-input {
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: var(--radius-medium);
+        border: 1px solid var(--outline);
+        background: var(--surface);
+        color: var(--on-surface);
+        font-family: var(--font-family);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .filter-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(0, 103, 103, 0.2);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 1400px) {
+        .workspace.project-view {
+          grid-template-columns: 300px 380px 1fr;
+        }
+
+        .workspace.task-view {
+          grid-template-columns: 480px 1fr;
+        }
+      }
+
+      @media (max-width: 1200px) {
+        .workspace.project-view {
+          grid-template-columns: 280px 360px 1fr;
+        }
+
+        .workspace.task-view {
+          grid-template-columns: 450px 1fr;
+        }
+      }
+
+      @media (max-width: 1000px) {
+        .workspace {
+          grid-template-columns: 1fr !important;
+          grid-template-rows: auto auto auto;
+          overflow-y: auto;
+        }
+
+        .panel {
+          border-right: none;
+          border-bottom: 1px solid var(--outline-variant);
+          height: auto;
+          min-height: 300px;
+        }
+
+        .panel:last-child {
+          border-bottom: none;
+        }
+
+        .panel .body {
+          max-height: 400px;
+        }
+
+        .task-item {
+          flex-direction: row;
+          align-items: center;
+        }
+
+        .task-item::after {
+          display: none;
+        }
+
+        .view-switch {
+          order: -1;
+          margin-right: auto;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .topbar {
+          padding: 0 16px;
+          flex-wrap: wrap;
+          min-height: auto;
+          padding: 12px 16px;
+        }
+
+        .brand h1 {
+          font-size: 16px;
+        }
+
+        .brand .subtitle {
+          display: none;
+        }
+
+        .controls {
+          gap: 8px;
+        }
+
+        .panel .head,
+        .panel .body {
+          padding: 16px;
+        }
+
+        .fixed-save-section {
+          padding: 12px 16px;
+        }
+
+        .task-progress-circle {
+          width: 32px;
+          height: 32px;
+          font-size: 12px;
+        }
+
+        .task-item::after {
+          left: 23px;
+        }
+
+        .view-switch-btn {
+          padding: 6px 12px;
+          font-size: 12px;
+        }
+      }
+      /* --- OPTION 1: Subtle & Professional Glow --- */
+
+      .floating-field {
+        position: relative;
+        flex: 1;
+        min-width: 150px;
+      }
+      .floating-field input,
+      .floating-field select,
+      .form-field-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid var(--outline-variant);
+        border-radius: 6px;
+        outline: none;
+        font-size: 13px;
+        background: var(--surface);
+        color: var(--on-surface);
+        transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
+      }
+      .floating-field label {
+        position: absolute;
+        top: 10px;
+        left: 14px;
+        color: var(--on-surface-variant);
+        font-weight: 600;
+        font-size: 13px;
+        pointer-events: none;
+        transition: 0.2s ease all;
+        background: transparent;
+      }
+      .floating-field input:focus ~ label,
+      .floating-field input:not(:placeholder-shown) ~ label,
+      .floating-field select:focus ~ label,
+      .floating-field select:not([value=""]) ~ label {
+        top: -8px;
+        left: 8px;
+        font-size: 11px;
+        background: var(--surface);
+        padding: 0 4px;
+      }
+
+      /* --- Editable glow highlight --- */
+      .is-editing {
+        border-color: #006a69;
+        box-shadow: 0 0 0 3px rgba(0, 106, 105, 0.25); /* same color with transparency */
+        background-color: var(--surface) !important;
+        outline: none;
+      }
+    </style>
   </head>
   <body>
     <div class="app" id="app">
@@ -109,16 +1498,17 @@
 
         <!-- Form Panel -->
         <div class="panel" id="formPanel">
+          <!-- The head content will be set by JavaScript -->
           <div class="head">Task Management</div>
           <div class="body">
             <div class="form-panel-container">
               <div class="form-panel-content">
                 <div id="taskFormContainer">
-                  <!-- Task forms will be rendered here -->
+                  <!-- The dynamic task form will be rendered here -->
                 </div>
 
-                <div id="emptyForm" class="empty" style="display: none">
-                  Select a project and a task to edit, or create a new task
+                <div id="emptyForm" class="empty" style="display: block">
+                  Select a task to see its details.
                 </div>
               </div>
 
@@ -130,8 +1520,13 @@
                   ></div>
                 </div>
                 <div style="display: flex; gap: 12px; align-items: center">
-                  <button id="saveTask" class="save-button-enhanced">
-                    💾 Save Task
+                  <!-- This button now handles both Edit and Save -->
+                  <button
+                    id="editSaveBtn"
+                    class="save-button-enhanced"
+                    style="display: none"
+                  >
+                    Edit
                   </button>
                 </div>
               </div>
@@ -183,6 +1578,1810 @@
       </div>
     </div>
 
-    <script src="sahayog_project.js"></script>
+    <script>
+      function fetchAllProjects() {
+        fetch(
+          "/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_all_projects"
+        )
+          .then((response) => {
+            if (!response.ok)
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.json();
+          })
+          .then((res) => {
+            if (res.message) {
+              console.log("Project API Response:", res.message);
+
+              // Transform API data into the dummy data shape
+              data = {
+                projects: res.message.map((p, index) => ({
+                  id: index + 1, // or use a unique field from API like p.name
+                  project_name: p.project_name,
+                  name: p.name,
+                  zone: p.custom_zone || "-",
+                  state: p.custom_region || "-",
+                  status: p.custom_branch_status || "-",
+                  tasks: [], // placeholder, unless API returns tasks
+                })),
+              };
+
+              // Call your existing renderer
+              renderProjects();
+            } else {
+              console.error("No projects returned from API.");
+            }
+          })
+          .catch((err) => console.error("Error fetching projects:", err));
+      }
+      /* ------------------------ Task Templates and Data ------------------------ */
+      const STORAGE_KEY = "pm_spa_data_v1";
+
+      // Sample users for assignment
+      const USERS = [
+        { id: 1, name: "Rajesh Kumar", role: "Project Manager" },
+        { id: 2, name: "Priya Sharma", role: "Site Engineer" },
+        { id: 3, name: "Amit Patel", role: "Safety Officer" },
+        { id: 4, name: "Sunita Singh", role: "Supervisor" },
+        { id: 5, name: "Vikram Gupta", role: "Admin Staff" },
+      ];
+
+      // Current view state
+      let currentView = "project"; // 'project' or 'task'
+      let selectedProjectId = null;
+      let selectedTaskId = null;
+
+      function getTaskTemplateData(type) {
+        switch (type) {
+          case "location_details":
+            return { locations: [] };
+          case "loi_form":
+            return {
+              ownerDetails: { name: "", address: "", phone: "", email: "" },
+              propertyDetails: { address: "", area: "", type: "", value: "" },
+              terms: "",
+            };
+          case "attachment_upload":
+            return { attachments: [] };
+          case "manpower_checklist":
+            return { manpower: [] };
+          default:
+            return { checklist: [] };
+        }
+      }
+
+      function initializeProjectTasks() {
+        data.projects.forEach((project) => {
+          if (project.tasks.length === 0) {
+            project.tasks = TASK_TEMPLATES.map((template) => ({
+              id: Date.now() + Math.random(),
+              title: template.title,
+              type: template.type,
+              status: "Not Started",
+              start: "",
+              end: "",
+              notes: "",
+              assignedTo: USERS[Math.floor(Math.random() * USERS.length)].id, // Random assignment
+              updated: Date.now(),
+              data: getTaskTemplateData(template.type),
+            }));
+          } else {
+            // Add assignedTo to existing tasks if missing
+            project.tasks.forEach((task) => {
+              if (!task.assignedTo) {
+                task.assignedTo =
+                  USERS[Math.floor(Math.random() * USERS.length)].id;
+              }
+            });
+          }
+        });
+      }
+
+      function loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            data = JSON.parse(raw);
+          }
+          fetchAllProjects();
+        } catch (e) {
+          console.warn("load error", e);
+          fetchAllProjects();
+        }
+      }
+
+      function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
+
+      /* ------------------------ Helpers ------------------------ */
+      function $id(id) {
+        return document.getElementById(id);
+      }
+
+      function getUserById(userId) {
+        return (
+          USERS.find((u) => u.id === userId) || { name: "Unassigned", role: "" }
+        );
+      }
+
+      function calculateProjectProgress(project) {
+        if (!project.tasks || project.tasks.length === 0) return 0;
+        const completedTasks = project.tasks.filter(
+          (task) => task.status === "Completed"
+        ).length;
+        return Math.round((completedTasks / project.tasks.length) * 100);
+      }
+
+      /* ------------------------ View Management ------------------------ */
+      function switchToProjectView() {
+        currentView = "project";
+        $id("workspace").className = "workspace project-view";
+        $id("projectViewBtn").classList.add("active");
+        $id("taskViewBtn").classList.remove("active");
+        $id("taskSearchRow").style.display = "none";
+
+        // Update header
+        const header = $id("tasksHeader");
+        const project = getSelectedProject();
+        if (project) {
+          header.textContent = `${project.name} - Tasks`;
+        } else {
+          header.textContent = "Select a project to view tasks";
+        }
+
+        renderTasksPanel();
+      }
+
+      function switchToTaskView() {
+        currentView = "task";
+        $id("workspace").className = "workspace task-view";
+        $id("projectViewBtn").classList.remove("active");
+        $id("taskViewBtn").classList.add("active");
+        $id("taskSearchRow").style.display = "flex";
+
+        // Update header
+        $id("tasksHeader").textContent = "All Tasks";
+        $id("progressSummary").style.display = "none";
+
+        renderAllTasks();
+        populateTaskProjectFilter();
+      }
+
+      function populateTaskProjectFilter() {
+        const filter = $id("taskProjectFilter");
+        filter.innerHTML = '<option value="">All Projects</option>';
+        data.projects.forEach((project) => {
+          const option = document.createElement("option");
+          option.value = project.id;
+          option.textContent = project.name;
+          filter.appendChild(option);
+        });
+      }
+
+      /* ------------------------ Core Functions ------------------------ */
+      function showBlur() {
+        $id("blurOverlay").classList.add("active");
+      }
+
+      function hideBlur() {
+        $id("blurOverlay").classList.remove("active");
+      }
+
+      function showFilterModal() {
+        showBlur();
+        $id("filterModal").classList.add("active");
+      }
+
+      function hideFilterModal() {
+        hideBlur();
+        $id("filterModal").classList.remove("active");
+      }
+
+      function renderProjectFilters() {
+        const zones = Array.from(
+          new Set(data.projects.map((p) => p.zone))
+        ).sort();
+        const states = Array.from(
+          new Set(data.projects.map((p) => p.state))
+        ).sort();
+
+        const zoneFilter = $id("projectFilterZone");
+        zoneFilter.innerHTML = '<option value="">All Zones</option>';
+        zones.forEach((z) => {
+          const o = document.createElement("option");
+          o.value = z;
+          o.textContent = z;
+          zoneFilter.appendChild(o);
+        });
+
+        const stateFilter = $id("projectFilterState");
+        stateFilter.innerHTML = '<option value="">All States</option>';
+        states.forEach((s) => {
+          const o = document.createElement("option");
+          o.value = s;
+          o.textContent = s;
+          stateFilter.appendChild(o);
+        });
+      }
+
+      function renderProjects() {
+        const list = $id("projectList");
+        const search = $id("projectSearch").value.trim().toLowerCase();
+        const zoneFilter = $id("projectFilterZone").value;
+        const statusFilter = $id("projectFilterStatus").value;
+        const stateFilter = $id("projectFilterState").value;
+
+        list.innerHTML = "";
+        data.projects
+          .filter(
+            (p) => !search || p.project_name.toLowerCase().includes(search)
+          )
+          .filter((p) => !zoneFilter || p.zone === zoneFilter)
+          .filter((p) => !statusFilter || p.status === statusFilter)
+          .filter((p) => !stateFilter || p.state === stateFilter)
+          .forEach((p) => {
+            const div = document.createElement("div");
+            div.className =
+              "project-card" + (p.name === selectedProjectId ? " active" : "");
+
+            div.onclick = () => {
+              selectProject(p.name);
+              renderTasksPanel(p); // ✅ just send project
+            };
+
+            const progressPercentage = calculateProjectProgress(p);
+
+            div.innerHTML = `
+          <div class="project-header">
+              <div>
+                  <div class="project-title">${p.project_name}</div>
+                  <div class="project-state">${p.state}</div>
+              </div>
+              <div>
+                  ${
+                    p.status === "Under Development"
+                      ? '<span class="project-status-pill dev">Under Dev</span>'
+                      : p.status === "Completed"
+                      ? '<span class="project-status-pill completed">Complete</span>'
+                      : '<span class="project-status-pill not-started">Not Started</span>'
+                  }
+              </div>
+          </div>
+          
+          <div class="project-progress-section">
+              <div class="project-progress-header">
+                  <span class="project-progress-label">Progress</span>
+                  <span class="project-progress-percentage">${progressPercentage}%</span>
+              </div>
+              <div class="project-progress-bar">
+                  <div class="project-progress-fill" style="width: ${progressPercentage}%;"></div>
+              </div>
+          </div>
+          
+          <div class="tags">
+              <div class="tag">${p.zone}</div>
+              <div class="tag">${p.state}</div>
+          </div>
+      `;
+            list.appendChild(div);
+          });
+
+        if (currentView === "project") {
+          renderTasksPanel(null); // ✅ empty placeholder if no project selected
+        }
+      }
+
+      function selectProject(id) {
+        selectedProjectId = id;
+        selectedTaskId = null;
+        renderProjects();
+
+        if (currentView === "project") {
+          renderTasksPanel();
+        }
+        clearForm();
+
+        // Update URL with project only
+        const params = new URLSearchParams(window.location.search);
+        params.set("project", id);
+        params.delete("task"); // remove any stale task
+        window.history.pushState(
+          {},
+          "",
+          `${window.location.pathname}?${params.toString()}`
+        );
+      }
+
+      function getSelectedProject() {
+        return data.projects.find((p) => p.id === selectedProjectId);
+      }
+
+      function getSelectedTask() {
+        if (currentView === "task") {
+          // In task view, find task across all projects
+          for (let project of data.projects) {
+            const task = project.tasks.find((t) => t.id === selectedTaskId);
+            if (task) return task;
+          }
+          return null;
+        } else {
+          const p = getSelectedProject();
+          return p && p.tasks.find((t) => t.id === selectedTaskId);
+        }
+      }
+
+      function getProgressClass(status) {
+        if (!status) return "open";
+
+        const s = status.toLowerCase();
+        if (s === "open") return "open";
+        if (s === "working") return "working";
+        if (s === "pending review") return "pending";
+        if (s === "overdue") return "overdue";
+        if (s === "template") return "template";
+        if (s === "completed") return "completed";
+        if (s === "cancelled") return "cancelled";
+
+        return "open"; // fallback
+      }
+
+      function getProgressContent(status, index) {
+        if (!status) return (index + 1).toString();
+
+        switch (status.toLowerCase()) {
+          case "completed":
+            return "✓"; // check mark for done
+          case "overdue":
+            return "!"; // warning
+          case "cancelled":
+            return "✕"; // cross mark
+          case "working":
+            return "⟳"; // progress symbol
+          case "pending review":
+            return "…"; // ellipsis for pending
+          case "template":
+            return "T"; // template indicator
+          case "open":
+            return (index + 1).toString(); // show sequence number
+          default:
+            return (index + 1).toString();
+        }
+      }
+
+      function renderTasksPanel(project = getSelectedProject(), tasks = null) {
+        const header = $id("tasksHeader");
+        const tList = $id("taskList");
+        const progressSummary = $id("progressSummary");
+        const progressSummaryText = $id("progressSummaryText");
+        const progressSummaryFill = $id("progressSummaryFill");
+
+        if (!project) {
+          header.textContent = "Select a project to view tasks";
+          tList.innerHTML = "";
+          progressSummary.style.display = "none";
+          return;
+        }
+
+        header.textContent = `${project.project_name || project.name} - Tasks`;
+
+        // If tasks already provided (recursive calls), use them
+        if (tasks) {
+          renderTasksList(project, tasks);
+          return;
+        }
+
+        // Otherwise fetch tasks here
+        fetch(
+          `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_all_tasks?name=${encodeURIComponent(
+            project.name
+          )}`
+        )
+          .then((res) => res.json())
+          .then((response) => {
+            const fetchedTasks = response.message || [];
+            renderTasksList(project, fetchedTasks);
+            console.log(
+              "Fetched tasks for project:",
+              project.name,
+              fetchedTasks
+            );
+          })
+          .catch((err) => {
+            console.error("Error fetching tasks:", err);
+            renderTasksList(project, []); // empty if error
+          });
+
+        function renderTasksList(project, projectTasks) {
+          // Sort tasks
+          projectTasks = projectTasks.sort((a, b) =>
+            (a.name || "")
+              .toLowerCase()
+              .localeCompare((b.name || "").toLowerCase())
+          );
+
+          // Calculate progress
+          const completedTasks = projectTasks.filter(
+            (t) => t.status === "Completed"
+          ).length;
+          const totalTasks = projectTasks.length;
+          const progressPercent =
+            totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+          progressSummaryText.textContent = `${completedTasks} of ${totalTasks} tasks completed (${Math.round(
+            progressPercent
+          )}%)`;
+          progressSummaryFill.style.width = `${progressPercent}%`;
+          progressSummary.style.display = "block";
+
+          // Render list
+          tList.innerHTML = "";
+          if (projectTasks.length === 0) {
+            tList.innerHTML = '<div class="empty">No tasks available.</div>';
+            return;
+          }
+
+          projectTasks.forEach((t, index) => {
+            const it = document.createElement("div");
+            const progressClass = getProgressClass(t.status);
+            const isActive = t.name === selectedTaskId ? " active" : "";
+            it.className = `task-item ${progressClass}${isActive}`;
+            it.setAttribute("data-task-id", t.name);
+
+            it.onclick = () => {
+              selectTask(t.name);
+              renderTasksPanel(project, projectTasks); // ✅ reuse tasks, no refetch
+            };
+
+            let badgeClass = getStatusClass(t.status);
+            let badgeText = t.status;
+
+            const startDate = t.exp_start_date
+              ? formatDate(t.exp_start_date)
+              : "No start date";
+            const endDate = t.exp_end_date
+              ? formatDate(t.exp_end_date)
+              : "No due date";
+
+            const modifiedPretty = timeAgo(t.modified);
+            const modifiedExact = formatDate(t.modified);
+
+            const assignedUser = getUserById(t.assignedTo);
+
+            it.innerHTML = `
+        <div class="task-progress-circle ${progressClass}">
+            ${getProgressContent(t.status, index)}
+        </div>
+        <div class="task-content">
+            <div class="task-title">${t.subject}</div>
+            <div class="task-meta">
+                <div class="task-dates">
+                   <span title="Expected Start Date">${startDate}</span> > 
+                   <span title="Expected End Date">${endDate}</span>
+                </div>
+                <div class="task-assigned-to">Assigned to ${
+                  assignedUser.name
+                }</div>
+            </div>
+        </div>
+        <div class="task-right">
+            <div class="badge ${badgeClass}">${badgeText}</div>
+            <div class="task-updated" title="Last Modified : ${modifiedExact}">${modifiedPretty}</div>
+        </div>
+      `;
+            tList.appendChild(it);
+          });
+        }
+      }
+
+      function renderAllTasks() {
+        const tList = $id("taskList");
+        const taskSearch = $id("taskSearch").value.trim().toLowerCase();
+        const projectFilter = $id("taskProjectFilter").value;
+
+        tList.innerHTML = "";
+
+        let allTasks = [];
+
+        // Collect all tasks from all projects
+        data.projects.forEach((project) => {
+          project.tasks.forEach((task) => {
+            allTasks.push({
+              ...task,
+              projectId: project.id,
+              projectName: project.name,
+            });
+          });
+        });
+
+        // Apply filters
+        const filteredTasks = allTasks
+          .filter(
+            (t) =>
+              !taskSearch ||
+              t.title.toLowerCase().includes(taskSearch) ||
+              t.projectName.toLowerCase().includes(taskSearch)
+          )
+          .filter(
+            (t) => !projectFilter || t.projectId.toString() === projectFilter
+          );
+
+        if (filteredTasks.length === 0) {
+          tList.innerHTML = '<div class="empty">No tasks found.</div>';
+          return;
+        }
+
+        filteredTasks.forEach((t, index) => {
+          const it = document.createElement("div");
+          const progressClass = getProgressClass(t.status);
+          it.className = `task-item ${progressClass}`;
+          it.onclick = () => {
+            selectTask(t.name);
+          };
+
+          let badgeClass = getStatusClass(t.status);
+          let badgeText = t.status;
+
+          const endDate = t.exp_end_date
+            ? formatDate(t.exp_end_date)
+            : "No due date";
+          const assignedUser = getUserById(t.assignedTo);
+
+          it.innerHTML = `
+            <div class="task-progress-circle ${progressClass}">
+              ${getProgressContent(t.status, index)}
+            </div>
+            <div class="task-content">
+              <div class="task-title">${t.title}</div>
+              <div class="task-meta">
+                <div class="task-end-date">${
+                  t.projectName
+                } • Due: ${endDate}</div>
+                <div class="task-assigned-to">Assigned to ${
+                  assignedUser.name
+                }</div>
+              </div>
+            </div>
+            <div class="task-right">
+              <div class="badge ${badgeClass}">${badgeText}</div>
+              <div class="task-updated">${timeAgo(t.modified)}</div>
+            </div>
+          `;
+          tList.appendChild(it);
+        });
+      }
+
+      // --- Add this to your main JavaScript file ---
+
+      // Global state variable to track if the form is in edit mode
+      let isEditing = false;
+      const editSaveBtn = document.getElementById("editSaveBtn");
+
+      /**
+       * Renders the task form in a read-only state.
+       * @param {object} task - The task object.
+       * @param {object} project - The project object.
+       */
+      function renderTaskForm(task, project) {
+        console.log(
+          "fetching task form for : " + task + "of project : " + project
+        );
+        const panelHead = document.querySelector("#formPanel .head");
+        if (panelHead) {
+          panelHead.textContent = task.subject || "Task Details";
+        }
+
+        const container = document.getElementById("taskFormContainer");
+        container.innerHTML = `
+    <style>
+      .floating-field {
+        position: relative;
+        flex: 1;
+        min-width: 150px;
+      }
+      .floating-field input,
+      .floating-field select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid var(--outline-variant);
+        border-radius: 6px;
+        outline: none;
+        font-size: 13px;
+        background: var(--surface);
+        color: var(--on-surface);
+      }
+      .floating-field label {
+        position: absolute;
+        top: 10px;
+        left: 14px;
+        color: var(--on-surface-variant);
+        font-weight: 600;
+        font-size: 13px;
+        pointer-events: none;
+        transition: 0.2s ease all;
+        background: transparent;
+      }
+      .floating-field input:focus ~ label,
+      .floating-field input:not(:placeholder-shown) ~ label,
+      .floating-field select:focus ~ label,
+      .floating-field select:not([value=""]) ~ label {
+        top: -8px;
+        left: 8px;
+        font-size: 11px;
+        background: var(--surface);
+        padding: 0 4px;
+      }
+    </style>
+
+    <div style="padding: 20px;" id="task-form-fields">
+      <div class="task-header-fields" 
+           style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--outline-variant);">
+
+        <!-- Project Name -->
+        <div class="floating-field">
+          <input type="text" id="projectName" placeholder=" " value="${
+            project.project_name
+          }" disabled />
+          <label for="projectName">Project</label>
+        </div>
+
+        <!-- Status -->
+        <div class="floating-field">
+          <select id="taskStatus" disabled>
+            <option ${task.status === "Open" ? "selected" : ""}>Open</option>
+            <option ${
+              task.status === "Working" ? "selected" : ""
+            }>Working</option>
+            <option ${
+              task.status === "Pending Review" ? "selected" : ""
+            }>Pending Review</option>
+            <option ${
+              task.status === "Overdue" ? "selected" : ""
+            }>Overdue</option>
+            <option ${
+              task.status === "Completed" ? "selected" : ""
+            }>Completed</option>
+            <option ${
+              task.status === "Cancelled" ? "selected" : ""
+            }>Cancelled</option>
+          </select>
+          <label for="taskStatus">Status</label>
+        </div>
+
+        <!-- Start Date -->
+        <div class="floating-field">
+          <input type="date" id="taskStartDate" placeholder=" " value="${
+            task.exp_start_date || ""
+          }" disabled />
+          <label for="taskStartDate">Start</label>
+        </div>
+
+        <!-- End Date -->
+        <div class="floating-field">
+          <input type="date" id="taskEndDate" placeholder=" " value="${
+            task.exp_end_date || ""
+          }" disabled />
+          <label for="taskEndDate">End</label>
+        </div>
+      </div>
+
+      <!-- completed on date -->
+      <div class="floating-field" id="completedOnWrapper" style="display:none;">
+        <input type="datetime-local" id="taskCompletedOn" placeholder=" " value="${
+          task.completed_on || ""
+        }" />
+        <label for="taskCompletedOn">Completed On</label>
+      </div>
+
+      <!-- Task-Specific Content -->
+      <div class="task-specific-content">
+        ${renderTaskSpecificContent(task.subject)}
+      </div>
+  `;
+        document.getElementById("emptyForm").style.display = "none";
+        editSaveBtn.style.display = "flex";
+        setEditMode(false);
+      }
+
+      /**
+       * Toggles the form between editing and view modes.
+       * @param {boolean} editing - True to enable editing, false for view mode.
+       */
+      function setEditMode(editing) {
+        isEditing = editing;
+        const form = document.getElementById("task-form-fields");
+        if (!form) return;
+
+        const fields = form.querySelectorAll("input, select, textarea");
+
+        fields.forEach((field) => {
+          if (field.id !== "projectName") {
+            field.disabled = !editing;
+            field.classList.toggle("is-editing", editing);
+          } else {
+            field.disabled = true;
+            field.classList.remove("is-editing");
+          }
+        });
+
+        // ✅ handle completedOn visibility dynamically
+        const statusSelect = document.getElementById("taskStatus");
+        const completedWrapper = document.getElementById("completedOnWrapper");
+        const completedInput = document.getElementById("taskCompletedOn");
+
+        function toggleCompletedOn() {
+          if (statusSelect.value === "Completed") {
+            completedWrapper.style.display = "block";
+            completedInput.required = true;
+          } else {
+            completedWrapper.style.display = "none";
+            completedInput.required = false;
+            completedInput.value = ""; // clear if not completed
+          }
+        }
+
+        if (editing) {
+          toggleCompletedOn(); // run once
+          statusSelect.addEventListener("change", toggleCompletedOn);
+        } else {
+          statusSelect.removeEventListener("change", toggleCompletedOn);
+        }
+
+        editSaveBtn.innerHTML = editing ? "Save" : "Edit";
+      }
+
+      // --- Event Listener for the Edit/Save Button ---
+      editSaveBtn.addEventListener("click", () => {
+        if (isEditing) {
+          // Check if status is Completed
+          const status = document.getElementById("taskStatus").value;
+          const completedOn = document.getElementById("taskCompletedOn").value;
+
+          if (status === "Completed" && !completedOn) {
+            alert("Please fill the 'Completed On' date/time before saving.");
+            document.getElementById("taskCompletedOn").focus();
+            return; // Stop saving
+          }
+
+          // Save logic here
+          console.log("Saving task data...");
+          alert("Task Saved!"); // Placeholder
+          setEditMode(false); // Switch back to view mode
+        } else {
+          // Enter edit mode
+          setEditMode(true);
+          document.getElementById("taskStatus").focus();
+        }
+      });
+
+      function clearForm() {
+        selectedTaskId = null;
+        const project = getSelectedProject();
+
+        if (currentView === "project" && !project) {
+          $id("emptyForm").style.display = "block";
+          $id("taskFormContainer").style.display = "none";
+        } else if (currentView === "task" && !selectedTaskId) {
+          $id("emptyForm").style.display = "block";
+          $id("taskFormContainer").style.display = "none";
+        } else {
+          $id("emptyForm").style.display = "none";
+        }
+
+        $id("lastUpdated").textContent = "";
+      }
+
+      function getStatusClass(status) {
+        if (!status) return "open";
+
+        const s = status.toLowerCase();
+
+        if (s === "open") return "open";
+        if (s === "working") return "working";
+        if (s === "pending review") return "pending";
+        if (s === "overdue") return "overdue";
+        if (s === "template") return "template";
+        if (s === "completed") return "completed";
+        if (s === "cancelled") return "cancelled";
+
+        return "open"; // fallback
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return "";
+        const date = new Date(dateStr);
+
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0"); // months are 0-based
+        const year = date.getFullYear();
+
+        return `${day}-${month}-${year}`;
+      }
+
+      /* ------------------------ Event Listeners ------------------------ */
+
+      // View Switch Events
+      $id("projectViewBtn").addEventListener("click", switchToProjectView);
+      $id("taskViewBtn").addEventListener("click", switchToTaskView);
+
+      $id("createProject").addEventListener("click", () => {
+        const name = prompt("Project name");
+        if (!name) return;
+        const zone = prompt("Zone (e.g. Zone -1)", "Zone -1") || "Zone -1";
+        const state =
+          prompt("State (e.g. Maharashtra, Himachal Pradesh)", "Maharashtra") ||
+          "Maharashtra";
+
+        const newP = {
+          id: Date.now(),
+          name,
+          zone,
+          state,
+          status: "Not Started",
+          tasks: TASK_TEMPLATES.map((template) => ({
+            id: Date.now() + Math.random(),
+            title: template.title,
+            type: template.type,
+            status: "Not Started",
+            start: "",
+            end: "",
+            notes: "",
+            assignedTo: USERS[Math.floor(Math.random() * USERS.length)].id,
+            updated: Date.now(),
+            data: getTaskTemplateData(template.type),
+          })),
+        };
+
+        data.projects.unshift(newP);
+        saveData();
+        renderProjectFilters();
+        renderProjects();
+        selectProject(newP.id);
+        populateTaskProjectFilter();
+      });
+
+      $id("projectSearch").addEventListener("input", renderProjects);
+      $id("taskSearch").addEventListener("input", renderAllTasks);
+      $id("taskProjectFilter").addEventListener("change", renderAllTasks);
+
+      // Filter Modal Events
+      $id("filterBtn").addEventListener("click", showFilterModal);
+      $id("closeFilterModal").addEventListener("click", hideFilterModal);
+      $id("blurOverlay").addEventListener("click", hideFilterModal);
+
+      $id("applyFilters").addEventListener("click", () => {
+        hideFilterModal();
+        renderProjects();
+      });
+
+      $id("clearFilters").addEventListener("click", () => {
+        $id("projectFilterZone").value = "";
+        $id("projectFilterStatus").value = "";
+        $id("projectFilterState").value = "";
+        renderProjects();
+      });
+
+      // Theme toggle
+      $id("themeToggle").addEventListener("click", () => {
+        const root = document.documentElement;
+        if (root.getAttribute("data-theme") === "dark") {
+          root.removeAttribute("data-theme");
+        } else {
+          root.setAttribute("data-theme", "dark");
+        }
+      });
+
+      /* ------------------------ Utilities ------------------------ */
+      function timeAgo(dateStr) {
+        if (!dateStr) return "just now";
+
+        const ts = new Date(dateStr).getTime(); // convert to timestamp
+        const s = Math.floor((Date.now() - ts) / 1000);
+
+        if (s < 60) return `${s}s ago`;
+        if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+        if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+        if (s < 172800) return "Yesterday";
+
+        return `${Math.floor(s / 86400)}d ago`;
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const projectId = params.get("project");
+        const taskId = params.get("task");
+
+        console.log("restoring project:", projectId);
+        console.log("restoring task:", taskId);
+
+        if (projectId) {
+          const projectObj = { name: projectId };
+
+          // First load the project
+          renderTasksPanel(projectObj, null);
+
+          // Then if taskId exists, load the task too
+          if (taskId) {
+            selectTask(taskId); // ✅ Ab yeh kaam karega
+          }
+        }
+      });
+
+      /* ------------------------ Enhanced Task Form Functions ------------------------ */
+
+      // Task-specific data templates
+      function getTaskTemplateData(type) {
+        switch (type) {
+          case "location_details":
+            return { locations: [] };
+          case "loi_form":
+            return {
+              ownerDetails: { name: "", address: "", phone: "", email: "" },
+              propertyDetails: { address: "", area: "", type: "", value: "" },
+              terms: "",
+            };
+          case "attachment_upload":
+            return { attachments: [] };
+          case "manpower_checklist":
+            return {
+              manpower: [
+                {
+                  designation: "Project Manager",
+                  required: 1,
+                  hired: 0,
+                  status: "pending",
+                },
+                {
+                  designation: "Site Engineer",
+                  required: 2,
+                  hired: 0,
+                  status: "pending",
+                },
+                {
+                  designation: "Safety Officer",
+                  required: 1,
+                  hired: 0,
+                  status: "pending",
+                },
+                {
+                  designation: "Supervisor",
+                  required: 3,
+                  hired: 0,
+                  status: "pending",
+                },
+                {
+                  designation: "Workers",
+                  required: 10,
+                  hired: 0,
+                  status: "pending",
+                },
+              ],
+            };
+          case "infrastructure_checklist":
+            return {
+              checklist: [
+                { item: "Site Preparation", status: "pending", notes: "" },
+                { item: "Foundation Work", status: "pending", notes: "" },
+                { item: "Electrical Setup", status: "pending", notes: "" },
+                { item: "Plumbing Setup", status: "pending", notes: "" },
+                { item: "Interior Work", status: "pending", notes: "" },
+              ],
+            };
+          case "hardware_checklist":
+            return {
+              checklist: [
+                { item: "Computers/Laptops", status: "pending", notes: "" },
+                { item: "Printers", status: "pending", notes: "" },
+                { item: "Network Equipment", status: "pending", notes: "" },
+                { item: "UPS Systems", status: "pending", notes: "" },
+                { item: "Security Systems", status: "pending", notes: "" },
+              ],
+            };
+          case "software_checklist":
+            return {
+              checklist: [
+                { item: "Operating System", status: "pending", notes: "" },
+                { item: "Office Software", status: "pending", notes: "" },
+                { item: "Antivirus", status: "pending", notes: "" },
+                { item: "Business Applications", status: "pending", notes: "" },
+                { item: "Network Configuration", status: "pending", notes: "" },
+              ],
+            };
+          case "handover_checklist":
+            return {
+              checklist: [
+                {
+                  item: "Documentation Handover",
+                  status: "pending",
+                  notes: "",
+                },
+                { item: "Key Handover", status: "pending", notes: "" },
+                { item: "System Access", status: "pending", notes: "" },
+                { item: "Training Completion", status: "pending", notes: "" },
+                { item: "Final Inspection", status: "pending", notes: "" },
+              ],
+            };
+          case "inauguration_checklist":
+            return {
+              checklist: [
+                {
+                  item: "Invitation Preparation",
+                  status: "pending",
+                  notes: "",
+                },
+                { item: "Venue Setup", status: "pending", notes: "" },
+                { item: "Media Coverage", status: "pending", notes: "" },
+                { item: "Guest Management", status: "pending", notes: "" },
+                { item: "Final Preparations", status: "pending", notes: "" },
+              ],
+            };
+          default:
+            return { checklist: [] };
+        }
+      }
+
+      // Show user assignment popup
+      function showUserAssignmentPopup(currentUserId, onUpdate) {
+        const popup = document.createElement("div");
+        popup.className = "assignment-popup";
+        popup.innerHTML = `
+    <div class="assignment-popup-backdrop"></div>
+    <div class="assignment-popup-content">
+      <div class="assignment-popup-header">
+        <h3>Assign User</h3>
+        <button class="assignment-popup-close">×</button>
+      </div>
+      <div class="assignment-popup-body">
+        <div class="user-list">
+          ${USERS.map(
+            (user) => `
+            <div class="user-option ${
+              user.id === currentUserId ? "selected" : ""
+            }" data-user-id="${user.id}">
+              <div class="user-avatar">👤</div>
+              <div class="user-info">
+                <div class="user-name">${user.name}</div>
+                <div class="user-role">${user.role}</div>
+              </div>
+              <div class="user-check">${
+                user.id === currentUserId ? "✓" : ""
+              }</div>
+            </div>
+          `
+          ).join("")}
+        </div>
+      </div>
+      <div class="assignment-popup-footer">
+        <button class="btn ghost" id="cancelAssignment">Cancel</button>
+        <button class="btn" id="updateAssignment">Update Assignment</button>
+      </div>
+    </div>
+  `;
+
+        document.body.appendChild(popup);
+        setTimeout(() => popup.classList.add("active"), 10);
+
+        let selectedUserId = currentUserId;
+
+        // Handle user selection
+        popup.querySelectorAll(".user-option").forEach((option) => {
+          option.addEventListener("click", () => {
+            popup.querySelectorAll(".user-option").forEach((opt) => {
+              opt.classList.remove("selected");
+              opt.querySelector(".user-check").textContent = "";
+            });
+            option.classList.add("selected");
+            option.querySelector(".user-check").textContent = "✓";
+            selectedUserId = parseInt(option.dataset.userId);
+          });
+        });
+
+        // Handle close
+        const closePopup = () => {
+          popup.classList.remove("active");
+          setTimeout(() => document.body.removeChild(popup), 300);
+        };
+
+        popup.querySelector(".assignment-popup-close").onclick = closePopup;
+        popup.querySelector(".assignment-popup-backdrop").onclick = closePopup;
+        popup.querySelector("#cancelAssignment").onclick = closePopup;
+
+        // Handle update
+        popup.querySelector("#updateAssignment").onclick = () => {
+          onUpdate(selectedUserId);
+          closePopup();
+        };
+      }
+
+      //     // Enhanced task form renderer
+      //     function renderTaskForm(task, project) {
+      //       const container = $id("taskFormContainer");
+      //       const assignedUser = getUserById(task.assignedTo);
+
+      //       const commonFormHtml = `
+      //   <div style="padding: 20px;">
+      //     <!-- Task Header with Assigned User -->
+      //     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      //       <h2 style="margin: 0; color: var(--on-surface); font-size: 20px;">${
+      //         task.title
+      //       }</h2>
+      //       <div style="display: flex; align-items: center; gap: 8px;">
+      //         <span style="font-size: 12px; color: var(--on-surface-variant);">Assigned to:</span>
+      //         <div class="assigned-user-display">
+      //           <span class="assigned-user-name">${assignedUser.name}</span>
+      //           <button class="btn-icon edit-assignment-btn" title="Change Assignment">✏️</button>
+      //         </div>
+      //       </div>
+      //     </div>
+
+      //     <!-- Compact Common Fields Row -->
+      //     <div class="common-fields-row">
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">Project</label>
+      //         <input type="text" class="form-field-input" value="${
+      //           project.name
+      //         }" readonly />
+      //       </div>
+
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">Start Date</label>
+      //         <input type="date" id="taskStartDate" class="form-field-input" value="${
+      //           task.start || ""
+      //         }" />
+      //       </div>
+
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">End Date</label>
+      //         <input type="date" id="taskEndDate" class="form-field-input" value="${
+      //           task.end || ""
+      //         }" />
+      //       </div>
+
+      //       <div class="form-field-group">
+      //         <label class="form-field-label">Status</label>
+      //         <select id="taskStatus" class="form-field-input">
+      //           <option ${
+      //             task.status === "Not Started" ? "selected" : ""
+      //           }>Not Started</option>
+      //           <option ${
+      //             task.status === "In Progress" ? "selected" : ""
+      //           }>In Progress</option>
+      //           <option ${
+      //             task.status === "Completed" ? "selected" : ""
+      //           }>Completed</option>
+      //           <option ${
+      //             task.status === "Overdue" ? "selected" : ""
+      //           }>Overdue</option>
+      //         </select>
+      //       </div>
+      //     </div>
+
+      //     <!-- Separator -->
+      //     <hr style="margin: 24px 0; border: none; height: 1px; background: var(--outline-variant);">
+
+      //     <!-- Task-Specific Content -->
+      //     <div class="task-specific-content">
+      //       ${renderTaskSpecificContent(task)}
+      //     </div>
+      //   </div>
+      // `;
+
+      //       container.innerHTML = commonFormHtml;
+
+      //       // Add event listener for assignment change
+      //       container
+      //         .querySelector(".edit-assignment-btn")
+      //         .addEventListener("click", () => {
+      //           showUserAssignmentPopup(task.assignedTo, (newUserId) => {
+      //             task.assignedTo = newUserId;
+      //             const newUser = getUserById(newUserId);
+      //             container.querySelector(".assigned-user-name").textContent =
+      //               newUser.name;
+      //             task.updated = Date.now();
+      //             saveData();
+      //             if (currentView === "project") {
+      //               renderTasksPanel();
+      //             } else {
+      //               renderAllTasks();
+      //             }
+      //           });
+      //         });
+      //     }
+
+      // Render task-specific content based on task type
+      function renderTaskSpecificContent(task) {
+        const subject = task.subject || "";
+
+        if (subject.includes("Acquisition of the Property")) {
+          return renderLocationDetailsForm(task);
+        } else if (subject.includes("Letter of Intent")) {
+          return renderLOIForm(task);
+        } else if (subject.includes("Agreement and Handover")) {
+          return renderAttachmentForm(task);
+        } else if (subject.includes("Manpower Recruitment")) {
+          return renderManpowerForm(task);
+        } else if (subject.includes("Infrastructure Development Work")) {
+          return renderInfrastructureForm(task);
+        } else if (subject.includes("IT Hardware Installation")) {
+          return renderHardwareForm(task);
+        } else if (subject.includes("IT Software Installation")) {
+          return renderSoftwareForm(task);
+        } else if (subject.includes("Handover to Business Team")) {
+          return renderHandoverForm(task);
+        } else if (subject.includes("Ready for Inauguration")) {
+          return renderInaugurationForm(task);
+        } else {
+          return `<p style="color: var(--on-surface-variant);">
+      Task-specific form for <b>${subject}</b> (not mapped yet)
+    </p>`;
+        }
+      }
+
+      // 1. Location Details Form
+      function renderLocationDetailsForm(task) {
+        if (!task.data.locations) task.data.locations = [];
+
+        return `
+    <div class="task-form-section">
+      <h3>Property Locations</h3>
+      <div class="locations-container">
+        ${task.data.locations
+          .map(
+            (location, index) => `
+          <div class="location-item" data-index="${index}">
+            <div class="location-header">
+              <h4>Location ${index + 1}</h4>
+              <button class="btn-icon remove-location" data-index="${index}">🗑️</button>
+            </div>
+            <div class="location-fields">
+              <input type="text" class="form-field-input location-address" placeholder="Address" value="${
+                location.address || ""
+              }" />
+              <select class="form-field-input location-status">
+                <option value="pending" ${
+                  location.status === "pending" ? "selected" : ""
+                }>Pending</option>
+                <option value="verified" ${
+                  location.status === "verified" ? "selected" : ""
+                }>Verified</option>
+                <option value="acquired" ${
+                  location.status === "acquired" ? "selected" : ""
+                }>Acquired</option>
+              </select>
+            </div>
+            <div class="attachments-section">
+              <label>Photos/Videos:</label>
+              <input type="file" class="location-files" multiple accept="image/*,video/*" data-index="${index}" />
+              <div class="files-list">
+                ${(location.files || [])
+                  .map((file) => `<span class="file-tag">${file}</span>`)
+                  .join("")}
+              </div>
+            </div>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+      <button class="btn ghost add-location">+ Add Location</button>
+    </div>
+  `;
+      }
+
+      // 2. Letter of Intent Form
+      function renderLOIForm(task) {
+        if (!task.data.ownerDetails) task.data.ownerDetails = {};
+        if (!task.data.propertyDetails) task.data.propertyDetails = {};
+
+        return `
+    <div class="task-form-section">
+      <h3>Letter of Intent Details</h3>
+      
+      <div class="form-section">
+        <h4>Property Owner Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <input type="text" class="form-field-input" placeholder="Owner Name" id="ownerName" value="${
+            task.data.ownerDetails.name || ""
+          }" />
+          <input type="text" class="form-field-input" placeholder="Phone" id="ownerPhone" value="${
+            task.data.ownerDetails.phone || ""
+          }" />
+          <input type="email" class="form-field-input" placeholder="Email" id="ownerEmail" value="${
+            task.data.ownerDetails.email || ""
+          }" />
+          <textarea class="form-field-input" placeholder="Address" id="ownerAddress">${
+            task.data.ownerDetails.address || ""
+          }</textarea>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Property Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <textarea class="form-field-input" placeholder="Property Address" id="propertyAddress">${
+            task.data.propertyDetails.address || ""
+          }</textarea>
+          <input type="text" class="form-field-input" placeholder="Area (sq ft)" id="propertyArea" value="${
+            task.data.propertyDetails.area || ""
+          }" />
+          <select class="form-field-input" id="propertyType">
+            <option value="">Property Type</option>
+            <option value="commercial" ${
+              task.data.propertyDetails.type === "commercial" ? "selected" : ""
+            }>Commercial</option>
+            <option value="residential" ${
+              task.data.propertyDetails.type === "residential" ? "selected" : ""
+            }>Residential</option>
+          </select>
+          <input type="text" class="form-field-input" placeholder="Value" id="propertyValue" value="${
+            task.data.propertyDetails.value || ""
+          }" />
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Terms & Conditions</h4>
+        <textarea class="form-field-input" rows="4" placeholder="Enter terms and conditions..." id="loiTerms">${
+          task.data.terms || ""
+        }</textarea>
+      </div>
+
+      <button class="btn print-loi">🖨️ Print Letter of Intent</button>
+    </div>
+  `;
+      }
+
+      // 3. Attachment Upload Form
+      function renderAttachmentForm(task) {
+        if (!task.data.attachments) task.data.attachments = [];
+
+        return `
+    <div class="task-form-section">
+      <h3>Agreement & Handover Documents</h3>
+      
+      <div class="upload-section">
+        <input type="file" class="form-field-input" multiple id="documentFiles" accept=".pdf,.doc,.docx,.jpg,.png" />
+        <button class="btn upload-documents">📎 Upload Documents</button>
+      </div>
+
+      <div class="attachments-list">
+        ${task.data.attachments
+          .map(
+            (file, index) => `
+          <div class="attachment-item">
+            <span class="attachment-name">📄 ${file.name}</span>
+            <span class="attachment-size">${file.size}</span>
+            <button class="btn-icon remove-attachment" data-index="${index}">🗑️</button>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+      }
+
+      // 4. Manpower Recruitment Form
+      function renderManpowerForm(task) {
+        if (!task.data.manpower) {
+          task.data.manpower = [
+            {
+              designation: "Project Manager",
+              required: 1,
+              hired: 0,
+              status: "pending",
+            },
+            {
+              designation: "Site Engineer",
+              required: 2,
+              hired: 0,
+              status: "pending",
+            },
+            {
+              designation: "Safety Officer",
+              required: 1,
+              hired: 0,
+              status: "pending",
+            },
+            {
+              designation: "Supervisor",
+              required: 3,
+              hired: 0,
+              status: "pending",
+            },
+            {
+              designation: "Workers",
+              required: 10,
+              hired: 0,
+              status: "pending",
+            },
+          ];
+        }
+
+        return `
+    <div class="task-form-section">
+      <h3>Manpower Recruitment Checklist</h3>
+      
+      <div class="manpower-list">
+        ${task.data.manpower
+          .map(
+            (item, index) => `
+          <div class="manpower-item">
+            <div class="manpower-info">
+              <strong>${item.designation}</strong>
+            </div>
+            <div class="manpower-counts">
+              <input type="number" class="form-field-input manpower-required" placeholder="Required" value="${
+                item.required
+              }" data-index="${index}" style="width: 80px;" />
+              <span>/</span>
+              <input type="number" class="form-field-input manpower-hired" placeholder="Hired" value="${
+                item.hired
+              }" data-index="${index}" style="width: 80px;" />
+            </div>
+            <select class="form-field-input manpower-status" data-index="${index}" style="width: 120px;">
+              <option value="pending" ${
+                item.status === "pending" ? "selected" : ""
+              }>Pending</option>
+              <option value="in-progress" ${
+                item.status === "in-progress" ? "selected" : ""
+              }>In Progress</option>
+              <option value="completed" ${
+                item.status === "completed" ? "selected" : ""
+              }>Completed</option>
+            </select>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+      
+      <button class="btn ghost add-manpower">+ Add Position</button>
+    </div>
+  `;
+      }
+
+      // 5-9. Checklist Forms (Infrastructure, Hardware, Software, Handover, Inauguration)
+      function renderChecklistForm(task, title) {
+        if (!task.data.checklist) {
+          task.data.checklist = getTaskTemplateData(task.type).checklist;
+        }
+
+        return `
+    <div class="task-form-section">
+      <h3>${title}</h3>
+      
+      <div class="checklist-container">
+        ${task.data.checklist
+          .map(
+            (item, index) => `
+          <div class="checklist-item">
+            <div class="checklist-content">
+              <input type="text" class="form-field-input checklist-item-text" value="${
+                item.item
+              }" data-index="${index}" />
+              <select class="form-field-input checklist-status" data-index="${index}" style="width: 120px;">
+                <option value="pending" ${
+                  item.status === "pending" ? "selected" : ""
+                }>Pending</option>
+                <option value="in-progress" ${
+                  item.status === "in-progress" ? "selected" : ""
+                }>In Progress</option>
+                <option value="completed" ${
+                  item.status === "completed" ? "selected" : ""
+                }>Completed</option>
+              </select>
+              <button class="btn-icon remove-checklist-item" data-index="${index}">🗑️</button>
+            </div>
+            <textarea class="form-field-input checklist-notes" placeholder="Notes..." data-index="${index}">${
+              item.notes || ""
+            }</textarea>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+      
+      <button class="btn ghost add-checklist-item">+ Add Item</button>
+    </div>
+  `;
+      }
+
+      function renderInfrastructureForm(task) {
+        return renderChecklistForm(
+          task,
+          "Infrastructure Development Checklist"
+        );
+      }
+
+      function renderHardwareForm(task) {
+        return renderChecklistForm(task, "IT Hardware Installation Checklist");
+      }
+
+      function renderSoftwareForm(task) {
+        return renderChecklistForm(task, "IT Software Installation Checklist");
+      }
+
+      function renderHandoverForm(task) {
+        return renderChecklistForm(task, "Business Handover Checklist");
+      }
+
+      function renderInaugurationForm(task) {
+        return renderChecklistForm(task, "Ready for Inauguration Checklist");
+      }
+
+      // Event handlers for task-specific forms
+      function attachTaskFormEventHandlers(task) {
+        const container = $id("taskFormContainer");
+
+        // Location form handlers
+        if (task.type === "location_details") {
+          // Add location
+          container
+            .querySelector(".add-location")
+            ?.addEventListener("click", () => {
+              task.data.locations.push({
+                address: "",
+                status: "pending",
+                files: [],
+              });
+              renderTaskForm(task, getSelectedProject());
+            });
+
+          // Remove location
+          container.querySelectorAll(".remove-location").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const index = parseInt(btn.dataset.index);
+              task.data.locations.splice(index, 1);
+              renderTaskForm(task, getSelectedProject());
+            });
+          });
+
+          // Update location data
+          container.querySelectorAll(".location-address").forEach((input) => {
+            input.addEventListener("change", () => {
+              const index = parseInt(
+                input.closest(".location-item").dataset.index
+              );
+              task.data.locations[index].address = input.value;
+            });
+          });
+        }
+
+        // LOI form handlers
+        if (task.type === "loi_form") {
+          // Print LOI
+          container
+            .querySelector(".print-loi")
+            ?.addEventListener("click", () => {
+              // Collect all form data first
+              task.data.ownerDetails.name = $id("ownerName").value;
+              task.data.ownerDetails.phone = $id("ownerPhone").value;
+              task.data.ownerDetails.email = $id("ownerEmail").value;
+              task.data.ownerDetails.address = $id("ownerAddress").value;
+              task.data.propertyDetails.address = $id("propertyAddress").value;
+              task.data.propertyDetails.area = $id("propertyArea").value;
+              task.data.propertyDetails.type = $id("propertyType").value;
+              task.data.propertyDetails.value = $id("propertyValue").value;
+              task.data.terms = $id("loiTerms").value;
+
+              generateLOIPrint(task);
+            });
+        }
+
+        // Manpower form handlers
+        if (task.type === "manpower_checklist") {
+          // Add manpower
+          container
+            .querySelector(".add-manpower")
+            ?.addEventListener("click", () => {
+              const designation = prompt("Enter designation:");
+              if (designation) {
+                task.data.manpower.push({
+                  designation,
+                  required: 1,
+                  hired: 0,
+                  status: "pending",
+                });
+                renderTaskForm(task, getSelectedProject());
+              }
+            });
+
+          // Update manpower counts
+          container
+            .querySelectorAll(".manpower-required, .manpower-hired")
+            .forEach((input) => {
+              input.addEventListener("change", () => {
+                const index = parseInt(input.dataset.index);
+                const field = input.classList.contains("manpower-required")
+                  ? "required"
+                  : "hired";
+                task.data.manpower[index][field] = parseInt(input.value) || 0;
+              });
+            });
+        }
+
+        // Checklist handlers for other task types
+        const checklistTypes = [
+          "infrastructure_checklist",
+          "hardware_checklist",
+          "software_checklist",
+          "handover_checklist",
+          "inauguration_checklist",
+        ];
+
+        if (checklistTypes.includes(task.type)) {
+          // Add checklist item
+          container
+            .querySelector(".add-checklist-item")
+            ?.addEventListener("click", () => {
+              const item = prompt("Enter checklist item:");
+              if (item) {
+                task.data.checklist.push({
+                  item,
+                  status: "pending",
+                  notes: "",
+                });
+                renderTaskForm(task, getSelectedProject());
+              }
+            });
+
+          // Remove checklist item
+          container
+            .querySelectorAll(".remove-checklist-item")
+            .forEach((btn) => {
+              btn.addEventListener("click", () => {
+                const index = parseInt(btn.dataset.index);
+                task.data.checklist.splice(index, 1);
+                renderTaskForm(task, getSelectedProject());
+              });
+            });
+
+          // Update checklist items
+          container
+            .querySelectorAll(".checklist-item-text, .checklist-notes")
+            .forEach((input) => {
+              input.addEventListener("change", () => {
+                const index = parseInt(input.dataset.index);
+                const field = input.classList.contains("checklist-item-text")
+                  ? "item"
+                  : "notes";
+                task.data.checklist[index][field] = input.value;
+              });
+            });
+
+          container.querySelectorAll(".checklist-status").forEach((select) => {
+            select.addEventListener("change", () => {
+              const index = parseInt(select.dataset.index);
+              task.data.checklist[index].status = select.value;
+            });
+          });
+        }
+      }
+
+      // Generate LOI Print
+      function generateLOIPrint(task) {
+        const project = getSelectedProject();
+        const printContent = `
+    <div style="padding: 40px; font-family: Arial, sans-serif;">
+      <h1 style="text-align: center; color: #006767;">LETTER OF INTENT</h1>
+      <hr style="margin: 20px 0;">
+      
+      <h3>Project: ${project.name}</h3>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      
+      <h3>Property Owner Details:</h3>
+      <p><strong>Name:</strong> ${task.data.ownerDetails.name}</p>
+      <p><strong>Address:</strong> ${task.data.ownerDetails.address}</p>
+      <p><strong>Phone:</strong> ${task.data.ownerDetails.phone}</p>
+      <p><strong>Email:</strong> ${task.data.ownerDetails.email}</p>
+      
+      <h3>Property Details:</h3>
+      <p><strong>Address:</strong> ${task.data.propertyDetails.address}</p>
+      <p><strong>Area:</strong> ${task.data.propertyDetails.area} sq ft</p>
+      <p><strong>Type:</strong> ${task.data.propertyDetails.type}</p>
+      <p><strong>Value:</strong> ${task.data.propertyDetails.value}</p>
+      
+      <h3>Terms & Conditions:</h3>
+      <p>${task.data.terms}</p>
+      
+      <div style="margin-top: 60px;">
+        <div style="float: left;">
+          <p>_____________________</p>
+          <p>Property Owner Signature</p>
+        </div>
+        <div style="float: right;">
+          <p>_____________________</p>
+          <p>Company Representative</p>
+        </div>
+        <div style="clear: both;"></div>
+      </div>
+    </div>
+  `;
+
+        const printWindow = window.open("", "_blank");
+        printWindow.document.write(`
+    <html>
+      <head><title>Letter of Intent - ${project.name}</title></head>
+      <body>${printContent}</body>
+    </html>
+  `);
+        printWindow.document.close();
+        printWindow.print();
+      }
+
+      // Update the existing renderTaskForm function call to include event handlers
+      function selectTask(taskName) {
+        console.log("clicked task id:", taskName);
+        selectedTaskId = taskName;
+
+        // ✅ Update URL with project & task
+        const url = new URL(window.location);
+        if (selectedProjectId) {
+          url.searchParams.set("project", selectedProjectId);
+        }
+        url.searchParams.set("task", taskName);
+        window.history.pushState({}, "", url);
+
+        // ✅ Remove active from all and add to clicked task
+        document.querySelectorAll(".task-item").forEach((el) => {
+          el.classList.remove("active");
+        });
+
+        const clickedTask = document.querySelector(
+          `.task-item[data-task-id="${taskName}"]`
+        );
+        if (clickedTask) {
+          clickedTask.classList.add("active");
+        }
+
+        // ✅ Fetch task details from backend
+        fetch(
+          `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+            taskName
+          )}`
+        )
+          .then((res) => res.json())
+          .then((response) => {
+            console.log("Full API Response:", response);
+
+            const task = response.message;
+            if (!task) {
+              console.error("Task not found in response");
+              return;
+            }
+
+            console.log("Task to render:", task);
+
+            const project = data.projects.find((p) => p.name === task.project);
+            if (!project) {
+              console.error("Project not found for task");
+              return;
+            }
+
+            renderTaskForm(task, project);
+            attachTaskFormEventHandlers(task);
+
+            $id("lastUpdated").textContent =
+              "Last updated: " + timeAgo(task.modified);
+            $id("taskFormContainer").style.display = "block";
+            $id("emptyForm").style.display = "none";
+          })
+          .catch((err) => {
+            console.error("Error fetching task details:", err);
+          });
+      }
+
+      /* ------------------------ Init ------------------------ */
+      (function init() {
+        loadData();
+        renderProjectFilters();
+        renderProjects();
+        populateTaskProjectFilter();
+
+        if (!selectedProjectId && data.projects.length) {
+          selectProject(data.projects[0].id);
+        }
+      })();
+    </script>
   </body>
 </html>
