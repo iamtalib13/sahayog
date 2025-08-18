@@ -1,4 +1,6 @@
 import frappe
+from frappe.utils.file_manager import save_file
+
 
 @frappe.whitelist()
 def get_all_projects():
@@ -145,4 +147,46 @@ def get_options_dynamically_for_filter():
         'division_names': [division.get('name') for division in division_names],
         'custom_branch_status_options': custom_branch_status_options.split("\n")  # Split options by new line
     }
+@frappe.whitelist()
+def add_image_for_existing_location(task_name, location_name, estimate_rent, status):
+    try:
+        # 1. Get the Task document
+        task = frappe.get_doc("Task", task_name)
+        
+        # 2. Get the uploaded file
+        file = frappe.request.files.get('image_file')
+        if not file:
+            return {"success": False, "error": "No file uploaded"}
 
+        # 3. Save file properly using Frappe's file manager
+        from frappe.utils.file_manager import save_file
+        file_content = file.stream.read()
+        
+        file_doc = save_file(
+            file.filename,
+            file_content,
+            "Task",
+            task_name,
+            folder="Home/Attachments",
+            is_private=0
+        )
+        
+        # 4. Verify file was saved correctly
+        if not file_doc or not file_doc.file_url:
+            return {"success": False, "error": "File upload failed"}
+        
+        # 5. Append to child table
+        task.append("custom_location_details", {
+            "location_name": location_name,
+            "estimate_rent": float(estimate_rent),
+            "status": status,
+            "location_image": file_doc.file_url  # Use the proper file URL
+        })
+        
+        task.save()
+        
+        return {"success": True, "file_url": file_doc.file_url}
+        
+    except Exception as e:
+        frappe.log_error(f"Failed to add location image: {str(e)}")
+        return {"success": False, "error": str(e)}
