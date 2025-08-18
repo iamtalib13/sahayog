@@ -2274,7 +2274,7 @@
 
       <!-- Task-Specific Content -->
       <div class="task-specific-content">
-        ${renderTaskSpecificContent(task.subject)}
+        ${renderTaskSpecificContent(task)}
       </div>
   `;
         document.getElementById("emptyForm").style.display = "none";
@@ -2505,6 +2505,81 @@
           }
         }
       });
+
+      /**
+       * Converts number to words (for rent display)
+       */
+      function numberToWords(num) {
+        if (!num || isNaN(num)) return "";
+        num = parseInt(num);
+        if (num === 0) return "Zero";
+
+        const a = [
+          "",
+          "One",
+          "Two",
+          "Three",
+          "Four",
+          "Five",
+          "Six",
+          "Seven",
+          "Eight",
+          "Nine",
+          "Ten",
+          "Eleven",
+          "Twelve",
+          "Thirteen",
+          "Fourteen",
+          "Fifteen",
+          "Sixteen",
+          "Seventeen",
+          "Eighteen",
+          "Nineteen",
+        ];
+        const b = [
+          "",
+          "",
+          "Twenty",
+          "Thirty",
+          "Forty",
+          "Fifty",
+          "Sixty",
+          "Seventy",
+          "Eighty",
+          "Ninety",
+        ];
+
+        const convert = (n) => {
+          if (n < 20) return a[n];
+          if (n < 100)
+            return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+          if (n < 1000)
+            return (
+              a[Math.floor(n / 100)] +
+              " Hundred " +
+              (n % 100 ? convert(n % 100) : "")
+            );
+          if (n < 100000)
+            return (
+              convert(Math.floor(n / 1000)) +
+              " Thousand " +
+              (n % 1000 ? convert(n % 1000) : "")
+            );
+          if (n < 10000000)
+            return (
+              convert(Math.floor(n / 100000)) +
+              " Lakh " +
+              (n % 100000 ? convert(n % 100000) : "")
+            );
+          return (
+            convert(Math.floor(n / 10000000)) +
+            " Crore " +
+            (n % 10000000 ? convert(n % 10000000) : "")
+          );
+        };
+
+        return convert(num).trim();
+      }
 
       /* ------------------------ Enhanced Task Form Functions ------------------------ */
 
@@ -2789,7 +2864,17 @@
 
       // Render task-specific content based on task type
       function renderTaskSpecificContent(task) {
+        // Get current URL
+        const currentURL = window.location.href;
+        const taskNameInURL = task.name.toLowerCase().replace(/\s+/g, "-"); // Convert "Acquisition of the Property" to "acquisition-of-the-property"
+
+        // Check if URL contains task name (case insensitive)
+        if (!currentURL.toLowerCase().includes(taskNameInURL)) {
+          return ""; // Return empty string if URL doesn't match
+        }
+
         const subject = task.subject || "";
+        console.log("Rendering task-specific content for:", subject);
 
         if (subject.includes("Acquisition of the Property")) {
           return renderLocationDetailsForm(task);
@@ -2818,53 +2903,288 @@
 
       // 1. Location Details Form
       function renderLocationDetailsForm(task) {
-        if (!task.data.locations) task.data.locations = [];
+        // Group by location_name
+        const grouped = {};
+        task.location_details_table.forEach((loc) => {
+          const name = loc.location_name || "Unknown";
+          if (!grouped[name]) grouped[name] = [];
+          grouped[name].push(loc);
+        });
 
-        return `
-    <div class="task-form-section">
-      <h3>Property Locations</h3>
-      <div class="locations-container">
-        ${task.data.locations
-          .map(
-            (location, index) => `
-          <div class="location-item" data-index="${index}">
-            <div class="location-header">
-              <h4>Location ${index + 1}</h4>
-              <button class="btn-icon remove-location" data-index="${index}">🗑️</button>
-            </div>
-            <div class="location-fields">
-              <input type="text" class="form-field-input location-address" placeholder="Address" value="${
-                location.address || ""
-              }" />
-              <select class="form-field-input location-status">
-                <option value="pending" ${
-                  location.status === "pending" ? "selected" : ""
-                }>Pending</option>
-                <option value="verified" ${
-                  location.status === "verified" ? "selected" : ""
-                }>Verified</option>
-                <option value="acquired" ${
-                  location.status === "acquired" ? "selected" : ""
-                }>Acquired</option>
-              </select>
-            </div>
-            <div class="attachments-section">
-              <label>Photos/Videos:</label>
-              <input type="file" class="location-files" multiple accept="image/*,video/*" data-index="${index}" />
-              <div class="files-list">
-                ${(location.files || [])
-                  .map((file) => `<span class="file-tag">${file}</span>`)
-                  .join("")}
-              </div>
-            </div>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-      <button class="btn ghost add-location">+ Add Location</button>
+        // Generate table rows
+        const rowsHTML = Object.keys(grouped)
+          .map((locationName, idx) => {
+            const locs = grouped[locationName];
+
+            // Collect all images
+            const imagesArray = locs.flatMap((loc) =>
+              Array.isArray(loc.location_image)
+                ? loc.location_image
+                : loc.location_image
+                ? [loc.location_image]
+                : []
+            );
+
+            // Render images + add button
+            const imagesHTML =
+              imagesArray
+                .map(
+                  (img) =>
+                    `<div class="location-image-wrapper">
+                                <img src="${img}" alt="location image" 
+                                     onclick="window.open('${img}', '_blank')"
+                                     style="cursor: pointer"/>
+                            </div>`
+                )
+                .join("") +
+              `<button class="add-image-btn" data-index="${idx}">+</button>`;
+
+            const estimate_rent = locs[0].estimate_rent || 0;
+            const status = locs.some((l) => l.status === "Pending")
+              ? "Pending"
+              : "Completed";
+
+            // Generate words for tooltip
+            const rentInWords = numberToWords(estimate_rent) + " Rupees only";
+
+            return `<tr class="location-row">
+                <td class="location-name-cell">${locationName}</td>
+                <td class="location-images-cell">${imagesHTML}</td>
+                <td class="estimate-rent-cell">
+                    <input 
+                        type="number" 
+                        class="estimate-rent" 
+                        value="${estimate_rent}" 
+                        title="${rentInWords}"
+                    />
+                </td>
+                <td class="location-status-cell">
+                    <select class="location-status">
+                        <option ${
+                          status === "Pending" ? "selected" : ""
+                        }>Pending</option>
+                        <option ${
+                          status === "Completed" ? "selected" : ""
+                        }>Completed</option>
+                    </select>
+                </td>
+            </tr>`;
+          })
+          .join("");
+
+        const html = `
+    <style>
+    .location-details-container h3 {
+        margin-bottom: 16px;
+        font-size: 18px;
+        color: var(--on-surface);
+        font-weight: 600;
+    }
+
+    .location-details-container table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .location-details-container th,
+    .location-details-container td {
+        padding: 10px 8px;
+        vertical-align: top;
+        font-size: 13px;
+        color: var(--on-surface);
+        word-break: break-word;
+    }
+
+    .location-details-container th {
+        text-align: left;
+        border-bottom: 2px solid var(--outline-variant);
+        font-weight: 600;
+    }
+
+    .location-row {
+        border-bottom: 1px solid var(--outline-variant);
+        transition: background 0.2s;
+    }
+
+    .location-row:hover {
+        background: var(--surface-variant);
+    }
+
+    /* Column widths */
+    .location-name-cell {
+        width: 12%;
+        white-space: normal;
+    }
+
+    .location-images-cell {
+        width: 64%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        min-height: 40px;
+    }
+
+    .location-image-wrapper img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid var(--outline-variant);
+        display: inline-block;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
+        backface-visibility: hidden;
+        transform-origin: center center;
+    }
+    .location-image-wrapper img:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10;
+    }
+    .add-image-btn {
+        width: 40px;
+        height: 40px;
+        border: 1px dashed var(--outline-variant);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--on-surface-variant);
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        display: inline-block;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
+        backface-visibility: hidden;
+        transform-origin: center center;
+    }
+    .add-image-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10;
+    } 
+
+    .estimate-rent-cell {
+        width: 11%;
+        position: relative;
+    }
+
+    .estimate-rent-cell input {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid var(--outline-variant);
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: help;
+    }
+
+    .location-status-cell {
+        width: 13%;
+    }
+
+    .location-status-cell select {
+        width: 100%;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--outline-variant);
+        font-size: 13px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    #addNewLocationBtn {
+        margin-top: 16px;
+        background: #316767;
+        color: #fff;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    /* Responsive: stack cells in small screens */
+    @media (max-width: 768px) {
+        .location-details-container table,
+        .location-details-container thead,
+        .location-details-container tbody,
+        .location-details-container th,
+        .location-details-container td,
+        .location-details-container tr {
+            display: block;
+        }
+
+        .location-details-container th {
+            display: none;
+        }
+
+        .location-row {
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--outline-variant);
+            padding-bottom: 12px;
+        }
+
+        .location-name-cell,
+        .location-images-cell,
+        .estimate-rent-cell,
+        .location-status-cell {
+            width: 100%;
+            display: flex;
+            margin-bottom: 6px;
+        }
+
+        .location-name-cell::before {
+            content: "Location Name: ";
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .location-images-cell::before {
+            content: "Images: ";
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .estimate-rent-cell::before {
+            content: "Rent: ";
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .location-status-cell::before {
+            content: "Status: ";
+            font-weight: 600;
+            margin-right: 6px;
+        }
+    }
+    </style>
+
+    <div class="location-details-container">
+        <h3>Location Details</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:12%">Location Name</th>
+                    <th style="width:64%">Location Images</th>
+                    <th style="width:11%">Rent/Month</th>
+                    <th style="width:13%">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHTML}
+            </tbody>
+        </table>
+        <button id="addNewLocationBtn">+ Add New Location</button>
     </div>
-  `;
+    `;
+
+        return html;
       }
 
       // 2. Letter of Intent Form
