@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Project Management — SPA</title>
     <link
@@ -2581,6 +2582,49 @@
         return convert(num).trim();
       }
 
+      async function getCSRFToken() {
+        // Try from meta tag first
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag && metaTag.content) {
+          console.log("Got CSRF token from meta tag");
+          return metaTag.content;
+        }
+
+        // Then try from cookies
+        const cookieMatch = document.cookie.match(/csrf_token=([^;]+)/);
+        if (cookieMatch && cookieMatch[1]) {
+          console.log("Got CSRF token from cookies");
+          return decodeURIComponent(cookieMatch[1]);
+        }
+
+        // Finally try fetching from API
+        try {
+          console.log("Fetching CSRF token from API");
+          const response = await fetch(
+            "/api/method/frappe.auth.get_logged_user"
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const token =
+            response.headers.get("X-Frappe-CSRF-Token") ||
+            response.headers.get("x-frappe-csrf-token");
+
+          if (!token) {
+            throw new Error("CSRF token not found in response headers");
+          }
+
+          console.log("Got CSRF token from API response");
+          return token;
+        } catch (error) {
+          console.error("CSRF token fetch error:", error);
+          throw new Error(
+            "Could not get security token. Please refresh the page."
+          );
+        }
+      }
       /* ------------------------ Enhanced Task Form Functions ------------------------ */
 
       // Task-specific data templates
@@ -3183,6 +3227,104 @@
         <button id="addNewLocationBtn">+ Add New Location</button>
     </div>
     `;
+
+        setTimeout(() => {
+          document.querySelectorAll(".add-image-btn").forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              const index = e.target.getAttribute("data-index");
+              const locationName = Object.keys(grouped)[index];
+              const locationGroup = grouped[locationName];
+
+              const firstLocation = locationGroup[0];
+              const estimateRent = firstLocation.estimate_rent || 0;
+              const status = locationGroup.some((l) => l.status === "Pending")
+                ? "Pending"
+                : "Completed";
+
+              const fileInput = document.createElement("input");
+              fileInput.type = "file";
+              fileInput.accept = "image/*";
+              fileInput.style.display = "none";
+
+              fileInput.addEventListener("change", async (e) => {
+                const file = e.target.files[0];
+                console.log("Selected file:", file);
+                if (!file) return;
+
+                try {
+                  // Create form data with all required fields
+                  const formData = new FormData();
+                  formData.append("task_name", task.name);
+                  formData.append("location_name", locationName);
+                  formData.append("estimate_rent", estimateRent);
+                  formData.append("status", status);
+                  formData.append("image_file", file); // This is the key change - use the file object directly
+
+                  // Call your API endpoint directly
+                  const csrfToken = await getCSRFToken();
+                  console.log("Using CSRF token:", csrfToken);
+
+                  const response = await fetch(
+                    `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.add_image_for_existing_location`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "X-Frappe-CSRF-Token": csrfToken,
+                      },
+                      body: formData,
+                    }
+                  );
+
+                  const result = await response.json();
+
+                  if (result.message && result.message.success) {
+                    // Refresh the task data
+                    const updatedTaskResponse = await fetch(
+                      `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+                        task.name
+                      )}`
+                    );
+                    const updatedTask = await updatedTaskResponse.json();
+
+                    // Re-render the form
+                    const container = document.querySelector(
+                      ".location-details-container"
+                    );
+                    if (container) {
+                      container.innerHTML = renderLocationDetailsForm(
+                        updatedTask.message
+                      );
+                    }
+
+                    // Optional: Show success message
+                    // frappe.show_alert(
+                    //   {
+                    //     message: __("Image added successfully"),
+                    //     indicator: "green",
+                    //   },
+                    //   3
+                    // );
+                  } else {
+                    throw new Error(
+                      result.message?.error || "Failed to add location image"
+                    );
+                  }
+                } catch (error) {
+                  console.error("Error adding image:", error);
+                  // frappe.msgprint({
+                  //   title: __("Error"),
+                  //   indicator: "red",
+                  //   message: __("Failed to add image: {0}", [error.message]),
+                  // });
+                }
+              });
+
+              document.body.appendChild(fileInput);
+              fileInput.click();
+              document.body.removeChild(fileInput);
+            });
+          });
+        }, 0);
 
         return html;
       }
