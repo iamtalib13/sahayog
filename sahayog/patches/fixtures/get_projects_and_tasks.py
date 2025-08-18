@@ -16,14 +16,14 @@ def get_all_projects():
         frappe.throw(f"Error fetching projects: {str(e)}")
         
 @frappe.whitelist()
-def get_all_tasks(project_name):
+def get_all_tasks(name):
     """
     Fetch all tasks for a specific project, including child table records.
     """
     try:
         tasks = frappe.get_all(
             "Task", 
-            filters={"project": project_name},
+            filters={"project": name},
             fields=["name", "subject", "exp_start_date", "exp_end_date", "status", "modified", "project"]
         )
 
