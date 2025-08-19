@@ -1022,7 +1022,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 const formattedProducts = products
                   .map((product) => ({
                     product: product.product || "Unknown Product",
-                    product_name: product.product_name || "Unknown Product",
+                    product_name: product.product_name || "Unknown Product", // This is already here
                     amount: parseFloat(product.product_amount) || 0,
                     idx: product.idx || 0,
                   }))
@@ -1093,7 +1093,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               Array.isArray(lead.products) &&
               lead.products.length > 0
             ) {
-              // Format individual products with ONLY product code and amount - NO TOTAL
+              // Format individual products with product code, product name, and amount
               const productItems = lead.products
                 .map((p) => {
                   const productCode = p.product || "Unknown";
@@ -1107,9 +1107,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   }).format(amount);
 
                   return `<div class="product-item" title="${productName}">
-                            <span class="product-name">${productCode}:</span>
-                            <span class="product-amount">${formattedAmount}</span>
-                          </div>`;
+              <span class="product-name">${productCode} (${productName}):</span>
+              <span class="product-amount">${formattedAmount}</span>
+            </div>`;
                 })
                 .join("");
 
@@ -1215,11 +1215,16 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           const empId = emp ? emp.id : "-";
           const empDesignation = emp ? emp.designation : "-";
 
-          // **UPDATED: Create searchable string from product codes and amounts only**
+          // **UPDATED: Create searchable string from product codes, names, and amounts**
           const productString =
             l.products && Array.isArray(l.products)
               ? l.products
-                  .map((p) => `${p.product || ""} ${p.amount || ""}`)
+                  .map(
+                    (p) =>
+                      `${p.product || ""} ${p.product_name || ""} ${
+                        p.amount || ""
+                      }`
+                  )
                   .join(" ")
                   .toLowerCase()
               : "";
@@ -1654,6 +1659,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 const formattedProducts = products
                   .map((product) => ({
                     product: product.product || "Unknown Product",
+                    product_name: product.product_name || "Unknown Product", // Add this line
                     amount: parseFloat(product.product_amount) || 0,
                     idx: product.idx || 0,
                   }))
@@ -1807,17 +1813,18 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           updateExportProgress(85, "Generating CSV data...");
 
           // **UPDATED: CSV headers - same structure as web interface**
+          // **UPDATED: CSV headers - same structure as web interface**
           const headers = [
             "#",
-            "Lead Name",
+            "Lead ID", // Changed from "Lead Name"
             "Customer",
             "Contact",
             "Source",
             "Products & Amounts",
             "Employee Name",
             "Employee ID",
-            "Employee Number",
-            "User ID",
+            // "Employee Number", - REMOVED
+            // "User ID",         - REMOVED
             "Designation",
             "Branch",
             "Status",
@@ -1837,24 +1844,25 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               .map((lead, index) => {
                 const emp = employeeMap[lead.lead_owner];
 
-                // **UPDATED: Format multiple products in single cell like browser display**
+                // **UPDATED: Format multiple products in single cell with product names**
                 let productsDisplay = "-";
                 if (lead.products && lead.products.length > 0) {
                   productsDisplay = lead.products
                     .map((p) => {
                       const productCode = p.product || "Unknown";
+                      const productName = p.product_name || "Unknown Product"; // Add product name
                       const amount = parseFloat(p.amount) || 0;
                       const formattedAmount = `₹${amount.toLocaleString(
                         "en-IN"
                       )}`;
-                      return `${productCode}: ${formattedAmount}`;
+                      return `${productCode} (${productName}): ${formattedAmount}`;
                     })
                     .join("\n"); // Use newline to separate products within the cell
                 }
 
                 const data = {
                   "#": i + index + 1,
-                  "Lead Name": lead.name || "-",
+                  "Lead ID": lead.name || "-", // Changed from "Lead Name"
                   Customer: lead.lead_name || "-",
                   Contact: lead.contact || "-",
                   Source: lead.source || "-",
@@ -1863,8 +1871,8 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                     ? emp.name
                     : lead.lead_owner || "Unknown",
                   "Employee ID": emp ? emp.id : "Not Found",
-                  "Employee Number": emp ? emp.employee_number : "Not Found",
-                  "User ID": emp ? emp.user_id : lead.lead_owner || "Not Found",
+                  // "Employee Number": emp ? emp.employee_number : "Not Found", - REMOVED
+                  // "User ID": emp ? emp.user_id : lead.lead_owner || "Not Found", - REMOVED
                   Designation: emp ? emp.designation : "Not Found",
                   Branch: (emp ? emp.branch : null) || lead.branch || "-",
                   Status: lead.status || "-",
