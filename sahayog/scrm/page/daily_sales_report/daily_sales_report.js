@@ -42,20 +42,22 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
         color: #212529;
         line-height: 1.25;
       }
-      
       /* Rating styles */
       .rating-section {
         background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        margin: 15px 0; padding: 16px; border-left: 4px solid #007bff;
+        margin: 15px 0; padding:2px 16px; border-left: 4px solid #007bff;
       }
       .rating-header {
         font-size: 16px; font-weight: 700; color: #212529; margin-bottom: 12px;
-        display: flex; align-items: center;
+        display: flex; align-items: center; justify-content: space-between;
       }
       .rating-header .icon { margin-right: 8px; font-size: 18px; }
+      .rating-top-badges {
+        display: flex; gap: 14px; align-items: center;
+      }
       .rating-metrics {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px; margin-bottom: 15px;
+        gap: 12px; margin-bottom: 8px;
       }
       .metric-card {
         background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
@@ -79,7 +81,26 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       .rating-good { background: #cce7ff; color: #004085; }
       .rating-average { background: #fff3cd; color: #856404; }
       .rating-bad { background: #f8d7da; color: #721c24; }
-      
+      .rating-criteria {
+        font-size: 12px;
+        color: #383d41;
+        margin: 2px 0 2px 0;
+        padding-left: 0;
+        line-height: 1.5;
+      }
+      .rating-criteria ul {
+        margin: 0 0 0 15px;
+        padding: 0;
+      }
+      .rating-criteria li {
+        margin: 0 0 2px 0;
+        padding: 0;
+      }
+      .criteria-good { color: #155724; font-weight: bold; }
+      .criteria-average { color: #856404; font-weight: bold; }
+      .criteria-bad { color: #721c24; font-weight: bold; }
+      .criteria-qualified { color: #155724; font-weight: bold; }
+      .criteria-disqualified { color: #721c24; font-weight: bold; }
       #user-date { display: flex; align-items: center; color: #4c4c4c; padding: 0 3px; margin-bottom: 10px; font-weight: bold; }
       #user-date .report-date-icon { margin-right: 8px; font-size: 16px; }
       .table-container {
@@ -145,12 +166,22 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
           <span style="margin-left: 8px; font-size: 13px;">Loading employee details...</span>
         </div>
       </div>
-      
-      <!-- Rating Section -->
       <div class="rating-section" id="performance-rating" style="display: none;">
         <div class="rating-header">
-          <span class="icon">⭐</span>
-          Performance Rating
+          <div class="rating-top-badges">
+            <span>
+              <strong>Qualification:</strong>
+              <span class="rating-badge" id="qualification-badge">-</span>
+            </span>
+            <span>
+              <strong>Rating:</strong>
+              <span class="rating-badge" id="performance-badge">-</span>
+            </span>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span class="icon">⭐</span>
+            Rating
+          </div>
         </div>
         <div class="rating-metrics">
           <div class="metric-card">
@@ -170,18 +201,20 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
             <div class="metric-value" id="not-interested-count">0</div>
           </div>
         </div>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <div>
-            <strong>Qualification:</strong>
-            <span class="rating-badge" id="qualification-badge">-</span>
-          </div>
-          <div>
-            <strong>Performance:</strong>
-            <span class="rating-badge" id="performance-badge">-</span>
-          </div>
+        <div class="rating-criteria">
+          <b>Rating Criteria:</b>
+          <ul>
+            <li><span class="criteria-good">Good</span>: At least 1 converted.</li>
+            <li><span class="criteria-average">Average</span>: At least 4 follow-ups and none converted.</li>
+            <li><span class="criteria-bad">Bad</span>: Neither above.</li>
+          </ul>
+          <b>Qualification Criteria:</b>
+          <ul>
+            <li><span class="criteria-qualified">Qualified</span>: At least 10 leads.</li>
+            <li><span class="criteria-disqualified">Disqualified</span>: Less than 10 leads.</li>
+          </ul>
         </div>
       </div>
-
       <div class="table-container">
         <table id="dsr-table">
           <thead>
@@ -229,7 +262,6 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     }</span>`;
   }
 
-  // Rating calculation function
   function calculateRating(leads) {
     const totalLeads = leads.length;
     const convertedLeads = leads.filter(
@@ -238,35 +270,24 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     const notInterestedLeads = leads.filter(
       (l) => (l.status || "").toLowerCase() === "not interested"
     ).length;
-
-    // Count leads with follow-ups (you may need to adjust this based on your actual followup logic)
     const leadsWithFollowups = leads.filter(
       (l) => l.followup_date && l.followup_date !== "-"
     ).length;
 
-    // 1. Qualification Logic: Minimum 10 leads → Qualified, otherwise Disqualified
     const qualification = totalLeads >= 10 ? "Qualified" : "Disqualified";
     const qualificationClass =
       totalLeads >= 10 ? "rating-qualified" : "rating-disqualified";
 
-    // 2. Performance Rating Logic
-    let performance = "Average";
-    let performanceClass = "rating-average";
-
+    // Rating Logic
+    let performance = "Bad";
+    let performanceClass = "rating-bad";
     if (convertedLeads >= 1) {
-      // At least 1 lead converted → Good
       performance = "Good";
       performanceClass = "rating-good";
-    } else if (totalLeads > 0 && notInterestedLeads === totalLeads) {
-      // All leads are "Not Interested" → Bad
-      performance = "Bad";
-      performanceClass = "rating-bad";
     } else if (leadsWithFollowups >= 4) {
-      // At least 4 follow-ups → Average (this is already the default)
       performance = "Average";
       performanceClass = "rating-average";
     }
-
     return {
       totalLeads,
       convertedLeads,
@@ -279,7 +300,6 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     };
   }
 
-  // Update rating display
   function updateRatingDisplay(rating) {
     $("#total-leads").text(rating.totalLeads);
     $("#followup-count").text(rating.leadsWithFollowups);
@@ -299,7 +319,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     $("#performance-rating").show();
   }
 
-  // Fetch employee details
+  // Fetch employee details (including employee ID)
   frappe.db
     .get_value("Employee", { user_id: frappe.session.user }, [
       "name",
@@ -313,6 +333,8 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       if (r.message) {
         let emp = r.message;
         $("#employee-details").html(`
+        <div class="emp-field"><span class="emp-label">Employee ID</span>
+    <div class="emp-value">${emp.name || "-"}</div></div>
         <div class="emp-field"><span class="emp-label employee">Employee</span>
     <div class="emp-value">${emp.employee_name || "-"}</div></div>
         <div class="emp-field"><span class="emp-label designation">Designation</span><div class="emp-value">${
@@ -340,7 +362,6 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       );
     });
 
-  // Helper: get lead's next followup appointment date
   async function getFollowupDate(lead_name) {
     let appts = await frappe.db.get_list("Appointment", {
       filters: {
@@ -358,7 +379,6 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       : "-";
   }
 
-  // Fetch Leads and render table (async per-lead for followup date)
   let leads = await frappe.db.get_list("Lead", {
     filters: {
       owner: frappe.session.user,
@@ -379,7 +399,6 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     limit: 100,
   });
 
-  // Process leads with followup dates and calculate rating
   let processedLeads = [];
   let rows = "";
 
@@ -400,18 +419,15 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     </tr>`;
   }
 
-  // Update table
   $("#dsr-table tbody").html(
     rows ||
       `<tr><td colspan="6" class="empty-state"><i>📭</i>No leads found for today</td></tr>`
   );
 
-  // Calculate and display rating
   if (processedLeads.length > 0) {
     const rating = calculateRating(processedLeads);
     updateRatingDisplay(rating);
   } else {
-    // Show rating section even with no leads
     updateRatingDisplay({
       totalLeads: 0,
       convertedLeads: 0,
