@@ -1833,37 +1833,37 @@
             const progressPercentage = calculateProjectProgress(p);
 
             div.innerHTML = `
-          <div class="project-header">
-              <div>
-                  <div class="project-title">${p.project_name}</div>
-                  <div class="project-state">${p.state}</div>
-              </div>
-              <div>
-                  ${
-                    p.status === "Under Development"
-                      ? '<span class="project-status-pill dev">Under Dev</span>'
-                      : p.status === "Completed"
-                      ? '<span class="project-status-pill completed">Complete</span>'
-                      : '<span class="project-status-pill not-started">Not Started</span>'
-                  }
-              </div>
-          </div>
-          
-          <div class="project-progress-section">
-              <div class="project-progress-header">
-                  <span class="project-progress-label">Progress</span>
-                  <span class="project-progress-percentage">${progressPercentage}%</span>
-              </div>
-              <div class="project-progress-bar">
-                  <div class="project-progress-fill" style="width: ${progressPercentage}%;"></div>
-              </div>
-          </div>
-          
-          <div class="tags">
-              <div class="tag">${p.zone}</div>
-              <div class="tag">${p.state}</div>
-          </div>
-      `;
+                <div class="project-header">
+                    <div>
+                        <div class="project-title">${p.project_name}</div>
+                        <div class="project-state">${p.state}</div>
+                    </div>
+                    <div>
+                        ${
+                          p.status === "Under Development"
+                            ? '<span class="project-status-pill dev">Under Dev</span>'
+                            : p.status === "Completed"
+                            ? '<span class="project-status-pill completed">Complete</span>'
+                            : '<span class="project-status-pill not-started">Not Started</span>'
+                        }
+                    </div>
+                </div>
+
+                <div class="project-progress-section">
+                    <div class="project-progress-header">
+                        <span class="project-progress-label">Progress</span>
+                        <span class="project-progress-percentage">${progressPercentage}%</span>
+                    </div>
+                    <div class="project-progress-bar">
+                        <div class="project-progress-fill" style="width: ${progressPercentage}%;"></div>
+                    </div>
+                </div>
+
+                <div class="tags">
+                    <div class="tag">${p.zone}</div>
+                    <div class="tag">${p.state}</div>
+                </div>
+            `;
             list.appendChild(div);
           });
 
@@ -2049,26 +2049,26 @@
             const assignedUser = getUserById(t.assignedTo);
 
             it.innerHTML = `
-        <div class="task-progress-circle ${progressClass}">
-            ${getProgressContent(t.status, index)}
-        </div>
-        <div class="task-content">
-            <div class="task-title">${t.subject}</div>
-            <div class="task-meta">
-                <div class="task-dates">
-                   <span title="Expected Start Date">${startDate}</span> > 
-                   <span title="Expected End Date">${endDate}</span>
-                </div>
-                <div class="task-assigned-to">Assigned to ${
-                  assignedUser.name
-                }</div>
-            </div>
-        </div>
-        <div class="task-right">
-            <div class="badge ${badgeClass}">${badgeText}</div>
-            <div class="task-updated" title="Last Modified : ${modifiedExact}">${modifiedPretty}</div>
-        </div>
-      `;
+              <div class="task-progress-circle ${progressClass}">
+                  ${getProgressContent(t.status, index)}
+              </div>
+              <div class="task-content">
+                  <div class="task-title">${t.subject}</div>
+                  <div class="task-meta">
+                      <div class="task-dates">
+                         <span title="Expected Start Date">${startDate}</span> >
+                         <span title="Expected End Date">${endDate}</span>
+                      </div>
+                      <div class="task-assigned-to">Assigned to ${
+                        assignedUser.name
+                      }</div>
+                  </div>
+              </div>
+              <div class="task-right">
+                  <div class="badge ${badgeClass}">${badgeText}</div>
+                  <div class="task-updated" title="Last Modified : ${modifiedExact}">${modifiedPretty}</div>
+              </div>
+            `;
             tList.appendChild(it);
           });
         }
@@ -2128,25 +2128,25 @@
           const assignedUser = getUserById(t.assignedTo);
 
           it.innerHTML = `
-            <div class="task-progress-circle ${progressClass}">
-              ${getProgressContent(t.status, index)}
-            </div>
-            <div class="task-content">
-              <div class="task-title">${t.title}</div>
-              <div class="task-meta">
-                <div class="task-end-date">${
-                  t.projectName
-                } • Due: ${endDate}</div>
-                <div class="task-assigned-to">Assigned to ${
-                  assignedUser.name
-                }</div>
-              </div>
-            </div>
-            <div class="task-right">
-              <div class="badge ${badgeClass}">${badgeText}</div>
-              <div class="task-updated">${timeAgo(t.modified)}</div>
-            </div>
-          `;
+                  <div class="task-progress-circle ${progressClass}">
+                    ${getProgressContent(t.status, index)}
+                  </div>
+                  <div class="task-content">
+                    <div class="task-title">${t.title}</div>
+                    <div class="task-meta">
+                      <div class="task-end-date">${
+                        t.projectName
+                      } • Due: ${endDate}</div>
+                      <div class="task-assigned-to">Assigned to ${
+                        assignedUser.name
+                      }</div>
+                    </div>
+                  </div>
+                  <div class="task-right">
+                    <div class="badge ${badgeClass}">${badgeText}</div>
+                    <div class="task-updated">${timeAgo(t.modified)}</div>
+                  </div>
+                `;
           tList.appendChild(it);
         });
       }
@@ -2173,111 +2173,106 @@
 
         const container = document.getElementById("taskFormContainer");
         container.innerHTML = `
-    <style>
-      .floating-field {
-        position: relative;
-        flex: 1;
-        min-width: 150px;
-      }
-      .floating-field input,
-      .floating-field select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 2px solid var(--outline-variant);
-        border-radius: 6px;
-        outline: none;
-        font-size: 13px;
-        background: var(--surface);
-        color: var(--on-surface);
-      }
-      .floating-field label {
-        position: absolute;
-        top: 10px;
-        left: 14px;
-        color: var(--on-surface-variant);
-        font-weight: 600;
-        font-size: 13px;
-        pointer-events: none;
-        transition: 0.2s ease all;
-        background: transparent;
-      }
-      .floating-field input:focus ~ label,
-      .floating-field input:not(:placeholder-shown) ~ label,
-      .floating-field select:focus ~ label,
-      .floating-field select:not([value=""]) ~ label {
-        top: -8px;
-        left: 8px;
-        font-size: 11px;
-        background: var(--surface);
-        padding: 0 4px;
-      }
-    </style>
+          <style>
+            .floating-field {
+              position: relative;
+              flex: 1;
+              min-width: 150px;
+            }
+            .floating-field input,
+            .floating-field select {
+              width: 100%;
+              padding: 10px 12px;
+              border: 2px solid var(--outline-variant);
+              border-radius: 6px;
+              outline: none;
+              font-size: 13px;
+              background: var(--surface);
+              color: var(--on-surface);
+            }
+            .floating-field label {
+              position: absolute;
+              top: 10px;
+              left: 14px;
+              color: var(--on-surface-variant);
+              font-weight: 600;
+              font-size: 13px;
+              pointer-events: none;
+              transition: 0.2s ease all;
+              background: transparent;
+            }
+            .floating-field input:focus ~ label,
+            .floating-field input:not(:placeholder-shown) ~ label,
+            .floating-field select:focus ~ label,
+            .floating-field select:not([value=""]) ~ label {
+              top: -8px;
+              left: 8px;
+              font-size: 11px;
+              background: var(--surface);
+              padding: 0 4px;
+            }
+          </style>
 
-    <div style="padding: 20px;" id="task-form-fields">
-      <div class="task-header-fields" 
-           style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--outline-variant);">
+          <div style="padding: 20px;" id="task-form-fields">
+        <div class="task-header-fields"
+             style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 10px; padding-bottom: 15px; border-bottom: 1px solid var(--outline-variant);">
 
-        <!-- Project Name -->
-        <div class="floating-field">
-          <input type="text" id="projectName" placeholder=" " value="${
-            project.project_name
-          }" disabled />
-          <label for="projectName">Project</label>
+          <!-- Status -->
+          <div class="floating-field">
+            <select id="taskStatus" disabled>
+              <option ${task.status === "Open" ? "selected" : ""}>Open</option>
+              <option ${
+                task.status === "Working" ? "selected" : ""
+              }>Working</option>
+              <option ${
+                task.status === "Pending Review" ? "selected" : ""
+              }>Pending Review</option>
+              <option ${
+                task.status === "Overdue" ? "selected" : ""
+              }>Overdue</option>
+              <option ${
+                task.status === "Completed" ? "selected" : ""
+              }>Completed</option>
+              <option ${
+                task.status === "Cancelled" ? "selected" : ""
+              }>Cancelled</option>
+            </select>
+            <label for="taskStatus">Status</label>
+          </div>
+
+          <!-- Start Date -->
+          <div class="floating-field">
+            <input type="date" id="taskStartDate" placeholder=" " value="${
+              task.exp_start_date || ""
+            }" disabled />
+            <label for="taskStartDate">Start</label>
+          </div>
+
+          <!-- End Date -->
+          <div class="floating-field">
+            <input type="date" id="taskEndDate" placeholder=" " value="${
+              task.exp_end_date || ""
+            }" disabled />
+            <label for="taskEndDate">End</label>
+          </div>
+
+          <!-- Completed On (inline in the same row) -->
+          <div class="floating-field" id="completedOnWrapper" style="display:none;">
+            <input type="datetime-local" id="taskCompletedOn" placeholder=" " value="${
+              task.completed_on || ""
+            }" />
+            <label for="taskCompletedOn">Completed On</label>
+          </div>
+
         </div>
 
-        <!-- Status -->
-        <div class="floating-field">
-          <select id="taskStatus" disabled>
-            <option ${task.status === "Open" ? "selected" : ""}>Open</option>
-            <option ${
-              task.status === "Working" ? "selected" : ""
-            }>Working</option>
-            <option ${
-              task.status === "Pending Review" ? "selected" : ""
-            }>Pending Review</option>
-            <option ${
-              task.status === "Overdue" ? "selected" : ""
-            }>Overdue</option>
-            <option ${
-              task.status === "Completed" ? "selected" : ""
-            }>Completed</option>
-            <option ${
-              task.status === "Cancelled" ? "selected" : ""
-            }>Cancelled</option>
-          </select>
-          <label for="taskStatus">Status</label>
-        </div>
-
-        <!-- Start Date -->
-        <div class="floating-field">
-          <input type="date" id="taskStartDate" placeholder=" " value="${
-            task.exp_start_date || ""
-          }" disabled />
-          <label for="taskStartDate">Start</label>
-        </div>
-
-        <!-- End Date -->
-        <div class="floating-field">
-          <input type="date" id="taskEndDate" placeholder=" " value="${
-            task.exp_end_date || ""
-          }" disabled />
-          <label for="taskEndDate">End</label>
+        <!-- Task-Specific Content -->
+        <div class="task-specific-content">
+          ${renderTaskSpecificContent(task)}
         </div>
       </div>
 
-      <!-- completed on date -->
-      <div class="floating-field" id="completedOnWrapper" style="display:none;">
-        <input type="datetime-local" id="taskCompletedOn" placeholder=" " value="${
-          task.completed_on || ""
-        }" />
-        <label for="taskCompletedOn">Completed On</label>
-      </div>
-
-      <!-- Task-Specific Content -->
-      <div class="task-specific-content">
-        ${renderTaskSpecificContent(task)}
-      </div>
-  `;
+        `;
         document.getElementById("emptyForm").style.display = "none";
         editSaveBtn.style.display = "flex";
         setEditMode(false);
@@ -2295,13 +2290,8 @@
         const fields = form.querySelectorAll("input, select, textarea");
 
         fields.forEach((field) => {
-          if (field.id !== "projectName") {
-            field.disabled = !editing;
-            field.classList.toggle("is-editing", editing);
-          } else {
-            field.disabled = true;
-            field.classList.remove("is-editing");
-          }
+          field.disabled = !editing;
+          field.classList.toggle("is-editing", editing);
         });
 
         // ✅ handle completedOn visibility dynamically
@@ -2326,6 +2316,25 @@
         } else {
           statusSelect.removeEventListener("change", toggleCompletedOn);
         }
+
+        // ✅ toggle Add New Location button
+        const addLocationBtn = document.getElementById("addNewLocationBtn");
+        if (addLocationBtn) {
+          addLocationBtn.style.display = editing ? "inline-block" : "none";
+        }
+
+        // ✅ toggle all add-image-btn (+) buttons
+        document.querySelectorAll(".add-image-btn").forEach((btn) => {
+          btn.style.display = editing ? "inline-flex" : "none";
+        });
+
+        document.querySelectorAll(".delete-image-btn").forEach((btn) => {
+          if (editing) {
+            btn.classList.add("show");
+          } else {
+            btn.classList.remove("show");
+          }
+        });
 
         editSaveBtn.innerHTML = editing ? "Save" : "Edit";
       }
@@ -2743,38 +2752,38 @@
         const popup = document.createElement("div");
         popup.className = "assignment-popup";
         popup.innerHTML = `
-    <div class="assignment-popup-backdrop"></div>
-    <div class="assignment-popup-content">
-      <div class="assignment-popup-header">
-        <h3>Assign User</h3>
-        <button class="assignment-popup-close">×</button>
-      </div>
-      <div class="assignment-popup-body">
-        <div class="user-list">
-          ${USERS.map(
-            (user) => `
-            <div class="user-option ${
-              user.id === currentUserId ? "selected" : ""
-            }" data-user-id="${user.id}">
-              <div class="user-avatar">👤</div>
-              <div class="user-info">
-                <div class="user-name">${user.name}</div>
-                <div class="user-role">${user.role}</div>
-              </div>
-              <div class="user-check">${
-                user.id === currentUserId ? "✓" : ""
-              }</div>
+          <div class="assignment-popup-backdrop"></div>
+          <div class="assignment-popup-content">
+            <div class="assignment-popup-header">
+              <h3>Assign User</h3>
+              <button class="assignment-popup-close">×</button>
             </div>
-          `
-          ).join("")}
-        </div>
-      </div>
-      <div class="assignment-popup-footer">
-        <button class="btn ghost" id="cancelAssignment">Cancel</button>
-        <button class="btn" id="updateAssignment">Update Assignment</button>
-      </div>
-    </div>
-  `;
+            <div class="assignment-popup-body">
+              <div class="user-list">
+                ${USERS.map(
+                  (user) => `
+                  <div class="user-option ${
+                    user.id === currentUserId ? "selected" : ""
+                  }" data-user-id="${user.id}">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-info">
+                      <div class="user-name">${user.name}</div>
+                      <div class="user-role">${user.role}</div>
+                    </div>
+                    <div class="user-check">${
+                      user.id === currentUserId ? "✓" : ""
+                    }</div>
+                  </div>
+                `
+                ).join("")}
+              </div>
+            </div>
+            <div class="assignment-popup-footer">
+              <button class="btn ghost" id="cancelAssignment">Cancel</button>
+              <button class="btn" id="updateAssignment">Update Assignment</button>
+            </div>
+          </div>
+        `;
 
         document.body.appendChild(popup);
         setTimeout(() => popup.classList.add("active"), 10);
@@ -2940,8 +2949,8 @@
           return renderInaugurationForm(task);
         } else {
           return `<p style="color: var(--on-surface-variant);">
-      Task-specific form for <b>${subject}</b> (not mapped yet)
-    </p>`;
+            Task-specific form for <b>${subject}</b> (not mapped yet)
+          </p>`;
         }
       }
 
@@ -2974,11 +2983,13 @@
               imagesArray
                 .map(
                   (img) =>
-                    `<div class="location-image-wrapper">
-                                <img src="${img}" alt="location image" 
-                                     onclick="window.open('${img}', '_blank')"
-                                     style="cursor: pointer"/>
-                            </div>`
+                    `<div class="location-image-wrapper" data-location="${locationName}" data-img="${img}">
+                      <div class="zoom-container">
+                        <img src="${img}" alt="location image"
+                             onclick="window.open('${img}', '_blank')"/>
+                        <button class="delete-image-btn" data-location="${locationName}" data-img="${img}">&times;</button>
+                      </div>
+                    </div>`
                 )
                 .join("") +
               `<button class="add-image-btn" data-index="${idx}">+</button>`;
@@ -2992,341 +3003,546 @@
             const rentInWords = numberToWords(estimate_rent) + " Rupees only";
 
             return `<tr class="location-row">
-                <td class="location-name-cell">${locationName}</td>
-                <td class="location-images-cell">${imagesHTML}</td>
-                <td class="estimate-rent-cell">
-                    <input 
-                        type="number" 
-                        class="estimate-rent" 
-                        value="${estimate_rent}" 
-                        title="${rentInWords}"
-                    />
-                </td>
-                <td class="location-status-cell">
-                    <select class="location-status">
-                        <option ${
-                          status === "Pending" ? "selected" : ""
-                        }>Pending</option>
-                        <option ${
-                          status === "Completed" ? "selected" : ""
-                        }>Completed</option>
-                    </select>
-                </td>
-            </tr>`;
+                      <td class="location-name-cell">${locationName}</td>
+                      <td class="location-images-cell">${imagesHTML}</td>
+                      <td class="estimate-rent-cell">
+                          <input
+                              type="number"
+                              class="estimate-rent"
+                              value="${estimate_rent}"
+                              title="${rentInWords}"
+                          />
+                      </td>
+                      <td class="location-status-cell">
+                          <select class="location-status">
+                              <option ${
+                                status === "Pending" ? "selected" : ""
+                              }>Pending</option>
+                              <option ${
+                                status === "Approved" ? "selected" : ""
+                              }>Approved</option>
+                              <option ${
+                                status === "Rejected" ? "selected" : ""
+                              }>Rejected</option>
+                          </select>
+                      </td>
+                  </tr>`;
           })
           .join("");
 
         const html = `
-    <style>
-    .location-details-container h3 {
-        margin-bottom: 16px;
-        font-size: 18px;
-        color: var(--on-surface);
-        font-weight: 600;
-    }
+          <style>
+          .location-details-container h3 {
+              margin-bottom: 16px;
+              font-size: 18px;
+              color: var(--on-surface);
+              font-weight: 600;
+          }
 
-    .location-details-container table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed;
-    }
+          .location-details-container table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+          }
 
-    .location-details-container th,
-    .location-details-container td {
-        padding: 10px 8px;
-        vertical-align: top;
-        font-size: 13px;
-        color: var(--on-surface);
-        word-break: break-word;
-    }
+          .location-details-container th,
+          .location-details-container td {
+              padding: 10px 8px;
+              vertical-align: top;
+              font-size: 13px;
+              color: var(--on-surface);
+              word-break: break-word;
+          }
 
-    .location-details-container th {
-        text-align: left;
-        border-bottom: 2px solid var(--outline-variant);
-        font-weight: 600;
-    }
+          .location-details-container th {
+              text-align: left;
+              border-bottom: 2px solid var(--outline-variant);
+              font-weight: 600;
+          }
 
-    .location-row {
-        border-bottom: 1px solid var(--outline-variant);
-        transition: background 0.2s;
-    }
+          .location-row {
+              border-bottom: 1px solid var(--outline-variant);
+              transition: background 0.2s;
+          }
 
-    .location-row:hover {
-        background: var(--surface-variant);
-    }
+          .location-row:hover {
+              background: var(--surface-variant);
+          }
 
-    /* Column widths */
-    .location-name-cell {
-        width: 12%;
-        white-space: normal;
-    }
+          /* Column widths */
+          .location-name-cell {
+              width: 12%;
+              white-space: normal;
+          }
 
-    .location-images-cell {
-        width: 64%;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        align-items: center;
-        min-height: 40px;
-    }
-
-    .location-image-wrapper img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 6px;
-        border: 1px solid var(--outline-variant);
-        display: inline-block;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        will-change: transform;
-        backface-visibility: hidden;
-        transform-origin: center center;
-    }
-    .location-image-wrapper img:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 10;
-    }
-    .add-image-btn {
-        width: 40px;
-        height: 40px;
-        border: 1px dashed var(--outline-variant);
-        border-radius: 6px;
-        background: var(--surface);
-        color: var(--on-surface-variant);
-        font-size: 20px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-
-        display: inline-block;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        will-change: transform;
-        backface-visibility: hidden;
-        transform-origin: center center;
-    }
-    .add-image-btn:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 10;
-    } 
-
-    .estimate-rent-cell {
-        width: 11%;
-        position: relative;
-    }
-
-    .estimate-rent-cell input {
-        width: 100%;
-        padding: 6px 8px;
-        border: 1px solid var(--outline-variant);
-        border-radius: 6px;
-        font-size: 13px;
-        cursor: help;
-    }
-
-    .location-status-cell {
-        width: 13%;
-    }
-
-    .location-status-cell select {
-        width: 100%;
-        padding: 6px 8px;
-        border-radius: 6px;
-        border: 1px solid var(--outline-variant);
-        font-size: 13px;
-        background: var(--surface);
-        color: var(--on-surface);
-    }
-
-    #addNewLocationBtn {
-        margin-top: 16px;
-        background: #316767;
-        color: #fff;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-    }
-
-    /* Responsive: stack cells in small screens */
-    @media (max-width: 768px) {
-        .location-details-container table,
-        .location-details-container thead,
-        .location-details-container tbody,
-        .location-details-container th,
-        .location-details-container td,
-        .location-details-container tr {
+          .location-images-cell {
+              width: 64%;
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              align-items: center;
+              min-height: 40px;
+          }
+          .location-image-wrapper {
+            position: relative;
+            display: inline-block;
+          }
+                    
+          .zoom-container {
+            position: relative;
+            display: inline-block;
+            border-radius: 6px;
+            overflow: visible; /* allow button to stick out */
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+            backface-visibility: hidden;
+            transform-origin: center center;
+          }
+                    
+          .zoom-container:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+          }
+                    
+          .zoom-container img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--outline-variant);
             display: block;
-        }
-
-        .location-details-container th {
-            display: none;
-        }
-
-        .location-row {
-            margin-bottom: 12px;
-            border-bottom: 1px solid var(--outline-variant);
-            padding-bottom: 12px;
-        }
-
-        .location-name-cell,
-        .location-images-cell,
-        .estimate-rent-cell,
-        .location-status-cell {
-            width: 100%;
+          }
+                    
+          .delete-image-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 13px;
+            height: 13px;
+            font-size: 12px;
+            cursor: pointer;
+            line-height: 16px;
+            text-align: center;
+            padding: 0;
             display: flex;
-            margin-bottom: 6px;
-        }
+            align-items: center;
+            justify-content: center;
 
-        .location-name-cell::before {
-            content: "Location Name: ";
-            font-weight: 600;
-            margin-right: 6px;
-        }
+            /* hidden state */
+            opacity: 0;
+            transform: scale(0.6);
+            pointer-events: none;
 
-        .location-images-cell::before {
-            content: "Images: ";
-            font-weight: 600;
-            margin-right: 6px;
-        }
+            /* smooth animation */
+            transition: opacity 0.3s ease, transform 0.3s ease;
+          }
 
-        .estimate-rent-cell::before {
-            content: "Rent: ";
-            font-weight: 600;
-            margin-right: 6px;
-        }
+          .delete-image-btn.show {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+          }                    
+          .delete-image-btn:hover {
+            background: darkred;
+          }
 
-        .location-status-cell::before {
-            content: "Status: ";
-            font-weight: 600;
-            margin-right: 6px;
-        }
-    }
-    </style>
+          .add-image-btn {
+              width: 40px;
+              height: 40px;
+              border: 1px dashed var(--outline-variant);
+              border-radius: 6px;
+              background: var(--surface);
+              color: var(--on-surface-variant);
+              font-size: 20px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
 
-    <div class="location-details-container">
-        <h3>Location Details</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width:12%">Location Name</th>
-                    <th style="width:64%">Location Images</th>
-                    <th style="width:11%">Rent/Month</th>
-                    <th style="width:13%">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${rowsHTML}
-            </tbody>
-        </table>
-        <button id="addNewLocationBtn">+ Add New Location</button>
-    </div>
-    `;
+              display: inline-block;
+              transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+              will-change: transform;
+              backface-visibility: hidden;
+              transform-origin: center center;
+          }
+          .add-image-btn:hover {
+              transform: scale(1.1);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+              z-index: 10;
+          }
 
+          .estimate-rent-cell {
+              width: 11%;
+              position: relative;
+          }
+
+          .estimate-rent-cell input {
+              width: 100%;
+              padding: 6px 8px;
+              border: 1px solid var(--outline-variant);
+              border-radius: 6px;
+              font-size: 13px;
+              cursor: help;
+          }
+
+          .location-status-cell {
+              width: 13%;
+          }
+
+          .location-status-cell select {
+              width: 100%;
+              padding: 6px 8px;
+              border-radius: 6px;
+              border: 1px solid var(--outline-variant);
+              font-size: 13px;
+              background: var(--surface);
+              color: var(--on-surface);
+          }
+
+          #addNewLocationBtn {
+              background: #316767;
+              color: #fff;
+              padding: 7px 10px;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 500;
+          }
+
+          .header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px; /* space between header row and table */
+      }
+
+      .header-row h3 {
+          margin: 0; /* remove extra space */
+      }
+
+      #addNewLocationBtn:hover {
+          background-color: #218838;
+      }
+
+
+          /* Responsive: stack cells in small screens */
+          @media (max-width: 768px) {
+              .location-details-container table,
+              .location-details-container thead,
+              .location-details-container tbody,
+              .location-details-container th,
+              .location-details-container td,
+              .location-details-container tr {
+                  display: block;
+              }
+
+              .location-details-container th {
+                  display: none;
+              }
+
+              .location-row {
+                  margin-bottom: 12px;
+                  border-bottom: 1px solid var(--outline-variant);
+                  padding-bottom: 12px;
+              }
+
+              .location-name-cell,
+              .location-images-cell,
+              .estimate-rent-cell,
+              .location-status-cell {
+                  width: 100%;
+                  display: flex;
+                  margin-bottom: 6px;
+              }
+
+              .location-name-cell::before {
+                  content: "Location Name: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+
+              .location-images-cell::before {
+                  content: "Images: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+
+              .estimate-rent-cell::before {
+                  content: "Rent: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+
+              .location-status-cell::before {
+                  content: "Status: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+          }
+          </style>
+
+          <div class="location-details-container">
+              <div class="header-row">
+                  <h3>Location Details</h3>
+                  <button id="addNewLocationBtn">+ Add New Location</button>
+              </div>
+            <hr style="margin: 0; border: none; height: 1px; background: var(--outline-variant);">
+              <table>
+                  <thead>
+                      <tr>
+                          <th style="width:15%">Location Name</th>
+                          <th style="width:55%">Location Images</th>
+                          <th style="width:15%">Rent/Month</th>
+                          <th style="width:15%">Status</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      ${rowsHTML}
+                  </tbody>
+              </table>
+              <input type="file" id="fileInput" multiple style="display:none;" />
+          </div>
+          `;
+
+        // Attach event listeners
         setTimeout(() => {
           document.querySelectorAll(".add-image-btn").forEach((btn) => {
-            btn.addEventListener("click", async (e) => {
-              const index = e.target.getAttribute("data-index");
-              const locationName = Object.keys(grouped)[index];
-              const locationGroup = grouped[locationName];
+            btn.addEventListener("click", (e) =>
+              handleAddImageForExistingLocation(e, grouped, task)
+            );
+          });
+        }, 0);
 
-              const firstLocation = locationGroup[0];
-              const estimateRent = firstLocation.estimate_rent || 0;
-              const status = locationGroup.some((l) => l.status === "Pending")
-                ? "Pending"
-                : "Completed";
+        setTimeout(() => {
+          const addBtn = document.getElementById("addNewLocationBtn");
+          if (addBtn) {
+            addBtn.addEventListener("click", () => handleAddNewLocation(task));
+          }
+        }, 0);
 
-              const fileInput = document.createElement("input");
-              fileInput.type = "file";
-              fileInput.accept = "image/*";
-              fileInput.style.display = "none";
-
-              fileInput.addEventListener("change", async (e) => {
-                const file = e.target.files[0];
-                console.log("Selected file:", file);
-                if (!file) return;
-
-                try {
-                  // Create form data with all required fields
-                  const formData = new FormData();
-                  formData.append("task_name", task.name);
-                  formData.append("location_name", locationName);
-                  formData.append("estimate_rent", estimateRent);
-                  formData.append("status", status);
-                  formData.append("image_file", file); // This is the key change - use the file object directly
-
-                  // Call your API endpoint directly
-                  const csrfToken = await getCSRFToken();
-                  console.log("Using CSRF token:", csrfToken);
-
-                  const response = await fetch(
-                    `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.add_image_for_existing_location`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "X-Frappe-CSRF-Token": csrfToken,
-                      },
-                      body: formData,
-                    }
-                  );
-
-                  const result = await response.json();
-
-                  if (result.message && result.message.success) {
-                    // Refresh the task data
-                    const updatedTaskResponse = await fetch(
-                      `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
-                        task.name
-                      )}`
-                    );
-                    const updatedTask = await updatedTaskResponse.json();
-
-                    // Re-render the form
-                    const container = document.querySelector(
-                      ".location-details-container"
-                    );
-                    if (container) {
-                      container.innerHTML = renderLocationDetailsForm(
-                        updatedTask.message
-                      );
-                    }
-
-                    // Optional: Show success message
-                    // frappe.show_alert(
-                    //   {
-                    //     message: __("Image added successfully"),
-                    //     indicator: "green",
-                    //   },
-                    //   3
-                    // );
-                  } else {
-                    throw new Error(
-                      result.message?.error || "Failed to add location image"
-                    );
-                  }
-                } catch (error) {
-                  console.error("Error adding image:", error);
-                  // frappe.msgprint({
-                  //   title: __("Error"),
-                  //   indicator: "red",
-                  //   message: __("Failed to add image: {0}", [error.message]),
-                  // });
-                }
-              });
-
-              document.body.appendChild(fileInput);
-              fileInput.click();
-              document.body.removeChild(fileInput);
+        setTimeout(() => {
+          document.querySelectorAll(".delete-image-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation(); // prevent triggering img click
+              const locationName = e.target.getAttribute("data-location");
+              const img = e.target.getAttribute("data-img");
+              handleDeleteImage(locationName, img, task);
             });
           });
         }, 0);
 
         return html;
+      }
+      // Function to handle adding an image in existing location
+      async function handleAddImageForExistingLocation(e, grouped, task) {
+        const index = e.target.getAttribute("data-index");
+        const locationName = Object.keys(grouped)[index];
+        const locationGroup = grouped[locationName];
+
+        const firstLocation = locationGroup[0];
+        const estimateRent = firstLocation.estimate_rent || 0;
+        const status = locationGroup.some((l) => l.status === "Pending")
+          ? "Pending"
+          : "Completed";
+
+        // Create file input
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.style.display = "none";
+
+        fileInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          console.log("Selected file:", file);
+          if (!file) return;
+
+          try {
+            // Create form data with all required fields
+            const formData = new FormData();
+            formData.append("task_name", task.name);
+            formData.append("location_name", locationName);
+            formData.append("estimate_rent", estimateRent);
+            formData.append("status", status);
+            formData.append("image_file", file);
+
+            // Call API
+            const csrfToken = await getCSRFToken();
+            console.log("Using CSRF token:", csrfToken);
+
+            const response = await fetch(
+              `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.add_image_for_existing_location`,
+              {
+                method: "POST",
+                headers: {
+                  "X-Frappe-CSRF-Token": csrfToken,
+                },
+                body: formData,
+              }
+            );
+
+            const result = await response.json();
+
+            if (result.message && result.message.success) {
+              // Refresh the task data
+              const updatedTaskResponse = await fetch(
+                `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+                  task.name
+                )}`
+              );
+              const updatedTask = await updatedTaskResponse.json();
+
+              // Re-render the form
+              const container = document.querySelector(
+                ".location-details-container"
+              );
+              if (container) {
+                container.innerHTML = renderLocationDetailsForm(
+                  updatedTask.message
+                );
+              }
+
+              // frappe.show_alert({message: __("Image added successfully"), indicator: "green"}, 3);
+            } else {
+              throw new Error(
+                result.message?.error || "Failed to add location image"
+              );
+            }
+          } catch (error) {
+            console.error("Error adding image:", error);
+            // frappe.msgprint({title: __("Error"), indicator: "red", message: __("Failed to add image: {0}", [error.message])});
+          }
+        });
+
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+      }
+
+      // Function to handle adding a new location with image upload
+      async function handleAddNewLocation(task) {
+        // Create file input
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.style.display = "none";
+
+        // Handle file selection
+        fileInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          // ask for details AFTER file selection
+          const locationName = prompt("Enter Location Name:");
+          if (!locationName) return;
+
+          const estimateRent = prompt("Enter Estimate Rent:") || 0;
+
+          try {
+            const formData = new FormData();
+            formData.append("task_name", task.name);
+            formData.append("location_name", locationName);
+            formData.append("estimate_rent", estimateRent);
+            formData.append("status", "Pending"); // always Pending
+            formData.append("image_file", file);
+
+            const csrfToken = await getCSRFToken();
+            const response = await fetch(
+              `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.add_new_location`,
+              {
+                method: "POST",
+                headers: {
+                  "X-Frappe-CSRF-Token": csrfToken,
+                },
+                body: formData,
+              }
+            );
+
+            const result = await response.json();
+            if (result.message && result.message.success) {
+              // Refresh task
+              const updatedTaskResponse = await fetch(
+                `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+                  task.name
+                )}`
+              );
+              const updatedTask = await updatedTaskResponse.json();
+
+              const container = document.querySelector(
+                ".location-details-container"
+              );
+              if (container) {
+                container.innerHTML = renderLocationDetailsForm(
+                  updatedTask.message
+                );
+              }
+            } else {
+              throw new Error(
+                result.message?.error || "Failed to add new location"
+              );
+            }
+          } catch (err) {
+            console.error("Error adding new location:", err);
+          } finally {
+            fileInput.remove(); // cleanup input element after use
+          }
+        });
+
+        // Trigger file dialog
+        document.body.appendChild(fileInput);
+        fileInput.click();
+      }
+
+      // Function to delete an image from a location(entire row)
+      async function handleDeleteImage(locationName, img, task) {
+        try {
+          const csrfToken = await getCSRFToken();
+          const response = await fetch(
+            `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.delete_location_image`,
+            {
+              method: "POST",
+              headers: {
+                "X-Frappe-CSRF-Token": csrfToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                task_name: task.name,
+                location_name: locationName,
+                image_file: img,
+              }),
+            }
+          );
+
+          const result = await response.json();
+          if (result.message && result.message.success) {
+            // Refresh task
+            const updatedTaskResponse = await fetch(
+              `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+                task.name
+              )}`
+            );
+            const updatedTask = await updatedTaskResponse.json();
+
+            const container = document.querySelector(
+              ".location-details-container"
+            );
+            if (container) {
+              container.innerHTML = renderLocationDetailsForm(
+                updatedTask.message
+              );
+            }
+          } else {
+            throw new Error(result.message?.error || "Failed to delete image");
+          }
+        } catch (err) {
+          console.error("Error deleting image:", err);
+        }
       }
 
       // 2. Letter of Intent Form
@@ -3335,61 +3551,65 @@
         if (!task.data.propertyDetails) task.data.propertyDetails = {};
 
         return `
-    <div class="task-form-section">
-      <h3>Letter of Intent Details</h3>
-      
-      <div class="form-section">
-        <h4>Property Owner Details</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <input type="text" class="form-field-input" placeholder="Owner Name" id="ownerName" value="${
-            task.data.ownerDetails.name || ""
-          }" />
-          <input type="text" class="form-field-input" placeholder="Phone" id="ownerPhone" value="${
-            task.data.ownerDetails.phone || ""
-          }" />
-          <input type="email" class="form-field-input" placeholder="Email" id="ownerEmail" value="${
-            task.data.ownerDetails.email || ""
-          }" />
-          <textarea class="form-field-input" placeholder="Address" id="ownerAddress">${
-            task.data.ownerDetails.address || ""
-          }</textarea>
-        </div>
-      </div>
+          <div class="task-form-section">
+            <h3>Letter of Intent Details</h3>
 
-      <div class="form-section">
-        <h4>Property Details</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <textarea class="form-field-input" placeholder="Property Address" id="propertyAddress">${
-            task.data.propertyDetails.address || ""
-          }</textarea>
-          <input type="text" class="form-field-input" placeholder="Area (sq ft)" id="propertyArea" value="${
-            task.data.propertyDetails.area || ""
-          }" />
-          <select class="form-field-input" id="propertyType">
-            <option value="">Property Type</option>
-            <option value="commercial" ${
-              task.data.propertyDetails.type === "commercial" ? "selected" : ""
-            }>Commercial</option>
-            <option value="residential" ${
-              task.data.propertyDetails.type === "residential" ? "selected" : ""
-            }>Residential</option>
-          </select>
-          <input type="text" class="form-field-input" placeholder="Value" id="propertyValue" value="${
-            task.data.propertyDetails.value || ""
-          }" />
-        </div>
-      </div>
+            <div class="form-section">
+              <h4>Property Owner Details</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <input type="text" class="form-field-input" placeholder="Owner Name" id="ownerName" value="${
+                  task.data.ownerDetails.name || ""
+                }" />
+                <input type="text" class="form-field-input" placeholder="Phone" id="ownerPhone" value="${
+                  task.data.ownerDetails.phone || ""
+                }" />
+                <input type="email" class="form-field-input" placeholder="Email" id="ownerEmail" value="${
+                  task.data.ownerDetails.email || ""
+                }" />
+                <textarea class="form-field-input" placeholder="Address" id="ownerAddress">${
+                  task.data.ownerDetails.address || ""
+                }</textarea>
+              </div>
+            </div>
 
-      <div class="form-section">
-        <h4>Terms & Conditions</h4>
-        <textarea class="form-field-input" rows="4" placeholder="Enter terms and conditions..." id="loiTerms">${
-          task.data.terms || ""
-        }</textarea>
-      </div>
+            <div class="form-section">
+              <h4>Property Details</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <textarea class="form-field-input" placeholder="Property Address" id="propertyAddress">${
+                  task.data.propertyDetails.address || ""
+                }</textarea>
+                <input type="text" class="form-field-input" placeholder="Area (sq ft)" id="propertyArea" value="${
+                  task.data.propertyDetails.area || ""
+                }" />
+                <select class="form-field-input" id="propertyType">
+                  <option value="">Property Type</option>
+                  <option value="commercial" ${
+                    task.data.propertyDetails.type === "commercial"
+                      ? "selected"
+                      : ""
+                  }>Commercial</option>
+                  <option value="residential" ${
+                    task.data.propertyDetails.type === "residential"
+                      ? "selected"
+                      : ""
+                  }>Residential</option>
+                </select>
+                <input type="text" class="form-field-input" placeholder="Value" id="propertyValue" value="${
+                  task.data.propertyDetails.value || ""
+                }" />
+              </div>
+            </div>
 
-      <button class="btn print-loi">🖨️ Print Letter of Intent</button>
-    </div>
-  `;
+            <div class="form-section">
+              <h4>Terms & Conditions</h4>
+              <textarea class="form-field-input" rows="4" placeholder="Enter terms and conditions..." id="loiTerms">${
+                task.data.terms || ""
+              }</textarea>
+            </div>
+
+            <button class="btn print-loi">🖨️ Print Letter of Intent</button>
+          </div>
+        `;
       }
 
       // 3. Attachment Upload Form
@@ -3397,29 +3617,29 @@
         if (!task.data.attachments) task.data.attachments = [];
 
         return `
-    <div class="task-form-section">
-      <h3>Agreement & Handover Documents</h3>
-      
-      <div class="upload-section">
-        <input type="file" class="form-field-input" multiple id="documentFiles" accept=".pdf,.doc,.docx,.jpg,.png" />
-        <button class="btn upload-documents">📎 Upload Documents</button>
-      </div>
+          <div class="task-form-section">
+            <h3>Agreement & Handover Documents</h3>
 
-      <div class="attachments-list">
-        ${task.data.attachments
-          .map(
-            (file, index) => `
-          <div class="attachment-item">
-            <span class="attachment-name">📄 ${file.name}</span>
-            <span class="attachment-size">${file.size}</span>
-            <button class="btn-icon remove-attachment" data-index="${index}">🗑️</button>
+            <div class="upload-section">
+              <input type="file" class="form-field-input" multiple id="documentFiles" accept=".pdf,.doc,.docx,.jpg,.png" />
+              <button class="btn upload-documents">📎 Upload Documents</button>
+            </div>
+
+            <div class="attachments-list">
+              ${task.data.attachments
+                .map(
+                  (file, index) => `
+                <div class="attachment-item">
+                  <span class="attachment-name">📄 ${file.name}</span>
+                  <span class="attachment-size">${file.size}</span>
+                  <button class="btn-icon remove-attachment" data-index="${index}">🗑️</button>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
           </div>
-        `
-          )
-          .join("")}
-      </div>
-    </div>
-  `;
+        `;
       }
 
       // 4. Manpower Recruitment Form
@@ -3460,46 +3680,46 @@
         }
 
         return `
-    <div class="task-form-section">
-      <h3>Manpower Recruitment Checklist</h3>
-      
-      <div class="manpower-list">
-        ${task.data.manpower
-          .map(
-            (item, index) => `
-          <div class="manpower-item">
-            <div class="manpower-info">
-              <strong>${item.designation}</strong>
+          <div class="task-form-section">
+            <h3>Manpower Recruitment Checklist</h3>
+
+            <div class="manpower-list">
+              ${task.data.manpower
+                .map(
+                  (item, index) => `
+                <div class="manpower-item">
+                  <div class="manpower-info">
+                    <strong>${item.designation}</strong>
+                  </div>
+                  <div class="manpower-counts">
+                    <input type="number" class="form-field-input manpower-required" placeholder="Required" value="${
+                      item.required
+                    }" data-index="${index}" style="width: 80px;" />
+                    <span>/</span>
+                    <input type="number" class="form-field-input manpower-hired" placeholder="Hired" value="${
+                      item.hired
+                    }" data-index="${index}" style="width: 80px;" />
+                  </div>
+                  <select class="form-field-input manpower-status" data-index="${index}" style="width: 120px;">
+                    <option value="pending" ${
+                      item.status === "pending" ? "selected" : ""
+                    }>Pending</option>
+                    <option value="in-progress" ${
+                      item.status === "in-progress" ? "selected" : ""
+                    }>In Progress</option>
+                    <option value="completed" ${
+                      item.status === "completed" ? "selected" : ""
+                    }>Completed</option>
+                  </select>
+                </div>
+              `
+                )
+                .join("")}
             </div>
-            <div class="manpower-counts">
-              <input type="number" class="form-field-input manpower-required" placeholder="Required" value="${
-                item.required
-              }" data-index="${index}" style="width: 80px;" />
-              <span>/</span>
-              <input type="number" class="form-field-input manpower-hired" placeholder="Hired" value="${
-                item.hired
-              }" data-index="${index}" style="width: 80px;" />
-            </div>
-            <select class="form-field-input manpower-status" data-index="${index}" style="width: 120px;">
-              <option value="pending" ${
-                item.status === "pending" ? "selected" : ""
-              }>Pending</option>
-              <option value="in-progress" ${
-                item.status === "in-progress" ? "selected" : ""
-              }>In Progress</option>
-              <option value="completed" ${
-                item.status === "completed" ? "selected" : ""
-              }>Completed</option>
-            </select>
+
+            <button class="btn ghost add-manpower">+ Add Position</button>
           </div>
-        `
-          )
-          .join("")}
-      </div>
-      
-      <button class="btn ghost add-manpower">+ Add Position</button>
-    </div>
-  `;
+        `;
       }
 
       // 5-9. Checklist Forms (Infrastructure, Hardware, Software, Handover, Inauguration)
@@ -3509,43 +3729,43 @@
         }
 
         return `
-    <div class="task-form-section">
-      <h3>${title}</h3>
-      
-      <div class="checklist-container">
-        ${task.data.checklist
-          .map(
-            (item, index) => `
-          <div class="checklist-item">
-            <div class="checklist-content">
-              <input type="text" class="form-field-input checklist-item-text" value="${
-                item.item
-              }" data-index="${index}" />
-              <select class="form-field-input checklist-status" data-index="${index}" style="width: 120px;">
-                <option value="pending" ${
-                  item.status === "pending" ? "selected" : ""
-                }>Pending</option>
-                <option value="in-progress" ${
-                  item.status === "in-progress" ? "selected" : ""
-                }>In Progress</option>
-                <option value="completed" ${
-                  item.status === "completed" ? "selected" : ""
-                }>Completed</option>
-              </select>
-              <button class="btn-icon remove-checklist-item" data-index="${index}">🗑️</button>
+          <div class="task-form-section">
+            <h3>${title}</h3>
+
+            <div class="checklist-container">
+              ${task.data.checklist
+                .map(
+                  (item, index) => `
+                <div class="checklist-item">
+                  <div class="checklist-content">
+                    <input type="text" class="form-field-input checklist-item-text" value="${
+                      item.item
+                    }" data-index="${index}" />
+                    <select class="form-field-input checklist-status" data-index="${index}" style="width: 120px;">
+                      <option value="pending" ${
+                        item.status === "pending" ? "selected" : ""
+                      }>Pending</option>
+                      <option value="in-progress" ${
+                        item.status === "in-progress" ? "selected" : ""
+                      }>In Progress</option>
+                      <option value="completed" ${
+                        item.status === "completed" ? "selected" : ""
+                      }>Completed</option>
+                    </select>
+                    <button class="btn-icon remove-checklist-item" data-index="${index}">🗑️</button>
+                  </div>
+                  <textarea class="form-field-input checklist-notes" placeholder="Notes..." data-index="${index}">${
+                    item.notes || ""
+                  }</textarea>
+                </div>
+              `
+                )
+                .join("")}
             </div>
-            <textarea class="form-field-input checklist-notes" placeholder="Notes..." data-index="${index}">${
-              item.notes || ""
-            }</textarea>
+
+            <button class="btn ghost add-checklist-item">+ Add Item</button>
           </div>
-        `
-          )
-          .join("")}
-      </div>
-      
-      <button class="btn ghost add-checklist-item">+ Add Item</button>
-    </div>
-  `;
+        `;
       }
 
       function renderInfrastructureForm(task) {
@@ -3724,49 +3944,53 @@
       function generateLOIPrint(task) {
         const project = getSelectedProject();
         const printContent = `
-    <div style="padding: 40px; font-family: Arial, sans-serif;">
-      <h1 style="text-align: center; color: #006767;">LETTER OF INTENT</h1>
-      <hr style="margin: 20px 0;">
-      
-      <h3>Project: ${project.name}</h3>
-      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-      
-      <h3>Property Owner Details:</h3>
-      <p><strong>Name:</strong> ${task.data.ownerDetails.name}</p>
-      <p><strong>Address:</strong> ${task.data.ownerDetails.address}</p>
-      <p><strong>Phone:</strong> ${task.data.ownerDetails.phone}</p>
-      <p><strong>Email:</strong> ${task.data.ownerDetails.email}</p>
-      
-      <h3>Property Details:</h3>
-      <p><strong>Address:</strong> ${task.data.propertyDetails.address}</p>
-      <p><strong>Area:</strong> ${task.data.propertyDetails.area} sq ft</p>
-      <p><strong>Type:</strong> ${task.data.propertyDetails.type}</p>
-      <p><strong>Value:</strong> ${task.data.propertyDetails.value}</p>
-      
-      <h3>Terms & Conditions:</h3>
-      <p>${task.data.terms}</p>
-      
-      <div style="margin-top: 60px;">
-        <div style="float: left;">
-          <p>_____________________</p>
-          <p>Property Owner Signature</p>
-        </div>
-        <div style="float: right;">
-          <p>_____________________</p>
-          <p>Company Representative</p>
-        </div>
-        <div style="clear: both;"></div>
-      </div>
-    </div>
-  `;
+          <div style="padding: 40px; font-family: Arial, sans-serif;">
+            <h1 style="text-align: center; color: #006767;">LETTER OF INTENT</h1>
+            <hr style="margin: 20px 0;">
+
+            <h3>Project: ${project.name}</h3>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+
+            <h3>Property Owner Details:</h3>
+            <p><strong>Name:</strong> ${task.data.ownerDetails.name}</p>
+            <p><strong>Address:</strong> ${task.data.ownerDetails.address}</p>
+            <p><strong>Phone:</strong> ${task.data.ownerDetails.phone}</p>
+            <p><strong>Email:</strong> ${task.data.ownerDetails.email}</p>
+
+            <h3>Property Details:</h3>
+            <p><strong>Address:</strong> ${
+              task.data.propertyDetails.address
+            }</p>
+            <p><strong>Area:</strong> ${
+              task.data.propertyDetails.area
+            } sq ft</p>
+            <p><strong>Type:</strong> ${task.data.propertyDetails.type}</p>
+            <p><strong>Value:</strong> ${task.data.propertyDetails.value}</p>
+
+            <h3>Terms & Conditions:</h3>
+            <p>${task.data.terms}</p>
+
+            <div style="margin-top: 60px;">
+              <div style="float: left;">
+                <p>_____________________</p>
+                <p>Property Owner Signature</p>
+              </div>
+              <div style="float: right;">
+                <p>_____________________</p>
+                <p>Company Representative</p>
+              </div>
+              <div style="clear: both;"></div>
+            </div>
+          </div>
+        `;
 
         const printWindow = window.open("", "_blank");
         printWindow.document.write(`
-    <html>
-      <head><title>Letter of Intent - ${project.name}</title></head>
-      <body>${printContent}</body>
-    </html>
-  `);
+          <html>
+            <head><title>Letter of Intent - ${project.name}</title></head>
+            <body>${printContent}</body>
+          </html>
+        `);
         printWindow.document.close();
         printWindow.print();
       }

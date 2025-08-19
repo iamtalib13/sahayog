@@ -1,5 +1,6 @@
 import frappe
-from frappe.utils.file_manager import save_file
+from frappe import _
+
 
 
 @frappe.whitelist()
@@ -147,46 +148,134 @@ def get_options_dynamically_for_filter():
         'division_names': [division.get('name') for division in division_names],
         'custom_branch_status_options': custom_branch_status_options.split("\n")  # Split options by new line
     }
+
 @frappe.whitelist()
 def add_image_for_existing_location(task_name, location_name, estimate_rent, status):
     try:
         # 1. Get the Task document
         task = frappe.get_doc("Task", task_name)
-        
-        # 2. Get the uploaded file
-        file = frappe.request.files.get('image_file')
-        if not file:
+
+        # 2. Handle uploaded file
+        file_url = None
+        uploaded_file = frappe.request.files.get('image_file')
+        if not uploaded_file:
             return {"success": False, "error": "No file uploaded"}
 
-        # 3. Save file properly using Frappe's file manager
-        from frappe.utils.file_manager import save_file
-        file_content = file.stream.read()
-        
-        file_doc = save_file(
-            file.filename,
-            file_content,
-            "Task",
-            task_name,
-            folder="Home/Attachments",
-            is_private=0
-        )
-        
-        # 4. Verify file was saved correctly
-        if not file_doc or not file_doc.file_url:
-            return {"success": False, "error": "File upload failed"}
-        
-        # 5. Append to child table
-        task.append("custom_location_details", {
-            "location_name": location_name,
-            "estimate_rent": float(estimate_rent),
-            "status": status,
-            "location_image": file_doc.file_url  # Use the proper file URL
+        file_content = uploaded_file.stream.read()
+
+        # 3. Create File doc (only in Home, not Task attachments)
+        file_doc = frappe.get_doc({
+            "doctype": "File",
+            "file_name": uploaded_file.filename,
+            "folder": "Home",
+            "is_private": 0,
+            "content": file_content
         })
-        
-        task.save()
-        
-        return {"success": True, "file_url": file_doc.file_url}
-        
+        file_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        file_url = file_doc.file_url
+
+        # 4. Append new row in child table
+        child = task.append("custom_location_details", {})
+        child.location_name = location_name
+        child.estimate_rent = float(estimate_rent or 0)
+        child.status = status
+        child.location_image = file_url
+
+        # 5. Save & commit
+        task.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "success": True,
+            "file_url": file_url,
+            "task": task.name
+        }
+
     except Exception as e:
-        frappe.log_error(f"Failed to add location image: {str(e)}")
+        frappe.log_error(frappe.get_traceback(), "Add Image For Existing Location Error")
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def add_new_location(task_name, location_name, estimate_rent, status):
+    try:
+        # 1. Get Task document
+        task = frappe.get_doc("Task", task_name)
+
+        # 2. Handle optional image file
+        file_url = None
+        uploaded_file = frappe.request.files.get('image_file')
+        if uploaded_file:
+            # Read file content
+            file_content = uploaded_file.stream.read()
+
+            # Create File document via ORM
+            file_doc = frappe.get_doc({
+                "doctype": "File",
+                "file_name": uploaded_file.filename,
+                "folder": "Home",
+                "is_private": 0,
+                "content": file_content
+            })
+            file_doc.insert(ignore_permissions=True)
+            frappe.db.commit()
+
+            file_url = file_doc.file_url
+
+        # 3. Append new location row via ORM
+        child = task.append("custom_location_details", {})
+        child.location_name = location_name
+        child.estimate_rent = float(estimate_rent or 0)
+        child.status = status
+        child.location_image = file_url
+
+        # 4. Save & commit
+        task.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "success": True,
+            "file_url": file_url,
+            "task": task.name
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Add New Location Error")
+        return {"success": False, "error": str(e)}
+    
+    
+@frappe.whitelist()
+def delete_location_image(task_name, location_name, image_file):
+    """
+    Delete the entire row from Task.custom_location_details 
+    if the image matches.
+    """
+    try:
+        # Fetch the task document
+        task = frappe.get_doc("Task", task_name)
+
+        deleted = False
+
+        # Collect rows to delete (avoid modifying list while iterating)
+        rows_to_delete = []
+        for row in task.custom_location_details:
+            if row.location_name == location_name and row.location_image == image_file:
+                rows_to_delete.append(row)
+
+        # Actually delete rows
+        for row in rows_to_delete:
+            task.remove(row)
+            deleted = True
+
+        if deleted:
+            task.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"success": True, "message": _("Row deleted successfully")}
+        else:
+            return {"success": False, "error": _("Row not found with given image")}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Delete Location Row Error")
         return {"success": False, "error": str(e)}
