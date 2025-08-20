@@ -84,12 +84,34 @@ def execute():
               "depends_on": "eval:frappe.user.has_role('System Manager') && !doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'"
             },
             {
+                "fieldname": "manpower_summary_html",
+                "fieldtype": "HTML",
+                "insert_after": "manpower_fetched",
+                "label": "Manpower Summary",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'"
+            },
+            {
                 "fieldname": "manpower_recruitment_table",
                 "fieldtype": "Table",
-                "insert_after": "manpower_fetched",
-                "label": "Manpower Table",
-                "options": "Manpower Recruitment",
+                "insert_after": "manpower_summary_html",
+                "label": "Standard Hirable Manpower Table",
+                "options": "Manpower Recruitment Hiring Table",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'",
+            },
+            {
+                "fieldname": "custom_licence_to_operate_section",
+                "fieldtype": "Section Break",
+                "insert_after": "custom_allow_supplier",
+                "label": "Licence to Operate Training",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 8 : Licence to Operate Certification'",
+            },
+            {
+                "fieldname": "lto_training_table",
+                "fieldtype": "Table",
+                "insert_after": "custom_licence_to_operate_section",
+                "label": "Standard Training Checklist",
+                "options": "Licence to Operate Training Table",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 8 : Licence to Operate Certification'",
             },
             {
               "fieldname": "custom_it_checklist_section",

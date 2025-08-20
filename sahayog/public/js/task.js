@@ -35,6 +35,10 @@ frappe.ui.form.on("Task", {
         "cannot_delete_all_rows",
         true
       ); // Hide delete all button
+
+      frm.set_df_property("lto_training_table", "cannot_add_rows", true); // Hide add row button
+      frm.set_df_property("lto_training_table", "cannot_delete_rows", true); // Hide delete button
+      frm.set_df_property("lto_training_table", "cannot_delete_all_rows", true); // Hide delete all button
     }
 
     let project = frm.doc.project;
@@ -143,6 +147,22 @@ frappe.ui.form.on("Task", {
       // Add CSS
       add_custom_css();
     }
+
+    if (
+      frm.doc.subject === "Task 4 : Manpower Recruitment" &&
+      !frm.doc.is_template
+    ) {
+      render_manpower_summary(frm);
+    }
+  },
+});
+
+frappe.ui.form.on("Manpower Recruitment Hiring Table", {
+  status: function (frm, cdt, cdn) {
+    render_manpower_summary(frm); // jab status change ho
+  },
+  employee_name: function (frm, cdt, cdn) {
+    render_manpower_summary(frm); // jab employee_name change ho
   },
 });
 
@@ -1322,4 +1342,35 @@ function add_custom_css() {
   `;
 
   frappe.dom.set_style(css);
+}
+function render_manpower_summary(frm) {
+  let total_hirable = frm.doc.manpower_recruitment_table.length || 0;
+  let total_hired_or_inprogress = 0;
+
+  (frm.doc.manpower_recruitment_table || []).forEach((row) => {
+    if (["Hired", "In-Progress"].includes(row.status) && row.employee_name) {
+      total_hired_or_inprogress += 1;
+    }
+  });
+
+  let remaining = total_hirable - total_hired_or_inprogress;
+
+  let html = `
+    <div style="display:flex; gap:20px; margin: 10px 0;">
+      <div style="flex:1; text-align:center; border:1px solid #007bff; border-radius:8px; padding:10px;">
+        <div style="font-size:14px; color:var(--text-muted);">Hirable</div>
+        <div style="font-size:20px; font-weight:600; color:#007bff;">${total_hirable}</div>
+      </div>
+      <div style="flex:1; text-align:center; border:1px solid #28a745; border-radius:8px; padding:10px;">
+        <div style="font-size:14px; color:var(--text-muted);">In-Progress / Hired</div>
+        <div style="font-size:20px; font-weight:600; color:#28a745;">${total_hired_or_inprogress}</div>
+      </div>
+      <div style="flex:1; text-align:center; border:1px solid #dc3545; border-radius:8px; padding:10px;">
+        <div style="font-size:14px; color:var(--text-muted);">Remaining</div>
+        <div style="font-size:20px; font-weight:600; color:#dc3545;">${remaining}</div>
+      </div>
+    </div>
+  `;
+
+  frm.fields_dict.manpower_summary_html.$wrapper.html(html);
 }
