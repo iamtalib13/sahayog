@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Project Template",
-  "modified": "2025-08-20 11:31:28.465625",
+  "modified": "2025-08-20 17:33:09.807766",
   "name": "New Branch Setup",
   "project_type": null,
   "tasks": [
@@ -59,7 +59,7 @@
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 8 : Learning & Training Operations",
+    "subject": "Task 8 : Licence to Operate",
     "task": "TASK-2025-00098"
    },
    {

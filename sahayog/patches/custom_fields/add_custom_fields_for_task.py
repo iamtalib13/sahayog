@@ -103,7 +103,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "custom_allow_supplier",
                 "label": "Licence to Operate Training",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 8 : Licence to Operate Certification'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 8 : Licence to Operate'",
             },
             {
                 "fieldname": "lto_training_table",
@@ -111,7 +111,7 @@ def execute():
                 "insert_after": "custom_licence_to_operate_section",
                 "label": "Standard Training Checklist",
                 "options": "Licence to Operate Training Table",
-                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 8 : Licence to Operate Certification'",
+                "depends_on": "eval:!doc.is_template && doc.subject == 'Task 8 : Licence to Operate'",
             },
             {
               "fieldname": "custom_it_checklist_section",
