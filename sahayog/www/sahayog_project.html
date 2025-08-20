@@ -2162,139 +2162,109 @@
        * @param {object} task - The task object.
        * @param {object} project - The project object.
        */
+      // --- Render task form ---
       function renderTaskForm(task, project) {
-        console.log(
-          "fetching task form for : " + task + "of project : " + project
-        );
+        console.log("Fetching task form for:", task, "of project:", project);
         const panelHead = document.querySelector("#formPanel .head");
-        if (panelHead) {
-          panelHead.textContent = task.subject || "Task Details";
-        }
+        if (panelHead) panelHead.textContent = task.subject || "Task Details";
 
         const container = document.getElementById("taskFormContainer");
         container.innerHTML = `
-          <style>
-            .floating-field {
-              position: relative;
-              flex: 1;
-              min-width: 150px;
-            }
-            .floating-field input,
-            .floating-field select {
-              width: 100%;
-              padding: 10px 12px;
-              border: 2px solid var(--outline-variant);
-              border-radius: 6px;
-              outline: none;
-              font-size: 13px;
-              background: var(--surface);
-              color: var(--on-surface);
-            }
-            .floating-field label {
-              position: absolute;
-              top: 10px;
-              left: 14px;
-              color: var(--on-surface-variant);
-              font-weight: 600;
-              font-size: 13px;
-              pointer-events: none;
-              transition: 0.2s ease all;
-              background: transparent;
-            }
-            .floating-field input:focus ~ label,
-            .floating-field input:not(:placeholder-shown) ~ label,
-            .floating-field select:focus ~ label,
-            .floating-field select:not([value=""]) ~ label {
-              top: -8px;
-              left: 8px;
-              font-size: 11px;
-              background: var(--surface);
-              padding: 0 4px;
-            }
-          </style>
-
-          <div style="padding: 20px;" id="task-form-fields">
+    <style>
+        .floating-field { position: relative; flex: 1; min-width: 150px; }
+        .floating-field input, .floating-field select {
+            width: 100%; padding: 10px 12px; border: 2px solid var(--outline-variant);
+            border-radius: 6px; outline: none; font-size: 13px; background: var(--surface); color: var(--on-surface);
+        }
+        .floating-field label {
+            position: absolute; top: 10px; left: 14px; color: var(--on-surface-variant);
+            font-weight: 600; font-size: 13px; pointer-events: none; transition: 0.2s ease all; background: transparent;
+        }
+        .floating-field input:focus ~ label, .floating-field input:not(:placeholder-shown) ~ label,
+        .floating-field select:focus ~ label, .floating-field select:not([value=""]) ~ label {
+            top: -8px; left: 8px; font-size: 11px; background: var(--surface); padding: 0 4px;
+        }
+    </style>
+    <div style="padding: 20px;" id="task-form-fields">
         <div class="task-header-fields"
              style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 10px; padding-bottom: 15px; border-bottom: 1px solid var(--outline-variant);">
 
-          <!-- Status -->
-          <div class="floating-field">
-            <select id="taskStatus" disabled>
-              <option ${task.status === "Open" ? "selected" : ""}>Open</option>
-              <option ${
-                task.status === "Working" ? "selected" : ""
-              }>Working</option>
-              <option ${
-                task.status === "Pending Review" ? "selected" : ""
-              }>Pending Review</option>
-              <option ${
-                task.status === "Overdue" ? "selected" : ""
-              }>Overdue</option>
-              <option ${
-                task.status === "Completed" ? "selected" : ""
-              }>Completed</option>
-              <option ${
-                task.status === "Cancelled" ? "selected" : ""
-              }>Cancelled</option>
-            </select>
-            <label for="taskStatus">Status</label>
-          </div>
+            <!-- Status -->
+            <div class="floating-field">
+                <select id="taskStatus" disabled>
+                    <option ${
+                      task.status === "Open" ? "selected" : ""
+                    }>Open</option>
+                    <option ${
+                      task.status === "Working" ? "selected" : ""
+                    }>Working</option>
+                    <option ${
+                      task.status === "Pending Review" ? "selected" : ""
+                    }>Pending Review</option>
+                    <option ${
+                      task.status === "Overdue" ? "selected" : ""
+                    }>Overdue</option>
+                    <option ${
+                      task.status === "Completed" ? "selected" : ""
+                    }>Completed</option>
+                    <option ${
+                      task.status === "Cancelled" ? "selected" : ""
+                    }>Cancelled</option>
+                </select>
+                <label for="taskStatus">Status</label>
+            </div>
 
-          <!-- Start Date -->
-          <div class="floating-field">
-            <input type="date" id="taskStartDate" placeholder=" " value="${
-              task.exp_start_date || ""
-            }" disabled />
-            <label for="taskStartDate">Start</label>
-          </div>
+            <!-- Start Date -->
+            <div class="floating-field">
+                <input type="date" id="taskStartDate" placeholder=" " value="${
+                  task.exp_start_date || ""
+                }" disabled />
+                <label for="taskStartDate">Start</label>
+            </div>
 
-          <!-- End Date -->
-          <div class="floating-field">
-            <input type="date" id="taskEndDate" placeholder=" " value="${
-              task.exp_end_date || ""
-            }" disabled />
-            <label for="taskEndDate">End</label>
-          </div>
+            <!-- End Date -->
+            <div class="floating-field">
+                <input type="date" id="taskEndDate" placeholder=" " value="${
+                  task.exp_end_date || ""
+                }" disabled />
+                <label for="taskEndDate">End</label>
+            </div>
 
-          <!-- Completed On (inline in the same row) -->
-          <div class="floating-field" id="completedOnWrapper" style="display:none;">
-            <input type="datetime-local" id="taskCompletedOn" placeholder=" " value="${
-              task.completed_on || ""
-            }" />
-            <label for="taskCompletedOn">Completed On</label>
-          </div>
+            <!-- Completed On -->
+            <div class="floating-field" id="completedOnWrapper" style="display:none;">
+                <input type="datetime-local" id="taskCompletedOn" placeholder=" " value="${
+                  task.completed_on || ""
+                }" />
+                <label for="taskCompletedOn">Completed On</label>
+            </div>
 
         </div>
 
         <!-- Task-Specific Content -->
         <div class="task-specific-content">
-          ${renderTaskSpecificContent(task)}
+            ${renderTaskSpecificContent(task)}
         </div>
-      </div>
-
-        `;
+    </div>
+    `;
         document.getElementById("emptyForm").style.display = "none";
         editSaveBtn.style.display = "flex";
         setEditMode(false);
+        attachAutoSave(task.name); // Attach auto-save listeners
       }
 
-      /**
-       * Toggles the form between editing and view modes.
-       * @param {boolean} editing - True to enable editing, false for view mode.
-       */
+      // --- Toggle edit mode ---
       function setEditMode(editing) {
         isEditing = editing;
         const form = document.getElementById("task-form-fields");
         if (!form) return;
 
         const fields = form.querySelectorAll("input, select, textarea");
-
         fields.forEach((field) => {
           field.disabled = !editing;
           field.classList.toggle("is-editing", editing);
         });
 
-        // ✅ handle completedOn visibility dynamically
+        // Completed On visibility
         const statusSelect = document.getElementById("taskStatus");
         const completedWrapper = document.getElementById("completedOnWrapper");
         const completedInput = document.getElementById("taskCompletedOn");
@@ -2306,63 +2276,158 @@
           } else {
             completedWrapper.style.display = "none";
             completedInput.required = false;
-            completedInput.value = ""; // clear if not completed
+            completedInput.value = "";
           }
         }
 
         if (editing) {
-          toggleCompletedOn(); // run once
+          toggleCompletedOn();
           statusSelect.addEventListener("change", toggleCompletedOn);
         } else {
           statusSelect.removeEventListener("change", toggleCompletedOn);
         }
 
-        // ✅ toggle Add New Location button
+        // Toggle buttons
         const addLocationBtn = document.getElementById("addNewLocationBtn");
-        if (addLocationBtn) {
+        if (addLocationBtn)
           addLocationBtn.style.display = editing ? "inline-block" : "none";
-        }
 
-        // ✅ toggle all add-image-btn (+) buttons
-        document.querySelectorAll(".add-image-btn").forEach((btn) => {
-          btn.style.display = editing ? "inline-flex" : "none";
-        });
+        document
+          .querySelectorAll(".add-image-btn")
+          .forEach(
+            (btn) => (btn.style.display = editing ? "inline-flex" : "none")
+          );
+        document
+          .querySelectorAll(".delete-image-btn")
+          .forEach((btn) => btn.classList.toggle("show", editing));
 
-        document.querySelectorAll(".delete-image-btn").forEach((btn) => {
-          if (editing) {
-            btn.classList.add("show");
-          } else {
-            btn.classList.remove("show");
-          }
-        });
-
-        editSaveBtn.innerHTML = editing ? "Save" : "Edit";
+        // changing the button text
+        editSaveBtn.innerHTML = editing ? "Close" : "Edit";
       }
 
-      // --- Event Listener for the Edit/Save Button ---
+      // --- Edit button ---
       editSaveBtn.addEventListener("click", () => {
-        if (isEditing) {
-          // Check if status is Completed
-          const status = document.getElementById("taskStatus").value;
-          const completedOn = document.getElementById("taskCompletedOn").value;
-
-          if (status === "Completed" && !completedOn) {
-            alert("Please fill the 'Completed On' date/time before saving.");
-            document.getElementById("taskCompletedOn").focus();
-            return; // Stop saving
-          }
-
-          // Save logic here
-          console.log("Saving task data...");
-          alert("Task Saved!"); // Placeholder
-          setEditMode(false); // Switch back to view mode
-        } else {
-          // Enter edit mode
+        if (!isEditing) {
           setEditMode(true);
           document.getElementById("taskStatus").focus();
+        } else {
+          setEditMode(false);
         }
       });
 
+      // --- Auto-save logic ---
+      async function attachAutoSave(taskName) {
+        const form = document.getElementById("task-form-fields");
+        if (!form) return;
+
+        // Store initial values
+        const initialValues = {
+          status: document.getElementById("taskStatus").value,
+          completed_on: document.getElementById("taskCompletedOn").value,
+          start_date: document.getElementById("taskStartDate").value,
+          end_date: document.getElementById("taskEndDate").value,
+        };
+
+        form.querySelectorAll("input, select, textarea").forEach((field) => {
+          field.addEventListener("change", async () => {
+            const status = document.getElementById("taskStatus").value;
+            const completedOn =
+              document.getElementById("taskCompletedOn").value;
+            const startDate = document.getElementById("taskStartDate").value;
+            const endDate = document.getElementById("taskEndDate").value;
+
+            const today = new Date().toISOString().split("T")[0];
+
+            // --- Validations ---
+            if (status === "Completed" && !completedOn) {
+              showGlobalMessage(
+                "Please fill 'Completed On' before saving.",
+                "error"
+              );
+              return;
+            }
+            if (completedOn && completedOn > today) {
+              showGlobalMessage(
+                "'Completed On' cannot be a future date.",
+                "error"
+              );
+              return;
+            }
+            if (startDate && endDate && startDate > endDate) {
+              showGlobalMessage(
+                "'Start Date' cannot be after 'End Date'.",
+                "error"
+              );
+              return;
+            }
+
+            // --- Check if any value changed ---
+            if (
+              status === initialValues.status &&
+              completedOn === initialValues.completed_on &&
+              startDate === initialValues.start_date &&
+              endDate === initialValues.end_date
+            ) {
+              console.log("No changes detected, skipping auto-save");
+              return; // Nothing changed
+            }
+
+            const data = {
+              status,
+              start_date: startDate,
+              end_date: endDate,
+              completed_on: completedOn,
+            };
+
+            try {
+              const csrfToken = await getCSRFToken();
+              const res = await fetch(
+                "/api/method/sahayog.patches.fixtures.get_projects_and_tasks.update_task_common_fields",
+                {
+                  method: "POST",
+                  headers: {
+                    "X-Frappe-CSRF-Token": csrfToken,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ task_name: taskName, data }),
+                }
+              );
+
+              const result = await res.json();
+
+              // Handle the response properly
+              if (result.message && result.message.success) {
+                showGlobalMessage("Task updated successfully!", "success");
+
+                // Update initial values to prevent repeated auto-save
+                initialValues.status = status;
+                initialValues.completed_on = completedOn;
+                initialValues.start_date = startDate;
+                initialValues.end_date = endDate;
+              } else if (result.message && result.message.error) {
+                // Show the specific error message from API
+                showGlobalMessage(result.message.error, "error");
+              } else if (result.message && !result.message.success) {
+                // Handle case where success is false but no specific error message
+                showGlobalMessage("Update failed", "error");
+              } else {
+                // Fallback for unexpected response format
+                showGlobalMessage(
+                  "Update failed - unexpected response",
+                  "error"
+                );
+              }
+            } catch (err) {
+              console.error(err);
+              showGlobalMessage("Error updating task", "error");
+            }
+
+            setEditMode(false); // Lock form again
+          });
+        });
+      }
+
+      // --- Clear form ---
       function clearForm() {
         selectedTaskId = null;
         const project = getSelectedProject();
@@ -2481,6 +2546,19 @@
       });
 
       /* ------------------------ Utilities ------------------------ */
+      function setStatusBackground(select) {
+        const value = select.value;
+        if (value === "Pending") {
+          select.style.background = "#f0ad4e"; // orange
+        } else if (value === "Approved") {
+          select.style.background = "#28a745"; // green
+        } else if (value === "Rejected") {
+          select.style.background = "#dc3545"; // red
+        } else {
+          select.style.background = "var(--surface)";
+          select.style.color = "var(--on-surface)";
+        }
+      }
       function timeAgo(dateStr) {
         if (!dateStr) return "just now";
 
@@ -2634,6 +2712,84 @@
           );
         }
       }
+
+      // Create global message container
+      let globalMsgContainer = document.createElement("div");
+      globalMsgContainer.id = "globalMessageContainer";
+      document.body.appendChild(globalMsgContainer);
+
+      // Add basic styles
+      const style = document.createElement("style");
+      style.innerHTML = `
+        #globalMessageContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .global-message {
+            min-width: 200px;
+            max-width: 300px;
+            background: #333;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-size: 13px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        .global-message.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .global-message.hide {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+
+        .global-message.success { background-color: #28a745; }
+        .global-message.error { background-color: #dc3545; }
+        .global-message.info { background-color: #007bff; }
+        `;
+      document.head.appendChild(style);
+
+      /**
+       * Show a global message
+       * @param {string} msg - The message text
+       * @param {"success"|"error"|"info"} type - The message type
+       * @param {number} duration - How long to display (ms)
+       */
+      function showGlobalMessage(msg, type = "info", duration = 3000) {
+        const messageEl = document.createElement("div");
+        messageEl.className = `global-message ${type}`;
+        messageEl.textContent = msg;
+
+        globalMsgContainer.appendChild(messageEl);
+
+        // Force reflow to enable transition
+        void messageEl.offsetWidth;
+        messageEl.classList.add("show");
+
+        // Hide after duration
+        setTimeout(() => {
+          messageEl.classList.remove("show");
+          messageEl.classList.add("hide");
+
+          // Remove element after transition
+          messageEl.addEventListener("transitionend", () => {
+            messageEl.remove();
+          });
+        }, duration);
+      }
+
       /* ------------------------ Enhanced Task Form Functions ------------------------ */
 
       // Task-specific data templates
@@ -2997,7 +3153,9 @@
             const estimate_rent = locs[0].estimate_rent || 0;
             const status = locs.some((l) => l.status === "Pending")
               ? "Pending"
-              : "Completed";
+              : locs.some((l) => l.status === "Approved")
+              ? "Approved"
+              : "Rejected";
 
             // Generate words for tooltip
             const rentInWords = numberToWords(estimate_rent) + " Rupees only";
@@ -3338,6 +3496,46 @@
           });
         }, 0);
 
+        setTimeout(() => {
+          document.querySelectorAll(".location-row").forEach((row) => {
+            const locationName = row
+              .querySelector(".location-name-cell")
+              .textContent.trim();
+            const rentInput = row.querySelector(".estimate-rent");
+            const statusSelect = row.querySelector(".location-status");
+
+            // On rent change
+            rentInput.addEventListener("change", () => {
+              handleUpdateLocation(
+                locationName,
+                rentInput,
+                statusSelect,
+                task.name
+              );
+            });
+
+            // On status change
+            statusSelect.addEventListener("change", () => {
+              handleUpdateLocation(
+                locationName,
+                rentInput,
+                statusSelect,
+                task.name
+              );
+            });
+          });
+        }, 0);
+
+        // Set background color based on status
+        setTimeout(() => {
+          document.querySelectorAll(".location-status").forEach((select) => {
+            setStatusBackground(select); // initial render
+            select.addEventListener("change", () => {
+              setStatusBackground(select); // update on change
+            });
+          });
+        }, 0);
+
         return html;
       }
       // Function to handle adding an image in existing location
@@ -3406,6 +3604,8 @@
                 container.innerHTML = renderLocationDetailsForm(
                   updatedTask.message
                 );
+                showGlobalMessage("Image Added successfully!", "success");
+                setEditMode(false);
               }
 
               // frappe.show_alert({message: __("Image added successfully"), indicator: "green"}, 3);
@@ -3481,6 +3681,11 @@
                 container.innerHTML = renderLocationDetailsForm(
                   updatedTask.message
                 );
+                showGlobalMessage(
+                  "New Location Added successfully!",
+                  "success"
+                );
+                setEditMode(false);
               }
             } else {
               throw new Error(
@@ -3536,12 +3741,59 @@
               container.innerHTML = renderLocationDetailsForm(
                 updatedTask.message
               );
+              showGlobalMessage("Deleted Image successfully!", "success");
+              setEditMode(false);
             }
           } else {
             throw new Error(result.message?.error || "Failed to delete image");
           }
         } catch (err) {
           console.error("Error deleting image:", err);
+        }
+      }
+
+      // Function to update location details (Rent and Status)
+      async function handleUpdateLocation(
+        locationName,
+        rentInput,
+        statusSelect,
+        taskName
+      ) {
+        const estimateRent = rentInput.value;
+        const status = statusSelect.value;
+
+        try {
+          const csrfToken = await getCSRFToken();
+          const response = await fetch(
+            "/api/method/sahayog.patches.fixtures.get_projects_and_tasks.update_location_details",
+            {
+              method: "POST",
+              headers: {
+                "X-Frappe-CSRF-Token": csrfToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                task_name: taskName,
+                location_name: locationName,
+                estimate_rent: estimateRent,
+                status: status,
+              }),
+            }
+          );
+
+          const result = await response.json();
+          if (result.message && result.message.success) {
+            console.log(`Location ${locationName} updated successfully`);
+            showGlobalMessage(
+              "Updated Location Details successfully!",
+              "success"
+            );
+            setEditMode(false);
+          } else {
+            console.error(result.message?.error || "Failed to update location");
+          }
+        } catch (err) {
+          console.error("Error updating location:", err);
         }
       }
 
