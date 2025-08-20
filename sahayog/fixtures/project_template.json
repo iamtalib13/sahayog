@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Project Template",
-  "modified": "2025-07-30 10:41:54.491151",
+  "modified": "2025-08-20 11:31:28.465625",
   "name": "New Branch Setup",
   "project_type": null,
   "tasks": [
@@ -59,15 +59,22 @@
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 8 : Handover to Business Team",
+    "subject": "Task 8 : Learning & Training Operations",
     "task": "TASK-2025-00098"
    },
    {
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 9 : Ready for Inauguration",
+    "subject": "Task 9 : Handover to Business Team",
     "task": "TASK-2025-00099"
+   },
+   {
+    "parent": "New Branch Setup",
+    "parentfield": "tasks",
+    "parenttype": "Project Template",
+    "subject": "Task 10 : Ready for Inauguration",
+    "task": "TASK-2025-00100"
    }
   ]
  }

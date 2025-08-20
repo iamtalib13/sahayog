@@ -279,3 +279,82 @@ def delete_location_image(task_name, location_name, image_file):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Delete Location Row Error")
         return {"success": False, "error": str(e)}
+    
+@frappe.whitelist()
+def update_location_details(task_name, location_name, estimate_rent=None, status=None):
+    """
+    Update rent and status for all rows in Task.custom_location_details
+    with the given location_name.
+    """
+    try:
+        task = frappe.get_doc("Task", task_name)
+        updated = False
+
+        for row in task.custom_location_details:
+            if row.location_name == location_name:
+                if estimate_rent is not None:
+                    row.estimate_rent = float(estimate_rent)
+                if status is not None:
+                    row.status = status
+                updated = True
+
+        if updated:
+            task.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"success": True, "message": _("Location details updated successfully")}
+        else:
+            return {"success": False, "error": _("No rows found for the given location_name")}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Update Location Details Error")
+        return {"success": False, "error": str(e)}
+    
+@frappe.whitelist()
+def update_task_common_fields(task_name, data):
+    """
+    Auto-update task fields.
+    'data' should be a dict containing keys: status, start_date, end_date, completed_on
+    """
+    try:
+        task = frappe.get_doc("Task", task_name)
+
+        # Only run validations for "Task 1 : Acquisition of the Property"
+        if task.subject == "Task 1 : Acquisition of the Property":
+            # Check if status is being changed to "Completed"
+            if data.get("status") == "Completed" and task.status != "Completed":
+                # Validation 1: Check if at least one location detail is "Approved"
+                approved_location_details = [row for row in task.get("custom_location_details", []) 
+                                           if row.status == "Approved"]
+                
+                if not approved_location_details:
+                    return {
+                        "success": False, 
+                        "error": "Cannot mark the task as 'Completed' until at least one location detail is 'Approved'."
+                    }
+                
+                # Validation 2: Check if multiple approved rows have different location names
+                if len(approved_location_details) > 1:
+                    first_location = approved_location_details[0].location_name
+                    different_locations = any(row.location_name != first_location 
+                                            for row in approved_location_details[1:])
+                    
+                    if different_locations:
+                        return {
+                            "success": False, 
+                            "error": "Only one location detail can have 'Approved' status before marking the task as 'Completed'."
+                        }
+
+        # Update fields
+        for key in ["status", "start_date", "end_date", "completed_on"]:
+            if key in data:
+                setattr(task, key, data[key])
+
+        task.save()
+        frappe.db.commit()
+
+        return {"success": True, "message": "Task updated successfully"}
+    except frappe.DoesNotExistError:
+        return {"success": False, "error": _("Task not found")}
+    except Exception as e:
+        frappe.log_error(e, "update_task_fields failed")
+        return {"success": False, "error": str(e)}
