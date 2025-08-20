@@ -559,7 +559,7 @@ def prevent_completion_if_it_checklist_incomplete(doc, method):
             title="Incomplete IT Checklist"
         )
 
-# Task 8 : Licence to Operate Certification validations
+# Task 8 : Licence to Operate validations
 def update_lto_training_table(doc, method):
     # prevent recursion
     if frappe.flags.in_update_lto:
@@ -572,7 +572,7 @@ def update_lto_training_table(doc, method):
     # Find Task 8 in the same project
     task_8 = frappe.db.get_value(
         "Task",
-        {"project": doc.project, "subject": "Task 8 : Licence to Operate Certification"},
+        {"project": doc.project, "subject": "Task 8 : Licence to Operate"},
         "name"
     )
 

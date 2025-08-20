@@ -50,9 +50,9 @@ def get_all_tasks(name):
             # Task 4: Manpower Recruitment
             if "Task 4 : Manpower Recruitment" in subject:
                 task["manpower_recruitment_table"] = frappe.get_all(
-                    "Manpower Recruitment",
+                    "Manpower Recruitment Hiring Table",
                     filters={"parent": task["name"], "parenttype": "Task"},
-                    fields=["hirable_designation", "standard_employee_count", "hired_till_now", "status"]
+                    fields=["employee_name", "employee_designation", "employee_department", "status"]
                 )
 
             # Task 6 or 7: IT Checklist
@@ -62,6 +62,15 @@ def get_all_tasks(name):
                     filters={"parent": task["name"], "parenttype": "Task"},
                     fields=["activity", "category", "status","installation_phase"]
                 )
+
+             # Task 8 : Licence to Operate
+            if "Task 8 : Licence to Operate" in subject:
+                task["lto_training_table"] = frappe.get_all(
+                    "Licence to Operate Training Table",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["employee_name", "employee_designation", "employee_department", "training_status"]
+                )
+
 
         return tasks
 
@@ -105,10 +114,10 @@ def get_specific_task(name):
 
         # Task 4: Manpower Recruitment
         if "Task 4 : Manpower Recruitment" in subject:
-            task["manpower_recruitment_table"] = frappe.get_all(
-                "Manpower Recruitment",
-                filters={"parent": task["name"], "parenttype": "Task"},
-                fields=["hirable_designation", "standard_employee_count", "hired_till_now", "status"]
+                task["manpower_recruitment_table"] = frappe.get_all(
+                    "Manpower Recruitment Hiring Table",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["employee_name", "employee_designation", "employee_department", "status"]
             )
 
         # Task 6 or 7: IT Checklist
