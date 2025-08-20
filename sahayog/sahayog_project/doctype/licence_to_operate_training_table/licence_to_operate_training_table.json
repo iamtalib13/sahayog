@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-20 15:57:42.248398",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_name",
+  "employee_designation",
+  "employee_department",
+  "training_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only_depends_on": "eval:doc.employee_name"
+  },
+  {
+   "fieldname": "employee_designation",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Designation",
+   "read_only_depends_on": "eval:doc.employee_designation"
+  },
+  {
+   "fieldname": "employee_department",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Department",
+   "read_only_depends_on": "eval:doc.employee_department"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "training_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Training Status",
+   "options": "Pending\nCompleted"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-08-20 16:56:23.365527",
+ "modified_by": "Administrator",
+ "module": "Sahayog Project",
+ "name": "Licence to Operate Training Table",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -244,6 +244,9 @@ doc_events = {
         "on_update": [
             "sahayog.doc_events.task.update_branch_status_trigger"
         ],
+        "on_update": [
+             "sahayog.doc_events.task.update_lto_training_table"
+        ],
         "after_insert": [
             "sahayog.doc_events.task.create_letter_of_intent"
         ],

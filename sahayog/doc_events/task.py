@@ -440,16 +440,17 @@ def fetch_manpower_settings(doc, method):
     if doc.subject == "Task 4 : Manpower Recruitment" and not doc.is_template:
         if not doc.manpower_fetched:
             settings = frappe.get_single("Manpower Recruitment Setting")
-            doc.manpower_recruitment_table = []
+            doc.manpower_recruitment_table = []  # pehle clear kar do
 
             for row in settings.manpower_recruitment_table:
-                doc.append("manpower_recruitment_table", {
-                    "standard_employee_count": row.standard_employee_count,
-                    "hirable_designation": row.hirable_designation
-                })
+                for i in range(row.standard_employee_count or 0):  # jitna count hai utni rows
+                    doc.append("manpower_recruitment_table", {
+                        "employee_designation": row.hirable_designation,
+                        "status": "Pending"
+                    })
             
             doc.manpower_fetched = 1  # Mark as fetched
-            
+
 def prevent_completion_if_manpower_incomplete(doc, method):
     if doc.subject != "Task 4 : Manpower Recruitment" or doc.is_template:
         return
@@ -458,22 +459,30 @@ def prevent_completion_if_manpower_incomplete(doc, method):
         errors = []
 
         for i, row in enumerate(doc.manpower_recruitment_table, start=1):
-            if not row.hired_till_now or row.hired_till_now <= 0:
+            # Status check
+            if row.status not in ["In-Progress", "Hired"]:
                 errors.append(
-                    f"Row {i} ({row.hirable_designation}): ✅ 'Hired Till Now' must be greater than 0."
+                    f"Row {i} ({row.employee_designation}): ❌ Status must be 'In-Progress' or 'Hired'."
                 )
 
-            if row.status not in ["In Process", "Hired"]:
-                errors.append(
-                    f"Row {i} ({row.hirable_designation}): ✅ Status must be 'In Process' or 'Hired'."
-                )
+            # Employee name required if status is valid
+            if row.status in ["In-Progress", "Hired"]:
+                if not row.employee_name:
+                    errors.append(
+                        f"Row {i} ({row.employee_designation}): ❌ Employee Name is required when status is '{row.status}'."
+                    )
+                if not row.employee_department:
+                    errors.append(
+                        f"Row {i} ({row.employee_designation}): ❌ Employee Department is required when status is '{row.status}'."
+                    )
 
         if errors:
             frappe.throw(
-                """<b>Please update the hiring details before completing this task.</b><br><br>
-                Make sure the following conditions are met for all rows in the manpower table:<br>
-                ✅ <b>Status</b> must be set to <b>In Process</b> or <b>Hired</b>.<br>
-                ✅ <b>Hired Till Now</b> must be greater than <b>0</b>.<br><br>
+                """<b>Please update the manpower details before completing this task.</b><br><br>
+                Conditions for each row:<br>
+                ✅ <b>Status</b> must be <b>In-Progress</b> or <b>Hired</b>.<br>
+                ✅ <b>Employee Name</b> is mandatory if status is <b>In-Progress</b> or <b>Hired</b>.<br>
+                ✅ <b>Employee Department</b> is mandatory if status is <b>In-Progress</b> or <b>Hired</b>.<br><br>
 
                 <button onclick="document.getElementById('manpower-errors').style.display='block'" 
                         style="background-color:#007bff;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">
@@ -549,3 +558,50 @@ def prevent_completion_if_it_checklist_incomplete(doc, method):
             """.format("<br>".join(errors)),
             title="Incomplete IT Checklist"
         )
+
+# Task 8 : Licence to Operate Certification validations
+def update_lto_training_table(doc, method):
+    # prevent recursion
+    if frappe.flags.in_update_lto:
+        return
+
+    # Run only for Task 4
+    if doc.subject != "Task 4 : Manpower Recruitment":
+        return
+
+    # Find Task 8 in the same project
+    task_8 = frappe.db.get_value(
+        "Task",
+        {"project": doc.project, "subject": "Task 8 : Licence to Operate Certification"},
+        "name"
+    )
+
+    if not task_8:
+        return
+
+    task_8_doc = frappe.get_doc("Task", task_8)
+
+    for row in doc.manpower_recruitment_table:
+        if row.status in ["Hired", "In-Progress"] and row.employee_name:
+            # Avoid duplicates
+            exists = any(
+                lto_row.employee_name == row.employee_name
+                for lto_row in task_8_doc.lto_training_table
+            )
+
+            if not exists:
+                task_8_doc.append("lto_training_table", {
+                    "employee_name": row.employee_name,
+                    "employee_department": row.employee_department,
+                    "employee_designation": row.employee_designation,
+                    "training_status": "Pending"
+                })
+
+    # save task 8 safely without recursion
+    frappe.flags.in_update_lto = True
+    try:
+        task_8_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+        frappe.msgprint("Task 8 LTO table updated successfully ✅")
+    finally:
+        frappe.flags.in_update_lto = False
