@@ -1282,7 +1282,7 @@
         type="button"
       >
         <i class="fas fa-file-alt text-lg"> </i>
-        <span> Report </span>
+        <span> DSR </span>
       </button>
     </nav>
     <script>
@@ -2040,18 +2040,11 @@
         } else if (currentSection === "report") {
           items = [
             {
-              title: "My Leads Report",
-              subtitle: "View detailed lead analytics",
-              link: "/app/query-report/My%20Leads%20Report",
+              title: "DSR",
+              subtitle: "Daily Sales Report",
+              link: "app/daily-sales-report",
               img: "https://placehold.co/40x40/png?text=R1",
               alt: "Leads Report icon, stylized letter R1 in blue on white background",
-            },
-            {
-              title: "My Appointments Report",
-              subtitle: "Monitor your appointment trends",
-              link: "/app/query-report/My%20Appointments",
-              img: "https://placehold.co/40x40/png?text=R2",
-              alt: "Appointments Report icon, stylized letter R2 in blue on white background",
             },
           ];
         }
@@ -2186,7 +2179,6 @@
                 : ""
             }
           `;
-
           div.addEventListener("click", () => {
             if (currentSection === "report" && item.link) {
               window.open(item.link, "_blank");
@@ -2194,7 +2186,6 @@
               openEditLeadDialogByName(item.rawData.name);
             } else if (currentSection === "appointment") {
               console.log("Appointment Name:", item.rawData.name);
-
               openEditAppointmentDialogByName(item.rawData.name);
             } else if (currentSection === "opportunity") {
               const name = item.rawData?.name;
