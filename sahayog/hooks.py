@@ -241,6 +241,7 @@ doc_events = {
             "sahayog.doc_events.task.prevent_completion_if_manpower_incomplete",
             "sahayog.doc_events.task.prevent_completion_if_it_checklist_incomplete",
             "sahayog.doc_events.task.prevent_completion_if_infra_incomplete",
+            "sahayog.doc_events.task.prevent_completion_if_lto_incomplete",
         ],
         "on_update": [
             "sahayog.doc_events.task.update_branch_status_trigger"
