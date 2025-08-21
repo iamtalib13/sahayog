@@ -658,3 +658,36 @@ def update_lto_training_table(doc, method):
         frappe.msgprint("Task 8 LTO table updated successfully ✅")
     finally:
         frappe.flags.in_update_lto = False
+
+def prevent_completion_if_lto_incomplete(doc, method):
+    if doc.subject != "Task 8 : Licence to Operate":
+        return
+
+    if doc.is_template or doc.status != "Completed":
+        return
+
+    errors = []
+
+    for i, row in enumerate(doc.lto_training_table, start=1):
+        if row.training_status != "Completed":
+            employee_info = row.employee_name.upper() if row.employee_name else "UNKNOWN"
+            errors.append(f"Row {i} ({employee_info}): Training status must be 'Completed'.")
+
+    if errors:
+        frappe.throw(
+            """<b>Please complete the LTO Training before marking this task as completed.</b><br><br>
+            Make sure the following condition is met for all rows in the LTO Training Table:<br>
+            ✅ <b>Training Status</b> must be <b>Completed</b>.<br><br>
+
+            <button onclick="document.getElementById('lto-errors').style.display='block'" 
+                    style="background-color:#007bff;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">
+                View Issues
+            </button>
+
+            <div id="lto-errors" style="display:none;margin-top:10px;">
+                <b>Issues found:</b><br>
+                {}
+            </div>
+            """.format("<br>".join(errors)),
+            title="Incomplete LTO Training"
+        )
