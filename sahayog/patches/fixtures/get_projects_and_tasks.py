@@ -54,6 +54,14 @@ def get_all_tasks(name):
                     filters={"parent": task["name"], "parenttype": "Task"},
                     fields=["employee_name", "employee_designation", "employee_department", "status"]
                 )
+                
+            # Task 5: Infrastructure Development Work
+            if "Task 5 : Infrastructure Development Work" in subject:
+                task["infrastructure_development_table"] = frappe.get_all(
+                    "Infrastructure Development Setting Table",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["infrastructure_task", "phase", "status", "remarks"]
+                )
 
             # Task 6 or 7: IT Checklist
             if subject in ["Task 6 : IT Hardware Installation", "Task 7 : IT Software Installation"]:

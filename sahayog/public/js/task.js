@@ -39,6 +39,22 @@ frappe.ui.form.on("Task", {
       frm.set_df_property("lto_training_table", "cannot_add_rows", true); // Hide add row button
       frm.set_df_property("lto_training_table", "cannot_delete_rows", true); // Hide delete button
       frm.set_df_property("lto_training_table", "cannot_delete_all_rows", true); // Hide delete all button
+
+      frm.set_df_property(
+        "infrastructure_development_table",
+        "cannot_add_rows",
+        true
+      ); // Hide add row button
+      frm.set_df_property(
+        "infrastructure_development_table",
+        "cannot_delete_rows",
+        true
+      ); // Hide delete button
+      frm.set_df_property(
+        "infrastructure_development_table",
+        "cannot_delete_all_rows",
+        true
+      ); // Hide delete all button
     }
 
     let project = frm.doc.project;

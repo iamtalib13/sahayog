@@ -497,6 +497,59 @@ def prevent_completion_if_manpower_incomplete(doc, method):
                 title="Hiring Data Incomplete"
             )
 
+#Task 5 : Infrastructure Development Work
+def fetch_infra_checklist_settings(doc, method):
+    if doc.subject == "Task 5 : Infrastructure Development Work" and not doc.is_template:
+        if not doc.infra_checklist_fetched:
+            settings = frappe.get_single("Infrastructure Development Setting")
+
+            # Pehle clear kar do
+            doc.infrastructure_development_table = []  
+
+            # Ab copy karo exact fields
+            for row in settings.infrastructure_development_table:
+                doc.append("infrastructure_development_table", {
+                    "infrastructure_task": row.infrastructure_task,
+                    "phase": row.phase,
+                    "status": "Pending"  # Default status if needed
+                })
+
+            doc.infra_checklist_fetched = 1  # Mark as fetched
+            
+def prevent_completion_if_infra_incomplete(doc, method):
+    if doc.subject != "Task 5 : Infrastructure Development Work" or doc.is_template:
+        return
+
+    if doc.status == "Completed":
+        errors = []
+
+        for i, row in enumerate(doc.infrastructure_development_table, start=1):
+            # Status must be In-Progress or Completed
+            if row.status not in ["Completed", "In-Progress"]:
+                errors.append(
+                    f"Row {i} ({row.infrastructure_task} - {row.phase}): ❌ Status must be 'In-Progress' or 'Completed'. Currently '{row.status or 'Not Set'}'."
+                )
+
+        if errors:
+            frappe.throw(
+                """<b>Please complete the infrastructure checklist before completing this task.</b><br><br>
+                Conditions for each row:<br>
+                ✅ <b>Status</b> must be <b>In-Progress</b> or <b>Completed</b>.<br><br>
+
+                <button onclick="document.getElementById('infra-errors').style.display='block'" 
+                        style="background-color:#007bff;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">
+                    View Issues
+                </button>
+
+                <div id="infra-errors" style="display:none;margin-top:10px;">
+                    <b>Issues found:</b><br>
+                    {}
+                </div>
+                """.format("<br>".join(errors)),
+                title="Infrastructure Checklist Incomplete"
+            )
+
+
 #Validations for above :
 #Task 6 : IT Hardware Installation
 #Task 7 : IT Software Installation 

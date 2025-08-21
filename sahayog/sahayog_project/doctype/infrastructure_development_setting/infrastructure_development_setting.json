@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-21 10:59:44.180311",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "infrastructure_development_section_section",
+  "infrastructure_development_table"
+ ],
+ "fields": [
+  {
+   "fieldname": "infrastructure_development_section_section",
+   "fieldtype": "Section Break",
+   "label": "Infrastructure Development Section"
+  },
+  {
+   "fieldname": "infrastructure_development_table",
+   "fieldtype": "Table",
+   "label": "Infrastructure Development Table",
+   "options": "Infrastructure Development Setting Table"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-08-21 11:02:13.532482",
+ "modified_by": "Administrator",
+ "module": "Sahayog Project",
+ "name": "Infrastructure Development Setting",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
