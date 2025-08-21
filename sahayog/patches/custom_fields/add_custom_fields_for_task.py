@@ -31,7 +31,7 @@ def execute():
             {
                 "fieldname": "custom_agreement_details_section",
                 "fieldtype": "Section Break",
-                "insert_after": "completed_on",
+                "insert_after": "sb_details",
                 "label": "Agreement Details",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 3 : Agreement and Handover'",
             },
@@ -44,21 +44,28 @@ def execute():
                
             },
              {
-                "fieldname": "custom_supplier_details_section",
+                "fieldname": "custom_infrastructure_section",
                 "fieldtype": "Section Break",
-                "insert_after": "custom_agreement",
-                "label": "Supplier Details",
+                "insert_after": "sb_details",
+                "label": "Infrastructure Tasks Details",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 5 : Infrastructure Development Work'",
                
             },
             {
-                "fieldname": "custom_allow_supplier",
+              "fieldname": "infra_checklist_fetched",
+              "fieldtype": "Check",
+              "insert_after": "custom_infrastructure_section",
+              "label": "Infra Checklist Fetched ?",
+              "default": 0,
+              "depends_on": "eval:frappe.user.has_role('System Manager') && !doc.is_template && doc.subject == 'Task 5 : Infrastructure Development Work'"
+            },
+            {
+                "fieldname": "infrastructure_development_table",
                 "fieldtype": "Table",
-                "options": "Allow Supplier",
-                "insert_after": "custom_supplier_details_section",
-                "label": "Allow Supplier",
+                "options": "Infrastructure Development Setting Table",
+                "insert_after": "infra_checklist_fetched",
+                "label": "Infrastructure Task Table",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 5 : Infrastructure Development Work'",
-               
             },
                {
                 "fieldname": "custom_sequence",
@@ -71,7 +78,7 @@ def execute():
             {
                 "fieldname": "custom_manpower_section",
                 "fieldtype": "Section Break",
-                "insert_after": "custom_allow_supplier",
+                "insert_after": "sb_details",
                 "label": "Manpower Recruitment",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 4 : Manpower Recruitment'",
             },
@@ -101,7 +108,7 @@ def execute():
             {
                 "fieldname": "custom_licence_to_operate_section",
                 "fieldtype": "Section Break",
-                "insert_after": "custom_allow_supplier",
+                "insert_after": "sb_details",
                 "label": "Licence to Operate Training",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Task 8 : Licence to Operate'",
             },
@@ -116,7 +123,7 @@ def execute():
             {
               "fieldname": "custom_it_checklist_section",
               "fieldtype": "Section Break",
-              "insert_after": "custom_allow_supplier",
+              "insert_after": "sb_details",
               "label": "IT Checklist",
               "depends_on": "eval:!doc.is_template && (doc.subject == 'Task 6 : IT Hardware Installation' || doc.subject == 'Task 7 : IT Software Installation')"
             },

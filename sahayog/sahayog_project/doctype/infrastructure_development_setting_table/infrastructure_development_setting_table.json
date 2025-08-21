@@ -1,0 +1,59 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-21 10:16:21.765817",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "infrastructure_task",
+  "phase",
+  "status",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "infrastructure_task",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Infrastructure Task",
+   "read_only_depends_on": "eval:doc.infrastructure_task"
+  },
+  {
+   "fieldname": "phase",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Phase",
+   "mandatory_depends_on": "eval:doc.phase",
+   "options": "\nPhase-I\nPhase-II\nPhase-III"
+  },
+  {
+   "depends_on": "eval:doc.parenttype==\"Task\"\n",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "\nPending\nIn-Progress\nCompleted"
+  },
+  {
+   "depends_on": "eval:doc.parenttype==\"Task\"\n",
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Remarks"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-08-21 11:27:29.517120",
+ "modified_by": "Administrator",
+ "module": "Sahayog Project",
+ "name": "Infrastructure Development Setting Table",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
