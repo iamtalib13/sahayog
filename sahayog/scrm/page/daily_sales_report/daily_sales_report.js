@@ -5,7 +5,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     single_column: true,
   });
 
-  // Improved Custom Styles (including rating styles)
+  // Improved Custom Styles (including rating and export styles)
   $(`
     <style>
       body, #employee-details, .dsr-header, #dsr-table, #user-date,
@@ -52,6 +52,9 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
         display: flex; align-items: center; justify-content: space-between;
       }
       .rating-header .icon { margin-right: 8px; font-size: 18px; }
+      .rating-title {
+        display: flex; align-items: center;
+      }
       .rating-top-badges {
         display: flex; gap: 14px; align-items: center;
       }
@@ -81,13 +84,41 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       .rating-good { background: #cce7ff; color: #004085; }
       .rating-average { background: #fff3cd; color: #856404; }
       .rating-bad { background: #f8d7da; color: #721c24; }
+      
+      /* Updated rating criteria styles */
       .rating-criteria {
         font-size: 12px;
         color: #383d41;
         margin: 2px 0 2px 0;
         padding-left: 0;
         line-height: 1.5;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
       }
+      .criteria-content {
+        flex: 1;
+      }
+      .criteria-badges {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-end;
+      }
+      .badge-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .badge-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6c757d;
+        min-width: 80px;
+        text-align: right;
+      }
+      
       .rating-criteria ul {
         margin: 0 0 0 15px;
         padding: 0;
@@ -101,8 +132,73 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       .criteria-bad { color: #721c24; font-weight: bold; }
       .criteria-qualified { color: #155724; font-weight: bold; }
       .criteria-disqualified { color: #721c24; font-weight: bold; }
-      #user-date { display: flex; align-items: center; color: #4c4c4c; padding: 0 3px; margin-bottom: 10px; font-weight: bold; }
-      #user-date .report-date-icon { margin-right: 8px; font-size: 16px; }
+      
+      /* Updated user-date styles */
+      #user-date { 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between;
+        color: #4c4c4c; 
+        padding: 0 3px; 
+        margin-bottom: 10px; 
+        font-weight: bold;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .date-section {
+        display: flex;
+        align-items: center;
+      }
+      #user-date .report-date-icon { 
+        margin-right: 8px; 
+        font-size: 16px; 
+      }
+      
+      /* Export button styles */
+      .export-controls-inline {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .export-btn-inline {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .export-btn-inline span {
+        margin-right: 4px;
+        font-size: 12px;
+      }
+      .export-btn-inline.export-csv {
+        background: #28a745;
+        color: white;
+      }
+      .export-btn-inline.export-csv:hover {
+        background: #218838;
+      }
+      .export-btn-inline.export-excel {
+        background: #17a2b8;
+        color: white;
+      }
+      .export-btn-inline.export-excel:hover {
+        background: #138496;
+      }
+      .export-btn-inline.export-pdf {
+        background: #dc3545;
+        color: white;
+      }
+      .export-btn-inline.export-pdf:hover {
+        background: #c82333;
+      }
+      
       .table-container {
         background: #fff; border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
         margin-top: 10px; max-height: 400px; overflow-y: auto;
@@ -141,25 +237,82 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       .loading-spinner { display: flex; justify-content: center; align-items: center; padding: 15px; }
       .spinner { width: 18px; height: 18px; border: 2px solid #f3f3f3; border-top: 2px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; }
       @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      
       @media (max-width: 768px) {
-        #user-date { justify-content: center; font-size: 12px; }
+        #user-date { 
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+        }
+        .date-section {
+          justify-content: center;
+          width: 100%;
+          font-size: 12px;
+        }
+        .export-controls-inline {
+          width: 100%;
+          justify-content: center;
+        }
+        .export-btn-inline {
+          font-size: 11px;
+          padding: 5px 10px;
+        }
         #employee-details { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 10px; }
         #dsr-table th, #dsr-table td { font-size: 12px; padding: 7px 3px; }
         .emp-label, .emp-value { font-size: 12px; }
         .rating-metrics { grid-template-columns: 1fr; }
+        
+        /* Mobile responsive for criteria section */
+        .rating-criteria {
+          flex-direction: column;
+          gap: 12px;
+        }
+        .criteria-badges {
+          align-items: flex-start;
+        }
+        .badge-row {
+          justify-content: flex-start;
+        }
+        .badge-label {
+          min-width: 70px;
+          text-align: left;
+        }
       }
     </style>
   `).appendTo(page.body);
 
-  // Layout (including rating section)
+  // Include SheetJS library for Excel export
+  if (typeof XLSX === "undefined") {
+    $("<script>")
+      .attr(
+        "src",
+        "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+      )
+      .appendTo("head");
+  }
+
+  // Layout (including rating section and export buttons)
   $(`
     <div>
-      <div id="user-date">
+    <div id="user-date">
+      <div class="date-section">
         <span class="report-date-icon">📅</span>
         <span>Report Date: ${frappe.datetime.str_to_user(
           frappe.datetime.now_date()
         )}</span>
       </div>
+      <div class="export-controls-inline" style="display: none;">
+        <button id="export-csv" class="export-btn-inline export-csv">
+          <span>📄</span> CSV
+        </button>
+        <button id="export-excel" class="export-btn-inline export-excel">
+          <span>📗</span> Excel
+        </button>
+        <button id="export-pdf" class="export-btn-inline export-pdf">
+          <span>📕</span> PDF
+        </button>
+      </div>
+    </div>
       <div id="employee-details">
         <div class="loading-spinner">
           <div class="spinner"></div>
@@ -168,17 +321,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       </div>
       <div class="rating-section" id="performance-rating" style="display: none;">
         <div class="rating-header">
-          <div class="rating-top-badges">
-            <span>
-              <strong>Qualification:</strong>
-              <span class="rating-badge" id="qualification-badge">-</span>
-            </span>
-            <span>
-              <strong>Rating:</strong>
-              <span class="rating-badge" id="performance-badge">-</span>
-            </span>
-          </div>
-          <div style="display: flex; align-items: center;">
+          <div class="rating-title">
             <span class="icon">⭐</span>
             Rating
           </div>
@@ -202,17 +345,29 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
           </div>
         </div>
         <div class="rating-criteria">
-          <b>Rating Criteria:</b>
-          <ul>
-            <li><span class="criteria-good">Good</span>: At least 1 converted.</li>
-            <li><span class="criteria-average">Average</span>: At least 4 follow-ups and none converted.</li>
-            <li><span class="criteria-bad">Bad</span>: Neither above.</li>
-          </ul>
-          <b>Qualification Criteria:</b>
-          <ul>
-            <li><span class="criteria-qualified">Qualified</span>: At least 10 leads.</li>
-            <li><span class="criteria-disqualified">Disqualified</span>: Less than 10 leads.</li>
-          </ul>
+          <div class="criteria-content">
+            <b>Rating Criteria:</b>
+            <ul>
+              <li><span class="criteria-good">Good</span>: At least 1 converted.</li>
+              <li><span class="criteria-average">Average</span>: At least 4 follow-ups and none converted.</li>
+              <li><span class="criteria-bad">Bad</span>: Neither above.</li>
+            </ul>
+            <b>Qualification Criteria:</b>
+            <ul>
+              <li><span class="criteria-qualified">Qualified</span>: At least 10 leads.</li>
+              <li><span class="criteria-disqualified">Disqualified</span>: Less than 10 leads.</li>
+            </ul>
+          </div>
+          <div class="criteria-badges">
+            <div class="badge-row">
+              <span class="badge-label">Qualification:</span>
+              <span class="rating-badge" id="qualification-badge">-</span>
+            </div>
+            <div class="badge-row">
+              <span class="badge-label">Rating:</span>
+              <span class="rating-badge" id="performance-badge">-</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="table-container">
@@ -239,6 +394,266 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       </div>
     </div>
   `).appendTo(page.body);
+
+  // Store data for export
+  let employeeData = {};
+  let processedLeads = [];
+  let currentRating = {};
+
+  // Export Functions
+  function exportToCSV(data, employeeData, rating) {
+    const csvContent = generateCSVContent(data, employeeData, rating);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `daily_sales_report_${frappe.datetime.now_date()}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    frappe.show_alert({
+      message: "CSV report exported successfully!",
+      indicator: "green",
+    });
+  }
+
+  function exportToExcel(data, employeeData, rating) {
+    if (typeof XLSX === "undefined") {
+      frappe.show_alert({
+        message: "Excel library is loading. Please try again in a moment.",
+        indicator: "orange",
+      });
+      return;
+    }
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+
+    // Employee Info Sheet
+    const empInfo = [
+      ["Daily Sales Report"],
+      ["Report Date", frappe.datetime.str_to_user(frappe.datetime.now_date())],
+      [""],
+      ["Employee Details"],
+      ["Employee ID", employeeData.name || "-"],
+      ["Employee Name", employeeData.employee_name || "-"],
+      ["Designation", employeeData.designation || "-"],
+      ["Branch", employeeData.branch || "-"],
+      ["Region", employeeData.custom_region || "-"],
+      ["Zone", employeeData.custom_zone || "-"],
+      [""],
+      ["Performance Rating"],
+      ["Total Leads", rating.totalLeads],
+      ["Follow-ups", rating.leadsWithFollowups],
+      ["Converted", rating.convertedLeads],
+      ["Not Interested", rating.notInterestedLeads],
+      ["Qualification", rating.qualification],
+      ["Performance", rating.performance],
+    ];
+
+    const empWs = XLSX.utils.aoa_to_sheet(empInfo);
+    XLSX.utils.book_append_sheet(wb, empWs, "Employee Info");
+
+    // Leads Data Sheet
+    const leadsData = data.map((lead) => [
+      lead.name,
+      lead.lead_name || "-",
+      lead.mobile_no || "-",
+      lead.source || "-",
+      lead.status || "-",
+      lead.followup_date || "-",
+    ]);
+
+    leadsData.unshift([
+      "Customer ID",
+      "Customer Name",
+      "Contact",
+      "Source",
+      "Status",
+      "Follow Up Date",
+    ]);
+
+    const leadsWs = XLSX.utils.aoa_to_sheet(leadsData);
+    XLSX.utils.book_append_sheet(wb, leadsWs, "Leads Data");
+
+    // Save file
+    XLSX.writeFile(wb, `daily_sales_report_${frappe.datetime.now_date()}.xlsx`);
+
+    frappe.show_alert({
+      message: "Excel report exported successfully!",
+      indicator: "green",
+    });
+  }
+
+  function exportToPDF(data, employeeData, rating) {
+    const printWindow = window.open("", "_blank");
+    const pdfContent = generatePDFContent(data, employeeData, rating);
+
+    printWindow.document.write(pdfContent);
+    printWindow.document.close();
+    printWindow.print();
+
+    frappe.show_alert({
+      message: "PDF export initiated!",
+      indicator: "blue",
+    });
+  }
+
+  function generateCSVContent(data, employeeData, rating) {
+    let csv = "Daily Sales Report\n";
+    csv += `Report Date,${frappe.datetime.str_to_user(
+      frappe.datetime.now_date()
+    )}\n\n`;
+
+    csv += "Employee Details\n";
+    csv += `Employee ID,${employeeData.name || "-"}\n`;
+    csv += `Employee Name,${employeeData.employee_name || "-"}\n`;
+    csv += `Designation,${employeeData.designation || "-"}\n`;
+    csv += `Branch,${employeeData.branch || "-"}\n`;
+    csv += `Region,${employeeData.custom_region || "-"}\n`;
+    csv += `Zone,${employeeData.custom_zone || "-"}\n\n`;
+
+    csv += "Performance Rating\n";
+    csv += `Total Leads,${rating.totalLeads}\n`;
+    csv += `Follow-ups,${rating.leadsWithFollowups}\n`;
+    csv += `Converted,${rating.convertedLeads}\n`;
+    csv += `Not Interested,${rating.notInterestedLeads}\n`;
+    csv += `Qualification,${rating.qualification}\n`;
+    csv += `Performance,${rating.performance}\n\n`;
+
+    csv += "Leads Data\n";
+    csv += "Customer ID,Customer Name,Contact,Source,Status,Follow Up Date\n";
+
+    data.forEach((lead) => {
+      csv += `"${lead.name}","${lead.lead_name || "-"}","${
+        lead.mobile_no || "-"
+      }","${lead.source || "-"}","${lead.status || "-"}","${
+        lead.followup_date || "-"
+      }"\n`;
+    });
+
+    return csv;
+  }
+
+  function generatePDFContent(data, employeeData, rating) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Daily Sales Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .section { margin-bottom: 25px; }
+          .section h3 { border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+          .info-table, .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          .info-table td, .data-table th, .data-table td { 
+            border: 1px solid #ddd; padding: 8px; text-align: left; 
+          }
+          .data-table th { background-color: #f8f9fa; font-weight: bold; }
+          .rating-section { background: #f8f9fa; padding: 15px; border-radius: 5px; }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Daily Sales Report</h1>
+          <p><strong>Report Date:</strong> ${frappe.datetime.str_to_user(
+            frappe.datetime.now_date()
+          )}</p>
+        </div>
+        
+        <div class="section">
+          <h3>Employee Details</h3>
+          <table class="info-table">
+            <tr><td><strong>Employee ID:</strong></td><td>${
+              employeeData.name || "-"
+            }</td></tr>
+            <tr><td><strong>Employee Name:</strong></td><td>${
+              employeeData.employee_name || "-"
+            }</td></tr>
+            <tr><td><strong>Designation:</strong></td><td>${
+              employeeData.designation || "-"
+            }</td></tr>
+            <tr><td><strong>Branch:</strong></td><td>${
+              employeeData.branch || "-"
+            }</td></tr>
+            <tr><td><strong>Region:</strong></td><td>${
+              employeeData.custom_region || "-"
+            }</td></tr>
+            <tr><td><strong>Zone:</strong></td><td>${
+              employeeData.custom_zone || "-"
+            }</td></tr>
+          </table>
+        </div>
+        
+        <div class="section">
+          <h3>Performance Rating</h3>
+          <div class="rating-section">
+            <p><strong>Qualification:</strong> ${
+              rating.qualification
+            } | <strong>Performance:</strong> ${rating.performance}</p>
+            <table class="info-table">
+              <tr>
+                <td><strong>Total Leads:</strong> ${rating.totalLeads}</td>
+                <td><strong>Follow-ups:</strong> ${
+                  rating.leadsWithFollowups
+                }</td>
+              </tr>
+              <tr>
+                <td><strong>Converted:</strong> ${rating.convertedLeads}</td>
+                <td><strong>Not Interested:</strong> ${
+                  rating.notInterestedLeads
+                }</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h3>Leads Data</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Customer ID</th>
+                <th>Customer Name</th>
+                <th>Contact</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Follow Up Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data
+                .map(
+                  (lead) => `
+                <tr>
+                  <td>${lead.name}</td>
+                  <td>${lead.lead_name || "-"}</td>
+                  <td>${lead.mobile_no || "-"}</td>
+                  <td>${lead.source || "-"}</td>
+                  <td>${lead.status || "-"}</td>
+                  <td>${lead.followup_date || "-"}</td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 
   // Status badge helper
   function getStatusBadge(status) {
@@ -332,6 +747,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     .then((r) => {
       if (r.message) {
         let emp = r.message;
+        employeeData = emp; // Store for export
         $("#employee-details").html(`
         <div class="emp-field"><span class="emp-label">Employee ID</span>
     <div class="emp-value">${emp.name || "-"}</div></div>
@@ -343,12 +759,13 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
         <div class="emp-field"><span class="emp-label branch">Branch</span><div class="emp-value">${
           emp.branch || "-"
         }</div></div>
-        <div class="emp-field"><span class="emp-label zone">Zone</span><div class="emp-value">${
-          emp.custom_zone || "-"
-        }</div></div>
+      
         <div class="emp-field"><span class="emp-label region">Region</span><div class="emp-value">${
           emp.custom_region || "-"
         }</div></div>
+          <div class="emp-field"><span class="emp-label zone">Zone</span><div class="emp-value">${
+            emp.custom_zone || "-"
+          }</div></div>
       `);
       } else {
         $("#employee-details").html(
@@ -399,7 +816,6 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     limit: 100,
   });
 
-  let processedLeads = [];
   let rows = "";
 
   for (const l of leads) {
@@ -426,9 +842,11 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
 
   if (processedLeads.length > 0) {
     const rating = calculateRating(processedLeads);
+    currentRating = rating; // Store for export
     updateRatingDisplay(rating);
+    $(".export-controls-inline").show(); // Show export controls
   } else {
-    updateRatingDisplay({
+    currentRating = {
       totalLeads: 0,
       convertedLeads: 0,
       notInterestedLeads: 0,
@@ -437,6 +855,21 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
       qualificationClass: "rating-disqualified",
       performance: "Bad",
       performanceClass: "rating-bad",
-    });
+    };
+    updateRatingDisplay(currentRating);
+    $(".export-controls-inline").show(); // Show export controls even with no data
   }
+
+  // Add event listeners for export buttons
+  $("#export-csv").on("click", function () {
+    exportToCSV(processedLeads, employeeData, currentRating);
+  });
+
+  $("#export-excel").on("click", function () {
+    exportToExcel(processedLeads, employeeData, currentRating);
+  });
+
+  $("#export-pdf").on("click", function () {
+    exportToPDF(processedLeads, employeeData, currentRating);
+  });
 };
