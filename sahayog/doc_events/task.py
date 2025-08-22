@@ -7,8 +7,25 @@ from frappe.core.doctype.file.file import File
 from sahayog.doc_events.project import update_branch_status
 from frappe.utils import get_url
 
+def after_insert_task(doc, method):
+    if not doc.project or not doc.subject:
+        return
 
+    project = frappe.get_doc("Project", doc.project)
+    if not project.project_template:
+        return
 
+    template = frappe.get_doc("Project Template", project.project_template)
+
+    for row in template.tasks:
+        if row.subject == doc.subject and row.custom_default_assignee:
+            assignees = [u.strip() for u in row.custom_default_assignee.split("\n") if u.strip()]
+            valid_users = [u for u in assignees if frappe.db.exists("User", u)]
+
+            if valid_users:
+                # update after insert
+                doc.db_set("_assign", json.dumps(valid_users))
+            break
 
 def create_letter_of_intent(doc, method):
     project = doc.project

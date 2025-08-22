@@ -116,6 +116,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_project_template_task.execute",
     # "sahayog.patches.fixtures.add_region.execute",
     # "sahayog.patches.fixtures.add_division.execute",
     # "sahayog.patches.fixtures.add_zone.execute",
@@ -250,7 +251,8 @@ doc_events = {
              "sahayog.doc_events.task.update_lto_training_table"
         ],
         "after_insert": [
-            "sahayog.doc_events.task.create_letter_of_intent"
+            "sahayog.doc_events.task.create_letter_of_intent",
+            "sahayog.doc_events.task.after_insert_task"
         ],
         "before_save": [
             "sahayog.doc_events.task.fetch_manpower_settings",
