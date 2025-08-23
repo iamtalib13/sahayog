@@ -189,3 +189,34 @@ def remove_task_assigned_user(task_name, users):
         frappe.db.commit()
 
     return {"assigned": new_assign, "removed": removed_users}
+
+
+@frappe.whitelist()
+def get_assigned_task_count(user=None):
+    """
+    Get count of tasks where the user is in _assign field.
+    Throws frappe exception if no task assigned.
+    """
+    if not user:
+        user = frappe.session.user
+
+    try:
+        # Admin / Managers always have access
+        allowed_roles = ["System Manager", "Task Manager", "Project Manager"]
+        user_roles = frappe.get_roles(user)
+        if any(role in allowed_roles for role in user_roles):
+            return frappe.db.count('Task')  # All tasks
+
+        # Count tasks where user is assigned
+        count = frappe.db.count('Task', {
+            '_assign': ['like', f'%"{user}"%']
+        })
+
+        if count == 0:
+            frappe.throw("No tasks assigned to you")
+
+        return count
+
+    except Exception as e:
+        frappe.log_error(f"Error getting assigned task count: {str(e)}")
+        return 0
