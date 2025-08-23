@@ -180,7 +180,7 @@ permission_query_conditions = {
 	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
-    
+    "Task": "sahayog.permissions.get_task_permission",
 }
 #
 # has_permission = {
