@@ -1,5 +1,4 @@
 // Create a reusable assignment function
-console.log("AssignMate JS loaded");
 function setupUserAssignment(frm, doctype, docname) {
   if (!docname || frm.doc.__islocal) return;
 
