@@ -58,6 +58,9 @@ doctype_js = {
     "Appointment" : "scrm/controller/appointment/appointment.js"
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
+app_include_js = [
+    "js/assignmate.js"
+]
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
