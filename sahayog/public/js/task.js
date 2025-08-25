@@ -1401,12 +1401,9 @@ function render_manpower_summary(frm) {
   frm.fields_dict.manpower_summary_html.$wrapper.html(html);
 }
 
-// Assignment of users to Task
 frappe.ui.form.on("Task", {
   refresh(frm) {
     if (!frm.doc.name || frm.doc.__islocal) return;
-    frappe.require(["assets/sahayog/js/assignmate.js"], () => {
-      setupUserAssignment(frm, "Task", frm.doc.name);
-    });
+    setupUserAssignment(frm, "Task", frm.doc.name);
   },
 });

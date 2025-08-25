@@ -59,7 +59,7 @@ doctype_js = {
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = [
-    "js/assignmate.js"
+    "/assets/sahayog/js/assignmate.js"
 ]
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
