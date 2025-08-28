@@ -7,6 +7,7 @@
   "project_type": null,
   "tasks": [
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -14,6 +15,7 @@
     "task": "TASK-2025-00091"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -21,6 +23,7 @@
     "task": "TASK-2025-00092"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -28,6 +31,7 @@
     "task": "TASK-2025-00093"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -35,6 +39,7 @@
     "task": "TASK-2025-00094"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -42,6 +47,7 @@
     "task": "TASK-2025-00095"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -49,6 +55,7 @@
     "task": "TASK-2025-00096"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -56,6 +63,7 @@
     "task": "TASK-2025-00097"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -63,6 +71,7 @@
     "task": "TASK-2025-00098"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
@@ -70,6 +79,7 @@
     "task": "TASK-2025-00099"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
