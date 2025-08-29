@@ -5,7 +5,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     single_column: true,
   });
 
-  // Complete CSS styles with infinite scroll
+  // Complete CSS styles with infinite scroll (unchanged)
   $(`
     <style>
       .dsr-master-content {
@@ -87,28 +87,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       }
       
-      .btn-primary {
-        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        color: white;
-      }
-      
-      .btn-primary:hover {
-        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,123,255,0.3);
-      }
-      
-      .btn-success {
-        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-        color: white;
-      }
-      
-      .btn-success:hover {
-        background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(40,167,69,0.3);
-      }
-      
       .loading-spinner {
         text-align: center;
         padding: 50px 20px;
@@ -136,7 +114,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         margin-bottom: 20px;
         opacity: 0.6;
       }
-
+      
       /* BATCH LOADING: Infinite scroll container */
       .lead-table-container {
         max-height: 600px;
@@ -444,7 +422,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         }
       }, 100);
 
-      loadMasterDSRDataOptimized();
+      debouncedLoad();
     },
   });
 
@@ -479,7 +457,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      loadMasterDSRDataOptimized();
+      debouncedLoad();
     },
   });
 
@@ -507,25 +485,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     label: __("Branch"),
     fieldtype: "Link",
     options: "Branch",
-    change: () => loadMasterDSRDataOptimized(),
+    change: () => debouncedLoad(),
   });
-
-  // Add action buttons
-  // page.set_primary_action(
-  //   "📊 Generate Report",
-  //   () => loadMasterDSRDataOptimized(),
-  //   "fa fa-chart-bar"
-  // );
-  // page.add_inner_button(
-  //   "📥 Export Excel",
-  //   () => exportToExcel(),
-  //   "fa fa-download"
-  // );
-  // page.add_inner_button(
-  //   "🔄 Clear Filters",
-  //   () => clearFilters(),
-  //   "fa fa-refresh"
-  // );
 
   // Content area with infinite scroll structure
   const content_area = $(`
@@ -533,7 +494,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       <div class="summary-info" id="period-summary" style="display: none;"></div>
       <div class="table-section">
         <div class="table-header">
-          <h3 class="table-title">📈 DSR Master Report (Dynamic + Batch Loading)</h3>
+          <h3 class="table-title">📈 DSR Master Report (Optimized + Batch Loading)</h3>
           <div class="table-actions">
             <span id="report-date" style="font-size: 12px; color: #6c757d; font-weight: 500;">
               📅 Report Generated: ${frappe.datetime.str_to_user(
@@ -579,18 +540,30 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     </div>
   `).appendTo(page.body);
 
-  // BATCH LOADING VARIABLES - 20 employees at a time
+  // OPTIMIZED VARIABLES
   let masterData = [];
-  let employeeDataMap = {};
+  let employeeDataMap = new Map(); // Use Map for better performance
   let currentEmployees = [];
   let totalEmployeeCount = 0;
   let isLoading = false;
   let hasMoreEmployees = true;
   let currentPage = 1;
-  const pageSize = 20; // BATCH SIZE: 20 employees per batch
+  const pageSize = 20;
   let scrollTimeout;
   let allDatesInPeriod = [];
-  let allProcessedData = []; // Store all processed employee data
+  let allProcessedData = [];
+
+  // PERFORMANCE OPTIMIZATION: Add caching and debouncing
+  const ratingCache = new Map();
+  let loadTimeout;
+
+  // Debounced loading function
+  const debouncedLoad = function () {
+    clearTimeout(loadTimeout);
+    loadTimeout = setTimeout(() => {
+      loadMasterDSRDataOptimized();
+    }, 500);
+  };
 
   // Helper function to generate consistent date range
   function generateDateRangeFromDates(startDate, endDate) {
@@ -653,7 +626,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     `);
   }
 
-  // Function to calculate DAILY rating
+  // OPTIMIZED: Function to calculate DAILY rating with caching
   function calculateDailyRating(dailyLeads) {
     const totalLeads = dailyLeads.length;
 
@@ -667,35 +640,55 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       };
     }
 
-    const convertedLeads = dailyLeads.filter(
+    // Create cache key for similar lead patterns
+    const convertedCount = dailyLeads.filter(
       (l) => (l.status || "").toLowerCase() === "converted"
     ).length;
-    const leadsWithFollowups = dailyLeads.filter((l) => l.has_followup).length;
+    const followupCount = dailyLeads.filter((l) => l.has_followup).length;
+
+    const cacheKey = `${totalLeads}_${convertedCount}_${followupCount}`;
+
+    if (ratingCache.has(cacheKey)) {
+      const cached = ratingCache.get(cacheKey);
+      return {
+        ...cached,
+        totalLeads: totalLeads,
+        convertedLeads: convertedCount,
+        leadsWithFollowups: followupCount,
+      };
+    }
 
     const qualification = totalLeads >= 10 ? "Qualified" : "Disqualified";
 
     let performance = "Bad";
-    if (convertedLeads >= 1) {
+    if (convertedCount >= 1) {
       performance = "Good";
-    } else if (leadsWithFollowups >= 4) {
+    } else if (followupCount >= 4) {
       performance = "Average";
     }
 
-    return {
+    const result = {
       totalLeads,
-      convertedLeads,
-      leadsWithFollowups,
+      convertedLeads: convertedCount,
+      leadsWithFollowups: followupCount,
       qualification,
       performance,
     };
+
+    // Cache the performance calculation
+    ratingCache.set(cacheKey, {
+      qualification: result.qualification,
+      performance: result.performance,
+    });
+
+    return result;
   }
 
-  // Setup infinite scroll for batch loading (20 employees at a time)
+  // Setup infinite scroll for batch loading
   function setupInfiniteScroll() {
     const tableContainer = document.querySelector(".lead-table-container");
     if (!tableContainer) return;
 
-    // Remove existing listener to prevent duplicates
     tableContainer.removeEventListener("scroll", handleScroll);
 
     function handleScroll() {
@@ -726,7 +719,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         `📄 Rendering batch ${currentPage} (${pageSize} employees)...`
       );
 
-      // Get the current batch from allProcessedData
       const startIndex = (currentPage - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       const batchEmployees = allProcessedData.slice(startIndex, endIndex);
@@ -746,16 +738,13 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         console.log("✅ Last batch loaded");
       }
 
-      // Add to current employees list
       if (currentPage === 1) {
         currentEmployees = batchEmployees;
       } else {
         currentEmployees = [...currentEmployees, ...batchEmployees];
       }
 
-      // Render the updated list
       renderEmployeeTable(currentEmployees);
-
       currentPage++;
     } catch (error) {
       console.error("❌ Error rendering next batch:", error);
@@ -813,23 +802,221 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     if (employees.length > 0) setupInfiniteScroll();
   }
 
-  // DYNAMIC: Main function with dynamic limits and batch processing
+  // OPTIMIZED: Preprocess data with better data structures
+  function preprocessDataOptimized(allLeads, employees, appointments) {
+    console.log("🚀 Starting optimized preprocessing...");
+
+    // Create lookup maps for O(1) access
+    const employeeMap = new Map();
+    employees.forEach((emp) => {
+      employeeMap.set(emp.user_id, {
+        name: emp.name,
+        employee_name: emp.employee_name,
+        branch: emp.branch,
+      });
+    });
+
+    // Create appointment lookup for faster checking
+    const appointmentSet = new Set(appointments.map((apt) => apt.party));
+
+    // Group leads by employee efficiently
+    const employeeLeadsMap = new Map();
+
+    allLeads.forEach((lead) => {
+      if (!lead.lead_owner || !employeeMap.has(lead.lead_owner)) return;
+
+      // Add followup info directly
+      lead.has_followup = appointmentSet.has(lead.name);
+
+      if (!employeeLeadsMap.has(lead.lead_owner)) {
+        employeeLeadsMap.set(lead.lead_owner, []);
+      }
+      employeeLeadsMap.get(lead.lead_owner).push(lead);
+    });
+
+    return { employeeMap, employeeLeadsMap };
+  }
+
+  // OPTIMIZED: Process employees in batches to prevent UI blocking
+  async function processEmployeesInBatches(
+    employeeMap,
+    employeeLeadsMap,
+    allDatesInPeriod
+  ) {
+    const BATCH_SIZE = 10; // Process 10 employees at a time
+    const allEmployees = Array.from(employeeMap.keys());
+    const processedData = [];
+
+    for (let i = 0; i < allEmployees.length; i += BATCH_SIZE) {
+      const batchEmployees = allEmployees.slice(i, i + BATCH_SIZE);
+
+      // Show progress
+      const progress = Math.round(65 + (i / allEmployees.length) * 25);
+      showLoadingWithProgress(
+        `Processing employees ${i + 1}-${Math.min(
+          i + BATCH_SIZE,
+          allEmployees.length
+        )}...`,
+        progress
+      );
+
+      // Process batch
+      const batchResults = processBatch(
+        batchEmployees,
+        employeeMap,
+        employeeLeadsMap,
+        allDatesInPeriod
+      );
+      processedData.push(...batchResults);
+
+      // Allow UI to update between batches
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    return processedData;
+  }
+
+  function processBatch(
+    employeeIds,
+    employeeMap,
+    employeeLeadsMap,
+    allDatesInPeriod
+  ) {
+    const results = [];
+
+    employeeIds.forEach((employeeId) => {
+      const employee = employeeMap.get(employeeId);
+      const employeeLeads = employeeLeadsMap.get(employeeId) || [];
+
+      // Group leads by date efficiently using Map
+      const leadsByDate = new Map();
+      employeeLeads.forEach((lead) => {
+        const dateKey = new Date(lead.creation).toISOString().split("T")[0];
+        if (!leadsByDate.has(dateKey)) {
+          leadsByDate.set(dateKey, []);
+        }
+        leadsByDate.get(dateKey).push(lead);
+      });
+
+      // Calculate metrics for all dates
+      const metrics = calculateEmployeeMetricsFast(
+        leadsByDate,
+        allDatesInPeriod
+      );
+
+      results.push({
+        branch: employee.branch || "-",
+        employee_code: employee.name,
+        employee_name: employee.employee_name || "-",
+        ...metrics,
+        total_leads: employeeLeads.length,
+        working_days: leadsByDate.size,
+        total_days: allDatesInPeriod.length,
+      });
+    });
+
+    return results;
+  }
+
+  // OPTIMIZED: Fast metrics calculation
+  function calculateEmployeeMetricsFast(leadsByDate, allDatesInPeriod) {
+    let qualifiedDays = 0;
+    let disqualifiedDays = 0;
+    let goodRatingDays = 0;
+    let averageRatingDays = 0;
+    let badRatingDays = 0;
+
+    // Use for...of for better performance with large arrays
+    for (const dateKey of allDatesInPeriod) {
+      const dailyLeads = leadsByDate.get(dateKey) || [];
+      const dailyRating = calculateDailyRating(dailyLeads);
+
+      // Increment counters directly (faster than arrays)
+      if (dailyRating.qualification === "Qualified") {
+        qualifiedDays++;
+      } else {
+        disqualifiedDays++;
+      }
+
+      if (dailyRating.performance === "Good") {
+        goodRatingDays++;
+      } else if (dailyRating.performance === "Average") {
+        averageRatingDays++;
+      } else {
+        badRatingDays++;
+      }
+    }
+
+    return {
+      qualified: qualifiedDays,
+      disqualified: disqualifiedDays,
+      bad_rating: badRatingDays,
+      average_rating: averageRatingDays,
+      good_rating: goodRatingDays,
+    };
+  }
+
+  // OPTIMIZED: Load data efficiently with better chunking
+  async function loadDataInChunks(doctype, filters, fields, totalCount) {
+    if (totalCount <= 5000) {
+      // Load all at once for smaller datasets
+      return await frappe.db.get_list(doctype, {
+        filters,
+        fields,
+        limit: 0,
+        order_by: doctype === "Lead" ? "creation desc" : undefined,
+      });
+    } else {
+      // Load in chunks for large datasets
+      const chunks = Math.ceil(totalCount / 5000);
+      let allRecords = [];
+
+      for (let i = 0; i < chunks; i++) {
+        const chunkRecords = await frappe.db.get_list(doctype, {
+          filters,
+          fields,
+          limit: 5000,
+          limit_start: i * 5000,
+          order_by: doctype === "Lead" ? "creation desc" : undefined,
+        });
+
+        allRecords = allRecords.concat(chunkRecords);
+
+        // Allow UI to breathe between chunks
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      return allRecords;
+    }
+  }
+
+  // OPTIMIZED: Reset data structures with cleanup
+  function resetDataStructures() {
+    masterData = [];
+    employeeDataMap = new Map();
+    currentEmployees = [];
+    allProcessedData = [];
+
+    // Clear caches
+    ratingCache.clear();
+
+    // Reset pagination
+    currentPage = 1;
+    hasMoreEmployees = true;
+    isLoading = false;
+    totalEmployeeCount = 0;
+
+    console.log("🧹 Data structures reset and memory cleared");
+  }
+
+  // MAIN OPTIMIZED FUNCTION
   async function loadMasterDSRDataOptimized() {
-    console.log(
-      "=== Starting DYNAMIC DSR Master Data Load (Batch Rendering - 20 at a time) ==="
-    );
-    showLoading("Initializing data load...");
+    console.log("=== Starting OPTIMIZED DSR Master Data Load ===");
+    showLoading("Initializing optimized data load...");
 
     try {
-      // RESET: Clear data structures completely
-      masterData = [];
-      employeeDataMap = {};
-      currentEmployees = [];
-      totalEmployeeCount = 0;
-      currentPage = 1;
-      hasMoreEmployees = true;
-      isLoading = false;
-      allProcessedData = [];
+      // Reset everything
+      resetDataStructures();
 
       const leadFilters = getLeadFilters();
       const startDate = page.fields_dict.start_date.get_value();
@@ -851,303 +1038,125 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
       updatePeriodSummary(startDate, endDate, totalDays);
 
-      // DYNAMIC: Get actual lead count first, then fetch accordingly
-      const totalLeadCount = await frappe.db.count("Lead", {
-        filters: leadFilters,
-      });
+      // Get counts first for optimization decisions
+      const [totalLeadCount, totalEmpCount] = await Promise.all([
+        frappe.db.count("Lead", { filters: leadFilters }),
+        frappe.db.count("Employee", {
+          filters: {
+            user_id: ["is", "set"],
+            ...(page.fields_dict.branch_filter.get_value()
+              ? { branch: page.fields_dict.branch_filter.get_value() }
+              : {}),
+          },
+        }),
+      ]);
 
-      console.log("2. Total Leads Count:", totalLeadCount);
-      showLoadingWithProgress("Fetching leads data...", 10);
+      console.log(
+        "2. Data Counts - Leads:",
+        totalLeadCount,
+        "Employees:",
+        totalEmpCount
+      );
 
       if (totalLeadCount === 0) {
         renderNoData(`No leads found for the selected date range`);
         return;
       }
 
-      // DYNAMIC: Fetch leads based on actual count
-      let allLeads = [];
-      const leadBatchSize = Math.min(5000, totalLeadCount); // Max 5000 per batch for memory efficiency
-      const leadBatches = Math.ceil(totalLeadCount / leadBatchSize);
+      showLoadingWithProgress("Loading data in parallel...", 15);
+
+      // Load all data in parallel with optimized chunking
+      const [allLeads, allEmployees, allAppointments] = await Promise.all([
+        loadDataInChunks(
+          "Lead",
+          leadFilters,
+          ["name", "lead_owner", "status", "creation", "custom_branch"],
+          totalLeadCount
+        ),
+        loadDataInChunks(
+          "Employee",
+          {
+            user_id: ["is", "set"],
+            ...(page.fields_dict.branch_filter.get_value()
+              ? { branch: page.fields_dict.branch_filter.get_value() }
+              : {}),
+          },
+          ["name", "employee_name", "branch", "user_id"],
+          totalEmpCount
+        ),
+        frappe.db.get_list("Appointment", {
+          filters: {
+            appointment_with: "Lead",
+            status: ["!=", "Cancelled"],
+          },
+          fields: ["party"],
+          limit: 0,
+        }),
+      ]);
 
       console.log(
-        `3. Fetching ${totalLeadCount} leads in ${leadBatches} batches of ${leadBatchSize}`
+        "3. Data Loaded - Leads:",
+        allLeads.length,
+        "Employees:",
+        allEmployees.length,
+        "Appointments:",
+        allAppointments.length
       );
 
-      // Fetch leads in batches if dataset is large
-      for (let batch = 0; batch < leadBatches; batch++) {
-        const batchProgress = 10 + (batch / leadBatches) * 20; // 10-30% range
-        showLoadingWithProgress(
-          `Fetching leads batch ${batch + 1}/${leadBatches}...`,
-          Math.round(batchProgress)
-        );
-
-        const batchLeads = await frappe.db.get_list("Lead", {
-          filters: leadFilters,
-          fields: ["name", "lead_owner", "status", "creation", "custom_branch"],
-          limit: leadBatchSize,
-          limit_start: batch * leadBatchSize,
-          order_by: "creation desc",
-        });
-
-        allLeads = [...allLeads, ...batchLeads];
-        console.log(
-          `Lead Batch ${batch + 1}: Fetched ${
-            batchLeads.length
-          } leads (Total: ${allLeads.length})`
-        );
-      }
-
-      console.log("4. All Leads fetched:", allLeads.length);
-      showLoadingWithProgress("Processing employee data...", 35);
-
+      // Filter employees who have leads
       const leadsWithOwners = allLeads.filter((lead) => lead.lead_owner);
-      const uniqueLeadOwners = [
-        ...new Set(leadsWithOwners.map((lead) => lead.lead_owner)),
-      ];
+      const uniqueLeadOwners = new Set(
+        leadsWithOwners.map((lead) => lead.lead_owner)
+      );
+      const employeesWithLeads = allEmployees.filter((emp) =>
+        uniqueLeadOwners.has(emp.user_id)
+      );
 
-      console.log("5. Unique Lead Owners:", uniqueLeadOwners.length);
-
-      if (uniqueLeadOwners.length === 0) {
-        renderNoData("No leads found with assigned owners");
+      if (employeesWithLeads.length === 0) {
+        renderNoData("No employees found with assigned leads");
         return;
       }
 
-      // DYNAMIC: Get actual employee count first
-      const branchFilter = page.fields_dict.branch_filter.get_value();
-      const employeeFilters = { user_id: ["in", uniqueLeadOwners] };
-      if (branchFilter) employeeFilters.branch = branchFilter;
+      showLoadingWithProgress("Preprocessing data structures...", 40);
 
-      const totalEmpCount = await frappe.db.count("Employee", {
-        filters: employeeFilters,
-      });
-
-      console.log("6. Total Employee Count:", totalEmpCount);
-      showLoadingWithProgress("Fetching employee data...", 40);
-
-      if (totalEmpCount === 0) {
-        renderNoData("No employees found matching criteria");
-        return;
-      }
-
-      // DYNAMIC: Fetch employees based on actual count
-      let employees = [];
-      const empBatchSize = Math.min(500, totalEmpCount); // Max 500 per batch
-      const empBatches = Math.ceil(totalEmpCount / empBatchSize);
-
-      console.log(
-        `7. Fetching ${totalEmpCount} employees in ${empBatches} batches of ${empBatchSize}`
-      );
-
-      // Fetch employees in batches if needed
-      for (let batch = 0; batch < empBatches; batch++) {
-        const batchProgress = 40 + (batch / empBatches) * 10; // 40-50% range
-        showLoadingWithProgress(
-          `Fetching employees batch ${batch + 1}/${empBatches}...`,
-          Math.round(batchProgress)
-        );
-
-        const batchEmployees = await frappe.db.get_list("Employee", {
-          filters: employeeFilters,
-          fields: ["name", "employee_name", "branch", "user_id"],
-          limit: empBatchSize,
-          limit_start: batch * empBatchSize,
-        });
-
-        employees = [...employees, ...batchEmployees];
-        console.log(
-          `Employee Batch ${batch + 1}: Fetched ${
-            batchEmployees.length
-          } employees (Total: ${employees.length})`
-        );
-      }
-
-      console.log("8. All Employees fetched:", employees.length);
-
-      // DYNAMIC: Fetch appointments based on lead count
-      const allLeadNames = allLeads.map((l) => l.name);
-      const appointmentBatchSize = Math.min(2000, allLeadNames.length);
-      const appointmentBatches = Math.ceil(
-        allLeadNames.length / appointmentBatchSize
+      // Preprocess data efficiently
+      const { employeeMap, employeeLeadsMap } = preprocessDataOptimized(
+        leadsWithOwners,
+        employeesWithLeads,
+        allAppointments
       );
 
       console.log(
-        `9. Fetching appointments for ${allLeadNames.length} leads in ${appointmentBatches} batches`
+        "4. Preprocessed - Employee Map:",
+        employeeMap.size,
+        "Employee Leads Map:",
+        employeeLeadsMap.size
       );
 
-      let globalFollowupMap = {};
+      showLoadingWithProgress("Processing employee metrics...", 50);
 
-      // Fetch appointments in batches
-      for (let batch = 0; batch < appointmentBatches; batch++) {
-        const batchProgress = 50 + (batch / appointmentBatches) * 15; // 50-65% range
-        showLoadingWithProgress(
-          `Fetching appointments batch ${batch + 1}/${appointmentBatches}...`,
-          Math.round(batchProgress)
-        );
-
-        const startIdx = batch * appointmentBatchSize;
-        const endIdx = startIdx + appointmentBatchSize;
-        const batchLeadNames = allLeadNames.slice(startIdx, endIdx);
-
-        try {
-          const appointments = await frappe.db.get_list("Appointment", {
-            filters: {
-              party: ["in", batchLeadNames],
-              appointment_with: "Lead",
-              status: ["!=", "Cancelled"],
-            },
-            fields: ["party"],
-            limit: 0, // No limit for appointments within batch
-          });
-
-          appointments.forEach((apt) => {
-            globalFollowupMap[apt.party] = true;
-          });
-
-          console.log(
-            `Appointment Batch ${batch + 1}: Processed ${
-              appointments.length
-            } appointments`
-          );
-        } catch (error) {
-          console.warn(`Appointment batch ${batch + 1} failed:`, error);
-        }
-      }
-
-      console.log(
-        "10. Total appointments processed:",
-        Object.keys(globalFollowupMap).length
+      // Process in batches to prevent UI blocking
+      const processedData = await processEmployeesInBatches(
+        employeeMap,
+        employeeLeadsMap,
+        dates
       );
 
-      // Process employees with progress tracking and deduplication
-      let processedCount = 0;
-      const totalEmployees = employees.length;
-
-      for (let i = 0; i < employees.length; i++) {
-        const employee = employees[i];
-
-        // DEDUPLICATION: Skip if employee already processed
-        if (employeeDataMap[employee.name]) {
-          console.log(`⚠️ Skipping duplicate employee: ${employee.name}`);
-          continue;
-        }
-
-        processedCount++;
-        const progress = Math.round(
-          65 + (processedCount / totalEmployees) * 25
-        ); // 65-90% range
-
-        console.log(
-          `11. Processing employee ${processedCount}/${totalEmployees}: ${employee.name} (${employee.user_id})`
-        );
-
-        showLoadingWithProgress(
-          `Processing ${processedCount}/${totalEmployees} employees`,
-          progress
-        );
-
-        const employeeLeads = allLeads.filter(
-          (lead) => lead.lead_owner === employee.user_id
-        );
-
-        // Use pre-fetched followup data instead of individual queries
-        employeeLeads.forEach((lead) => {
-          lead.has_followup = !!globalFollowupMap[lead.name];
-        });
-
-        // Group leads by date using consistent ISO format
-        const leadsByDate = {};
-        employeeLeads.forEach((lead) => {
-          const dateObj = new Date(lead.creation);
-          const dateKey = dateObj.toISOString().split("T")[0]; // YYYY-MM-DD
-
-          if (!leadsByDate[dateKey]) {
-            leadsByDate[dateKey] = [];
-          }
-          leadsByDate[dateKey].push(lead);
-        });
-
-        const workingDays = Object.keys(leadsByDate).length;
-
-        // Initialize counters
-        let qualifiedDays = 0;
-        let disqualifiedDays = 0;
-        let goodRatingDays = 0;
-        let averageRatingDays = 0;
-        let badRatingDays = 0;
-        let totalLeads = employeeLeads.length;
-
-        // Process every day in the period
-        for (const dateKey of allDatesInPeriod) {
-          const dailyLeads = leadsByDate[dateKey] || [];
-          const dailyRating = calculateDailyRating(dailyLeads);
-
-          // Accumulate ratings (exactly once per day)
-          if (dailyRating.qualification === "Qualified") {
-            qualifiedDays += 1;
-          } else {
-            disqualifiedDays += 1;
-          }
-
-          if (dailyRating.performance === "Good") {
-            goodRatingDays += 1;
-          } else if (dailyRating.performance === "Average") {
-            averageRatingDays += 1;
-          } else {
-            badRatingDays += 1;
-          }
-        }
-
-        // VERIFICATION: Check totals (must equal period days)
-        const totalQualificationDays = qualifiedDays + disqualifiedDays;
-        const totalRatingDays =
-          goodRatingDays + averageRatingDays + badRatingDays;
-
-        if (
-          totalQualificationDays !== totalDays ||
-          totalRatingDays !== totalDays
-        ) {
-          console.error(
-            `❌ Count mismatch for ${employee.name}: Q+D=${totalQualificationDays}, G+A+B=${totalRatingDays}, Expected=${totalDays}`
-          );
-        } else {
-          console.log(
-            `✅ Verified counts for ${employee.name}: All totals = ${totalDays} days`
-          );
-        }
-
-        // Store in Map to prevent duplicates
-        employeeDataMap[employee.name] = {
-          branch: employee.branch || "-",
-          employee_code: employee.name,
-          employee_name: employee.employee_name || "-",
-          qualified: qualifiedDays,
-          disqualified: disqualifiedDays,
-          bad_rating: badRatingDays,
-          average_rating: averageRatingDays,
-          good_rating: goodRatingDays,
-          total_leads: totalLeads,
-          working_days: workingDays,
-          total_days: allDatesInPeriod.length,
-        };
-      }
-
-      // Convert Map to Array (ensures unique employees)
-      allProcessedData = Object.values(employeeDataMap);
-
-      // Sort by total leads descending (same as before)
-      allProcessedData.sort((a, b) => b.total_leads - a.total_leads);
-
+      // Sort by total leads descending
+      allProcessedData = processedData.sort(
+        (a, b) => b.total_leads - a.total_leads
+      );
       totalEmployeeCount = allProcessedData.length;
 
-      showLoadingWithProgress("Starting batch rendering...", 95);
+      showLoadingWithProgress("Initializing table...", 90);
 
       console.log(
-        "12. Final processed data (NO DUPLICATES):",
+        "5. Final processed data:",
         allProcessedData.length,
         "unique employees"
       );
 
-      // Clear the loading container and start batch rendering
+      // Initialize table structure
       $(".lead-table-container").html(`
         <table class="table table-sm" id="master-dsr-table">
           <thead>
@@ -1199,7 +1208,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         <strong>📅 Period:</strong> ${startDateFormatted} to ${endDateFormatted} (${totalDays} days)${branchText} | 
         <strong>📋 Note:</strong> All ${totalDays} days are included in calculations. 
         Non-working days (0 leads) count as Disqualified + Bad rating. | 
-        <strong>🚀 Dynamic Loading:</strong> Adapts to any dataset size with batch rendering (20 at a time).
+        <strong>🚀 Optimized:</strong> Faster processing with better algorithms and batch rendering.
       `
       )
       .show();
@@ -1221,7 +1230,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         Top: ${topPerformer ? topPerformer.employee_name : "N/A"} (${
       topPerformer ? topPerformer.total_leads : 0
     } leads) |
-        <strong>🔄 Dynamic:</strong> Scroll to load next 20 employees
+        <strong>⚡ Optimized:</strong> Scroll to load next 20 employees efficiently
       </div>
     `;
 
@@ -1256,7 +1265,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     `);
   }
 
-  // Export to Excel (exports ALL data, not just displayed 20)
+  // Export to Excel (exports ALL data, not just displayed 20) - unchanged
   function exportToExcel() {
     if (allProcessedData.length === 0) {
       frappe.show_alert({
@@ -1271,7 +1280,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     const branchName =
       page.fields_dict.branch_filter.get_value() || "All_Branches";
 
-    // Export ALL processed data (not just currently displayed)
     const sortedData = allProcessedData.sort(
       (a, b) => b.total_leads - a.total_leads
     );
@@ -1353,7 +1361,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `DSR_Master_Report_DYNAMIC_${startDateStr}_to_${endDateStr}_${branchName}.csv`
+      `DSR_Master_Report_OPTIMIZED_${startDateStr}_to_${endDateStr}_${branchName}.csv`
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -1361,7 +1369,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     document.body.removeChild(link);
 
     frappe.show_alert({
-      message: `✅ DSR Master Report exported successfully! (${sortedData.length} total employees - ALL data exported, not just displayed 20)`,
+      message: `✅ DSR Master Report exported successfully! (${sortedData.length} total employees - ALL data exported)`,
       indicator: "green",
     });
   }
@@ -1377,6 +1385,11 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       indicator: "blue",
     });
   }
+
+  // Cleanup on page destroy
+  $(window).on("beforeunload", function () {
+    resetDataStructures();
+  });
 
   // Load initial data
   loadMasterDSRDataOptimized();
