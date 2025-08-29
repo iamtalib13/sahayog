@@ -214,12 +214,14 @@ doc_events = {
       
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
+
             
         ],
         # "before_save": [
         #      "sahayog.doc_events.employee.emp_enable_disable",
             
         # ],
+        
     },
     "Project": {
 
@@ -301,7 +303,13 @@ doc_events = {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
         ]
-    },   
+    },  
+     "Item": {
+        "before_save": "sahayog.doc_events.item.item_name_capital",
+
+
+    }
+
 }
 
 # Scheduled Tasks
