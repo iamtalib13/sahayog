@@ -449,13 +449,14 @@ fixtures = [
         "dt": "Module",
         
     },
-
-   
     {
         "dt": "Custom DocPerm",
-        "filters": [["parent", "=", "Issue Register"]]
+        "filters": [["parent", "in", ["Issue Register", "Branch Proposal","Project","Project Template","Task"]]]
     },
-
+    {
+        "dt":"Workflow",
+        "filters": [["name", "in", ["Branch Proposal"]]]
+    },
      {
         "dt": "Task",
         "filters": [["is_template", "=", "1"]]
