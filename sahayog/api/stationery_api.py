@@ -1,4 +1,8 @@
 import frappe
+import json
+import frappe
+from frappe.model.document import Document
+
 
 @frappe.whitelist()
 def get_stock_ledger_entries(item_code=None, warehouse=None):
@@ -80,9 +84,7 @@ def get_balance_from_sle(item_code=None, warehouse=None):
     
     return frappe.db.sql(query, as_dict=True)
 
-
 #//api/method/sahayog.api.stationery_api.get_stock_balance_data
-
 from frappe import _
 from erpnext.stock.report.stock_balance.stock_balance import execute
 
@@ -123,7 +125,7 @@ def get_stock_balance_data(company=None, from_date=None, to_date=None, item_code
 @frappe.whitelist()
 def get_stock_entry_items():
     return frappe.db.sql("""
-        SELECT sed.item_code, sed.item_name, sed.basic_rate
+        SELECT sed.item_code, sed.item_name, sed.basic_rate, sed.t_warehouse,sed.qty
         FROM `tabStock Entry Detail` sed
         INNER JOIN `tabStock Entry` se ON se.name = sed.parent
         WHERE se.docstatus = 1
@@ -131,9 +133,9 @@ def get_stock_entry_items():
         LIMIT 50
     """, as_dict=True)
 
-
 @frappe.whitelist()
 def get_asset_entries(item_code=None, location=None):
+
     filters = {}
     if item_code:
         filters["item_code"] = item_code
@@ -157,3 +159,228 @@ def get_asset_entries(item_code=None, location=None):
 
     
     return entries
+
+# //api/method/sahayog.api.stationery_api.get_asset_movements
+@frappe.whitelist()
+def get_asset_movements(company=None, asset=None, purpose=None):
+    """
+    Asset Movement records fetch karta hai specified filters ke saath.
+    Optional filters: company, asset, purpose
+    """
+    # Master record filters
+    master_filters = {}
+    if company:
+        master_filters["company"] = company
+    if purpose:
+        master_filters["purpose"] = purpose
+
+    # Master table se records lo
+    master_records = frappe.get_all(
+        "Asset Movement",
+        filters=master_filters,
+        fields=["name", "company", "purpose", "transaction_date"],
+        order_by="transaction_date desc"
+    )
+
+    results = []
+
+    for record in master_records:
+        # Child table fetch karo
+        child_filters = {"parent": record.name}
+        if asset:
+            child_filters["asset"] = asset
+
+        assets = frappe.get_all(
+            "Asset Movement Item",
+            filters=child_filters,
+            fields=["asset"]
+        )
+
+        for a in assets:
+            results.append({
+                "company": record.company,
+                "purpose": record.purpose,
+                "transaction_date": record.transaction_date,
+                "asset": a.asset
+            })
+
+    # Debug print
+    if results:
+        headers = ["Company", "Purpose", "Transaction Date", "Asset"]
+        print("-" * 100)
+        print("{:<25} {:<20} {:<20} {:<25}".format(*headers))
+        print("-" * 100)
+        for r in results:
+            print("{:<25} {:<20} {:<20} {:<25}".format(
+                r.get("company", ""),
+                r.get("purpose", ""),
+                str(r.get("transaction_date", "")),
+                r.get("asset", "")
+            ))
+        print("-" * 100)
+    else:
+        print("No asset movements found.")
+
+    return results
+
+@frappe.whitelist()
+def create_asset(asset):
+    # If asset is received as string, convert to dict
+    if isinstance(asset, str):
+        asset = json.loads(asset)
+
+    doc = frappe.new_doc("Asset")
+    doc.item_code = asset.get("item_code")
+    doc.asset_name = asset.get("asset_name")
+    doc.location = asset.get("location")
+    doc.purchase_date = asset.get("purchase_date")
+    doc.is_composite_asset = int(asset.get("is_composite", 1))  # Match doctype field name
+    doc.insert()
+    frappe.db.commit()
+    return {"name": doc.name}
+
+# //api/method/sahayog.api.stationery_api.get_outward_entries
+@frappe.whitelist()
+def get_outward_entriess():
+    # Fetch recent outward (Material Issue) entries
+    entries = frappe.get_all(
+        "Stock Entry",
+        fields=["name", "stock_entry_type", "posting_date", "docstatus"],
+        filters={"stock_entry_type": "Material Issue"},
+        order_by="creation desc",
+        limit=50
+    )
+
+    result = []
+    for entry in entries:
+        # Fetch child rows
+        details = frappe.get_all(
+            "Stock Entry Detail",
+            fields=["item_code", "qty", "s_warehouse"],
+            filters={"parent": entry.name}
+        )
+
+        # You can compute or fetch available qty here
+        # For demo: use qty as "available qty"
+        for d in details:
+            d["available_qty"] = d.qty  # or your logic here
+
+        result.append({
+            "entry": entry,
+            "items": details
+        })
+
+    return result
+
+# //api/method/sahayog.api.stationery_api.get_inward_list
+@frappe.whitelist()
+def get_inward_list():
+    """Return list of Purchase Receipts with total qty and supplier"""
+    receipts = frappe.db.sql("""
+        SELECT 
+            pr.name,
+            pr.supplier,
+            pr.posting_date,
+            pr.status,
+            SUM(pri.qty) as total_qty
+        FROM `tabPurchase Receipt` pr
+        LEFT JOIN `tabPurchase Receipt Item` pri
+            ON pri.parent = pr.name
+        GROUP BY pr.name, pr.supplier, pr.posting_date, pr.status
+        ORDER BY pr.creation DESC
+        LIMIT 50
+    """, as_dict=True)
+
+    return receipts
+
+# // api/method/sahayog.api.stationery_api.get_user_warehouse
+@frappe.whitelist()
+def get_user_warehouse(user=None):
+    """Return warehouse for the given user from Sahayog Settings child table"""
+
+    if not user:
+        user = frappe.session.user  # logged-in user email like 8466@gmail.com
+
+    # Fetch settings (Single Doctype)
+    settings = frappe.get_single("Sahayog Settings")
+
+    # Loop through correct child table fieldname
+    for row in settings.table_wlbb:
+        if row.user_id == user:
+            return {
+                "warehouse": row.warehouse
+            }
+
+    return {
+        "warehouse": None,
+        "message": f"No warehouse assigned for user {user}"
+    }
+
+# // api/method/sahayog.api.stationery_api.get_stock_entry_submissions
+@frappe.whitelist()
+def get_outward_entries(company=None, from_date=None, to_date=None, submitted_only=False):
+    """Fetch Stock Entry (parent) + Items (child) with optional filters."""
+
+    # Build filters
+    master_filters = {}
+    if company:
+        master_filters["company"] = company
+    if from_date and to_date:
+        master_filters["posting_date"] = ["between", [from_date, to_date]]
+    elif from_date:
+        master_filters["posting_date"] = [">=", from_date]
+    elif to_date:
+        master_filters["posting_date"] = ["<=", to_date]
+    if submitted_only:
+        master_filters["docstatus"] = 1
+
+    # Get parent records
+    parents = frappe.get_all(
+        "Stock Entry",
+        filters=master_filters,
+        fields=["name", "posting_date", "company", "purpose", "docstatus", "modified"],
+        order_by="posting_date desc"
+    )
+    if not parents:
+        return []
+
+    parent_names = [p["name"] for p in parents]
+
+    # Get child rows in one query
+    children = frappe.get_all(
+        "Stock Entry Detail",
+        filters={"parent": ["in", parent_names]},
+        fields=["parent", "s_warehouse", "t_warehouse", "item_code", "qty", "basic_rate"],
+        order_by="idx"
+    )
+
+    # Attach children to parents
+    child_map = {}
+    for c in children:
+        child_map.setdefault(c["parent"], []).append({
+            "source_warehouse": c["s_warehouse"],
+            "target_warehouse": c["t_warehouse"],
+            "item_code": c["item_code"],
+            "qty": c["qty"],
+            "basic_rate": c["basic_rate"],   # ✅ Added here
+        })
+
+    # Final response
+    status_map = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
+    for p in parents:
+        p["status"] = status_map.get(p["docstatus"], "Unknown")
+        p["items"] = child_map.get(p["name"], [])
+        p.pop("docstatus", None)
+
+    return parents
+# // api/method/sahayog.api.stationery_api.get_available_qty
+@frappe.whitelist()
+def get_available_qty(item_code, warehouse):
+    # Sum actual_qty in Stock Ledger Entries for item and warehouse to get current stock balance
+    qty = frappe.db.sql("""
+        SELECT SUM(actual_qty)
+        FROM `tabStock Ledger Entry`
+        WHERE item_code=%s AND warehouse=%s
+    """, (item_code, warehouse))
+
+    return qty[0][0] or 0
