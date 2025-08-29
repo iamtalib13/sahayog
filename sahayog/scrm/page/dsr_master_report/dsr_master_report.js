@@ -408,13 +408,44 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     return today.toISOString().split("T")[0];
   }
 
-  // Add filters: Start Date and End Date
+  // Add filters: Start Date and End Date with user-friendly restrictions
   page.add_field({
     fieldname: "start_date",
     label: __("Start Date"),
     fieldtype: "Date",
     default: getCurrentDate(),
-    change: () => loadMasterDSRDataOptimized(),
+    change: () => {
+      const startDate = page.fields_dict.start_date.get_value();
+      const endDate = page.fields_dict.end_date.get_value();
+      const today = getCurrentDate();
+
+      // Validate start date is not in future
+      if (startDate > today) {
+        frappe.show_alert({
+          message: "❌ Start Date cannot be in the future. Setting to today.",
+          indicator: "red",
+        });
+        page.fields_dict.start_date.set_value(today);
+        return;
+      }
+
+      // Update end date to match start date if end date is earlier
+      if (endDate && startDate > endDate) {
+        page.fields_dict.end_date.set_value(startDate);
+      }
+
+      // Update end date picker restrictions
+      setTimeout(() => {
+        if (page.fields_dict.end_date.datepicker) {
+          page.fields_dict.end_date.datepicker.update({
+            minDate: new Date(startDate),
+            maxDate: new Date(today),
+          });
+        }
+      }, 100);
+
+      loadMasterDSRDataOptimized();
+    },
   });
 
   page.add_field({
@@ -422,9 +453,54 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     label: __("End Date"),
     fieldtype: "Date",
     default: getCurrentDate(),
-    read_only: 1,
-    change: () => loadMasterDSRDataOptimized(),
+    change: () => {
+      const startDate = page.fields_dict.start_date.get_value();
+      const endDate = page.fields_dict.end_date.get_value();
+      const today = getCurrentDate();
+
+      // Validate that end_date is not in the future
+      if (endDate > today) {
+        frappe.show_alert({
+          message: "❌ End Date cannot be in the future. Setting to today.",
+          indicator: "red",
+        });
+        page.fields_dict.end_date.set_value(today);
+        return;
+      }
+
+      // Validate that end_date is not before start_date
+      if (startDate && endDate < startDate) {
+        frappe.show_alert({
+          message:
+            "❌ End Date cannot be before Start Date. Setting to Start Date.",
+          indicator: "red",
+        });
+        page.fields_dict.end_date.set_value(startDate);
+        return;
+      }
+
+      loadMasterDSRDataOptimized();
+    },
   });
+
+  // SET DATEPICKER RESTRICTIONS after fields are created
+  setTimeout(() => {
+    const today = getCurrentDate();
+
+    // Restrict start date picker - no future dates
+    if (page.fields_dict.start_date.datepicker) {
+      page.fields_dict.start_date.datepicker.update({
+        maxDate: new Date(today),
+      });
+    }
+
+    // Restrict end date picker - no future dates
+    if (page.fields_dict.end_date.datepicker) {
+      page.fields_dict.end_date.datepicker.update({
+        maxDate: new Date(today),
+      });
+    }
+  }, 200);
 
   page.add_field({
     fieldname: "branch_filter",
