@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"2DzmB3ADgz\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM-Zonal Manager</span>\",\"col\":12}},{\"id\":\"tewEuHs1XR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Lead Report\",\"col\":3}},{\"id\":\"OKuYuRkC5l\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
+ "content": "[{\"id\":\"2DzmB3ADgz\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM-Zonal Manager</span>\",\"col\":12}},{\"id\":\"tewEuHs1XR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Lead Report\",\"col\":3}},{\"id\":\"DjCA7ICIB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"DSR Master Report\",\"col\":3}},{\"id\":\"OKuYuRkC5l\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
  "creation": "2025-06-25 17:39:55.133538",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "CRM-ZM",
  "links": [],
- "modified": "2025-08-02 12:57:35.924825",
+ "modified": "2025-08-30 15:45:41.822008",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM-ZM",
@@ -33,6 +33,13 @@
    "doc_view": "List",
    "label": "Lead Report",
    "link_to": "crm-lead-management",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "DSR Master Report",
+   "link_to": "dsr-master-report",
    "type": "Page"
   },
   {
