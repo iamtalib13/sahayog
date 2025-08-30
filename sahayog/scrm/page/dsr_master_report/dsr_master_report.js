@@ -480,12 +480,34 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }, 200);
 
+  // ADDED: Branch filter
   page.add_field({
     fieldname: "branch_filter",
     label: __("Branch"),
     fieldtype: "Link",
     options: "Branch",
     change: () => debouncedLoad(),
+  });
+
+  // ADDED: Employee ID filter
+  page.add_field({
+    fieldname: "employee_filter",
+    label: __("Employee"),
+    fieldtype: "Link",
+    options: "Employee",
+    change: () => debouncedLoad(),
+    get_query: function () {
+      return {
+        filters: {
+          // Show only employees with user_id set (who can have leads assigned)
+          user_id: ["is", "set"],
+          // If branch is selected, show only employees from that branch
+          ...(page.fields_dict.branch_filter.get_value()
+            ? { branch: page.fields_dict.branch_filter.get_value() }
+            : {}),
+        },
+      };
+    },
   });
 
   // Content area with infinite scroll structure
@@ -565,27 +587,40 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }, 500);
   };
 
-  // Helper function to generate consistent date range
+  // MODIFIED: Helper function to generate consistent date range excluding Sundays
   function generateDateRangeFromDates(startDate, endDate) {
     const dates = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
     const current = new Date(start);
+    let totalDays = 0;
+    let workingDays = 0;
 
     while (current <= end) {
-      dates.push(current.toISOString().split("T")[0]); // YYYY-MM-DD
+      const dateString = current.toISOString().split("T")[0];
+      const dayOfWeek = current.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+      totalDays++;
+
+      // Exclude Sundays (dayOfWeek === 0)
+      if (dayOfWeek !== 0) {
+        dates.push(dateString);
+        workingDays++;
+      }
+
       current.setDate(current.getDate() + 1);
     }
 
     return {
-      dates,
+      dates, // Only working days (excluding Sundays)
       startDate: start,
       endDate: end,
-      totalDays: dates.length,
+      totalDays: totalDays, // All calendar days
+      workingDays: workingDays, // Excluding Sundays
     };
   }
 
-  // Function to get filters for leads
+  // MODIFIED: Function to get filters for leads
   function getLeadFilters() {
     const filters = { docstatus: 0 };
 
@@ -785,7 +820,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         <td class="total-leads-cell">${employee.total_leads}</td>
         <td><span class="working-days-info">${employee.working_days}/${
           employee.total_days
-        }</span></td>
+        } </span></td>
       </tr>
     `
       )
@@ -911,7 +946,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         ...metrics,
         total_leads: employeeLeads.length,
         working_days: leadsByDate.size,
-        total_days: allDatesInPeriod.length,
+        total_days: allDatesInPeriod.length, // Total working days in period (excluding Sundays)
       });
     });
 
@@ -1027,28 +1062,43 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      const { dates, totalDays } = generateDateRangeFromDates(
+      // MODIFIED: Now returns workingDays and totalDays
+      const { dates, totalDays, workingDays } = generateDateRangeFromDates(
         startDate,
         endDate
       );
-      allDatesInPeriod = dates;
+      allDatesInPeriod = dates; // Now contains only working days (no Sundays)
 
-      console.log("1. Date Range:", { startDate, endDate, totalDays });
+      console.log("1. Date Range:", {
+        startDate,
+        endDate,
+        totalDays,
+        workingDays,
+        excludedSundays: totalDays - workingDays,
+      });
       showLoadingWithProgress("Checking data counts...", 5);
 
-      updatePeriodSummary(startDate, endDate, totalDays);
+      updatePeriodSummary(startDate, endDate, totalDays, workingDays);
+
+      // MODIFIED: Employee filter - build employee filters with selected employee
+      const employeeFilters = {
+        user_id: ["is", "set"],
+      };
+
+      // Add branch filter if selected
+      if (page.fields_dict.branch_filter.get_value()) {
+        employeeFilters.branch = page.fields_dict.branch_filter.get_value();
+      }
+
+      // ADDED: Add specific employee filter if selected
+      if (page.fields_dict.employee_filter.get_value()) {
+        employeeFilters.name = page.fields_dict.employee_filter.get_value();
+      }
 
       // Get counts first for optimization decisions
       const [totalLeadCount, totalEmpCount] = await Promise.all([
         frappe.db.count("Lead", { filters: leadFilters }),
-        frappe.db.count("Employee", {
-          filters: {
-            user_id: ["is", "set"],
-            ...(page.fields_dict.branch_filter.get_value()
-              ? { branch: page.fields_dict.branch_filter.get_value() }
-              : {}),
-          },
-        }),
+        frappe.db.count("Employee", { filters: employeeFilters }),
       ]);
 
       console.log(
@@ -1075,12 +1125,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         ),
         loadDataInChunks(
           "Employee",
-          {
-            user_id: ["is", "set"],
-            ...(page.fields_dict.branch_filter.get_value()
-              ? { branch: page.fields_dict.branch_filter.get_value() }
-              : {}),
-          },
+          employeeFilters, // Use the modified filters with employee selection
           ["name", "employee_name", "branch", "user_id"],
           totalEmpCount
         ),
@@ -1139,7 +1184,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       const processedData = await processEmployeesInBatches(
         employeeMap,
         employeeLeadsMap,
-        dates
+        dates // Only working days
       );
 
       // Sort by total leads descending
@@ -1195,19 +1240,32 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }
 
-  function updatePeriodSummary(startDate, endDate, totalDays) {
+  // MODIFIED: Update period summary to show working days information
+  function updatePeriodSummary(startDate, endDate, totalDays, workingDays) {
     const startDateFormatted = frappe.datetime.str_to_user(startDate);
     const endDateFormatted = frappe.datetime.str_to_user(endDate);
-    const branchText = page.fields_dict.branch_filter.get_value()
-      ? ` | Branch: ${page.fields_dict.branch_filter.get_value()}`
-      : " | All Branches";
+
+    // Enhanced filter text with employee info
+    let filterText = " | All Branches";
+    if (page.fields_dict.branch_filter.get_value()) {
+      filterText = ` | Branch: ${page.fields_dict.branch_filter.get_value()}`;
+    }
+
+    if (page.fields_dict.employee_filter.get_value()) {
+      filterText += ` | Employee: ${page.fields_dict.employee_filter.get_value()}`;
+    } else {
+      filterText += " | All Employees";
+    }
+
+    const excludedSundays = totalDays - workingDays;
 
     $("#period-summary")
       .html(
         `
-        <strong>📅 Period:</strong> ${startDateFormatted} to ${endDateFormatted} (${totalDays} days)${branchText} | 
-        <strong>📋 Note:</strong> All ${totalDays} days are included in calculations. 
-        Non-working days (0 leads) count as Disqualified + Bad rating. | 
+        <strong>📅 Period:</strong> ${startDateFormatted} to ${endDateFormatted} 
+        (${totalDays} total days, ${workingDays} working days, ${excludedSundays} Sundays excluded)${filterText} | 
+        <strong>📋 Note:</strong> Only ${workingDays} working days are included in calculations. 
+        Sundays are automatically excluded from performance metrics. | 
         <strong>🚀 Optimized:</strong> Faster processing with better algorithms and batch rendering.
       `
       )
@@ -1265,7 +1323,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     `);
   }
 
-  // Export to Excel (exports ALL data, not just displayed 20) - unchanged
+  // Export to Excel (exports ALL data, not just displayed 20)
   function exportToExcel() {
     if (allProcessedData.length === 0) {
       frappe.show_alert({
@@ -1279,6 +1337,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     const endDate = page.fields_dict.end_date.get_value() || getCurrentDate();
     const branchName =
       page.fields_dict.branch_filter.get_value() || "All_Branches";
+    const employeeName =
+      page.fields_dict.employee_filter.get_value() || "All_Employees";
 
     const sortedData = allProcessedData.sort(
       (a, b) => b.total_leads - a.total_leads
@@ -1330,7 +1390,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       totals.average_rating,
       totals.good_rating,
       totals.total_leads,
-      `${totals.working_days} days`,
+      `${totals.working_days} working days`,
     ]);
 
     exportData.unshift([
@@ -1344,7 +1404,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       "Rating - No. of Average Days",
       "Rating - No. of Good Days",
       "Total Leads",
-      "Working Days/Total Days",
+      "Working Days/Total Working Days (Sundays Excluded)",
     ]);
 
     const csvContent = exportData
@@ -1361,7 +1421,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `DSR_Master_Report_OPTIMIZED_${startDateStr}_to_${endDateStr}_${branchName}.csv`
+      `DSR_Master_Report_ExcludingSundays_${startDateStr}_to_${endDateStr}_${branchName}_${employeeName}.csv`
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -1369,7 +1429,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     document.body.removeChild(link);
 
     frappe.show_alert({
-      message: `✅ DSR Master Report exported successfully! (${sortedData.length} total employees - ALL data exported)`,
+      message: `✅ DSR Master Report exported successfully! (${sortedData.length} employees - Sundays excluded from calculations)`,
       indicator: "green",
     });
   }
@@ -1378,10 +1438,11 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     page.fields_dict.start_date.set_value(getCurrentDate());
     page.fields_dict.end_date.set_value(getCurrentDate());
     page.fields_dict.branch_filter.set_value("");
+    page.fields_dict.employee_filter.set_value(""); // Clear employee filter too
     loadMasterDSRDataOptimized();
 
     frappe.show_alert({
-      message: "🔄 Filters reset to today",
+      message: "🔄 All filters reset to default",
       indicator: "blue",
     });
   }
