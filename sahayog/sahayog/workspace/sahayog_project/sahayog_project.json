@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"-JjV7o74y5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Proposal\",\"col\":3}},{\"id\":\"go0CSk53PB\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog Projects\",\"col\":12}}]",
+ "content": "[{\"id\":\"-JjV7o74y5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Proposal\",\"col\":3}},{\"id\":\"ns_daMsp96\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier\",\"col\":3}},{\"id\":\"QUl36rfjho\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order\",\"col\":3}},{\"id\":\"go0CSk53PB\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog Projects\",\"col\":12}}]",
  "creation": "2025-02-08 10:29:55.166799",
  "custom_blocks": [
   {
@@ -17,7 +17,7 @@
  "is_hidden": 0,
  "label": "Sahayog Project",
  "links": [],
- "modified": "2025-08-29 10:53:33.745698",
+ "modified": "2025-09-01 12:05:19.115625",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Project",
@@ -41,6 +41,22 @@
    "doc_view": "List",
    "label": "Branch Proposal",
    "link_to": "Branch Proposal",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Supplier",
+   "link_to": "Supplier",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Purchase Order",
+   "link_to": "Purchase Order",
    "stats_filter": "[]",
    "type": "DocType"
   }

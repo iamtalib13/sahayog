@@ -708,3 +708,37 @@ def prevent_completion_if_lto_incomplete(doc, method):
             """.format("<br>".join(errors)),
             title="Incomplete LTO Training"
         )
+import frappe
+from frappe import _
+import json
+
+@frappe.whitelist()
+def update_project_suppliers(project_name, suppliers):
+    if not project_name:
+        frappe.throw(_("Project name is required"))
+
+    # Convert JSON string to list
+    if isinstance(suppliers, str):
+        try:
+            suppliers = json.loads(suppliers)
+        except Exception:
+            frappe.throw(_("Invalid suppliers list"))
+
+    if not suppliers or not isinstance(suppliers, list):
+        frappe.throw(_("Suppliers list is required"))
+
+    project = frappe.get_doc("Project", project_name)
+
+    # Clear existing child table
+    project.set("custom_supplier_details", [])
+
+    # Add new suppliers
+    for s in suppliers:
+        if not frappe.db.exists("Supplier", s):
+            frappe.throw(_("Supplier {0} does not exist").format(s))
+        row = project.append("custom_supplier_details", {})
+        row.supplier = s
+
+    project.save()
+    frappe.db.commit()
+    return {"message": _("Suppliers updated successfully")}
