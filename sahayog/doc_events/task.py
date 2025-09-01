@@ -32,7 +32,7 @@ def create_letter_of_intent(doc, method):
     subject = doc.subject
     task = doc.name
 
-    if subject == 'Task 2 : Letter of Intent' and project:
+    if subject == 'Letter of Intent' and project:
         # Create a new Letter of Intent document
         letter_of_intent = frappe.new_doc('Letter of Intent')
         letter_of_intent.project = project
@@ -367,7 +367,7 @@ def update_branch_status_trigger(doc, method):
         frappe.msgprint(f"An error occurred while triggering the branch status update for Project: {str(e)}")
 
 def validate_location_status(doc, method):
-    if doc.subject == "Task 1 : Acquisition of the Property" and doc.status == "Completed":
+    if doc.subject == "Acquisition of the Property" and doc.status == "Completed":
         approved_locations = set()
         
         for location in doc.custom_location_details:
@@ -387,7 +387,7 @@ def validate_location_status(doc, method):
 
 
 def validate_agreement_status(doc, method):
-    if doc.subject == "Task 3 : Agreement and Handover" and doc.status == "Completed":
+    if doc.subject == "Agreement and Handover" and doc.status == "Completed":
         # Check if the custom_agreement field is empty or None
         if not doc.custom_agreement:
             frappe.throw(_("Cannot mark the task as 'Completed' until the Agreement is provided."))
@@ -403,7 +403,7 @@ def check_loi_docstatus_for_task_2(doc, method):
         return
 
     # ✅ Ab actual validation sirf Task 2 ke liye chale
-    if doc.subject == 'Task 2 : Letter of Intent':
+    if doc.subject == 'Letter of Intent':
         project = doc.project
 
         # LOI fetch karo project ke basis pe
@@ -454,7 +454,7 @@ def get_last_task_number(prefix):
 
 #Task 4 : Manpower Recruitment validations
 def fetch_manpower_settings(doc, method):
-    if doc.subject == "Task 4 : Manpower Recruitment" and not doc.is_template:
+    if doc.subject == "Manpower Recruitment" and not doc.is_template:
         if not doc.manpower_fetched:
             settings = frappe.get_single("Manpower Recruitment Setting")
             doc.manpower_recruitment_table = []  # pehle clear kar do
@@ -469,7 +469,7 @@ def fetch_manpower_settings(doc, method):
             doc.manpower_fetched = 1  # Mark as fetched
 
 def prevent_completion_if_manpower_incomplete(doc, method):
-    if doc.subject != "Task 4 : Manpower Recruitment" or doc.is_template:
+    if doc.subject != "Manpower Recruitment" or doc.is_template:
         return
 
     if doc.status == "Completed":
@@ -516,7 +516,7 @@ def prevent_completion_if_manpower_incomplete(doc, method):
 
 #Task 5 : Infrastructure Development Work
 def fetch_infra_checklist_settings(doc, method):
-    if doc.subject == "Task 5 : Infrastructure Development Work" and not doc.is_template:
+    if doc.subject == "Infrastructure Development Work" and not doc.is_template:
         if not doc.infra_checklist_fetched:
             settings = frappe.get_single("Infrastructure Development Setting")
 
@@ -534,7 +534,7 @@ def fetch_infra_checklist_settings(doc, method):
             doc.infra_checklist_fetched = 1  # Mark as fetched
             
 def prevent_completion_if_infra_incomplete(doc, method):
-    if doc.subject != "Task 5 : Infrastructure Development Work" or doc.is_template:
+    if doc.subject != "Infrastructure Development Work" or doc.is_template:
         return
 
     if doc.status == "Completed":
@@ -572,13 +572,13 @@ def prevent_completion_if_infra_incomplete(doc, method):
 #Task 7 : IT Software Installation 
 
 def fetch_it_checklist_settings(doc, method):
-    if doc.subject not in ["Task 6 : IT Hardware Installation", "Task 7 : IT Software Installation"]:
+    if doc.subject not in ["IT Hardware Installation", "IT Software Installation"]:
         return
 
     if doc.is_template or doc.if_checklist_fetched:
         return
 
-    category = "Hardware" if doc.subject == "Task 6 : IT Hardware Installation" else "Software"
+    category = "Hardware" if doc.subject == "IT Hardware Installation" else "Software"
 
     settings = frappe.get_single("IT Checklist Setting")
     doc.it_checklist_table = []
@@ -596,7 +596,7 @@ def fetch_it_checklist_settings(doc, method):
 
 
 def prevent_completion_if_it_checklist_incomplete(doc, method):
-    if doc.subject not in ["Task 6 : IT Hardware Installation", "Task 7 : IT Software Installation"]:
+    if doc.subject not in ["IT Hardware Installation", "IT Software Installation"]:
         return
 
     if doc.is_template or doc.status != "Completed":
@@ -636,13 +636,13 @@ def update_lto_training_table(doc, method):
         return
 
     # Run only for Task 4
-    if doc.subject != "Task 4 : Manpower Recruitment":
+    if doc.subject != "Manpower Recruitment" or doc.is_template == 1:
         return
 
     # Find Task 8 in the same project
     task_8 = frappe.db.get_value(
         "Task",
-        {"project": doc.project, "subject": "Task 8 : Licence to Operate"},
+        {"project": doc.project, "subject": "Licence to Operate"},
         "name"
     )
 
@@ -672,12 +672,12 @@ def update_lto_training_table(doc, method):
     try:
         task_8_doc.save(ignore_permissions=True)
         frappe.db.commit()
-        frappe.msgprint("Task 8 LTO table updated successfully ✅")
+        frappe.msgprint("LTO table updated successfully ✅")
     finally:
         frappe.flags.in_update_lto = False
 
 def prevent_completion_if_lto_incomplete(doc, method):
-    if doc.subject != "Task 8 : Licence to Operate":
+    if doc.subject != "Licence to Operate":
         return
 
     if doc.is_template or doc.status != "Completed":
