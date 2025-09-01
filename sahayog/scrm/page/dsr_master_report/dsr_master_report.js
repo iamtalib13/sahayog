@@ -480,16 +480,105 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }, 200);
 
-  // ADDED: Branch filter
+  // MODIFIED: Zone filter with logical hierarchy dependency
+  page.add_field({
+    fieldname: "zone_filter",
+    label: __("Zone"),
+    fieldtype: "Link",
+    options: "Zone",
+    change: () => {
+      // Clear dependent filters when zone changes
+      page.fields_dict.region_filter.set_value("");
+      page.fields_dict.branch_filter.set_value("");
+      page.fields_dict.employee_filter.set_value("");
+      debouncedLoad();
+    },
+  });
+
+  // MODIFIED: Region filter with zone validation
+  page.add_field({
+    fieldname: "region_filter",
+    label: __("Region"),
+    fieldtype: "Link",
+    options: "Region",
+    change: () => {
+      // Validate zone is selected for region
+      const zoneValue = page.fields_dict.zone_filter.get_value();
+      const regionValue = page.fields_dict.region_filter.get_value();
+
+      if (regionValue && !zoneValue) {
+        frappe.show_alert({
+          message: "⚠️ Please select a Zone first before selecting Region",
+          indicator: "orange",
+        });
+        page.fields_dict.region_filter.set_value("");
+        return;
+      }
+
+      // Clear dependent filters when region changes
+      page.fields_dict.branch_filter.set_value("");
+      page.fields_dict.employee_filter.set_value("");
+      debouncedLoad();
+    },
+    get_query: function () {
+      const zoneValue = page.fields_dict.zone_filter.get_value();
+      if (!zoneValue) {
+        // Don't show any regions if zone not selected
+        return {
+          filters: {
+            name: ["=", ""], // This will show no results
+          },
+        };
+      }
+      // If zone is selected, show all regions (since they're not linked in DB)
+      return {};
+    },
+  });
+
+  // MODIFIED: Branch filter with zone/region validation
   page.add_field({
     fieldname: "branch_filter",
     label: __("Branch"),
     fieldtype: "Link",
     options: "Branch",
-    change: () => debouncedLoad(),
+    change: () => {
+      // Validate hierarchy before allowing branch selection
+      const zoneValue = page.fields_dict.zone_filter.get_value();
+      const regionValue = page.fields_dict.region_filter.get_value();
+      const branchValue = page.fields_dict.branch_filter.get_value();
+
+      if (branchValue && !regionValue) {
+        frappe.show_alert({
+          message:
+            "⚠️ Please select Zone and Region first before selecting Branch",
+          indicator: "orange",
+        });
+        page.fields_dict.branch_filter.set_value("");
+        return;
+      }
+
+      // Clear dependent filters when branch changes
+      page.fields_dict.employee_filter.set_value("");
+      debouncedLoad();
+    },
+    get_query: function () {
+      const zoneValue = page.fields_dict.zone_filter.get_value();
+      const regionValue = page.fields_dict.region_filter.get_value();
+
+      if (!zoneValue || !regionValue) {
+        // Don't show any branches if zone/region not selected
+        return {
+          filters: {
+            name: ["=", ""], // This will show no results
+          },
+        };
+      }
+      // If zone and region selected, show all branches
+      return {};
+    },
   });
 
-  // ADDED: Employee ID filter
+  // MODIFIED: Employee filter with full hierarchy validation
   page.add_field({
     fieldname: "employee_filter",
     label: __("Employee"),
@@ -497,16 +586,26 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     options: "Employee",
     change: () => debouncedLoad(),
     get_query: function () {
-      return {
-        filters: {
-          // Show only employees with user_id set (who can have leads assigned)
-          user_id: ["is", "set"],
-          // If branch is selected, show only employees from that branch
-          ...(page.fields_dict.branch_filter.get_value()
-            ? { branch: page.fields_dict.branch_filter.get_value() }
-            : {}),
-        },
+      const filters = {
+        user_id: ["is", "set"],
       };
+
+      // Apply hierarchy filters based on selections
+      const zoneValue = page.fields_dict.zone_filter.get_value();
+      const regionValue = page.fields_dict.region_filter.get_value();
+      const branchValue = page.fields_dict.branch_filter.get_value();
+
+      if (zoneValue) {
+        filters.custom_zone = zoneValue;
+      }
+      if (regionValue) {
+        filters.custom_region = regionValue;
+      }
+      if (branchValue) {
+        filters.branch = branchValue;
+      }
+
+      return { filters };
     },
   });
 
@@ -516,7 +615,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       <div class="summary-info" id="period-summary" style="display: none;"></div>
       <div class="table-section">
         <div class="table-header">
-          <h3 class="table-title">📈 DSR Master Report (Optimized + Batch Loading)</h3>
+          <h3 class="table-title">📈 DSR Master Report (Hierarchical + Optimized)</h3>
           <div class="table-actions">
             <span id="report-date" style="font-size: 12px; color: #6c757d; font-weight: 500;">
               📅 Report Generated: ${frappe.datetime.str_to_user(
@@ -620,7 +719,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     };
   }
 
-  // MODIFIED: Function to get filters for leads
+  // ENHANCED: Hierarchy validation in data filtering
   function getLeadFilters() {
     const filters = { docstatus: 0 };
 
@@ -633,8 +732,36 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       filters.creation = [">=", startDate];
     }
 
+    // Apply hierarchical lead filters with validation
+    const zoneFilter = page.fields_dict.zone_filter.get_value();
+    const regionFilter = page.fields_dict.region_filter.get_value();
     const branchFilter = page.fields_dict.branch_filter.get_value();
-    if (branchFilter) {
+
+    // Validate hierarchy before applying filters
+    if (regionFilter && !zoneFilter) {
+      frappe.show_alert({
+        message: "⚠️ Region filter requires Zone to be selected",
+        indicator: "orange",
+      });
+      return filters; // Return basic filters only
+    }
+
+    if (branchFilter && (!zoneFilter || !regionFilter)) {
+      frappe.show_alert({
+        message: "⚠️ Branch filter requires Zone and Region to be selected",
+        indicator: "orange",
+      });
+      return filters; // Return basic filters only
+    }
+
+    // Apply valid hierarchy filters
+    if (zoneFilter) {
+      filters.custom_zone = zoneFilter;
+    }
+    if (regionFilter && zoneFilter) {
+      filters.custom_region = regionFilter;
+    }
+    if (branchFilter && zoneFilter && regionFilter) {
       filters.custom_branch = branchFilter;
     }
 
@@ -848,6 +975,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         name: emp.name,
         employee_name: emp.employee_name,
         branch: emp.branch,
+        custom_zone: emp.custom_zone,
+        custom_region: emp.custom_region,
       });
     });
 
@@ -870,6 +999,52 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     });
 
     return { employeeMap, employeeLeadsMap };
+  }
+
+  // SMART FALLBACK LOGIC - Show all employees when no assigned leads found
+  function handleNoLeadsScenario(
+    allEmployees,
+    allLeads,
+    allAppointments,
+    dates
+  ) {
+    console.log(
+      "🔍 No assigned leads found. Showing all employees with zero lead counts."
+    );
+
+    // Create employee map with all employees
+    const employeeMap = new Map();
+    allEmployees.forEach((emp) => {
+      employeeMap.set(emp.user_id, {
+        name: emp.name,
+        employee_name: emp.employee_name,
+        branch: emp.branch,
+        custom_zone: emp.custom_zone,
+        custom_region: emp.custom_region,
+      });
+    });
+
+    // Process all employees with zero metrics
+    const processedData = [];
+    employeeMap.forEach((employee, userId) => {
+      processedData.push({
+        branch: employee.branch || "-",
+        employee_code: employee.name,
+        employee_name: employee.employee_name || "-",
+        custom_zone: employee.custom_zone || "-",
+        custom_region: employee.custom_region || "-",
+        qualified: 0,
+        disqualified: dates.length, // All days are disqualified (no leads)
+        bad_rating: dates.length, // All days are bad (no leads)
+        average_rating: 0,
+        good_rating: 0,
+        total_leads: 0,
+        working_days: 0,
+        total_days: dates.length,
+      });
+    });
+
+    return processedData.sort((a, b) => b.total_leads - a.total_leads);
   }
 
   // OPTIMIZED: Process employees in batches to prevent UI blocking
@@ -943,6 +1118,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         branch: employee.branch || "-",
         employee_code: employee.name,
         employee_name: employee.employee_name || "-",
+        custom_zone: employee.custom_zone || "-",
+        custom_region: employee.custom_region || "-",
         ...metrics,
         total_leads: employeeLeads.length,
         working_days: leadsByDate.size,
@@ -1080,19 +1257,46 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
       updatePeriodSummary(startDate, endDate, totalDays, workingDays);
 
-      // MODIFIED: Employee filter - build employee filters with selected employee
+      // ENHANCED: Employee filter - build employee filters with hierarchy validation
       const employeeFilters = {
         user_id: ["is", "set"],
       };
 
-      // Add branch filter if selected
-      if (page.fields_dict.branch_filter.get_value()) {
-        employeeFilters.branch = page.fields_dict.branch_filter.get_value();
+      // Apply hierarchical employee filters with validation
+      const zoneValue = page.fields_dict.zone_filter.get_value();
+      const regionValue = page.fields_dict.region_filter.get_value();
+      const branchValue = page.fields_dict.branch_filter.get_value();
+      const employeeValue = page.fields_dict.employee_filter.get_value();
+
+      // Validate hierarchy before applying filters
+      if (regionValue && !zoneValue) {
+        frappe.show_alert({
+          message: "⚠️ Region filter requires Zone to be selected",
+          indicator: "orange",
+        });
+        return;
       }
 
-      // ADDED: Add specific employee filter if selected
-      if (page.fields_dict.employee_filter.get_value()) {
-        employeeFilters.name = page.fields_dict.employee_filter.get_value();
+      if (branchValue && (!zoneValue || !regionValue)) {
+        frappe.show_alert({
+          message: "⚠️ Branch filter requires Zone and Region to be selected",
+          indicator: "orange",
+        });
+        return;
+      }
+
+      // Apply valid filters
+      if (zoneValue) {
+        employeeFilters.custom_zone = zoneValue;
+      }
+      if (regionValue && zoneValue) {
+        employeeFilters.custom_region = regionValue;
+      }
+      if (branchValue && zoneValue && regionValue) {
+        employeeFilters.branch = branchValue;
+      }
+      if (employeeValue) {
+        employeeFilters.name = employeeValue;
       }
 
       // Get counts first for optimization decisions
@@ -1115,18 +1319,33 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
       showLoadingWithProgress("Loading data in parallel...", 15);
 
-      // Load all data in parallel with optimized chunking
+      // Load all data in parallel with optimized chunking - Include zone/region fields for leads
       const [allLeads, allEmployees, allAppointments] = await Promise.all([
         loadDataInChunks(
           "Lead",
           leadFilters,
-          ["name", "lead_owner", "status", "creation", "custom_branch"],
+          [
+            "name",
+            "lead_owner",
+            "status",
+            "creation",
+            "custom_branch",
+            "custom_zone",
+            "custom_region",
+          ], // Added zone/region
           totalLeadCount
         ),
         loadDataInChunks(
           "Employee",
-          employeeFilters, // Use the modified filters with employee selection
-          ["name", "employee_name", "branch", "user_id"],
+          employeeFilters,
+          [
+            "name",
+            "employee_name",
+            "branch",
+            "user_id",
+            "custom_zone",
+            "custom_region",
+          ],
           totalEmpCount
         ),
         frappe.db.get_list("Appointment", {
@@ -1148,19 +1367,138 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         allAppointments.length
       );
 
-      // Filter employees who have leads
+      // SMART FALLBACK LOGIC - Filter employees who have leads OR show all employees with zero counts
       const leadsWithOwners = allLeads.filter((lead) => lead.lead_owner);
       const uniqueLeadOwners = new Set(
         leadsWithOwners.map((lead) => lead.lead_owner)
       );
-      const employeesWithLeads = allEmployees.filter((emp) =>
-        uniqueLeadOwners.has(emp.user_id)
-      );
 
-      if (employeesWithLeads.length === 0) {
-        renderNoData("No employees found with assigned leads");
+      let employeesWithLeads;
+      let displayMode = "with_leads"; // Track what we're showing
+
+      if (uniqueLeadOwners.size === 0) {
+        // No leads are assigned to anyone - show all employees with zero counts
+        allProcessedData = handleNoLeadsScenario(
+          allEmployees,
+          allLeads,
+          allAppointments,
+          dates
+        );
+        totalEmployeeCount = allProcessedData.length;
+        displayMode = "all_employees_no_leads";
+        console.log(
+          "🔍 No assigned leads found. Showing all employees with zero lead counts."
+        );
+
+        // Store display mode for use in other functions
+        window.currentDisplayMode = displayMode;
+
+        // Skip normal processing and go directly to rendering
+        showLoadingWithProgress("Initializing table...", 90);
+
+        // Initialize table structure
+        $(".lead-table-container").html(`
+          <table class="table table-sm" id="master-dsr-table">
+            <thead>
+              <tr>
+                <th rowspan="2">Sr.<br>No.</th>
+                <th rowspan="2">Branch</th>
+                <th rowspan="2">Employee<br>Code</th>
+                <th rowspan="2">Employee Name</th>
+                <th colspan="2">📊 QUALIFICATION</th>
+                <th colspan="3">⭐ RATING</th>
+                <th rowspan="2">Total<br>Leads</th>
+                <th rowspan="2">Working<br>Days</th>
+              </tr>
+              <tr>
+                <th>No. of<br>Qualified</th>
+                <th>No. of<br>Disqualified</th>
+                <th>No. of<br>Bad</th>
+                <th>No. of<br>Average</th>
+                <th>No. of<br>Good</th>
+              </tr>
+            </thead>
+            <tbody id="employee-content"></tbody>
+          </table>
+          <div id="loading-indicator" class="loading-indicator">
+            <i class="fa fa-spinner fa-spin"></i> Loading more employees...
+          </div>
+        `);
+
+        // Start batch rendering
+        setTimeout(() => {
+          renderNextBatch();
+        }, 500);
         return;
+      } else {
+        // Some leads are assigned - check if filtered employees have any leads
+        employeesWithLeads = allEmployees.filter((emp) =>
+          uniqueLeadOwners.has(emp.user_id)
+        );
+
+        if (employeesWithLeads.length === 0) {
+          // No employees match the lead assignments after filtering
+          allProcessedData = handleNoLeadsScenario(
+            allEmployees,
+            allLeads,
+            allAppointments,
+            dates
+          );
+          totalEmployeeCount = allProcessedData.length;
+          displayMode = "all_employees_filter_mismatch";
+          console.log(
+            "🔄 No employees match assigned leads after filtering. Showing all employees."
+          );
+
+          // Store display mode
+          window.currentDisplayMode = displayMode;
+
+          // Skip normal processing and go directly to rendering
+          showLoadingWithProgress("Initializing table...", 90);
+
+          // Initialize table structure
+          $(".lead-table-container").html(`
+            <table class="table table-sm" id="master-dsr-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Sr.<br>No.</th>
+                  <th rowspan="2">Branch</th>
+                  <th rowspan="2">Employee<br>Code</th>
+                  <th rowspan="2">Employee Name</th>
+                  <th colspan="2">📊 QUALIFICATION</th>
+                  <th colspan="3">⭐ RATING</th>
+                  <th rowspan="2">Total<br>Leads</th>
+                  <th rowspan="2">Working<br>Days</th>
+                </tr>
+                <tr>
+                  <th>No. of<br>Qualified</th>
+                  <th>No. of<br>Disqualified</th>
+                  <th>No. of<br>Bad</th>
+                  <th>No. of<br>Average</th>
+                  <th>No. of<br>Good</th>
+                </tr>
+              </thead>
+              <tbody id="employee-content"></tbody>
+            </table>
+            <div id="loading-indicator" class="loading-indicator">
+              <i class="fa fa-spinner fa-spin"></i> Loading more employees...
+            </div>
+          `);
+
+          // Start batch rendering
+          setTimeout(() => {
+            renderNextBatch();
+          }, 500);
+          return;
+        } else {
+          console.log(
+            `📊 Found ${employeesWithLeads.length} employees with assigned leads.`
+          );
+        }
       }
+
+      // Store display mode for use in other functions
+      window.currentDisplayMode = displayMode;
 
       showLoadingWithProgress("Preprocessing data structures...", 40);
 
@@ -1240,21 +1578,51 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }
 
-  // MODIFIED: Update period summary to show working days information
+  // ENHANCED: Update period summary to show hierarchical filter information
   function updatePeriodSummary(startDate, endDate, totalDays, workingDays) {
     const startDateFormatted = frappe.datetime.str_to_user(startDate);
     const endDateFormatted = frappe.datetime.str_to_user(endDate);
 
-    // Enhanced filter text with employee info
-    let filterText = " | All Branches";
-    if (page.fields_dict.branch_filter.get_value()) {
-      filterText = ` | Branch: ${page.fields_dict.branch_filter.get_value()}`;
+    // Hierarchical filter text with validation
+    let filterText = "";
+
+    const zoneValue = page.fields_dict.zone_filter.get_value();
+    const regionValue = page.fields_dict.region_filter.get_value();
+    const branchValue = page.fields_dict.branch_filter.get_value();
+    const employeeValue = page.fields_dict.employee_filter.get_value();
+
+    if (zoneValue) {
+      filterText += ` | Zone: ${zoneValue}`;
+
+      if (regionValue) {
+        filterText += ` → Region: ${regionValue}`;
+
+        if (branchValue) {
+          filterText += ` → Branch: ${branchValue}`;
+
+          if (employeeValue) {
+            filterText += ` → Employee: ${employeeValue}`;
+          }
+        }
+      }
+    } else {
+      filterText = " | All Zones, Regions, Branches & Employees";
     }
 
-    if (page.fields_dict.employee_filter.get_value()) {
-      filterText += ` | Employee: ${page.fields_dict.employee_filter.get_value()}`;
-    } else {
-      filterText += " | All Employees";
+    // Add hierarchy validation message
+    let hierarchyNote = "";
+    if (regionValue && !zoneValue) {
+      hierarchyNote = " | ❌ Invalid: Region requires Zone";
+    } else if (branchValue && (!zoneValue || !regionValue)) {
+      hierarchyNote = " | ❌ Invalid: Branch requires Zone & Region";
+    }
+
+    // Display mode indicator
+    let modeText = "";
+    if (window.currentDisplayMode === "all_employees_no_leads") {
+      modeText = " | ⚠️ No assigned leads found - showing all employees";
+    } else if (window.currentDisplayMode === "all_employees_filter_mismatch") {
+      modeText = " | ⚠️ Filter mismatch - showing all employees";
     }
 
     const excludedSundays = totalDays - workingDays;
@@ -1263,10 +1631,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       .html(
         `
         <strong>📅 Period:</strong> ${startDateFormatted} to ${endDateFormatted} 
-        (${totalDays} total days, ${workingDays} working days, ${excludedSundays} Sundays excluded)${filterText} | 
-        <strong>📋 Note:</strong> Only ${workingDays} working days are included in calculations. 
-        Sundays are automatically excluded from performance metrics. | 
-        <strong>🚀 Optimized:</strong> Faster processing with better algorithms and batch rendering.
+        (${totalDays} total days, ${workingDays} working days, ${excludedSundays} Sundays excluded)${filterText}${hierarchyNote}${modeText}
       `
       )
       .show();
@@ -1287,8 +1652,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         ~${avgLeadsPerEmployee} leads per employee | 
         Top: ${topPerformer ? topPerformer.employee_name : "N/A"} (${
       topPerformer ? topPerformer.total_leads : 0
-    } leads) |
-        <strong>⚡ Optimized:</strong> Scroll to load next 20 employees efficiently
+    } leads) 
+       
       </div>
     `;
 
@@ -1335,6 +1700,9 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
     const startDate = page.fields_dict.start_date.get_value();
     const endDate = page.fields_dict.end_date.get_value() || getCurrentDate();
+    const zoneName = page.fields_dict.zone_filter.get_value() || "All_Zones";
+    const regionName =
+      page.fields_dict.region_filter.get_value() || "All_Regions";
     const branchName =
       page.fields_dict.branch_filter.get_value() || "All_Branches";
     const employeeName =
@@ -1421,7 +1789,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `DSR_Master_Report_ExcludingSundays_${startDateStr}_to_${endDateStr}_${branchName}_${employeeName}.csv`
+      `DSR_Master_Report_Hierarchical_${startDateStr}_to_${endDateStr}_${zoneName}_${regionName}_${branchName}_${employeeName}.csv`
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -1429,20 +1797,24 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     document.body.removeChild(link);
 
     frappe.show_alert({
-      message: `✅ DSR Master Report exported successfully! (${sortedData.length} employees - Sundays excluded from calculations)`,
+      message: `✅ DSR Master Report exported successfully! (${sortedData.length} employees - Hierarchical filtering)`,
       indicator: "green",
     });
   }
 
   function clearFilters() {
+    // Clear in reverse hierarchy order
+    page.fields_dict.employee_filter.set_value("");
+    page.fields_dict.branch_filter.set_value("");
+    page.fields_dict.region_filter.set_value("");
+    page.fields_dict.zone_filter.set_value("");
     page.fields_dict.start_date.set_value(getCurrentDate());
     page.fields_dict.end_date.set_value(getCurrentDate());
-    page.fields_dict.branch_filter.set_value("");
-    page.fields_dict.employee_filter.set_value(""); // Clear employee filter too
+
     loadMasterDSRDataOptimized();
 
     frappe.show_alert({
-      message: "🔄 All filters reset to default",
+      message: "🔄 All filters reset to default (hierarchy maintained)",
       indicator: "blue",
     });
   }
