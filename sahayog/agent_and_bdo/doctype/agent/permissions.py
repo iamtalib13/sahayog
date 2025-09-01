@@ -1,0 +1,35 @@
+import frappe
+
+
+def get_agents_sol_wise(user=None):
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+
+    # Administrator ko full access
+    if "Administrator" in user_roles:
+        return ""
+
+    # Employee details nikalna
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": user},
+        ["sol_id", "employee_number"],
+        as_dict=True,
+    )
+
+    if employee:
+        conditions = []
+
+        if employee.sol_id:
+            conditions.append(f"`tabAgent`.branch_code = '{employee.sol_id}'")
+
+        if employee.employee_number:
+            conditions.append(f"`tabAgent`.employee = '{employee.employee_number}'")
+
+        if conditions:
+            return " OR ".join(conditions)
+
+    # Agar employee record hi nahi mila, to koi record na dikhaye
+    return "1=0"

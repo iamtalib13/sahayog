@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-18 11:19:16.961586",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "case_id",
+  "case_type",
+  "column_break_zzki",
+  "case_raised_by",
+  "case_against_employee",
+  "section_break_gtkv",
+  "description",
+  "enquiry"
+ ],
+ "fields": [
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Data",
+   "label": "Case ID"
+  },
+  {
+   "fieldname": "case_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Case Type",
+   "options": "\nComplaint\nMisconduct\nGrievance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "case_raised_by",
+   "fieldtype": "Link",
+   "label": "Case Raised By",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "case_against_employee",
+   "fieldtype": "Link",
+   "label": "Case Against Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_zzki",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_gtkv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "enquiry",
+   "fieldtype": "Table",
+   "label": "Enquiry",
+   "options": "Enquiry"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-18 11:45:32.827164",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Disciplinary Case",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

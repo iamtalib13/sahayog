@@ -184,6 +184,8 @@ permission_query_conditions = {
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
     "Task": "sahayog.permissions.get_task_permission",
+    "Agent": "sahayog.agent_and_bdo.doctype.agent.permissions.get_agents_sol_wise",
+  
 }
 #
 # has_permission = {
