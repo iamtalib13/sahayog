@@ -1,31 +1,137 @@
 {
  "actions": [],
- "allow_rename": 1,
- "autoname": "field:agent",
+ "autoname": "field:agent_code",
  "creation": "2025-06-02 13:33:21.011932",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "agent",
-  "agent_name"
+  "agent_details_section",
+  "status",
+  "agent_code",
+  "agent_name",
+  "agent_status",
+  "column_break_dxwu",
+  "branch_code",
+  "branch_name",
+  "role",
+  "employee",
+  "bdo_details_section",
+  "requested_by",
+  "requested_on",
+  "column_break_nbix",
+  "approved_by",
+  "approved_on"
  ],
  "fields": [
   {
-   "fieldname": "agent",
+   "fieldname": "agent_name",
    "fieldtype": "Data",
-   "label": "Agent",
+   "in_standard_filter": 1,
+   "label": "Agent Name",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "agent_code",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Agent Code",
+   "read_only": 1,
    "unique": 1
   },
   {
-   "fieldname": "agent_name",
+   "fieldname": "branch_code",
    "fieldtype": "Data",
-   "label": "Agent Name"
+   "in_standard_filter": 1,
+   "label": "Branch Code",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Branch Name",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Data",
+   "label": "Role",
+   "read_only": 1
+  },
+  {
+   "default": "Unallocated",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Unallocated\nAllocated\nPending",
+   "read_only": 1
+  },
+  {
+   "fieldname": "agent_details_section",
+   "fieldtype": "Section Break",
+   "label": "Agent Details"
+  },
+  {
+   "fieldname": "column_break_dxwu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bdo_details_section",
+   "fieldtype": "Section Break",
+   "label": "Allocation Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nbix",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_status",
+   "fieldtype": "Data",
+   "label": "Agent Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_on",
+   "fieldtype": "Datetime",
+   "label": "Requested On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-04 13:50:01.060563",
+ "modified": "2025-08-29 10:14:59.527419",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",
@@ -69,5 +175,18 @@
  "search_fields": "agent_name",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Red",
+   "title": "Unallocated"
+  },
+  {
+   "color": "Green",
+   "title": "Allocated"
+  },
+  {
+   "color": "Yellow",
+   "title": "Pending"
+  }
+ ]
 }

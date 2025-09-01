@@ -179,6 +179,7 @@ permission_query_conditions = {
 	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
+    "Agent": "sahayog.agent_and_bdo.doctype.agent.permissions.get_agents_sol_wise",
     
 }
 #
@@ -357,7 +358,7 @@ override_whitelisted_methods = {
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 override_doctype_dashboards = {
-	#"Task": "sahayog.task.get_dashboard_data",
+	"Task": "sahayog.dashboard.task_dashboard.get_data",
     "Project": "sahayog.dashboard.project_dashboard.get_data",
 
 }

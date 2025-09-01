@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-18 11:37:41.715117",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "notice_date",
+  "suspension_required",
+  "column_break_mreb",
+  "attendance",
+  "explanation_provided",
+  "findings",
+  "section_break_dezy",
+  "remark"
+ ],
+ "fields": [
+  {
+   "fieldname": "notice_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Notice Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "suspension_required",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Suspension Required",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_mreb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Attendance",
+   "options": "\nAbsent\nPresent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "explanation_provided",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Explanation Provided",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "findings",
+   "fieldtype": "Select",
+   "label": "Findings",
+   "options": "\nSatisfactory-Minor\nNot Satisfactory-Major",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_dezy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Text",
+   "label": "Remark",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-08-18 11:44:13.186552",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Enquiry",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
