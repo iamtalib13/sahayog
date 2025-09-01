@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Project Management — SPA</title>
     <link
@@ -1832,37 +1833,37 @@
             const progressPercentage = calculateProjectProgress(p);
 
             div.innerHTML = `
-          <div class="project-header">
-              <div>
-                  <div class="project-title">${p.project_name}</div>
-                  <div class="project-state">${p.state}</div>
-              </div>
-              <div>
-                  ${
-                    p.status === "Under Development"
-                      ? '<span class="project-status-pill dev">Under Dev</span>'
-                      : p.status === "Completed"
-                      ? '<span class="project-status-pill completed">Complete</span>'
-                      : '<span class="project-status-pill not-started">Not Started</span>'
-                  }
-              </div>
-          </div>
-          
-          <div class="project-progress-section">
-              <div class="project-progress-header">
-                  <span class="project-progress-label">Progress</span>
-                  <span class="project-progress-percentage">${progressPercentage}%</span>
-              </div>
-              <div class="project-progress-bar">
-                  <div class="project-progress-fill" style="width: ${progressPercentage}%;"></div>
-              </div>
-          </div>
-          
-          <div class="tags">
-              <div class="tag">${p.zone}</div>
-              <div class="tag">${p.state}</div>
-          </div>
-      `;
+                <div class="project-header">
+                    <div>
+                        <div class="project-title">${p.project_name}</div>
+                        <div class="project-state">${p.state}</div>
+                    </div>
+                    <div>
+                        ${
+                          p.status === "Under Development"
+                            ? '<span class="project-status-pill dev">Under Dev</span>'
+                            : p.status === "Completed"
+                            ? '<span class="project-status-pill completed">Complete</span>'
+                            : '<span class="project-status-pill not-started">Not Started</span>'
+                        }
+                    </div>
+                </div>
+
+                <div class="project-progress-section">
+                    <div class="project-progress-header">
+                        <span class="project-progress-label">Progress</span>
+                        <span class="project-progress-percentage">${progressPercentage}%</span>
+                    </div>
+                    <div class="project-progress-bar">
+                        <div class="project-progress-fill" style="width: ${progressPercentage}%;"></div>
+                    </div>
+                </div>
+
+                <div class="tags">
+                    <div class="tag">${p.zone}</div>
+                    <div class="tag">${p.state}</div>
+                </div>
+            `;
             list.appendChild(div);
           });
 
@@ -2048,26 +2049,26 @@
             const assignedUser = getUserById(t.assignedTo);
 
             it.innerHTML = `
-        <div class="task-progress-circle ${progressClass}">
-            ${getProgressContent(t.status, index)}
-        </div>
-        <div class="task-content">
-            <div class="task-title">${t.subject}</div>
-            <div class="task-meta">
-                <div class="task-dates">
-                   <span title="Expected Start Date">${startDate}</span> > 
-                   <span title="Expected End Date">${endDate}</span>
-                </div>
-                <div class="task-assigned-to">Assigned to ${
-                  assignedUser.name
-                }</div>
-            </div>
-        </div>
-        <div class="task-right">
-            <div class="badge ${badgeClass}">${badgeText}</div>
-            <div class="task-updated" title="Last Modified : ${modifiedExact}">${modifiedPretty}</div>
-        </div>
-      `;
+              <div class="task-progress-circle ${progressClass}">
+                  ${getProgressContent(t.status, index)}
+              </div>
+              <div class="task-content">
+                  <div class="task-title">${t.subject}</div>
+                  <div class="task-meta">
+                      <div class="task-dates">
+                         <span title="Expected Start Date">${startDate}</span> >
+                         <span title="Expected End Date">${endDate}</span>
+                      </div>
+                      <div class="task-assigned-to">Assigned to ${
+                        assignedUser.name
+                      }</div>
+                  </div>
+              </div>
+              <div class="task-right">
+                  <div class="badge ${badgeClass}">${badgeText}</div>
+                  <div class="task-updated" title="Last Modified : ${modifiedExact}">${modifiedPretty}</div>
+              </div>
+            `;
             tList.appendChild(it);
           });
         }
@@ -2127,25 +2128,25 @@
           const assignedUser = getUserById(t.assignedTo);
 
           it.innerHTML = `
-            <div class="task-progress-circle ${progressClass}">
-              ${getProgressContent(t.status, index)}
-            </div>
-            <div class="task-content">
-              <div class="task-title">${t.title}</div>
-              <div class="task-meta">
-                <div class="task-end-date">${
-                  t.projectName
-                } • Due: ${endDate}</div>
-                <div class="task-assigned-to">Assigned to ${
-                  assignedUser.name
-                }</div>
-              </div>
-            </div>
-            <div class="task-right">
-              <div class="badge ${badgeClass}">${badgeText}</div>
-              <div class="task-updated">${timeAgo(t.modified)}</div>
-            </div>
-          `;
+                  <div class="task-progress-circle ${progressClass}">
+                    ${getProgressContent(t.status, index)}
+                  </div>
+                  <div class="task-content">
+                    <div class="task-title">${t.title}</div>
+                    <div class="task-meta">
+                      <div class="task-end-date">${
+                        t.projectName
+                      } • Due: ${endDate}</div>
+                      <div class="task-assigned-to">Assigned to ${
+                        assignedUser.name
+                      }</div>
+                    </div>
+                  </div>
+                  <div class="task-right">
+                    <div class="badge ${badgeClass}">${badgeText}</div>
+                    <div class="task-updated">${timeAgo(t.modified)}</div>
+                  </div>
+                `;
           tList.appendChild(it);
         });
       }
@@ -2161,149 +2162,109 @@
        * @param {object} task - The task object.
        * @param {object} project - The project object.
        */
+      // --- Render task form ---
       function renderTaskForm(task, project) {
-        console.log(
-          "fetching task form for : " + task + "of project : " + project
-        );
+        console.log("Fetching task form for:", task, "of project:", project);
         const panelHead = document.querySelector("#formPanel .head");
-        if (panelHead) {
-          panelHead.textContent = task.subject || "Task Details";
-        }
+        if (panelHead) panelHead.textContent = task.subject || "Task Details";
 
         const container = document.getElementById("taskFormContainer");
         container.innerHTML = `
     <style>
-      .floating-field {
-        position: relative;
-        flex: 1;
-        min-width: 150px;
-      }
-      .floating-field input,
-      .floating-field select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 2px solid var(--outline-variant);
-        border-radius: 6px;
-        outline: none;
-        font-size: 13px;
-        background: var(--surface);
-        color: var(--on-surface);
-      }
-      .floating-field label {
-        position: absolute;
-        top: 10px;
-        left: 14px;
-        color: var(--on-surface-variant);
-        font-weight: 600;
-        font-size: 13px;
-        pointer-events: none;
-        transition: 0.2s ease all;
-        background: transparent;
-      }
-      .floating-field input:focus ~ label,
-      .floating-field input:not(:placeholder-shown) ~ label,
-      .floating-field select:focus ~ label,
-      .floating-field select:not([value=""]) ~ label {
-        top: -8px;
-        left: 8px;
-        font-size: 11px;
-        background: var(--surface);
-        padding: 0 4px;
-      }
+        .floating-field { position: relative; flex: 1; min-width: 150px; }
+        .floating-field input, .floating-field select {
+            width: 100%; padding: 10px 12px; border: 2px solid var(--outline-variant);
+            border-radius: 6px; outline: none; font-size: 13px; background: var(--surface); color: var(--on-surface);
+        }
+        .floating-field label {
+            position: absolute; top: 10px; left: 14px; color: var(--on-surface-variant);
+            font-weight: 600; font-size: 13px; pointer-events: none; transition: 0.2s ease all; background: transparent;
+        }
+        .floating-field input:focus ~ label, .floating-field input:not(:placeholder-shown) ~ label,
+        .floating-field select:focus ~ label, .floating-field select:not([value=""]) ~ label {
+            top: -8px; left: 8px; font-size: 11px; background: var(--surface); padding: 0 4px;
+        }
     </style>
-
     <div style="padding: 20px;" id="task-form-fields">
-      <div class="task-header-fields" 
-           style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--outline-variant);">
+        <div class="task-header-fields"
+             style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 10px; padding-bottom: 15px; border-bottom: 1px solid var(--outline-variant);">
 
-        <!-- Project Name -->
-        <div class="floating-field">
-          <input type="text" id="projectName" placeholder=" " value="${
-            project.project_name
-          }" disabled />
-          <label for="projectName">Project</label>
+            <!-- Status -->
+            <div class="floating-field">
+                <select id="taskStatus" disabled>
+                    <option ${
+                      task.status === "Open" ? "selected" : ""
+                    }>Open</option>
+                    <option ${
+                      task.status === "Working" ? "selected" : ""
+                    }>Working</option>
+                    <option ${
+                      task.status === "Pending Review" ? "selected" : ""
+                    }>Pending Review</option>
+                    <option ${
+                      task.status === "Overdue" ? "selected" : ""
+                    }>Overdue</option>
+                    <option ${
+                      task.status === "Completed" ? "selected" : ""
+                    }>Completed</option>
+                    <option ${
+                      task.status === "Cancelled" ? "selected" : ""
+                    }>Cancelled</option>
+                </select>
+                <label for="taskStatus">Status</label>
+            </div>
+
+            <!-- Start Date -->
+            <div class="floating-field">
+                <input type="date" id="taskStartDate" placeholder=" " value="${
+                  task.exp_start_date || ""
+                }" disabled />
+                <label for="taskStartDate">Start</label>
+            </div>
+
+            <!-- End Date -->
+            <div class="floating-field">
+                <input type="date" id="taskEndDate" placeholder=" " value="${
+                  task.exp_end_date || ""
+                }" disabled />
+                <label for="taskEndDate">End</label>
+            </div>
+
+            <!-- Completed On -->
+            <div class="floating-field" id="completedOnWrapper" style="display:none;">
+                <input type="datetime-local" id="taskCompletedOn" placeholder=" " value="${
+                  task.completed_on || ""
+                }" />
+                <label for="taskCompletedOn">Completed On</label>
+            </div>
+
         </div>
 
-        <!-- Status -->
-        <div class="floating-field">
-          <select id="taskStatus" disabled>
-            <option ${task.status === "Open" ? "selected" : ""}>Open</option>
-            <option ${
-              task.status === "Working" ? "selected" : ""
-            }>Working</option>
-            <option ${
-              task.status === "Pending Review" ? "selected" : ""
-            }>Pending Review</option>
-            <option ${
-              task.status === "Overdue" ? "selected" : ""
-            }>Overdue</option>
-            <option ${
-              task.status === "Completed" ? "selected" : ""
-            }>Completed</option>
-            <option ${
-              task.status === "Cancelled" ? "selected" : ""
-            }>Cancelled</option>
-          </select>
-          <label for="taskStatus">Status</label>
+        <!-- Task-Specific Content -->
+        <div class="task-specific-content">
+            ${renderTaskSpecificContent(task)}
         </div>
-
-        <!-- Start Date -->
-        <div class="floating-field">
-          <input type="date" id="taskStartDate" placeholder=" " value="${
-            task.exp_start_date || ""
-          }" disabled />
-          <label for="taskStartDate">Start</label>
-        </div>
-
-        <!-- End Date -->
-        <div class="floating-field">
-          <input type="date" id="taskEndDate" placeholder=" " value="${
-            task.exp_end_date || ""
-          }" disabled />
-          <label for="taskEndDate">End</label>
-        </div>
-      </div>
-
-      <!-- completed on date -->
-      <div class="floating-field" id="completedOnWrapper" style="display:none;">
-        <input type="datetime-local" id="taskCompletedOn" placeholder=" " value="${
-          task.completed_on || ""
-        }" />
-        <label for="taskCompletedOn">Completed On</label>
-      </div>
-
-      <!-- Task-Specific Content -->
-      <div class="task-specific-content">
-        ${renderTaskSpecificContent(task.subject)}
-      </div>
-  `;
+    </div>
+    `;
         document.getElementById("emptyForm").style.display = "none";
         editSaveBtn.style.display = "flex";
         setEditMode(false);
+        attachAutoSave(task.name); // Attach auto-save listeners
       }
 
-      /**
-       * Toggles the form between editing and view modes.
-       * @param {boolean} editing - True to enable editing, false for view mode.
-       */
+      // --- Toggle edit mode ---
       function setEditMode(editing) {
         isEditing = editing;
         const form = document.getElementById("task-form-fields");
         if (!form) return;
 
         const fields = form.querySelectorAll("input, select, textarea");
-
         fields.forEach((field) => {
-          if (field.id !== "projectName") {
-            field.disabled = !editing;
-            field.classList.toggle("is-editing", editing);
-          } else {
-            field.disabled = true;
-            field.classList.remove("is-editing");
-          }
+          field.disabled = !editing;
+          field.classList.toggle("is-editing", editing);
         });
 
-        // ✅ handle completedOn visibility dynamically
+        // Completed On visibility
         const statusSelect = document.getElementById("taskStatus");
         const completedWrapper = document.getElementById("completedOnWrapper");
         const completedInput = document.getElementById("taskCompletedOn");
@@ -2315,44 +2276,158 @@
           } else {
             completedWrapper.style.display = "none";
             completedInput.required = false;
-            completedInput.value = ""; // clear if not completed
+            completedInput.value = "";
           }
         }
 
         if (editing) {
-          toggleCompletedOn(); // run once
+          toggleCompletedOn();
           statusSelect.addEventListener("change", toggleCompletedOn);
         } else {
           statusSelect.removeEventListener("change", toggleCompletedOn);
         }
 
-        editSaveBtn.innerHTML = editing ? "Save" : "Edit";
+        // Toggle buttons
+        const addLocationBtn = document.getElementById("addNewLocationBtn");
+        if (addLocationBtn)
+          addLocationBtn.style.display = editing ? "inline-block" : "none";
+
+        document
+          .querySelectorAll(".add-image-btn")
+          .forEach(
+            (btn) => (btn.style.display = editing ? "inline-flex" : "none")
+          );
+        document
+          .querySelectorAll(".delete-image-btn")
+          .forEach((btn) => btn.classList.toggle("show", editing));
+
+        // changing the button text
+        editSaveBtn.innerHTML = editing ? "Close" : "Edit";
       }
 
-      // --- Event Listener for the Edit/Save Button ---
+      // --- Edit button ---
       editSaveBtn.addEventListener("click", () => {
-        if (isEditing) {
-          // Check if status is Completed
-          const status = document.getElementById("taskStatus").value;
-          const completedOn = document.getElementById("taskCompletedOn").value;
-
-          if (status === "Completed" && !completedOn) {
-            alert("Please fill the 'Completed On' date/time before saving.");
-            document.getElementById("taskCompletedOn").focus();
-            return; // Stop saving
-          }
-
-          // Save logic here
-          console.log("Saving task data...");
-          alert("Task Saved!"); // Placeholder
-          setEditMode(false); // Switch back to view mode
-        } else {
-          // Enter edit mode
+        if (!isEditing) {
           setEditMode(true);
           document.getElementById("taskStatus").focus();
+        } else {
+          setEditMode(false);
         }
       });
 
+      // --- Auto-save logic ---
+      async function attachAutoSave(taskName) {
+        const form = document.getElementById("task-form-fields");
+        if (!form) return;
+
+        // Store initial values
+        const initialValues = {
+          status: document.getElementById("taskStatus").value,
+          completed_on: document.getElementById("taskCompletedOn").value,
+          start_date: document.getElementById("taskStartDate").value,
+          end_date: document.getElementById("taskEndDate").value,
+        };
+
+        form.querySelectorAll("input, select, textarea").forEach((field) => {
+          field.addEventListener("change", async () => {
+            const status = document.getElementById("taskStatus").value;
+            const completedOn =
+              document.getElementById("taskCompletedOn").value;
+            const startDate = document.getElementById("taskStartDate").value;
+            const endDate = document.getElementById("taskEndDate").value;
+
+            const today = new Date().toISOString().split("T")[0];
+
+            // --- Validations ---
+            if (status === "Completed" && !completedOn) {
+              showGlobalMessage(
+                "Please fill 'Completed On' before saving.",
+                "error"
+              );
+              return;
+            }
+            if (completedOn && completedOn > today) {
+              showGlobalMessage(
+                "'Completed On' cannot be a future date.",
+                "error"
+              );
+              return;
+            }
+            if (startDate && endDate && startDate > endDate) {
+              showGlobalMessage(
+                "'Start Date' cannot be after 'End Date'.",
+                "error"
+              );
+              return;
+            }
+
+            // --- Check if any value changed ---
+            if (
+              status === initialValues.status &&
+              completedOn === initialValues.completed_on &&
+              startDate === initialValues.start_date &&
+              endDate === initialValues.end_date
+            ) {
+              console.log("No changes detected, skipping auto-save");
+              return; // Nothing changed
+            }
+
+            const data = {
+              status,
+              start_date: startDate,
+              end_date: endDate,
+              completed_on: completedOn,
+            };
+
+            try {
+              const csrfToken = await getCSRFToken();
+              const res = await fetch(
+                "/api/method/sahayog.patches.fixtures.get_projects_and_tasks.update_task_common_fields",
+                {
+                  method: "POST",
+                  headers: {
+                    "X-Frappe-CSRF-Token": csrfToken,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ task_name: taskName, data }),
+                }
+              );
+
+              const result = await res.json();
+
+              // Handle the response properly
+              if (result.message && result.message.success) {
+                showGlobalMessage("Task updated successfully!", "success");
+
+                // Update initial values to prevent repeated auto-save
+                initialValues.status = status;
+                initialValues.completed_on = completedOn;
+                initialValues.start_date = startDate;
+                initialValues.end_date = endDate;
+              } else if (result.message && result.message.error) {
+                // Show the specific error message from API
+                showGlobalMessage(result.message.error, "error");
+              } else if (result.message && !result.message.success) {
+                // Handle case where success is false but no specific error message
+                showGlobalMessage("Update failed", "error");
+              } else {
+                // Fallback for unexpected response format
+                showGlobalMessage(
+                  "Update failed - unexpected response",
+                  "error"
+                );
+              }
+            } catch (err) {
+              console.error(err);
+              showGlobalMessage("Error updating task", "error");
+            }
+
+            setEditMode(false); // Lock form again
+          });
+        });
+      }
+
+      // --- Clear form ---
       function clearForm() {
         selectedTaskId = null;
         const project = getSelectedProject();
@@ -2471,6 +2546,19 @@
       });
 
       /* ------------------------ Utilities ------------------------ */
+      function setStatusBackground(select) {
+        const value = select.value;
+        if (value === "Pending") {
+          select.style.background = "#f0ad4e"; // orange
+        } else if (value === "Approved") {
+          select.style.background = "#28a745"; // green
+        } else if (value === "Rejected") {
+          select.style.background = "#dc3545"; // red
+        } else {
+          select.style.background = "var(--surface)";
+          select.style.color = "var(--on-surface)";
+        }
+      }
       function timeAgo(dateStr) {
         if (!dateStr) return "just now";
 
@@ -2505,6 +2593,202 @@
           }
         }
       });
+
+      /**
+       * Converts number to words (for rent display)
+       */
+      function numberToWords(num) {
+        if (!num || isNaN(num)) return "";
+        num = parseInt(num);
+        if (num === 0) return "Zero";
+
+        const a = [
+          "",
+          "One",
+          "Two",
+          "Three",
+          "Four",
+          "Five",
+          "Six",
+          "Seven",
+          "Eight",
+          "Nine",
+          "Ten",
+          "Eleven",
+          "Twelve",
+          "Thirteen",
+          "Fourteen",
+          "Fifteen",
+          "Sixteen",
+          "Seventeen",
+          "Eighteen",
+          "Nineteen",
+        ];
+        const b = [
+          "",
+          "",
+          "Twenty",
+          "Thirty",
+          "Forty",
+          "Fifty",
+          "Sixty",
+          "Seventy",
+          "Eighty",
+          "Ninety",
+        ];
+
+        const convert = (n) => {
+          if (n < 20) return a[n];
+          if (n < 100)
+            return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+          if (n < 1000)
+            return (
+              a[Math.floor(n / 100)] +
+              " Hundred " +
+              (n % 100 ? convert(n % 100) : "")
+            );
+          if (n < 100000)
+            return (
+              convert(Math.floor(n / 1000)) +
+              " Thousand " +
+              (n % 1000 ? convert(n % 1000) : "")
+            );
+          if (n < 10000000)
+            return (
+              convert(Math.floor(n / 100000)) +
+              " Lakh " +
+              (n % 100000 ? convert(n % 100000) : "")
+            );
+          return (
+            convert(Math.floor(n / 10000000)) +
+            " Crore " +
+            (n % 10000000 ? convert(n % 10000000) : "")
+          );
+        };
+
+        return convert(num).trim();
+      }
+
+      async function getCSRFToken() {
+        // Try from meta tag first
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag && metaTag.content) {
+          console.log("Got CSRF token from meta tag");
+          return metaTag.content;
+        }
+
+        // Then try from cookies
+        const cookieMatch = document.cookie.match(/csrf_token=([^;]+)/);
+        if (cookieMatch && cookieMatch[1]) {
+          console.log("Got CSRF token from cookies");
+          return decodeURIComponent(cookieMatch[1]);
+        }
+
+        // Finally try fetching from API
+        try {
+          console.log("Fetching CSRF token from API");
+          const response = await fetch(
+            "/api/method/frappe.auth.get_logged_user"
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const token =
+            response.headers.get("X-Frappe-CSRF-Token") ||
+            response.headers.get("x-frappe-csrf-token");
+
+          if (!token) {
+            throw new Error("CSRF token not found in response headers");
+          }
+
+          console.log("Got CSRF token from API response");
+          return token;
+        } catch (error) {
+          console.error("CSRF token fetch error:", error);
+          throw new Error(
+            "Could not get security token. Please refresh the page."
+          );
+        }
+      }
+
+      // Create global message container
+      let globalMsgContainer = document.createElement("div");
+      globalMsgContainer.id = "globalMessageContainer";
+      document.body.appendChild(globalMsgContainer);
+
+      // Add basic styles
+      const style = document.createElement("style");
+      style.innerHTML = `
+        #globalMessageContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .global-message {
+            min-width: 200px;
+            max-width: 300px;
+            background: #333;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-size: 13px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        .global-message.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .global-message.hide {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+
+        .global-message.success { background-color: #28a745; }
+        .global-message.error { background-color: #dc3545; }
+        .global-message.info { background-color: #007bff; }
+        `;
+      document.head.appendChild(style);
+
+      /**
+       * Show a global message
+       * @param {string} msg - The message text
+       * @param {"success"|"error"|"info"} type - The message type
+       * @param {number} duration - How long to display (ms)
+       */
+      function showGlobalMessage(msg, type = "info", duration = 3000) {
+        const messageEl = document.createElement("div");
+        messageEl.className = `global-message ${type}`;
+        messageEl.textContent = msg;
+
+        globalMsgContainer.appendChild(messageEl);
+
+        // Force reflow to enable transition
+        void messageEl.offsetWidth;
+        messageEl.classList.add("show");
+
+        // Hide after duration
+        setTimeout(() => {
+          messageEl.classList.remove("show");
+          messageEl.classList.add("hide");
+
+          // Remove element after transition
+          messageEl.addEventListener("transitionend", () => {
+            messageEl.remove();
+          });
+        }, duration);
+      }
 
       /* ------------------------ Enhanced Task Form Functions ------------------------ */
 
@@ -2624,38 +2908,38 @@
         const popup = document.createElement("div");
         popup.className = "assignment-popup";
         popup.innerHTML = `
-    <div class="assignment-popup-backdrop"></div>
-    <div class="assignment-popup-content">
-      <div class="assignment-popup-header">
-        <h3>Assign User</h3>
-        <button class="assignment-popup-close">×</button>
-      </div>
-      <div class="assignment-popup-body">
-        <div class="user-list">
-          ${USERS.map(
-            (user) => `
-            <div class="user-option ${
-              user.id === currentUserId ? "selected" : ""
-            }" data-user-id="${user.id}">
-              <div class="user-avatar">👤</div>
-              <div class="user-info">
-                <div class="user-name">${user.name}</div>
-                <div class="user-role">${user.role}</div>
-              </div>
-              <div class="user-check">${
-                user.id === currentUserId ? "✓" : ""
-              }</div>
+          <div class="assignment-popup-backdrop"></div>
+          <div class="assignment-popup-content">
+            <div class="assignment-popup-header">
+              <h3>Assign User</h3>
+              <button class="assignment-popup-close">×</button>
             </div>
-          `
-          ).join("")}
-        </div>
-      </div>
-      <div class="assignment-popup-footer">
-        <button class="btn ghost" id="cancelAssignment">Cancel</button>
-        <button class="btn" id="updateAssignment">Update Assignment</button>
-      </div>
-    </div>
-  `;
+            <div class="assignment-popup-body">
+              <div class="user-list">
+                ${USERS.map(
+                  (user) => `
+                  <div class="user-option ${
+                    user.id === currentUserId ? "selected" : ""
+                  }" data-user-id="${user.id}">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-info">
+                      <div class="user-name">${user.name}</div>
+                      <div class="user-role">${user.role}</div>
+                    </div>
+                    <div class="user-check">${
+                      user.id === currentUserId ? "✓" : ""
+                    }</div>
+                  </div>
+                `
+                ).join("")}
+              </div>
+            </div>
+            <div class="assignment-popup-footer">
+              <button class="btn ghost" id="cancelAssignment">Cancel</button>
+              <button class="btn" id="updateAssignment">Update Assignment</button>
+            </div>
+          </div>
+        `;
 
         document.body.appendChild(popup);
         setTimeout(() => popup.classList.add("active"), 10);
@@ -2789,7 +3073,17 @@
 
       // Render task-specific content based on task type
       function renderTaskSpecificContent(task) {
+        // Get current URL
+        const currentURL = window.location.href;
+        const taskNameInURL = task.name.toLowerCase().replace(/\s+/g, "-"); // Convert "Acquisition of the Property" to "acquisition-of-the-property"
+
+        // Check if URL contains task name (case insensitive)
+        if (!currentURL.toLowerCase().includes(taskNameInURL)) {
+          return ""; // Return empty string if URL doesn't match
+        }
+
         const subject = task.subject || "";
+        console.log("Rendering task-specific content for:", subject);
 
         if (subject.includes("Acquisition of the Property")) {
           return renderLocationDetailsForm(task);
@@ -2811,60 +3105,696 @@
           return renderInaugurationForm(task);
         } else {
           return `<p style="color: var(--on-surface-variant);">
-      Task-specific form for <b>${subject}</b> (not mapped yet)
-    </p>`;
+            Task-specific form for <b>${subject}</b> (not mapped yet)
+          </p>`;
         }
       }
 
       // 1. Location Details Form
       function renderLocationDetailsForm(task) {
-        if (!task.data.locations) task.data.locations = [];
+        // Group by location_name
+        const grouped = {};
+        task.location_details_table.forEach((loc) => {
+          const name = loc.location_name || "Unknown";
+          if (!grouped[name]) grouped[name] = [];
+          grouped[name].push(loc);
+        });
 
-        return `
-    <div class="task-form-section">
-      <h3>Property Locations</h3>
-      <div class="locations-container">
-        ${task.data.locations
-          .map(
-            (location, index) => `
-          <div class="location-item" data-index="${index}">
-            <div class="location-header">
-              <h4>Location ${index + 1}</h4>
-              <button class="btn-icon remove-location" data-index="${index}">🗑️</button>
-            </div>
-            <div class="location-fields">
-              <input type="text" class="form-field-input location-address" placeholder="Address" value="${
-                location.address || ""
-              }" />
-              <select class="form-field-input location-status">
-                <option value="pending" ${
-                  location.status === "pending" ? "selected" : ""
-                }>Pending</option>
-                <option value="verified" ${
-                  location.status === "verified" ? "selected" : ""
-                }>Verified</option>
-                <option value="acquired" ${
-                  location.status === "acquired" ? "selected" : ""
-                }>Acquired</option>
-              </select>
-            </div>
-            <div class="attachments-section">
-              <label>Photos/Videos:</label>
-              <input type="file" class="location-files" multiple accept="image/*,video/*" data-index="${index}" />
-              <div class="files-list">
-                ${(location.files || [])
-                  .map((file) => `<span class="file-tag">${file}</span>`)
-                  .join("")}
+        // Generate table rows
+        const rowsHTML = Object.keys(grouped)
+          .map((locationName, idx) => {
+            const locs = grouped[locationName];
+
+            // Collect all images
+            const imagesArray = locs.flatMap((loc) =>
+              Array.isArray(loc.location_image)
+                ? loc.location_image
+                : loc.location_image
+                ? [loc.location_image]
+                : []
+            );
+
+            // Render images + add button
+            const imagesHTML =
+              imagesArray
+                .map(
+                  (img) =>
+                    `<div class="location-image-wrapper" data-location="${locationName}" data-img="${img}">
+                      <div class="zoom-container">
+                        <img src="${img}" alt="location image"
+                             onclick="window.open('${img}', '_blank')"/>
+                        <button class="delete-image-btn" data-location="${locationName}" data-img="${img}">&times;</button>
+                      </div>
+                    </div>`
+                )
+                .join("") +
+              `<button class="add-image-btn" data-index="${idx}">+</button>`;
+
+            const estimate_rent = locs[0].estimate_rent || 0;
+            const status = locs.some((l) => l.status === "Pending")
+              ? "Pending"
+              : locs.some((l) => l.status === "Approved")
+              ? "Approved"
+              : "Rejected";
+
+            // Generate words for tooltip
+            const rentInWords = numberToWords(estimate_rent) + " Rupees only";
+
+            return `<tr class="location-row">
+                      <td class="location-name-cell">${locationName}</td>
+                      <td class="location-images-cell">${imagesHTML}</td>
+                      <td class="estimate-rent-cell">
+                          <input
+                              type="number"
+                              class="estimate-rent"
+                              value="${estimate_rent}"
+                              title="${rentInWords}"
+                          />
+                      </td>
+                      <td class="location-status-cell">
+                          <select class="location-status">
+                              <option ${
+                                status === "Pending" ? "selected" : ""
+                              }>Pending</option>
+                              <option ${
+                                status === "Approved" ? "selected" : ""
+                              }>Approved</option>
+                              <option ${
+                                status === "Rejected" ? "selected" : ""
+                              }>Rejected</option>
+                          </select>
+                      </td>
+                  </tr>`;
+          })
+          .join("");
+
+        const html = `
+          <style>
+          .location-details-container h3 {
+              margin-bottom: 16px;
+              font-size: 18px;
+              color: var(--on-surface);
+              font-weight: 600;
+          }
+
+          .location-details-container table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+          }
+
+          .location-details-container th,
+          .location-details-container td {
+              padding: 10px 8px;
+              vertical-align: top;
+              font-size: 13px;
+              color: var(--on-surface);
+              word-break: break-word;
+          }
+
+          .location-details-container th {
+              text-align: left;
+              border-bottom: 2px solid var(--outline-variant);
+              font-weight: 600;
+          }
+
+          .location-row {
+              border-bottom: 1px solid var(--outline-variant);
+              transition: background 0.2s;
+          }
+
+          .location-row:hover {
+              background: var(--surface-variant);
+          }
+
+          /* Column widths */
+          .location-name-cell {
+              width: 12%;
+              white-space: normal;
+          }
+
+          .location-images-cell {
+              width: 64%;
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              align-items: center;
+              min-height: 40px;
+          }
+          .location-image-wrapper {
+            position: relative;
+            display: inline-block;
+          }
+                    
+          .zoom-container {
+            position: relative;
+            display: inline-block;
+            border-radius: 6px;
+            overflow: visible; /* allow button to stick out */
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+            backface-visibility: hidden;
+            transform-origin: center center;
+          }
+                    
+          .zoom-container:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+          }
+                    
+          .zoom-container img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--outline-variant);
+            display: block;
+          }
+                    
+          .delete-image-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 13px;
+            height: 13px;
+            font-size: 12px;
+            cursor: pointer;
+            line-height: 16px;
+            text-align: center;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* hidden state */
+            opacity: 0;
+            transform: scale(0.6);
+            pointer-events: none;
+
+            /* smooth animation */
+            transition: opacity 0.3s ease, transform 0.3s ease;
+          }
+
+          .delete-image-btn.show {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+          }                    
+          .delete-image-btn:hover {
+            background: darkred;
+          }
+
+          .add-image-btn {
+              width: 40px;
+              height: 40px;
+              border: 1px dashed var(--outline-variant);
+              border-radius: 6px;
+              background: var(--surface);
+              color: var(--on-surface-variant);
+              font-size: 20px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
+
+              display: inline-block;
+              transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+              will-change: transform;
+              backface-visibility: hidden;
+              transform-origin: center center;
+          }
+          .add-image-btn:hover {
+              transform: scale(1.1);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+              z-index: 10;
+          }
+
+          .estimate-rent-cell {
+              width: 11%;
+              position: relative;
+          }
+
+          .estimate-rent-cell input {
+              width: 100%;
+              padding: 6px 8px;
+              border: 1px solid var(--outline-variant);
+              border-radius: 6px;
+              font-size: 13px;
+              cursor: help;
+          }
+
+          .location-status-cell {
+              width: 13%;
+          }
+
+          .location-status-cell select {
+              width: 100%;
+              padding: 6px 8px;
+              border-radius: 6px;
+              border: 1px solid var(--outline-variant);
+              font-size: 13px;
+              background: var(--surface);
+              color: var(--on-surface);
+          }
+
+          #addNewLocationBtn {
+              background: #316767;
+              color: #fff;
+              padding: 7px 10px;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 500;
+          }
+
+          .header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px; /* space between header row and table */
+      }
+
+      .header-row h3 {
+          margin: 0; /* remove extra space */
+      }
+
+      #addNewLocationBtn:hover {
+          background-color: #218838;
+      }
+
+
+          /* Responsive: stack cells in small screens */
+          @media (max-width: 768px) {
+              .location-details-container table,
+              .location-details-container thead,
+              .location-details-container tbody,
+              .location-details-container th,
+              .location-details-container td,
+              .location-details-container tr {
+                  display: block;
+              }
+
+              .location-details-container th {
+                  display: none;
+              }
+
+              .location-row {
+                  margin-bottom: 12px;
+                  border-bottom: 1px solid var(--outline-variant);
+                  padding-bottom: 12px;
+              }
+
+              .location-name-cell,
+              .location-images-cell,
+              .estimate-rent-cell,
+              .location-status-cell {
+                  width: 100%;
+                  display: flex;
+                  margin-bottom: 6px;
+              }
+
+              .location-name-cell::before {
+                  content: "Location Name: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+
+              .location-images-cell::before {
+                  content: "Images: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+
+              .estimate-rent-cell::before {
+                  content: "Rent: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+
+              .location-status-cell::before {
+                  content: "Status: ";
+                  font-weight: 600;
+                  margin-right: 6px;
+              }
+          }
+          </style>
+
+          <div class="location-details-container">
+              <div class="header-row">
+                  <h3>Location Details</h3>
+                  <button id="addNewLocationBtn">+ Add New Location</button>
               </div>
-            </div>
+            <hr style="margin: 0; border: none; height: 1px; background: var(--outline-variant);">
+              <table>
+                  <thead>
+                      <tr>
+                          <th style="width:15%">Location Name</th>
+                          <th style="width:55%">Location Images</th>
+                          <th style="width:15%">Rent/Month</th>
+                          <th style="width:15%">Status</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      ${rowsHTML}
+                  </tbody>
+              </table>
+              <input type="file" id="fileInput" multiple style="display:none;" />
           </div>
-        `
-          )
-          .join("")}
-      </div>
-      <button class="btn ghost add-location">+ Add Location</button>
-    </div>
-  `;
+          `;
+
+        // Attach event listeners
+        setTimeout(() => {
+          document.querySelectorAll(".add-image-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) =>
+              handleAddImageForExistingLocation(e, grouped, task)
+            );
+          });
+        }, 0);
+
+        setTimeout(() => {
+          const addBtn = document.getElementById("addNewLocationBtn");
+          if (addBtn) {
+            addBtn.addEventListener("click", () => handleAddNewLocation(task));
+          }
+        }, 0);
+
+        setTimeout(() => {
+          document.querySelectorAll(".delete-image-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation(); // prevent triggering img click
+              const locationName = e.target.getAttribute("data-location");
+              const img = e.target.getAttribute("data-img");
+              handleDeleteImage(locationName, img, task);
+            });
+          });
+        }, 0);
+
+        setTimeout(() => {
+          document.querySelectorAll(".location-row").forEach((row) => {
+            const locationName = row
+              .querySelector(".location-name-cell")
+              .textContent.trim();
+            const rentInput = row.querySelector(".estimate-rent");
+            const statusSelect = row.querySelector(".location-status");
+
+            // On rent change
+            rentInput.addEventListener("change", () => {
+              handleUpdateLocation(
+                locationName,
+                rentInput,
+                statusSelect,
+                task.name
+              );
+            });
+
+            // On status change
+            statusSelect.addEventListener("change", () => {
+              handleUpdateLocation(
+                locationName,
+                rentInput,
+                statusSelect,
+                task.name
+              );
+            });
+          });
+        }, 0);
+
+        // Set background color based on status
+        setTimeout(() => {
+          document.querySelectorAll(".location-status").forEach((select) => {
+            setStatusBackground(select); // initial render
+            select.addEventListener("change", () => {
+              setStatusBackground(select); // update on change
+            });
+          });
+        }, 0);
+
+        return html;
+      }
+      // Function to handle adding an image in existing location
+      async function handleAddImageForExistingLocation(e, grouped, task) {
+        const index = e.target.getAttribute("data-index");
+        const locationName = Object.keys(grouped)[index];
+        const locationGroup = grouped[locationName];
+
+        const firstLocation = locationGroup[0];
+        const estimateRent = firstLocation.estimate_rent || 0;
+        const status = locationGroup.some((l) => l.status === "Pending")
+          ? "Pending"
+          : "Completed";
+
+        // Create file input
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.style.display = "none";
+
+        fileInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          console.log("Selected file:", file);
+          if (!file) return;
+
+          try {
+            // Create form data with all required fields
+            const formData = new FormData();
+            formData.append("task_name", task.name);
+            formData.append("location_name", locationName);
+            formData.append("estimate_rent", estimateRent);
+            formData.append("status", status);
+            formData.append("image_file", file);
+
+            // Call API
+            const csrfToken = await getCSRFToken();
+            console.log("Using CSRF token:", csrfToken);
+
+            const response = await fetch(
+              `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.add_image_for_existing_location`,
+              {
+                method: "POST",
+                headers: {
+                  "X-Frappe-CSRF-Token": csrfToken,
+                },
+                body: formData,
+              }
+            );
+
+            const result = await response.json();
+
+            if (result.message && result.message.success) {
+              // Refresh the task data
+              const updatedTaskResponse = await fetch(
+                `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+                  task.name
+                )}`
+              );
+              const updatedTask = await updatedTaskResponse.json();
+
+              // Re-render the form
+              const container = document.querySelector(
+                ".location-details-container"
+              );
+              if (container) {
+                container.innerHTML = renderLocationDetailsForm(
+                  updatedTask.message
+                );
+                showGlobalMessage("Image Added successfully!", "success");
+                setEditMode(false);
+              }
+
+              // frappe.show_alert({message: __("Image added successfully"), indicator: "green"}, 3);
+            } else {
+              throw new Error(
+                result.message?.error || "Failed to add location image"
+              );
+            }
+          } catch (error) {
+            console.error("Error adding image:", error);
+            // frappe.msgprint({title: __("Error"), indicator: "red", message: __("Failed to add image: {0}", [error.message])});
+          }
+        });
+
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+      }
+
+      // Function to handle adding a new location with image upload
+      async function handleAddNewLocation(task) {
+        // Create file input
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.style.display = "none";
+
+        // Handle file selection
+        fileInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          // ask for details AFTER file selection
+          const locationName = prompt("Enter Location Name:");
+          if (!locationName) return;
+
+          const estimateRent = prompt("Enter Estimate Rent:") || 0;
+
+          try {
+            const formData = new FormData();
+            formData.append("task_name", task.name);
+            formData.append("location_name", locationName);
+            formData.append("estimate_rent", estimateRent);
+            formData.append("status", "Pending"); // always Pending
+            formData.append("image_file", file);
+
+            const csrfToken = await getCSRFToken();
+            const response = await fetch(
+              `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.add_new_location`,
+              {
+                method: "POST",
+                headers: {
+                  "X-Frappe-CSRF-Token": csrfToken,
+                },
+                body: formData,
+              }
+            );
+
+            const result = await response.json();
+            if (result.message && result.message.success) {
+              // Refresh task
+              const updatedTaskResponse = await fetch(
+                `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+                  task.name
+                )}`
+              );
+              const updatedTask = await updatedTaskResponse.json();
+
+              const container = document.querySelector(
+                ".location-details-container"
+              );
+              if (container) {
+                container.innerHTML = renderLocationDetailsForm(
+                  updatedTask.message
+                );
+                showGlobalMessage(
+                  "New Location Added successfully!",
+                  "success"
+                );
+                setEditMode(false);
+              }
+            } else {
+              throw new Error(
+                result.message?.error || "Failed to add new location"
+              );
+            }
+          } catch (err) {
+            console.error("Error adding new location:", err);
+          } finally {
+            fileInput.remove(); // cleanup input element after use
+          }
+        });
+
+        // Trigger file dialog
+        document.body.appendChild(fileInput);
+        fileInput.click();
+      }
+
+      // Function to delete an image from a location(entire row)
+      async function handleDeleteImage(locationName, img, task) {
+        try {
+          const csrfToken = await getCSRFToken();
+          const response = await fetch(
+            `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.delete_location_image`,
+            {
+              method: "POST",
+              headers: {
+                "X-Frappe-CSRF-Token": csrfToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                task_name: task.name,
+                location_name: locationName,
+                image_file: img,
+              }),
+            }
+          );
+
+          const result = await response.json();
+          if (result.message && result.message.success) {
+            // Refresh task
+            const updatedTaskResponse = await fetch(
+              `/api/method/sahayog.patches.fixtures.get_projects_and_tasks.get_specific_task?name=${encodeURIComponent(
+                task.name
+              )}`
+            );
+            const updatedTask = await updatedTaskResponse.json();
+
+            const container = document.querySelector(
+              ".location-details-container"
+            );
+            if (container) {
+              container.innerHTML = renderLocationDetailsForm(
+                updatedTask.message
+              );
+              showGlobalMessage("Deleted Image successfully!", "success");
+              setEditMode(false);
+            }
+          } else {
+            throw new Error(result.message?.error || "Failed to delete image");
+          }
+        } catch (err) {
+          console.error("Error deleting image:", err);
+        }
+      }
+
+      // Function to update location details (Rent and Status)
+      async function handleUpdateLocation(
+        locationName,
+        rentInput,
+        statusSelect,
+        taskName
+      ) {
+        const estimateRent = rentInput.value;
+        const status = statusSelect.value;
+
+        try {
+          const csrfToken = await getCSRFToken();
+          const response = await fetch(
+            "/api/method/sahayog.patches.fixtures.get_projects_and_tasks.update_location_details",
+            {
+              method: "POST",
+              headers: {
+                "X-Frappe-CSRF-Token": csrfToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                task_name: taskName,
+                location_name: locationName,
+                estimate_rent: estimateRent,
+                status: status,
+              }),
+            }
+          );
+
+          const result = await response.json();
+          if (result.message && result.message.success) {
+            console.log(`Location ${locationName} updated successfully`);
+            showGlobalMessage(
+              "Updated Location Details successfully!",
+              "success"
+            );
+            setEditMode(false);
+          } else {
+            console.error(result.message?.error || "Failed to update location");
+          }
+        } catch (err) {
+          console.error("Error updating location:", err);
+        }
       }
 
       // 2. Letter of Intent Form
@@ -2873,61 +3803,65 @@
         if (!task.data.propertyDetails) task.data.propertyDetails = {};
 
         return `
-    <div class="task-form-section">
-      <h3>Letter of Intent Details</h3>
-      
-      <div class="form-section">
-        <h4>Property Owner Details</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <input type="text" class="form-field-input" placeholder="Owner Name" id="ownerName" value="${
-            task.data.ownerDetails.name || ""
-          }" />
-          <input type="text" class="form-field-input" placeholder="Phone" id="ownerPhone" value="${
-            task.data.ownerDetails.phone || ""
-          }" />
-          <input type="email" class="form-field-input" placeholder="Email" id="ownerEmail" value="${
-            task.data.ownerDetails.email || ""
-          }" />
-          <textarea class="form-field-input" placeholder="Address" id="ownerAddress">${
-            task.data.ownerDetails.address || ""
-          }</textarea>
-        </div>
-      </div>
+          <div class="task-form-section">
+            <h3>Letter of Intent Details</h3>
 
-      <div class="form-section">
-        <h4>Property Details</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <textarea class="form-field-input" placeholder="Property Address" id="propertyAddress">${
-            task.data.propertyDetails.address || ""
-          }</textarea>
-          <input type="text" class="form-field-input" placeholder="Area (sq ft)" id="propertyArea" value="${
-            task.data.propertyDetails.area || ""
-          }" />
-          <select class="form-field-input" id="propertyType">
-            <option value="">Property Type</option>
-            <option value="commercial" ${
-              task.data.propertyDetails.type === "commercial" ? "selected" : ""
-            }>Commercial</option>
-            <option value="residential" ${
-              task.data.propertyDetails.type === "residential" ? "selected" : ""
-            }>Residential</option>
-          </select>
-          <input type="text" class="form-field-input" placeholder="Value" id="propertyValue" value="${
-            task.data.propertyDetails.value || ""
-          }" />
-        </div>
-      </div>
+            <div class="form-section">
+              <h4>Property Owner Details</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <input type="text" class="form-field-input" placeholder="Owner Name" id="ownerName" value="${
+                  task.data.ownerDetails.name || ""
+                }" />
+                <input type="text" class="form-field-input" placeholder="Phone" id="ownerPhone" value="${
+                  task.data.ownerDetails.phone || ""
+                }" />
+                <input type="email" class="form-field-input" placeholder="Email" id="ownerEmail" value="${
+                  task.data.ownerDetails.email || ""
+                }" />
+                <textarea class="form-field-input" placeholder="Address" id="ownerAddress">${
+                  task.data.ownerDetails.address || ""
+                }</textarea>
+              </div>
+            </div>
 
-      <div class="form-section">
-        <h4>Terms & Conditions</h4>
-        <textarea class="form-field-input" rows="4" placeholder="Enter terms and conditions..." id="loiTerms">${
-          task.data.terms || ""
-        }</textarea>
-      </div>
+            <div class="form-section">
+              <h4>Property Details</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <textarea class="form-field-input" placeholder="Property Address" id="propertyAddress">${
+                  task.data.propertyDetails.address || ""
+                }</textarea>
+                <input type="text" class="form-field-input" placeholder="Area (sq ft)" id="propertyArea" value="${
+                  task.data.propertyDetails.area || ""
+                }" />
+                <select class="form-field-input" id="propertyType">
+                  <option value="">Property Type</option>
+                  <option value="commercial" ${
+                    task.data.propertyDetails.type === "commercial"
+                      ? "selected"
+                      : ""
+                  }>Commercial</option>
+                  <option value="residential" ${
+                    task.data.propertyDetails.type === "residential"
+                      ? "selected"
+                      : ""
+                  }>Residential</option>
+                </select>
+                <input type="text" class="form-field-input" placeholder="Value" id="propertyValue" value="${
+                  task.data.propertyDetails.value || ""
+                }" />
+              </div>
+            </div>
 
-      <button class="btn print-loi">🖨️ Print Letter of Intent</button>
-    </div>
-  `;
+            <div class="form-section">
+              <h4>Terms & Conditions</h4>
+              <textarea class="form-field-input" rows="4" placeholder="Enter terms and conditions..." id="loiTerms">${
+                task.data.terms || ""
+              }</textarea>
+            </div>
+
+            <button class="btn print-loi">🖨️ Print Letter of Intent</button>
+          </div>
+        `;
       }
 
       // 3. Attachment Upload Form
@@ -2935,29 +3869,29 @@
         if (!task.data.attachments) task.data.attachments = [];
 
         return `
-    <div class="task-form-section">
-      <h3>Agreement & Handover Documents</h3>
-      
-      <div class="upload-section">
-        <input type="file" class="form-field-input" multiple id="documentFiles" accept=".pdf,.doc,.docx,.jpg,.png" />
-        <button class="btn upload-documents">📎 Upload Documents</button>
-      </div>
+          <div class="task-form-section">
+            <h3>Agreement & Handover Documents</h3>
 
-      <div class="attachments-list">
-        ${task.data.attachments
-          .map(
-            (file, index) => `
-          <div class="attachment-item">
-            <span class="attachment-name">📄 ${file.name}</span>
-            <span class="attachment-size">${file.size}</span>
-            <button class="btn-icon remove-attachment" data-index="${index}">🗑️</button>
+            <div class="upload-section">
+              <input type="file" class="form-field-input" multiple id="documentFiles" accept=".pdf,.doc,.docx,.jpg,.png" />
+              <button class="btn upload-documents">📎 Upload Documents</button>
+            </div>
+
+            <div class="attachments-list">
+              ${task.data.attachments
+                .map(
+                  (file, index) => `
+                <div class="attachment-item">
+                  <span class="attachment-name">📄 ${file.name}</span>
+                  <span class="attachment-size">${file.size}</span>
+                  <button class="btn-icon remove-attachment" data-index="${index}">🗑️</button>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
           </div>
-        `
-          )
-          .join("")}
-      </div>
-    </div>
-  `;
+        `;
       }
 
       // 4. Manpower Recruitment Form
@@ -2998,46 +3932,46 @@
         }
 
         return `
-    <div class="task-form-section">
-      <h3>Manpower Recruitment Checklist</h3>
-      
-      <div class="manpower-list">
-        ${task.data.manpower
-          .map(
-            (item, index) => `
-          <div class="manpower-item">
-            <div class="manpower-info">
-              <strong>${item.designation}</strong>
+          <div class="task-form-section">
+            <h3>Manpower Recruitment Checklist</h3>
+
+            <div class="manpower-list">
+              ${task.data.manpower
+                .map(
+                  (item, index) => `
+                <div class="manpower-item">
+                  <div class="manpower-info">
+                    <strong>${item.designation}</strong>
+                  </div>
+                  <div class="manpower-counts">
+                    <input type="number" class="form-field-input manpower-required" placeholder="Required" value="${
+                      item.required
+                    }" data-index="${index}" style="width: 80px;" />
+                    <span>/</span>
+                    <input type="number" class="form-field-input manpower-hired" placeholder="Hired" value="${
+                      item.hired
+                    }" data-index="${index}" style="width: 80px;" />
+                  </div>
+                  <select class="form-field-input manpower-status" data-index="${index}" style="width: 120px;">
+                    <option value="pending" ${
+                      item.status === "pending" ? "selected" : ""
+                    }>Pending</option>
+                    <option value="in-progress" ${
+                      item.status === "in-progress" ? "selected" : ""
+                    }>In Progress</option>
+                    <option value="completed" ${
+                      item.status === "completed" ? "selected" : ""
+                    }>Completed</option>
+                  </select>
+                </div>
+              `
+                )
+                .join("")}
             </div>
-            <div class="manpower-counts">
-              <input type="number" class="form-field-input manpower-required" placeholder="Required" value="${
-                item.required
-              }" data-index="${index}" style="width: 80px;" />
-              <span>/</span>
-              <input type="number" class="form-field-input manpower-hired" placeholder="Hired" value="${
-                item.hired
-              }" data-index="${index}" style="width: 80px;" />
-            </div>
-            <select class="form-field-input manpower-status" data-index="${index}" style="width: 120px;">
-              <option value="pending" ${
-                item.status === "pending" ? "selected" : ""
-              }>Pending</option>
-              <option value="in-progress" ${
-                item.status === "in-progress" ? "selected" : ""
-              }>In Progress</option>
-              <option value="completed" ${
-                item.status === "completed" ? "selected" : ""
-              }>Completed</option>
-            </select>
+
+            <button class="btn ghost add-manpower">+ Add Position</button>
           </div>
-        `
-          )
-          .join("")}
-      </div>
-      
-      <button class="btn ghost add-manpower">+ Add Position</button>
-    </div>
-  `;
+        `;
       }
 
       // 5-9. Checklist Forms (Infrastructure, Hardware, Software, Handover, Inauguration)
@@ -3047,43 +3981,43 @@
         }
 
         return `
-    <div class="task-form-section">
-      <h3>${title}</h3>
-      
-      <div class="checklist-container">
-        ${task.data.checklist
-          .map(
-            (item, index) => `
-          <div class="checklist-item">
-            <div class="checklist-content">
-              <input type="text" class="form-field-input checklist-item-text" value="${
-                item.item
-              }" data-index="${index}" />
-              <select class="form-field-input checklist-status" data-index="${index}" style="width: 120px;">
-                <option value="pending" ${
-                  item.status === "pending" ? "selected" : ""
-                }>Pending</option>
-                <option value="in-progress" ${
-                  item.status === "in-progress" ? "selected" : ""
-                }>In Progress</option>
-                <option value="completed" ${
-                  item.status === "completed" ? "selected" : ""
-                }>Completed</option>
-              </select>
-              <button class="btn-icon remove-checklist-item" data-index="${index}">🗑️</button>
+          <div class="task-form-section">
+            <h3>${title}</h3>
+
+            <div class="checklist-container">
+              ${task.data.checklist
+                .map(
+                  (item, index) => `
+                <div class="checklist-item">
+                  <div class="checklist-content">
+                    <input type="text" class="form-field-input checklist-item-text" value="${
+                      item.item
+                    }" data-index="${index}" />
+                    <select class="form-field-input checklist-status" data-index="${index}" style="width: 120px;">
+                      <option value="pending" ${
+                        item.status === "pending" ? "selected" : ""
+                      }>Pending</option>
+                      <option value="in-progress" ${
+                        item.status === "in-progress" ? "selected" : ""
+                      }>In Progress</option>
+                      <option value="completed" ${
+                        item.status === "completed" ? "selected" : ""
+                      }>Completed</option>
+                    </select>
+                    <button class="btn-icon remove-checklist-item" data-index="${index}">🗑️</button>
+                  </div>
+                  <textarea class="form-field-input checklist-notes" placeholder="Notes..." data-index="${index}">${
+                    item.notes || ""
+                  }</textarea>
+                </div>
+              `
+                )
+                .join("")}
             </div>
-            <textarea class="form-field-input checklist-notes" placeholder="Notes..." data-index="${index}">${
-              item.notes || ""
-            }</textarea>
+
+            <button class="btn ghost add-checklist-item">+ Add Item</button>
           </div>
-        `
-          )
-          .join("")}
-      </div>
-      
-      <button class="btn ghost add-checklist-item">+ Add Item</button>
-    </div>
-  `;
+        `;
       }
 
       function renderInfrastructureForm(task) {
@@ -3262,49 +4196,53 @@
       function generateLOIPrint(task) {
         const project = getSelectedProject();
         const printContent = `
-    <div style="padding: 40px; font-family: Arial, sans-serif;">
-      <h1 style="text-align: center; color: #006767;">LETTER OF INTENT</h1>
-      <hr style="margin: 20px 0;">
-      
-      <h3>Project: ${project.name}</h3>
-      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-      
-      <h3>Property Owner Details:</h3>
-      <p><strong>Name:</strong> ${task.data.ownerDetails.name}</p>
-      <p><strong>Address:</strong> ${task.data.ownerDetails.address}</p>
-      <p><strong>Phone:</strong> ${task.data.ownerDetails.phone}</p>
-      <p><strong>Email:</strong> ${task.data.ownerDetails.email}</p>
-      
-      <h3>Property Details:</h3>
-      <p><strong>Address:</strong> ${task.data.propertyDetails.address}</p>
-      <p><strong>Area:</strong> ${task.data.propertyDetails.area} sq ft</p>
-      <p><strong>Type:</strong> ${task.data.propertyDetails.type}</p>
-      <p><strong>Value:</strong> ${task.data.propertyDetails.value}</p>
-      
-      <h3>Terms & Conditions:</h3>
-      <p>${task.data.terms}</p>
-      
-      <div style="margin-top: 60px;">
-        <div style="float: left;">
-          <p>_____________________</p>
-          <p>Property Owner Signature</p>
-        </div>
-        <div style="float: right;">
-          <p>_____________________</p>
-          <p>Company Representative</p>
-        </div>
-        <div style="clear: both;"></div>
-      </div>
-    </div>
-  `;
+          <div style="padding: 40px; font-family: Arial, sans-serif;">
+            <h1 style="text-align: center; color: #006767;">LETTER OF INTENT</h1>
+            <hr style="margin: 20px 0;">
+
+            <h3>Project: ${project.name}</h3>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+
+            <h3>Property Owner Details:</h3>
+            <p><strong>Name:</strong> ${task.data.ownerDetails.name}</p>
+            <p><strong>Address:</strong> ${task.data.ownerDetails.address}</p>
+            <p><strong>Phone:</strong> ${task.data.ownerDetails.phone}</p>
+            <p><strong>Email:</strong> ${task.data.ownerDetails.email}</p>
+
+            <h3>Property Details:</h3>
+            <p><strong>Address:</strong> ${
+              task.data.propertyDetails.address
+            }</p>
+            <p><strong>Area:</strong> ${
+              task.data.propertyDetails.area
+            } sq ft</p>
+            <p><strong>Type:</strong> ${task.data.propertyDetails.type}</p>
+            <p><strong>Value:</strong> ${task.data.propertyDetails.value}</p>
+
+            <h3>Terms & Conditions:</h3>
+            <p>${task.data.terms}</p>
+
+            <div style="margin-top: 60px;">
+              <div style="float: left;">
+                <p>_____________________</p>
+                <p>Property Owner Signature</p>
+              </div>
+              <div style="float: right;">
+                <p>_____________________</p>
+                <p>Company Representative</p>
+              </div>
+              <div style="clear: both;"></div>
+            </div>
+          </div>
+        `;
 
         const printWindow = window.open("", "_blank");
         printWindow.document.write(`
-    <html>
-      <head><title>Letter of Intent - ${project.name}</title></head>
-      <body>${printContent}</body>
-    </html>
-  `);
+          <html>
+            <head><title>Letter of Intent - ${project.name}</title></head>
+            <body>${printContent}</body>
+          </html>
+        `);
         printWindow.document.close();
         printWindow.print();
       }

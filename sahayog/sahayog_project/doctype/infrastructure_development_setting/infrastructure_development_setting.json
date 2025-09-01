@@ -1,34 +1,34 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-07-25 11:21:58.006226",
+ "creation": "2025-08-21 10:59:44.180311",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "manpower_recruitment_section",
-  "manpower_recruitment_table"
+  "infrastructure_development_section_section",
+  "infrastructure_development_table"
  ],
  "fields": [
   {
-   "fieldname": "manpower_recruitment_section",
+   "fieldname": "infrastructure_development_section_section",
    "fieldtype": "Section Break",
-   "label": "Manpower Recruitment Section"
+   "label": "Infrastructure Development Section"
   },
   {
-   "fieldname": "manpower_recruitment_table",
+   "fieldname": "infrastructure_development_table",
    "fieldtype": "Table",
-   "label": "Manpower Recruitment Table",
-   "options": "Manpower Recruitment Setting Table"
+   "label": "Infrastructure Development Table",
+   "options": "Infrastructure Development Setting Table"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-20 14:04:28.747216",
+ "modified": "2025-08-21 11:02:13.532482",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
- "name": "Manpower Recruitment Setting",
+ "name": "Infrastructure Development Setting",
  "owner": "Administrator",
  "permissions": [
   {
