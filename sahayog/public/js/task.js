@@ -1,6 +1,9 @@
 frappe.ui.form.on("Task", {
   refresh: function (frm) {
     frm.trigger("hide_fields");
+    if (frm.doc.subject == "Vendor Allocation") {
+      frm.trigger("supplier_allocation");
+    }
     frm.trigger("set_readonly_fields");
     frm.trigger("collapsible_false");
     if (
@@ -133,7 +136,120 @@ frappe.ui.form.on("Task", {
       });
     }
   },
+  async supplier_allocation(frm) {
+    if (!frm.doc.project) {
+      frm.set_intro("Please select a Project first.", "orange");
+      return;
+    }
 
+    // -----------------------------
+    // 1️⃣ Fetch Project and existing suppliers
+    // -----------------------------
+    let project = await frappe.db.get_doc("Project", frm.doc.project);
+    let existing_suppliers = project.custom_supplier_details || [];
+
+    // -----------------------------
+    // 2️⃣ Set intro with clickable links
+    // -----------------------------
+    if (existing_suppliers.length > 0) {
+      let html = `<ul style="margin-top:8px;">${existing_suppliers
+        .map(
+          (r, idx) =>
+            `<li>
+                ${idx + 1}. 
+                <a href="#Form/Supplier/${
+                  r.supplier
+                }" onclick="frappe.set_route('Form','Supplier','${
+              r.supplier
+            }'); return false;">
+                    ${r.supplier}
+                </a>
+            </li>`
+        )
+        .join("")}</ul>`;
+
+      frm.set_intro(
+        `This Project has ${existing_suppliers.length} supplier(s) Allocated: ${html}`,
+        "green"
+      );
+    } else {
+      frm.set_intro("No suppliers linked in the Project.", "orange");
+    }
+
+    // -----------------------------
+    // 3️⃣ Always add custom button
+    // -----------------------------
+    frm.add_custom_button("Allocate Supplier", async () => {
+      const dialog = new frappe.ui.Dialog({
+        title: __("Allocate Suppliers"),
+        fields: [
+          {
+            fieldname: "suppliers",
+            fieldtype: "Table",
+            label: __("Suppliers"),
+            in_place_edit: true,
+            reqd: 1,
+            fields: [
+              {
+                fieldname: "supplier",
+                label: __("Supplier"),
+                fieldtype: "Link",
+                options: "Supplier",
+                in_list_view: 1,
+                reqd: 1,
+              },
+            ],
+            data: existing_suppliers.map((r) => ({ supplier: r.supplier })),
+          },
+        ],
+        primary_action_label: __("Submit"),
+        primary_action: async function (values) {
+          // -----------------------------
+          // 4️⃣ Filter empty/invalid suppliers
+          // -----------------------------
+          let supplier_list = values.suppliers
+            .map((r) => r.supplier)
+            .filter((s) => s && s.trim() !== "");
+
+          if (supplier_list.length === 0) {
+            frappe.msgprint("Please add at least one valid supplier.");
+            return;
+          }
+          console.log("Suppliers to allocate:", supplier_list);
+          // -----------------------------
+          // 5️⃣ Call Python API to update child table
+          // -----------------------------
+          try {
+            await frappe.call({
+              method: "sahayog.doc_events.task.update_project_suppliers",
+              args: {
+                project_name: frm.doc.project,
+                suppliers: JSON.stringify(supplier_list), // <- important
+              },
+              callback: function (r) {
+                frappe.show_alert({
+                  message: "Suppliers updated successfully!",
+                  indicator: "green",
+                });
+                frm.trigger("supplier_allocation");
+              },
+            });
+
+            dialog.hide();
+            window.location.reload();
+          } catch (err) {
+            frappe.msgprint({
+              title: __("Error"),
+              message: err.message,
+              indicator: "red",
+            });
+          }
+        },
+      });
+
+      dialog.show();
+    });
+  },
   async set_readonly_fields(frm) {
     const fields_to_readonly = [
       "project",
