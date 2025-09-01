@@ -73,7 +73,7 @@ frappe.ui.form.on("Task", {
 
     let project = frm.doc.project;
 
-    if (frm.doc.subject == "Task 2 : Letter of Intent") {
+    if (frm.doc.subject == "Letter of Intent") {
       // Add the Create LOI button
       let createButton = frm.add_custom_button(__("Create LOI"), function () {
         frappe.new_doc("Letter of Intent", null, {
@@ -167,7 +167,7 @@ frappe.ui.form.on("Task", {
 // html field
 frappe.ui.form.on("Task", {
   refresh: function (frm) {
-    if (frm.doc.subject === "Task 1 : Acquisition of the Property") {
+    if (frm.doc.subject === "Acquisition of the Property") {
       // Render custom UI
       frm.fields_dict.custom_location_details.$wrapper
         .closest(".form-group")
@@ -178,10 +178,7 @@ frappe.ui.form.on("Task", {
       add_custom_css();
     }
 
-    if (
-      frm.doc.subject === "Task 4 : Manpower Recruitment" &&
-      !frm.doc.is_template
-    ) {
+    if (frm.doc.subject === "Manpower Recruitment" && !frm.doc.is_template) {
       render_manpower_summary(frm);
     }
   },
