@@ -56,6 +56,10 @@ frappe.ui.form.on("Task", {
         true
       ); // Hide delete all button
 
+      // Filter options for the 'status' field
+      let allowed_status = ["Open", "Working", "Overdue", "Completed"]; // options visible to normal users
+      frm.set_df_property("status", "options", allowed_status.join("\n"));
+
       // Hide sidebar
       $(".layout-side-section").hide();
       $(".sidebar-toggle-btn").hide();
