@@ -26,7 +26,7 @@
  "is_hidden": 0,
  "label": "Prodtech Issue Register",
  "links": [],
- "modified": "2025-07-14 16:29:38.710150",
+ "modified": "2025-08-02 12:57:35.750654",
  "modified_by": "Administrator",
  "module": "Issue Register",
  "name": "Prodtech Issue Register",
@@ -49,7 +49,7 @@
  "public": 1,
  "quick_lists": [],
  "roles": [],
- "sequence_id": 55.0,
+ "sequence_id": 66.0,
  "shortcuts": [
   {
    "color": "Grey",

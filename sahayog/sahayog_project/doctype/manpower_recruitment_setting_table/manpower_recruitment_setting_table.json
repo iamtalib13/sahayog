@@ -3,13 +3,10 @@
  "allow_rename": 1,
  "creation": "2025-07-25 11:55:25.531539",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "hirable_designation",
-  "standard_employee_count",
-  "hired_till_now",
-  "status"
+  "standard_employee_count"
  ],
  "fields": [
   {
@@ -19,22 +16,6 @@
    "label": "Hirable Designation",
    "read_only_depends_on": "eval:doc.parenttype == \"Task\"",
    "reqd": 1
-  },
-  {
-   "depends_on": "eval:doc.parenttype == \"Task\"",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "Pending\nIn Progress\nHired"
-  },
-  {
-   "depends_on": "eval:doc.parenttype == \"Task\"",
-   "fieldname": "hired_till_now",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Hired Till Now",
-   "non_negative": 1
   },
   {
    "fieldname": "standard_employee_count",
@@ -50,10 +31,10 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-25 14:12:56.852889",
+ "modified": "2025-08-20 14:49:24.069378",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
- "name": "Manpower Recruitment",
+ "name": "Manpower Recruitment Setting Table",
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",

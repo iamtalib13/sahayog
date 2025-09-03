@@ -194,12 +194,14 @@
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 1rem;
       }
-
       .action-card {
         background-color: var(--card-bg);
         border-radius: var(--radius);
-        padding: 1rem;
-        box-shadow: var(--shadow);
+        box-shadow: 
+        /* Bottom shadow (existing) */ var(--shadow),
+          /* Upper side shadow - adds depth from top */ 0 -4px 6px -1px
+            rgba(0, 0, 0, 0.05),
+          0 -2px 4px -1px rgba(0, 0, 0, 0.03);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -211,6 +213,7 @@
         color: inherit;
         aspect-ratio: 1;
         user-select: none;
+        position: relative;
       }
 
       .action-card:hover {
@@ -252,7 +255,7 @@
         }
 
         .card-title {
-          font-size: 0.75rem;
+          font-size: 0.5rem;
         }
       }
 
@@ -288,6 +291,25 @@
       }
       .animate-ping {
         animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+      .task-card {
+        position: relative;
+      }
+
+      .count-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #ef4444;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
       }
     </style>
   </head>
@@ -422,11 +444,143 @@
               </div>
               <h3 class="card-title">Audit</h3>
             </a>
+            <a
+              href="/app/praman"
+              class="action-card mis"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-chart-pie"></i>
+              </div>
+              <h3 class="card-title">Praman</h3>
+            </a>
+
+            <a
+              href="/app/branch-proposal"
+              class="action-card bp-card relative"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-building"></i>
+              </div>
+              <h3 class="card-title">Branch Proposal</h3>
+            </a>
+
+            <a
+              href="/app/task"
+              class="action-card task-card relative"
+              role="link"
+              tabindex="0"
+              onclick="handleTaskCardClick(event)"
+            >
+              <div
+                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
+                aria-hidden="true"
+              >
+                <i class="fas fa-tasks"></i>
+              </div>
+              <h3 class="card-title">Tasks</h3>
+              <!-- Count badge will be added dynamically -->
+            </a>
           </div>
         </section>
       </main>
     </div>
     <script>
+      // Function to handle Task card click with custom filtering
+      function handleTaskCardClick(event, taskCount) {
+        event.preventDefault();
+
+        if (!taskCount || taskCount === 0) {
+          alert("No tasks assigned to you");
+          return; // Stop navigation
+        }
+
+        const url = "/app/task";
+        if (window.top) {
+          window.top.location.href = url;
+        } else {
+          window.location.href = url;
+        }
+      }
+
+      // Function to fetch and display assigned task count
+      async function fetchAssignedTaskCount() {
+        const taskCard = document.querySelector(".task-card");
+        if (!taskCard) return;
+
+        try {
+          const userRes = await fetch(
+            "/api/method/frappe.auth.get_logged_user"
+          );
+          const userData = await userRes.json();
+          const userId = userData.message;
+
+          if (!userId || userId === "Administrator") return;
+
+          // Use API to get assigned task count (with frappe.throw validation)
+          const countRes = await fetch(
+            `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
+          );
+          const countData = await countRes.json();
+          const taskCount = countData.message || 0;
+
+          // Badge update
+          const existingBadge = taskCard.querySelector(".count-badge");
+          if (existingBadge) existingBadge.remove();
+
+          if (taskCount > 0) {
+            const countBadge = document.createElement("div");
+            countBadge.className = "count-badge";
+            countBadge.textContent = taskCount;
+            taskCard.appendChild(countBadge);
+
+            // Enable click
+            taskCard.style.pointerEvents = "auto";
+            taskCard.style.opacity = "1";
+          } else {
+            // No tasks → disable card
+            taskCard.classList.add("no-tasks");
+            taskCard.style.pointerEvents = "none";
+            taskCard.style.opacity = "0.6";
+          }
+
+          // Attach click
+          taskCard.onclick = async function (e) {
+            e.preventDefault();
+            try {
+              // Double-check task count via API in case page is open long time
+              await fetch(
+                `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
+              );
+              // Navigate if no frappe.throw
+              window.location.href = "/app/task";
+            } catch (err) {
+              // frappe.throw error will be caught here
+              frappe.msgprint(err?.message || "No tasks assigned to you");
+            }
+          };
+        } catch (error) {
+          console.error("Failed to fetch task count:", error);
+          // Optional: show card disabled
+          taskCard.style.pointerEvents = "none";
+          taskCard.style.opacity = "0.6";
+        }
+      }
+
+      // DOMContentLoaded
+      document.addEventListener("DOMContentLoaded", function () {
+        fetchAssignedTaskCount();
+      });
+
       async function fetchEmployeeDetails() {
         try {
           // Step 1: Get the current logged-in user

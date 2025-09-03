@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"-JjV7o74y5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Proposal\",\"col\":3}},{\"id\":\"go0CSk53PB\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog Projects\",\"col\":12}}]",
+ "content": "[{\"id\":\"-JjV7o74y5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Proposal\",\"col\":3}},{\"id\":\"ns_daMsp96\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier\",\"col\":3}},{\"id\":\"QUl36rfjho\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order\",\"col\":3}},{\"id\":\"YC0IYZ0mP_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"BOQ Settings\",\"col\":3}},{\"id\":\"go0CSk53PB\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Sahayog Projects\",\"col\":12}}]",
  "creation": "2025-02-08 10:29:55.166799",
  "custom_blocks": [
   {
@@ -17,7 +17,7 @@
  "is_hidden": 0,
  "label": "Sahayog Project",
  "links": [],
- "modified": "2025-07-14 16:29:38.602195",
+ "modified": "2025-09-01 17:49:40.102711",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Project",
@@ -34,13 +34,37 @@
    "role": "Task Manager"
   }
  ],
- "sequence_id": 52.0,
+ "sequence_id": 62.0,
  "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "BOQ Settings",
+   "link_to": "BOQ",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "Branch Proposal",
    "link_to": "Branch Proposal",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Supplier",
+   "link_to": "Supplier",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Purchase Order",
+   "link_to": "Purchase Order",
    "stats_filter": "[]",
    "type": "DocType"
   }

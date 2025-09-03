@@ -1,328 +1,335 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:{project}-LOI",
-  "creation": "2025-02-03 11:27:09.661013",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "project_section",
-    "project",
-    "date",
-    "column_break_c4sb",
-    "task",
-    "personal_information_section",
-    "salutation",
-    "owner_name",
-    "residential_address",
-    "column_break_5djl",
-    "aadhar_number",
-    "mobile_number",
-    "email_address",
-    "pan_number",
-    "property_details_section",
-    "premises_offered",
-    "carpet_area",
-    "column_break_byqk",
-    "rent_per_month",
-    "municipal_taxes",
-    "maintenance",
-    "security_deposit",
-    "financial_terms_section",
-    "leave_and_license",
-    "stamp_duty",
-    "lock_in_period",
-    "exit_clause",
-    "escalations_or_increments",
-    "rent_free_period",
-    "parking_area",
-    "water_supply",
-    "drainage_and_sewerage",
-    "electricity_and_backup",
-    "payment_terms",
-    "column_break_x1rq",
-    "signage",
-    "arbitration_and_jurisdiction",
-    "landlord_scope_of_work",
-    "internet_antina",
-    "split_ratio",
-    "agreement_details_section",
-    "type_of_agreement",
-    "column_break_4gzf",
-    "section_break_dffg",
-    "amended_from"
-  ],
-  "fields": [
-    {
-      "fieldname": "project_section",
-      "fieldtype": "Section Break",
-      "label": "Project"
-    },
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "in_list_view": 1,
-      "label": " Project",
-      "options": "Project",
-      "read_only_depends_on": "eval:frappe.session.user!=\"Administrator\"\n",
-      "reqd": 1
-    },
-    {
-      "fieldname": "date",
-      "fieldtype": "Date",
-      "label": "Date"
-    },
-    {
-      "fieldname": "column_break_c4sb",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "task",
-      "fieldtype": "Link",
-      "label": "Task",
-      "options": "Task",
-      "read_only_depends_on": "eval:frappe.session.user!=\"Administrator\"\n"
-    },
-    {
-      "fieldname": "personal_information_section",
-      "fieldtype": "Section Break",
-      "label": "Personal Information"
-    },
-    {
-      "fieldname": "salutation",
-      "fieldtype": "Link",
-      "label": "Salutation",
-      "options": "Salutation"
-    },
-    {
-      "fieldname": "owner_name",
-      "fieldtype": "Data",
-      "label": "Owner Name"
-    },
-    {
-      "fieldname": "residential_address",
-      "fieldtype": "Small Text",
-      "label": "Residential Address"
-    },
-    {
-      "fieldname": "column_break_5djl",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "aadhar_number",
-      "fieldtype": "Data",
-      "label": "Aadhar Number"
-    },
-    {
-      "fieldname": "mobile_number",
-      "fieldtype": "Data",
-      "label": "Mobile Number"
-    },
-    {
-      "fieldname": "email_address",
-      "fieldtype": "Data",
-      "label": "Email Address"
-    },
-    {
-      "fieldname": "pan_number",
-      "fieldtype": "Data",
-      "label": " PAN Number"
-    },
-    {
-      "fieldname": "property_details_section",
-      "fieldtype": "Section Break",
-      "label": "Property Details"
-    },
-    {
-      "fieldname": "premises_offered",
-      "fieldtype": "Small Text",
-      "label": " Premises Offered"
-    },
-    {
-      "fieldname": "carpet_area",
-      "fieldtype": "Small Text",
-      "label": "Carpet Area"
-    },
-    {
-      "fieldname": "column_break_byqk",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "rent_per_month",
-      "fieldtype": "Data",
-      "label": "Rent per Month"
-    },
-    {
-      "fieldname": "municipal_taxes",
-      "fieldtype": "Data",
-      "label": "Municipal Taxes"
-    },
-    {
-      "fieldname": "maintenance",
-      "fieldtype": "Data",
-      "label": "Maintenance"
-    },
-    {
-      "fieldname": "security_deposit",
-      "fieldtype": "Data",
-      "label": "Security Deposit"
-    },
-    {
-      "fieldname": "financial_terms_section",
-      "fieldtype": "Section Break",
-      "label": "Financial Terms"
-    },
-    {
-      "fieldname": "stamp_duty",
-      "fieldtype": "Data",
-      "label": "Stamp Duty and Registration"
-    },
-    {
-      "fieldname": "lock_in_period",
-      "fieldtype": "Data",
-      "label": "Lock in period"
-    },
-    {
-      "fieldname": "exit_clause",
-      "fieldtype": "Small Text",
-      "label": "Exit Clause"
-    },
-    {
-      "fieldname": "escalations_or_increments",
-      "fieldtype": "Data",
-      "label": "Escalations or Increments"
-    },
-    {
-      "fieldname": "rent_free_period",
-      "fieldtype": "Data",
-      "label": "Rent Free Period"
-    },
-    {
-      "fieldname": "parking_area",
-      "fieldtype": "Data",
-      "label": "Parking Area"
-    },
-    {
-      "fieldname": "water_supply",
-      "fieldtype": "Data",
-      "label": "Water Supply"
-    },
-    {
-      "fieldname": "drainage_and_sewerage",
-      "fieldtype": "Data",
-      "label": "Drainage and Sewerage"
-    },
-    {
-      "fieldname": "electricity_and_backup",
-      "fieldtype": "Data",
-      "label": "Electricity and Backup"
-    },
-    {
-      "fieldname": "payment_terms",
-      "fieldtype": "Small Text",
-      "label": "Payment terms of Security deposite"
-    },
-    {
-      "fieldname": "column_break_x1rq",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "signage",
-      "fieldtype": "Small Text",
-      "label": "Signage"
-    },
-    {
-      "fieldname": "arbitration_and_jurisdiction",
-      "fieldtype": "Data",
-      "label": "Arbitration and Jurisdiction"
-    },
-    {
-      "fieldname": "landlord_scope_of_work",
-      "fieldtype": "Small Text",
-      "label": "Landlord Scope of Work"
-    },
-    {
-      "fieldname": "split_ratio",
-      "fieldtype": "Small Text",
-      "label": "Split Ratio"
-    },
-    {
-      "fieldname": "agreement_details_section",
-      "fieldtype": "Section Break",
-      "label": "Agreement Details"
-    },
-    {
-      "fieldname": "type_of_agreement",
-      "fieldtype": "Select",
-      "label": "Type of Agreement",
-      "options": "\nLease\nLicense\nOther"
-    },
-    {
-      "fieldname": "column_break_4gzf",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "section_break_dffg",
-      "fieldtype": "Section Break"
-    },
-    {
-      "fieldname": "amended_from",
-      "fieldtype": "Link",
-      "label": "Amended From",
-      "no_copy": 1,
-      "options": "Letter of Intent",
-      "print_hide": 1,
-      "read_only": 1,
-      "search_index": 1
-    },
-    {
-      "fieldname": "amended_from",
-      "fieldtype": "Link",
-      "label": "Amended From",
-      "no_copy": 1,
-      "options": "Letter of Intent",
-      "print_hide": 1,
-      "read_only": 1,
-      "search_index": 1
-    },
-    {
-      "fieldname": "internet_antina",
-      "fieldtype": "Small Text",
-      "label": "Internet Antina"
-    },
-    {
-      "fieldname": "leave_and_license",
-      "fieldtype": "Data",
-      "label": "Leave and License Period"
-    }
-  ],
-  "grid_page_length": 50,
-  "index_web_pages_for_search": 1,
-  "is_submittable": 1,
-  "links": [],
-  "modified": "2025-07-23 10:39:54.755669",
-  "modified_by": "Administrator",
-  "module": "Sahayog",
-  "name": "Letter of Intent",
-  "naming_rule": "Expression",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "submit": 1,
-      "write": 1
-    }
-  ],
-  "row_format": "Dynamic",
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "states": []
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{project}-LOI",
+ "creation": "2025-02-03 11:27:09.661013",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project_section",
+  "project",
+  "project_name",
+  "column_break_c4sb",
+  "task",
+  "date",
+  "personal_information_section",
+  "salutation",
+  "owner_name",
+  "residential_address",
+  "column_break_5djl",
+  "aadhar_number",
+  "mobile_number",
+  "email_address",
+  "pan_number",
+  "property_details_section",
+  "premises_offered",
+  "carpet_area",
+  "column_break_byqk",
+  "rent_per_month",
+  "municipal_taxes",
+  "maintenance",
+  "security_deposit",
+  "financial_terms_section",
+  "leave_and_license",
+  "stamp_duty",
+  "lock_in_period",
+  "exit_clause",
+  "escalations_or_increments",
+  "rent_free_period",
+  "parking_area",
+  "water_supply",
+  "drainage_and_sewerage",
+  "electricity_and_backup",
+  "payment_terms",
+  "column_break_x1rq",
+  "signage",
+  "arbitration_and_jurisdiction",
+  "landlord_scope_of_work",
+  "internet_antina",
+  "split_ratio",
+  "agreement_details_section",
+  "type_of_agreement",
+  "column_break_4gzf",
+  "section_break_dffg",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "project_section",
+   "fieldtype": "Section Break",
+   "label": "Project"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": " Project ID",
+   "options": "Project",
+   "read_only_depends_on": "eval:frappe.session.user!=\"Administrator\"\n",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "column_break_c4sb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "Task",
+   "read_only_depends_on": "eval:frappe.session.user!=\"Administrator\"\n"
+  },
+  {
+   "fieldname": "personal_information_section",
+   "fieldtype": "Section Break",
+   "label": "Personal Information"
+  },
+  {
+   "fieldname": "salutation",
+   "fieldtype": "Link",
+   "label": "Salutation",
+   "options": "Salutation"
+  },
+  {
+   "fieldname": "owner_name",
+   "fieldtype": "Data",
+   "label": "Owner Name"
+  },
+  {
+   "fieldname": "residential_address",
+   "fieldtype": "Small Text",
+   "label": "Residential Address"
+  },
+  {
+   "fieldname": "column_break_5djl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Data",
+   "label": "Mobile Number"
+  },
+  {
+   "fieldname": "email_address",
+   "fieldtype": "Data",
+   "label": "Email Address"
+  },
+  {
+   "fieldname": "pan_number",
+   "fieldtype": "Data",
+   "label": " PAN Number"
+  },
+  {
+   "fieldname": "property_details_section",
+   "fieldtype": "Section Break",
+   "label": "Property Details"
+  },
+  {
+   "fieldname": "premises_offered",
+   "fieldtype": "Small Text",
+   "label": " Premises Offered"
+  },
+  {
+   "fieldname": "carpet_area",
+   "fieldtype": "Small Text",
+   "label": "Carpet Area"
+  },
+  {
+   "fieldname": "column_break_byqk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rent_per_month",
+   "fieldtype": "Data",
+   "label": "Rent per Month"
+  },
+  {
+   "fieldname": "municipal_taxes",
+   "fieldtype": "Data",
+   "label": "Municipal Taxes"
+  },
+  {
+   "fieldname": "maintenance",
+   "fieldtype": "Data",
+   "label": "Maintenance"
+  },
+  {
+   "fieldname": "security_deposit",
+   "fieldtype": "Data",
+   "label": "Security Deposit"
+  },
+  {
+   "fieldname": "financial_terms_section",
+   "fieldtype": "Section Break",
+   "label": "Financial Terms"
+  },
+  {
+   "fieldname": "stamp_duty",
+   "fieldtype": "Data",
+   "label": "Stamp Duty and Registration"
+  },
+  {
+   "fieldname": "lock_in_period",
+   "fieldtype": "Data",
+   "label": "Lock in period"
+  },
+  {
+   "fieldname": "exit_clause",
+   "fieldtype": "Small Text",
+   "label": "Exit Clause"
+  },
+  {
+   "fieldname": "escalations_or_increments",
+   "fieldtype": "Data",
+   "label": "Escalations or Increments"
+  },
+  {
+   "fieldname": "rent_free_period",
+   "fieldtype": "Data",
+   "label": "Rent Free Period"
+  },
+  {
+   "fieldname": "parking_area",
+   "fieldtype": "Data",
+   "label": "Parking Area"
+  },
+  {
+   "fieldname": "water_supply",
+   "fieldtype": "Data",
+   "label": "Water Supply"
+  },
+  {
+   "fieldname": "drainage_and_sewerage",
+   "fieldtype": "Data",
+   "label": "Drainage and Sewerage"
+  },
+  {
+   "fieldname": "electricity_and_backup",
+   "fieldtype": "Data",
+   "label": "Electricity and Backup"
+  },
+  {
+   "fieldname": "payment_terms",
+   "fieldtype": "Small Text",
+   "label": "Payment terms of Security deposite"
+  },
+  {
+   "fieldname": "column_break_x1rq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "signage",
+   "fieldtype": "Small Text",
+   "label": "Signage"
+  },
+  {
+   "fieldname": "arbitration_and_jurisdiction",
+   "fieldtype": "Data",
+   "label": "Arbitration and Jurisdiction"
+  },
+  {
+   "fieldname": "landlord_scope_of_work",
+   "fieldtype": "Small Text",
+   "label": "Landlord Scope of Work"
+  },
+  {
+   "fieldname": "split_ratio",
+   "fieldtype": "Small Text",
+   "label": "Split Ratio"
+  },
+  {
+   "fieldname": "agreement_details_section",
+   "fieldtype": "Section Break",
+   "label": "Agreement Details"
+  },
+  {
+   "fieldname": "type_of_agreement",
+   "fieldtype": "Select",
+   "label": "Type of Agreement",
+   "options": "\nLease\nLicense\nOther"
+  },
+  {
+   "fieldname": "column_break_4gzf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_dffg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Letter of Intent",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Letter of Intent",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "internet_antina",
+   "fieldtype": "Small Text",
+   "label": "Internet Antina"
+  },
+  {
+   "fieldname": "leave_and_license",
+   "fieldtype": "Data",
+   "label": "Leave and License Period"
+  },
+  {
+   "fetch_from": "project.project_name",
+   "fieldname": "project_name",
+   "fieldtype": "Data",
+   "label": "Project Name"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-09-03 16:03:56.905734",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Letter of Intent",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
 }

@@ -12,6 +12,13 @@ def execute():
                 "label": "Warehouse",
             },  
             
+             {
+                "fieldname": "sol_id",
+                "fieldtype": "Data",
+                "insert_after": "custom_warehouse",
+                "label": "Branch SOL ID",
+            },  
+            
         ],
     }
     create_custom_fields(fields)

@@ -13,6 +13,7 @@ def execute(filters=None):
     status = filters.get("status")
     zone = filters.get("zone")
     region = filters.get("region")
+    branch = filters.get("branch")
 
     conditions = ""
 
@@ -23,9 +24,11 @@ def execute(filters=None):
     if to_date:
         conditions += " AND DATE(l.creation) <= %(to_date)s"
     if zone:
-        conditions += " AND l.zone = %(zone)s"
+        conditions += " AND l.custom_zone = %(zone)s"
     if region:
         conditions += " AND l.region = %(region)s"
+    if branch:
+        conditions += " AND l.branch = %(branch)s"
 
     columns = [
         {"label": "Product", "fieldname": "product", "fieldtype": "Link", "options": "Item", "width": 150},
@@ -39,53 +42,34 @@ def execute(filters=None):
         SELECT
             lp.product,
             lp.product_name,
-            l.custom_zone,
             COUNT(lp.name) AS lead_count,
             SUM(lp.product_amount) AS total_amount,
             AVG(lp.product_amount) AS average_amount
         FROM `tabLead Product` lp
         INNER JOIN `tabLead` l ON l.name = lp.parent
         WHERE 1=1 {conditions}
-        GROUP BY lp.product, lp.product_name, l.custom_zone
+        GROUP BY lp.product, lp.product_name
         ORDER BY total_amount DESC
     """, {
         "from_date": from_date,
         "to_date": to_date,
         "status": status,
         "zone": zone,
-        "region": region
+        "region": region,
+        "branch": branch
     }, as_dict=True)
 
-    # Aggregate data per product
-    product_map = defaultdict(lambda: {"product_name": "", "lead_count": 0, "total_amount": 0, "zones": defaultdict(float)})
-    all_zones = set()
-
-    for row in data:
-        key = row["product"]
-        zone = row["custom_zone"]
-        product_map[key]["product_name"] = row["product_name"]
-        product_map[key]["lead_count"] += row["lead_count"]
-        product_map[key]["total_amount"] += row["total_amount"]
-        product_map[key]["zones"][zone] += row["total_amount"]
-        all_zones.add(zone)
-
-    all_zones = sorted(all_zones)
+    # Final table data
     final_data = []
-    chart_labels = []
-    zone_wise = {zone: [] for zone in all_zones}
-
-    for product, val in product_map.items():
-        avg = val["total_amount"] / val["lead_count"] if val["lead_count"] else 0
+    for row in data:
+        avg_amount = row["total_amount"] / row["lead_count"] if row["lead_count"] else 0
         final_data.append({
-            "product": product,
-            "product_name": val["product_name"],
-            "lead_count": val["lead_count"],
-            "total_amount": val["total_amount"],
-            "average_amount": avg
+            "product": row["product"],
+            "product_name": row["product_name"],
+            "lead_count": row["lead_count"],
+            "total_amount": row["total_amount"],
+            "average_amount": avg_amount
         })
-        chart_labels.append(val["product_name"])
-        for zone in all_zones:
-            zone_wise[zone].append(val["zones"].get(zone, 0))
 
     # Grand totals
     total_amount = sum(row["total_amount"] for row in final_data)
@@ -102,31 +86,26 @@ def execute(filters=None):
             "_style": "font-weight: bold; color: darkgreen;"
         })
 
-    # Stacked chart with vibrant and distinct colors
+    # Chart - Simple product-wise bar chart
+    chart_labels = [row["product_name"] for row in data]
+    chart_values = [row["total_amount"] for row in data]
+
     catchy_colors = [
-        "#FF6F61",  # Coral Red
-        "#6A4C93",  # Royal Purple
-        "#00B8A9",  # Aquamarine
-        "#F9A825",  # Golden Yellow
-        "#EF476F",  # Pink Red
-        "#118AB2",  # Deep Blue
-        "#06D6A0",  # Mint Green
-        "#FFD166",  # Bright Yellow
-        "#8338EC",  # Vivid Violet
-        "#FB5607"   # Orange Red
+        "#FF6F61", "#6A4C93", "#00B8A9", "#F9A825",
+        "#EF476F", "#118AB2", "#06D6A0", "#FFD166",
+        "#8338EC", "#FB5607"
     ]
 
     chart = {
         "data": {
             "labels": chart_labels,
             "datasets": [
-                {"name": zone, "values": zone_wise[zone]} for zone in all_zones
+                {"name": "Total Amount", "values": chart_values}
             ]
         },
         "type": "bar",
-        "barOptions": {"stacked": True},
         "height": 120,
-        "colors": catchy_colors[:len(all_zones)]
+        "colors": catchy_colors[:1]
     }
 
     def inr_format(amount):

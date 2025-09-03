@@ -1,6 +1,11 @@
 frappe.ui.form.on("Supplier Quotation", {
   refresh: function (frm) {
     console.log("✅ Supplier Quotation form refreshed.");
+    // Page title change
+    frm.page.set_title("BOQ");
+
+    // Browser tab title bhi update ho jayega
+    document.title = "BOQ";
 
     // Always hide the project field first
     //frm.set_df_property("project", "hidden", 1);

@@ -7,9 +7,16 @@
  "engine": "InnoDB",
  "field_order": [
   "location_name",
+  "address",
+  "location_image",
   "status",
   "estimate_rent",
-  "location_image"
+  "security_deposit",
+  "floor",
+  "remarks",
+  "contact_number",
+  "occupation",
+  "carpet_area"
  ],
  "fields": [
   {
@@ -37,12 +44,47 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Estimate Rent"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Address"
+  },
+  {
+   "fieldname": "security_deposit",
+   "fieldtype": "Currency",
+   "label": "Security Deposit"
+  },
+  {
+   "fieldname": "floor",
+   "fieldtype": "Data",
+   "label": "Floor"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Data",
+   "label": "Contact Number"
+  },
+  {
+   "fieldname": "occupation",
+   "fieldtype": "Data",
+   "label": "Occupation"
+  },
+  {
+   "fieldname": "carpet_area",
+   "fieldtype": "Data",
+   "label": "Carpet Area"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-16 15:46:11.980155",
+ "modified": "2025-09-03 10:12:04.667684",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Location Details",

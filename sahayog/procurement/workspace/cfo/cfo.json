@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "CFO",
  "links": [],
- "modified": "2025-07-14 16:29:38.812909",
+ "modified": "2025-08-02 12:57:35.801358",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "CFO",
@@ -30,7 +30,7 @@
    "role": "Purchase Manager"
   }
  ],
- "sequence_id": 58.0,
+ "sequence_id": 70.0,
  "shortcuts": [
   {
    "color": "Red",

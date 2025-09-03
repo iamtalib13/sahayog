@@ -8,8 +8,10 @@
  "field_order": [
   "report_name",
   "report_attachment",
+  "analytics_chart",
   "column_break_pksx",
-  "last_updated_date",
+  "start_date",
+  "end_date",
   "is_active"
  ],
  "fields": [
@@ -25,11 +27,6 @@
    "unique": 1
   },
   {
-   "fieldname": "last_updated_date",
-   "fieldtype": "Date",
-   "label": "Last Updated Date"
-  },
-  {
    "fieldname": "column_break_pksx",
    "fieldtype": "Column Break"
   },
@@ -38,12 +35,29 @@
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active"
+  },
+  {
+   "fieldname": "analytics_chart",
+   "fieldtype": "Select",
+   "label": "Analytics Chart",
+   "options": "\nBDO Performance"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
   }
  ],
  "grid_page_length": 50,
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-29 12:25:03.928915",
+ "modified": "2025-08-05 16:09:41.650315",
  "modified_by": "Administrator",
  "module": "MIS",
  "name": "MIS Report",

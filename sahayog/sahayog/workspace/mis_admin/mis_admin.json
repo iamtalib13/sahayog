@@ -1,24 +1,30 @@
 {
  "charts": [],
- "content": "[{\"id\":\"oWHJx6y_7_\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">MIS Admin</span>\",\"col\":12}},{\"id\":\"VFjWeUXzPL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add New\",\"col\":3}},{\"id\":\"XvjzXBz2KI\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Update Data\",\"col\":3}}]",
+ "content": "[{\"id\":\"RBgWmLoacG\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"MIS Report List\",\"col\":12}}]",
  "creation": "2025-07-29 12:01:55.993655",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "MIS Report List",
+   "label": "MIS Report List"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
+ "icon": "",
  "idx": 0,
- "indicator_color": "green",
+ "indicator_color": "",
  "is_hidden": 0,
  "label": "MIS Admin",
  "links": [],
- "modified": "2025-07-29 12:11:38.032423",
+ "modified": "2025-09-03 14:36:03.687211",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "MIS Admin",
  "number_cards": [],
  "owner": "Administrator",
- "parent_page": "",
+ "parent_page": "Pramaan",
  "public": 1,
  "quick_lists": [],
  "roles": [
@@ -26,22 +32,7 @@
    "role": "MIS Admin"
   }
  ],
- "sequence_id": 89.0,
- "shortcuts": [
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Add New",
-   "type": "URL",
-   "url": "/app/data-import/BDO%20Performance%20Import%20on%202025-07-29%2012%3A08%3A22.542776"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Update Data",
-   "type": "URL",
-   "url": "/app/data-import/BDO%20Performance%20Import%20on%202025-07-29%2012%3A09%3A51.286182"
-  }
- ],
+ "sequence_id": 85.0,
+ "shortcuts": [],
  "title": "MIS Admin"
 }

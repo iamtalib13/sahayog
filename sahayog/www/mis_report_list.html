@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MIS Report – Dynamic List View</title>
+
+    <!-- ── Minimal styling that mimics the Desk list view ─────────────────── -->
+    <style>
+      body {
+        margin: 0;
+        font: 14px/1.5 "Inter", Arial, sans-serif;
+        color: #383838;
+      }
+      .card {
+        border: 1px solid #dfe3e8;
+        border-radius: 4px;
+        background: #fff;
+      }
+      .card header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid #e3e6eb;
+        padding: 0px 12px;
+      }
+      .card header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+
+      .add-button {
+        background: #171718;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .add-button:hover {
+        background: #000;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 12px;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+      th {
+        font-weight: bold;
+        font-size: 14px;
+        color: #6c757d;
+        background: #f1f3f5;
+        text-align: left;
+      }
+      tr:not(:last-child) {
+        border-bottom: 1px solid #e3e6eb;
+      }
+      tr:hover td {
+        background: #fafbfc;
+      }
+
+      /* Fix checkbox column alignment */
+      th.checkbox,
+      td.checkbox {
+        text-align: center;
+        vertical-align: middle;
+        width: 40px;
+        padding: 8px 4px;
+      }
+
+      .checkbox input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        margin: 0;
+        cursor: pointer;
+      }
+
+      /* ID column - ensure left alignment */
+      th.id-column,
+      td.id-column {
+        text-align: left;
+        vertical-align: middle;
+        min-width: 240px;
+      }
+
+      /* Clickable ID link styling */
+      .id-link {
+        color: #383838;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.2s ease;
+        border-bottom: 1px solid transparent;
+      }
+
+      .id-link:hover {
+        color: #383838;
+        text-decoration: underline;
+      }
+
+      .id-link:active {
+        color: #383838;
+      }
+
+      /* Date column - left alignment */
+      th.date-column,
+      td.date-column {
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      /* Fix status column alignment - center only for status */
+      th.status-column,
+      td.status-column {
+        text-align: center;
+        vertical-align: middle;
+        width: 120px;
+      }
+
+      /* Modified date column - right alignment */
+      th.modified-column,
+      td.modified-column {
+        text-align: right;
+        vertical-align: middle;
+        width: 180px;
+      }
+
+      .loading {
+        padding: 1.5rem;
+        text-align: center;
+        color: #6c757d;
+        font-size: 13px;
+      }
+      .error {
+        color: #d6336c;
+      }
+      .status-oval {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        color: white;
+        text-align: center;
+        display: inline-block;
+        min-width: 60px;
+        text-transform: capitalize;
+        vertical-align: middle;
+      }
+
+      .status-active {
+        background-color: #28a745;
+      }
+
+      .status-inactive {
+        background-color: #ff5858;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <header>
+        <h2>MIS Report</h2>
+        <div
+          style="
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          "
+        >
+          <div id="add-button" class="btn btn-primary add-button">
+            + Add MIS Report
+          </div>
+        </div>
+      </header>
+
+      <!-- Loading placeholder -->
+      <div id="state" class="loading">Loading reports…</div>
+
+      <!-- Dynamic table -->
+      <table id="mis-table" style="display: none">
+        <thead>
+          <tr>
+            <th class="checkbox">
+              <input type="checkbox" id="select-all" />
+            </th>
+            <th class="id-column">ID</th>
+            <th class="date-column">Start Date</th>
+            <th class="date-column">End Date</th>
+            <th class="status-column">Is Active</th>
+            <th class="modified-column" id="modified-header"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      /* -------- Helpers --------------------------------------------------- */
+      const qs = (sel) => document.querySelector(sel);
+      const qsa = (sel) => document.querySelectorAll(sel);
+      const esc = (str) => new Option(str).innerHTML;
+
+      // Global variables to store counts
+      let totalRecordsCount = 0;
+      let displayedRecordsCount = 0;
+
+      // Pretty date formatting function for dd/mm/yyyy format
+      function getPrettyDate(dateString) {
+        if (!dateString) return "Not set";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      }
+
+      // Relative time formatting function
+      function getRelativeTime(dateString) {
+        if (!dateString) return "Unknown";
+
+        const now = new Date();
+        const date = new Date(dateString);
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) {
+          return diffInSeconds <= 5 ? "now" : `${diffInSeconds}s ago`;
+        }
+
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        if (diffInMinutes < 60) {
+          return `${diffInMinutes}m ago`;
+        }
+
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) {
+          return `${diffInHours}h ago`;
+        }
+
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 30) {
+          return `${diffInDays}d ago`;
+        }
+
+        const diffInMonths = Math.floor(diffInDays / 30);
+        if (diffInMonths < 12) {
+          return `${diffInMonths}mo ago`;
+        }
+
+        const diffInYears = Math.floor(diffInMonths / 12);
+        return `${diffInYears}y ago`;
+      }
+
+      /* -------- Get Total Record Count ------------------------------------ */
+      async function getTotalRecordCount() {
+        try {
+          const headers = { "Content-Type": "application/json" };
+          const token = getCSRF();
+          if (token) headers["X-Frappe-CSRF-Token"] = token;
+
+          const params = new URLSearchParams({
+            fields: JSON.stringify(["name"]), // Only get name field for count
+            limit_page_length: 0, // Get all records for count
+          });
+
+          const res = await fetch(`/api/resource/MIS Report?${params}`, {
+            credentials: "same-origin",
+            headers,
+          });
+
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          const { data: allRecords = [] } = await res.json();
+          return allRecords.length;
+        } catch (e) {
+          console.error("Error getting total count:", e);
+          return 0;
+        }
+      }
+
+      /* -------- Update Record Count in Header ----------------------------- */
+      function updateRecordCount() {
+        const modifiedHeader = qs("#modified-header");
+        const checkedRows = qsa(
+          "#mis-table tbody input[type='checkbox']:checked"
+        ).length;
+
+        if (modifiedHeader) {
+          if (checkedRows > 0) {
+            modifiedHeader.textContent = ` ${checkedRows} selected | ${displayedRecordsCount} of ${totalRecordsCount}`;
+          } else {
+            modifiedHeader.textContent = ` ${displayedRecordsCount} of ${totalRecordsCount}`;
+          }
+        }
+      }
+
+      function getCSRF() {
+        const m = document.querySelector('meta[name="csrf-token"]');
+        if (m) return m.content;
+        if (window.frappe && frappe.csrf_token) return frappe.csrf_token;
+        const c = (document.cookie || "")
+          .split(";")
+          .find((c) => c.trim().startsWith("csrf_token="));
+        return c ? decodeURIComponent(c.split("=")[1]) : "";
+      }
+
+      /* -------- ID Link Navigation ---------------------------------------- */
+      function navigateToRecord(recordId) {
+        // Option 1: Frappe framework navigation - replaces current URL
+        if (window.frappe && frappe.set_route) {
+          frappe.set_route("Form", "MIS Report", recordId);
+          return;
+        }
+
+        // Option 2: Direct URL replacement
+        const baseUrl = window.location.origin;
+        const recordUrl = `${baseUrl}/app/form/MIS%20Report/${encodeURIComponent(
+          recordId
+        )}`;
+        window.top.location.replace(recordUrl);
+      }
+
+      function setupIdLinks() {
+        // Add click handlers to all ID links
+        qsa(".id-link").forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation(); // Prevent row selection when clicking ID
+
+            const recordId = this.textContent.trim();
+            navigateToRecord(recordId);
+          });
+        });
+      }
+
+      /* -------- Add Button Functionality ---------------------------------- */
+      function setupAddButton() {
+        const addButton = qs("#add-button");
+
+        if (addButton) {
+          addButton.addEventListener("click", function () {
+            // Option 1: Frappe framework navigation - replaces current URL
+            if (window.frappe && frappe.new_doc) {
+              frappe.new_doc("MIS Report");
+              return;
+            }
+
+            // Option 2: Direct URL replacement to new form
+            const baseUrl = window.location.origin;
+            const newRecordUrl = `${baseUrl}/app/form/MIS%20Report/new`;
+            window.top.location.replace(newRecordUrl);
+          });
+        }
+      }
+
+      /* -------- Select All Functionality --------------------------------- */
+      function setupSelectAllFunctionality() {
+        const selectAllCheckbox = qs("#select-all");
+
+        if (!selectAllCheckbox) return;
+
+        selectAllCheckbox.addEventListener("change", function () {
+          const rowCheckboxes = qsa("#mis-table tbody input[type='checkbox']");
+          const isChecked = this.checked;
+
+          rowCheckboxes.forEach((checkbox) => {
+            checkbox.checked = isChecked;
+          });
+
+          // Update record count after selecting/deselecting all
+          updateRecordCount();
+        });
+
+        function addRowCheckboxListeners() {
+          const rowCheckboxes = qsa("#mis-table tbody input[type='checkbox']");
+          rowCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", updateSelectAllCheckbox);
+          });
+          updateSelectAllCheckbox();
+        }
+
+        return addRowCheckboxListeners;
+      }
+
+      function updateSelectAllCheckbox() {
+        const selectAllCheckbox = qs("#select-all");
+        const rowCheckboxes = qsa("#mis-table tbody input[type='checkbox']");
+        const checkedCount = qsa(
+          "#mis-table tbody input[type='checkbox']:checked"
+        ).length;
+        const totalCount = rowCheckboxes.length;
+
+        if (totalCount === 0) {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === totalCount) {
+          selectAllCheckbox.checked = true;
+          selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount > 0) {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = true;
+        } else {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = false;
+        }
+
+        // Update record count in header
+        updateRecordCount();
+      }
+
+      /* -------- Fetch & render data --------------------------------------- */
+      async function loadReports() {
+        try {
+          // First get total count of all records
+          totalRecordsCount = await getTotalRecordCount();
+
+          const headers = { "Content-Type": "application/json" };
+          const token = getCSRF();
+          if (token) headers["X-Frappe-CSRF-Token"] = token;
+
+          const params = new URLSearchParams({
+            fields: JSON.stringify([
+              "name",
+              "modified",
+              "is_active",
+              "start_date",
+              "end_date",
+            ]),
+            order_by: "modified desc",
+          });
+          const res = await fetch(`/api/resource/MIS Report?${params}`, {
+            credentials: "same-origin",
+            headers,
+          });
+
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          const { data: rows = [] } = await res.json();
+          if (!rows.length) throw new Error("No reports found");
+
+          // Set displayed records count
+          displayedRecordsCount = rows.length;
+
+          // build rows
+          const tbody = qs("#mis-table tbody");
+          rows.forEach((r) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td class="checkbox"><input type="checkbox" class="row-checkbox"></td>
+            <td class="id-column">
+              <a href="#" class="id-link" data-record-id="${esc(r.name)}">
+                ${esc(r.name)}
+              </a>
+            </td>
+            <td class="date-column">${getPrettyDate(r.start_date)}</td>
+            <td class="date-column">${getPrettyDate(r.end_date)}</td>
+            <td class="status-column">
+              <span class="status-oval ${
+                r.is_active ? "status-active" : "status-inactive"
+              }">
+                ${r.is_active ? "Active" : "Inactive"}
+              </span>
+            </td>
+            <td class="modified-column" data-original-date="${r.modified}">
+              ${getRelativeTime(r.modified)}
+            </td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          qs("#mis-table").style.display = "";
+          qs("#state").remove();
+
+          // Setup functionality after rows are created
+          const addRowListeners = setupSelectAllFunctionality();
+          if (addRowListeners) {
+            addRowListeners();
+          }
+
+          setupIdLinks(); // Setup clickable ID links
+          setupAddButton(); // Setup add button functionality
+          startRelativeTimeUpdates(); // Start updating relative times periodically
+          updateRecordCount(); // Initialize record count display
+        } catch (e) {
+          qs("#state").className = "loading error";
+          qs("#state").textContent = "Error: " + e.message;
+          console.error(e);
+        }
+      }
+
+      // Update relative times every minute
+      function startRelativeTimeUpdates() {
+        setInterval(() => {
+          const modifiedCells = qsa("#mis-table tbody .modified-column");
+          modifiedCells.forEach((cell) => {
+            const originalDate = cell.dataset.originalDate;
+            if (originalDate) {
+              cell.textContent = getRelativeTime(originalDate);
+            }
+          });
+        }, 60000); // Update every minute
+      }
+
+      /* -------- Run on load ---------------------------------------------- */
+      document.readyState === "loading"
+        ? document.addEventListener("DOMContentLoaded", loadReports)
+        : loadReports();
+    </script>
+  </body>
+</html>

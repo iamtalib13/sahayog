@@ -1,6 +1,9 @@
 frappe.ui.form.on("Task", {
   refresh: function (frm) {
     frm.trigger("hide_fields");
+    if (frm.doc.subject == "Vendor Allocation") {
+      frm.trigger("supplier_allocation");
+    }
     frm.trigger("set_readonly_fields");
     frm.trigger("collapsible_false");
     if (
@@ -15,11 +18,65 @@ frappe.ui.form.on("Task", {
       frm.set_df_property("actual_time", "hidden", 1);
       frm.set_df_property("sb_more_info", "hidden", 1);
       frm.set_df_property("sb_costing", "hidden", 1);
+
+      frm.set_df_property("it_checklist_table", "cannot_add_rows", true); // Hide add row button
+      frm.set_df_property("it_checklist_table", "cannot_delete_rows", true); // Hide delete button
+      frm.set_df_property("it_checklist_table", "cannot_delete_all_rows", true); // Hide delete all button
+
+      frm.set_df_property(
+        "manpower_recruitment_table",
+        "cannot_add_rows",
+        true
+      ); // Hide add row button
+      frm.set_df_property(
+        "manpower_recruitment_table",
+        "cannot_delete_rows",
+        true
+      ); // Hide delete button
+      frm.set_df_property(
+        "manpower_recruitment_table",
+        "cannot_delete_all_rows",
+        true
+      ); // Hide delete all button
+
+      frm.set_df_property("lto_training_table", "cannot_add_rows", true); // Hide add row button
+      frm.set_df_property("lto_training_table", "cannot_delete_rows", true); // Hide delete button
+      frm.set_df_property("lto_training_table", "cannot_delete_all_rows", true); // Hide delete all button
+
+      frm.set_df_property(
+        "infrastructure_development_table",
+        "cannot_add_rows",
+        true
+      ); // Hide add row button
+      frm.set_df_property(
+        "infrastructure_development_table",
+        "cannot_delete_rows",
+        true
+      ); // Hide delete button
+      frm.set_df_property(
+        "infrastructure_development_table",
+        "cannot_delete_all_rows",
+        true
+      ); // Hide delete all button
+
+      // Filter options for the 'status' field
+      let allowed_status = ["Open", "Working", "Overdue", "Completed"]; // options visible to normal users
+      frm.set_df_property("status", "options", allowed_status.join("\n"));
+
+      // Hide sidebar
+      $(".layout-side-section").hide();
+      $(".sidebar-toggle-btn").hide();
+      // $(".form-assignments").hide();
+      // $(".form-shared").hide();
+      // $(".form-tags").hide();
+      // $(".form-attachments").hide();
+      // $(".form-sidebar-stats").hide();
+      // $(".list-unstyled.sidebar-menu.text-muted").hide();
     }
 
     let project = frm.doc.project;
 
-    if (frm.doc.subject == "Task 2 : Letter of Intent") {
+    if (frm.doc.subject == "Letter of Intent") {
       // Add the Create LOI button
       let createButton = frm.add_custom_button(__("Create LOI"), function () {
         frappe.new_doc("Letter of Intent", null, {
@@ -79,7 +136,120 @@ frappe.ui.form.on("Task", {
       });
     }
   },
+  async supplier_allocation(frm) {
+    if (!frm.doc.project) {
+      frm.set_intro("Please select a Project first.", "orange");
+      return;
+    }
 
+    // -----------------------------
+    // 1️⃣ Fetch Project and existing suppliers
+    // -----------------------------
+    let project = await frappe.db.get_doc("Project", frm.doc.project);
+    let existing_suppliers = project.custom_supplier_details || [];
+
+    // -----------------------------
+    // 2️⃣ Set intro with clickable links
+    // -----------------------------
+    if (existing_suppliers.length > 0) {
+      let html = `<ul style="margin-top:8px;">${existing_suppliers
+        .map(
+          (r, idx) =>
+            `<li>
+                ${idx + 1}. 
+                <a href="#Form/Supplier/${
+                  r.supplier
+                }" onclick="frappe.set_route('Form','Supplier','${
+              r.supplier
+            }'); return false;">
+                    ${r.supplier}
+                </a>
+            </li>`
+        )
+        .join("")}</ul>`;
+
+      frm.set_intro(
+        `This Project has ${existing_suppliers.length} supplier(s) Allocated: ${html}`,
+        "green"
+      );
+    } else {
+      frm.set_intro("No suppliers linked in the Project.", "orange");
+    }
+
+    // -----------------------------
+    // 3️⃣ Always add custom button
+    // -----------------------------
+    frm.add_custom_button("Allocate Supplier", async () => {
+      const dialog = new frappe.ui.Dialog({
+        title: __("Allocate Suppliers"),
+        fields: [
+          {
+            fieldname: "suppliers",
+            fieldtype: "Table",
+            label: __("Suppliers"),
+            in_place_edit: true,
+            reqd: 1,
+            fields: [
+              {
+                fieldname: "supplier",
+                label: __("Supplier"),
+                fieldtype: "Link",
+                options: "Supplier",
+                in_list_view: 1,
+                reqd: 1,
+              },
+            ],
+            data: existing_suppliers.map((r) => ({ supplier: r.supplier })),
+          },
+        ],
+        primary_action_label: __("Submit"),
+        primary_action: async function (values) {
+          // -----------------------------
+          // 4️⃣ Filter empty/invalid suppliers
+          // -----------------------------
+          let supplier_list = values.suppliers
+            .map((r) => r.supplier)
+            .filter((s) => s && s.trim() !== "");
+
+          if (supplier_list.length === 0) {
+            frappe.msgprint("Please add at least one valid supplier.");
+            return;
+          }
+          console.log("Suppliers to allocate:", supplier_list);
+          // -----------------------------
+          // 5️⃣ Call Python API to update child table
+          // -----------------------------
+          try {
+            await frappe.call({
+              method: "sahayog.doc_events.task.update_project_suppliers",
+              args: {
+                project_name: frm.doc.project,
+                suppliers: JSON.stringify(supplier_list), // <- important
+              },
+              callback: function (r) {
+                frappe.show_alert({
+                  message: "Suppliers updated successfully!",
+                  indicator: "green",
+                });
+                frm.trigger("supplier_allocation");
+              },
+            });
+
+            dialog.hide();
+            window.location.reload();
+          } catch (err) {
+            frappe.msgprint({
+              title: __("Error"),
+              message: err.message,
+              indicator: "red",
+            });
+          }
+        },
+      });
+
+      dialog.show();
+    });
+  },
   async set_readonly_fields(frm) {
     const fields_to_readonly = [
       "project",
@@ -113,16 +283,37 @@ frappe.ui.form.on("Task", {
 // html field
 frappe.ui.form.on("Task", {
   refresh: function (frm) {
-    if (frm.doc.subject === "Task 1 : Acquisition of the Property") {
+    if (
+      frm.doc.subject === "Acquisition of the Property" &&
+      !frm.doc.is_template
+    ) {
       // Render custom UI
-      frm.fields_dict.custom_location_details.$wrapper
-        .closest(".form-group")
-        .hide();
+      if (
+        frappe.session.user != "Administrator" &&
+        !frappe.user.has_role("System Manager")
+      ) {
+        frm.fields_dict.custom_location_details.$wrapper
+          .closest(".form-group")
+          .hide();
+      }
       render_custom_location_ui_for_task(frm);
 
       // Add CSS
       add_custom_css();
     }
+
+    if (frm.doc.subject === "Manpower Recruitment" && !frm.doc.is_template) {
+      render_manpower_summary(frm);
+    }
+  },
+});
+
+frappe.ui.form.on("Manpower Recruitment Hiring Table", {
+  status: function (frm, cdt, cdn) {
+    render_manpower_summary(frm); // jab status change ho
+  },
+  employee_name: function (frm, cdt, cdn) {
+    render_manpower_summary(frm); // jab employee_name change ho
   },
 });
 
@@ -132,6 +323,7 @@ function render_custom_location_ui_for_task(frm) {
   const table = frm.doc.custom_location_details || [];
   const grouped = {};
 
+  // Group rows by location_name
   table.forEach((row) => {
     if (!row.location_name) return;
     if (!grouped[row.location_name]) grouped[row.location_name] = [];
@@ -141,6 +333,13 @@ function render_custom_location_ui_for_task(frm) {
       docname: row.name,
       status: row.status,
       estimate_rent: row.estimate_rent,
+      address: row.address,
+      security_deposit: row.security_deposit,
+      floor: row.floor,
+      remarks: row.remarks,
+      contact_number: row.contact_number,
+      occupation: row.occupation,
+      carpet_area: row.carpet_area,
     });
   });
 
@@ -151,217 +350,352 @@ function render_custom_location_ui_for_task(frm) {
                     <tr>
                         <th style="width: 150px;">Location Name</th>
                         <th>Location Images</th>
+                        <th style="width: 200px;">Address</th>
                         <th style="width: 120px;">Estimate Rent<br>(per month)</th>
-                        <th style="width: 100px;">Status</th>
+                        <th style="width: 120px;">Security Deposit</th>
+                        <th style="width: 80px;">Floor</th>
+                        <th style="width: 150px;">Contact Number</th>
+                        <th style="width: 200px;">Remarks</th>
+                        <th style="width: 120px;">Occupation</th>
+                        <th style="width: 120px;">Carpet Area (sq.ft)</th>
+                        <th style="width: 100px;">Status</th>   
                     </tr>
                 </thead>
                 <tbody>`;
 
-  let row_num = 1;
-
   for (let location in grouped) {
     if (!location) continue;
 
-    const currentStatus = getCurrentLocationStatus(frm, location);
-    const currentRent = getCurrentLocationRent(frm, location);
+    // Use the unified function to get all field values
+    const currentStatus = getLocationFieldValue(frm, location, "status");
+    const currentRent = getLocationFieldValue(frm, location, "estimate_rent");
+    const currentDeposit = getLocationFieldValue(
+      frm,
+      location,
+      "security_deposit"
+    );
+    const currentAddress = getLocationFieldValue(frm, location, "address");
+    const currentFloor = getLocationFieldValue(frm, location, "floor");
+    const currentContact = getLocationFieldValue(
+      frm,
+      location,
+      "contact_number"
+    );
+    const currentRemarks = getLocationFieldValue(frm, location, "remarks");
+
+    const firstRow = grouped[location][0] || {};
+    const encodedLocation = encodeURIComponent(location);
 
     html += `
-            <tr data-location="${encodeURIComponent(location)}">
+            <tr data-location="${encodedLocation}" class="location-row">
+              <!-- Location Name -->
               <td>
-                <div class="location-header">
-                 <textarea
-                    class="editable-location location-input"
-                    data-location="${encodeURIComponent(location)}"
-                    data-old-location="${encodeURIComponent(location)}"
-                    style="border: none; background: transparent; width: 100%; font-weight: bold; resize: vertical; min-height: 40px;" spellcheck="false"
-
-                  >${frappe.utils.escape_html(location)}</textarea>
-                </div>
+                <textarea
+                  class="editable-location location-input"
+                  data-location="${encodedLocation}"
+                  data-old-location="${encodedLocation}"
+                  style="border: none; background: transparent; width: 100%; font-weight: bold; resize: vertical; min-height: 40px;" 
+                  spellcheck="false"
+                >${frappe.utils.escape_html(location)}</textarea>
               </td>
+
+              <!-- Images -->
               <td>
-            <div class="location-images-container">`;
+                <div class="location-images-container">`;
 
     grouped[location].forEach((item) => {
       const file = item.image || "";
       const is_video = file.toLowerCase().endsWith(".mp4");
-
       html += `
-                                <div class="media-thumbnail" data-status="${
-                                  item.status
-                                }">
-                                    <a href="${file}" target="_blank" class="media-link">
-                                        ${
-                                          is_video
-                                            ? `<video src="${file}" width="100%" height="100%" muted></video>`
-                                            : `<img src="${file}" width="100%" height="100%" alt="${frappe.utils.escape_html(
-                                                item.name
-                                              )}">`
-                                        }
-                                        <div class="media-overlay" title="See Image"></div>
-                                    </a>
-                                    <a href="#" data-docname="${
-                                      item.docname
-                                    }" class="delete-img" title="Delete Image">
-                                        <i class="fa fa-trash"></i>
-                                    </a>
-                                </div>`;
+        <div class="media-thumbnail" data-status="${item.status}">
+          <a href="${file}" target="_blank" class="media-link">
+            ${
+              is_video
+                ? `<video src="${file}" width="100%" height="100%" muted></video>`
+                : `<img src="${file}" width="100%" height="100%" alt="${frappe.utils.escape_html(
+                    item.name
+                  )}">`
+            }
+            <div class="media-overlay" title="See Image"></div>
+          </a>
+          <a href="#" data-docname="${
+            item.docname
+          }" class="delete-img" title="Delete Image">
+            <i class="fa fa-trash"></i>
+          </a>
+        </div>`;
     });
-    const encodedLocation = encodeURIComponent(location);
 
     html += `
-            <div class="media-thumbnail upload-thumbnail" title="Add Media" data-location="${encodeURIComponent(
-              location
-            )}">
-                <div class="upload-icon">
-                  <i class="fa fa-plus"></i>
-                </div>
-              </div>
-            </div>
-            </td>
-            <td>
-              <div style="display: flex; flex-direction: column; align-items: start; gap: 4px;">
-                <div style="display: flex; align-items: center; gap: 4px;">
-                  <span style="font-size: 16px; color: #555;">₹</span>
-                  <input type="text"
-                         class="form-control estimate-rent-input"
-                         data-location="${encodeURIComponent(location)}"
-                         value="${
-                           currentRent ? formatCurrencyInput(currentRent) : ""
-                         }"
-                         placeholder="Enter rent"
-                         style="flex: 1; max-width: 120px;">
-                </div>
-                <div class="amount-in-words"
-                     data-location="${encodedLocation}"
-                     style="font-size: 12px; color: #555;">
-                     ${
-                       currentRent
-                         ? numberToWords(parseInt(currentRent)) + " Rupees only"
-                         : ""
-                     }
-                </div>
-              </div>
-            </td>
-            <td>
-            <div class="status-selection-container">`;
+        <div class="media-thumbnail upload-thumbnail" title="Add Media" data-location="${encodedLocation}">
+          <div class="upload-icon"><i class="fa fa-plus"></i></div>
+        </div>
+        </div>
+      </td>
 
+      <!-- Address -->
+      <td>
+        <textarea class="form-control address-input"
+                  data-location="${encodedLocation}"
+                  placeholder="Enter address"
+                  style="border: none; background: transparent; width: 100%; font-weight: bold; resize: vertical; min-height: 40px;" 
+                  spellcheck="false">${frappe.utils.escape_html(
+                    currentAddress || ""
+                  )}</textarea>
+      </td>
+
+
+      <!-- Estimate Rent -->
+      <td>
+        <div style="display: flex; flex-direction: column; align-items: start; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 4px;">
+          <input type="text"
+                   class="form-control estimate-rent-input"
+                   data-location="${encodedLocation}"
+                   value="₹${
+                     currentRent ? formatCurrencyInput(currentRent) : "000"
+                   }"
+                   placeholder="Enter rent"
+                   style="flex: 1; max-width: 120px;">
+          </div>
+          <div class="amount-in-words estimate-rent-words"
+               data-location="${encodedLocation}"
+               style="font-size: 12px; color: #555;">
+               ${
+                 currentRent
+                   ? numberToWords(parseInt(currentRent)) + " Rupees only"
+                   : ""
+               }
+          </div>
+        </div>
+      </td>
+
+      <!-- Security Deposit -->
+     <td>
+        <div style="display: flex; flex-direction: column; align-items: start; gap: 4px;">
+          <input type="text" class="form-control security-deposit-input"
+                 data-location="${encodedLocation}"
+                 value="₹${
+                   currentDeposit ? formatCurrencyInput(currentDeposit) : "000"
+                 }"
+                 placeholder="Enter deposit"
+                 style="flex: 1; max-width: 120px;">
+          <div class="amount-in-words security-deposit-words"
+               data-location="${encodedLocation}"
+               style="font-size: 12px; color: #555;">
+            ${
+              currentDeposit
+                ? numberToWords(parseInt(currentDeposit)) + " Rupees only"
+                : ""
+            }
+          </div>
+        </div>
+      </td>
+          
+      <!-- Floor -->
+      <td>
+        <input type="text" class="form-control floor-input"
+               data-location="${encodedLocation}"
+               value="${frappe.utils.escape_html(currentFloor || "")}"
+               placeholder="Floor">
+      </td>
+
+      <!-- Contact Number -->
+      <td>
+        <input type="text" class="form-control contact-input"
+               data-location="${encodedLocation}"
+               value="${frappe.utils.escape_html(currentContact || "")}"
+               placeholder="Contact Number">
+      </td>
+
+      <!-- Remarks -->
+      <td>
+        <textarea class="form-control remarks-input"
+                  data-location="${encodedLocation}"
+                  placeholder="Remarks" style="border: none; background: transparent; width: 100%; font-weight: bold; resize: vertical; min-height: 40px;" 
+                  spellcheck="false">${frappe.utils.escape_html(
+                    currentRemarks || ""
+                  )}</textarea>
+      </td>
+
+      <!-- Occupation -->
+      <td>
+        <input type="text" class="form-control occupation-input"
+               data-location="${encodedLocation}"
+               value="${frappe.utils.escape_html(firstRow.occupation || "")}"
+               placeholder="Occupation">
+      </td>
+
+      <!-- Carpet Area -->
+      <td>
+        <input type="text" class="form-control carpet-area-input"
+               data-location="${encodedLocation}"
+               value="${frappe.utils.escape_html(firstRow.carpet_area || "")}"
+               placeholder="Carpet Area">
+      </td>
+
+
+      <!-- Status -->
+      <td>
+        <div class="status-selection-container">`;
+
+    // Project Manager logic
     if (frappe.user.has_role("Project Manager")) {
+      const anyApproved = isAnyLocationApproved(frm);
+      const isThisLocationApproved = currentStatus === "Approved";
+      const isReadOnly = anyApproved && !isThisLocationApproved;
+
+      // Status select
       html += `
-                                <select class="form-control status-select" data-location="${encodeURIComponent(
-                                  location
-                                )}">
-                                    <option value="Pending" ${
-                                      currentStatus === "Pending"
-                                        ? "selected"
-                                        : ""
-                                    }>Pending</option>
-                                    <option value="Approved" ${
-                                      currentStatus === "Approved"
-                                        ? "selected"
-                                        : ""
-                                    }>Approved</option>
-                                    <option value="Rejected" ${
-                                      currentStatus === "Rejected"
-                                        ? "selected"
-                                        : ""
-                                    }>Rejected</option>
-                                    ${
-                                      currentStatus === "Mixed"
-                                        ? '<option value="Mixed" selected>Mixed Status</option>'
-                                        : ""
-                                    }
-                                </select>`;
+      <select class="form-control status-select" 
+              data-location="${encodedLocation}"
+              ${isReadOnly ? "disabled" : ""}>
+        <option value="Pending" ${
+          currentStatus === "Pending" ? "selected" : ""
+        }>Pending</option>
+        <option value="Approved" ${
+          currentStatus === "Approved" ? "selected" : ""
+        }>Approved</option>
+        <option value="Rejected" ${
+          currentStatus === "Rejected" ? "selected" : ""
+        }>Rejected</option>
+        ${
+          currentStatus === "Mixed"
+            ? '<option value="Mixed" selected>Mixed Status</option>'
+            : ""
+        }
+      </select>`;
+
+      // Help message
+      if (isReadOnly) {
+        html += `<div class="help-message" style="font-size: 11px; color: #6b778c; margin-top: 4px;">
+            Cannot change - another location is approved
+          </div>`;
+      }
     } else {
-      html += `
-                                <span class="status-badge ${currentStatus.toLowerCase()}">${currentStatus}</span>`;
+      html += `<span class="status-badge ${currentStatus.toLowerCase()}">${currentStatus}</span>`;
     }
 
     html += `
-                            </div>
-                        </td>
-                    </tr>`;
+        </div>
+      </td>
+    </tr>`;
   }
 
   html += `
                 </tbody>
             </table>
-            <div class="add-location-container">
-                <button class="btn btn-sm btn-primary" id="add-location">
-                    <i class="fa fa-plus"></i> Add New Location
-                </button>
-            </div>
-        </div>`;
+        </div>
+        <div class="add-location-container" style="margin-bottom:10px; text-align:left;">
+          <button class="btn btn-sm btn-primary" id="add-location">
+            <i class="fa fa-plus"></i> Add New Location
+          </button>
+        </div>
+        `;
 
   frm.fields_dict.custom_location_details_html.$wrapper.html(html);
 
-  // Event bindings
+  // ====== Event Bindings ======
+
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find("tr.location-row")
+    .each(function () {
+      const $row = $(this);
+      const location = decodeURIComponent($row.data("location"));
+      const currentStatus = getLocationFieldValue(frm, location, "status");
+      const anyApproved = isAnyLocationApproved(frm);
+      const isThisLocationApproved = currentStatus === "Approved";
+
+      if (anyApproved && !isThisLocationApproved) {
+        $row.find("input, textarea, select, button").prop("disabled", true);
+        $row.css("opacity", 0.8);
+      }
+    });
+
+  // Add location
   frm.fields_dict.custom_location_details_html.$wrapper
     .find("#add-location")
     .on("click", function () {
       add_new_location_for_task(frm);
     });
 
-  // Click handler for editable location names
+  // Location name update
   frm.fields_dict.custom_location_details_html.$wrapper
     .find(".location-input")
     .on("change", function () {
       const old_location = decodeURIComponent($(this).data("old-location"));
       const new_location = $(this).val().trim();
-
       update_location_name_inline(frm, old_location, new_location);
     });
 
-  // Add thumbnail-style upload button click handler
+  // Upload handler
+  // Upload handler CALL 1
   frm.fields_dict.custom_location_details_html.$wrapper
     .find(".upload-thumbnail")
     .on("click", function (e) {
       e.preventDefault();
       const location = decodeURIComponent($(this).data("location"));
-      const currentRent = getCurrentLocationRent(frm, location);
-      upload_media_files_for_task(frm, location, currentRent);
+
+      // Collect all fields for this location
+      const currentRent = getLocationFieldValue(frm, location, "estimate_rent");
+      const securityDeposit = getLocationFieldValue(
+        frm,
+        location,
+        "security_deposit"
+      );
+      const address = getLocationFieldValue(frm, location, "address");
+      const floor = getLocationFieldValue(frm, location, "floor");
+      const contact = getLocationFieldValue(frm, location, "contact_number");
+      const remarks = getLocationFieldValue(frm, location, "remarks");
+      const occupation = getLocationFieldValue(frm, location, "occupation");
+      const carpet_area = getLocationFieldValue(frm, location, "carpet_area");
+
+      upload_media_files_for_task(frm, location, currentRent, {
+        security_deposit: securityDeposit,
+        address: address,
+        floor: floor,
+        contact: contact,
+        remarks: remarks,
+        occupation: occupation,
+        carpet_area: carpet_area,
+      });
     });
 
+  // Delete image handler
   frm.fields_dict.custom_location_details_html.$wrapper
     .find(".delete-img")
     .on("click", function (e) {
       e.preventDefault();
       const docname = $(this).data("docname");
-
       frappe.confirm(__("Are you sure you want to delete this item?"), () => {
         delete_media_item_for_task(frm, docname);
       });
     });
 
-  // Number to words conversion on input change
-  // Replace the existing estimate-rent-input event handlers with this:
+  // Estimate Rent input (with currency + words)
   frm.fields_dict.custom_location_details_html.$wrapper
     .find(".estimate-rent-input")
-    .off("input change blur") // Remove any existing handlers
+    .off("input change blur")
     .on("input", function () {
       const input = $(this);
       const formatted = formatCurrencyInput(input.val());
       if (formatted !== input.val()) {
-        // Set cursor position
         const cursorPos = input[0].selectionStart;
         input.val(formatted);
-        // Adjust cursor position after formatting
         const diff = formatted.length - input.val().length;
         input[0].setSelectionRange(cursorPos + diff, cursorPos + diff);
       }
-
-      // Update words in real-time
       const encodedLocation = input.data("location");
       const wordSpan =
         frm.fields_dict.custom_location_details_html.$wrapper.find(
-          `.amount-in-words[data-location="${CSS.escape(encodedLocation)}"]`
+          `.estimate-rent-words[data-location="${CSS.escape(encodedLocation)}"]`
         );
-
       if (wordSpan.length) {
         const numericValue = parseCurrencyInput(input.val());
         if (numericValue) {
-          const amountInWords =
-            numberToWords(Math.floor(numericValue)) + " Rupees only";
-          wordSpan.text(amountInWords);
+          wordSpan.text(
+            numberToWords(Math.floor(numericValue)) + " Rupees only"
+          );
         } else {
           wordSpan.text("");
         }
@@ -371,15 +705,135 @@ function render_custom_location_ui_for_task(frm) {
       const input = $(this);
       const location = decodeURIComponent(input.data("location"));
       const numericValue = parseCurrencyInput(input.val());
-
-      // Format properly on blur
       input.val(formatCurrencyInput(numericValue));
-
-      // Update the database
-      update_rent_for_location(frm, location, numericValue);
+      update_field_for_location(
+        frm,
+        location,
+        "estimate_rent",
+        numericValue,
+        "Rent updated"
+      );
     });
 
-  // Apply background color initially and on change
+  // Security Deposit input (with currency + words)
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".security-deposit-input")
+    .off("input change blur")
+    .on("input", function () {
+      const input = $(this);
+      const formatted = formatCurrencyInput(input.val());
+      if (formatted !== input.val()) {
+        const cursorPos = input[0].selectionStart;
+        input.val(formatted);
+        const diff = formatted.length - input.val().length;
+        input[0].setSelectionRange(cursorPos + diff, cursorPos + diff);
+      }
+      const encodedLocation = input.data("location");
+      const wordSpan =
+        frm.fields_dict.custom_location_details_html.$wrapper.find(
+          `.security-deposit-words[data-location="${CSS.escape(
+            encodedLocation
+          )}"]`
+        );
+      if (wordSpan.length) {
+        const numericValue = parseCurrencyInput(input.val());
+        if (numericValue) {
+          wordSpan.text(
+            numberToWords(Math.floor(numericValue)) + " Rupees only"
+          );
+        } else {
+          wordSpan.text("");
+        }
+      }
+    })
+    .on("blur", function () {
+      const input = $(this);
+      const location = decodeURIComponent(input.data("location"));
+      const numericValue = parseCurrencyInput(input.val());
+      input.val(formatCurrencyInput(numericValue));
+      update_field_for_location(
+        frm,
+        location,
+        "security_deposit",
+        numericValue,
+        "Deposit updated"
+      );
+    });
+
+  // New field handlers (directly generic)
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".address-input")
+    .on("blur", function () {
+      update_field_for_location(
+        frm,
+        decodeURIComponent($(this).data("location")),
+        "address",
+        $(this).val(),
+        "Address updated"
+      );
+    });
+
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".floor-input")
+    .on("blur", function () {
+      update_field_for_location(
+        frm,
+        decodeURIComponent($(this).data("location")),
+        "floor",
+        $(this).val(),
+        "Floor updated"
+      );
+    });
+
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".contact-input")
+    .on("blur", function () {
+      update_field_for_location(
+        frm,
+        decodeURIComponent($(this).data("location")),
+        "contact_number",
+        $(this).val(),
+        "Contact updated"
+      );
+    });
+
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".remarks-input")
+    .on("blur", function () {
+      update_field_for_location(
+        frm,
+        decodeURIComponent($(this).data("location")),
+        "remarks",
+        $(this).val(),
+        "Remarks updated"
+      );
+    });
+
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".carpet-area-input")
+    .on("blur", function () {
+      update_field_for_location(
+        frm,
+        decodeURIComponent($(this).data("location")),
+        "carpet_area",
+        $(this).val(),
+        "Carpet Area updated"
+      );
+    });
+
+  frm.fields_dict.custom_location_details_html.$wrapper
+    .find(".occupation-input")
+    .on("blur", function () {
+      update_field_for_location(
+        frm,
+        decodeURIComponent($(this).data("location")),
+        "occupation",
+        $(this).val(),
+        "Occupation updated"
+      );
+    });
+
+  // Status select styling + update
   frm.fields_dict.custom_location_details_html.$wrapper
     .find(".status-select")
     .each(function () {
@@ -387,13 +841,17 @@ function render_custom_location_ui_for_task(frm) {
     })
     .on("change", function () {
       applyStatusSelectColor(this);
+      const location = decodeURIComponent($(this).data("location"));
+      const new_status = $(this).val();
+      const $select = $(this);
+      $select.prop("disabled", true);
+      update_status_for_location(frm, location, new_status);
     });
 
   function applyStatusSelectColor(selectEl) {
     const val = selectEl.value;
     let bg = "";
-    let textColor = "#fff"; // default black
-
+    let textColor = "#fff";
     switch (val) {
       case "Pending":
         bg = "#6c757d";
@@ -406,37 +864,17 @@ function render_custom_location_ui_for_task(frm) {
         break;
       case "Mixed":
         bg = "#ffc107";
-        textColor = "#212529"; // black text on yellow
+        textColor = "#212529";
         break;
       default:
         bg = "";
         textColor = "#212529";
         break;
     }
-
-    if (bg) {
-      selectEl.style.background = `linear-gradient(${bg}, ${bg})`;
-    } else {
-      selectEl.style.background = "";
-    }
-
+    if (bg) selectEl.style.background = `linear-gradient(${bg}, ${bg})`;
+    else selectEl.style.background = "";
     selectEl.style.color = textColor;
   }
-
-  // Status change handler
-  frm.fields_dict.custom_location_details_html.$wrapper
-    .find(".status-select")
-    .on("change", function () {
-      const location = decodeURIComponent($(this).data("location"));
-      const new_status = $(this).val();
-
-      const $select = $(this);
-      $select.prop("disabled", true);
-
-      update_status_for_location(frm, location, new_status).catch(() => {
-        // Error handling is done in update_status_for_location
-      });
-    });
 }
 
 // Number to words function
@@ -509,35 +947,29 @@ function numberToWords(num) {
   return convert(num).trim();
 }
 
-// Helper function to get current location status
-function getCurrentLocationStatus(frm, location) {
+// Unified function to get field values for a location
+function getLocationFieldValue(frm, location, fieldName) {
   const child_table = frm.doc.custom_location_details || [];
-  const statuses = [
-    ...new Set(
-      child_table
-        .filter((row) => row.location_name === location)
-        .map((row) => row.status)
-    ),
-  ];
-  return statuses.length === 1 ? statuses[0] : "Mixed";
+
+  // Filter rows for the specific location
+  const locationRows = child_table.filter(
+    (row) => row.location_name === location
+  );
+
+  if (locationRows.length === 0) return "";
+
+  // Get all unique values for the requested field
+  const fieldValues = [...new Set(locationRows.map((row) => row[fieldName]))];
+
+  // For status field, return "Mixed" if there are different values
+  if (fieldName === "status") {
+    return fieldValues.length === 1 ? fieldValues[0] : "Mixed";
+  }
+
+  // For other fields, return the value if all records agree, or empty string if mixed/undefined
+  return fieldValues.length === 1 ? fieldValues[0] : "";
 }
 
-// Helper function to get current location rent
-function getCurrentLocationRent(frm, location) {
-  const child_table = frm.doc.custom_location_details || [];
-  const rents = [
-    ...new Set(
-      child_table
-        .filter((row) => row.location_name === location)
-        .map((row) => row.estimate_rent)
-    ),
-  ];
-
-  // Return the rent value if all records agree, or empty string if mixed/undefined
-  return rents.length === 1 ? rents[0] : "";
-}
-
-// Add these helper functions somewhere in your code
 // Add these helper functions
 function formatCurrencyInput(value) {
   if (!value) return "";
@@ -549,12 +981,19 @@ function formatCurrencyInput(value) {
   });
 }
 
+//helper function to  Check if any location is approved
+function isAnyLocationApproved(frm) {
+  const child_table = frm.doc.custom_location_details || [];
+  return child_table.some((row) => row.status === "Approved");
+}
+
 function parseCurrencyInput(formattedValue) {
   if (!formattedValue) return 0;
   // Remove all non-digit characters
   const numStr = formattedValue.replace(/\D/g, "");
   return parseInt(numStr) || 0;
 }
+
 // Function to update status for all items in a location
 function update_status_for_location(frm, location, new_status) {
   if (new_status === "Mixed") return Promise.resolve();
@@ -562,6 +1001,23 @@ function update_status_for_location(frm, location, new_status) {
   const child_table = frm.doc.custom_location_details || [];
   let updates = [];
 
+  // If we're approving a location, reject all other locations
+  if (new_status === "Approved") {
+    child_table.forEach((row) => {
+      if (row.location_name !== location && row.status !== "Rejected") {
+        updates.push(() => {
+          return frappe.model.set_value(
+            row.doctype,
+            row.name,
+            "status",
+            "Rejected"
+          );
+        });
+      }
+    });
+  }
+
+  // Update the current location's status
   child_table.forEach((row) => {
     if (row.location_name === location && row.status !== new_status) {
       updates.push(() => {
@@ -586,9 +1042,15 @@ function update_status_for_location(frm, location, new_status) {
       return frm.save();
     })
     .then(() => {
+      let message = __("Status updated for all items in this location");
+      if (new_status === "Approved") {
+        message = __(
+          "Location approved. All other locations have been rejected."
+        );
+      }
       frappe.show_alert(
         {
-          message: __("Status updated for all items in this location"),
+          message: message,
           indicator: "green",
         },
         3
@@ -603,7 +1065,7 @@ function update_status_for_location(frm, location, new_status) {
       });
       // Re-render to show correct status
       render_custom_location_ui_for_task(frm);
-      throw err; // Re-throw to allow caller to handle
+      throw err;
     });
 }
 
@@ -615,26 +1077,53 @@ function add_new_location_for_task(frm) {
         fieldname: "location_name",
         fieldtype: "Data",
         reqd: true,
-        description: "Enter a name for the new location",
       },
+      { label: "Address", fieldname: "address", fieldtype: "Data" },
       {
         label: "Estimate Rent",
         fieldname: "estimate_rent",
         fieldtype: "Currency",
-        description: "Enter estimated rent for this location (optional)",
       },
+      {
+        label: "Security Deposit",
+        fieldname: "security_deposit",
+        fieldtype: "Currency",
+      },
+      { label: "Floor", fieldname: "floor", fieldtype: "Data" },
+      { label: "Remarks", fieldname: "remarks", fieldtype: "Small Text" },
+      {
+        label: "Contact Number",
+        fieldname: "contact_number",
+        fieldtype: "Data",
+      },
+      { label: "Occupation", fieldname: "occupation", fieldtype: "Data" },
+      { label: "Carpet Area", fieldname: "carpet_area", fieldtype: "Data" },
     ],
     (values) => {
       if (!values.location_name) return;
+
       frappe.show_alert(
         { message: __("Preparing uploader..."), indicator: "blue" },
         3
       );
+
       setTimeout(() => {
+        // Pass extra fields as an object
+        const extraFields = {
+          address: values.address,
+          security_deposit: values.security_deposit,
+          floor: values.floor,
+          remarks: values.remarks,
+          contact_number: values.contact_number,
+          occupation: values.occupation,
+          carpet_area: values.carpet_area,
+        };
+
         upload_media_files_for_task(
           frm,
           values.location_name,
-          values.estimate_rent
+          values.estimate_rent,
+          extraFields
         );
       }, 300);
     },
@@ -646,67 +1135,41 @@ function add_new_location_for_task(frm) {
 function update_location_name_inline(frm, old_location, new_location) {
   if (!new_location || new_location === old_location) return;
 
-  const updates = [];
-  (frm.doc.custom_location_details || []).forEach((row) => {
-    if (row.location_name === old_location) {
-      updates.push(() => {
-        return frappe.model.set_value(
-          row.doctype,
-          row.name,
-          "location_name",
-          new_location
-        );
-      });
-    }
-  });
-
-  if (updates.length === 0) return;
-
-  updates
-    .reduce((p, fn) => p.then(fn), Promise.resolve())
-    .then(() => {
-      frm.refresh_field("custom_location_details");
-      render_custom_location_ui_for_task(frm); // re-render
-      return frm.save();
-    })
-    .then(() => {
-      frappe.show_alert(
-        { message: __("Location name updated"), indicator: "green" },
-        3
-      );
-    })
-    .catch((err) => {
-      console.error("Error updating location:", err);
-      frappe.msgprint({
-        title: __("Error"),
-        message: __("Failed to update location name"),
-        indicator: "red",
-      });
-    });
+  return update_field_for_location(
+    frm,
+    old_location,
+    "location_name",
+    new_location,
+    "Location name updated"
+  );
 }
 
-function update_rent_for_location(frm, location, new_rent) {
-  // Ensure new_rent is a number (in case it comes from formatted input)
-  const numericRent =
-    typeof new_rent === "string" ? parseCurrencyInput(new_rent) : new_rent;
-
+function update_field_for_location(
+  frm,
+  location,
+  fieldname,
+  new_value,
+  success_message
+) {
+  const child_table = frm.doc.custom_location_details || [];
   let updates = [];
-  (frm.doc.custom_location_details || []).forEach((row) => {
-    if (row.location_name === location && row.estimate_rent != numericRent) {
+
+  child_table.forEach((row) => {
+    if (row.location_name === location && row[fieldname] != new_value) {
       updates.push(() => {
         return frappe.model.set_value(
           row.doctype,
           row.name,
-          "estimate_rent",
-          numericRent
+          fieldname,
+          new_value
         );
       });
     }
   });
 
-  if (updates.length === 0) return;
+  if (updates.length === 0) return Promise.resolve();
 
-  updates
+  return updates
     .reduce((p, fn) => p.then(fn), Promise.resolve())
     .then(() => {
       frm.refresh_field("custom_location_details");
@@ -714,82 +1177,68 @@ function update_rent_for_location(frm, location, new_rent) {
       return frm.save();
     })
     .then(() => {
-      frappe.show_alert(
-        { message: __("Rent estimate updated"), indicator: "green" },
-        3
-      );
+      if (success_message) {
+        frappe.show_alert(
+          { message: __(success_message), indicator: "green" },
+          3
+        );
+      }
     })
     .catch((err) => {
-      console.error("Error updating rent:", err);
+      console.error(`Error updating ${fieldname}:`, err);
       frappe.msgprint({
         title: __("Error"),
-        message: __("Failed to update rent estimate"),
+        message: __(`Failed to update ${fieldname}`),
         indicator: "red",
       });
+      render_custom_location_ui_for_task(frm);
+      throw err;
     });
 }
 
-function upload_media_files_for_task(frm, location, estimate_rent) {
+function upload_media_files_for_task(
+  frm,
+  location,
+  estimate_rent,
+  extraFields = {}
+) {
   new frappe.ui.FileUploader({
     allow_multiple: true,
-    restrictions: {
-      allowed_file_types: ["image/*", "video/mp4"],
-    },
+    restrictions: { allowed_file_types: ["image/*", "video/mp4"] },
     async on_success(file) {
       try {
-        // 1. Set file as public
         await frappe.call({
           method: "frappe.client.set_value",
           args: {
             doctype: "File",
             name: file.name,
-            fieldname: {
-              is_private: 0,
-            },
+            fieldname: { is_private: 0 },
           },
         });
 
-        // 2. Refetch the file to get updated file_url
         const r = await frappe.call({
           method: "frappe.client.get",
-          args: {
-            doctype: "File",
-            name: file.name,
-          },
+          args: { doctype: "File", name: file.name },
         });
-
         const updated_file = r.message;
 
-        // 3. Add child row with updated file_url and estimate rent
         const new_row = frm.add_child("custom_location_details");
         new_row.location_name = location;
         new_row.location_image = updated_file.file_url;
-        new_row.estimate_rent = estimate_rent || 0; // default to 0 if undefined
         new_row.status = "Pending";
+        new_row.estimate_rent = estimate_rent || 0;
+
+        // merge all extra fields
+        Object.assign(new_row, extraFields);
 
         frm.refresh_field("custom_location_details");
-
         render_custom_location_ui_for_task(frm);
 
-        frm
-          .save()
-          .then(() => {
-            frappe.show_alert(
-              {
-                message: __("Media uploaded successfully"),
-                indicator: "green",
-              },
-              3
-            );
-          })
-          .catch((err) => {
-            console.error("Error saving after upload:", err);
-            frappe.msgprint({
-              title: __("Upload Error"),
-              message: __("Media uploaded but failed to save document"),
-              indicator: "red",
-            });
-          });
+        await frm.save();
+        frappe.show_alert(
+          { message: __("Media uploaded successfully"), indicator: "green" },
+          3
+        );
 
         console.log(`Uploaded and attached file: ${updated_file.file_url}`);
       } catch (err) {
@@ -846,6 +1295,7 @@ function delete_media_item_for_task(frm, docname) {
     });
   }
 }
+
 function add_custom_css() {
   const css = `
   /* Overall Container and Table Styling */
@@ -856,6 +1306,11 @@ function add_custom_css() {
     overflow: hidden;
     margin-bottom: 20px;
   }
+    .status-select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background-color: #f5f5f5 !important;
+}
 
   table {
     width: 100%;
@@ -923,28 +1378,7 @@ function add_custom_css() {
     margin-bottom: 8px;
   }
 
-  .editable-location {
-    font-size: 13px;
-    font-weight: 500;
-    width: 100%;
-    padding: 8px 10px;
-    background-color: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    resize: vertical;
-    min-height: 60px;
-    line-height: 1.5;
-    transition: all 0.2s;
-    color: #36414c;
-  }
-
-  .editable-location:focus {
-    outline: none;
-    background-color: #fff;
-    border-color: #5e64ff;
-    box-shadow: 0 0 0 2px rgba(94, 100, 255, 0.2);
-  }
-
+ 
   /* Media Thumbnails Section */
   .location-images-container {
     display: flex;
@@ -956,8 +1390,8 @@ function add_custom_css() {
 
   .media-thumbnail {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 6px;
     overflow: hidden;
     border: 1px solid #e0e0e0;
@@ -1155,24 +1589,6 @@ function add_custom_css() {
   }
 
   /* Rent Input Styling */
-  .estimate-rent-input {
-    font-size: 13px;
-    width: 100%;
-    padding: 8px 10px;
-    background-color: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    transition: all 0.2s;
-    text-align: right;
-    color: #36414c;
-  }
-
-  .estimate-rent-input:focus {
-    outline: none;
-    background-color: #fff;
-    border-color: #23a565;
-    box-shadow: 0 0 0 2px rgba(35, 165, 101, 0.1);
-  }
 
   /* Remove spinner arrows */
   .estimate-rent-input::-webkit-outer-spin-button,
@@ -1237,24 +1653,56 @@ function add_custom_css() {
   }
 
   /* Custom scrollbar for table container */
-  .location-album-container::-webkit-scrollbar {
-    height: 8px;
-    width: 8px;
-  }
+  /* Scroll wrapper */
+.location-album-container {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;   /* horizontal scroll */
+  overflow-y: hidden;
+  margin-bottom: 20px;
+  width: 100%;
+}
 
-  .location-album-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-  }
+/* Table layout */
+.location-album-container table {
+  min-width: 1200px; /* force scroll if small screen */
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  table-layout: fixed;
+}
 
-  .location-album-container::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 10px;
-  }
+/* Sticky first column (Location Name) */
+.location-album-container th:first-child,
+.location-album-container td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  background: #fff;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
 
-  .location-album-container::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
+/* Images column takes max space */
+.location-album-container th:nth-child(2),
+.location-album-container td:nth-child(2) {
+  width: 400px;
+}
+
+/* Other columns fixed widths */
+.location-album-container th:nth-child(3),
+.location-album-container td:nth-child(3) {
+  width: 200px;
+  min-width: 200px;
+}
+.location-album-container th:last-child,
+.location-album-container td:last-child {
+  width: 120px;
+  min-width: 120px;
+}
+
 
   /* Hover effects for table rows */
   table tr {
@@ -1303,3 +1751,42 @@ function add_custom_css() {
 
   frappe.dom.set_style(css);
 }
+
+function render_manpower_summary(frm) {
+  let total_hirable = frm.doc.manpower_recruitment_table.length || 0;
+  let total_hired_or_inprogress = 0;
+
+  (frm.doc.manpower_recruitment_table || []).forEach((row) => {
+    if (["Hired", "In-Progress"].includes(row.status) && row.employee_name) {
+      total_hired_or_inprogress += 1;
+    }
+  });
+
+  let remaining = total_hirable - total_hired_or_inprogress;
+
+  let html = `
+    <div style="display:flex; gap:20px; margin: 10px 0;">
+      <div style="flex:1; text-align:center; border:1px solid #007bff; border-radius:8px; padding:10px;">
+        <div style="font-size:14px; color:var(--text-muted);">Hirable</div>
+        <div style="font-size:20px; font-weight:600; color:#007bff;">${total_hirable}</div>
+      </div>
+      <div style="flex:1; text-align:center; border:1px solid #28a745; border-radius:8px; padding:10px;">
+        <div style="font-size:14px; color:var(--text-muted);">In-Progress / Hired</div>
+        <div style="font-size:20px; font-weight:600; color:#28a745;">${total_hired_or_inprogress}</div>
+      </div>
+      <div style="flex:1; text-align:center; border:1px solid #dc3545; border-radius:8px; padding:10px;">
+        <div style="font-size:14px; color:var(--text-muted);">Remaining</div>
+        <div style="font-size:20px; font-weight:600; color:#dc3545;">${remaining}</div>
+      </div>
+    </div>
+  `;
+
+  frm.fields_dict.manpower_summary_html.$wrapper.html(html);
+}
+
+frappe.ui.form.on("Task", {
+  refresh(frm) {
+    if (!frm.doc.name || frm.doc.__islocal) return;
+    setupUserAssignment(frm, "Task", frm.doc.name);
+  },
+});
