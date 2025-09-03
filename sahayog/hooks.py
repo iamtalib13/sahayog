@@ -1,3 +1,4 @@
+from frappe.model.document import Document
 app_name = "sahayog"
 app_title = "Sahayog"
 app_publisher = "Developer Team"
@@ -45,6 +46,7 @@ website_route_rules = [
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 
+
 # include js in doctype views
 doctype_js = {
     "Purchase Order": "public/js/purchase_order.js",
@@ -54,10 +56,16 @@ doctype_js = {
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
     "Project": "public/js/project.js",
-    "Lead":"scrm/controller/lead/lead.js",
-    "Appointment" : "scrm/controller/appointment/appointment.js"
+    "Lead": "scrm/controller/lead/lead.js",
+    "Appointment": "scrm/controller/appointment/appointment.js",
+    "Approval Request": "public/js/approval_request.js",
+    "Approval Request": "public/js/approval_request.js"
+
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
+app_include_js = [
+    "sahayog/public/js/approval_request.js"
+]
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -108,10 +116,10 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_request_for_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation_item.execute",
-    "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",    
-    "sahayog.patches.custom_fields.add_custom_field_for_stock_entry.execute",  
-    "sahayog.patches.custom_fields.add_custom_field_for_material_request.execute",  
-    "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",  
+    "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_stock_entry.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_material_request.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
@@ -126,7 +134,7 @@ after_migrate = [
     # "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
 
-#    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
+    #    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
     "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
 
     # "sahayog.patches.add_roles.execute",
@@ -138,7 +146,7 @@ after_migrate = [
     # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
-   
+
     "sahayog.scrm.custom_html_block.l_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.employee_crm.execute",
 
@@ -176,19 +184,30 @@ after_migrate = [
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+    # "Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
-    
+    # "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.get_permission_query_conditions",
+    "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.get_permission_query_conditions",
+
+
 }
 #
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+has_permission = {
+    # 	"Event": "frappe.desk.doctype.event.event.has_permission",
+    # "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",
+    "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",
 
-# DocType Class
+}
+
+# DocType Classfrom frappe.model.document import Document
+
+
+class ApprovalRequest(Document):
+    pass
 # ---------------
 # Override standard doctype classes
+
 
 override_doctype_class = {
     "Warehouse": "sahayog.override.warehouse_doc_naming.CustomWarehouse",
@@ -207,14 +226,14 @@ doc_events = {
             "sahayog.doc_events.create_user_from_employee.create_user",
             # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
         ],
-      
+
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
-            
+
         ],
         # "before_save": [
         #      "sahayog.doc_events.employee.emp_enable_disable",
-            
+
         # ],
     },
     "Project": {
@@ -224,13 +243,13 @@ doc_events = {
         ],
     },
     "User": {
-       
+
         "before_save": [
             "sahayog.doc_events.user.user_enable_disable",
-            "sahayog.doc_events.user.capital_user_name",   
+            "sahayog.doc_events.user.capital_user_name",
         ],
     },
-   "Task": {
+    "Task": {
         "autoname": [
             "sahayog.doc_events.task.task_custom_autoname"
         ],
@@ -252,7 +271,7 @@ doc_events = {
             "sahayog.doc_events.task.fetch_it_checklist_settings",
         ],
     },
-    
+
     "Sahayog Settings": {
         "on_update": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template",
         "after_save": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template"
@@ -266,12 +285,12 @@ doc_events = {
         "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit",
         "before_save": "sahayog.doc_events.supplier_quotation.sync_project_field"
     },
-      
+
     "Project": {
         "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
     },
     "Purchase Order": {
-        #"on_update": "sahayog.doc_events.purchase_order.show_status_messages",
+        # "on_update": "sahayog.doc_events.purchase_order.show_status_messages",
         "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname",
         "before_save": "sahayog.doc_events.purchase_order.fetch_terms_conditions",
         "validate": "sahayog.doc_events.purchase_order.validate_store_incharge_po",
@@ -281,16 +300,16 @@ doc_events = {
         "before_save": "sahayog.doc_events.purchase_order.sync_project_field",
         "validate": "sahayog.doc_events.purchase_receipt.validate_store_incharge",
     },
-    "Department":{
+    "Department": {
         "autoname": "sahayog.doc_events.department.department_name"
     },
 
-   
+
     "Lead": {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
         ]
-    },   
+    },
 }
 
 # Scheduled Tasks
@@ -310,7 +329,7 @@ scheduler_events = {
     }
     # "cron": {
     #     "*": [
-    #        
+    #
     #     ]
     # }
     # You can uncomment these if needed later:
@@ -349,7 +368,7 @@ override_whitelisted_methods = {
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
     "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
     "erpnext.selling.doctype.customer.customer": "sahayog.override.override_make_contact.custom_make_contact",
-    #"frappe.core.doctype.communication.email.make": "sahayog.override.email_sender_override.make"
+    # "frappe.core.doctype.communication.email.make": "sahayog.override.email_sender_override.make"
 
 }
 #
@@ -357,7 +376,7 @@ override_whitelisted_methods = {
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 override_doctype_dashboards = {
-	#"Task": "sahayog.task.get_dashboard_data",
+    # "Task": "sahayog.task.get_dashboard_data",
     "Project": "sahayog.dashboard.project_dashboard.get_data",
 
 }
@@ -428,42 +447,42 @@ fixtures = [
     },
     {
         "dt": "Prodtech",
-        
+
     },
-     {
+    {
         "dt": "Item Department",
-        
+
     },
     {
         "dt": "Module",
-        
+
     },
 
-   
+
     {
         "dt": "Custom DocPerm",
         "filters": [["parent", "=", "Issue Register"]]
     },
 
-     {
+    {
         "dt": "Task",
         "filters": [["is_template", "=", "1"]]
     },
 
     {
         "dt": "Project Template",
-        
+
     },
     {"dt": "Custom HTML Block", "filters": [
         [
             "name",
             "in",
             {
-				"Sahayog Projects",
+                                "Sahayog Projects",
                 "Sahayog Home",
                 "BDO Performance",
                 "MIS Report List",
-			}
+            }
         ]
     ]},
 ]
