@@ -1101,22 +1101,29 @@ function add_new_location_for_task(frm) {
     ],
     (values) => {
       if (!values.location_name) return;
+
       frappe.show_alert(
         { message: __("Preparing uploader..."), indicator: "blue" },
         3
       );
+
       setTimeout(() => {
+        // Pass extra fields as an object
+        const extraFields = {
+          address: values.address,
+          security_deposit: values.security_deposit,
+          floor: values.floor,
+          remarks: values.remarks,
+          contact_number: values.contact_number,
+          occupation: values.occupation,
+          carpet_area: values.carpet_area,
+        };
+
         upload_media_files_for_task(
           frm,
           values.location_name,
           values.estimate_rent,
-          values.address,
-          values.security_deposit,
-          values.floor,
-          values.remarks,
-          values.contact_number,
-          values.occupation,
-          values.carpet_area
+          extraFields
         );
       }, 300);
     },
