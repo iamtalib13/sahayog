@@ -586,7 +586,7 @@ function render_custom_location_ui_for_task(frm) {
                 </tbody>
             </table>
         </div>
-        <div class="add-location-container" style="margin-bottom:10px; text-align:right;">
+        <div class="add-location-container" style="margin-bottom:10px; text-align:left;">
           <button class="btn btn-sm btn-primary" id="add-location">
             <i class="fa fa-plus"></i> Add New Location
           </button>

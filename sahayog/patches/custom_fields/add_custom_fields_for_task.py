@@ -142,7 +142,19 @@ def execute():
               "label": "IT Checklist Table",
               "options": "IT Checklist",
               "depends_on": "eval:!doc.is_template && (doc.subject == 'IT Hardware Installation' || doc.subject == 'IT Software Installation')"
-            }
+            },
+              {
+                "fieldname": "column_break_after_is_template",
+                "fieldtype": "Column Break",
+                "insert_after": "is_template",
+            },
+            {
+                "fieldname": "project_name",
+                "fieldtype": "Data",
+                "insert_after": "column_break_after_is_template",
+                "label": "Project Name",
+                "fetch_from": "project.project_name"
+            },
         ],
     }
     create_custom_fields(fields)
