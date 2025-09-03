@@ -92,3 +92,6 @@ def has_permission(doc, user=None):
         return True
 
     return False
+
+
+# working code
