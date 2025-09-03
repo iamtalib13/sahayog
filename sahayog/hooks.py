@@ -468,6 +468,9 @@ fixtures = [
         "dt": "Project Template",
         
     },
+    {
+        "dt":"Letter Head",
+    },
     {"dt": "Custom HTML Block", "filters": [
         [
             "name",
