@@ -436,7 +436,7 @@ fixtures = [
     {
         "dt": "Print Format",
         "filters": [
-            ["name", "=", "LOI"]
+            ["name", "in", ["LOI","Letter of Intent Print Format"]]
         ]
     },
     {
