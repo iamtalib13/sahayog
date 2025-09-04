@@ -6,13 +6,19 @@ class CustomItem(Item):
     def autoname(self):
         """
         Custom autoname for Item:
-        Format: 4-letter prefix from item_group + 3-digit serial (e.g., PROD001)
-        Checks for existing names and increments until a unique one is found.
+        - If item_code is already provided (e.g., via Excel import), use it directly.
+        - Else, generate code using: 4-letter prefix from item_group + 3-digit serial (e.g., PROD001).
         """
+
+        # If item_code is already provided, keep it
+        if self.item_code:
+            self.name = self.item_code
+            return
 
         if not self.item_group:
             frappe.throw(_("Item Group is required to generate Item Code."))
 
+        # Generate prefix (first 4 letters of Item Group, padded with 'X' if shorter)
         prefix = self.item_group.upper().replace(" ", "")[:4].ljust(4, 'X')
         series_num = 1
         max_tries = 10
@@ -26,3 +32,4 @@ class CustomItem(Item):
             series_num += 1
 
         frappe.throw(_("Unable to generate unique Item Code after {0} attempts").format(max_tries))
+    

@@ -12,6 +12,13 @@ def execute():
                 "label": "Item Department",
                 "reqd": 1,
             },
+              {
+                "fieldname": "bom_template",
+                "fieldtype": "Check",
+                "insert_after": "disabled",
+                "label": "BOM Template",
+                "default": 0,
+            },
          
         ]
     }
