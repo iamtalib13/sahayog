@@ -55,7 +55,9 @@ doctype_js = {
     "Task": "public/js/task.js",
     "Project": "public/js/project.js",
     "Lead":"scrm/controller/lead/lead.js",
-    "Appointment" : "scrm/controller/appointment/appointment.js"
+    "Appointment" : "scrm/controller/appointment/appointment.js",
+    "Product Bundle": "public/js/product_bundle.js",
+    "BOM": "public/js/bom.js",
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = [
@@ -106,6 +108,9 @@ app_include_js = [
 # ]
 
 after_migrate = [
+    "sahayog.patches.custom_fields.add_custom_fields_for_bom.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_item.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_product_bundle.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
