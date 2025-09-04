@@ -347,19 +347,18 @@ function render_custom_location_ui_for_task(frm) {
         <div class="location-album-container">
             <table class="table table-bordered" style="margin:0;">
                 <thead>
-                    <tr>
-                        <th style="width: 150px;">Location Name</th>
-                        <th>Location Images</th>
-                        <th style="width: 200px;">Address</th>
-                        <th style="width: 120px;">Estimate Rent<br>(per month)</th>
-                        <th style="width: 120px;">Security Deposit</th>
-                        <th style="width: 80px;">Floor</th>
-                        <th style="width: 150px;">Contact Number</th>
-                        <th style="width: 200px;">Remarks</th>
-                        <th style="width: 120px;">Occupation</th>
-                        <th style="width: 120px;">Carpet Area (sq.ft)</th>
-                        <th style="width: 100px;">Status</th>   
-                    </tr>
+                  <tr>
+                    <th style="width: 150px;">Location Name & <br>Status</th>
+                    <th>Location Images</th>
+                    <th style="width: 200px;">Address</th>
+                    <th style="width: 120px;">Estimate Rent<br>(per month)</th>
+                    <th style="width: 120px;">Security Deposit</th>
+                    <th style="width: 80px;">Floor</th>
+                    <th style="width: 150px;">Contact Number</th>
+                    <th style="width: 200px;">Remarks</th>
+                    <th style="width: 120px;">Occupation</th>
+                    <th style="width: 120px;">Carpet Area (sq.ft)</th>
+                  </tr>
                 </thead>
                 <tbody>`;
 
@@ -387,17 +386,61 @@ function render_custom_location_ui_for_task(frm) {
     const encodedLocation = encodeURIComponent(location);
 
     html += `
-            <tr data-location="${encodedLocation}" class="location-row">
-              <!-- Location Name -->
-              <td>
-                <textarea
-                  class="editable-location location-input"
-                  data-location="${encodedLocation}"
-                  data-old-location="${encodedLocation}"
-                  style="border: none; background: transparent; width: 100%; font-weight: bold; resize: vertical; min-height: 40px;" 
-                  spellcheck="false"
-                >${frappe.utils.escape_html(location)}</textarea>
-              </td>
+<tr data-location="${encodedLocation}" class="location-row">
+  <!-- Location Name + Status merged -->
+  <td>
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <!-- Location Name -->
+      <textarea
+        class="editable-location location-input"
+        data-location="${encodedLocation}"
+        data-old-location="${encodedLocation}"
+        style="border: none; background: transparent; width: 100%; font-weight: bold; resize: vertical; min-height: 40px;" 
+        spellcheck="false"
+      >${frappe.utils.escape_html(location)}</textarea>
+
+      <!-- Status -->
+      <div class="status-selection-container">`;
+
+    if (frappe.user.has_role("Project Manager")) {
+      const anyApproved = isAnyLocationApproved(frm);
+      const isThisLocationApproved = currentStatus === "Approved";
+      const isReadOnly = anyApproved && !isThisLocationApproved;
+
+      html += `
+    <select class="form-control status-select" 
+            data-location="${encodedLocation}"
+            ${isReadOnly ? "disabled" : ""}>
+      <option value="Pending" ${
+        currentStatus === "Pending" ? "selected" : ""
+      }>Pending</option>
+      <option value="Approved" ${
+        currentStatus === "Approved" ? "selected" : ""
+      }>Approved</option>
+      <option value="Rejected" ${
+        currentStatus === "Rejected" ? "selected" : ""
+      }>Rejected</option>
+      ${
+        currentStatus === "Mixed"
+          ? '<option value="Mixed" selected>Mixed Status</option>'
+          : ""
+      }
+    </select>`;
+
+      if (isReadOnly) {
+        html += `<div class="help-message" style="font-size: 11px; color: #6b778c; margin-top: 4px;">
+        Cannot change - another location is approved
+      </div>`;
+      }
+    } else {
+      html += `<span class="status-badge ${currentStatus.toLowerCase()}">${currentStatus}</span>`;
+    }
+
+    html += `
+      </div>
+    </div>
+  </td>
+
 
               <!-- Images -->
               <td>
@@ -532,52 +575,6 @@ function render_custom_location_ui_for_task(frm) {
                data-location="${encodedLocation}"
                value="${frappe.utils.escape_html(firstRow.carpet_area || "")}"
                placeholder="Carpet Area">
-      </td>
-
-
-      <!-- Status -->
-      <td>
-        <div class="status-selection-container">`;
-
-    // Project Manager logic
-    if (frappe.user.has_role("Project Manager")) {
-      const anyApproved = isAnyLocationApproved(frm);
-      const isThisLocationApproved = currentStatus === "Approved";
-      const isReadOnly = anyApproved && !isThisLocationApproved;
-
-      // Status select
-      html += `
-      <select class="form-control status-select" 
-              data-location="${encodedLocation}"
-              ${isReadOnly ? "disabled" : ""}>
-        <option value="Pending" ${
-          currentStatus === "Pending" ? "selected" : ""
-        }>Pending</option>
-        <option value="Approved" ${
-          currentStatus === "Approved" ? "selected" : ""
-        }>Approved</option>
-        <option value="Rejected" ${
-          currentStatus === "Rejected" ? "selected" : ""
-        }>Rejected</option>
-        ${
-          currentStatus === "Mixed"
-            ? '<option value="Mixed" selected>Mixed Status</option>'
-            : ""
-        }
-      </select>`;
-
-      // Help message
-      if (isReadOnly) {
-        html += `<div class="help-message" style="font-size: 11px; color: #6b778c; margin-top: 4px;">
-            Cannot change - another location is approved
-          </div>`;
-      }
-    } else {
-      html += `<span class="status-badge ${currentStatus.toLowerCase()}">${currentStatus}</span>`;
-    }
-
-    html += `
-        </div>
       </td>
     </tr>`;
   }
