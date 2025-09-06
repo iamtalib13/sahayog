@@ -18,6 +18,14 @@ frappe.ui.form.on("Product Bundle", {
 
     //relabel fields
     frm.set_df_property("new_item_code", "label", "BOM Template");
+    frm.set_query("new_item_code", function () {
+      return {
+        filters: {
+          bom_template: 1,
+          is_stock_item: 0,
+        },
+      };
+    });
   },
 });
 // Child table event handler
