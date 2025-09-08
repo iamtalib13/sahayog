@@ -56,6 +56,13 @@ def execute():
                 "insert_after": "custom_division",
                 "label": "Cluster"
             },
+                {
+                "fieldname": "sol_id",
+                "fieldtype": "Data",
+                "fetch_from": "branch.sol_id",
+                "insert_after": "branch",
+                "label": "Sol ID"
+            },
           
         ]
     }

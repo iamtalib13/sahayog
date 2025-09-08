@@ -87,6 +87,7 @@
   {
    "fieldname": "employee",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Employee",
    "options": "Employee",
    "read_only": 1
@@ -131,7 +132,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-29 10:14:59.527419",
+ "modified": "2025-09-08 16:01:39.891566",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",
