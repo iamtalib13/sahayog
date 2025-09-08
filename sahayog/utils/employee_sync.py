@@ -59,7 +59,7 @@ def sync_employees():
 
     while True:
         # 1️⃣ Fetch batch of employees from Production API
-        prod_api = f"{PROD_URL}/api/method/your_app.api.employee.get_employee_data"
+        prod_api = f"{PROD_URL}/api/method/sahayog.utils.employee_sync.get_employee_data"
         params = {
             "limit_start": start,
             "limit_page_length": BATCH_SIZE
