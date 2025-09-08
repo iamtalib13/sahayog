@@ -8,7 +8,8 @@ def get_agents_sol_wise(user=None):
     user_roles = frappe.get_roles(user)
 
 
-    if "Administrator" in user_roles:
+ # Check if user is Administrator or MIS Admin
+    if "Administrator" in user_roles or "MIS Admin" in user_roles:
         return ""
 
     employee = frappe.db.get_value(
