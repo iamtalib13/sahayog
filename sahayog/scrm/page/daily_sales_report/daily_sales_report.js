@@ -216,6 +216,14 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
         vertical-align: middle; text-align: center; font-size: 13px; padding: 9px 6px;
         border-top: 1px solid #dee2e6; border-bottom: none; line-height: 1.45;
       }
+      /* Sr No column specific styling */
+      #dsr-table th:first-child,
+      #dsr-table td:first-child {
+        width: 60px;
+        min-width: 60px;
+        text-align: center;
+        font-weight: 600;
+      }
       .status-badge {
         display: inline-flex; align-items: center; font-size: 12px; font-weight: 500;
         padding: 2px 8px; border-radius: 8px;
@@ -374,6 +382,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
         <table id="dsr-table">
           <thead>
             <tr>
+              <th>Sr No</th>
               <th>Customer ID</th>
               <th>Customer Name</th>
               <th>Contact</th>
@@ -384,7 +393,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
           </thead>
           <tbody>
             <tr>
-              <td colspan="6" class="loading-spinner">
+              <td colspan="7" class="loading-spinner">
                 <div class="spinner"></div>
                 <span style="margin-left: 8px; font-size: 13px;">Loading leads...</span>
               </td>
@@ -461,7 +470,8 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     XLSX.utils.book_append_sheet(wb, empWs, "Employee Info");
 
     // Leads Data Sheet
-    const leadsData = data.map((lead) => [
+    const leadsData = data.map((lead, index) => [
+      index + 1, // Sr No
       lead.name,
       lead.lead_name || "-",
       lead.mobile_no || "-",
@@ -471,6 +481,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     ]);
 
     leadsData.unshift([
+      "Sr No",
       "Customer ID",
       "Customer Name",
       "Contact",
@@ -528,10 +539,11 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     csv += `Performance,${rating.performance}\n\n`;
 
     csv += "Leads Data\n";
-    csv += "Customer ID,Customer Name,Contact,Source,Status,Follow Up Date\n";
+    csv +=
+      "Sr No,Customer ID,Customer Name,Contact,Source,Status,Follow Up Date\n";
 
-    data.forEach((lead) => {
-      csv += `"${lead.name}","${lead.lead_name || "-"}","${
+    data.forEach((lead, index) => {
+      csv += `"${index + 1}","${lead.name}","${lead.lead_name || "-"}","${
         lead.mobile_no || "-"
       }","${lead.source || "-"}","${lead.status || "-"}","${
         lead.followup_date || "-"
@@ -557,6 +569,9 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
             border: 1px solid #ddd; padding: 8px; text-align: left; 
           }
           .data-table th { background-color: #f8f9fa; font-weight: bold; }
+          .data-table th:first-child, .data-table td:first-child { 
+            width: 60px; text-align: center; font-weight: bold; 
+          }
           .rating-section { background: #f8f9fa; padding: 15px; border-radius: 5px; }
           @media print {
             body { margin: 0; }
@@ -624,6 +639,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
           <table class="data-table">
             <thead>
               <tr>
+                <th>Sr No</th>
                 <th>Customer ID</th>
                 <th>Customer Name</th>
                 <th>Contact</th>
@@ -635,8 +651,9 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
             <tbody>
               ${data
                 .map(
-                  (lead) => `
+                  (lead, index) => `
                 <tr>
+                  <td>${index + 1}</td>
                   <td>${lead.name}</td>
                   <td>${lead.lead_name || "-"}</td>
                   <td>${lead.mobile_no || "-"}</td>
@@ -818,7 +835,8 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
 
   let rows = "";
 
-  for (const l of leads) {
+  for (let index = 0; index < leads.length; index++) {
+    const l = leads[index];
     let followup = await getFollowupDate(l.name);
     processedLeads.push({
       ...l,
@@ -826,6 +844,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     });
 
     rows += `<tr>
+      <td style="font-weight: 600; color: #495057;">${index + 1}</td>
       <td>${l.name}</td>
       <td><strong style="font-size: 13px;">${l.lead_name || "-"}</strong></td>
       <td style="font-size: 13px;">${l.mobile_no || "-"}</td>
@@ -837,7 +856,7 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
 
   $("#dsr-table tbody").html(
     rows ||
-      `<tr><td colspan="6" class="empty-state"><i>📭</i>No leads found for today</td></tr>`
+      `<tr><td colspan="7" class="empty-state"><i>📭</i>No leads found for today</td></tr>`
   );
 
   if (processedLeads.length > 0) {
