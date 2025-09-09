@@ -52,11 +52,15 @@ doctype_js = {
     "Task": "public/js/task.js",
     "Project": "public/js/project.js",
     "Lead":"scrm/controller/lead/lead.js",
-    "Appointment" : "scrm/controller/appointment/appointment.js"
+    "Appointment" : "scrm/controller/appointment/appointment.js",
+    "Stock Entry": "public/js/stock_entry_hide_fields.js",
+    "Purchase Receipt": "public/js/purchase_receipt_hide.js"
+
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {
+    "Purchase Receipt" : "public/js/purchase_receipt_list_view_to_inward.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -176,6 +180,8 @@ permission_query_conditions = {
 	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
+    "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission",
+    "Stock Entry": "sahayog.permissions.get_stock_entry_permission",
     
 }
 #

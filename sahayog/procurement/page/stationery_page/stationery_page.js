@@ -355,20 +355,6 @@ const rows = ledgerEntries.map(entry => {
         console.error(error);
     }
 }
-// This function shows item details in a popup
-function showItemDetails(item) {
-  const html = `
-    <p><strong>Item Code:</strong> ${item.name}</p>
-    <p><strong>Name:</strong> ${item.item_name}</p>
-    <p><strong>UOM:</strong> ${item.stock_uom}</p>
-    <p><strong>Description:</strong><br>${item.description || "N/A"}</p>
-  `;
-  frappe.msgprint({
-    title: `Item: ${item.name}`,
-    message: html,
-    indicator: 'blue'
-  });
-}
 // OUTWARD FORM RENDER FUNCTION
 function setActiveTab(active, inactive) {
   active.style.fontWeight = "bold";
@@ -426,7 +412,11 @@ async function render_inward_form(doc = null, selectedSupplier = "") {
     suppliers = await frappe.db.get_list("Supplier", { fields: ["name"] });
     items = await frappe.db.get_list("Item", {
       fields: ["item_code", "item_name", "description"],
-      limit: 1000
+      limit: 1000,
+      filters: {
+        is_fixed_asset: 0,
+        is_stock_item: 1
+      }
     });
   } catch (e) {
     section.innerHTML = `<div class="alert alert-danger">Error loading data. Please try again.</div>`;
@@ -453,9 +443,7 @@ async function render_inward_form(doc = null, selectedSupplier = "") {
       method: "sahayog.api.stationery_api.get_user_warehouse",
     });
     if (res.message?.warehouse) warehouseValue = res.message.warehouse;
-  } catch (error) {
-    // use default
-  }
+  } catch (error) { }
   let displayWarehouse = isEdit && doc.set_warehouse ? doc.set_warehouse : warehouseValue;
 
   let itemsRows = '';
@@ -548,6 +536,9 @@ async function render_inward_form(doc = null, selectedSupplier = "") {
         <button id="submit-inward" class="btn btn-success" ${isSubmitted ? 'disabled' : ''}>
           ${isSubmitted ? "View Only" : (isEdit ? "Update Inward Entry" : "Submit Inward Entry")}
         </button>
+        ${isEdit && doc.docstatus === 0 ? `
+          <button id="submit-pr-btn" class="btn btn-primary mt-2">Submit</button>
+        ` : ""}
       </div>
     </div>
     <datalist id="product-list">${itemOptions}</datalist>
@@ -690,7 +681,7 @@ async function render_inward_form(doc = null, selectedSupplier = "") {
           indicator: "green"
         });
       }
-      render_inward_list();
+      render_inward_form();
     } catch (err) {
       frappe.show_alert({ message: "❌ Failed to save Inward Entry", indicator: "red" });
     }
@@ -709,6 +700,92 @@ async function render_inward_form(doc = null, selectedSupplier = "") {
     tbody.appendChild(row);
   }
   toggleAddDelete();
+
+  // ---- CHANGE DETECTION FOR SUBMIT ----
+  function hasChanges(doc, supplier, invoice_date, itemsData) {
+    if ((doc.supplier || "") !== supplier) return true;
+    if ((doc.posting_date || "").split("T")[0] !== invoice_date) return true;
+    if ((doc.items || []).length !== itemsData.length) return true;
+    for (let i = 0; i < itemsData.length; i++) {
+      const d = doc.items[i] || {};
+      const r = itemsData[i];
+      if (
+        (d.item_code || "") !== r.item_code ||
+        Number(d.qty) !== Number(r.qty) ||
+        Number(d.rate) !== Number(r.rate)
+      ) return true;
+    }
+    return false;
+  }
+
+  // ---- SUBMISSION HANDLER FOR DRAFT ----
+  if (isEdit && doc.docstatus === 0) {
+    const submitBtn = section.querySelector("#submit-pr-btn");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", async function() {
+        submitBtn.disabled = true;
+
+        const supplier = supplierInput.value;
+        const invoice_date = section.querySelector("#invoice_date").value;
+        const rows = tbody.querySelectorAll("tr");
+        const itemsData = [...rows].map(row => {
+          const val = row.querySelector(".product-input").value;
+          return {
+            item_code: val.split(" : ")[0].trim(),
+            qty: parseFloat(row.querySelector(".qty-input").value) || 0,
+            rate: parseFloat(row.querySelector(".rate-input").value) || 0
+          };
+        });
+
+        const changed = hasChanges(doc, supplier, invoice_date, itemsData);
+
+        try {
+          if (changed) {
+            // Save/update first if changed
+            const { message: currentDoc } = await frappe.call({
+              method: "frappe.client.get",
+              args: { doctype: "Purchase Receipt", name: doc.name }
+            });
+            Object.assign(currentDoc, {
+              supplier,
+              posting_date: invoice_date,
+              set_warehouse: displayWarehouse,
+              items: itemsData
+            });
+            await frappe.call({ method: "frappe.client.save", args: { doc: currentDoc } });
+          }
+
+          // Now submit
+          // First get full document from server
+          const { message: fullDoc } = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Purchase Receipt", name: doc.name }
+          });
+
+          // Then submit passing docs parameter
+          await frappe.call({
+            method: "frappe.client.submit",
+            args: { doc: fullDoc }
+          });
+
+
+          frappe.show_alert({
+            message: `Purchase Receipt <b>${doc.name}</b> ${changed ? "updated and " : ""}submitted successfully.`,
+            indicator: "green"
+          });
+
+          render_inward_form(submitRes.message, selectedSupplier);
+
+        } catch (err) {
+          frappe.show_alert({
+            message: `❌ Failed to submit Purchase Receipt: ${err.message || err}`,
+            indicator: "red"
+          });
+          submitBtn.disabled = false;
+        }
+      });
+    }
+  }
 }
 // Modified create_supplier to return new supplier name
 async function create_supplier_with_callback(callback) {
@@ -925,8 +1002,6 @@ async function render_inward_list() {
     console.error(error);
   }
 }
-// This function shows purchase receipt details in a popup & It formats the items in a table and displays total quantities and amounts
-
 // RENDER OUTWARD FUNCTION
 async function render_outward() {
   const content = document.getElementById("content");
@@ -1158,159 +1233,12 @@ async function render_outward_list() {
     console.error(err);
   }
 }
-// This function shows stock entry details in a popup
-async function showStockEntryDetails(doc) {
-  const statusBadge = doc.docstatus === 0
-    ? `<span class="badge bg-primary">Draft</span>`
-    : `<span class="badge bg-success">Submitted</span>`;
-
-  // Build rows with qty, rate editable if draft
-  const itemsRows = doc.items.map((item, index) => `
-    <tr>
-      <td class="text-center">${index + 1}</td>
-      <td>${item.item_code}</td>
-      <td><input type="number" class="form-control form-control-sm qty-input" id="qty-${index}" value="${item.qty}" min="0" ${doc.docstatus !== 0 ? 'readonly' : ''}></td>
-      <td><input type="number" class="form-control form-control-sm rate-input" id="rate-${index}" value="${item.rate}" min="0" ${doc.docstatus !== 0 ? 'readonly' : ''}></td>
-      <td id="amount-${index}" class="text-end">₹ ${(item.qty * item.rate).toFixed(2)}</td>
-    </tr>
-  `).join("");
-
-  const html = `
-    <div class="card shadow-sm">
-      <div class="card-header d-flex align-items-center">
-        <h5 class="mb-0">Stock Entry: ${doc.name}</h5>
-        ${statusBadge}
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <button class="btn btn-sm btn-outline-secondary" id="back-to-outward-list">
-              <i class="fa fa-arrow-left"></i> Back
-            </button>
-          </div>
-        </div>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label class="form-label"><strong>Stock Entry Type</strong></label>
-            <input type="text" class="form-control" value="${doc.stock_entry_type}" readonly>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label"><strong>Posting Date</strong></label>
-            <input type="date" class="form-control" id="posting_date" value="${doc.posting_date.split('T')[0]}" ${doc.docstatus !== 0 ? 'readonly' : ''}>
-          </div>
-        </div>
-
-        <table class="table table-bordered table-sm align-middle">
-          <thead class="table-light">
-            <tr>
-              <th class="text-center" style="width: 50px;">No.</th>
-              <th>Item Code</th>
-              <th style="width: 150px;">Quantity</th>
-              <th style="width: 150px;">Rate (INR)</th>
-              <th class="text-end" style="width: 150px;">Amount (INR)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsRows}
-          </tbody>
-        </table>
-
-        ${doc.docstatus === 0 ? `
-          <div class="text-end mt-3">
-            <button class="btn btn-success" id="submit-stockentry-btn">
-              <i class="fa fa-check"></i> Submit Stock Entry
-            </button>
-          </div>
-        ` : ''}
-      </div>
-    </div>
-  `;
-
-  const section = document.getElementById("outward-section");
-  section.innerHTML = html;
-
-  setTimeout(() => {
-    const backBtn = document.getElementById("back-to-outward-list");
-    if (backBtn) backBtn.addEventListener("click", () => {
-      render_outward_list();
-    });
-  }, 0);
-
-  if (doc.docstatus === 0) {
-    doc.items.forEach((_, index) => {
-      const qtyInput = document.getElementById(`qty-${index}`);
-      const rateInput = document.getElementById(`rate-${index}`);
-      const amountCell = document.getElementById(`amount-${index}`);
-
-      const updateAmount = () => {
-        let qty = parseFloat(qtyInput.value) || 0;
-        let rate = parseFloat(rateInput.value) || 0;
-        amountCell.textContent = `₹ ${(qty * rate).toFixed(2)}`;
-      };
-
-      qtyInput.addEventListener("input", updateAmount);
-      rateInput.addEventListener("input", updateAmount);
-    });
-
-    document.getElementById("submit-stockentry-btn").addEventListener("click", async () => {
-      try {
-        const posting_date = document.getElementById("posting_date").value;
-
-        // Fetch fresh copy of Stock Entry doc for update
-        const currentDocResp = await frappe.call({
-          method: "frappe.client.get",
-          args: {
-            doctype: "Stock Entry",
-            name: doc.name
-          }
-        });
-        const currentDoc = currentDocResp.message;
-
-        // Prepare updated items with mandatory s_warehouse (and t_warehouse if needed)
-        const updatedItems = [];
-        currentDoc.items.forEach((item, index) => {
-          const qty = parseFloat(document.getElementById(`qty-${index}`).value) || 0;
-          const rate = parseFloat(document.getElementById(`rate-${index}`).value) || 0;
-          updatedItems.push({
-            item_code: item.item_code,
-            qty: qty,
-            rate: rate,
-            s_warehouse: item.s_warehouse || "Your Source Warehouse", // Replace with your value or doc default
-            t_warehouse: item.t_warehouse || "Your Target Warehouse"  // Replace with your value or doc default, or remove if not required
-          });
-        });
-
-        if (!updatedItems.some(i => i.qty > 0)) {
-          frappe.msgprint("Please add at least one valid item before submitting.");
-          return;
-        }
-
-        currentDoc.items = updatedItems;
-        currentDoc.posting_date = posting_date;
-
-        // Save updated Stock Entry doc (still Draft)
-        await frappe.call({
-          method: "frappe.client.save",
-          args: { doc: currentDoc }
-        });
-
-        frappe.msgprint("✅ Stock Entry updated successfully!");
-        render_outward_list(); // Optionally, refresh your list or view
-
-      } catch (err) {
-        frappe.msgprint("❌ Error submitting stock entry.");
-        console.error(err);
-      }
-    });
-  }
-}
-//show outward form  function 
+// This function shows the outward form for creating or editing a stock entry
 async function render_outward_form(doc = null) {
   setActiveTab(
     document.getElementById("tab-form"),
     document.getElementById("tab-list")
   );
-
   const section = document.getElementById("outward-section");
   section.innerHTML = "<h4>Loading Outward Form...</h4>";
 
@@ -1325,9 +1253,14 @@ async function render_outward_form(doc = null) {
     console.error("Failed to fetch default source warehouse:", err);
   }
 
-  const res = await fetch("/api/method/sahayog.api.stationery_api.get_stock_entry_items");
-  const data = await res.json();
-  const items = Array.isArray(data.message) ? data.message : [];
+const items = await frappe.db.get_list("Item", {
+  fields: ["item_code", "item_name", "description"],
+  limit: 1000,
+  filters: {
+    is_fixed_asset: 0,
+    is_stock_item: 1
+  }
+});
 
   const whRes = await fetch("/api/resource/Warehouse?fields=[\"name\"]");
   const whData = await whRes.json();
@@ -1380,9 +1313,8 @@ async function render_outward_form(doc = null) {
         border-radius: 50%;
         box-shadow: 0 0 10px 3px #3cc29199;
         display: inline-block;
-      }
+      }readonly
     </style>
-
     <div class="card">
       <div class="card-body">
         <h4>Stock Outward Entry</h4>
@@ -1403,27 +1335,23 @@ async function render_outward_form(doc = null) {
               <label for="from-warehouse" style="font-weight: 600; margin-top: 4px;">Source Warehouse</label>
               <select id="from-warehouse" class="form-control form-control-sm" style="min-width:180px;"
                 ${doc && doc.docstatus !== 0 ? "disabled" : ""}>
+                
                 ${whOptions}
               </select>
             </div>
-
             <div style="position: relative; width: 90px; height: 32px; display: flex; align-items: center; justify-content: center;">
-<svg width="90" height="32" xmlns="http://www.w3.org/2000/svg">
-  <line x1="10" y1="16" x2="80" y2="16" stroke="#222" stroke-width="2" stroke-dasharray="6,7" />
-  ${
-    (doc && doc.docstatus !== 0)
-      ? `<circle cx="80" cy="16" r="5" fill="#2aaaff" />`
-      : `<circle r="5" fill="#2aaaff">
-           <animateMotion dur="1.7s" repeatCount="indefinite"
-             keyPoints="0;1" keyTimes="0;1" fill="freeze"
-             path="M10,16 L80,16" />
-           <animate attributeName="opacity" values="1;.3;1" dur="1.7s" repeatCount="indefinite" />
-         </circle>`
-  }
-</svg>
-
+              <svg width="90" height="32" xmlns="http://www.w3.org/2000/svg">
+                <line x1="10" y1="16" x2="80" y2="16" stroke="#222" stroke-width="2" stroke-dasharray="6,7" />
+                ${
+                  (doc && doc.docstatus !== 0)
+                    ? `<circle cx="80" cy="16" r="5" fill="#2aaaff" />`
+                    : `<circle r="5" fill="#2aaaff">
+                        <animateMotion dur="1.7s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" fill="freeze" path="M10,16 L80,16" />
+                        <animate attributeName="opacity" values="1;.3;1" dur="1.7s" repeatCount="indefinite" />
+                      </circle>`
+                }
+              </svg>
             </div>
-
             <div class="d-flex flex-column align-items-center">
               <span class="dot-green"></span>
               <label for="to-warehouse" style="font-weight: 600; margin-top: 4px;">Target Warehouse</label>
@@ -1434,7 +1362,6 @@ async function render_outward_form(doc = null) {
             </div>
           </div>
         </div>
-
         <div style="overflow-x:auto; width: 100%;">
           <table class="table table-bordered" id="outward-table" style="min-width:900px;">
             <thead>
@@ -1444,6 +1371,7 @@ async function render_outward_form(doc = null) {
                 <th>Item Code</th>
                 <th>Quantity</th>
                 <th>Available Quantity</th>
+                <th>supply Quantity</th>
                 <th>Rate (INR)</th>
                 <th>Amount (INR)</th>
               </tr>
@@ -1451,11 +1379,9 @@ async function render_outward_form(doc = null) {
             <tbody></tbody>
           </table>
         </div>
-
         <div class="d-flex justify-content-between align-items-center mb-2">
           <button id="add-delete-btn" class="btn btn-sm btn-primary" ${doc && doc.docstatus !== 0 ? 'disabled' : ''}>➕ Add</button>
         </div>
-
         <div class="mt-3">
           <button id="submit-outward" class="btn btn-success" ${doc && doc.docstatus !== 0 ? 'disabled' : ''}>
             ${doc ? (doc.docstatus === 0 ? 'Update Outward Entry' : 'View Only') : 'Submit Outward Entry'}
@@ -1464,13 +1390,32 @@ async function render_outward_form(doc = null) {
       </div>
     </div>
   `;
+  document.getElementById("from-warehouse").addEventListener("mousedown", function(e) {
+  e.preventDefault(); // stops dropdown from opening
+});
 
-  // Set dropdown values
+
   document.getElementById("from-warehouse").value = fromWarehouseValue;
   document.getElementById("to-warehouse").value = toWarehouseValue;
 
   const tbody = document.querySelector("#outward-table tbody");
   const addDeleteBtn = document.getElementById("add-delete-btn");
+
+  async function setUnusedQty(row, item_code, warehouse) {
+    // fetch unused qty for row and set cell
+    try {
+      const response = await frappe.call({
+        method: "sahayog.api.stationery_api.get_available_qty",
+        args: {
+          item_code,
+          warehouse
+        }
+      });
+      row.querySelector(".unused-qty").textContent = response.message ?? 0;
+    } catch (err) {
+      row.querySelector(".unused-qty").textContent = "Error";
+    }
+  }
 
   function addRow(itemObj = null) {
     const itemCodeValue = itemObj ? itemObj.item_code : "";
@@ -1492,6 +1437,7 @@ async function render_outward_form(doc = null) {
         <input type="number" class="form-control qty-input" value="${qtyValue}" min="0" ${doc && doc.docstatus !== 0 ? 'readonly' : ''}/>
       </td>
       <td class="available-qty text-end">${availQty}</td>
+      <td class="unused-qty text-end">0</td>
       <td>
         <input type="number" class="form-control rate-input" value="${rateValue}" min="0" ${doc && doc.docstatus !== 0 ? 'readonly' : ''} />
       </td>
@@ -1499,6 +1445,11 @@ async function render_outward_form(doc = null) {
     `;
     tbody.appendChild(row);
     updateSrNumbers();
+
+    // Set unused qty for item row (important when loading existing docs)
+    if (itemCodeValue) {
+      setUnusedQty(row, itemCodeValue, document.getElementById("from-warehouse").value);
+    }
   }
 
   function updateSrNumbers() {
@@ -1506,7 +1457,6 @@ async function render_outward_form(doc = null) {
       row.cells[1].innerText = idx + 1;
     });
   }
-
   function toggleAddDelete() {
     const anyChecked = tbody.querySelectorAll(".row-check:checked").length > 0;
     addDeleteBtn.textContent = anyChecked ? "🗑 Delete" : "➕ Add";
@@ -1514,7 +1464,9 @@ async function render_outward_form(doc = null) {
   }
 
   if (doc && Array.isArray(doc.items) && doc.items.length > 0) {
-    doc.items.forEach(item => addRow(item));
+    for (let item of doc.items) {
+      addRow(item);
+    }
   } else {
     addRow();
   }
@@ -1524,7 +1476,7 @@ async function render_outward_form(doc = null) {
     toggleAddDelete();
   });
 
-  tbody.addEventListener("change", (e) => {
+  tbody.addEventListener("change", async (e) => {
     if (e.target.classList.contains("row-check")) {
       toggleAddDelete();
     }
@@ -1539,6 +1491,7 @@ async function render_outward_form(doc = null) {
         row.querySelector(".qty-input").value = "0";
         row.querySelector(".amount").textContent = "₹ 0.00";
         row.querySelector(".available-qty").textContent = qtyLookup[matched.item_code] ?? 0;
+        await setUnusedQty(row, matched.item_code, document.getElementById("from-warehouse").value);
       }
     }
   });
@@ -1784,12 +1737,10 @@ function render_asset_valuation(itemCode = null, location = null) {
       location: location
     },
     callback: function (r) {
-
       if (r.message && r.message.length > 0) {
-
-        // Generate table rows
+        // Use doc name for lookups and details
         const rows = r.message.map(asset => `
-          <tr>
+          <tr data-doc-name="${asset.name || ''}" style="cursor:pointer;">
             <td>${asset.item_code || ""}</td>
             <td>${asset.asset_name || ""}</td>
             <td>${asset.location || ""}</td>
@@ -1799,7 +1750,6 @@ function render_asset_valuation(itemCode = null, location = null) {
           </tr>
         `).join("");
 
-        // Inject card + table HTML
         section.innerHTML = `
           <div class="card mt-3">
             <div class="card-body">
@@ -1811,7 +1761,7 @@ function render_asset_valuation(itemCode = null, location = null) {
                   <button id="export-asset" class="btn btn-sm btn-outline-primary" style="border: 1px solid #0f0f0f;">⬇ Export Excel</button>
                 </div>
               </div>
-              <div class="table-responsive">
+              <div class="table-responsive" style="position:relative;">
                 <table class="table table-striped table-hover table-bordered" id="asset-table">
                   <thead class="table-light">
                     <tr>
@@ -1833,12 +1783,51 @@ function render_asset_valuation(itemCode = null, location = null) {
                   </thead>
                   <tbody>${rows}</tbody>
                 </table>
+                <div id="hover-name-tooltip" style="display:none;position:fixed;z-index:9999;background:#222;color:#fff;padding:4px 10px;border-radius:4px;font-size:13px;pointer-events:none;"></div>
               </div>
             </div>
           </div>
         `;
 
-        // Search filter per column
+        // Show record name on hover (tooltip follows pointer closely)
+        const tooltip = document.getElementById("hover-name-tooltip");
+        document.querySelectorAll("#asset-table tbody tr").forEach(row => {
+          row.addEventListener("mouseenter", (e) => {
+            const docName = row.getAttribute("data-doc-name");
+            if (tooltip && docName) {
+              tooltip.textContent = docName;
+              tooltip.style.display = "block";
+            }
+          });
+          row.addEventListener("mousemove", (e) => {
+            if (tooltip.style.display === "block") {
+              // Use clientX/clientY for pointer, add small offset for visibility
+              tooltip.style.left = (e.clientX + 12) + "px";
+              tooltip.style.top = (e.clientY + 12) + "px";
+            }
+          });
+          row.addEventListener("mouseleave", () => {
+            if (tooltip) tooltip.style.display = "none";
+          });
+        });
+
+        // Use doc name for fetching details
+        document.querySelectorAll("#asset-table tbody tr").forEach(row => {
+          row.addEventListener("click", () => {
+            try {
+              const docName = row.getAttribute("data-doc-name");
+              if (typeof display_asset_details === "function") {
+                display_asset_details(docName);
+              } else {
+                console.error("display_asset_details function not found");
+              }
+            } catch (e) {
+              console.error("Error handling row click:", e);
+            }
+          });
+        });
+
+        // Search filter for each column
         document.querySelectorAll("#asset-table thead tr.search-row input").forEach((input, colIndex) => {
           input.addEventListener("keyup", function () {
             const filter = this.value.toLowerCase();
@@ -1859,12 +1848,278 @@ function render_asset_valuation(itemCode = null, location = null) {
         document.getElementById("export-asset").addEventListener("click", () => {
           exportTableToCSV("asset-table", "Asset_Valuation.csv");
         });
-
       } else {
         section.innerHTML = "<p class='text-danger'>❌ No Asset Entries Found</p>";
       }
+    },
+    error: function(err) {
+      console.error("Error fetching asset entries:", err);
+      section.innerHTML = "<p class='text-danger'>❌ Failed to load asset entries.</p>";
     }
   });
+}
+// This function displays detailed asset information along with its lifecycle timeline
+async function display_asset_details(docName) {
+  const section = document.getElementById("section-area");
+  section.innerHTML = `
+    <div style="display:flex;justify-content:center;align-items:center;height:220px;">
+      <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status"></div>
+    </div>
+  `;
+
+  try {
+    const res = await frappe.call({
+      method: "frappe.client.get",
+      args: {
+        doctype: "Asset",
+        name: docName
+      }
+    });
+
+    const asset = res.message;
+
+    if (!asset) {
+      section.innerHTML = "<p class='text-danger'>❌ Asset details not found!</p>";
+      return;
+    }
+
+    // Card with details table and timeline container INSIDE
+    let infoHtml = `
+      <div class="card mt-3 shadow-lg" style="max-width:950px;margin:auto;">
+        <div class="card-body">
+          <h3 style="margin-bottom:22px;font-weight:700;color:#525252;letter-spacing:1px;">
+            <i class="fa fa-cube text-info"></i> Asset Detail
+          </h3>
+          <table class="table table-bordered table-striped" style="width:100%;background:#fff;margin-bottom:0;">
+            <tbody>
+              <tr><th style="width:32%;">Company</th><td>${asset.company || ""}</td></tr>
+              <tr><th>Asset Name</th><td><span style="font-weight:600;font-size:1.1em;color:#222;">${asset.asset_name || ""}</span></td></tr>
+              <tr>
+                <th>Item Code</th>
+                <td style="padding: 3px 10px;">
+                  <span style="
+                    background: #FFF4E5;
+                    color: #FF9800;
+                    padding: 3px 10px;
+                    border-radius: 999px;
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                    display: inline-block;
+                    min-width: 80px;
+                    text-align: center;
+                  ">
+                    ${asset.item_code || ""}
+                  </span>
+                </td>
+              </tr>
+              <tr><th>Asset Category</th><td>${asset.asset_category || ""}</td></tr>
+              <tr><th>Location</th><td><i class="fa fa-map-marker-alt text-danger"></i> ${asset.location || ""}</td></tr>
+              <tr><th>Owner</th><td>${asset.asset_owner || ""}</td></tr>
+              <tr><th>Custodian</th><td>${asset.custodian || ""}</td></tr>
+              <tr><th>Department</th><td>${asset.department || ""}</td></tr>
+            </tbody>
+          </table>
+          <div id="asset-timeline-wrapper" style="background:linear-gradient(90deg,#f8fafc,#e3f2fd 80%);overflow-x:auto;padding:24px 8px 8px 8px;border-radius:12px;margin-top:18px;box-shadow:0 2px 12px #e3e3e3;">
+            <div id="asset-timeline"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    section.innerHTML = infoHtml;
+
+    // Render the timeline chart inside asset-timeline id
+    await render_asset_timeline_dom(asset);
+
+  } catch (error) {
+    console.error("Error loading asset lifecycle:", error);
+    section.innerHTML = "<p class='text-danger'>❌ Error loading asset lifecycle.</p>";
+  }
+}
+// Timeline chart
+async function render_asset_timeline_dom(asset) {
+  const steps = [
+    "Acquisition & Capitalization",
+    "Assignment to Employee",
+    "In Use",
+    "Returned / Leaves",
+    "Under Maintenance",
+    "Retired",
+    "Disposed"
+  ];
+
+  const container = document.getElementById("asset-timeline");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const status = (asset.status || "").toLowerCase();
+  const is_scrapped = (status === "scrapped" || status === "scraper");
+  const in_journal = asset.asset_in_journal || false;
+  const is_submitted = asset.docstatus === 1;
+
+  // Fetch asset movements for timeline status
+  let movementSteps = [];
+  try {
+    const res = await frappe.call({
+      method: "sahayog.api.stationery_api.get_movements_for_asset",
+      args: { asset_name: asset.name }
+    });
+    const movements = res.message || [];
+    movements.forEach(movement => {
+      if (movement.purpose === "Assignment" || movement.purpose === "Receipt") {
+        movementSteps.push(1);
+      }
+      if (movement.purpose === "Transfer" || movement.purpose === "Receipt") {
+        movementSteps.push(2);
+      }
+    });
+  } catch (e) {
+    console.error("Failed to fetch asset movements", e);
+  }
+
+  let under_maintenance = false;
+  try {
+    const res = await frappe.call({
+      method: "frappe.client.get_list",
+      args: {
+        doctype: "Asset Maintenance",
+        filters: [["asset_name", "=", asset.name]],
+        limit: 1
+      }
+    });
+    under_maintenance = res.message && res.message.length > 0;
+  } catch (e) {
+    under_maintenance = false;
+  }
+
+  let glowSteps = [];
+  let blinkStep = -1;
+
+  if (is_scrapped) {
+    glowSteps = steps.map((_, i) => i);
+  } else if (in_journal) {
+    glowSteps = steps.map((_, i) => i);
+  } else if (under_maintenance) {
+    glowSteps = [0,1,2,3,4];
+  } else if (movementSteps.length > 0) {
+    glowSteps = [0];
+    movementSteps.forEach(idx => {
+      if (!glowSteps.includes(idx)) glowSteps.push(idx);
+    });
+    if (glowSteps.includes(2)) blinkStep = 2;
+  } else if (is_submitted) {
+    glowSteps = [0];
+  }
+
+  // Modern color palette for steps
+  const palette = [
+    "#1976d2", // blue
+    "#43a047", // green
+    "#00bcd4", // cyan
+    "#ffb300", // amber
+    "#ff7043", // orange
+    "#8e24aa", // purple
+    "#bdbdbd"  // grey
+  ];
+
+  // Build timeline HTML with improved UX
+  let html = `<div style="display:flex;align-items:center;gap:0;">`;
+  steps.forEach((step, idx) => {
+    const glow = glowSteps.includes(idx);
+    const blink = blinkStep === idx;
+    const active = (glowSteps.length > 0 && idx <= Math.max(...glowSteps));
+    let bgColor = "#f0f4f8";
+    let textColor = "#888";
+    let borderColor = "#e0e0e0";
+    let boxShadow = "";
+    let fontWeight = "400";
+    let animation = "";
+    let icon = "";
+
+    if (active) {
+      fontWeight = "700";
+      textColor = "#fff";
+      bgColor = palette[idx] || "#1976d2";
+      borderColor = bgColor;
+      boxShadow = glow ? `0 0 18px 4px ${bgColor}55` : "";
+      if (blink) animation = "timeline-blink 1.2s ease-in-out infinite alternate";
+      // Icon for each step
+      icon = [
+        '<i class="fa fa-plus-circle"></i>',
+        '<i class="fa fa-user-check"></i>',
+        '<i class="fa fa-cogs"></i>',
+        '<i class="fa fa-undo"></i>',
+        '<i class="fa fa-wrench"></i>',
+        '<i class="fa fa-archive"></i>',
+        '<i class="fa fa-trash"></i>'
+      ][idx] || "";
+    } else {
+      bgColor = "#f0f4f8";
+      textColor = "#bbb";
+      borderColor = "#e0e0e0";
+      icon = [
+        '<i class="fa fa-plus-circle"></i>',
+        '<i class="fa fa-user-check"></i>',
+        '<i class="fa fa-cogs"></i>',
+        '<i class="fa fa-undo"></i>',
+        '<i class="fa fa-wrench"></i>',
+        '<i class="fa fa-archive"></i>',
+        '<i class="fa fa-trash"></i>'
+      ][idx] || "";
+    }
+
+    html += `
+      <div style="
+        flex:1;
+        text-align:center;
+        padding:14px 10px 10px 10px;
+        border-radius:18px;
+        font-size:13px;
+        font-weight:${fontWeight};
+        color:${textColor};
+        background:${bgColor};
+        border:2px solid ${borderColor};
+        ${boxShadow};
+        ${animation ? `animation:${animation};` : ""}
+        margin:0 2px;
+        min-width:120px;
+        position:relative;
+        transition: box-shadow 0.3s, background-color 0.3s;
+        box-shadow:${boxShadow};
+        cursor:default;
+      ">
+        <div style="font-size:1.3em;margin-bottom:2px;">${icon}</div>
+        <div>${step}</div>
+      </div>
+      ${idx < steps.length - 1 ? `
+        <div style="width:32px;height:4px;background:linear-gradient(90deg,${active?palette[idx]:"#e0e0e0"} 60%,${active?palette[idx+1]:"#e0e0e0"} 100%);margin:0 0px;align-self:center;border-radius:2px;"></div>
+      ` : ''}
+    `;
+  });
+  html += `
+    </div>
+    <style>
+      @keyframes timeline-blink {
+        0% {
+          background-color: #00bcd4;
+          box-shadow: 0 0 25px 10px #00bcd4cc;
+        }
+        100% {
+          background-color: #43e8d8;
+          box-shadow: 0 0 15px 4px #00bcd488;
+        }
+      }
+      #asset-timeline::-webkit-scrollbar {
+        height: 8px;
+      }
+      #asset-timeline::-webkit-scrollbar-thumb {
+        background: #e0e0e0;
+        border-radius: 4px;
+      }
+    </style>
+  `;
+
+  container.innerHTML = html;
 }
 // This function fetches asset valuation data and renders it in a table
 async function asset_movment_list() {
@@ -2163,11 +2418,15 @@ async function render_asset_movement_form(selectedPurpose = "") {
 async function render_asset_creation() {
   const container = document.getElementById("section-area");
 
-  // Fetch all items and locations for the datalists
+  // Fetch all items and locations for the datalists with filter for is_fixed_asset = 1 and is_stock_item = 0
   const [items, locations] = await Promise.all([
     frappe.db.get_list("Item", {
       fields: ["item_code", "item_name"],
-      limit: 1000
+      limit: 1000,
+      filters: {
+        is_fixed_asset: 1,
+        is_stock_item: 0
+      }
     }),
     frappe.db.get_list("Location", {
       fields: ["name"],
@@ -2215,7 +2474,7 @@ async function render_asset_creation() {
         </div>
 
         <div class="form-check mb-3">
-          <input class="form-check-input" type="checkbox" id="is_composite">
+          <input class="form-check-input" type="checkbox" id="is_composite" disabled checked value="1">
           <label class="form-check-label" for="is_composite">Is Composite Asset</label>
         </div>
 
@@ -2282,4 +2541,5 @@ async function render_asset_creation() {
   });
 }
 
+// accepted
 };
