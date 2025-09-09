@@ -2,6 +2,8 @@ import frappe
 import json
 import frappe
 from frappe.model.document import Document
+from frappe import _
+from erpnext.stock.report.stock_balance.stock_balance import execute
 
 
 @frappe.whitelist()
@@ -85,9 +87,6 @@ def get_balance_from_sle(item_code=None, warehouse=None):
     return frappe.db.sql(query, as_dict=True)
 
 #//api/method/sahayog.api.stationery_api.get_stock_balance_data
-from frappe import _
-from erpnext.stock.report.stock_balance.stock_balance import execute
-
 @frappe.whitelist(allow_guest=True)
 def get_stock_balance_data(company=None, from_date=None, to_date=None, item_code=None, warehouse=None):
     """
@@ -132,7 +131,7 @@ def get_stock_entry_items():
         ORDER BY se.creation DESC
         LIMIT 50
     """, as_dict=True)
-
+# //api/method/sahayog.api.stationery_api.get_asset_entries
 @frappe.whitelist()
 def get_asset_entries(item_code=None, location=None):
 
@@ -146,6 +145,7 @@ def get_asset_entries(item_code=None, location=None):
         "Asset",
         filters=filters,
         fields=[
+            "name",                     # Asset ID
             "item_code",               # Item Code
             "asset_name",              # Asset Name
             "location",                # Location
@@ -275,21 +275,18 @@ def get_outward_entriess():
 # //api/method/sahayog.api.stationery_api.get_inward_list
 @frappe.whitelist()
 def get_inward_list():
-    """Return list of Purchase Receipts with total qty and supplier"""
-    receipts = frappe.db.sql("""
-        SELECT 
-            pr.name,
-            pr.supplier,
-            pr.posting_date,
-            pr.status,
-            SUM(pri.qty) as total_qty
-        FROM `tabPurchase Receipt` pr
-        LEFT JOIN `tabPurchase Receipt Item` pri
-            ON pri.parent = pr.name
-        GROUP BY pr.name, pr.supplier, pr.posting_date, pr.status
-        ORDER BY pr.creation DESC
-        LIMIT 50
-    """, as_dict=True)
+    receipts = frappe.get_list(
+        "Purchase Receipt",
+        fields=["name", "supplier", "posting_date", "status"],
+        limit_page_length=50,
+    )
+
+    # Add qty manually
+    for r in receipts:
+        r["total_qty"] = frappe.db.sql(
+            "SELECT SUM(qty) FROM `tabPurchase Receipt Item` WHERE parent=%s",
+            r.name
+        )[0][0] or 0
 
     return receipts
 
@@ -305,10 +302,11 @@ def get_user_warehouse(user=None):
     settings = frappe.get_single("Sahayog Settings")
 
     # Loop through correct child table fieldname
-    for row in settings.table_wlbb:
+    for row in settings.wh_dept_map:
         if row.user_id == user:
             return {
-                "warehouse": row.warehouse
+                "warehouse": row.warehouse,
+                "item_department": row.item_department
             }
 
     return {
@@ -319,7 +317,20 @@ def get_user_warehouse(user=None):
 # // api/method/sahayog.api.stationery_api.get_stock_entry_submissions
 @frappe.whitelist()
 def get_outward_entries(company=None, from_date=None, to_date=None, submitted_only=False):
-    """Fetch Stock Entry (parent) + Items (child) with optional filters."""
+    """Fetch Stock Entry (parent) + Items (child) with optional filters + respect permission query."""
+
+    user = frappe.session.user
+    if user == "Administrator":
+        allowed_departments = None  # no restriction
+    else:
+        allowed_departments = frappe.get_all(
+            "Default Warehouse",
+            filters={"parenttype": "Sahayog Settings", "user_id": user},
+            pluck="item_department"
+        )
+
+        if not allowed_departments:
+            return []  # user has no access
 
     # Build filters
     master_filters = {}
@@ -333,12 +344,14 @@ def get_outward_entries(company=None, from_date=None, to_date=None, submitted_on
         master_filters["posting_date"] = ["<=", to_date]
     if submitted_only:
         master_filters["docstatus"] = 1
+    if allowed_departments:
+        master_filters["custom_department"] = ["in", allowed_departments]
 
-    # Get parent records
+    # Get parent records with ORM
     parents = frappe.get_all(
         "Stock Entry",
         filters=master_filters,
-        fields=["name", "posting_date", "company", "purpose", "docstatus", "modified"],
+        fields=["name", "posting_date", "company", "purpose", "docstatus", "custom_department", "modified"],
         order_by="posting_date desc"
     )
     if not parents:
@@ -362,7 +375,7 @@ def get_outward_entries(company=None, from_date=None, to_date=None, submitted_on
             "target_warehouse": c["t_warehouse"],
             "item_code": c["item_code"],
             "qty": c["qty"],
-            "basic_rate": c["basic_rate"],   # ✅ Added here
+            "basic_rate": c["basic_rate"],
         })
 
     # Final response
@@ -373,6 +386,7 @@ def get_outward_entries(company=None, from_date=None, to_date=None, submitted_on
         p.pop("docstatus", None)
 
     return parents
+
 # // api/method/sahayog.api.stationery_api.get_available_qty
 @frappe.whitelist()
 def get_available_qty(item_code, warehouse):
@@ -384,3 +398,30 @@ def get_available_qty(item_code, warehouse):
     """, (item_code, warehouse))
 
     return qty[0][0] or 0
+
+# // api/method/sahayog.api.stationery_api.update_asset_state
+@frappe.whitelist()
+def update_asset_state(asset_name, new_state):
+    asset = frappe.get_doc("Asset", asset_name)
+    asset.lifecycle_state = new_state
+    asset.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"status": "success", "new_state": new_state}
+
+# //api/method/sahayog.api.stationery_api.get_movements_for_asset  thsi is for the client script asset life cycle
+@frappe.whitelist()
+def get_movements_for_asset(asset_name):
+    # Use system permissions to fetch all movements linked to this asset
+    # This bypasses the user's limited permissions in client calls
+    movements = frappe.db.sql("""
+        SELECT am.name, am.purpose
+        FROM `tabAsset Movement` am
+        INNER JOIN `tabAsset Movement Item` ami ON ami.parent = am.name
+        WHERE ami.asset = %s
+        ORDER BY am.transaction_date DESC
+        LIMIT 50
+    """, asset_name, as_dict=True)
+    
+    return movements
+
+# ac

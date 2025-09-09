@@ -74,3 +74,41 @@ def get_appointment_permission(user):
     # conditions.append(f"`tabAppointment`.custom_escalated_to = '{user}'")
 
     return " or ".join(conditions) if conditions else ""
+
+def get_purchase_receipt_permission(user, doctype=None):
+    if not user:
+        user = frappe.session.user
+
+    # Admin can see all
+    if user == "Administrator":
+        return ""
+
+    # Match Purchase Receipt.custom_item_department with Sahayog Setting child row
+    return f"""
+        exists(
+            select 1
+            from `tabDefault Warehouse` dw
+            where dw.parenttype = 'Sahayog Settings'
+            and dw.user_id = '{user}'
+            and dw.item_department = `tabPurchase Receipt`.custom_department
+        )
+    """
+
+def get_stock_entry_permission(user, doctype=None):
+    if not user:
+        user = frappe.session.user
+
+    # Admin can see all
+    if user == "Administrator":
+        return ""
+
+    # Match Stock Entry.custom_item_department with Sahayog Setting child row
+    return f"""
+        exists(
+            select 1
+            from `tabDefault Warehouse` dw
+            where dw.parenttype = 'Sahayog Settings'
+            and dw.user_id = '{user}'
+            and dw.item_department = `tabStock Entry`.custom_department
+        )
+    """
