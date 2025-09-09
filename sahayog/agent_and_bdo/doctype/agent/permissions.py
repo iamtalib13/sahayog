@@ -7,11 +7,11 @@ def get_agents_sol_wise(user=None):
 
     user_roles = frappe.get_roles(user)
 
-    # Administrator ko full access
-    if "Administrator" in user_roles:
+
+ # Check if user is Administrator or MIS Admin
+    if "Administrator" in user_roles or "MIS Admin" in user_roles:
         return ""
 
-    # Employee details nikalna
     employee = frappe.db.get_value(
         "Employee",
         {"user_id": user},
@@ -31,5 +31,5 @@ def get_agents_sol_wise(user=None):
         if conditions:
             return " OR ".join(conditions)
 
-    # Agar employee record hi nahi mila, to koi record na dikhaye
+
     return "1=0"
