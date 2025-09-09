@@ -200,7 +200,8 @@
               <input type="checkbox" id="select-all" />
             </th>
             <th class="id-column">ID</th>
-            <th class="date-column">Last Updated Date</th>
+            <th class="date-column">Start Date</th>
+            <th class="date-column">End Date</th>
             <th class="status-column">Is Active</th>
             <th class="modified-column" id="modified-header"></th>
           </tr>
@@ -437,7 +438,8 @@
               "name",
               "modified",
               "is_active",
-              "last_updated_date",
+              "start_date",
+              "end_date",
             ]),
             order_by: "modified desc",
           });
@@ -464,7 +466,8 @@
                 ${esc(r.name)}
               </a>
             </td>
-            <td class="date-column">${getPrettyDate(r.last_updated_date)}</td>
+            <td class="date-column">${getPrettyDate(r.start_date)}</td>
+            <td class="date-column">${getPrettyDate(r.end_date)}</td>
             <td class="status-column">
               <span class="status-oval ${
                 r.is_active ? "status-active" : "status-inactive"

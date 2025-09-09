@@ -18,14 +18,14 @@
    "fieldname": "manpower_recruitment_table",
    "fieldtype": "Table",
    "label": "Manpower Recruitment Table",
-   "options": "Manpower Recruitment"
+   "options": "Manpower Recruitment Setting Table"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-25 12:06:33.484750",
+ "modified": "2025-08-20 14:04:28.747216",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Manpower Recruitment Setting",

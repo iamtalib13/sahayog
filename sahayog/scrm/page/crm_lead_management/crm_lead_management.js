@@ -423,6 +423,53 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           margin-bottom: 16px;
           display: block;
         }
+        
+        /* Enhanced Product Display Styles */
+        .product-cell {
+          position: relative;
+          max-width: 250px;
+          word-wrap: break-word;
+          vertical-align: top;
+        }
+        .product-display {
+          font-size: 12px;
+          line-height: 1.4;
+          max-height: 120px;
+          overflow-y: auto;
+        }
+        /*.product-item {
+          display: block;
+          margin-bottom: 4px;
+          background: #f0f8ff;
+          padding: 4px 8px;
+          border-radius: 4px;
+          border: 1px solid #d1e7ff;
+          word-break: break-word;
+        }*/
+        .product-item:hover {
+          background: #e6f3ff;
+        }
+        .product-name {
+          flex: 1;
+         
+          color: #495057;
+          font-weight: 500;
+        }
+        .product-amount {
+          font-weight: 600;
+          color: #2e7d32;
+        }
+        /* Scrollbar for product cell */
+        .product-display::-webkit-scrollbar {
+          width: 4px;
+        }
+        .product-display::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        .product-display::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 2px;
+        }
       </style>
 
       <div class="row mb-4">
@@ -567,6 +614,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   <th>Customer</th>
                   <th width="110">Contact</th>
                   <th>Source</th>
+                  <th width="250">Products & Amounts</th>
                   <th>Employee Name</th>
                   <th>Employee ID</th>
                   <th>Designation</th>
@@ -582,14 +630,15 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   <th><input type="text" id="col-2-filter" placeholder="Filter Customer" class="col-filter"></th>
                   <th width="110"><input type="text" id="col-3-filter" placeholder="Filter Contact" class="col-filter"></th>
                   <th><input type="text" id="col-4-filter" placeholder="Filter Source" class="col-filter"></th>
-                  <th><input type="text" id="col-5-filter" placeholder="Filter Employee" class="col-filter"></th>
-                  <th><input type="text" id="col-6-filter" placeholder="Filter ID" class="col-filter"></th>
-                  <th><input type="text" id="col-7-filter" placeholder="Filter Designation" class="col-filter"></th>
-                  <th><input type="text" id="col-8-filter" placeholder="Filter Branch" class="col-filter"></th>
-                  <th><input type="text" id="col-9-filter" placeholder="Filter Status" class="col-filter"></th>
-                  <th><input type="text" id="col-10-filter" placeholder="Filter Region" class="col-filter"></th>
-                  <th><input type="text" id="col-11-filter" placeholder="Filter Zone" class="col-filter"></th>
-                  <th><input type="text" id="col-12-filter" placeholder="Filter Date" class="col-filter"></th>
+                  <th><input type="text" id="col-5-filter" placeholder="Filter Products" class="col-filter"></th>
+                  <th><input type="text" id="col-6-filter" placeholder="Filter Employee" class="col-filter"></th>
+                  <th><input type="text" id="col-7-filter" placeholder="Filter ID" class="col-filter"></th>
+                  <th><input type="text" id="col-8-filter" placeholder="Filter Designation" class="col-filter"></th>
+                  <th><input type="text" id="col-9-filter" placeholder="Filter Branch" class="col-filter"></th>
+                  <th><input type="text" id="col-10-filter" placeholder="Filter Status" class="col-filter"></th>
+                  <th><input type="text" id="col-11-filter" placeholder="Filter Region" class="col-filter"></th>
+                  <th><input type="text" id="col-12-filter" placeholder="Filter Zone" class="col-filter"></th>
+                  <th><input type="text" id="col-13-filter" placeholder="Filter Date" class="col-filter"></th>
                 </tr>
               </thead>
               <tbody id="lead-content"></tbody>
@@ -618,8 +667,8 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       let scrollTimeout;
       let exportCancelled = false;
 
-      // Initialize column filters
-      for (let i = 0; i < 13; i++) {
+      // Initialize column filters - Updated to 14 columns (removed total amount column)
+      for (let i = 0; i < 14; i++) {
         columnFilters[i] = "";
       }
 
@@ -696,12 +745,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         const dateFilters = getDateFilters();
 
         try {
-          // Get total count
           const totalCount = await frappe.db.count("Lead", {
             filters: dateFilters,
           });
 
-          // Get converted count
           const convertedFilters = [
             ...dateFilters,
             ["status", "=", "Converted"],
@@ -710,7 +757,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             filters: convertedFilters,
           });
 
-          // Get follow up count
           const followUpFilters = [
             ...dateFilters,
             ["status", "=", "Follow Up"],
@@ -719,7 +765,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             filters: followUpFilters,
           });
 
-          // Get not interested count
           const notInterestedFilters = [
             ...dateFilters,
             ["status", "=", "Not Interested"],
@@ -728,7 +773,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             filters: notInterestedFilters,
           });
 
-          // Update the cards with actual counts from database
           $("#total-leads").text(totalCount);
           $("#converted-leads").text(convertedCount);
           $("#follow-up-leads").text(followUpCount);
@@ -772,7 +816,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 "first_name",
                 "last_name",
               ],
-              limit_page_length: 0, // Get all employees
+              limit_page_length: 0,
               as_dict: true,
             },
           });
@@ -784,7 +828,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
           employeeList.forEach((emp) => {
             if (emp.user_id) {
-              // Use multiple fallback options for employee name
               const empName =
                 emp.employee_name ||
                 (emp.first_name && emp.last_name
@@ -796,7 +839,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               empMap[emp.user_id] = {
                 name: empName,
                 id: emp.name,
-                user_id: emp.user_id, // Include user_id for mapping
+                user_id: emp.user_id,
                 employee_number: emp.employee_number || emp.name,
                 designation: emp.designation || "-",
                 branch: emp.branch || "-",
@@ -862,7 +905,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               employeeMap[emp.user_id] = {
                 name: empName,
                 id: emp.name,
-                user_id: emp.user_id, // Include user_id for mapping
+                user_id: emp.user_id,
                 employee_number: emp.employee_number || emp.name,
                 designation: emp.designation || "-",
                 branch: emp.branch || "-",
@@ -870,14 +913,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               console.log(`Mapped employee: ${emp.user_id} -> ${empName}`);
             });
 
-            // Add fallback for employees still not found
             unknownOwners.forEach((owner) => {
               if (!employeeMap[owner]) {
                 console.warn(`Employee not found for user_id: ${owner}`);
                 employeeMap[owner] = {
                   name: owner,
                   id: "-",
-                  user_id: owner, // Include user_id for mapping
+                  user_id: owner,
                   employee_number: "-",
                   designation: "Not Found",
                   branch: "Not Found",
@@ -886,13 +928,12 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             });
           } catch (error) {
             console.error("Error updating employee mapping:", error);
-            // Add fallback for all unknown owners
             unknownOwners.forEach((owner) => {
               if (!employeeMap[owner]) {
                 employeeMap[owner] = {
                   name: owner,
                   id: "-",
-                  user_id: owner, // Include user_id for mapping
+                  user_id: owner,
                   employee_number: "-",
                   designation: "Error",
                   branch: "Error",
@@ -912,13 +953,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           return;
         }
 
-        // Remove any existing scroll listeners
         tableContainer.removeEventListener("scroll", handleScroll);
 
         function handleScroll() {
           const { scrollTop, scrollHeight, clientHeight } = tableContainer;
-
-          // Check if we're near the bottom (within 200px)
           const isNearBottom = scrollTop + clientHeight >= scrollHeight - 200;
 
           if (isNearBottom && !isLoading && hasMoreLeads) {
@@ -926,14 +964,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           }
         }
 
-        // Throttle scroll events to improve performance
         tableContainer.addEventListener("scroll", () => {
           clearTimeout(scrollTimeout);
           scrollTimeout = setTimeout(handleScroll, 100);
         });
       }
 
-      // Updated fetchLeadsPage function with improved limits
+      // **SOLUTION 4: Simplified Approach - fetchLeadsPage function with immediate product fetching**
       async function fetchLeadsPage(page) {
         if (isLoading || !hasMoreLeads) return;
 
@@ -959,19 +996,68 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             filters: filters,
             limit_start: (page - 1) * pageSize,
             limit: pageSize,
-            limit_page_length: 0, // Remove default 20 record limit
+            limit_page_length: 0,
             order_by: "creation desc",
           });
 
+          console.log(`Fetched ${leads.length} leads for page ${page}`);
+
           if (leads.length < pageSize) hasMoreLeads = false;
 
-          // Update employee mapping for new leads
-          await updateEmployeeMapping(leads);
+          // **SIMPLIFIED: Fetch each lead individually to get products (bypasses permission issues)**
+          const leadsWithProducts = await Promise.all(
+            leads.map(async (lead) => {
+              try {
+                const fullLead = await frappe.call({
+                  method: "frappe.client.get",
+                  args: {
+                    doctype: "Lead",
+                    name: lead.name,
+                  },
+                });
+
+                const leadDoc = fullLead.message;
+                const products = leadDoc.custom_product_table || [];
+
+                const formattedProducts = products
+                  .map((product) => ({
+                    product: product.product || "Unknown Product",
+                    product_name: product.product_name || "Unknown Product", // This is already here
+                    amount: parseFloat(product.product_amount) || 0,
+                    idx: product.idx || 0,
+                  }))
+                  .sort((a, b) => a.idx - b.idx);
+
+                // console.log(
+                //   `Lead ${lead.name} has ${formattedProducts.length} products:`,
+                //   formattedProducts
+                // );
+
+                return {
+                  ...lead,
+                  products: formattedProducts,
+                };
+              } catch (error) {
+                console.warn(
+                  `Failed to fetch products for lead ${lead.name}:`,
+                  error
+                );
+                return {
+                  ...lead,
+                  products: [],
+                };
+              }
+            })
+          );
+
+          console.log("Leads with products:", leadsWithProducts);
+
+          await updateEmployeeMapping(leadsWithProducts);
 
           if (page === 1) {
-            currentLeads = leads;
+            currentLeads = leadsWithProducts;
           } else {
-            currentLeads = [...currentLeads, ...leads];
+            currentLeads = [...currentLeads, ...leadsWithProducts];
           }
 
           render_lead_list(currentLeads);
@@ -987,9 +1073,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         }
       }
 
-      // **IMPROVED: Updated render function to better handle employee data**
+      // **UPDATED: render_lead_list function with simplified product display (NO TOTAL)**
       function render_lead_list(leads) {
         const filteredLeads = getFilteredLeads(leads);
+        console.log("Rendering leads:", filteredLeads.length);
 
         const rows = filteredLeads
           .map((lead, index) => {
@@ -997,6 +1084,48 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             const empName = emp ? emp.name : lead.lead_owner || "Unknown";
             const empId = emp ? emp.id : "-";
             const empDesignation = emp ? emp.designation : "-";
+
+            // **SIMPLIFIED: Format individual products with amounts (ONLY PRODUCT CODE) - NO TOTAL**
+            let productsDisplay = "-";
+
+            if (
+              lead.products &&
+              Array.isArray(lead.products) &&
+              lead.products.length > 0
+            ) {
+              // Format individual products with product code, product name, and amount
+              const productItems = lead.products
+                .map((p) => {
+                  const productCode = p.product || "Unknown";
+                  const productName = p.product_name || "Unknown Product";
+                  const amount = parseFloat(p.amount) || 0;
+                  const formattedAmount = new Intl.NumberFormat("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  }).format(amount);
+
+                  return `<div class="product-item" title="${productName}">
+              <span class="product-name">${productCode} (${productName}):</span>
+              <span class="product-amount">${formattedAmount}</span>
+            </div>`;
+                })
+                .join("");
+
+              // Simple display without total
+              productsDisplay = `
+                <div class="product-display">
+                  ${productItems}
+                </div>`;
+
+              // console.log(
+              //   `Products display for ${lead.name}:`,
+              //   productsDisplay
+              // );
+            } else {
+              console.log(`Lead ${lead.name} has no products`);
+            }
 
             return `
             <tr>
@@ -1011,6 +1140,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               <td>${lead.lead_name || "-"}</td>
               <td width="110">${lead.contact || "-"}</td>
               <td>${lead.source || "-"}</td>
+              <td class="product-cell" width="250">
+                ${productsDisplay}
+              </td>
               <td>${empName}</td>
               <td>${empId}</td>
               <td>${empDesignation}</td>
@@ -1027,7 +1159,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           .join("");
 
         const tbody = document.getElementById("lead-content");
-        if (tbody) tbody.innerHTML = rows;
+        if (tbody) {
+          tbody.innerHTML = rows;
+          console.log("Table rows updated successfully");
+        }
 
         $("#record-count").text(
           `Showing ${filteredLeads.length} of ${totalLeadsCount} records (${currentLeads.length} loaded)`
@@ -1048,7 +1183,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
         $("#loading-indicator").show();
 
-        // **Load employee data first if not already loaded**
         if (Object.keys(employeeMap).length === 0) {
           employeeMap = await fetchAllEmployees();
         }
@@ -1073,6 +1207,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
       }
 
+      // **UPDATED: getFilteredLeads function without total amount**
       function getFilteredLeads(leads) {
         return leads.filter((l) => {
           const emp = employeeMap[l.lead_owner];
@@ -1080,12 +1215,27 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           const empId = emp ? emp.id : "-";
           const empDesignation = emp ? emp.designation : "-";
 
+          // **UPDATED: Create searchable string from product codes, names, and amounts**
+          const productString =
+            l.products && Array.isArray(l.products)
+              ? l.products
+                  .map(
+                    (p) =>
+                      `${p.product || ""} ${p.product_name || ""} ${
+                        p.amount || ""
+                      }`
+                  )
+                  .join(" ")
+                  .toLowerCase()
+              : "";
+
           const rowValues = [
-            "", // # column is handled separately
+            "",
             l.name.toLowerCase(),
             (l.lead_name || "").toLowerCase(),
             (l.contact || "").toLowerCase(),
             (l.source || "").toLowerCase(),
+            productString, // Products & amounts column (only product codes)
             empName.toLowerCase(),
             empId.toLowerCase(),
             empDesignation.toLowerCase(),
@@ -1125,24 +1275,20 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         render_lead_list(currentLeads);
       });
 
-      // **COMPLETELY REWRITTEN: Analytics function to fetch ALL leads for analysis**
+      // **UPDATED: Analytics function with product handling**
       async function generateAnalyticsData() {
         try {
-          // Show loading state
           $("#analytics-loading").show();
           $("#analytics-content").hide();
 
           const filters = getDateFilters();
-
           console.log("Starting analytics generation for all leads...");
 
-          // Fetch ALL leads for analytics (not just paginated ones)
           let allAnalyticsLeads = [];
           const batchSize = 500;
           let batchStart = 0;
           let hasMore = true;
 
-          // Get total count first
           const totalCount = await frappe.db.count("Lead", {
             filters: filters,
           });
@@ -1159,7 +1305,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             return;
           }
 
-          // Fetch all leads in batches
           while (hasMore) {
             try {
               console.log(
@@ -1197,7 +1342,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 break;
               }
 
-              // Transform the leads to match our expected structure
               const transformedLeads = leads.map((lead) => ({
                 name: lead.name,
                 status: lead.status,
@@ -1212,18 +1356,14 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               }));
 
               allAnalyticsLeads = [...allAnalyticsLeads, ...transformedLeads];
-
-              // Update employee mapping for new leads
               await updateEmployeeMapping(transformedLeads);
 
               batchStart += batchSize;
 
-              // If we got fewer records than requested, we've reached the end
               if (leads.length < batchSize) {
                 hasMore = false;
               }
 
-              // Prevent infinite loops - safety check
               if (allAnalyticsLeads.length >= totalCount) {
                 hasMore = false;
               }
@@ -1235,7 +1375,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
           console.log(`Loaded ${allAnalyticsLeads.length} leads for analytics`);
 
-          // Generate analytics from ALL leads
           const employeeStats = {};
 
           allAnalyticsLeads.forEach((lead) => {
@@ -1271,7 +1410,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             }
           });
 
-          // Calculate conversion rates
           analyticsData = Object.values(employeeStats).map((emp) => {
             emp.conversionRate =
               emp.totalLeads > 0
@@ -1280,13 +1418,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             return emp;
           });
 
-          // Sort by conversion rate descending
           analyticsData.sort((a, b) => {
-            // First sort by conversion rate
             if (b.conversionRate !== a.conversionRate) {
               return b.conversionRate - a.conversionRate;
             }
-            // If conversion rates are equal, sort by total leads
             return b.totalLeads - a.totalLeads;
           });
 
@@ -1294,7 +1429,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             `Generated analytics for ${analyticsData.length} employees`
           );
 
-          // Update date range display
           const fromDate = $("#from-date").val();
           const toDate = $("#to-date").val();
 
@@ -1307,11 +1441,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             `Date Range: ${fromDateText} to ${toDateText} | Total Leads Analyzed: ${allAnalyticsLeads.length}`
           );
 
-          // Hide loading and show content
           $("#analytics-loading").hide();
           $("#analytics-content").show();
 
-          // Render the analytics
           renderAnalyticsTable();
           renderAnalyticsSummary();
         } catch (error) {
@@ -1392,7 +1524,8 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         document.body.removeChild(link);
       });
 
-      // **COMPLETELY REWRITTEN Export CSV function with comprehensive employee mapping**
+      // **UPDATED: Export CSV function without total amount**
+      // **UPDATED: Export CSV function with multiple products in single cell**
       $("#export-csv").on("click", async function () {
         try {
           showExportProgress();
@@ -1400,21 +1533,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
           if (exportCancelled) return;
 
-          // **CRITICAL: Load ALL employee data first**
           updateExportProgress(10, "Loading complete employee database...");
           employeeMap = await fetchAllEmployees();
 
-          if (Object.keys(employeeMap).length === 0) {
-            hideExportProgress();
-            frappe.msgprint(
-              "Warning: No employee data found. Employee names and IDs may not appear correctly in the export."
-            );
-            // Continue with export but warn user
-          }
-
           const filters = getDateFilters();
-
-          // Get total count
           const totalCount = await frappe.db.count("Lead", {
             filters: filters,
           });
@@ -1433,7 +1555,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           if (exportCancelled) return;
 
           let allLeads = [];
-          const batchSize = 200; // Smaller batch size for reliability
+          const batchSize = 200;
           const totalBatches = Math.ceil(totalCount / batchSize);
           const maxRecords = 50000;
 
@@ -1449,7 +1571,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           for (let i = 0; i < totalBatches; i++) {
             if (exportCancelled) return;
 
-            const batchProgress = 20 + (i / totalBatches) * 40;
+            const batchProgress = 20 + (i / totalBatches) * 30;
             updateExportProgress(
               Math.round(batchProgress),
               `Fetching batch ${i + 1} of ${totalBatches} (${
@@ -1484,7 +1606,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               });
 
               const batchLeads = response.message || [];
-
               const transformedLeads = batchLeads.map((lead) => ({
                 name: lead.name,
                 status: lead.status,
@@ -1499,8 +1620,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               }));
 
               allLeads = [...allLeads, ...transformedLeads];
-
-              // Delay to prevent server overload
               await new Promise((resolve) => setTimeout(resolve, 150));
             } catch (batchError) {
               console.error(`Error in batch ${i + 1}:`, batchError);
@@ -1520,9 +1639,53 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             return;
           }
 
+          updateExportProgress(55, "Fetching product information...");
+
+          // Fetch products for each lead individually
+          const allLeadsWithProducts = await Promise.all(
+            allLeads.map(async (lead) => {
+              try {
+                const fullLead = await frappe.call({
+                  method: "frappe.client.get",
+                  args: {
+                    doctype: "Lead",
+                    name: lead.name,
+                  },
+                });
+
+                const leadDoc = fullLead.message;
+                const products = leadDoc.custom_product_table || [];
+
+                const formattedProducts = products
+                  .map((product) => ({
+                    product: product.product || "Unknown Product",
+                    product_name: product.product_name || "Unknown Product", // Add this line
+                    amount: parseFloat(product.product_amount) || 0,
+                    idx: product.idx || 0,
+                  }))
+                  .sort((a, b) => a.idx - b.idx);
+
+                return {
+                  ...lead,
+                  products: formattedProducts,
+                };
+              } catch (error) {
+                console.warn(
+                  `Failed to fetch products for lead ${lead.name}:`,
+                  error
+                );
+                return {
+                  ...lead,
+                  products: [],
+                };
+              }
+            })
+          );
+
+          allLeads = allLeadsWithProducts;
+
           updateExportProgress(65, "Processing employee information...");
 
-          // **CRITICAL: Ensure ALL employee mappings are complete**
           const uniqueOwners = [
             ...new Set(allLeads.map((lead) => lead.lead_owner).filter(Boolean)),
           ];
@@ -1536,7 +1699,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               `Fetching additional employee data for ${missingOwners.length} employees...`
             );
 
-            // Process missing employees in smaller chunks
             const chunkSize = 50;
             for (let i = 0; i < missingOwners.length; i += chunkSize) {
               if (exportCancelled) return;
@@ -1582,21 +1744,14 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                     designation: emp.designation || "-",
                     branch: emp.branch || "-",
                   };
-                  console.log(
-                    `CSV Export - Mapped: ${emp.user_id} -> ${empName}`
-                  );
                 });
               } catch (empError) {
                 console.error("Error fetching chunk of employees:", empError);
               }
             }
 
-            // Final fallback for any still missing employees
             missingOwners.forEach((owner) => {
               if (!employeeMap[owner]) {
-                console.warn(
-                  `CSV Export - Employee mapping still missing for: ${owner}`
-                );
                 employeeMap[owner] = {
                   name: owner,
                   id: "Not Found",
@@ -1611,12 +1766,18 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
           updateExportProgress(75, "Applying filters...");
 
-          // Apply column filters
           const filteredLeads = allLeads.filter((lead) => {
             const emp = employeeMap[lead.lead_owner];
             const empName = emp ? emp.name : lead.lead_owner || "Unknown";
             const empId = emp ? emp.id : "-";
             const empDesignation = emp ? emp.designation : "-";
+
+            const productString = lead.products
+              ? lead.products
+                  .map((p) => `${p.product || ""} ${p.amount || ""}`)
+                  .join(" ")
+                  .toLowerCase()
+              : "";
 
             const rowValues = [
               "",
@@ -1624,6 +1785,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               (lead.lead_name || "").toLowerCase(),
               (lead.contact || "").toLowerCase(),
               (lead.source || "").toLowerCase(),
+              productString,
               empName.toLowerCase(),
               empId.toLowerCase(),
               empDesignation.toLowerCase(),
@@ -1650,17 +1812,19 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
           updateExportProgress(85, "Generating CSV data...");
 
-          // Generate CSV
+          // **UPDATED: CSV headers - same structure as web interface**
+          // **UPDATED: CSV headers - same structure as web interface**
           const headers = [
             "#",
-            "Lead Name",
+            "Lead ID", // Changed from "Lead Name"
             "Customer",
             "Contact",
             "Source",
+            "Products & Amounts",
             "Employee Name",
             "Employee ID",
-            "Employee Number",
-            "User ID", // Include User ID column
+            // "Employee Number", - REMOVED
+            // "User ID",         - REMOVED
             "Designation",
             "Branch",
             "Status",
@@ -1671,7 +1835,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
           let csvContent = headers.join(",") + "\n";
 
-          // Process leads in chunks for CSV generation
           const csvChunkSize = 500;
           for (let i = 0; i < filteredLeads.length; i += csvChunkSize) {
             if (exportCancelled) return;
@@ -1681,29 +1844,35 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               .map((lead, index) => {
                 const emp = employeeMap[lead.lead_owner];
 
-                // Debug logging for mapping issues
-                if (!emp && lead.lead_owner) {
-                  console.warn(
-                    `No employee mapping found for lead_owner: ${lead.lead_owner}`
-                  );
-                } else if (emp) {
-                  console.log(
-                    `Successfully mapped lead_owner: ${lead.lead_owner} -> Employee: ${emp.name} (ID: ${emp.id})`
-                  );
+                // **UPDATED: Format multiple products in single cell with product names**
+                let productsDisplay = "-";
+                if (lead.products && lead.products.length > 0) {
+                  productsDisplay = lead.products
+                    .map((p) => {
+                      const productCode = p.product || "Unknown";
+                      const productName = p.product_name || "Unknown Product"; // Add product name
+                      const amount = parseFloat(p.amount) || 0;
+                      const formattedAmount = `₹${amount.toLocaleString(
+                        "en-IN"
+                      )}`;
+                      return `${productCode} (${productName}): ${formattedAmount}`;
+                    })
+                    .join("\n"); // Use newline to separate products within the cell
                 }
 
                 const data = {
                   "#": i + index + 1,
-                  "Lead Name": lead.name || "-",
+                  "Lead ID": lead.name || "-", // Changed from "Lead Name"
                   Customer: lead.lead_name || "-",
                   Contact: lead.contact || "-",
                   Source: lead.source || "-",
+                  "Products & Amounts": productsDisplay,
                   "Employee Name": emp
                     ? emp.name
                     : lead.lead_owner || "Unknown",
                   "Employee ID": emp ? emp.id : "Not Found",
-                  "Employee Number": emp ? emp.employee_number : "Not Found",
-                  "User ID": emp ? emp.user_id : lead.lead_owner || "Not Found",
+                  // "Employee Number": emp ? emp.employee_number : "Not Found", - REMOVED
+                  // "User ID": emp ? emp.user_id : lead.lead_owner || "Not Found", - REMOVED
                   Designation: emp ? emp.designation : "Not Found",
                   Branch: (emp ? emp.branch : null) || lead.branch || "-",
                   Status: lead.status || "-",
@@ -1712,15 +1881,23 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   "Created On": formatDateTimeForDisplay(lead.creation),
                 };
 
-                return headers
+                const row = headers
                   .map((header) => {
                     let value = data[header] || "";
-                    if (typeof value === "string" && value.includes(",")) {
+                    // Properly escape CSV values that contain commas or newlines
+                    if (
+                      typeof value === "string" &&
+                      (value.includes(",") ||
+                        value.includes("\n") ||
+                        value.includes('"'))
+                    ) {
                       value = `"${value.replace(/"/g, '""')}"`;
                     }
                     return value;
                   })
                   .join(",");
+
+                return row;
               })
               .join("\n");
 
@@ -1745,7 +1922,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = `leads_complete_${frappe.datetime.get_today()}_${
+          link.download = `leads_with_products_${frappe.datetime.get_today()}_${
             filteredLeads.length
           }_records.csv`;
 
@@ -1758,10 +1935,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             URL.revokeObjectURL(url);
             hideExportProgress();
 
-            // Show detailed completion message
             frappe.msgprint({
               title: "Export Completed Successfully",
-              message: `Successfully exported ${filteredLeads.length} leads!`,
+              message: `Successfully exported ${filteredLeads.length} leads with product details in single cells!`,
               indicator: "green",
             });
           }, 1000);
@@ -1770,7 +1946,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           hideExportProgress();
           frappe.msgprint({
             title: "Export Failed",
-            message: `An error occurred while exporting: ${error.message}. Please try again with a smaller date range.`,
+            message: `An error occurred while exporting: ${error.message}`,
             indicator: "red",
           });
         }
@@ -1797,23 +1973,23 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         );
 
         const summaryHtml = `
-    <div class="summary-card">
-      <h4>${totalEmployees}</h4>
-      <p>Total Employees</p>
-    </div>
-    <div class="summary-card">
-      <h4>${avgConversionRate}%</h4>
-      <p>Average Conversion Rate</p>
-    </div>
-    <div class="summary-card">
-      <h4>${totalLeads}</h4>
-      <p>Total Leads Analyzed</p>
-    </div>
-    <div class="summary-card">
-      <h4>${totalConverted}</h4>
-      <p>Total Conversions</p>
-    </div>
-  `;
+          <div class="summary-card">
+            <h4>${totalEmployees}</h4>
+            <p>Total Employees</p>
+          </div>
+          <div class="summary-card">
+            <h4>${avgConversionRate}%</h4>
+            <p>Average Conversion Rate</p>
+          </div>
+          <div class="summary-card">
+            <h4>${totalLeads}</h4>
+            <p>Total Leads Analyzed</p>
+          </div>
+          <div class="summary-card">
+            <h4>${totalConverted}</h4>
+            <p>Total Conversions</p>
+          </div>
+        `;
 
         $("#analytics-summary").html(summaryHtml);
       }
@@ -1838,28 +2014,28 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 : "low";
 
             return `
-            <tr>
-              <td>${index + 1}</td>
-              <td><strong>${emp.employeeName}</strong></td>
-              <td>${emp.employeeId}</td>
-              <td>${emp.designation}</td>
-              <td>${emp.branch}</td>
-              <td><strong>${emp.totalLeads}</strong></td>
-              <td>${emp.converted}</td>
-              <td>${emp.followUp}</td>
-              <td>${emp.notInterested}</td>
-              <td><span class="conversion-rate ${rateClass}">${
+              <tr>
+                <td>${index + 1}</td>
+                <td><strong>${emp.employeeName}</strong></td>
+                <td>${emp.employeeId}</td>
+                <td>${emp.designation}</td>
+                <td>${emp.branch}</td>
+                <td><strong>${emp.totalLeads}</strong></td>
+                <td>${emp.converted}</td>
+                <td>${emp.followUp}</td>
+                <td>${emp.notInterested}</td>
+                <td><span class="conversion-rate ${rateClass}">${
               emp.conversionRate
             }%</span></td>
-              <td>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width: ${
-                    emp.conversionRate
-                  }%"></div>
-                </div>
-              </td>
-            </tr>
-          `;
+                <td>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${
+                      emp.conversionRate
+                    }%"></div>
+                  </div>
+                </td>
+              </tr>
+            `;
           })
           .join("");
 

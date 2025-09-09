@@ -1,4 +1,7 @@
 import frappe
+from frappe import _
+
+
 
 @frappe.whitelist()
 def get_all_projects():
@@ -14,24 +17,36 @@ def get_all_projects():
         return projects
     except Exception as e:
         frappe.throw(f"Error fetching projects: {str(e)}")
-        
+
 @frappe.whitelist()
-def get_all_tasks(project_name):
+def get_all_tasks(name):
     """
     Fetch all tasks for a specific project, including child table records.
     """
     try:
+        # Get all template tasks with custom_sequence
+        template_tasks = frappe.get_all(
+            "Task",
+            filters={"is_template": 1},
+            fields=["subject", "custom_sequence"]
+        )
+        template_map = {t["subject"]: t["custom_sequence"] for t in template_tasks if t["custom_sequence"]}
+
+        # Get all tasks for the given project
         tasks = frappe.get_all(
             "Task", 
-            filters={"project": project_name},
+            filters={"project": name},
             fields=["name", "subject", "exp_start_date", "exp_end_date", "status", "modified", "project"]
         )
 
         for task in tasks:
             subject = task["subject"]
 
+            # Attach custom_sequence from template if subject matches
+            task["custom_sequence"] = template_map.get(subject)
+
             # Task 1: Location Details
-            if "Task 1 : Acquisition of the Property" in subject:
+            if "Acquisition of the Property" in subject:
                 task["location_details_table"] = frappe.get_all(
                     "Location Details",
                     filters={"parent": task["name"], "parenttype": "Task"},
@@ -39,31 +54,107 @@ def get_all_tasks(project_name):
                 )
 
             # Task 3: Custom Agreement
-            if "Task 3 : Agreement and Handover" in subject:
+            if "Agreement and Handover" in subject:
                 task["custom_agreement"] = frappe.db.get_value(
                     "Task", task["name"], "custom_agreement"
                 )
 
             # Task 4: Manpower Recruitment
-            if "Task 4 : Manpower Recruitment" in subject:
+            if "Manpower Recruitment" in subject:
                 task["manpower_recruitment_table"] = frappe.get_all(
-                    "Manpower Recruitment",
+                    "Manpower Recruitment Hiring Table",
                     filters={"parent": task["name"], "parenttype": "Task"},
-                    fields=["hirable_designation", "standard_employee_count", "hired_till_now", "status"]
+                    fields=["employee_name", "employee_designation", "employee_department", "status"]
+                )
+                
+            # Task 5: Infrastructure Development Work
+            if "Infrastructure Development Work" in subject:
+                task["infrastructure_development_table"] = frappe.get_all(
+                    "Infrastructure Development Setting Table",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["infrastructure_task", "phase", "status", "remarks"]
                 )
 
             # Task 6 or 7: IT Checklist
-            if subject in ["Task 6 : IT Hardware Installation", "Task 7 : IT Software Installation"]:
+            if subject in ["IT Hardware Installation", "IT Software Installation"]:
                 task["it_checklist_table"] = frappe.get_all(
                     "IT Checklist",
                     filters={"parent": task["name"], "parenttype": "Task"},
                     fields=["activity", "category", "status","installation_phase"]
                 )
 
-        return tasks
+            # Task 8 : Licence to Operate
+            if "Licence to Operate" in subject:
+                task["lto_training_table"] = frappe.get_all(
+                    "Licence to Operate Training Table",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["employee_name", "employee_designation", "employee_department", "training_status"]
+                )
+
+        # ✅ Sort tasks by custom_sequence (None values will go at the end)
+        tasks_sorted = sorted(tasks, key=lambda x: (x.get("custom_sequence") is None, x.get("custom_sequence")))
+
+        return tasks_sorted
 
     except Exception as e:
         frappe.throw(f"Error fetching tasks: {str(e)}")
+
+@frappe.whitelist()
+def get_specific_task(name):
+    """
+    Fetch details of a specific task, including related child table records.
+    """
+    try:
+        # Main task
+        task = frappe.get_all(
+            "Task",
+            filters={"name": name},
+            fields=["name", "subject", "exp_start_date", "exp_end_date", "status", "modified", "project", "description"],
+            limit_page_length=1
+        )
+
+        if not task:
+            frappe.throw(f"No task found with name: {name}")
+
+        task = task[0]  # since it's only one
+
+        subject = task["subject"]
+
+        # Task 1: Location Details
+        if "Acquisition of the Property" in subject:
+            task["location_details_table"] = frappe.get_all(
+                "Location Details",
+                filters={"parent": task["name"], "parenttype": "Task"},
+                fields=["location_name", "estimate_rent", "location_image", "status"]
+            )
+
+        # Task 3: Custom Agreement
+        if "Agreement and Handover" in subject:
+            task["custom_agreement"] = frappe.db.get_value(
+                "Task", task["name"], "custom_agreement"
+            )
+
+        # Task 4: Manpower Recruitment
+        if "Manpower Recruitment" in subject:
+                task["manpower_recruitment_table"] = frappe.get_all(
+                    "Manpower Recruitment Hiring Table",
+                    filters={"parent": task["name"], "parenttype": "Task"},
+                    fields=["employee_name", "employee_designation", "employee_department", "status"]
+            )
+
+        # Task 6 or 7: IT Checklist
+        if subject in ["IT Hardware Installation", "IT Software Installation"]:
+            task["it_checklist_table"] = frappe.get_all(
+                "IT Checklist",
+                filters={"parent": task["name"], "parenttype": "Task"},
+                fields=["activity", "category", "status", "installation_phase"]
+            )
+
+        return task
+
+    except Exception as e:
+        frappe.throw(f"Error fetching task: {str(e)}")
+
 
 
  
@@ -89,3 +180,212 @@ def get_options_dynamically_for_filter():
         'custom_branch_status_options': custom_branch_status_options.split("\n")  # Split options by new line
     }
 
+@frappe.whitelist()
+def add_image_for_existing_location(task_name, location_name, estimate_rent, status):
+    try:
+        # 1. Get the Task document
+        task = frappe.get_doc("Task", task_name)
+
+        # 2. Handle uploaded file
+        file_url = None
+        uploaded_file = frappe.request.files.get('image_file')
+        if not uploaded_file:
+            return {"success": False, "error": "No file uploaded"}
+
+        file_content = uploaded_file.stream.read()
+
+        # 3. Create File doc (only in Home, not Task attachments)
+        file_doc = frappe.get_doc({
+            "doctype": "File",
+            "file_name": uploaded_file.filename,
+            "folder": "Home",
+            "is_private": 0,
+            "content": file_content
+        })
+        file_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        file_url = file_doc.file_url
+
+        # 4. Append new row in child table
+        child = task.append("custom_location_details", {})
+        child.location_name = location_name
+        child.estimate_rent = float(estimate_rent or 0)
+        child.status = status
+        child.location_image = file_url
+
+        # 5. Save & commit
+        task.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "success": True,
+            "file_url": file_url,
+            "task": task.name
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Add Image For Existing Location Error")
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def add_new_location(task_name, location_name, estimate_rent, status):
+    try:
+        # 1. Get Task document
+        task = frappe.get_doc("Task", task_name)
+
+        # 2. Handle optional image file
+        file_url = None
+        uploaded_file = frappe.request.files.get('image_file')
+        if uploaded_file:
+            # Read file content
+            file_content = uploaded_file.stream.read()
+
+            # Create File document via ORM
+            file_doc = frappe.get_doc({
+                "doctype": "File",
+                "file_name": uploaded_file.filename,
+                "folder": "Home",
+                "is_private": 0,
+                "content": file_content
+            })
+            file_doc.insert(ignore_permissions=True)
+            frappe.db.commit()
+
+            file_url = file_doc.file_url
+
+        # 3. Append new location row via ORM
+        child = task.append("custom_location_details", {})
+        child.location_name = location_name
+        child.estimate_rent = float(estimate_rent or 0)
+        child.status = status
+        child.location_image = file_url
+
+        # 4. Save & commit
+        task.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "success": True,
+            "file_url": file_url,
+            "task": task.name
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Add New Location Error")
+        return {"success": False, "error": str(e)}
+    
+    
+@frappe.whitelist()
+def delete_location_image(task_name, location_name, image_file):
+    """
+    Delete the entire row from Task.custom_location_details 
+    if the image matches.
+    """
+    try:
+        # Fetch the task document
+        task = frappe.get_doc("Task", task_name)
+
+        deleted = False
+
+        # Collect rows to delete (avoid modifying list while iterating)
+        rows_to_delete = []
+        for row in task.custom_location_details:
+            if row.location_name == location_name and row.location_image == image_file:
+                rows_to_delete.append(row)
+
+        # Actually delete rows
+        for row in rows_to_delete:
+            task.remove(row)
+            deleted = True
+
+        if deleted:
+            task.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"success": True, "message": _("Row deleted successfully")}
+        else:
+            return {"success": False, "error": _("Row not found with given image")}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Delete Location Row Error")
+        return {"success": False, "error": str(e)}
+    
+@frappe.whitelist()
+def update_location_details(task_name, location_name, estimate_rent=None, status=None):
+    """
+    Update rent and status for all rows in Task.custom_location_details
+    with the given location_name.
+    """
+    try:
+        task = frappe.get_doc("Task", task_name)
+        updated = False
+
+        for row in task.custom_location_details:
+            if row.location_name == location_name:
+                if estimate_rent is not None:
+                    row.estimate_rent = float(estimate_rent)
+                if status is not None:
+                    row.status = status
+                updated = True
+
+        if updated:
+            task.save(ignore_permissions=True)
+            frappe.db.commit()
+            return {"success": True, "message": _("Location details updated successfully")}
+        else:
+            return {"success": False, "error": _("No rows found for the given location_name")}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Update Location Details Error")
+        return {"success": False, "error": str(e)}
+    
+@frappe.whitelist()
+def update_task_common_fields(task_name, data):
+    """
+    Auto-update task fields.
+    'data' should be a dict containing keys: status, start_date, end_date, completed_on
+    """
+    try:
+        task = frappe.get_doc("Task", task_name)
+
+        # Only run validations for "Task 1 : Acquisition of the Property"
+        if task.subject == "Task 1 : Acquisition of the Property":
+            # Check if status is being changed to "Completed"
+            if data.get("status") == "Completed" and task.status != "Completed":
+                # Validation 1: Check if at least one location detail is "Approved"
+                approved_location_details = [row for row in task.get("custom_location_details", []) 
+                                           if row.status == "Approved"]
+                
+                if not approved_location_details:
+                    return {
+                        "success": False, 
+                        "error": "Cannot mark the task as 'Completed' until at least one location detail is 'Approved'."
+                    }
+                
+                # Validation 2: Check if multiple approved rows have different location names
+                if len(approved_location_details) > 1:
+                    first_location = approved_location_details[0].location_name
+                    different_locations = any(row.location_name != first_location 
+                                            for row in approved_location_details[1:])
+                    
+                    if different_locations:
+                        return {
+                            "success": False, 
+                            "error": "Only one location detail can have 'Approved' status before marking the task as 'Completed'."
+                        }
+
+        # Update fields
+        for key in ["status", "start_date", "end_date", "completed_on"]:
+            if key in data:
+                setattr(task, key, data[key])
+
+        task.save()
+        frappe.db.commit()
+
+        return {"success": True, "message": "Task updated successfully"}
+    except frappe.DoesNotExistError:
+        return {"success": False, "error": _("Task not found")}
+    except Exception as e:
+        frappe.log_error(e, "update_task_fields failed")
+        return {"success": False, "error": str(e)}

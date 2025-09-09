@@ -2,72 +2,97 @@
  {
   "docstatus": 0,
   "doctype": "Project Template",
-  "modified": "2025-07-30 10:41:54.491151",
+  "modified": "2025-09-01 11:37:26.679729",
   "name": "New Branch Setup",
   "project_type": null,
   "tasks": [
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 1 : Acquisition of the Property",
+    "subject": "Acquisition of the Property",
     "task": "TASK-2025-00091"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 2 : Letter of Intent",
+    "subject": "Letter of Intent",
     "task": "TASK-2025-00092"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 3 : Agreement and Handover",
+    "subject": "Agreement and Handover",
     "task": "TASK-2025-00093"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 4 : Manpower Recruitment",
+    "subject": "Vendor Allocation",
     "task": "TASK-2025-00094"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 5 : Infrastructure Development Work",
+    "subject": "Infrastructure Development Work",
     "task": "TASK-2025-00095"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 6 : IT Hardware Installation",
+    "subject": "IT Hardware Installation",
     "task": "TASK-2025-00096"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 7 : IT Software Installation",
+    "subject": "IT Software Installation",
     "task": "TASK-2025-00097"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 8 : Handover to Business Team",
+    "subject": "Manpower Recruitment",
     "task": "TASK-2025-00098"
    },
    {
+    "custom_default_assignee": null,
     "parent": "New Branch Setup",
     "parentfield": "tasks",
     "parenttype": "Project Template",
-    "subject": "Task 9 : Ready for Inauguration",
+    "subject": "Licence to Operate",
     "task": "TASK-2025-00099"
+   },
+   {
+    "custom_default_assignee": null,
+    "parent": "New Branch Setup",
+    "parentfield": "tasks",
+    "parenttype": "Project Template",
+    "subject": "Handover to Business Team",
+    "task": "TASK-2025-00100"
+   },
+   {
+    "custom_default_assignee": null,
+    "parent": "New Branch Setup",
+    "parentfield": "tasks",
+    "parenttype": "Project Template",
+    "subject": "Ready for Inauguration",
+    "task": "TASK-2025-00101"
    }
   ]
  }

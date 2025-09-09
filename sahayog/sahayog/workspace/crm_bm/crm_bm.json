@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"QdoGGaSC_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM BM</span>\",\"col\":12}},{\"id\":\"ws-JT3-2jo\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Branch Leads\",\"col\":4}},{\"id\":\"4x8tYFBFgI\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"0JzCPZGcPy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Lead Report\",\"col\":3}},{\"id\":\"XAQn6Hc2TJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
+ "content": "[{\"id\":\"QdoGGaSC_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM BM</span>\",\"col\":12}},{\"id\":\"ws-JT3-2jo\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Branch Leads\",\"col\":4}},{\"id\":\"4x8tYFBFgI\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"0JzCPZGcPy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Lead Report\",\"col\":3}},{\"id\":\"DN2LXL9DAx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"DSR Master Report\",\"col\":3}},{\"id\":\"XAQn6Hc2TJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
  "creation": "2025-06-24 17:25:46.336252",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "CRM BM",
  "links": [],
- "modified": "2025-08-02 12:57:35.899117",
+ "modified": "2025-08-30 15:39:38.289377",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM BM",
@@ -38,6 +38,13 @@
    "doc_view": "List",
    "label": "Branch Lead Report",
    "link_to": "crm-lead-management",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "DSR Master Report",
+   "link_to": "dsr-master-report",
    "type": "Page"
   },
   {

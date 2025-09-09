@@ -20,6 +20,9 @@ app_license = "mit"
 # 		"has_permission": "sahayog.api.permission.has_app_permission"
 # 	}
 # ]
+website_route_rules = [
+    {"from_route": "/me", "to_route": "me"},
+]
 
 # Includes in <head>
 # ------------------
@@ -52,12 +55,12 @@ doctype_js = {
     "Task": "public/js/task.js",
     "Project": "public/js/project.js",
     "Lead":"scrm/controller/lead/lead.js",
-    "Appointment" : "scrm/controller/appointment/appointment.js",
-    "Stock Entry": "public/js/stock_entry_hide_fields.js",
-    "Purchase Receipt": "public/js/purchase_receipt_hide.js"
-
+    "Appointment" : "scrm/controller/appointment/appointment.js"
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
+app_include_js = [
+    "/assets/sahayog/js/assignmate.js"
+]
 
 doctype_list_js = {
     "Purchase Receipt" : "public/js/purchase_receipt_list_view_to_inward.js"}
@@ -104,6 +107,9 @@ doctype_list_js = {
 # ]
 
 after_migrate = [
+    "sahayog.patches.custom_fields.add_custom_fields_for_bom.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_for_item.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_product_bundle.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_project.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_employee.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
@@ -117,6 +123,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_project_template_task.execute",
     # "sahayog.patches.fixtures.add_region.execute",
     # "sahayog.patches.fixtures.add_division.execute",
     # "sahayog.patches.fixtures.add_zone.execute",
@@ -180,8 +187,6 @@ permission_query_conditions = {
 	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
-    "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission",
-    "Stock Entry": "sahayog.permissions.get_stock_entry_permission",
     
 }
 #
@@ -243,15 +248,22 @@ doc_events = {
             "sahayog.doc_events.task.check_loi_docstatus_for_task_2",
             "sahayog.doc_events.task.prevent_completion_if_manpower_incomplete",
             "sahayog.doc_events.task.prevent_completion_if_it_checklist_incomplete",
+            "sahayog.doc_events.task.prevent_completion_if_infra_incomplete",
+            "sahayog.doc_events.task.prevent_completion_if_lto_incomplete",
         ],
         "on_update": [
             "sahayog.doc_events.task.update_branch_status_trigger"
         ],
+        "on_update": [
+             "sahayog.doc_events.task.update_lto_training_table"
+        ],
         "after_insert": [
-            "sahayog.doc_events.task.create_letter_of_intent"
+            "sahayog.doc_events.task.create_letter_of_intent",
+            "sahayog.doc_events.task.after_insert_task"
         ],
         "before_save": [
             "sahayog.doc_events.task.fetch_manpower_settings",
+            "sahayog.doc_events.task.fetch_infra_checklist_settings",
             "sahayog.doc_events.task.fetch_it_checklist_settings",
         ],
     },
@@ -426,7 +438,7 @@ fixtures = [
     {
         "dt": "Print Format",
         "filters": [
-            ["name", "=", "LOI"]
+            ["name", "in", ["LOI","Letter of Intent Print Format"]]
         ]
     },
     {
@@ -441,13 +453,14 @@ fixtures = [
         "dt": "Module",
         
     },
-
-   
     {
         "dt": "Custom DocPerm",
-        "filters": [["parent", "=", "Issue Register"]]
+        "filters": [["parent", "in", ["Issue Register", "Branch Proposal","Project","Project Template","Task"]]]
     },
-
+    {
+        "dt":"Workflow",
+        "filters": [["name", "in", ["Branch Proposal"]]]
+    },
      {
         "dt": "Task",
         "filters": [["is_template", "=", "1"]]
@@ -456,6 +469,9 @@ fixtures = [
     {
         "dt": "Project Template",
         
+    },
+    {
+        "dt":"Letter Head",
     },
     {"dt": "Custom HTML Block", "filters": [
         [

@@ -5,136 +5,536 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Employee KPI Dashboard</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
         font-family: "Inter", sans-serif;
-        background: #fff;
         color: #1f2937;
-        padding: 0px;
+        min-height: 100vh;
       }
+
       .dashboard {
-        max-width: 1100px;
+        max-width: 1200px;
         margin: auto;
-        background: white;
-        border-radius: 0px;
-        padding: 5px;
-        height: 100vh;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.2);
       }
-      .header {
-        text-align: center;
-        margin-bottom: 20px;
+
+      .card-header {
+        border-radius: 20px;
+        margin-bottom: 40px;
+
+        color: #006767 !important;
+        /* background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        border: 1px solid #e2e8f0; */
       }
-      .header h1 {
-        margin: 0;
-        font-size: 22px;
-        font-weight: 700;
-      }
-      .header p {
-        margin: 6px 0;
-        color: #6b7280;
-        font-size: 16px;
-      }
+
       .info-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 10px;
-        margin-bottom: 30px;
-        font-size: 15px;
-        color: #374151;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
       }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-        gap: 20px;
+
+      .info-item {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        font-size: 14px;
+
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #f1f5f9;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
-      .card {
-        border-radius: 16px;
-        padding: 8px 14px;
+
+      .info-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-item strong {
+        font-weight: 600;
+      }
+
+      /* Header styles integrated into info-grid */
+      .header-item {
+        padding: 20px;
+        border-radius: 12px;
+        font-size: 16px;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 120px;
+        margin-bottom: 20px;
+      }
+
+      .header-left {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        text-align: left;
+        flex: 1;
+      }
+
+      .dashboard-title {
+        border: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #006767 0%, #107070 100%);
+        color: white;
+
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        margin-left: 20px;
+      }
+
+      .employee-name {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        line-height: 1.2;
+      }
+
+      .branch-designation {
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0.95;
+        margin: 0;
+        line-height: 1.3;
+      }
+
+      .last-update {
+        font-weight: 600;
+
+        white-space: nowrap;
+        text-align: center;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+      }
+
+      .card {
+        border-radius: 20px;
+        padding: 25px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         position: relative;
         overflow: hidden;
         text-align: left;
-        min-height: 50px;
-        border: 1px solid #cdcdcd;
+        min-height: 120px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.2);
       }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: inherit;
+        filter: blur(0px);
+        z-index: -1;
+      }
+
+      .card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      }
+
       .card h2 {
-        font-size: 20px;
-        margin: 10px 0;
+        font-size: 24px;
+        margin: 15px 0 5px 0;
         font-weight: 700;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
+
       .card p {
         margin: 0;
-        font-size: 12px;
-        font-weight: 500;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.95);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        line-height: 1.4;
       }
-      @media (max-width: 600px) {
-        .card h2 {
-          font-size: 22px;
+
+      .card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.95);
+        margin-bottom: 10px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        line-height: 1.4;
+      }
+
+      /* Card Color Themes */
+      .card:nth-child(1) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .card:nth-child(2) {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+
+      .card:nth-child(3) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      .card:nth-child(4) {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      }
+
+      .card:nth-child(5) {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      }
+
+      .card:nth-child(6) {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      }
+
+      .card:nth-child(7) {
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+      }
+
+      .card:nth-child(8) {
+        background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      }
+
+      /* Alternative color scheme for better distinction */
+      .blue {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+      }
+      .green {
+        background: linear-gradient(
+          135deg,
+          #11998e 0%,
+          #38ef7d 100%
+        ) !important;
+      }
+      .orange {
+        background: linear-gradient(
+          135deg,
+          #fc4a1a 0%,
+          #f7b733 100%
+        ) !important;
+      }
+      .pink {
+        background: linear-gradient(
+          135deg,
+          #f093fb 0%,
+          #f5576c 100%
+        ) !important;
+      }
+      .red {
+        background: linear-gradient(
+          135deg,
+          #ff416c 0%,
+          #ff4b2b 100%
+        ) !important;
+      }
+      .gray {
+        background: linear-gradient(
+          135deg,
+          #bdc3c7 0%,
+          #2c3e50 100%
+        ) !important;
+      }
+
+      .percent {
+        font-size: 32px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 8px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Loading Animation */
+      .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 8px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
         }
       }
-      .percent {
-        font-size: 28px;
-        font-weight: 700;
-        color: #000;
-        margin-bottom: 6px;
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        .dashboard {
+          padding: 20px;
+          border-radius: 15px;
+        }
+
+        .card-header {
+          padding: 20px;
+        }
+
+        .info-grid {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .header-item {
+          min-height: 100px;
+          padding: 15px;
+          flex-direction: column;
+          text-align: center;
+          gap: 15px;
+        }
+
+        .header-left {
+          text-align: center;
+        }
+
+        .header-right {
+          margin-left: 0;
+          justify-content: center;
+        }
+
+        .employee-name {
+          font-size: 20px;
+        }
+
+        .branch-designation {
+          font-size: 13px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .card {
+          min-height: 100px;
+          padding: 20px;
+        }
+
+        .card h2 {
+          font-size: 20px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .dashboard {
+          padding: 15px;
+        }
+
+        .card-header {
+          padding: 15px;
+        }
+
+        .card {
+          padding: 15px;
+          min-height: 90px;
+        }
+
+        .card h2 {
+          font-size: 18px;
+        }
+
+        .header-item {
+          padding: 12px;
+        }
+
+        .employee-name {
+          font-size: 18px;
+        }
+
+        .last-update {
+          padding: 8px 12px;
+          font-size: 11px;
+        }
+      }
+
+      /* Status Indicators */
+      .status-indicator {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+        }
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+        }
+        100% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+        }
+      }
+
+      /* Error State */
+      .error-state {
+        text-align: center;
+        padding: 40px;
+        color: #ef4444;
+        font-weight: 500;
+      }
+
+      /* Success State Animation */
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
     </style>
   </head>
   <body>
-    <div class="dashboard">
-      <div class="header">
-        <p style="text-align: right; color: #6b7280; font-size: 16px">
-          Last Update: <span id="date"></span>
-        </p>
-        <h1 id="employee_name">Data Is Not available</h1>
-        <p id="branch_designation"></p>
+    <div class="fade-in">
+      <div class="card-header" id="card-header">
+        <div class="dashboard-title">
+          <h1>Pramaan Dashboard</h1>
+        </div>
+        <div class="header-item">
+          <div class="header-left">
+            <div class="employee-name" id="employee_name">
+              Loading Dashboard... <span class="loading"></span>
+            </div>
+            <div class="branch-designation" id="branch_designation">
+              Please wait while we fetch your data
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="last-update">
+              Data Period: <span id="date-range">Loading...</span>
+            </div>
+          </div>
+        </div>
+        <div class="info-grid" id="info-grid">
+          <!-- Placeholder for other info items -->
+          <div class="info-item">Loading...</div>
+        </div>
       </div>
-      <div class="info-grid" id="info-grid"></div>
+
       <div class="grid">
         <div class="card blue">
-          <p>Active FD Accounts vs Collection</p>
-          <h2><span id="fd_ac">0</span>/ ₹<span id="fd_atm">0</span></h2>
-        </div>
-        <div class="card blue">
-          <p>Active 6M FD Accounts vs Collection</p>
-          <h2><span id="fd_6m_ac">0</span>/ ₹<span id="fd_6m_amt">0</span></h2>
-        </div>
-        <div class="card green">
-          <p>DAM Account Count & Collection</p>
-          <h2><span id="dam_ac">0</span> / ₹<span id="dam_amt">0</span></h2>
-        </div>
-        <div class="card">
-          <div class="card-title">RD Demand vs Collection</div>
+          <div class="status-indicator"></div>
+          <p>Active Fixed Deposit Accounts vs Collection Amount</p>
           <h2>
-            <span id="rd_demand">0</span> / ₹<span id="rd_collection">0</span>
+            <span id="fd_ac">0</span> Accounts / ₹<span id="fd_atm">0</span>
           </h2>
         </div>
+
+        <div class="card green">
+          <div class="status-indicator"></div>
+          <p>Active 6-Month FD Accounts vs Collection Amount</p>
+          <h2>
+            <span id="fd_6m_ac">0</span> Accounts / ₹<span id="fd_6m_amt"
+              >0</span
+            >
+          </h2>
+        </div>
+
         <div class="card orange">
-          <p>New SMBG</p>
-          <h2 id="new_smbg_ac">0</h2>
-          <p>₹<span id="new_smbg_amt">0</span></p>
+          <div class="status-indicator"></div>
+          <p>Daily Account Management - Account Count & Collection</p>
+          <h2>
+            <span id="dam_ac">0</span> Accounts / ₹<span id="dam_amt">0</span>
+          </h2>
         </div>
+
         <div class="card pink">
-          <p>New RD Opened</p>
-          <h2 id="new_rd_ac">0</h2>
-          <p>₹<span id="new_rd_amt">0</span></p>
+          <div class="status-indicator"></div>
+          <div class="card-title">
+            Recurring Deposit Demand vs Collection Amount
+          </div>
+          <h2>
+            Demand: ₹<span id="rd_demand">0</span> / Collection: ₹<span
+              id="rd_collection"
+              >0</span
+            >
+          </h2>
         </div>
+
         <div class="card red">
-          <p>MIS Collection</p>
+          <div class="status-indicator"></div>
+          <p>New Small & Marginal Business Group Accounts</p>
+          <h2 id="new_smbg_ac">0 Accounts</h2>
+          <p>Total Amount: ₹<span id="new_smbg_amt">0</span></p>
+        </div>
+
+        <div class="card gray">
+          <div class="status-indicator"></div>
+          <p>New Recurring Deposit Accounts Opened</p>
+          <h2 id="new_rd_ac">0 Accounts</h2>
+          <p>Total Amount: ₹<span id="new_rd_amt">0</span></p>
+        </div>
+
+        <div class="card blue">
+          <div class="status-indicator"></div>
+          <p>Management Information System - Total Collection</p>
           <h2>₹<span id="mis_amt">0</span></h2>
         </div>
-        <div class="card gray">
-          <p>Achieved DAM Collection</p>
+
+        <div class="card green">
+          <div class="status-indicator"></div>
+          <p>Achievement Percentage - DAM Collection Target</p>
           <h2 id="achieved_percent">0%</h2>
         </div>
       </div>
     </div>
+
     <script>
       async function loadKPI() {
         try {
@@ -149,14 +549,35 @@
             const kpiData = data.message.data;
             console.log("KPI Data:", kpiData);
 
-            // Update last updated date
-            if (data.message.last_updated) {
+            // Update date range display
+            if (data.message.start_date && data.message.end_date) {
+              const startDate = new Date(data.message.start_date);
+              const endDate = new Date(data.message.end_date);
+              console.log("Start Date:", startDate, "End Date:", endDate);
+
+              const formatDate = (date) => {
+                const day = date.getDate().toString().padStart(2, "0");
+                const month = (date.getMonth() + 1).toString().padStart(2, "0");
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+              };
+
+              const dateRange = `${formatDate(startDate)} to ${formatDate(
+                endDate
+              )}`;
+              document.getElementById("date-range").textContent = dateRange;
+            } else if (data.message.last_updated) {
+              // Fallback to last_updated if date range not available
               const updateDate = new Date(data.message.last_updated);
-              const day = updateDate.getDate();
-              const month = updateDate.getMonth() + 1;
+              const day = updateDate.getDate().toString().padStart(2, "0");
+              const month = (updateDate.getMonth() + 1)
+                .toString()
+                .padStart(2, "0");
               const year = updateDate.getFullYear();
               const formatted = `${day}/${month}/${year}`;
-              document.getElementById("date").textContent = formatted;
+              document.getElementById(
+                "date-range"
+              ).textContent = `As of ${formatted}`;
             }
 
             // Update header information
@@ -168,32 +589,32 @@
               kpiData["Designation Name"] || kpiData.designation_name || "N/A"
             }`;
 
-            // Update info grid
+            // Update info grid (excluding the header item)
             const infoHtml = `
-              <div><strong>Zone:</strong> ${
+              <div class="info-item"><strong>Zone:</strong> ${
                 kpiData["Zone Name"] || kpiData.zone_name || "N/A"
               }</div>
-              <div><strong>Region:</strong> ${
+              <div class="info-item"><strong>Region:</strong> ${
                 kpiData["Region Name"] || kpiData.region_name || "N/A"
               }</div>
-              <div><strong>District:</strong> ${
+              <div class="info-item"><strong>District:</strong> ${
                 kpiData["District Name"] || kpiData.district_name || "N/A"
               }</div>
-              <div><strong>Emp ID:</strong> ${
+              <div class="info-item"><strong>Employee ID:</strong> ${
                 kpiData.EmpID || kpiData.emp_id || "N/A"
               }</div>
-              <div><strong>Join Duration:</strong> ${
+              <div class="info-item"><strong>Service Duration:</strong> ${
                 kpiData["Join dur"] || kpiData.join_duration || "N/A"
               }</div>
-              <div><strong>SSA Agents:</strong> ${
+              <div class="info-item"><strong>SSA Agents:</strong> ${
                 kpiData["Total ss/Agnt"] || kpiData.total_agents || 0
               } (New: ${
               kpiData["New Ss/Agnt"] || kpiData.new_agents || 0
             })</div>
-              <div><strong>Active:</strong> ${
+              <div class="info-item"><strong>Active Agents:</strong> ${
                 kpiData.Active || kpiData.active || 0
               }</div>
-              <div><strong>Inactive:</strong> ${
+              <div class="info-item"><strong>Inactive Agents:</strong> ${
                 kpiData.Inactive || kpiData.inactive || 0
               }</div>
             `;
@@ -255,22 +676,41 @@
             // Calculate achievement percentage if needed
             const damAmount = parseFloat(kpiData["DAM AMT"] || 0);
             const achievedPercent =
-              damAmount > 0 ? Math.round((damAmount / 100000) * 100) : 0; // Adjust calculation as needed
+              damAmount > 0 ? Math.round((damAmount / 100000) * 100) : 0;
             document.getElementById(
               "achieved_percent"
             ).textContent = `${achievedPercent}%`;
+
+            // Remove loading spinner
+            const loadingSpinner = document.querySelector(".loading");
+            if (loadingSpinner) {
+              loadingSpinner.remove();
+            }
           } else {
             console.error(
               "Error in response:",
               data.message?.message || "Unknown error"
             );
-            document.getElementById("employee_name").textContent =
-              "Error loading data";
+            showError("Error loading data");
           }
         } catch (err) {
           console.error("Error fetching KPI data:", err);
-          document.getElementById("employee_name").textContent =
-            "Error loading data";
+          showError("Error loading data - Please check your connection");
+        }
+      }
+
+      function showError(message) {
+        const headerItem = document.querySelector(".header-item");
+        if (headerItem) {
+          headerItem.innerHTML = `
+            <div class="header-left">
+              <div class="employee-name">${message}</div>
+              <div class="branch-designation">Please refresh the page to try again</div>
+            </div>
+            <div class="header-right">
+              <div class="last-update">Unable to load data</div>
+            </div>
+          `;
         }
       }
 
@@ -281,6 +721,7 @@
         });
       }
 
+      // Initialize dashboard
       loadKPI();
     </script>
   </body>

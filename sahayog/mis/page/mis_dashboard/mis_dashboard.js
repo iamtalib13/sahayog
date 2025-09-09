@@ -29,7 +29,7 @@ class MISDashboard {
   setupPage() {
     this.page = frappe.ui.make_app_page({
       parent: this.wrapper,
-      title: "MIS Dashboard",
+      title: "Praman Report Dashboard",
       single_column: true,
     });
   }
@@ -92,9 +92,63 @@ class MISDashboard {
         .select2-container--default .select2-selection--single .select2-selection__rendered {
           line-height: 34px !important;
           font-size: 14px !important;
+          color: #374151 !important;
         }
         .select2-container--default.select2-container--focus .select2-selection--single {
           border-color: #006767 !important;
+        }
+
+        /* ✅ Enhanced: Dropdown options styling with more info */
+        .select2-dropdown {
+          background: white !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 6px !important;
+        }
+        .select2-results__option {
+          background: transparent !important;
+          color: #374151 !important;
+          padding: 10px 12px !important;
+          font-size: 14px !important;
+          border-bottom: 1px solid #f3f4f6;
+        }
+        .select2-results__option:last-child {
+          border-bottom: none;
+        }
+        .select2-results__option--highlighted {
+          background-color: #f3f4f6 !important;
+          color: #111827 !important;
+        }
+        .select2-results__option--selected {
+          background-color: #006767 !important;
+          color: white !important;
+        }
+        .select2-search--dropdown .select2-search__field {
+          border: 1px solid #d1d5db !important;
+          border-radius: 4px !important;
+          padding: 6px 8px !important;
+          color: #374151 !important;
+        }
+
+        /* Custom option styling */
+        .report-option {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .report-name {
+          font-weight: 600;
+          font-size: 14px;
+          color: inherit;
+        }
+        .report-dates {
+          font-size: 12px;
+          color: #64748b;
+        }
+        .select2-results__option--highlighted .report-dates {
+          color: #64748b;
+        }
+        .select2-results__option--selected .report-dates {
+          color: rgba(255, 255, 255, 0.8);
         }
 
         /* Compact Button */
@@ -297,10 +351,12 @@ class MISDashboard {
 
   async loadReports() {
     try {
+      // ✅ Enhanced: Fetch start_date and end_date along with name
       const reports = await frappe.db.get_list("MIS Report", {
-        fields: ["name", "last_updated_date"],
+        fields: ["name", "start_date", "end_date"],
         filters: { is_active: 1 },
         limit: 100,
+        order_by: "end_date desc",
       });
 
       this.populateDropdown(reports);
@@ -315,8 +371,11 @@ class MISDashboard {
     dropdown.empty().append(`<option value="">Select report...</option>`);
 
     reports.forEach((report) => {
+      // ✅ Enhanced: Store all report data in data attributes
       dropdown.append(
-        `<option value="${report.name}" data-last-updated="${report.last_updated_date}">
+        `<option value="${report.name}" 
+          data-start-date="${report.start_date || ""}" 
+          data-end-date="${report.end_date || ""}">
           ${report.name}
         </option>`
       );
@@ -332,22 +391,31 @@ class MISDashboard {
     });
   }
 
+  // ✅ Enhanced: Format dropdown options with report details
   formatDropdownOption(option) {
     if (!option.id) return option.text;
 
-    const updatedDate = option.element?.dataset?.lastUpdated;
-    const formattedDate = updatedDate
-      ? frappe.datetime.str_to_user(updatedDate)
+    const startDate = option.element?.dataset?.startDate;
+    const endDate = option.element?.dataset?.endDate;
+
+    const formattedStartDate = startDate
+      ? frappe.datetime.str_to_user(startDate)
+      : "N/A";
+    const formattedEndDate = endDate
+      ? frappe.datetime.str_to_user(endDate)
       : "N/A";
 
     return `
-      <div style="padding: 4px 0;">
-        <div style="font-weight: 500;">${option.text}</div>
-        <div style="font-size: 11px; color: #64748b;">Updated: ${formattedDate}</div>
+      <div class="report-option">
+        <div class="report-name">${option.text}</div>
+        <div class="report-dates">
+          From: ${formattedStartDate} | To: ${formattedEndDate}
+        </div>
       </div>
     `;
   }
 
+  // ✅ Enhanced: Show only report name in selected value
   formatDropdownSelection(option) {
     return option.text;
   }
@@ -375,7 +443,8 @@ class MISDashboard {
     const {
       report_attachment: fileUrl,
       name: reportName,
-      last_updated_date,
+      start_date,
+      end_date,
     } = doc;
 
     if (!fileUrl) {
@@ -403,7 +472,8 @@ class MISDashboard {
         return;
       }
 
-      this.renderReport(data, reportName, last_updated_date);
+      // ✅ Enhanced: Pass both start_date and end_date
+      this.renderReport(data, reportName, start_date, end_date);
     } catch (error) {
       console.error("File processing error:", error);
       frappe.msgprint("Failed to process file");
@@ -421,27 +491,42 @@ class MISDashboard {
     return XLSX.utils.sheet_to_json(sheet, { header: 1 });
   }
 
-  renderReport(data, reportName, lastUpdated) {
+  // ✅ Enhanced: Accept both start_date and end_date
+  renderReport(data, reportName, startDate, endDate) {
     if (!data?.length) {
       this.showNoData("No data found");
       return;
     }
 
     this.currentReportData = data;
-    this.updateReportInfo(reportName, lastUpdated);
+    this.updateReportInfo(reportName, startDate, endDate);
     this.renderTable(data);
     this.showTableHeader();
   }
 
-  updateReportInfo(reportName, lastUpdated) {
+  // ✅ Enhanced: Display both start and end dates
+  updateReportInfo(reportName, startDate, endDate) {
     $("#report-title").text(reportName);
+
+    const formattedStartDate = startDate
+      ? frappe.datetime.str_to_user(startDate)
+      : "N/A";
+    const formattedEndDate = endDate
+      ? frappe.datetime.str_to_user(endDate)
+      : "N/A";
+
     $("#report-meta").text(
-      `Updated: ${frappe.datetime.str_to_user(lastUpdated) || "N/A"}`
+      `Period: ${formattedStartDate} to ${formattedEndDate}`
     );
     $("#report-info").show();
   }
 
   renderTable(data) {
+    if (this.hotInstance) {
+      this.hotInstance.destroy();
+      this.hotInstance = null;
+    }
+
     const container = document.getElementById("table-content");
     container.innerHTML = '<div id="handsontable-container"></div>';
 
@@ -520,5 +605,13 @@ class MISDashboard {
       mimeType: "text/csv",
       rowHeaders: false,
     });
+  }
+
+  destroy() {
+    if (this.hotInstance) {
+      this.hotInstance.destroy();
+      this.hotInstance = null;
+    }
+    this.currentReportData = null;
   }
 }
