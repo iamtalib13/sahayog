@@ -1,25 +1,22 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "naming_series:",
  "creation": "2025-08-18 11:19:16.961586",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "case_id",
+  "naming_series",
   "case_type",
   "column_break_zzki",
   "case_raised_by",
+  "section_break_xwlh",
   "case_against_employee",
   "section_break_gtkv",
   "description",
-  "enquiry"
+  "section_break_fakz",
+  "enquiry_item"
  ],
  "fields": [
-  {
-   "fieldname": "case_id",
-   "fieldtype": "Data",
-   "label": "Case ID"
-  },
   {
    "fieldname": "case_type",
    "fieldtype": "Select",
@@ -33,13 +30,14 @@
    "fieldtype": "Link",
    "label": "Case Raised By",
    "options": "Employee",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "case_against_employee",
-   "fieldtype": "Link",
-   "label": "Case Against Employee",
-   "options": "Employee",
+   "fieldtype": "Table",
+   "label": "Case Against Employees",
+   "options": "Case Against Employee Item",
    "reqd": 1
   },
   {
@@ -57,19 +55,39 @@
    "reqd": 1
   },
   {
-   "fieldname": "enquiry",
+   "fieldname": "section_break_xwlh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Case ID",
+   "no_copy": 1,
+   "options": "DC-",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_fakz",
+   "fieldtype": "Section Break",
+   "label": "Enquiry Details"
+  },
+  {
+   "fieldname": "enquiry_item",
    "fieldtype": "Table",
    "label": "Enquiry",
-   "options": "Enquiry"
+   "options": "Enquiry Item",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-18 11:45:32.827164",
+ "modified": "2025-09-10 11:18:48.828935",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -88,5 +106,6 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
