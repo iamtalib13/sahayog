@@ -58,6 +58,10 @@ doctype_js = {
     "Appointment" : "scrm/controller/appointment/appointment.js",
     "Product Bundle": "public/js/product_bundle.js",
     "BOM": "public/js/bom.js",
+    "Purchase Receipt": "public/js/purchase_receipt.js",
+}
+doctype_list_js = {
+    "Purchase Receipt": "public/js/purchase_receipt_list.js"
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = [
