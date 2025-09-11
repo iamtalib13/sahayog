@@ -2,7 +2,7 @@ import frappe
 
 def execute():
     # List of divisions to create
-    divisions_to_create = ['School', 'Two Wheeler', 'Microfinance', 'Multistate',]
+    divisions_to_create = ['School', 'Two Wheeler', 'Microfinance', 'Multistate']
 
     for division_name in divisions_to_create:
         try:
