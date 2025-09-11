@@ -1,0 +1,61 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"ekBjxy1yfN\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Agent Management</span>\",\"col\":12}},{\"id\":\"N6DSQUBvXC\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Unallocated Agents\",\"col\":4}},{\"id\":\"X6elFZsMGk\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Allocated Agents\",\"col\":4}},{\"id\":\"_pt7hEFieG\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Approval Pending\",\"col\":4}},{\"id\":\"_caB4wiLMr\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Unallocated Agents\",\"col\":4}},{\"id\":\"cyAW7kuknH\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Allocated Agents\",\"col\":4}},{\"id\":\"s3uIHhvUuW\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Approval Pending\",\"col\":4}}]",
+ "creation": "2025-08-23 13:57:34.773843",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Agent Management",
+ "links": [],
+ "modified": "2025-09-08 17:24:03.083866",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Agent Management",
+ "number_cards": [
+  {
+   "label": "Unallocated Agents",
+   "number_card_name": "Unallocated Agents"
+  },
+  {
+   "label": "Allocated Agents",
+   "number_card_name": "Allocated Agents"
+  },
+  {
+   "label": "Approval Pending",
+   "number_card_name": "Approval Pending"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [
+  {
+   "document_type": "Agent",
+   "label": "Unallocated Agents",
+   "quick_list_filter": "[[\"Agent\",\"status\",\"=\",\"Unallocated\",false]]"
+  },
+  {
+   "document_type": "Agent",
+   "label": "Allocated Agents",
+   "quick_list_filter": "[[\"Agent\",\"status\",\"=\",\"Allocated\",false]]"
+  },
+  {
+   "document_type": "Agent",
+   "label": "Approval Pending",
+   "quick_list_filter": "[[\"Agent\",\"status\",\"=\",\"Pending\",false]]"
+  }
+ ],
+ "roles": [
+  {
+   "role": "Employee"
+  }
+ ],
+ "sequence_id": 89.0,
+ "shortcuts": [],
+ "title": "Agent Management"
+}

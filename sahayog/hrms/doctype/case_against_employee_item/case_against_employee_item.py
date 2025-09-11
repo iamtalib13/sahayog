@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class LeadProductTable(Document):
+class CaseAgainstEmployeeItem(Document):
 	pass
