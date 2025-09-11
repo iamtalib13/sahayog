@@ -1,0 +1,91 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"g6Xa5dwrLs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Inventory Management</span>\",\"col\":12}},{\"id\":\"TvWOl0npn8\",\"type\":\"paragraph\",\"data\":{\"text\":\"Master\",\"col\":12}},{\"id\":\"t_llnzj0Jo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Creating New Item\",\"col\":3}},{\"id\":\"27scnXHyd-\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"SGE6I9to0y\",\"type\":\"paragraph\",\"data\":{\"text\":\"Transaction\",\"col\":12}},{\"id\":\"xiv-o6BXFY\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inward Stock\",\"col\":3}},{\"id\":\"qZoeT_IJSb\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Outward Stock\",\"col\":3}},{\"id\":\"wU3ovN0bpz\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Asset\",\"col\":3}},{\"id\":\"5H1NnPgWP0\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"iPTK67CE6P\",\"type\":\"paragraph\",\"data\":{\"text\":\"Report\",\"col\":12}},{\"id\":\"8xD_Wt22x8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":3}},{\"id\":\"cY1FrPCTIl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}},{\"id\":\"88H3UQ5W7g\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"cKvDHLiD04\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inventory Portal\",\"col\":3}}]",
+ "creation": "2025-08-21 11:35:39.977299",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Inventory Management",
+ "links": [],
+ "modified": "2025-09-11 14:24:04.302248",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Inventory Management",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Stationery Employee"
+  },
+  {
+   "role": "Stationery Store & Support Manager"
+  }
+ ],
+ "sequence_id": 90.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Inward Stock",
+   "link_to": "Purchase Receipt",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Asset",
+   "link_to": "Asset",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Creating New Item",
+   "link_to": "Item",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Stock Balance",
+   "link_to": "Stock Balance",
+   "report_ref_doctype": "Stock Ledger Entry",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Inventory Portal",
+   "link_to": "stationery-page",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Outward Stock",
+   "link_to": "Stock Entry",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Stock Ledger",
+   "link_to": "Stock Ledger",
+   "report_ref_doctype": "Stock Ledger Entry",
+   "type": "Report"
+  }
+ ],
+ "title": "Inventory Management"
+}
