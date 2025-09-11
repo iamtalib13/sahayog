@@ -9,6 +9,7 @@
   "disciplinary_case",
   "notice_date",
   "suspension_required",
+  "status",
   "column_break_mreb",
   "attendance",
   "explanation_provided",
@@ -85,13 +86,20 @@
    "fieldname": "enquiry_actions_section",
    "fieldtype": "Section Break",
    "label": "Enquiry Actions"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nOpen\nIn-Progress\nClosed"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-11 10:54:24.449645",
+ "modified": "2025-09-11 16:50:28.332608",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry",
