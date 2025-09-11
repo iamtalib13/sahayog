@@ -7,12 +7,15 @@
  "engine": "InnoDB",
  "field_order": [
   "product_code",
-  "product_name"
+  "product_name",
+  "product_type",
+  "enabled"
  ],
  "fields": [
   {
    "fieldname": "product_name",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Product Name",
    "reqd": 1
   },
@@ -23,12 +26,25 @@
    "label": "Product Code",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Product type",
+   "options": "\nSBA\nCAA\nODA\nTDA\nLAA\nOAB\nOAP"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-19 13:28:32.328082",
+ "modified": "2025-09-11 10:35:57.351281",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Product",
