@@ -55,7 +55,9 @@ doctype_js = {
     "Task": "public/js/task.js",
     "Project": "public/js/project.js",
     "Lead":"scrm/controller/lead/lead.js",
-    "Appointment" : "scrm/controller/appointment/appointment.js"
+    "Appointment" : "scrm/controller/appointment/appointment.js",
+    "Stock Entry": "public/js/stock_entry_hide_fields.js",
+    "Purchase Receipt": "public/js/purchase_receipt_hide.js",
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = [
@@ -63,7 +65,9 @@ app_include_js = [
 ]
 
 doctype_list_js = {
-    "Purchase Receipt" : "public/js/purchase_receipt_list_view_to_inward.js"}
+    "Purchase Receipt" : "public/js/purchase_receipt_list_view_to_inward.js",
+    "Stock Entry" : "public/js/stock_entry_list_view_to_inward.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -121,7 +125,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",  
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
-    "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
+
     "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_project_template_task.execute",
     # "sahayog.patches.fixtures.add_region.execute",
@@ -187,8 +191,14 @@ permission_query_conditions = {
 	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
+    #"Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission_for_department",
+    "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission_for_warehouse",
+    "Stock Entry": "sahayog.permissions.get_stock_entry_permission",
     
 }
+
+
+
 #
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
