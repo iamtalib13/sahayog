@@ -55,7 +55,7 @@ frappe.ui.form.on("Stock Entry", {
     if (frappe.session.user !== "Administrator") {
     frm.set_df_property("from_warehouse", "read_only", 1);
     }
-    // Apply filter to item_code in the "items" child table
+    // Apply filter to item_code in the "items" child tables
     frm.fields_dict["items"].grid.get_field("item_code").get_query = function(doc, cdt, cdn) {
       let row = locals[cdt][cdn]; // current row if needed
       return {

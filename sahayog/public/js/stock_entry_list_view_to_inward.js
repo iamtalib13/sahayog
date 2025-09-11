@@ -41,6 +41,7 @@ frappe.listview_settings['Stock Entry'] = {
       $('.layout-main-section-wrapper').css("margin-left", "0");
 
     // Hide sidebar on list load
+    
     setTimeout(() => {
       // Hide the sidebar section
       document.querySelectorAll('.layout-side-section').forEach(el => el.style.display = 'none');

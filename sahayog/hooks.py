@@ -57,7 +57,7 @@ doctype_js = {
     "Lead":"scrm/controller/lead/lead.js",
     "Appointment" : "scrm/controller/appointment/appointment.js",
     "Stock Entry": "public/js/stock_entry_hide_fields.js",
-    "Purchase Receipt": "public/js/purchase_receipt_hide.js",
+    "Purchase Receipt": "public/js/purchase_receipt_hide_fields.js",
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = [
@@ -199,7 +199,7 @@ permission_query_conditions = {
 
 
 
-#
+# Uncomment this to restrict Event doctype access to Event Owners only
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }

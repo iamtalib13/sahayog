@@ -40,7 +40,7 @@ def get_lead_permission(user, doctype=None):
 # Set the permissions visibility on doc of Appointment
 def get_appointment_permission(user):
     return " or ".join(conditions) if conditions else ""
-
+# permission query_conditions for purchase receipt based on warehouse(inward)
 def get_purchase_receipt_permission_for_warehouse(user, doctype=None):
     if not user:
         user = frappe.session.user
