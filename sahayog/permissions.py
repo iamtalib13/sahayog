@@ -39,54 +39,45 @@ def get_lead_permission(user, doctype=None):
 
 # Set the permissions visibility on doc of Appointment
 def get_appointment_permission(user):
+    return " or ".join(conditions) if conditions else ""
+# permission query_conditions for purchase receipt based on warehouse(inward)
+def get_purchase_receipt_permission_for_warehouse(user, doctype=None):
     if not user:
         user = frappe.session.user
 
-    # Allow Administrator and Sales Manager to see all records
-    user_roles = frappe.get_roles(user)
-    if "Administrator" in user_roles or "Sales Manager" in user_roles:
+    # Admin can see all
+    if user == "Administrator":
         return ""
 
-    conditions = []
+    # Allow owner to see their own records
+    # Also allow warehouse match
+    return f"""
+        (`tabPurchase Receipt`.owner = '{user}'
+        or exists(
+            select 1
+            from `tabDefault Warehouse` dw
+            where dw.parenttype = 'Sahayog Settings'
+            and dw.user_id = '{user}'
+            and dw.warehouse = `tabPurchase Receipt`.set_warehouse
+        ))
+    """
 
-   # Extra access for Branch Manager
-    if "Branch Manager" in user_roles:
-        user_branch = frappe.db.get_value("Employee", {"user_id": user}, "branch")
-        if user_branch:
-            # Add condition: show appointments linked to Leads in same branch
-            conditions.append(f"""
-                (
-                    `tabAppointment`.appointment_with = 'Lead'
-                    AND EXISTS (
-                        SELECT 1 FROM `tabLead`
-                        WHERE `tabLead`.name = `tabAppointment`.party
-                        AND `tabLead`.custom_branch = '{user_branch}'
-                    )
-                )
-            """)
-
-    conditions.append(f"`tabAppointment`.owner = '{user}'")
-
-    # Add condition for assigned user (stored as a JSON string in _assign)
-    #conditions.append(f"`tabAppointment`._assign LIKE '%\"{user}\"%'")
-
-    # Add condition for escalated user if used
-    # conditions.append(f"`tabAppointment`.custom_escalated_to = '{user}'")
-
-    return " or ".join(conditions) if conditions else ""
-
-def get_task_permission(user):
-    """Filter Task list based on user roles and assignment"""
+def get_stock_entry_permission(user, doctype=None):
     if not user:
         user = frappe.session.user
 
-    # Roles jo hamesha sab tasks dekh sakte hain
-    allowed_roles = ["System Manager", "Task Manager", "Project Manager"]
-    user_roles = frappe.get_roles(user)
-    if any(role in allowed_roles for role in user_roles):
-        return ""  # no filter, show all tasks
+    if user == "Administrator":
+        return ""
 
-    # Employees: only tasks where they are in _assign
-    # safe LIKE filter
-    return f"""(`tabTask`.`_assign` LIKE '%"{user}"%')"""
-
+    return f"""
+        (
+            `tabStock Entry`.owner = '{user}'
+            or exists(
+                select 1
+                from `tabDefault Warehouse` dw
+                where dw.parenttype = 'Sahayog Settings'
+                and dw.user_id = '{user}'
+                and dw.warehouse = `tabStock Entry`.from_warehouse
+            )
+        )
+    """
