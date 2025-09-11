@@ -1,10 +1,12 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "autoincrement",
  "creation": "2025-08-18 11:37:41.715117",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "enquiry_actions_section",
+  "disciplinary_case",
   "notice_date",
   "suspension_required",
   "column_break_mreb",
@@ -51,7 +53,7 @@
    "fieldname": "findings",
    "fieldtype": "Select",
    "label": "Findings",
-   "options": "\nSatisfactory-Minor\nNot Satisfactory-Major"
+   "options": "Pending\nSatisfactory-Minor\nNot Satisfactory-Major"
   },
   {
    "fieldname": "section_break_dezy",
@@ -71,16 +73,29 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "disciplinary_case",
+   "fieldtype": "Link",
+   "label": "Disciplinary Case",
+   "options": "Disciplinary Case",
+   "read_only": 1
+  },
+  {
+   "fieldname": "enquiry_actions_section",
+   "fieldtype": "Section Break",
+   "label": "Enquiry Actions"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-09 16:26:58.253766",
+ "modified": "2025-09-11 10:54:24.449645",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry",
+ "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
   {
@@ -99,5 +114,6 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
