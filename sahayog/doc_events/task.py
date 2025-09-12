@@ -708,9 +708,6 @@ def prevent_completion_if_lto_incomplete(doc, method):
             """.format("<br>".join(errors)),
             title="Incomplete LTO Training"
         )
-import frappe
-from frappe import _
-import json
 
 @frappe.whitelist()
 def update_project_suppliers(project_name, suppliers):
@@ -742,3 +739,66 @@ def update_project_suppliers(project_name, suppliers):
     project.save()
     frappe.db.commit()
     return {"message": _("Suppliers updated successfully")}
+
+def sync_task_to_loi_on_update(doc, method):
+    """
+    Hook function called on Task update.
+    Syncs data from an approved location to the 'Letter of Intent' document.
+    """
+    # Step 1: Check if this is the correct task to trigger the sync.
+    if doc.subject != "Acquisition of the Property" or not doc.project:
+        return
+
+    # Step 2: Find the approved row in the 'custom_location_details' child table.
+    approved_row = next((d for d in doc.get("custom_location_details") if d.status == "Approved"), None)
+
+    # If no row is approved, there is nothing to sync.
+    if not approved_row:
+        return
+
+    try:
+        # Step 3: Find the 'Letter of Intent' Task and then the corresponding LOI document.
+        loi_task_name = frappe.get_value(
+            "Task",
+            {"project": doc.project, "subject": "Letter of Intent"},
+            "name"
+        )
+        if not loi_task_name:
+            print(f"LOI Sync Skipped: Task with subject 'Letter of Intent' not found in project {doc.project}.")
+            return
+
+        loi_doc_name = frappe.get_value(
+            "Letter of Intent",
+            {"project": doc.project, "task": loi_task_name},
+            "name"
+        )
+        if not loi_doc_name:
+            print(f"LOI Sync Skipped: 'Letter of Intent' document not found for project {doc.project}.")
+            return
+
+        # Step 4: Load the 'Letter of Intent' document.
+        loi_doc = frappe.get_doc("Letter of Intent", loi_doc_name)
+
+        # Get the fields from 'Location Details' to map, excluding some fields.
+        source_fields = frappe.get_meta("Location Details").fields
+        fields_to_exclude = ["location_name", "status", "location_image", "remarks"]
+
+        # Update fields from the approved location row.
+        for field in source_fields:
+            if field.fieldtype not in frappe.model.no_value_fields and field.fieldname not in fields_to_exclude:
+                loi_doc.set(field.fieldname, approved_row.get(field.fieldname))
+
+        # Step 5: Save the document and commit the transaction.
+        loi_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        # Notify the user.
+        frappe.msgprint(
+            f"Successfully synced details to Letter of Intent: <a href='/app/letter-of-intent/{loi_doc_name}' target='_blank'>{loi_doc_name}</a>",
+            title="LOI Synced",
+            indicator="green"
+        )
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Letter of Intent Sync Failed")
+        frappe.msgprint(f"Could not sync to Letter of Intent. Error: {str(e)}", title="Sync Warning", indicator="orange")

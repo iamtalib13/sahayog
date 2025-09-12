@@ -8,7 +8,7 @@ def execute():
                 "fieldname": "custom_location_details_section",
                 "fieldtype": "Section Break",
                 "insert_after": "sb_details",
-                "label": "Location Details",
+                "label": "Location Comparision Details",
                 "depends_on": "eval:!doc.is_template && doc.subject == 'Acquisition of the Property'",
                
             },
