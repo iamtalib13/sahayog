@@ -6,31 +6,64 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "location_details_section",
   "location_name",
-  "address",
-  "location_image",
   "status",
-  "estimate_rent",
-  "security_deposit",
-  "floor",
-  "remarks",
-  "contact_number",
+  "location_image",
+  "personal_information_section",
+  "salutation",
+  "owner_name",
+  "residential_address",
+  "column_break_personal",
+  "aadhar_number",
+  "mobile_number",
+  "email_address",
+  "pan_number",
   "occupation",
-  "carpet_area"
+  "property_details_section",
+  "premises_offered",
+  "carpet_area",
+  "floor",
+  "column_break_property",
+  "rent_per_month",
+  "municipal_taxes",
+  "maintenance",
+  "security_deposit",
+  "financial_terms_section",
+  "leave_and_license",
+  "stamp_duty",
+  "lock_in_period",
+  "exit_clause",
+  "escalations_or_increments",
+  "rent_free_period",
+  "parking_area",
+  "water_supply",
+  "drainage_and_sewerage",
+  "electricity_and_backup",
+  "payment_terms",
+  "column_break_financial",
+  "signage",
+  "arbitration_and_jurisdiction",
+  "landlord_scope_of_work",
+  "split_ratio",
+  "internet_antina",
+  "other_details_section",
+  "remarks"
  ],
  "fields": [
   {
    "fieldname": "location_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Location Name"
+   "label": "Location Name",
+   "reqd": 1
   },
   {
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "status",
+   "label": "Status",
    "options": "Pending\nApproved\nRejected"
   },
   {
@@ -40,20 +73,72 @@
    "label": "Location Image"
   },
   {
-   "fieldname": "estimate_rent",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Estimate Rent"
+   "fieldname": "personal_information_section",
+   "fieldtype": "Section Break",
+   "label": "Personal Information"
   },
   {
-   "fieldname": "address",
+   "fieldname": "salutation",
+   "fieldtype": "Link",
+   "label": "Salutation",
+   "options": "Salutation"
+  },
+  {
+   "fieldname": "owner_name",
    "fieldtype": "Data",
-   "label": "Address"
+   "label": "Owner Name"
   },
   {
-   "fieldname": "security_deposit",
-   "fieldtype": "Currency",
-   "label": "Security Deposit"
+   "fieldname": "residential_address",
+   "fieldtype": "Small Text",
+   "label": "Residential Address",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "column_break_personal",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Data",
+   "label": "Mobile Number"
+  },
+  {
+   "fieldname": "email_address",
+   "fieldtype": "Data",
+   "label": "Email Address"
+  },
+  {
+   "fieldname": "pan_number",
+   "fieldtype": "Data",
+   "label": "PAN Number"
+  },
+  {
+   "fieldname": "occupation",
+   "fieldtype": "Data",
+   "label": "Owner Occupation"
+  },
+  {
+   "fieldname": "property_details_section",
+   "fieldtype": "Section Break",
+   "label": "Property Details"
+  },
+  {
+   "fieldname": "premises_offered",
+   "fieldtype": "Small Text",
+   "label": "Premises Offered",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "carpet_area",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Carpet Area"
   },
   {
    "fieldname": "floor",
@@ -61,30 +146,146 @@
    "label": "Floor"
   },
   {
+   "fieldname": "column_break_property",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rent_per_month",
+   "fieldtype": "Currency",
+   "label": "Rent per Month"
+  },
+  {
+   "fieldname": "municipal_taxes",
+   "fieldtype": "Currency",
+   "label": "Municipal Taxes"
+  },
+  {
+   "fieldname": "maintenance",
+   "fieldtype": "Currency",
+   "label": "Maintenance"
+  },
+  {
+   "fieldname": "security_deposit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Security Deposit"
+  },
+  {
+   "fieldname": "financial_terms_section",
+   "fieldtype": "Section Break",
+   "label": "Financial Terms & Amenities"
+  },
+  {
+   "fieldname": "leave_and_license",
+   "fieldtype": "Data",
+   "label": "Leave and License Period"
+  },
+  {
+   "fieldname": "stamp_duty",
+   "fieldtype": "Data",
+   "label": "Stamp Duty and Registration"
+  },
+  {
+   "fieldname": "lock_in_period",
+   "fieldtype": "Data",
+   "label": "Lock-in Period"
+  },
+  {
+   "fieldname": "exit_clause",
+   "fieldtype": "Small Text",
+   "label": "Exit Clause",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "escalations_or_increments",
+   "fieldtype": "Data",
+   "label": "Escalations or Increments"
+  },
+  {
+   "fieldname": "rent_free_period",
+   "fieldtype": "Data",
+   "label": "Rent Free Period"
+  },
+  {
+   "fieldname": "parking_area",
+   "fieldtype": "Data",
+   "label": "Parking Area"
+  },
+  {
+   "fieldname": "water_supply",
+   "fieldtype": "Data",
+   "label": "Water Supply"
+  },
+  {
+   "fieldname": "drainage_and_sewerage",
+   "fieldtype": "Data",
+   "label": "Drainage and Sewerage"
+  },
+  {
+   "fieldname": "electricity_and_backup",
+   "fieldtype": "Data",
+   "label": "Electricity and Backup"
+  },
+  {
+   "fieldname": "payment_terms",
+   "fieldtype": "Small Text",
+   "label": "Payment Terms of Security Deposit",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "column_break_financial",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "signage",
+   "fieldtype": "Small Text",
+   "label": "Signage",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "arbitration_and_jurisdiction",
+   "fieldtype": "Data",
+   "label": "Arbitration and Jurisdiction"
+  },
+  {
+   "fieldname": "landlord_scope_of_work",
+   "fieldtype": "Small Text",
+   "label": "Landlord Scope of Work",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "split_ratio",
+   "fieldtype": "Small Text",
+   "label": "Split Ratio",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "internet_antina",
+   "fieldtype": "Small Text",
+   "label": "Internet Antenna",
+   "max_height": "80px"
+  },
+  {
+   "fieldname": "other_details_section",
+   "fieldtype": "Section Break",
+   "label": "Other Details"
+  },
+  {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "max_height": "80px"
   },
   {
-   "fieldname": "contact_number",
-   "fieldtype": "Data",
-   "label": "Contact Number"
-  },
-  {
-   "fieldname": "occupation",
-   "fieldtype": "Data",
-   "label": "Occupation"
-  },
-  {
-   "fieldname": "carpet_area",
-   "fieldtype": "Data",
-   "label": "Carpet Area"
+   "fieldname": "location_details_section",
+   "fieldtype": "Section Break",
+   "label": "Location Details"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-03 10:12:04.667684",
+ "modified": "2025-09-12 11:05:48.621636",
  "modified_by": "Administrator",
  "module": "Sahayog Project",
  "name": "Location Details",

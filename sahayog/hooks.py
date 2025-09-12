@@ -259,10 +259,9 @@ doc_events = {
             "sahayog.doc_events.task.prevent_completion_if_lto_incomplete",
         ],
         "on_update": [
-            "sahayog.doc_events.task.update_branch_status_trigger"
-        ],
-        "on_update": [
-             "sahayog.doc_events.task.update_lto_training_table"
+            "sahayog.doc_events.task.update_branch_status_trigger",
+            "sahayog.doc_events.task.sync_task_to_loi_on_update",
+            "sahayog.doc_events.task.update_lto_training_table"
         ],
         "after_insert": [
             "sahayog.doc_events.task.create_letter_of_intent",
