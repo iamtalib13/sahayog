@@ -1,6 +1,6 @@
-frappe.listview_settings["Purchase Receipt"] = {
+frappe.listview_settings["Stock Entry"] = {
   onload(listview) {
-    listview.page.set_title("Inward List");
+    listview.page.set_title("Outward List");
     $("span.sidebar-toggle-btn").hide();
     $(".col-lg-2.layout-side-section").hide();
   },
@@ -8,8 +8,8 @@ frappe.listview_settings["Purchase Receipt"] = {
   refresh(listview) {
     const btn = listview.page.btn_primary;
     if (btn) {
-      btn.find("span.hidden-xs").text("Add Inward");
-      btn.attr("data-label", "Add Inward");
+      btn.find("span.hidden-xs").text("Add Outward");
+      btn.attr("data-label", "Add Outward");
     }
   },
 };

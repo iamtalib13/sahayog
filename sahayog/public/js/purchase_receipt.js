@@ -4,6 +4,7 @@ frappe.ui.form.on("Purchase Receipt", {
     frm.trigger("customize_ui");
     frm.trigger("hide_fields");
     frm.trigger("set_page_title");
+    frm.trigger("hide_rejected_quantity_and_button");
   },
 
   onload: function (frm) {
@@ -86,4 +87,36 @@ frappe.ui.form.on("Purchase Receipt", {
       console.log("Hidden field/tab:", fieldname);
     });
   },
+
+  hide_rejected_quantity_and_button: function(frm) {
+    setTimeout(() => {
+      // Hide header
+      $('[data-fieldname="rejected_qty"]').closest('.grid-header-row,[class^="col"]').hide();
+      // Hide cells
+      $('[data-fieldname="rejected_qty"]').hide();
+
+      // Hide "Get Items From" button by its data-label/text
+      $('button[data-label*="Get Items From"]').hide();
+
+      // Hide "Create" button (dropdown and single)
+      $('button[data-label*="Create"]').hide();
+
+      // Hide "Preview" button
+      $('button[data-label*="Preview"]').hide();
+
+      //hide view stock button
+      $('button[data-label*="View"]').hide();
+
+      //hide status button
+      $('button[data-label*="Status"]').hide();
+
+      // Optionally: Hide by exact button text if data-label not set
+      $('button:contains("Get Items From")').hide();
+      $('button:contains("Create")').hide();
+      $('button:contains("Preview")').hide();
+      $('button:contains("View")').hide();
+      $('button:contains("Status")').hide();
+    }, 200);
+    
+  }
 });
