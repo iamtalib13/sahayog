@@ -4,10 +4,14 @@ frappe.ui.form.on("Stock Entry", {
     frm.trigger("hide_fields");
     frm.trigger("set_page_title");
     frm.trigger("hide_rejected_quantity");
+    frm.trigger("set_child_table_read_only");
+
   },
 
   onload: function (frm) {
     frm.trigger("set_page_title");
+    frm.trigger("set_metrial_transfer_default");
+
   },
 
   set_page_title: function (frm) {
@@ -21,6 +25,41 @@ frappe.ui.form.on("Stock Entry", {
     if (cur_page && cur_page.set_title) {
       cur_page.set_title(custom_title);
     }
+  },
+
+  set_metrial_transfer_default: function(frm) {
+    // Allowed values (same as in Stock Entry Type DocType)
+    if (frappe.session.user == "Administrator") {
+    
+    const allowed_types = [
+      { label: "Material Transfer", value: "Material Transfer" },
+      { label: "Material Issue", value: "Material Issue" }
+    ];
+
+    // Restrict the Link field to only these values
+    frm.fields_dict["stock_entry_type"].get_query = function() {
+      return {
+        filters: {
+          name: ["in", allowed_types.map(opt => opt.value)]
+        }
+      };
+    };
+
+    // Auto-select default
+    if (frm.is_new()) {
+      frm.set_value("stock_entry_type", "Material Transfer");
+    }
+  }  
+
+  },
+  set_child_table_read_only: function(frm) {
+    console.log("Setting child table fields to read-only");
+    const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
+    if (!grid) return;
+
+    // disable editing for these child-table fields (works for existing & new rows)
+    grid.toggle_enable('s_warehouse', false);
+    grid.toggle_enable('t_warehouse', false);    
   },
 
   customize_ui: function (frm) {
@@ -50,6 +89,7 @@ frappe.ui.form.on("Stock Entry", {
       "naming_series",
       "add_to_transit",
       "source_warehouse_address",
+      "target_warehouse_address",
       // Tabs/Sections
       "supplier_info_tab",
       "accounting_dimensions_section",

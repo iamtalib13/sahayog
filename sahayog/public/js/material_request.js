@@ -6,6 +6,7 @@ frappe.ui.form.on("Material Request", {
     frm.toggle_reqd("set_warehouse", true);
     frm.set_df_property("project", "hidden", 1);
     frm.set_df_property("cost_center", "hidden", 1);
+    frm.trigger("hide_fields");
   },
 
   onload: function (frm) {
@@ -111,6 +112,30 @@ frappe.ui.form.on("Material Request", {
       frm.set_df_property("set_warehouse", "read_only", false); // ✅ Reset read-only
     }
   },
+hide_fields: function(frm) {
+  const fields_to_hide = [
+    "scan_barcode",
+    // Tabs/Sections
+    "terms_tab",
+    "more_info_tab",
+    "connections_tab"
+    // Add additional fieldnames or tab break fieldnames as needed
+  ];
+
+  fields_to_hide.forEach((fieldname) => {
+    frm.set_df_property(fieldname, "hidden", true); // Hide the field
+
+    // Hide corresponding tab break by selector
+    // Use correct prefix for Material Request doctype tabs!
+    const tab_selector = `#material-request-${fieldname}-tab`;
+    const $tab = $(tab_selector);
+    if ($tab.length) {
+      $tab.hide();
+      console.log("Hidden tab:", tab_selector);
+    }
+  });
+}
+
 });
 
 frappe.ui.form.on("Material Request Item", {
@@ -123,4 +148,5 @@ frappe.ui.form.on("Material Request Item", {
       // console.error("Row is undefined.");
     }
   },
+  
 });
