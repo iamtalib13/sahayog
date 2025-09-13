@@ -59,9 +59,12 @@ doctype_js = {
     "Product Bundle": "public/js/product_bundle.js",
     "BOM": "public/js/bom.js",
     "Purchase Receipt": "public/js/purchase_receipt.js",
+    "Stock Entry": "public/js/stock_entry.js",
 }
 doctype_list_js = {
-    "Purchase Receipt": "public/js/purchase_receipt_list.js"
+    "Purchase Receipt": "public/js/purchase_receipt_list.js",
+    "Stock Entry": "public/js/stock_entry_list.js",
+    
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = [
@@ -299,9 +302,9 @@ doc_events = {
         "validate": "sahayog.doc_events.purchase_order.validate_store_incharge_po",
     },
     "Purchase Receipt": {
-        "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname",
-        "before_save": "sahayog.doc_events.purchase_order.sync_project_field",
-        "validate": "sahayog.doc_events.purchase_receipt.validate_store_incharge",
+        # "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname",
+        # "before_save": "sahayog.doc_events.purchase_order.sync_project_field",
+        # "validate": "sahayog.doc_events.purchase_receipt.validate_store_incharge",
     },
     "Department":{
         "autoname": "sahayog.doc_events.department.department_name"

@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"g6Xa5dwrLs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Inventory Management</b></span>\",\"col\":12}},{\"id\":\"5-I32i40tn\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":3}},{\"id\":\"nmhvF-pSV5\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"iPTK67CE6P\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h3\\\">Report</span>\",\"col\":12}},{\"id\":\"8xD_Wt22x8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":3}},{\"id\":\"cY1FrPCTIl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}}]",
+ "content": "[{\"id\":\"g6Xa5dwrLs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Inventory Management</b></span>\",\"col\":12}},{\"id\":\"5-I32i40tn\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":3}},{\"id\":\"nmhvF-pSV5\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"cRRhcZ7Ogl\",\"type\":\"card\",\"data\":{\"card_name\":\"Requests\",\"col\":4}},{\"id\":\"iPTK67CE6P\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h3\\\">Report</span>\",\"col\":12}},{\"id\":\"8xD_Wt22x8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":3}},{\"id\":\"cY1FrPCTIl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}}]",
  "creation": "2025-08-21 11:35:39.977299",
  "custom_blocks": [],
  "docstatus": 0,
@@ -59,9 +59,28 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Requests",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Material Request",
+   "link_count": 0,
+   "link_to": "Material Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-09-11 14:41:25.631191",
+ "modified": "2025-09-12 16:48:27.248541",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Inventory Management",
