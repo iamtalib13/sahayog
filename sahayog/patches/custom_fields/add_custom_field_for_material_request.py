@@ -3,19 +3,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 def execute():
     fields = {
-        "Material Request": [
-            {
-                "fieldname": "custom_store_incharge",
-                "fieldtype": "Link",
-                "options": "Store Incharge",
-                "insert_after": "material_request_type",
-                "label": "Store Incharge",
-                "reqd": 1,
-                
-            },  
-
-            
-             
+        "Material Request": [           
             {
                 "fieldname": "custom_request_for",
                 "fieldtype": "Select",
@@ -44,7 +32,25 @@ def execute():
                 "label": "Project",
                 "depends_on": "eval:doc.custom_request_for == 'Project'",
                 "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
-            },     
+            }, 
+              {
+                "fieldname": "custom_supplier",
+                "fieldtype": "Link",
+                "options": "Supplier",
+                "insert_after": "custom_project",
+                "label": "Vendor",
+                "depends_on": "eval:doc.custom_request_for == 'Project'",  # Optional: show only for Project
+                "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
+            },    
+            {
+                "fieldname": "custom_product_bundle",
+                "fieldtype": "Link",
+                "options": "Product Bundle",
+                "insert_after": "custom_supplier",
+                "label": "Product Bundle",
+                "depends_on": "eval:doc.custom_request_for == 'Project'",
+                "mandatory_depends_on": "eval:doc.custom_request_for == 'Project'",
+            },
         ],
     }
     create_custom_fields(fields)
