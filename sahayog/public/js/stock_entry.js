@@ -127,3 +127,72 @@ frappe.ui.form.on("Stock Entry", {
   }
 
 });
+
+frappe.ui.form.on("Stock Entry", {
+  refresh: function(frm) {
+    // Add a custom button
+    frm.add_custom_button("Show Stock Balance", () => {
+      if (!frm.doc.to_warehouse) {
+        frappe.msgprint("Please select a Target Warehouse (to_warehouse).");
+        return;
+      }
+
+      if (!frm.doc.items || frm.doc.items.length === 0) {
+        frappe.msgprint("Please add items in the table.");
+        return;
+      }
+
+      // Collect all item codes from child table
+      const item_codes = frm.doc.items.map(row => row.item_code);
+
+      frappe.call({
+        method: "sahayog.procurement.api.stocke_entry_report.get_available_qty"
+,
+        args: {
+          warehouse: frm.doc.to_warehouse,
+          item_codes: item_codes  // pass array of item codes
+        },
+        callback: function(r) {
+          if (r.message) {
+            show_stock_balance_dialog(r.message);
+          }
+        }
+      });
+    });
+  }
+});
+
+function show_stock_balance_dialog(bins) {
+  let html = `<table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Item Code</th>
+        <th>Warehouse</th>
+        <th>Actual Qty</th>
+        <th>Projected Qty</th>
+      </tr>
+    </thead>
+    <tbody>`;
+  
+  bins.forEach(bin => {
+    html += `<tr>
+      <td>${bin.item_code}</td>
+      <td>${bin.warehouse}</td>
+      <td>${bin.actual_qty}</td>
+      <td>${bin.projected_qty}</td>
+    </tr>`;
+  });
+  
+  html += `</tbody></table>`;
+
+  let d = new frappe.ui.Dialog({
+    title: 'Stock Balance Report',
+    size: 'large',
+    fields: [
+      {fieldtype: 'HTML', fieldname: 'stock_balance_html'},
+    ]
+  });
+
+  d.fields_dict.stock_balance_html.$wrapper.html(html);
+  d.show();
+}
