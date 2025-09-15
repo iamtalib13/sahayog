@@ -89,27 +89,6 @@ def execute():
                 "read_only": 1,
                 "depends_on": "eval:doc.branch_proposal"
             },
-              {
-                "fieldname": "custom_supplier_section_break",
-                "fieldtype": "Section Break",
-                "insert_after": "custom_zone",
-                "label": "Supplier Details",              
-                
-            },
-
-            {
-                "fieldname": "custom_supplier_section",
-                "fieldtype": "Section Break",
-                "insert_after": "custom_supplier_section_break",
-                "label": "Supplier Allocation Details",
-            },
-             {
-                "fieldname": "custom_supplier_details",
-                "fieldtype": "Table",
-                "insert_after": "custom_supplier_section",
-                "options": "Project Suppliers",
-                "label": "Supplier Allocation Details",
-            },      
         ],
     }
 

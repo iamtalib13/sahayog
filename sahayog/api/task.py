@@ -1,5 +1,7 @@
 import frappe
 import json
+from frappe.utils import today
+
 
 @frappe.whitelist()
 def update_location_details(parent_docname, location_name, new_values_json):
@@ -51,3 +53,60 @@ def normalize_value(value, fieldname, numeric_fields):
         if isinstance(value, str):
             return value.strip()
         return value
+    
+
+@frappe.whitelist()
+def allocate_suppliers_and_create_mr(project_name, supplier, product_bundle):
+    # Check if MR already exists with same project, supplier, and product bundle
+    existing_mr = frappe.get_all(
+        "Material Request",
+        filters={
+            "custom_project": project_name,
+            "custom_supplier": supplier,
+            "custom_product_bundle": product_bundle,
+        },
+        fields=["name"]
+    )
+
+    if existing_mr:
+        return {
+            "status": "exists",
+            "message": f"Material Request {existing_mr[0].name} already exists for this Supplier & Product Bundle."
+        }
+
+    project = frappe.get_doc("Project", project_name)
+
+    # Create Material Request
+    mr = frappe.new_doc("Material Request")
+    mr.update({
+        "material_request_type": "Purchase",
+        "project": project_name,
+        "status": "Draft",
+        "custom_product_bundle": product_bundle,
+        "custom_request_for": "Project",
+        "custom_project": project_name,
+        "set_warehouse": project.custom_project_warehouse or "",
+        "schedule_date": today(),
+        "custom_supplier": supplier
+    })
+
+    # Add items from Product Bundle
+    bundle = frappe.get_doc("Product Bundle", product_bundle)
+    for item in bundle.items:
+        mr.append("items", {
+            "item_code": item.item_code,
+            "qty": item.qty,
+            "uom": item.uom,
+            "required_by": today(),
+            "description": item.item_code or "",
+            "uom_conversion_factor": 1,
+        })
+
+    mr.insert()
+    frappe.db.commit()
+
+    return {
+        "status": "created",
+        "message": f"Material Request {mr.name} created successfully!",
+        "mr_name": mr.name
+    }
