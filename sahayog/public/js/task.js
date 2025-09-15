@@ -107,9 +107,6 @@ frappe.ui.form.on("Task", {
         });
     }
   },
-
-  onload: function (frm) {},
-
   async hide_fields(frm) {
     const fields_to_hide = [
       "is_template",
@@ -136,107 +133,102 @@ frappe.ui.form.on("Task", {
       });
     }
   },
+
   async supplier_allocation(frm) {
+    frm.set_intro(""); // Clear any existing intro
     if (!frm.doc.project) {
       frm.set_intro("Please select a Project first.", "orange");
       return;
     }
 
-    // -----------------------------
-    // 1️⃣ Fetch Project and existing suppliers
-    // -----------------------------
-    let project = await frappe.db.get_doc("Project", frm.doc.project);
-    let existing_suppliers = project.custom_supplier_details || [];
+    // Fetch all Material Requests linked to this project
+    let mr_list = await frappe.db.get_list("Material Request", {
+      fields: ["name", "custom_supplier"],
+      filters: {
+        custom_project: frm.doc.project,
+      },
+    });
 
-    // -----------------------------
-    // 2️⃣ Set intro with clickable links
-    // -----------------------------
-    if (existing_suppliers.length > 0) {
-      let html = `<ul style="margin-top:8px;">${existing_suppliers
-        .map(
-          (r, idx) =>
-            `<li>
-                ${idx + 1}. 
-                <a href="#Form/Supplier/${
-                  r.supplier
-                }" onclick="frappe.set_route('Form','Supplier','${
-              r.supplier
-            }'); return false;">
-                    ${r.supplier}
-                </a>
-            </li>`
-        )
-        .join("")}</ul>`;
+    if (mr_list.length > 0) {
+      // Build intro with clickable supplier + MR links
+      let html = mr_list
+        .map((mr) => {
+          let supplier_link = mr.custom_supplier
+            ? `<a href="#Form/Supplier/${mr.custom_supplier}" onclick="frappe.set_route('Form','Supplier','${mr.custom_supplier}'); return false;">
+                        ${mr.custom_supplier}
+                   </a>`
+            : "No Supplier";
+
+          return `${supplier_link} | MR: <a href="#Form/Material Request/${mr.name}">${mr.name}</a>`;
+        })
+        .join("<br>");
 
       frm.set_intro(
-        `This Project has ${existing_suppliers.length} supplier(s) Allocated: ${html}`,
+        `Material Requests created for this Project:<br>${html}`,
         "green"
       );
     } else {
-      frm.set_intro("No suppliers linked in the Project.", "orange");
+      frm.set_intro("No Material Request created with any supplier.", "orange");
     }
 
-    // -----------------------------
-    // 3️⃣ Always add custom button
-    // -----------------------------
-    frm.add_custom_button("Allocate Vendors", async () => {
+    // Add custom button
+    frm.add_custom_button("Allocate Vendor & Create MR", async () => {
       const dialog = new frappe.ui.Dialog({
-        title: __("Allocate Vendors"),
+        title: __("Allocate Vendor & Create Material Request"),
         fields: [
           {
-            fieldname: "suppliers",
-            fieldtype: "Table",
-            label: __("Suppliers"),
-            in_place_edit: true,
+            fieldname: "product_bundle",
+            fieldtype: "Link",
+            label: __("Product Bundle"),
+            options: "Product Bundle",
             reqd: 1,
-            fields: [
-              {
-                fieldname: "supplier",
-                label: __("Supplier"),
-                fieldtype: "Link",
-                options: "Supplier",
-                in_list_view: 1,
-                reqd: 1,
-              },
-            ],
-            data: existing_suppliers.map((r) => ({ supplier: r.supplier })),
+          },
+          {
+            fieldname: "supplier",
+            fieldtype: "Link",
+            label: __("Vendor"),
+            options: "Supplier",
+            reqd: 1,
           },
         ],
-        primary_action_label: __("Submit"),
+        primary_action_label: __("Create Material Request"),
         primary_action: async function (values) {
-          // -----------------------------
-          // 4️⃣ Filter empty/invalid suppliers
-          // -----------------------------
-          let supplier_list = values.suppliers
-            .map((r) => r.supplier)
-            .filter((s) => s && s.trim() !== "");
-
-          if (supplier_list.length === 0) {
-            frappe.msgprint("Please add at least one valid supplier.");
+          if (!values.product_bundle) {
+            frappe.msgprint("Please select a Product Bundle.");
             return;
           }
-          console.log("Suppliers to allocate:", supplier_list);
-          // -----------------------------
-          // 5️⃣ Call Python API to update child table
-          // -----------------------------
+
+          if (!values.supplier) {
+            frappe.msgprint("Please select a Vendor.");
+            return;
+          }
+
           try {
             await frappe.call({
-              method: "sahayog.doc_events.task.update_project_suppliers",
+              method: "sahayog.api.task.allocate_suppliers_and_create_mr",
               args: {
                 project_name: frm.doc.project,
-                suppliers: JSON.stringify(supplier_list), // <- important
+                supplier: values.supplier,
+                product_bundle: values.product_bundle,
               },
               callback: function (r) {
-                frappe.show_alert({
-                  message: "Suppliers updated successfully!",
-                  indicator: "green",
-                });
-                frm.trigger("supplier_allocation");
+                if (r.message.status === "exists") {
+                  frappe.msgprint({
+                    title: __("Already Exists"),
+                    message: r.message.message,
+                    indicator: "orange",
+                  });
+                } else if (r.message.status === "created") {
+                  frappe.show_alert({
+                    message: r.message.message,
+                    indicator: "green",
+                  });
+                  frm.trigger("supplier_allocation");
+                }
               },
             });
 
             dialog.hide();
-            window.location.reload();
           } catch (err) {
             frappe.msgprint({
               title: __("Error"),
@@ -276,29 +268,6 @@ frappe.ui.form.on("Task", {
   async collapsible_false(frm) {
     if (frm.fields_dict["sb_timeline"]) {
       frm.fields_dict["sb_timeline"].collapse(false);
-    }
-  },
-});
-
-// html field
-frappe.ui.form.on("Task", {
-  refresh: function (frm) {
-    if (
-      frm.doc.subject === "Acquisition of the Property" &&
-      !frm.doc.is_template
-    ) {
-      if (
-        frappe.session.user != "Administrator" &&
-        !frappe.user.has_role("System Manager")
-      ) {
-        frm.fields_dict.custom_location_details.$wrapper
-          .closest(".form-group")
-          .hide();
-      }
-    }
-
-    if (frm.doc.subject === "Manpower Recruitment" && !frm.doc.is_template) {
-      render_manpower_summary(frm);
     }
   },
 });
@@ -344,13 +313,6 @@ function render_manpower_summary(frm) {
   frm.fields_dict.manpower_summary_html.$wrapper.html(html);
 }
 
-frappe.ui.form.on("Task", {
-  refresh(frm) {
-    if (!frm.doc.name || frm.doc.__islocal) return;
-    setupUserAssignment(frm, "Task", frm.doc.name);
-  },
-});
-
 // ========== CUSTOM LOCATION DETAILS FOR TASK ==========
 frappe.ui.form.on("Task", {
   refresh: function (frm) {
@@ -358,6 +320,27 @@ frappe.ui.form.on("Task", {
       handleCustomLocationVisibility(frm);
       renderCustomLocationUIForTask(frm);
       addCustomCSS();
+    }
+
+    if (!frm.doc.name || frm.doc.__islocal) return;
+    setupUserAssignment(frm, "Task", frm.doc.name);
+
+    if (
+      frm.doc.subject === "Acquisition of the Property" &&
+      !frm.doc.is_template
+    ) {
+      if (
+        frappe.session.user != "Administrator" &&
+        !frappe.user.has_role("System Manager")
+      ) {
+        frm.fields_dict.custom_location_details.$wrapper
+          .closest(".form-group")
+          .hide();
+      }
+    }
+
+    if (frm.doc.subject === "Manpower Recruitment" && !frm.doc.is_template) {
+      render_manpower_summary(frm);
     }
   },
 });
@@ -482,6 +465,7 @@ function buildLocationTableHTML(frm, groupedLocations) {
     `;
   return html;
 }
+
 function buildLocationRowHTML(frm, location, locationItems) {
   const encodedLocation = encodeURIComponent(location);
 
