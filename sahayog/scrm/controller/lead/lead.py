@@ -1,5 +1,6 @@
 import frappe
 
+# Function to update employee details in the Lead document
 def update_employee_details(doc, method):
     if frappe.session.user != "Administrator":
         try:
@@ -29,3 +30,19 @@ def update_employee_details(doc, method):
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Lead Update Employee Details Error")
             frappe.throw("An error occurred while updating employee details.")
+
+# Function to set the 'Is Operation Lead' field before saving the document
+def set_is_operation_lead(doc, method):
+    user = frappe.session.user
+
+    # Skip Administrator
+    if user == "Administrator":
+        return
+
+    roles = frappe.get_roles(user)
+
+    # If user has the role "Operation Executive", set flag
+    if "Operations Executive" in roles:
+        doc.custom_is_operation_lead = 1
+    else:
+        doc.custom_is_operation_lead = 0

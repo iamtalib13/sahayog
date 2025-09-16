@@ -64,6 +64,13 @@ def execute():
                 "insert_after": "status",
                 "depends_on": "eval:doc.status == 'Not Interested'",
                 "mandatory_depends_on": "eval:doc.status == 'Not Interested'",
+            },
+            {
+                "label": "Is Operation Lead",
+                "fieldname": "custom_is_operation_lead",
+                "fieldtype": "Check",
+                "default": 0,
+                "insert_after": "custom_zone",
             }
 
         ],
