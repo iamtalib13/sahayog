@@ -133,9 +133,20 @@ frappe.ui.form.on("Task", {
       });
     }
   },
-
   async supplier_allocation(frm) {
     frm.set_intro(""); // Clear any existing intro
+
+    // Map docstatus to human-readable text
+    const status_map = {
+      0: "Draft",
+      1: "Submitted",
+      2: "Cancelled",
+    };
+    const status_text = status_map[frm.doc.docstatus] || "Unknown";
+
+    // Show the current status at the top
+    frm.set_intro(`Status: ${status_text}`, "blue");
+
     if (!frm.doc.project) {
       frm.set_intro("Please select a Project first.", "orange");
       return;
@@ -143,7 +154,7 @@ frappe.ui.form.on("Task", {
 
     // Fetch all Material Requests linked to this project
     let mr_list = await frappe.db.get_list("Material Request", {
-      fields: ["name", "custom_supplier"],
+      fields: ["name", "custom_supplier", "docstatus"],
       filters: {
         custom_project: frm.doc.project,
       },
@@ -155,23 +166,27 @@ frappe.ui.form.on("Task", {
         .map((mr) => {
           let supplier_link = mr.custom_supplier
             ? `<a href="#Form/Supplier/${mr.custom_supplier}" onclick="frappe.set_route('Form','Supplier','${mr.custom_supplier}'); return false;">
-                        ${mr.custom_supplier}
-                   </a>`
+                            ${mr.custom_supplier}
+                      </a>`
             : "No Supplier";
 
-          return `${supplier_link} | MR: <a href="#Form/Material Request/${mr.name}">${mr.name}</a>`;
+          const mr_status = status_map[mr.docstatus] || "Unknown";
+          return `${supplier_link} | MR: <a href="/app/material-request/${mr.name}">${mr.name} (${mr_status})</a>`;
         })
         .join("<br>");
 
       frm.set_intro(
-        `Material Requests created for this Project:<br>${html}`,
+        `Status: ${status_text}<br>Material Requests created for this Project:<br>${html}`,
         "green"
       );
     } else {
-      frm.set_intro("No Material Request created with any supplier.", "orange");
+      frm.set_intro(
+        `Status: ${status_text}<br>No Material Request created with any supplier.`,
+        "orange"
+      );
     }
 
-    // Add custom button
+    // Add custom button (same as before)
     frm.add_custom_button("Allocate Vendor & Create MR", async () => {
       const dialog = new frappe.ui.Dialog({
         title: __("Allocate Vendor & Create Material Request"),
