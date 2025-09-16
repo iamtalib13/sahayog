@@ -1,6 +1,9 @@
 frappe.ui.form.on("Lead", {
   refresh(frm) {
-    // Add "Create Appointment" button
+    // Hide the naming series field
+    $('div[data-fieldname="naming_series"]').hide();
+
+    // if the form is not new, customize buttons
     if (!frm.is_new()) {
       // Remove the default "Customer" button under the "Create" group
       setTimeout(() => {
@@ -31,9 +34,14 @@ frappe.ui.form.on("Lead", {
       "last_name",
       "job_title",
       "type",
+      "gender",
+      "email_id",
+      "lead_owner",
+      "salutation",
       "request_type",
       "website",
       "phone",
+      "whatsapp_no",
       "phone_ext",
       "organization_section",
       "other_info_tab",
@@ -41,6 +49,8 @@ frappe.ui.form.on("Lead", {
       "address_html",
       "contact_html",
       "dashboard_tab",
+      "address_section",
+      "custom_lead_owner_details_section",
     ]);
 
     frm.set_df_property("first_name", "label", "Full Name");

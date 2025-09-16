@@ -310,6 +310,7 @@ doc_events = {
     "Lead": {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
+            "sahayog.scrm.controller.lead.lead.set_is_operation_lead"
         ]
     },   
 }

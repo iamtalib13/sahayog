@@ -1,0 +1,49 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"A-APg1VdCd\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM-Opertions</span>\",\"col\":12}},{\"id\":\"3swFx5mIXe\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Lead\",\"col\":3}},{\"id\":\"RvQuKIRiRd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Operations Leads\",\"col\":3}}]",
+ "creation": "2025-09-15 12:32:34.698187",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "CRM-Opertions",
+ "links": [],
+ "modified": "2025-09-15 16:47:13.172608",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "CRM-Opertions",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Employee CRM",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Operations Executive"
+  }
+ ],
+ "sequence_id": 91.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Operations Leads",
+   "link_to": "Lead",
+   "stats_filter": "[[\"Lead\",\"custom_is_operation_lead\",\"=\",1,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "New",
+   "label": "New Lead",
+   "link_to": "Lead",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "CRM-Opertions"
+}
