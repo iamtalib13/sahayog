@@ -144,9 +144,6 @@ frappe.ui.form.on("Task", {
     };
     const status_text = status_map[frm.doc.docstatus] || "Unknown";
 
-    // Show the current status at the top
-    frm.set_intro(`Status: ${status_text}`, "blue");
-
     if (!frm.doc.project) {
       frm.set_intro("Please select a Project first.", "orange");
       return;
