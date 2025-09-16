@@ -29,7 +29,6 @@ frappe.ui.form.on("Stock Entry", {
 
   set_metrial_transfer_default: function(frm) {
     // Allowed values (same as in Stock Entry Type DocType)
-    if (frappe.session.user == "Administrator") {
     
     const allowed_types = [
       { label: "Material Transfer", value: "Material Transfer" },
@@ -49,7 +48,6 @@ frappe.ui.form.on("Stock Entry", {
     if (frm.is_new()) {
       frm.set_value("stock_entry_type", "Material Transfer");
     }
-  }  
 
   },
   set_child_table_read_only: function(frm) {
