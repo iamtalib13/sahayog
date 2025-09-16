@@ -1,0 +1,18 @@
+[
+ {
+  "default_value": null,
+  "doc_type": "Material Request",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "schedule_date",
+  "is_system_generated": 0,
+  "modified": "2025-09-13 12:52:01.299826",
+  "module": "Procurement",
+  "name": "Material Request-schedule_date-reqd",
+  "property": "reqd",
+  "property_type": null,
+  "row_name": null,
+  "value": "1"
+ }
+]
