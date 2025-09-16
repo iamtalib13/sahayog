@@ -12,7 +12,7 @@
   "loc_perm_settings_section",
   "location_table_permissions",
   "inventory_tab",
-  "table_zszk"
+  "wh_dept_map"
  ],
  "fields": [
   {
@@ -53,7 +53,7 @@
    "label": "Inventory"
   },
   {
-   "fieldname": "table_zszk",
+   "fieldname": "wh_dept_map",
    "fieldtype": "Table",
    "options": "Default Warehouse"
   }
@@ -62,7 +62,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-15 13:06:01.539564",
+ "modified": "2025-09-16 17:00:02.154063",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
