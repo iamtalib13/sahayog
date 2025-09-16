@@ -8,6 +8,10 @@
  "field_order": [
   "employee_id",
   "employee_name",
+  "branch_id",
+  "branch_name",
+  "zone",
+  "designation",
   "email"
  ],
  "fields": [
@@ -32,13 +36,40 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Email"
+  },
+  {
+   "fetch_from": "employee_id.branch",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Branch ID"
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Branch Name"
+  },
+  {
+   "fetch_from": "employee_id.custom_zone",
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Zone"
+  },
+  {
+   "fetch_from": "employee_id.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Designation"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-11 15:54:07.979863",
+ "modified": "2025-09-13 10:58:12.863855",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Against Employee Item",

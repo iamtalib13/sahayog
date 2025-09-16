@@ -3,7 +3,7 @@
 
 # import frappe
 from frappe.model.document import Document
-
+import frappe
 
 class Enquiry(Document):
-	pass
+    pass
