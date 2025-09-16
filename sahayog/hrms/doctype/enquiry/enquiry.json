@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "autoincrement",
+ "autoname": "format:{disciplinary_case}-{##}",
  "creation": "2025-08-18 11:37:41.715117",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -9,20 +9,21 @@
   "disciplinary_case",
   "notice_date",
   "suspension_required",
+  "status",
   "column_break_mreb",
   "attendance",
   "explanation_provided",
   "findings",
   "section_break_dezy",
-  "remark",
-  "amended_from"
+  "remark"
  ],
  "fields": [
   {
    "fieldname": "notice_date",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Notice Date"
+   "label": "Notice Date",
+   "reqd": 1
   },
   {
    "fieldname": "suspension_required",
@@ -53,7 +54,7 @@
    "fieldname": "findings",
    "fieldtype": "Select",
    "label": "Findings",
-   "options": "Pending\nSatisfactory-Minor\nNot Satisfactory-Major"
+   "options": "\nSatisfactory-Minor\nNot Satisfactory-Major"
   },
   {
    "fieldname": "section_break_dezy",
@@ -63,16 +64,6 @@
    "fieldname": "remark",
    "fieldtype": "Text",
    "label": "Remark"
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Enquiry",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
   },
   {
    "fieldname": "disciplinary_case",
@@ -85,17 +76,23 @@
    "fieldname": "enquiry_actions_section",
    "fieldtype": "Section Break",
    "label": "Enquiry Actions"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nOpen\nIn-Progress\nClosed"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "is_submittable": 1,
  "links": [],
- "modified": "2025-09-11 10:54:24.449645",
+ "modified": "2025-09-12 11:57:32.407602",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry",
- "naming_rule": "Autoincrement",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -111,6 +108,7 @@
    "write": 1
   }
  ],
+ "quick_entry": 1,
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",

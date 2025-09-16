@@ -1,24 +1,39 @@
 {
  "actions": [],
- "autoname": "naming_series:",
+ "autoname": "format:DC-{####}",
  "creation": "2025-08-18 11:19:16.961586",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "issue_show_cause_notice_tab",
   "case_information_section",
-  "naming_series",
+  "case_id",
+  "category",
+  "issue_occurrence_date",
+  "issue_report_to_hr",
+  "column_break_bnqh",
   "case_type",
-  "column_break_zzki",
-  "case_raised_by",
-  "case_raised_by_employee_name",
+  "level",
+  "suspension_required",
+  "column_break_rlgh",
   "status",
-  "section_break_xwlh",
-  "case_against_employee",
+  "amount_of_fraud",
+  "document_upload",
   "section_break_gtkv",
   "description",
-  "attachments",
+  "section_break_xwlh",
+  "case_against_employee",
+  "section_break_vgzh",
+  "hr_employee_id",
+  "column_break_pico",
+  "hr_name",
+  "section_break_gxrw",
+  "remarks",
   "section_break_fakz",
-  "enquiry_item"
+  "enquiry_item_html",
+  "schedule_enquiry_btn",
+  "suspension_order_tab",
+  "issue_suspension_letter"
  ],
  "fields": [
   {
@@ -30,22 +45,11 @@
    "reqd": 1
   },
   {
-   "fieldname": "case_raised_by",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "Case Raised By",
-   "options": "Employee"
-  },
-  {
    "fieldname": "case_against_employee",
    "fieldtype": "Table",
    "label": "Case Against Employees",
    "options": "Case Against Employee Item",
    "reqd": 1
-  },
-  {
-   "fieldname": "column_break_zzki",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_gtkv",
@@ -55,7 +59,7 @@
   {
    "fieldname": "description",
    "fieldtype": "Text Editor",
-   "label": "Description",
+   "label": "Issue In Details",
    "reqd": 1
   },
   {
@@ -64,31 +68,9 @@
    "label": "Employees Involved"
   },
   {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Case ID",
-   "no_copy": 1,
-   "options": "DC-",
-   "read_only": 1,
-   "set_only_once": 1
-  },
-  {
    "fieldname": "section_break_fakz",
    "fieldtype": "Section Break",
    "label": "Enquiry Details"
-  },
-  {
-   "fieldname": "enquiry_item",
-   "fieldtype": "Table",
-   "label": "Enquiry",
-   "options": "Enquiry Item",
-   "read_only": 1
-  },
-  {
-   "fieldname": "attachments",
-   "fieldtype": "Attach",
-   "label": "Attachments"
   },
   {
    "fieldname": "case_information_section",
@@ -96,19 +78,118 @@
    "label": "Case Information"
   },
   {
-   "fetch_from": "case_raised_by.employee_name",
-   "fieldname": "case_raised_by_employee_name",
-   "fieldtype": "Data",
-   "label": "Case Raised By Employee Name",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
    "default": "Open",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
    "options": "\nOpen\nIn Progress\nOn Hold\nClosed\nAction Taken"
+  },
+  {
+   "fieldname": "schedule_enquiry_btn",
+   "fieldtype": "Button",
+   "label": "Schedule Enquiry"
+  },
+  {
+   "fieldname": "enquiry_item_html",
+   "fieldtype": "HTML",
+   "label": "Enquiry"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "\nMajor\nMinor"
+  },
+  {
+   "fieldname": "issue_occurrence_date",
+   "fieldtype": "Date",
+   "label": "Issue Occurrence Date"
+  },
+  {
+   "fieldname": "column_break_rlgh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "issue_report_to_hr",
+   "fieldtype": "Date",
+   "label": "Issue Reported To HR"
+  },
+  {
+   "fieldname": "suspension_required",
+   "fieldtype": "Select",
+   "label": "Suspension Required",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "hr_employee_id",
+   "fieldtype": "Link",
+   "label": "HR Employee ID",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "level",
+   "fieldtype": "Select",
+   "label": "Level",
+   "options": "\n1\n2\n3"
+  },
+  {
+   "fieldname": "document_upload",
+   "fieldtype": "Attach",
+   "label": "Document Upload"
+  },
+  {
+   "fieldname": "section_break_vgzh",
+   "fieldtype": "Section Break",
+   "label": "HR Details"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amount_of_fraud",
+   "fieldtype": "Currency",
+   "label": "Amount of Fraud"
+  },
+  {
+   "fieldname": "issue_show_cause_notice_tab",
+   "fieldtype": "Tab Break",
+   "label": "Issue Show Cause Notice"
+  },
+  {
+   "fieldname": "suspension_order_tab",
+   "fieldtype": "Tab Break",
+   "label": "Suspension Order"
+  },
+  {
+   "fieldname": "issue_suspension_letter",
+   "fieldtype": "Data",
+   "label": "Issue Suspension Letter"
+  },
+  {
+   "fieldname": "column_break_bnqh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "hr_employee_id.employee_name",
+   "fieldname": "hr_name",
+   "fieldtype": "Data",
+   "is_virtual": 1,
+   "label": "HR Name"
+  },
+  {
+   "fieldname": "column_break_pico",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_gxrw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Data",
+   "label": "Case ID"
   }
  ],
  "grid_page_length": 50,
@@ -119,11 +200,11 @@
    "link_fieldname": "disciplinary_case"
   }
  ],
- "modified": "2025-09-11 15:59:29.937926",
+ "modified": "2025-09-16 11:00:33.097438",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
- "naming_rule": "By \"Naming Series\" field",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
