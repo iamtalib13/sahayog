@@ -50,7 +50,7 @@ def get_all_tasks(name):
                 task["location_details_table"] = frappe.get_all(
                     "Location Details",
                     filters={"parent": task["name"], "parenttype": "Task"},
-                    fields=["location_name", "estimate_rent", "location_image", "status"]
+                    fields=["location_name", "rent_per_month", "location_image", "status"]
                 )
 
             # Task 3: Custom Agreement
