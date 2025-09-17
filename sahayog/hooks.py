@@ -157,7 +157,7 @@ after_migrate = [
    
     "sahayog.scrm.custom_html_block.l_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.employee_crm.execute",
-    "sahayog.patches.custom_fields.add_custom_field_for_material_request_item-custom_custom_metrial_transfre_purches_status.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_Material_Request_Item-custom_custom_metrial_transfre_purches_status.execute",
 
 ]
 # Uninstallation
