@@ -124,6 +124,7 @@ frappe.ui.form.on("Stock Entry", {
       $('button:contains("Get Items From")').hide();
       $('button:contains("Create")').hide();
       $('button:contains("Preview")').hide();
+      $('[data-fieldname="from_warehouse"]').prop('disabled', true);
     }, 200);
     
   },
