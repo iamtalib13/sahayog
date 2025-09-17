@@ -157,6 +157,7 @@ after_migrate = [
    
     "sahayog.scrm.custom_html_block.l_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.employee_crm.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_material_request_item_custom_custom_metrial_transfre_purches_status.execute",
 
 ]
 # Uninstallation
@@ -506,12 +507,25 @@ fixtures = [
             ]]
         ]
     },
-      {
+
+    {
         "doctype": "Property Setter",
         "filters": [
-            ["doc_type", "=", "Material Request"],
-            ["field_name", "=", "schedule_date"],
-            ["property", "=", "reqd"]
+            ["name", "in", [
+                "Material Request-schedule_date-reqd",
+                "Purchase Receipt-main-field_order"
+            ]]
         ]
-    }
+    },
+     {
+        "doctype": "Stock Entry",
+        "filters": [
+            [
+                "name", "in", [
+                    "Stock Entry-section_break_jwgn-collapsible"
+                ]
+            ]
+        ]
+    },
+
     ]

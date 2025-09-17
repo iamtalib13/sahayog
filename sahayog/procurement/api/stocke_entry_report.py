@@ -1,6 +1,6 @@
 import frappe
 
-# "sahayog.procurement.api.purchase_receipt.get_available_qty"
+# sahayog.procurement.api.purchase_receipt.get_available_qty"
 
 @frappe.whitelist()
 def get_available_qty(item_code=None, warehouse=None):
@@ -37,3 +37,26 @@ def get_available_qty(item_code=None, warehouse=None):
 
     return bins
 
+# sahayog.procurement.api.purchase_receipt.get_user_warehouse
+@frappe.whitelist()
+def get_user_warehouse(user=None):
+    """Return warehouse for the given user from Sahayog Settings child table"""
+
+    if not user:
+        user = frappe.session.user  # logged-in user email like 8466@gmail.com
+
+    # Fetch settings (Single Doctype)
+    settings = frappe.get_single("Sahayog Settings")
+
+    # Loop through correct child table fieldname
+    for row in settings.wh_dept_map:
+        if row.user_id == user:
+            return {
+                "warehouse": row.warehouse,
+                # "item_department": row.item_department
+            }
+
+    return {
+        "warehouse": None,
+        "message": f"No warehouse assigned for user {user}"
+    }
