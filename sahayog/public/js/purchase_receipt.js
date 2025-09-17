@@ -6,11 +6,14 @@ frappe.ui.form.on("Purchase Receipt", {
     frm.trigger("set_page_title");
     frm.trigger("hide_rejected_quantity_and_button");
     frm.trigger("set_warehouse");
+    hide_rejected_qty_column(frm);
+
   },
 
   onload: function (frm) {
     // Set title on form load
     frm.trigger("set_page_title");
+    hide_rejected_qty_column(frm);
   },
 
   set_page_title: function (frm) {
@@ -87,6 +90,7 @@ frappe.ui.form.on("Purchase Receipt", {
 
       console.log("Hidden field/tab:", fieldname);
     });
+    
   },
 
   hide_rejected_quantity_and_button: function(frm) {
@@ -136,5 +140,16 @@ frappe.ui.form.on("Purchase Receipt", {
         }
       });
     }   
-  }
+  },
+hide_rejected_qty_column: function(frm) {
+  if (!frm.fields_dict.items) return;
+
+  // Listen for every grid render event
+  frm.fields_dict.items.grid.on('render', function() {
+    // Hide the "Rejected Quantity" header cell
+    frm.fields_dict["items"].$wrapper.find('th[data-fieldname="rejected_qty"]').hide();
+    // Hide all "Rejected Quantity" cells in every row
+    frm.fields_dict["items"].$wrapper.find('td[data-fieldname="rejected_qty"]').hide();
+  });
+}
 });

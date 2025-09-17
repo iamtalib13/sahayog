@@ -6,6 +6,9 @@ frappe.ui.form.on("Stock Entry", {
     frm.trigger("hide_rejected_quantity");
     frm.trigger("set_child_table_read_only");
     frm.trigger("set_warehouse");
+     if (frappe.session.user !== "Administrator") {
+      frm.set_df_property("from_warehouse", "read_only", 1);
+    }
 
   },
 
@@ -124,23 +127,28 @@ frappe.ui.form.on("Stock Entry", {
     }, 200);
     
   },
-  set_warehouse: function(frm) {
-     if (frm.is_new()) {
-      frappe.call({
-        method: "sahayog.procurement.api.stocke_entry_report.get_user_warehouse",
-        callback: function (r) {
-          if (r.message) {
-            let warehouse = r.message.warehouse;
-            let item_department = r.message.item_department;
+set_warehouse: function(frm) {
+  if (frm.is_new()) {
+    frappe.call({
+      method: "sahayog.procurement.api.stocke_entry_report.get_user_warehouse",
+      callback: function(r) {
+        if (r.message) {
+          let warehouse = r.message.warehouse;
+          console.log("Warehouse:", warehouse);
 
-            console.log("Warehouse:", warehouse);
-            // set values on the form
-            frm.set_value("from_warehouse", warehouse);
+          // set value first
+          frm.set_value("from_warehouse", warehouse);
+
+          // then lock it down
+          if (frappe.session.user !== "Administrator") {
+            frm.set_df_property("from_warehouse", "read_only", 1);
           }
         }
-      });
-    }   
+      }
+    });
   }
+}
+,
 
 });
 
