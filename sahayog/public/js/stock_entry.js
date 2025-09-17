@@ -29,7 +29,6 @@ frappe.ui.form.on("Stock Entry", {
 
   set_metrial_transfer_default: function(frm) {
     // Allowed values (same as in Stock Entry Type DocType)
-    if (frappe.session.user == "Administrator") {
     
     const allowed_types = [
       { label: "Material Transfer", value: "Material Transfer" },
@@ -49,7 +48,6 @@ frappe.ui.form.on("Stock Entry", {
     if (frm.is_new()) {
       frm.set_value("stock_entry_type", "Material Transfer");
     }
-  }  
 
   },
   set_child_table_read_only: function(frm) {
@@ -150,7 +148,8 @@ frappe.ui.form.on("Stock Entry", {
 ,
         args: {
           warehouse: frm.doc.to_warehouse,
-          item_codes: item_codes  // pass array of item codes
+          item_codes: item_codes,
+            // pass array of item codes
         },
         callback: function(r) {
           if (r.message) {
@@ -167,9 +166,9 @@ function show_stock_balance_dialog(bins) {
     <thead>
       <tr>
         <th>Item Code</th>
+        <th>Item Name</th>
         <th>Warehouse</th>
         <th>Actual Qty</th>
-        <th>Projected Qty</th>
       </tr>
     </thead>
     <tbody>`;
@@ -177,9 +176,9 @@ function show_stock_balance_dialog(bins) {
   bins.forEach(bin => {
     html += `<tr>
       <td>${bin.item_code}</td>
+      <td>${bin.item_name || ''}</td>
       <td>${bin.warehouse}</td>
       <td>${bin.actual_qty}</td>
-      <td>${bin.projected_qty}</td>
     </tr>`;
   });
   

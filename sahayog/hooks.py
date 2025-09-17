@@ -197,7 +197,8 @@ permission_query_conditions = {
     "Appointment": "sahayog.permissions.get_appointment_permission",
     "Task": "sahayog.permissions.get_task_permission",
     "Agent": "sahayog.agent_and_bdo.doctype.agent.permissions.get_agents_sol_wise",
-  
+    "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission_for_warehouse",
+    "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",  
 }
 #
 # has_permission = {
@@ -496,4 +497,21 @@ fixtures = [
 			}
         ]
     ]},
-]
+
+    {
+        "doctype": "Workspace",
+        "filters": [
+            ["name", "in", [
+                "Inventory Management",  
+            ]]
+        ]
+    },
+      {
+        "doctype": "Property Setter",
+        "filters": [
+            ["doc_type", "=", "Material Request"],
+            ["field_name", "=", "schedule_date"],
+            ["property", "=", "reqd"]
+        ]
+    }
+    ]
