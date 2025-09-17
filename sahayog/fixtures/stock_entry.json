@@ -1,6 +1,7 @@
 [
   {
     "creation": "2025-09-17 12:00:00.000000",
+    "doc_type": "Stock Entry",
     "docstatus": 0,
     "doctype": "Property Setter",
     "modified": "2025-09-17 12:00:00.000000",
