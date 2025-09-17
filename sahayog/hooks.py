@@ -506,12 +506,14 @@ fixtures = [
             ]]
         ]
     },
-      {
+
+    {
         "doctype": "Property Setter",
         "filters": [
-            ["doc_type", "=", "Material Request"],
-            ["field_name", "=", "schedule_date"],
-            ["property", "=", "reqd"]
+            ["name", "in", [
+                "Material Request-schedule_date-reqd",
+                "Purchase Receipt-main-field_order"
+            ]]
         ]
     },
      {
@@ -524,12 +526,5 @@ fixtures = [
             ]
         ]
     },
-    {
-            "doctype": "Property Setter",
-            "filters": [
-                ["name", "in", [
-                    "Purchase Receipt-main-field_order"
-                ]]
-            ]
-    }
+
     ]
