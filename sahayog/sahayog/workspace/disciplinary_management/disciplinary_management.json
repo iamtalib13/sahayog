@@ -1,8 +1,13 @@
 {
  "charts": [],
- "content": "[{\"id\":\"hR_WEJ7xlJ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Disciplinary Management</span>\",\"col\":12}},{\"id\":\"P3nVnyGl8e\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Case\",\"col\":3}},{\"id\":\"p1s78el04O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Case\",\"col\":3}}]",
+ "content": "[{\"id\":\"NALlztd3o5\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Disciplinary Management\",\"col\":12}}]",
  "creation": "2025-09-13 11:17:55.133668",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "Disciplinary Management",
+   "label": "Disciplinary Management"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -12,7 +17,7 @@
  "is_hidden": 0,
  "label": "Disciplinary Management",
  "links": [],
- "modified": "2025-09-13 11:18:55.656004",
+ "modified": "2025-09-16 21:47:30.899547",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Disciplinary Management",
@@ -30,23 +35,6 @@
   }
  ],
  "sequence_id": 86.0,
- "shortcuts": [
-  {
-   "color": "Grey",
-   "doc_view": "New",
-   "label": "New Case",
-   "link_to": "Disciplinary Case",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Disciplinary Case",
-   "link_to": "Disciplinary Case",
-   "stats_filter": "[]",
-   "type": "DocType"
-  }
- ],
+ "shortcuts": [],
  "title": "Disciplinary Management"
 }

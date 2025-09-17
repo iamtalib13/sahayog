@@ -175,7 +175,6 @@
    "fetch_from": "hr_employee_id.employee_name",
    "fieldname": "hr_name",
    "fieldtype": "Data",
-   "is_virtual": 1,
    "label": "HR Name"
   },
   {
@@ -200,7 +199,7 @@
    "link_fieldname": "disciplinary_case"
   }
  ],
- "modified": "2025-09-16 11:00:33.097438",
+ "modified": "2025-09-16 23:02:58.787619",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
