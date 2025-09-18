@@ -1,5 +1,6 @@
 import frappe
 from erpnext.stock.report.stock_balance.stock_balance import execute
+
 # sahayog/procurement/api/stock_balance_ledger.get_stock_balance_data
 @frappe.whitelist(allow_guest=True)
 def get_stock_balance_data(company=None, from_date=None, to_date=None, item_code=None, warehouse=None):

@@ -16,7 +16,7 @@ frappe.pages['inventory-movement'].on_page_load = function(wrapper) {
       </div>
       <div class="col-md-10">
         <div id="content" class="p-3 bg-white shadow-sm border rounded" >
-          <!-- View will be loaded here -->
+          <!--- View will be loaded here --->
         </div>
       </div>
     </div>
