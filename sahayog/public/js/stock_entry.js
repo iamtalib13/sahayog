@@ -172,7 +172,7 @@ frappe.ui.form.on("Stock Entry", {
       const item_codes = frm.doc.items.map(row => row.item_code);
 
       frappe.call({
-        method: "sahayog.procurement.api.stocke_entry_report.get_available_qty"
+        method: "sahayog.procurement.api.stock_entry_report.get_available_qty"
 ,
         args: {
           warehouse: frm.doc.to_warehouse,
