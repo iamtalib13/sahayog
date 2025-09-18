@@ -26,6 +26,7 @@
   {
    "fieldname": "agent_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Agent Name",
    "read_only": 1,
@@ -42,6 +43,7 @@
   {
    "fieldname": "branch_code",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Branch Code",
    "read_only": 1,
@@ -50,6 +52,7 @@
   {
    "fieldname": "branch_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Branch Name",
    "read_only": 1,
@@ -132,7 +135,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-08 16:01:39.891566",
+ "modified": "2025-09-18 13:19:31.823371",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",

@@ -271,3 +271,26 @@ def get_approver_details(user_id):
         return {
             "display_name": user_id
         }
+    
+@frappe.whitelist()
+def get_employee_info(employee):
+    """
+    Fetch employee details safely
+    """
+    emp = frappe.get_all(
+        "Employee",
+        filters={"name": employee},
+        fields=[
+            "employee_number",
+            "employee_name",
+            "branch",
+            "department",
+            "designation"
+        ],
+        limit_page_length=1
+    )
+
+    if emp:
+        return emp[0]
+    else:
+        return {}    
