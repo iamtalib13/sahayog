@@ -4,7 +4,7 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2025-09-18 15:42:16.872498",
+ "modified": "2025-09-18 17:02:14.435164",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "inventory-movement",
@@ -15,5 +15,5 @@
  "standard": "Yes",
  "style": null,
  "system_page": 0,
- "title": "Inventory Movement"
+ "title": "Inventory Report"
 }
