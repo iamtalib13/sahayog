@@ -64,6 +64,7 @@ doctype_js = {
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
     "Stock Entry": "public/js/stock_entry_list.js",
+    "Material Request": "public/js/material_request_list.js",
     
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
