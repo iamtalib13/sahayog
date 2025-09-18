@@ -7,7 +7,6 @@ frappe.ui.form.on("Purchase Receipt", {
     frm.trigger("hide_rejected_quantity_and_button");
     frm.trigger("set_warehouse");
     hide_rejected_qty_column(frm);
-
   },
 
   onload: function (frm) {
@@ -121,6 +120,7 @@ frappe.ui.form.on("Purchase Receipt", {
       $('button:contains("Preview")').hide();
       $('button:contains("View")').hide();
       $('button:contains("Status")').hide();
+      $('[data-fieldname="set_warehouse"]').prop('disabled', true);
     }, 200);
     
   },
