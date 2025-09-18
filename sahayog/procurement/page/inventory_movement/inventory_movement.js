@@ -12,7 +12,7 @@ frappe.pages['inventory-movement'].on_page_load = function(wrapper) {
         <div class="list-group" id="sidebar">
           <a class="list-group-item list-group-item-action active" data-view="dashboard">Stock Blance</a>
           <a class="list-group-item list-group-item-action" data-view="inward">stock ledger</a>
-          
+  
         </div>
       </div>
       <div class="col-md-10">
