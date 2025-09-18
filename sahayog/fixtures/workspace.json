@@ -108,7 +108,7 @@
     "hidden": 0,
     "icon": null,
     "is_query_report": 0,
-    "label": "Requests",
+    "label": "Purchase Requests",
     "link_count": 1,
     "link_to": null,
     "link_type": "DocType",
