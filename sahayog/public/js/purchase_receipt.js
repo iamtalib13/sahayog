@@ -127,7 +127,7 @@ frappe.ui.form.on("Purchase Receipt", {
     set_warehouse: function(frm) {
      if (frm.is_new()) {
       frappe.call({
-        method: "sahayog.procurement.api.stocke_entry_report.get_user_warehouse",
+        method: "sahayog.procurement.api.stock_entry_report.get_user_warehouse",
         callback: function (r) {
           if (r.message) {
             let warehouse = r.message.warehouse;

@@ -129,9 +129,10 @@ frappe.ui.form.on("Stock Entry", {
     
   },
 set_warehouse: function(frm) {
+  if(frappe.session.user !== "Administrator") {
   if (frm.is_new()) {
     frappe.call({
-      method: "sahayog.procurement.api.stocke_entry_report.get_user_warehouse",
+      method: "sahayog.procurement.api.stock_entry_report.get_user_warehouse",
       callback: function(r) {
         if (r.message) {
           let warehouse = r.message.warehouse;
@@ -148,7 +149,7 @@ set_warehouse: function(frm) {
       }
     });
   }
-}
+}}
 ,
 
 });
