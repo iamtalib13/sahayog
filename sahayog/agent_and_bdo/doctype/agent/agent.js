@@ -186,200 +186,108 @@ frappe.ui.form.on("Agent", {
     }
 
     frm.call({
-      method: "get_employee_info", // replace with actual path
+      method: "your_app.employee.get_employee_info", // replace with actual path
       args: { employee: employee },
       callback: function (r) {
-        if (r.message) {
-          let emp = r.message;
-          console.log(emp);
+        const emp = r.message || null;
 
-          frm.set_intro(`
-                    <div style="
-                        background: linear-gradient(135deg, #006768 0%, #004a4b 100%);
-                        border-radius: 12px;
-                        padding: 0;
-                        margin: 10px 0;
-                        box-shadow: 0 4px 15px rgba(0,103,104,0.2);
-                        overflow: hidden;
-                    ">
-                        <!-- Header -->
-                        <div style="
-                            background: rgba(255,255,255,0.15);
-                            color: white;
-                            padding: 15px 20px;
-                            border-bottom: 1px solid rgba(255,255,255,0.2);
-                        ">
-                            <h4 style="margin: 0; display: flex; align-items: center;">
-                                <i class="fa fa-id-card-o" style="margin-right: 8px;"></i>
-                                Employee Information
-                            </h4>
-                        </div>
-                        
-                        <!-- Content -->
-                        <div style="
-                            background: white;
-                            padding: 20px;
-                            display: grid;
-                            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                            gap: 15px;
-                        ">
-                            <div style="display: flex; align-items: center;">
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #006768;
-                                    border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    margin-right: 12px;
-                                ">
-                                    <i class="fa fa-hashtag" style="color: white; font-size: 14px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 12px; color: #6c757d; font-weight: 500;">
-                                        EMPLOYEE NUMBER
-                                    </div>
-                                    <div style="font-size: 16px; font-weight: 600; color: #2c3e50;">
-                                        ${emp.employee_number || "Not Assigned"}
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center;">
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #008b8d;
-                                    border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    margin-right: 12px;
-                                ">
-                                    <i class="fa fa-user" style="color: white; font-size: 14px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 12px; color: #6c757d; font-weight: 500;">
-                                        FULL NAME
-                                    </div>
-                                    <div style="font-size: 16px; font-weight: 600; color: #2c3e50;">
-                                        ${emp.employee_name || "Not Provided"}
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center;">
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #00a0a3;
-                                    border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    margin-right: 12px;
-                                ">
-                                    <i class="fa fa-building" style="color: white; font-size: 14px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 12px; color: #6c757d; font-weight: 500;">
-                                        BRANCH
-                                    </div>
-                                    <div style="font-size: 16px; font-weight: 600; color: #2c3e50;">
-                                        ${emp.branch || "Not Assigned"}
-                                    </div>
-                                </div>
-                            </div>
-                            ${
-                              emp.department
-                                ? `
-                            <div style="display: flex; align-items: center;">
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #00b5b8;
-                                    border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    margin-right: 12px;
-                                ">
-                                    <i class="fa fa-users" style="color: white; font-size: 14px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 12px; color: #6c757d; font-weight: 500;">
-                                        DEPARTMENT
-                                    </div>
-                                    <div style="font-size: 16px; font-weight: 600; color: #2c3e50;">
-                                        ${emp.department}
-                                    </div>
-                                </div>
-                            </div>
-                            `
-                                : ""
-                            }
-                            ${
-                              emp.designation
-                                ? `
-                            <div style="display: flex; align-items: center;">
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #00cacf;
-                                    border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    margin-right: 12px;
-                                ">
-                                    <i class="fa fa-star" style="color: white; font-size: 14px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 12px; color: #6c757d; font-weight: 500;">
-                                        DESIGNATION
-                                    </div>
-                                    <div style="font-size: 16px; font-weight: 600; color: #2c3e50;">
-                                        ${emp.designation}
-                                    </div>
-                                </div>
-                            </div>
-                            `
-                                : ""
-                            }
-                        </div>
-                        <!-- Quick Actions -->
-                        <div style="
-                            background: linear-gradient(to right, #f8f9fa, #e8f4f5);
-                            padding: 15px 20px;
-                            border-top: 1px solid #e9ecef;
-                            text-align: center;
-                        ">
-                            <button class="btn btn-sm" 
-                                    onclick="frappe.set_route('List', 'Agent', {'employee': '${employee}'})"
-                                    style="
-                                        background: #006768;
-                                        color: white;
-                                        border: 1px solid #006768;
-                                        transition: all 0.3s ease;
-                                        padding: 8px 20px;
-                                    "
-                                    onmouseover="this.style.background='#004a4b'"
-                                    onmouseout="this.style.background='#006768'">
-                                <i class="fa fa-list"></i> View All Agents
-                            </button>
-                        </div>
-                    </div>
-                `);
-        } else {
+        if (!emp) {
           frm.set_intro(`
                 <div style="background: linear-gradient(135deg, #dc3545, #c82333); color:white; padding:15px; border-radius:8px;">
                     <i class="fa fa-exclamation-triangle" style="margin-right:8px;"></i>
                     Employee details not found.
                 </div>
             `);
+          return;
         }
+
+        // Helper function for safe field access
+        const safe = (value, fallback = "Not Provided") => value || fallback;
+
+        frm.set_intro(`
+            <div style="background: linear-gradient(135deg, #006768 0%, #004a4b 100%); border-radius: 12px; padding: 0; margin: 10px 0; box-shadow: 0 4px 15px rgba(0,103,104,0.2); overflow: hidden;">
+                
+                <!-- Header -->
+                <div style="background: rgba(255,255,255,0.15); color: white; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                    <h4 style="margin: 0; display: flex; align-items: center;">
+                        <i class="fa fa-id-card-o" style="margin-right: 8px;"></i>
+                        Employee Information
+                    </h4>
+                </div>
+                
+                <!-- Content -->
+                <div style="background: white; padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    
+                    ${[
+                      {
+                        icon: "fa-hashtag",
+                        label: "EMPLOYEE NUMBER",
+                        value: safe(emp.employee_number, "Not Assigned"),
+                        color: "#006768",
+                      },
+                      {
+                        icon: "fa-user",
+                        label: "FULL NAME",
+                        value: safe(emp.employee_name),
+                        color: "#008b8d",
+                      },
+                      {
+                        icon: "fa-building",
+                        label: "BRANCH",
+                        value: safe(emp.branch, "Not Assigned"),
+                        color: "#00a0a3",
+                      },
+                      emp.department
+                        ? {
+                            icon: "fa-users",
+                            label: "DEPARTMENT",
+                            value: emp.department,
+                            color: "#00b5b8",
+                          }
+                        : null,
+                      emp.designation
+                        ? {
+                            icon: "fa-star",
+                            label: "DESIGNATION",
+                            value: emp.designation,
+                            color: "#00cacf",
+                          }
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .map(
+                        (item) => `
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 40px; height: 40px; background: ${item.color}; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                <i class="fa ${item.icon}" style="color: white; font-size: 14px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6c757d; font-weight: 500;">${item.label}</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #2c3e50;">${item.value}</div>
+                            </div>
+                        </div>
+                    `
+                      )
+                      .join("")}
+
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="background: linear-gradient(to right, #f8f9fa, #e8f4f5); padding: 15px 20px; border-top: 1px solid #e9ecef; text-align: center;">
+                    <button class="btn btn-sm" 
+                            onclick="frappe.set_route('List', 'Agent', {'employee': '${employee}'})"
+                            style="background: #006768; color: white; border: 1px solid #006768; transition: all 0.3s ease; padding: 8px 20px;"
+                            onmouseover="this.style.background='#004a4b'"
+                            onmouseout="this.style.background='#006768'">
+                        <i class="fa fa-list"></i> View All Agents
+                    </button>
+                </div>
+
+            </div>
+        `);
       },
       error: function (err) {
-        console.error(err);
+        console.error("Error fetching employee info:", err);
         frm.set_intro(`
             <div style="background: linear-gradient(135deg, #dc3545, #c82333); color:white; padding:15px; border-radius:8px;">
                 <i class="fa fa-exclamation-triangle" style="margin-right:8px;"></i>
