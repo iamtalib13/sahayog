@@ -1,6 +1,6 @@
 import frappe
 
-# sahayog.procurement.api.purchase_receipt.get_available_qty"
+# sahayog.procurement.api.stocke_entry_report.get_available_qty
 
 @frappe.whitelist()
 def get_available_qty(item_code=None, warehouse=None):
