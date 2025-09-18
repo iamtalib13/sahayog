@@ -186,7 +186,7 @@ frappe.ui.form.on("Agent", {
     }
 
     frm.call({
-      method: "your_app.employee.get_employee_info", // replace with actual path
+      method: "get_employee_info", // replace with actual path
       args: { employee: employee },
       callback: function (r) {
         const emp = r.message || null;
