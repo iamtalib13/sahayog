@@ -324,7 +324,6 @@
             <div
               id="random-gesture"
               class="absolute -bottom-1 -right-1 z-50 w-5 h-5 rounded-full bg-blue-500 shadow-inner cursor-pointer flex items-center justify-center text-white text-[10px]"
-              title="Change Password"
             >
               <!-- White tick inside -->
               <svg
@@ -354,6 +353,7 @@
             <p class="profile-greeting" id="greeting-message"></p>
             <p class="profile-name" id="emp_name">Admin</p>
             <span class="profile-role" id="emp_designation">Admin</span>
+            <span class="profile-role" id="emp_branch_sol"></span>
           </div>
         </div>
       </header>
@@ -599,6 +599,7 @@
           if (userId === "Administrator") {
             document.getElementById("emp_name").textContent = "Administrator";
             document.getElementById("emp_designation").textContent = "-";
+            document.getElementById("emp_branch_sol").textContent = "-";
             document.getElementById("avatar-initial").textContent = "A";
             document.getElementById(
               "greeting-message"
@@ -611,7 +612,7 @@
             JSON.stringify([["user_id", "=", userId]])
           );
           const fields = encodeURIComponent(
-            JSON.stringify(["employee_name", "designation"])
+            JSON.stringify(["employee_name", "designation", "branch", "sol_id"])
           );
           const empRes = await fetch(
             `/api/resource/Employee?filters=${filters}&fields=${fields}`
@@ -624,6 +625,15 @@
             document.getElementById("emp_name").textContent = employeeName;
             document.getElementById("emp_designation").textContent =
               emp.designation || "N/A";
+
+            const branch = emp.branch || "N/A";
+            const solId =
+              emp.sol_id && emp.sol_id.trim() !== ""
+                ? emp.sol_id
+                : '<span style="color: red;">Please update your details for SOL ID</span>';
+
+            const branchSol = `Branch : ${branch} | SOL ID : ${solId}`;
+            document.getElementById("emp_branch_sol").innerHTML = branchSol;
 
             // Set first letter in avatar
             const initial = employeeName.trim().charAt(0).toUpperCase();
