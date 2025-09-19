@@ -1,7 +1,7 @@
 [
  {
   "charts": [],
-  "content": "[{\"id\":\"g6Xa5dwrLs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Inventory Management</b></span>\",\"col\":12}},{\"id\":\"5-I32i40tn\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":3}},{\"id\":\"nmhvF-pSV5\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"cRRhcZ7Ogl\",\"type\":\"card\",\"data\":{\"card_name\":\"Requests\",\"col\":4}},{\"id\":\"iPTK67CE6P\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h3\\\">Report</span>\",\"col\":12}},{\"id\":\"8xD_Wt22x8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":3}},{\"id\":\"cY1FrPCTIl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}}]",
+  "content": "[{\"id\":\"g6Xa5dwrLs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Inventory Management</b></span>\",\"col\":12}},{\"id\":\"5-I32i40tn\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":3}},{\"id\":\"nmhvF-pSV5\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"K-_veezllr\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase Request\",\"col\":4}},{\"id\":\"iPTK67CE6P\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h3\\\">Report</span>\",\"col\":12}},{\"id\":\"A5WxyhaZQL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inventory Statement\",\"col\":3}},{\"id\":\"8xD_Wt22x8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":3}},{\"id\":\"cY1FrPCTIl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -108,7 +108,7 @@
     "hidden": 0,
     "icon": null,
     "is_query_report": 0,
-    "label": "Purchase Requests",
+    "label": "Purchase Request",
     "link_count": 1,
     "link_to": null,
     "link_type": "DocType",
@@ -139,7 +139,7 @@
     "type": "Link"
    }
   ],
-  "modified": "2025-09-12 16:48:27.248541",
+  "modified": "2025-09-19 11:13:28.077669",
   "module": "Sahayog",
   "name": "Inventory Management",
   "number_cards": [],
@@ -172,6 +172,23 @@
     "restrict_to_domain": null,
     "stats_filter": null,
     "type": "Report",
+    "url": null
+   },
+   {
+    "color": "Grey",
+    "doc_view": "List",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Inventory Statement",
+    "link_to": "inventory-movement",
+    "parent": "Inventory Management",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Page",
     "url": null
    },
    {
