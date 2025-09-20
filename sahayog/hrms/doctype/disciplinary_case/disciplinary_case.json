@@ -7,28 +7,27 @@
  "field_order": [
   "issue_show_cause_notice_tab",
   "case_information_section",
-  "case_id",
-  "category",
-  "issue_occurrence_date",
-  "issue_report_to_hr",
-  "column_break_bnqh",
-  "case_type",
-  "level",
-  "suspension_required",
-  "column_break_rlgh",
-  "status",
-  "amount_of_fraud",
-  "document_upload",
-  "section_break_gtkv",
+  "employee_id",
+  "employee_name",
+  "branch_id",
+  "zone",
   "description",
-  "section_break_xwlh",
-  "case_against_employee",
-  "section_break_vgzh",
-  "hr_employee_id",
-  "column_break_pico",
-  "hr_name",
-  "section_break_gxrw",
+  "issue_occurrence_date",
+  "suspension_required",
+  "document_upload",
   "remarks",
+  "column_break_bnqh",
+  "case_id",
+  "designation",
+  "branch_name",
+  "case_type",
+  "category",
+  "issue_report_to_hr",
+  "amount_of_fraud",
+  "level",
+  "hr_employee_id",
+  "hr_name",
+  "status",
   "section_break_fakz",
   "enquiry_item_html",
   "schedule_enquiry_btn",
@@ -45,27 +44,10 @@
    "reqd": 1
   },
   {
-   "fieldname": "case_against_employee",
-   "fieldtype": "Table",
-   "label": "Case Against Employees",
-   "options": "Case Against Employee Item",
-   "reqd": 1
-  },
-  {
-   "fieldname": "section_break_gtkv",
-   "fieldtype": "Section Break",
-   "label": "Case Details"
-  },
-  {
    "fieldname": "description",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Issue In Details",
    "reqd": 1
-  },
-  {
-   "fieldname": "section_break_xwlh",
-   "fieldtype": "Section Break",
-   "label": "Employees Involved"
   },
   {
    "fieldname": "section_break_fakz",
@@ -101,13 +83,10 @@
    "options": "\nMajor\nMinor"
   },
   {
+   "default": "Today",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Date",
    "label": "Issue Occurrence Date"
-  },
-  {
-   "fieldname": "column_break_rlgh",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "issue_report_to_hr",
@@ -136,11 +115,6 @@
    "fieldname": "document_upload",
    "fieldtype": "Attach",
    "label": "Document Upload"
-  },
-  {
-   "fieldname": "section_break_vgzh",
-   "fieldtype": "Section Break",
-   "label": "HR Details"
   },
   {
    "fieldname": "remarks",
@@ -178,17 +152,46 @@
    "label": "HR Name"
   },
   {
-   "fieldname": "column_break_pico",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_gxrw",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "case_id",
    "fieldtype": "Data",
-   "label": "Case ID"
+   "label": "Case ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Employee ID",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name"
+  },
+  {
+   "fetch_from": "employee_id.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fetch_from": "employee_id.branch",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID"
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name"
+  },
+  {
+   "fetch_from": "employee_id.custom_zone",
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "label": "Zone Name"
   }
  ],
  "grid_page_length": 50,
@@ -199,7 +202,7 @@
    "link_fieldname": "disciplinary_case"
   }
  ],
- "modified": "2025-09-16 23:02:58.787619",
+ "modified": "2025-09-20 12:13:03.151274",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
