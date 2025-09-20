@@ -142,7 +142,6 @@ frappe.ui.form.on("Task", {
       1: "Submitted",
       2: "Cancelled",
     };
-    const status_text = status_map[frm.doc.docstatus] || "Unknown";
 
     if (!frm.doc.project) {
       frm.set_intro("Please select a Project first.", "orange");
@@ -173,14 +172,11 @@ frappe.ui.form.on("Task", {
         .join("<br>");
 
       frm.set_intro(
-        `Status: ${status_text}<br>Material Requests created for this Project:<br>${html}`,
+        `${mr_list.length} Material Requests created for this Project:<br>${html}`,
         "green"
       );
     } else {
-      frm.set_intro(
-        `Status: ${status_text}<br>No Material Request created with any supplier.`,
-        "orange"
-      );
+      frm.set_intro(`No Material Request created with any supplier.`, "orange");
     }
 
     // Add custom button (same as before)
