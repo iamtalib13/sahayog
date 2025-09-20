@@ -28,10 +28,10 @@
   "name": "Stationery"
  },
  {
-  "department": null,
+  "department": "Purchase",
   "docstatus": 0,
   "doctype": "Item Department",
-  "modified": "2025-06-20 15:45:13.162814",
+  "modified": "2025-09-20 11:48:38.640772",
   "name": "Purchase"
  }
 ]
