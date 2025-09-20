@@ -237,7 +237,8 @@ frappe.ui.form.on("Task", {
                         indicator: "orange",
                       });
                     } else if (r.message.status === "created") {
-                      frappe.show_alert({
+                      frappe.msgprint({
+                        title: __("Material Request Created"),
                         message: r.message.message,
                         indicator: "green",
                       });
