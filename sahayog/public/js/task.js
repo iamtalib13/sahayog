@@ -215,39 +215,54 @@ frappe.ui.form.on("Task", {
             return;
           }
 
-          try {
-            await frappe.call({
-              method: "sahayog.api.task.allocate_suppliers_and_create_mr",
-              args: {
-                project_name: frm.doc.project,
-                supplier: values.supplier,
-                product_bundle: values.product_bundle,
-              },
-              callback: function (r) {
-                if (r.message.status === "exists") {
-                  frappe.msgprint({
-                    title: __("Already Exists"),
-                    message: r.message.message,
-                    indicator: "orange",
-                  });
-                } else if (r.message.status === "created") {
-                  frappe.show_alert({
-                    message: r.message.message,
-                    indicator: "green",
-                  });
-                  frm.trigger("supplier_allocation");
-                }
-              },
-            });
+          frappe.confirm(
+            __(
+              "This will create a Material Request with all items present in the selected Product Bundle for this Project. Do you want to continue?"
+            ),
+            async () => {
+              // YES clicked → proceed with MR creation
+              try {
+                await frappe.call({
+                  method: "sahayog.api.task.allocate_suppliers_and_create_mr",
+                  args: {
+                    project_name: frm.doc.project,
+                    supplier: values.supplier,
+                    product_bundle: values.product_bundle,
+                  },
+                  callback: function (r) {
+                    if (r.message.status === "exists") {
+                      frappe.msgprint({
+                        title: __("Already Exists"),
+                        message: r.message.message,
+                        indicator: "orange",
+                      });
+                    } else if (r.message.status === "created") {
+                      frappe.show_alert({
+                        message: r.message.message,
+                        indicator: "green",
+                      });
+                      frm.trigger("supplier_allocation");
+                    }
+                  },
+                });
 
-            dialog.hide();
-          } catch (err) {
-            frappe.msgprint({
-              title: __("Error"),
-              message: err.message,
-              indicator: "red",
-            });
-          }
+                dialog.hide();
+              } catch (err) {
+                frappe.msgprint({
+                  title: __("Error"),
+                  message: err.message,
+                  indicator: "red",
+                });
+              }
+            },
+            () => {
+              // NO clicked → just close confirmation, don’t create MR
+              frappe.show_alert({
+                message: __("Material Request creation cancelled."),
+                indicator: "orange",
+              });
+            }
+          );
         },
       });
 
