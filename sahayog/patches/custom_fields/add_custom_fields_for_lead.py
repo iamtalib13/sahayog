@@ -19,6 +19,7 @@ def execute():
                 "fieldtype": "Link",
                 "options": "Employee",
                 "insert_after": "custom_lead_owner_details_section",
+                "ignore_user_permissions": 1,
             },
             {
                 "label": "Branch",
@@ -26,6 +27,7 @@ def execute():
                 "fieldtype": "Link",
                 "options" : "Branch",
                 "insert_after": "custom_employee_id",
+                "ignore_user_permissions": 1,
             },
 
             {
@@ -33,7 +35,8 @@ def execute():
                 "fieldname": "custom_region",
                 "fieldtype": "Link",
                 "options" : "Region",
-                "insert_after": "custom_branch", 
+                "insert_after": "custom_branch",
+                "ignore_user_permissions": 1,
             },
             {
                 "label": "Zone",
@@ -41,6 +44,7 @@ def execute():
                 "fieldtype": "Link",
                 "options" : "Zone",
                 "insert_after": "custom_region",
+                "ignore_user_permissions": 1,
             },
             {
                 "label": "Product Details",
@@ -78,6 +82,7 @@ def execute():
                 "fieldtype": "Link",
                 "options": "Employee",
                 "insert_after": "custom_is_operation_lead",
+                "ignore_user_permissions": 1,
             }
 
 
