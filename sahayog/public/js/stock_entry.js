@@ -1,14 +1,15 @@
 frappe.ui.form.on("Stock Entry", {
   refresh: function (frm) {
+
+    if(frappe.session.user !== "Administrator") {
+      frm.trigger("hide_rejected_quantity");
+    }
+
     frm.trigger("customize_ui");
     frm.trigger("hide_fields");
     frm.trigger("set_page_title");
-    frm.trigger("hide_rejected_quantity");
     frm.trigger("set_child_table_read_only");
     frm.trigger("set_warehouse");
-     if (frappe.session.user !== "Administrator") {
-      frm.set_df_property("from_warehouse", "read_only", 1);
-    }
 
   },
 
@@ -55,7 +56,6 @@ frappe.ui.form.on("Stock Entry", {
 
   },
   set_child_table_read_only: function(frm) {
-    console.log("Setting child table fields to read-only");
     const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
     if (!grid) return;
 
@@ -124,7 +124,7 @@ frappe.ui.form.on("Stock Entry", {
       $('button:contains("Get Items From")').hide();
       $('button:contains("Create")').hide();
       $('button:contains("Preview")').hide();
-      $('[data-fieldname="from_warehouse"]').prop('disabled', true);
+      frm.set_df_property("from_warehouse", "read_only", 1);
     }, 200);
     
   },
@@ -140,11 +140,6 @@ set_warehouse: function(frm) {
 
           // set value first
           frm.set_value("from_warehouse", warehouse);
-
-          // then lock it down
-          if (frappe.session.user !== "Administrator") {
-            frm.set_df_property("from_warehouse", "read_only", 1);
-          }
         }
       }
     });

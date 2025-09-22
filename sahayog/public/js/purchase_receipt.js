@@ -1,10 +1,12 @@
 frappe.ui.form.on("Purchase Receipt", {
   refresh: function (frm) {
+    if(frappe.session.user !== "Administrator") {
+    frm.trigger("hide_rejected_quantity_and_button");
+    }    
     // Apply UI customizations
     frm.trigger("customize_ui");
     frm.trigger("hide_fields");
     frm.trigger("set_page_title");
-    frm.trigger("hide_rejected_quantity_and_button");
     frm.trigger("set_warehouse");
     hide_rejected_qty_column(frm);
   },
@@ -120,7 +122,7 @@ frappe.ui.form.on("Purchase Receipt", {
       $('button:contains("Preview")').hide();
       $('button:contains("View")').hide();
       $('button:contains("Status")').hide();
-      $('[data-fieldname="set_warehouse"]').prop('disabled', true);
+        frm.set_df_property("set_warehouse", "read_only", 1);
     }, 200);
     
   },
