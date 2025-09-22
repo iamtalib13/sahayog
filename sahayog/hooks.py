@@ -60,7 +60,8 @@ doctype_js = {
     "BOM": "public/js/bom.js",
     "Purchase Receipt": "public/js/purchase_receipt.js",
     "Stock Entry": "public/js/stock_entry.js",
-    "Shareholder": "public/js/shareholder.js"
+    "Shareholder": "public/js/shareholder.js",
+    "Share Transfer":"public/js/share_transfer.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
