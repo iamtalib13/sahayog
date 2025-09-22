@@ -16,15 +16,15 @@
 :root {
   --primary: #006768;
   --primary-dark: #004d4d;
-  --primary-light: #008080;
-  --primary-extra-light: #e6f2f2;
-  --secondary: #6c757d;
-  --success: #28a745;
-  --info: #17a2b8;
-  --warning: #ffc107;
-  --danger: #dc3545;
-  --light: #f8f9fa;
-  --dark: #343a40;
+  --primary-light: #4db6b6;
+  --primary-extra-light: #e6f7f7;
+
+  --secondary: #495057;
+  --accent: #008080;
+
+  /* Neutrals */
+  --light: #f5fafa;
+  --dark: #212529;
   --gray-100: #f8f9fa;
   --gray-200: #e9ecef;
   --gray-300: #dee2e6;
@@ -34,18 +34,23 @@
   --gray-700: #495057;
   --gray-800: #343a40;
   --gray-900: #212529;
-  --gradient-start: #006768;
-  --gradient-end: #004d4d;
+
+  /* Gradient Shades */
   --gradient-light: linear-gradient(120deg, var(--primary-light), var(--primary));
   --gradient-dark: linear-gradient(120deg, var(--primary), var(--primary-dark));
+
+  /* Shadows */
   --shadow-sm: 0 2px 6px rgba(0, 103, 104, 0.12), 0 1px 3px rgba(0, 103, 104, 0.08);
   --shadow-md: 0 6px 12px rgba(0, 103, 104, 0.15), 0 3px 6px rgba(0, 103, 104, 0.1);
   --shadow-lg: 0 15px 30px rgba(0, 103, 104, 0.2), 0 8px 15px rgba(0, 103, 104, 0.15);
+
+  /* Radius & Animations */
   --border-radius: 14px;
   --border-radius-sm: 10px;
   --transition: all 0.3s ease;
   --transition-slow: all 0.5s ease;
 }
+
 
 * {
   margin: 0;
@@ -799,58 +804,59 @@ body {
       </div>
     </div>
 
-    <!-- Action Grid -->
-    <div class="action-grid">
-      <a href="/app/item" class="text-decoration-none">
-        <div class="action-card fade-in delay-1">
-          <div class="action-icon">
-            <i class="fas fa-box"></i>
-          </div>
-          <h6>Items</h6>
-          <p>Manage inventory items</p>
-        </div>
-      </a>
-      
-      <a href="/app/purchase-receipt" class="text-decoration-none">
-        <div class="action-card fade-in delay-3">
-          <div class="action-icon">
-            <i class="fas fa-file-invoice"></i>
-          </div>
-          <h6>Inward</h6>
-          <p>Process received goods</p>
-        </div>
-      </a>
-
-      <a href="/app/stock-entry" class="text-decoration-none">
-        <div class="action-card fade-in delay-2">
-          <div class="action-icon">
-            <i class="fas fa-arrow-down"></i>
-          </div>
-          <h6>Outward</h6>
-          <p>Record stock movements</p>
-        </div>
-      </a>
-      
-      <a href="/app/material-request" class="text-decoration-none">
-        <div class="action-card fade-in delay-4">
-          <div class="action-icon">
-            <i class="fas fa-clipboard-list"></i>
-          </div>
-          <h6>Material Request</h6>
-          <p>Create material requests</p>
-        </div>
-      </a>
-      
-      <a href="/app/inventory-movement" class="text-decoration-none">
-        <div class="action-card fade-in delay-4">
-          <div class="action-icon">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <h6>Inventory Movement Report</h6>
-          <p>See Report</p>
-        </div>
-      </a>
+<!-- Action Grid -->
+<div class="action-grid">
+  <a class="text-decoration-none" data-link="/app/item">
+    <div class="action-card fade-in delay-1">
+      <div class="action-icon">
+        <i class="fas fa-box"></i>
+      </div>
+      <h6>Items</h6>
+      <p>Manage inventory items</p>
     </div>
+  </a>
+
+  <a class="text-decoration-none" data-link="/app/purchase-receipt/new-purchase-receipt">
+    <div class="action-card fade-in delay-2">
+      <div class="action-icon">
+        <i class="fas fa-truck-loading"></i>
+      </div>
+      <h6>Inward</h6>
+      <p>Record purchase receipts</p>
+    </div>
+  </a>
+
+  <a class="text-decoration-none" data-link="/app/stock-entry/new-stock-entry">
+    <div class="action-card fade-in delay-3">
+      <div class="action-icon">
+        <i class="fas fa-dolly"></i>
+      </div>
+      <h6>Outward</h6>
+      <p>Record stock issues</p>
+    </div>
+  </a>
+
+  <a class="text-decoration-none" data-link="/app/material-request/new-material-request">
+    <div class="action-card fade-in delay-4">
+      <div class="action-icon">
+        <i class="fas fa-clipboard-list"></i>
+      </div>
+      <h6>Material Request</h6>
+      <p>Create material requests</p>
+    </div>
+  </a>
+
+  <a class="text-decoration-none" data-link="/app/query-report/Inventory%20Movement">
+    <div class="action-card fade-in delay-5">
+      <div class="action-icon">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <h6>Inventory Movement</h6>
+      <p>View stock movement reports</p>
+    </div>
+  </a>
+</div>
+
     <!-- Quick Actions -->
     <div class="quick-actions">
       <div class="quick-actions-header">
@@ -969,18 +975,27 @@ fetch('/api/method/sahayog.procurement.api.stock_entry_report.get_user_warehouse
     });
     // Quick Actions: open respective create forms on button clicks
 document.querySelector('.action-buttons .btn:nth-child(1)').onclick = function() {
-  window.location.href = '/app/item/new-item';
+  window.top.location.href = '/app/item/new-item';
 };
 document.querySelector('.action-buttons .btn:nth-child(2)').onclick = function() {
-  window.location.href = '/app/purchase-receipt/new-purchase-receipt';
+  window.top.location.href = '/app/purchase-receipt/new-purchase-receipt';
 };
 document.querySelector('.action-buttons .btn:nth-child(3)').onclick = function() {
-  window.location.href = '/app/stock-entry/new-stock-entry';
+  window.top.location.href = '/app/stock-entry/new-stock-entry';
 };
 document.querySelector('.action-buttons .btn:nth-child(4)').onclick = function() {
-  window.location.href = '/app/material-request/new-material-request';
+  window.top.location.href = '/app/material-request/new-material-request';
 };
-
+  // Make action cards open in parent window
+  document.querySelectorAll('.action-grid a').forEach(card => {
+    card.addEventListener('click', function (e) {
+      e.preventDefault(); // stop navigation inside iframe
+      const targetLink = this.getAttribute('data-link');
+      if (targetLink) {
+        window.top.location.href = targetLink; // open in parent
+      }
+    });
+  });
   </script>
 </body>
 </html>
