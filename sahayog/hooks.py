@@ -60,6 +60,7 @@ doctype_js = {
     "BOM": "public/js/bom.js",
     "Purchase Receipt": "public/js/purchase_receipt.js",
     "Stock Entry": "public/js/stock_entry.js",
+    "Shareholder": "public/js/shareholder.js"
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
@@ -116,6 +117,7 @@ app_include_js = [
 # ]
 
 after_migrate = [
+    "sahayog.patches.custom_fields.add_custom_fields_for_shareholder.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_bom.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_item.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_product_bundle.execute",
