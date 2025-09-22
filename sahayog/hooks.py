@@ -288,7 +288,8 @@ doc_events = {
     },
 
     "Branch": {
-        "after_insert": "sahayog.doc_events.branch_warehouse.create_branch_warehouse"
+        "after_insert": "sahayog.doc_events.branch_warehouse.create_branch_warehouse",
+        "before_save":"sahayog.doc_events.branch.update_employee_sol_id"
     },
 
     "Supplier Quotation": {
