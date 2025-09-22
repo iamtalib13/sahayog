@@ -1,8 +1,16 @@
 [
  {
   "charts": [],
-  "content": "[{\"id\":\"g6Xa5dwrLs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Inventory Management</b></span>\",\"col\":12}},{\"id\":\"5-I32i40tn\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":3}},{\"id\":\"nmhvF-pSV5\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"K-_veezllr\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase Request\",\"col\":4}},{\"id\":\"iPTK67CE6P\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h3\\\">Report</span>\",\"col\":12}},{\"id\":\"A5WxyhaZQL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inventory Statement\",\"col\":3}},{\"id\":\"8xD_Wt22x8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":3}},{\"id\":\"cY1FrPCTIl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}}]",
-  "custom_blocks": [],
+  "content": "[{\"id\":\"g6Xa5dwrLs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Inventory Management</b></span>\",\"col\":12}},{\"id\":\"S7leLxCx65\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Inventory\",\"col\":12}},{\"id\":\"5-I32i40tn\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":3}},{\"id\":\"nmhvF-pSV5\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"K-_veezllr\",\"type\":\"card\",\"data\":{\"card_name\":\"Purchase Request\",\"col\":4}},{\"id\":\"iPTK67CE6P\",\"type\":\"paragraph\",\"data\":{\"text\":\"<span class=\\\"h3\\\">Report</span>\",\"col\":12}},{\"id\":\"A5WxyhaZQL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inventory Statement\",\"col\":3}},{\"id\":\"8xD_Wt22x8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Balance\",\"col\":3}},{\"id\":\"cY1FrPCTIl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock Ledger\",\"col\":3}}]",
+  "custom_blocks": [
+   {
+    "custom_block_name": "Inventory",
+    "label": "Inventory",
+    "parent": "Inventory Management",
+    "parentfield": "custom_blocks",
+    "parenttype": "Workspace"
+   }
+  ],
   "docstatus": 0,
   "doctype": "Workspace",
   "for_user": "",
@@ -139,7 +147,7 @@
     "type": "Link"
    }
   ],
-  "modified": "2025-09-19 11:13:28.077669",
+  "modified": "2025-09-20 10:34:00.277949",
   "module": "Sahayog",
   "name": "Inventory Management",
   "number_cards": [],
