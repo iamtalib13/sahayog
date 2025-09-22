@@ -315,14 +315,25 @@ doc_events = {
     "Department":{
         "autoname": "sahayog.doc_events.department.department_name"
     },
-
-   
     "Lead": {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
             "sahayog.scrm.controller.lead.lead.set_is_operation_lead"
         ]
     },   
+    "Shareholder": {
+        "before_save": [
+            "sahayog.doc_events.shareholder.before_save",
+        ],
+        "before_insert": [
+            "sahayog.doc_events.shareholder.before_save",
+           
+        ],
+        "autoname": [
+            "sahayog.doc_events.shareholder.autoname",
+           
+        ],
+    }, 
 }
 
 # Scheduled Tasks
