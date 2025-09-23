@@ -67,6 +67,7 @@ doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
     "Stock Entry": "public/js/stock_entry_list.js",
     "Material Request": "public/js/material_request_list.js",
+    "Shareholder": "public/js/shareholder_list.js",
     
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
@@ -118,6 +119,7 @@ app_include_js = [
 # ]
 
 after_migrate = [
+    "sahayog.patches.custom_fields.add_custom_field_for_share_transfer.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_shareholder.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_bom.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_item.execute",
@@ -322,9 +324,7 @@ doc_events = {
         ]
     },   
     "Shareholder": {
-        "before_save": [
-            "sahayog.doc_events.shareholder.before_save",
-        ],
+      
         "before_insert": [
             "sahayog.doc_events.shareholder.before_save",
            
@@ -334,6 +334,9 @@ doc_events = {
            
         ],
     }, 
+    "Share Transfer": {
+        "autoname": "sahayog.doc_events.share_transfer.share_transfer_autoname"
+    }
 }
 
 # Scheduled Tasks
