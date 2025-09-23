@@ -38,6 +38,7 @@
   {
    "fieldname": "case_type",
    "fieldtype": "Select",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Case Type",
    "options": "\nComplaint\nMisconduct\nGrievance",
@@ -103,7 +104,8 @@
    "fieldname": "hr_employee_id",
    "fieldtype": "Link",
    "label": "HR Employee ID",
-   "options": "Employee"
+   "options": "Employee",
+   "read_only": 1
   },
   {
    "fieldname": "level",
@@ -149,7 +151,8 @@
    "fetch_from": "hr_employee_id.employee_name",
    "fieldname": "hr_name",
    "fieldtype": "Data",
-   "label": "HR Name"
+   "label": "HR Name",
+   "read_only": 1
   },
   {
    "fieldname": "case_id",
@@ -168,30 +171,36 @@
    "fetch_from": "employee_id.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
-   "label": "Employee Name"
+   "label": "Employee Name",
+   "read_only": 1
   },
   {
    "fetch_from": "employee_id.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
-   "label": "Designation"
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee_id.sol_id",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "read_only": 1
   },
   {
    "fetch_from": "employee_id.branch",
-   "fieldname": "branch_id",
-   "fieldtype": "Data",
-   "label": "Branch ID"
-  },
-  {
    "fieldname": "branch_name",
    "fieldtype": "Data",
-   "label": "Branch Name"
+   "label": "Branch Name",
+   "read_only": 1
   },
   {
    "fetch_from": "employee_id.custom_zone",
    "fieldname": "zone",
    "fieldtype": "Data",
-   "label": "Zone Name"
+   "label": "Zone Name",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -202,7 +211,7 @@
    "link_fieldname": "disciplinary_case"
   }
  ],
- "modified": "2025-09-20 12:13:03.151274",
+ "modified": "2025-09-23 13:53:03.656382",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

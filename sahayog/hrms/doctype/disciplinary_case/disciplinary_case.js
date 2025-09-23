@@ -1,5 +1,13 @@
 frappe.ui.form.on("Disciplinary Case", {
   refresh(frm) {
+    // Hide the button that contains these classes (any order)
+    $(".button.text-muted.btn.btn-default.icon-btn")
+      .has("svg.icon.icon-sm")
+      .hide();
+
+    // Or, more generally, hide button by SVG icon
+    $("button:has(svg.icon.icon-sm)").hide();
+
     // --- Enquiry Table Logic ---
     if (!frm.doc.__islocal) {
       frappe.call({
@@ -61,6 +69,14 @@ frappe.ui.form.on("Disciplinary Case", {
           }
         },
       });
+      frm.add_custom_button("Print", function () {
+        const url = frappe.urllib.get_full_url(
+          `/api/method/frappe.utils.weasyprint.download_pdf?doctype=Disciplinary+Case&name=${encodeURIComponent(
+            frm.doc.name
+          )}&print_format=Show+Cause+Notice&letterhead=Disciplinary+Case`
+        );
+        window.open(url, "_blank");
+      });
     }
   },
 
@@ -89,4 +105,34 @@ frappe.ui.form.on("Disciplinary Case", {
       frm.set_df_property("case_type_description", "options", desc);
     }
   },
+
+  // employee_id: function (frm) {
+  //   if (!frm.doc.employee_id) return;
+
+  //   console.log("Fetching employee:", frm.doc.employee_id);
+
+  //   frappe.db
+  //     .get_value("Employee", frm.doc.employee_id, [
+  //       "employee_name",
+  //       "department",
+  //       "branch",
+  //       "designation",
+  //       "custom_zone",
+  //     ])
+  //     .then((r) => {
+  //       console.log("Response from get_value:", r);
+  //       if (r && r.message) {
+  //         let emp = r.message;
+  //         frm.set_value("employee_name", emp.employee_name);
+  //         frm.set_value("branch_name", emp.branch);
+  //         frm.set_value("designation", emp.designation);
+  //         frm.set_value("zone", emp.custom_zone);
+  //       } else {
+  //         console.log("No employee found or wrong employee ID");
+  //       }
+  //     })
+  //     .catch((err) => {
+  //       console.error("Error fetching employee:", err);
+  //     });
+  // },
 });
