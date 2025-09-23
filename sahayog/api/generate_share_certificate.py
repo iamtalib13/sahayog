@@ -89,7 +89,7 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
                     draw_text(draw, (100, 850), line2, font=title_font, fill=text_color)
 
         amount = doc.get("amount")
-        formatted_amount = f"{int(amount):,}" if amount else ""
+        formatted_amount = format_indian_number(amount)
 
         draw_text(draw, (480, 935), str(doc.get("no_of_shares") or ""), font=title_font, fill=text_color)
         draw_text(draw, (230, 1010), str(doc.get("from_no") or ""), font=title_font, fill=text_color)
@@ -145,3 +145,43 @@ def draw_text_in_template(draw, position, text, font, fill=(0, 0, 0)):
     # 🔹 RED Rectangle
     # bbox = draw.textbbox((x, y), text, font=font)
     # draw.rectangle(bbox, outline="red", width=2)  # red box for debugging
+    
+
+# ============================================================
+# 🔢 Helper: Format Numbers in Indian Numbering System
+# ------------------------------------------------------------
+# In India, commas are placed differently compared to the 
+# international system:
+#   1,000 → 1,000
+#   10,000 → 10,000
+#   100,000 → 1,00,000
+#   1,000,000 → 10,00,000
+#   98,765,432 → 9,87,65,432
+#
+# This helper ensures your amounts look correct on certificates.
+# ============================================================
+def format_indian_number(number):
+    """Format number with Indian comma style (e.g., 1000000 -> 10,00,000)."""
+    try:
+        number = int(number)
+    except (TypeError, ValueError):
+        return ""
+    
+    num_str = str(number)
+    if len(num_str) <= 3:
+        return num_str
+    
+    # First group (last 3 digits)
+    last_three = num_str[-3:]
+    remaining = num_str[:-3]
+    
+    # Add commas every 2 digits in remaining
+    parts = []
+    while len(remaining) > 2:
+        parts.insert(0, remaining[-2:])
+        remaining = remaining[:-2]
+    
+    if remaining:
+        parts.insert(0, remaining)
+    
+    return ",".join(parts) + "," + last_three
