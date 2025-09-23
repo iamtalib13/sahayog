@@ -114,12 +114,12 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
 
         # 8. Save to buffer and return
         buffered = BytesIO()
-        cert_image.save(buffered, format="PNG")
+        cert_image.save(buffered, format="PDF")
         img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
         return {
             "file_data": img_str,
-            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.png"
+            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.pdf"
         }
 
     except Exception as e:
