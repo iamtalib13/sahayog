@@ -88,10 +88,13 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
                 if line2:
                     draw_text(draw, (100, 850), line2, font=title_font, fill=text_color)
 
+        amount = doc.get("amount")
+        formatted_amount = f"{int(amount):,}" if amount else ""
+
         draw_text(draw, (480, 935), str(doc.get("no_of_shares") or ""), font=title_font, fill=text_color)
         draw_text(draw, (230, 1010), str(doc.get("from_no") or ""), font=title_font, fill=text_color)
         draw_text(draw, (810, 1010), str(doc.get("to_no") or ""), font=title_font, fill=text_color)
-        draw_text(draw, (170, 1180), str(doc.get("amount") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (170, 1180), formatted_amount, font=title_font, fill=text_color)
         draw_text(draw, (490, 80), str(doc.get("name") or ""), font=ImageFont.truetype(font_path_str, size=35), fill=text_color)
         draw_text(draw, (1050, 80), str(doc.get("account_number") or ""), font=ImageFont.truetype(font_path_str, size=35), fill=text_color)
         draw_text(draw, (520, 1840), formatted_date, font=title_font, fill=text_color)
@@ -103,7 +106,7 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
         draw_text(draw, (2050, 1145), str(doc.get("no_of_shares") or ""), font=title_font, fill=text_color)
         draw_text(draw, (2890, 1145), str(doc.get("from_no") or ""), font=title_font, fill=text_color)
         draw_text(draw, (3415, 1145), str(doc.get("to_no") or ""), font=title_font, fill=text_color)
-        draw_text(draw, (3230, 1255), str(doc.get("amount") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (3230, 1255), formatted_amount, font=title_font, fill=text_color)
         draw_text(draw, (1990, 675), str(doc.get("name") or ""), font=title_font, fill=text_color)
         draw_text(draw, (3600, 675), str(doc.get("account_number") or ""), font=title_font, fill=text_color)
         draw_text(draw, (2280, 1920), formatted_date, font=title_font, fill=text_color)
@@ -111,12 +114,12 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
 
         # 8. Save to buffer and return
         buffered = BytesIO()
-        cert_image.save(buffered, format="PDF")
+        cert_image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
         return {
             "file_data": img_str,
-            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.pdf"
+            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.png"
         }
 
     except Exception as e:
