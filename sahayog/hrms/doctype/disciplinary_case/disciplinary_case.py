@@ -8,11 +8,11 @@ from frappe.model.document import Document
 class DisciplinaryCase(Document):
     def before_insert(self):
         user = frappe.session.user
-        hr_employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
-        if hr_employee:
-            self.hr_employee_id = hr_employee
+        hr_employee_data = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name"])
+        if hr_employee_data:
+            self.hr_employee_id, self.hr_name = hr_employee_data
         else:
-            frappe.msgprint("Please set User ID in Employee record.")
+            frappe.throw("Please set User ID in Employee record.")
 
     def after_insert(self):
         # Set case_id = name after record is created
