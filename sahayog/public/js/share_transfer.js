@@ -4,8 +4,8 @@ frappe.ui.form.on("Share Transfer", {
     if (!frm.is_new() && frm.doc.docstatus === 1) {
       frm
         .add_custom_button(__("Get Certificate"), function () {
-          // Show a message to the user that the process has started
-          frappe.msgprint(__("Generating your certificate..."));
+          // Freeze the screen with a "Downloading..." message
+          frappe.dom.freeze(__("Downloading..."));
 
           // Call the server-side Python method
           frappe.call({
@@ -15,9 +15,18 @@ frappe.ui.form.on("Share Transfer", {
               transfer_doc_name: frm.doc.name,
             },
             callback: function (r) {
+              frappe.dom.unfreeze(); // Unfreeze the screen
+
               if (r.message) {
                 // The server returns the file data; trigger the download
                 trigger_download(r.message.file_data, r.message.file_name);
+
+                // Show success message after download is triggered
+                frappe.msgprint(
+                  __(
+                    "Share Certificate Downloaded Successfully.<br>Please check your Downloads folder."
+                  )
+                );
               } else {
                 frappe.msgprint({
                   title: __("Error"),
