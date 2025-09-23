@@ -24,7 +24,7 @@ frappe.ui.form.on("Share Transfer", {
                 // Show success message after download is triggered
                 frappe.msgprint(
                   __(
-                    "Share Certificate Downloaded Successfully.<br>Please check your Downloads folder."
+                    `Certificate for <strong>${frm.doc.name}</strong> downloaded successfully.<br>Please check your Downloads folder.`
                   )
                 );
               } else {
