@@ -107,14 +107,51 @@ frappe.ui.form.on("Shareholder", {
       const btn = document.getElementById(
         `btn_${t.name.replace(/[^a-zA-Z0-9]/g, "")}`
       );
+
       if (btn) {
         btn.addEventListener("click", () => {
-          frappe.msgprint({
-            title: __("Certificate"),
-            message: `Share Transfer Name: <strong>${t.name}</strong>`,
+          // Freeze screen with message
+          frappe.dom.freeze(__("Downloading..."));
+
+          // Call your Python method
+          frappe.call({
+            method:
+              "sahayog.api.generate_share_certificate.generate_share_certificate",
+            args: {
+              transfer_doc_name: t.name, // Pass the Shareholder / Share Transfer name
+            },
+            callback: function (r) {
+              frappe.dom.unfreeze();
+
+              if (r.message) {
+                trigger_download(r.message.file_data, r.message.file_name);
+
+                frappe.msgprint(
+                  __(
+                    `Certificate for <strong>${t.name}</strong> downloaded successfully.<br>Please check your Downloads folder.`
+                  )
+                );
+              } else {
+                frappe.msgprint({
+                  title: __("Error"),
+                  indicator: "red",
+                  message: __("Could not generate the certificate."),
+                });
+              }
+            },
           });
         });
       }
     });
+
+    // Helper function for download
+    function trigger_download(file_data_base64, file_name) {
+      const link = document.createElement("a");
+      link.href = `data:image/png;base64,${file_data_base64}`;
+      link.download = file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   },
 });
