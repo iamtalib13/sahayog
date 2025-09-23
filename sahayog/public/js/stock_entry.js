@@ -106,7 +106,23 @@ frappe.ui.form.on("Stock Entry", {
       $(`#stock-entry-${fieldname}-tab`).hide();
 
       console.log("Hidden field/tab:", fieldname);
-    });
+      });
+      
+      //hide submit button when user is not in allowed roles
+      let allowed_roles = ["Administrator", "Owner", "Branch Manager"];
+      let has_role = allowed_roles.some(role => frappe.user.has_role(role));
+
+      if (frm.doc.__islocal) {
+        // New document - show Save button for all
+        frm.page.btn_primary.show();
+      } else {
+        // Existing document - toggle Submit button visibility based on role
+        if (!has_role) {
+          frm.page.btn_primary.hide();  // hide Submit button if no role
+        } else {
+          frm.page.btn_primary.show();  // show Submit button for allowed roles
+        }
+      }
   },
     hide_rejected_quantity: function(frm) {
     setTimeout(() => {
