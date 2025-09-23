@@ -88,20 +88,24 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
                 if line2:
                     draw_text(draw, (100, 850), line2, font=title_font, fill=text_color)
 
-        draw_text(draw, (480, 935), str(doc.get("no_of_shares", "")), font=title_font, fill=text_color)
-        draw_text(draw, (230, 1010), str(doc.get("from_no", "")), font=title_font, fill=text_color)
-        draw_text(draw, (810, 1010), str(doc.get("to_no", "")), font=title_font, fill=text_color)
-        draw_text(draw, (170, 1180), str(doc.get("amount", "")), font=title_font, fill=text_color)
+        draw_text(draw, (480, 935), str(doc.get("no_of_shares") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (230, 1010), str(doc.get("from_no") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (810, 1010), str(doc.get("to_no") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (170, 1180), str(doc.get("amount") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (490, 80), str(doc.get("name") or ""), font=ImageFont.truetype(font_path_str, size=35), fill=text_color)
+        draw_text(draw, (1050, 80), str(doc.get("account_number") or ""), font=ImageFont.truetype(font_path_str, size=35), fill=text_color)
         draw_text(draw, (520, 1840), formatted_date, font=title_font, fill=text_color)
         # LEFT side ends
 
         # RIGHT side certificate details
-        draw_text(draw, (1810, 920), str(shareholder_name), font=title_font, fill=text_color)
-        draw_text(draw, (1670, 1030), str(shareholder_address), font=title_font, fill=text_color)
-        draw_text(draw, (2050, 1145), str(doc.get("no_of_shares", "")), font=title_font, fill=text_color)
-        draw_text(draw, (2890, 1145), str(doc.get("from_no", "")), font=title_font, fill=text_color)
-        draw_text(draw, (3415, 1145), str(doc.get("to_no", "")), font=title_font, fill=text_color)
-        draw_text(draw, (3230, 1255), str(doc.get("amount","")), font=title_font, fill=text_color)
+        draw_text(draw, (1810, 920), str((shareholder_name) or ""), font=title_font, fill=text_color)
+        draw_text(draw, (1670, 1030), str((shareholder_address) or ""), font=title_font, fill=text_color)
+        draw_text(draw, (2050, 1145), str(doc.get("no_of_shares") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (2890, 1145), str(doc.get("from_no") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (3415, 1145), str(doc.get("to_no") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (3230, 1255), str(doc.get("amount") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (1990, 675), str(doc.get("name") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (3600, 675), str(doc.get("account_number") or ""), font=title_font, fill=text_color)
         draw_text(draw, (2280, 1920), formatted_date, font=title_font, fill=text_color)
         # RIGHT side ends
 
