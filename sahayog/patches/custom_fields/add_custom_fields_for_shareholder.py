@@ -5,21 +5,9 @@ def execute():
     fields = {
         "Shareholder": [
             {
-                "fieldname": "account_no",
-                "fieldtype": "Data",
-                "insert_after": "title",
-                "label": "Account No",
-            },
-              {
-                "fieldname": "get_data",
-                "fieldtype": "Button",
-                "insert_after": "account_no",
-                "label": "Get Data",
-            },
-            {
                 "fieldname": "cif",
                 "fieldtype": "Data",
-                "insert_after": "get_data",
+                "insert_after": "title",
                 "label": "CIF ID",
             },
      
@@ -46,6 +34,13 @@ def execute():
                 "fieldtype": "Small Text",
                 "insert_after": "customer_name",
                 "label": "Address",
+            },
+{
+                "fieldname": "share_transaction_details",
+                "fieldtype": "HTML",
+                "insert_after": "section_break_3",
+                "label": "Share Transaction Details",
+
             },
 
          
