@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "CRM-Opertions",
  "links": [],
- "modified": "2025-09-15 16:47:13.172608",
+ "modified": "2025-09-24 17:15:06.826194",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM-Opertions",
@@ -23,7 +23,10 @@
  "quick_lists": [],
  "roles": [
   {
-   "role": "Operations Executive"
+   "role": "Operations Support Executive"
+  },
+  {
+   "role": "Operations Support Manager"
   }
  ],
  "sequence_id": 91.0,

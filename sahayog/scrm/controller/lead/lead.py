@@ -46,3 +46,88 @@ def set_is_operation_lead(doc, method):
         doc.custom_is_operation_lead = 1
     else:
         doc.custom_is_operation_lead = 0
+
+# Get assigned employee info 
+@frappe.whitelist()
+def get_assigned_employee_info(lead_name):
+    """Fetch first assigned employee linked to the Lead via _assign"""
+    # Find assigned users from ToDo
+    assigned = frappe.get_all(
+        "ToDo",
+        filters={"reference_type": "Lead", "reference_name": lead_name, "status": "Open"},
+        fields=["allocated_to"],
+        limit_page_length=1
+    )
+    if not assigned:
+        return None
+
+    user = assigned[0].allocated_to
+
+    # Map user to Employee
+    emp = frappe.get_all(
+        "Employee",
+        filters={"user_id": user},
+        fields=["employee_name", "branch", "employee_number"],
+        limit_page_length=1
+    )
+    if not emp:
+        return {"employee_name": user, "branch": "-", "employee_number": "-"}
+
+    return emp[0]
+
+# Get lead owner info
+@frappe.whitelist()
+def get_lead_owner_info(lead_name):
+    """
+    Return lead owner details: name, employee_number, branch
+    """
+    lead = frappe.get_doc("Lead", lead_name)
+    
+    if not lead.lead_owner:
+        return {}
+
+    # Assuming 'lead_owner' links to a User, and each User has employee info
+    employee = frappe.get_all(
+        "Employee",
+        filters={"user_id": lead.lead_owner},
+        fields=["employee_name", "employee_number", "branch"],
+        limit_page_length=1,
+    )
+
+    if employee:
+        return employee[0]
+    
+    return {}
+
+
+@frappe.whitelist()
+def get_users_by_branch(doctype, txt, searchfield, start, page_len, filters):
+    """
+    Get users based on the selected branch through Employee relationship
+    """
+    branch = filters.get('branch')
+    
+    if not branch:
+        return []
+    
+    # Query to get users linked to employees in the selected branch
+    users = frappe.db.sql("""
+        SELECT DISTINCT u.name, u.full_name
+        FROM `tabUser` u
+        INNER JOIN `tabEmployee` e ON u.name = e.user_id
+        WHERE e.branch = %(branch)s
+        AND u.enabled = 1
+        AND u.name != 'Administrator'
+        AND u.name != 'Guest'
+        AND (u.name LIKE %(txt)s OR u.full_name LIKE %(txt)s)
+        ORDER BY u.full_name
+        LIMIT %(start)s, %(page_len)s
+    """, {
+        'branch': branch,
+        'txt': f'%{txt}%',
+        'start': start,
+        'page_len': page_len
+    })
+    
+    return users
+

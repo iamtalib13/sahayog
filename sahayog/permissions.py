@@ -68,7 +68,7 @@ def get_appointment_permission(user):
     conditions.append(f"`tabAppointment`.owner = '{user}'")
 
     # Add condition for assigned user (stored as a JSON string in _assign)
-    #conditions.append(f"`tabAppointment`._assign LIKE '%\"{user}\"%'")
+    conditions.append(f"`tabAppointment`._assign LIKE '%\"{user}\"%'")
 
     # Add condition for escalated user if used
     # conditions.append(f"`tabAppointment`.custom_escalated_to = '{user}'")
