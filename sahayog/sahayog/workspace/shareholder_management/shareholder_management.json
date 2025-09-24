@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Shareholder Management",
  "links": [],
- "modified": "2025-09-23 17:34:01.220154",
+ "modified": "2025-09-24 16:47:25.338401",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Shareholder Management",
@@ -24,7 +24,13 @@
  "quick_lists": [],
  "roles": [
   {
-   "role": "Branch Manager"
+   "role": "Share Admin"
+  },
+  {
+   "role": "Share User"
+  },
+  {
+   "role": "System Manager"
   }
  ],
  "sequence_id": 92.0,

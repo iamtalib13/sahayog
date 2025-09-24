@@ -139,7 +139,9 @@ def execute():
         "Translator",
         "user891",
         "Website Manager",
-        "Workspace Manager"
+        "Workspace Manager",
+        "Share User",
+        "Share Admin",
     ]
 
     for role in roles:
