@@ -34,6 +34,7 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
 
         # 4. Define fonts (portable)
         title_font = ImageFont.load_default()
+        font_path_str = None
         try:
             font_path_str = frappe.get_app_path("sahayog", "public", "fonts", "DejaVuSansMono-Bold.ttf")
             if os.path.exists(font_path_str):
@@ -57,8 +58,33 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
             except Exception:
                 formatted_date = str(doc.get("date"))
 
-        # 7. Draw dynamic data
-        draw_text = draw_text_in_template #if debug_mode else draw.text
+        # 7. Log user + timestamp, always include status in Text field
+        status_textfield = "Original" if (doc.download_counter or 0) == 0 else "Duplicate"
+        log_entry = f"{frappe.session.user} - {frappe.utils.now()} - {status_textfield}"
+
+        if doc.downloaded_by:
+            doc.downloaded_by += f"\n{log_entry}"
+        else:
+            doc.downloaded_by = log_entry
+
+        # Increment download counter AFTER logging
+        doc.download_counter = (doc.download_counter or 0) + 1
+        doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        # 8. Draw status on certificate (RED) ONLY if download_counter > 0
+        if doc.download_counter > 1:  # because we incremented it above
+            red_color = (139, 0, 0)
+            try:
+                status_font = ImageFont.truetype(font_path_str, size=40)
+            except:
+                status_font = title_font  # fallback
+            draw.text((2630, 600), "DUPLICATE", font=status_font, fill=red_color)
+            draw.text((600, 530), "DUPLICATE", font=status_font, fill=red_color)
+
+
+        # 8. Draw dynamic data
+        draw_text = draw_text_in_template  # debug friendly
 
         # LEFT side certificate details
         draw_text(draw, (310, 680), str(shareholder_name), font=title_font, fill=text_color)
@@ -112,19 +138,20 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
         draw_text(draw, (2280, 1920), formatted_date, font=title_font, fill=text_color)
         # RIGHT side ends
 
-        # 8. Save to buffer and return
+        # 9. Save to buffer and return
         buffered = BytesIO()
-        cert_image.save(buffered, format="PDF")
+        cert_image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
         return {
             "file_data": img_str,
-            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.pdf"
+            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.png"
         }
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Certificate Generation Failed")
         return None
+
 
 # 🔹 Helper: Add grid overlay
 def add_grid(draw, image_width, image_height, step=50):
@@ -136,29 +163,18 @@ def add_grid(draw, image_width, image_height, step=50):
         draw.line([(0, y), (image_width, y)], fill=(200, 200, 200), width=1)
         draw.text((5, y+5), str(y), fill=(100, 100, 100))
 
+
 # 🔹 Helper: Draw text with bounding box
 def draw_text_in_template(draw, position, text, font, fill=(0, 0, 0)):
     """Draws text and a red rectangle around it to visualize placement."""
     x, y = position
     draw.text((x, y), text, font=font, fill=fill)
-    
-    # 🔹 RED Rectangle
     # bbox = draw.textbbox((x, y), text, font=font)
-    # draw.rectangle(bbox, outline="red", width=2)  # red box for debugging
-    
+    # draw.rectangle(bbox, outline="red", width=2)
+
 
 # ============================================================
 # 🔢 Helper: Format Numbers in Indian Numbering System
-# ------------------------------------------------------------
-# In India, commas are placed differently compared to the 
-# international system:
-#   1,000 → 1,000
-#   10,000 → 10,000
-#   100,000 → 1,00,000
-#   1,000,000 → 10,00,000
-#   98,765,432 → 9,87,65,432
-#
-# This helper ensures your amounts look correct on certificates.
 # ============================================================
 def format_indian_number(number):
     """Format number with Indian comma style (e.g., 1000000 -> 10,00,000)."""
@@ -171,11 +187,9 @@ def format_indian_number(number):
     if len(num_str) <= 3:
         return num_str
     
-    # First group (last 3 digits)
     last_three = num_str[-3:]
     remaining = num_str[:-3]
     
-    # Add commas every 2 digits in remaining
     parts = []
     while len(remaining) > 2:
         parts.insert(0, remaining[-2:])
@@ -185,3 +199,13 @@ def format_indian_number(number):
         parts.insert(0, remaining)
     
     return ",".join(parts) + "," + last_three
+
+
+@frappe.whitelist()
+def reset_download_counter(docname):
+    doc = frappe.get_doc("Share Transfer", docname)
+    doc.download_counter = 0
+    #doc.downloaded_by = ""  # optional: clear log
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return True
