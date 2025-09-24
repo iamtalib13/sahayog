@@ -151,7 +151,7 @@ after_migrate = [
 #    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
     "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
 
-    # "sahayog.patches.add_roles.execute",
+     "sahayog.patches.add_roles.execute",
 
     # "sahayog.patches.fixtures.add_item_group.execute",
     # "sahayog.patches.fixtures.add_warehouses.execute",
@@ -206,6 +206,8 @@ permission_query_conditions = {
     "Agent": "sahayog.agent_and_bdo.doctype.agent.permissions.get_agents_sol_wise",
     "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission_for_warehouse",
     "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",  
+    "Shareholder": "sahayog.permissions.get_shareholder_permission",
+    "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
 }
 #
 # has_permission = {

@@ -131,3 +131,58 @@ def get_stock_entry_permission_for_warehouse(user, doctype=None):
             )
         )
     """
+
+def get_shareholder_permission(user, doctype=None):
+    if not user:
+        user = frappe.session.user
+
+    # Administrator can see all
+    if user == "Administrator":
+        return ""
+
+    roles = frappe.get_roles(user)
+
+    # Roles with full access
+    if "System Manager" in roles or "Share Admin" in roles:
+        return ""
+
+    # Only Share User allowed with sol_id filter
+    if "Share User" in roles:
+        sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+        if sol_id:
+            return f"(`tabShareholder`.sol_id = '{sol_id}')"
+        else:
+            frappe.msgprint("You don't have access")
+            return "1=0"
+
+    # No access otherwise
+    frappe.msgprint("You don't have access")
+    return "1=0"
+
+
+def get_share_transfer_permission(user, doctype=None):
+    if not user:
+        user = frappe.session.user
+
+    # Administrator can see all
+    if user == "Administrator":
+        return ""
+
+    roles = frappe.get_roles(user)
+
+    # Roles with full access
+    if "System Manager" in roles or "Share Admin" in roles:
+        return ""
+
+    # Only Share User allowed with sol_id filter
+    if "Share User" in roles:
+        sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+        if sol_id:
+            return f"(`tabShare Transfer`.sol_id = '{sol_id}')"
+        else:
+            frappe.msgprint("You don't have access")
+            return "1=0"
+
+    # No access otherwise
+    frappe.msgprint("You don't have access")
+    return "1=0"
