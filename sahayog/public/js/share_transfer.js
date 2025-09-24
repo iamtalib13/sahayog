@@ -39,6 +39,35 @@ frappe.ui.form.on("Share Transfer", {
         })
         .addClass("btn-primary"); // Optional: Makes the button stand out
     }
+
+    //add multiple roles in allowed role if required
+    let allowed_roles = ["Administrator"];
+    if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
+      frm.add_custom_button(__("Reset Counter"), function () {
+        frappe.confirm(
+          __("Are you sure you want to reset the download counter?"),
+          function () {
+            // Call server method to reset counter
+            frappe.call({
+              method:
+                "sahayog.api.generate_share_certificate.reset_download_counter",
+              args: {
+                docname: frm.doc.name,
+              },
+              callback: function (r) {
+                if (!r.exc) {
+                  frappe.show_alert({
+                    message: __("Download counter reset!"),
+                    indicator: "green",
+                  });
+                  frm.reload_doc();
+                }
+              },
+            });
+          }
+        );
+      });
+    }
   },
 });
 
