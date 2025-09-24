@@ -9,7 +9,7 @@ import math
 # CONFIGURABLE VARIABLES
 # =====================================================================
 
-LAST_SERIES_NUMBER = 609051
+LAST_SERIES_NUMBER = 0
 DEFAULT_SHARE_RATE = 10.0
 DEFAULT_TRANSFER_TYPE = "Issue"
 DEFAULT_SHARE_TYPE = "Equity"

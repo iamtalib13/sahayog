@@ -1,5 +1,9 @@
 frappe.ui.form.on("Shareholder", {
   refresh: function (frm) {
+    $(".layout-side-section").hide();
+    $(".sidebar-toggle-btn").hide();
+    frm.dashboard.links_area.hide();
+
     frm.set_df_property("naming_series", "hidden", 1);
     frm.set_df_property("title", "hidden", 1);
     frm.set_df_property("address_contacts", "hidden", 1);
@@ -23,6 +27,7 @@ frappe.ui.form.on("Shareholder", {
           "date",
           "account_number",
           "rate",
+          "no_of_shares", // ✅ included here
           "amount",
           "from_no",
           "to_no",
@@ -58,44 +63,47 @@ frappe.ui.form.on("Shareholder", {
     }
 
     let html = `
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Date</th>
-                        <th>Account Number</th>
-                        <th>Rate</th>
-                        <th>Amount</th>
-                        <th>From No</th>
-                        <th>To No</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+    <h3>Share Transaction Details</h3>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Share Certificate No</th>
+            <th>Date</th>
+            <th>Account</th>
+            <th>Rate</th>
+            <th>No. of Shares</th> <!-- ✅ shifted here -->
+            <th>Amount</th>
+            <th>From No</th>
+            <th>To No</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
 
     transfers.message.forEach((t) => {
       html += `
-                <tr>
-                    <td><a href="/app/share-transfer/${
-                      t.name
-                    }" target="_blank">${t.name}</a></td>
-                    <td>${formatDate(t.date)}</td>
-                    <td>${t.account_number || ""}</td>
-                    <td>${t.rate || ""}</td>
-                    <td>${formatAmountIndian(t.amount)}</td>
-                    <td>${t.from_no || ""}</td>
-                    <td>${t.to_no || ""}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" id="btn_${t.name.replace(
-                          /[^a-zA-Z0-9]/g,
-                          ""
-                        )}">
-                            Certificate
-                        </button>
-                    </td>
-                </tr>
-            `;
+        <tr>
+          <td><a href="/app/share-transfer/${t.name}" target="_blank">${
+        t.name
+      }</a></td>
+          <td>${formatDate(t.date)}</td>
+          <td>${t.account_number || ""}</td>
+          <td>${t.rate || ""}</td>
+          <td>${t.no_of_shares || ""}</td> <!-- ✅ placed after rate -->
+          <td>${formatAmountIndian(t.amount)}</td>
+          <td>${t.from_no || ""}</td>
+          <td>${t.to_no || ""}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" id="btn_${t.name.replace(
+              /[^a-zA-Z0-9]/g,
+              ""
+            )}">
+              Certificate
+            </button>
+          </td>
+        </tr>
+      `;
     });
 
     html += `</tbody></table>`;
@@ -110,15 +118,13 @@ frappe.ui.form.on("Shareholder", {
 
       if (btn) {
         btn.addEventListener("click", () => {
-          // Freeze screen with message
           frappe.dom.freeze(__("Downloading..."));
 
-          // Call your Python method
           frappe.call({
             method:
               "sahayog.api.generate_share_certificate.generate_share_certificate",
             args: {
-              transfer_doc_name: t.name, // Pass the Shareholder / Share Transfer name
+              transfer_doc_name: t.name,
             },
             callback: function (r) {
               frappe.dom.unfreeze();
