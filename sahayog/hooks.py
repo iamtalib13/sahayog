@@ -68,6 +68,7 @@ doctype_list_js = {
     "Stock Entry": "public/js/stock_entry_list.js",
     "Material Request": "public/js/material_request_list.js",
     "Shareholder": "public/js/shareholder_list.js",
+    "Share Transfer": "public/js/share_transfer_list.js",
     
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"

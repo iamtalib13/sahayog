@@ -1,7 +1,13 @@
 frappe.ui.form.on("Share Transfer", {
   refresh: function (frm) {
+    set_custom_breadcrumbs(frm);
+    frm.remove_custom_button("Create Journal Entry");
     // Only show the button for saved, submitted documents
-    if (!frm.is_new() && frm.doc.docstatus === 1) {
+    if (
+      !frm.is_new() &&
+      frm.doc.docstatus === 1 &&
+      frappe.user.has_role("System Manager")
+    ) {
       frm
         .add_custom_button(__("Get Certificate"), function () {
           // Freeze the screen with a "Downloading..." message
@@ -41,7 +47,7 @@ frappe.ui.form.on("Share Transfer", {
     }
 
     //add multiple roles in allowed role if required
-    let allowed_roles = ["Administrator"];
+    let allowed_roles = ["System Manager", "Share Admin"];
     if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
       frm.add_custom_button(__("Reset Counter"), function () {
         frappe.confirm(
@@ -90,4 +96,29 @@ function trigger_download(file_data_base64, file_name) {
 
   // Clean up by removing the link
   document.body.removeChild(link);
+}
+// Function to replace breadcrumbs
+function set_custom_breadcrumbs(frm) {
+  const breadcrumbs = document.getElementById("navbar-breadcrumbs");
+  if (breadcrumbs) {
+    breadcrumbs.innerHTML = ""; // Clear existing
+
+    // Home link
+    const homeLi = document.createElement("li");
+    const homeA = document.createElement("a");
+    homeA.href = "/app/shareholder-management/";
+    homeA.innerText = "Home";
+    homeLi.appendChild(homeA);
+
+    // Shareholder List link
+    const listLi = document.createElement("li");
+    const listA = document.createElement("a");
+    listA.href = "/app/share-transfer/";
+    listA.innerText = "Share Transaction List";
+    listLi.appendChild(listA);
+
+    // Append to breadcrumbs
+    breadcrumbs.appendChild(homeLi);
+    breadcrumbs.appendChild(listLi);
+  }
 }

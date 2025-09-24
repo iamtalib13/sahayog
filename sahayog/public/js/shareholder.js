@@ -3,7 +3,7 @@ frappe.ui.form.on("Shareholder", {
     $(".layout-side-section").hide();
     $(".sidebar-toggle-btn").hide();
     frm.dashboard.links_area.hide();
-
+    set_custom_breadcrumbs(frm);
     frm.set_df_property("naming_series", "hidden", 1);
     frm.set_df_property("title", "hidden", 1);
     frm.set_df_property("address_contacts", "hidden", 1);
@@ -27,10 +27,11 @@ frappe.ui.form.on("Shareholder", {
           "date",
           "account_number",
           "rate",
-          "no_of_shares", // ✅ included here
+          "no_of_shares",
           "amount",
           "from_no",
           "to_no",
+          "download_counter",
         ],
         order_by: "date desc",
       },
@@ -43,14 +44,10 @@ frappe.ui.form.on("Shareholder", {
       let decPart = x.length > 1 ? "." + x[1] : "";
       let lastThree = intPart.slice(-3);
       let otherNumbers = intPart.slice(0, -3);
-      if (otherNumbers != "") {
-        lastThree = "," + lastThree;
-      }
-      let formatted =
-        otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") +
-        lastThree +
-        decPart;
-      return formatted;
+      if (otherNumbers != "") lastThree = "," + lastThree;
+      return (
+        otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree + decPart
+      );
     }
 
     function formatDate(d) {
@@ -63,7 +60,7 @@ frappe.ui.form.on("Shareholder", {
     }
 
     let html = `
-    <h3>Share Transaction Details</h3>
+      <h3>Share Transaction Details</h3>
       <table class="table table-bordered">
         <thead>
           <tr>
@@ -71,7 +68,7 @@ frappe.ui.form.on("Shareholder", {
             <th>Date</th>
             <th>Account</th>
             <th>Rate</th>
-            <th>No. of Shares</th> <!-- ✅ shifted here -->
+            <th>No. of Shares</th>
             <th>Amount</th>
             <th>From No</th>
             <th>To No</th>
@@ -82,6 +79,12 @@ frappe.ui.form.on("Shareholder", {
     `;
 
     transfers.message.forEach((t) => {
+      const isPrinted = t.download_counter && t.download_counter > 0;
+      const buttonText = isPrinted ? "Already Printed" : "Print";
+      const buttonClass = isPrinted
+        ? "btn btn-sm btn-secondary"
+        : "btn btn-sm btn-primary";
+
       html += `
         <tr>
           <td><a href="/app/share-transfer/${t.name}" target="_blank">${
@@ -90,16 +93,15 @@ frappe.ui.form.on("Shareholder", {
           <td>${formatDate(t.date)}</td>
           <td>${t.account_number || ""}</td>
           <td>${t.rate || ""}</td>
-          <td>${t.no_of_shares || ""}</td> <!-- ✅ placed after rate -->
+          <td>${t.no_of_shares || ""}</td>
           <td>${formatAmountIndian(t.amount)}</td>
           <td>${t.from_no || ""}</td>
           <td>${t.to_no || ""}</td>
           <td>
-            <button class="btn btn-sm btn-primary" id="btn_${t.name.replace(
-              /[^a-zA-Z0-9]/g,
-              ""
-            )}">
-              Certificate
+            <button class="${buttonClass}" 
+                    id="btn_${t.name.replace(/[^a-zA-Z0-9]/g, "")}" 
+                    data-download-counter="${t.download_counter || 0}">
+              ${buttonText}
             </button>
           </td>
         </tr>
@@ -110,7 +112,7 @@ frappe.ui.form.on("Shareholder", {
 
     frm.set_df_property("share_transaction_details", "options", html);
 
-    // Attach click handlers for Certificate buttons
+    // Attach click handlers
     transfers.message.forEach((t) => {
       const btn = document.getElementById(
         `btn_${t.name.replace(/[^a-zA-Z0-9]/g, "")}`
@@ -118,14 +120,28 @@ frappe.ui.form.on("Shareholder", {
 
       if (btn) {
         btn.addEventListener("click", () => {
+          const downloadCounter =
+            parseInt(btn.getAttribute("data-download-counter")) || 0;
+
+          // If already printed → just show alert
+          if (downloadCounter > 0) {
+            frappe.show_alert(
+              {
+                message: __("Please contact to Operation Department"),
+                indicator: "red",
+              },
+              10
+            );
+            return;
+          }
+
+          // Otherwise → normal download
           frappe.dom.freeze(__("Downloading..."));
 
           frappe.call({
             method:
               "sahayog.api.generate_share_certificate.generate_share_certificate",
-            args: {
-              transfer_doc_name: t.name,
-            },
+            args: { transfer_doc_name: t.name },
             callback: function (r) {
               frappe.dom.unfreeze();
 
@@ -137,6 +153,8 @@ frappe.ui.form.on("Shareholder", {
                     `Certificate for <strong>${t.name}</strong> downloaded successfully.<br>Please check your Downloads folder.`
                   )
                 );
+
+                setTimeout(() => frm.trigger("populate_summary_html"), 1000);
               } else {
                 frappe.msgprint({
                   title: __("Error"),
@@ -150,7 +168,7 @@ frappe.ui.form.on("Shareholder", {
       }
     });
 
-    // Helper function for download
+    // Download helper
     function trigger_download(file_data_base64, file_name) {
       const link = document.createElement("a");
       link.href = `data:image/png;base64,${file_data_base64}`;
@@ -160,4 +178,34 @@ frappe.ui.form.on("Shareholder", {
       document.body.removeChild(link);
     }
   },
+
+  onload: function (frm) {
+    set_custom_breadcrumbs(frm);
+  },
 });
+
+// Function to replace breadcrumbs
+function set_custom_breadcrumbs(frm) {
+  const breadcrumbs = document.getElementById("navbar-breadcrumbs");
+  if (breadcrumbs) {
+    breadcrumbs.innerHTML = ""; // Clear existing
+
+    // Home link
+    const homeLi = document.createElement("li");
+    const homeA = document.createElement("a");
+    homeA.href = "/app/shareholder-management/";
+    homeA.innerText = "Home";
+    homeLi.appendChild(homeA);
+
+    // Shareholder List link
+    const listLi = document.createElement("li");
+    const listA = document.createElement("a");
+    listA.href = "/app/shareholder/view/list";
+    listA.innerText = "Shareholder List";
+    listLi.appendChild(listA);
+
+    // Append to breadcrumbs
+    breadcrumbs.appendChild(homeLi);
+    breadcrumbs.appendChild(listLi);
+  }
+}
