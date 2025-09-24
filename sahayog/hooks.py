@@ -513,7 +513,8 @@ fixtures = [
                 "Sahayog Home",
                 "BDO Performance",
                 "MIS Report List",
-                "Disciplinary Management"
+                "Disciplinary Management",
+                "Inventory"
 			}
         ]
     ]},
