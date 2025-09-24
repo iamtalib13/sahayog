@@ -2,6 +2,17 @@
  {
   "docstatus": 0,
   "doctype": "Custom HTML Block",
+  "html": "<iframe src=\"/inventory_management\" width=\"100%\" height=\"1000px\" style=\"border:none;\"></iframe>\n",
+  "modified": "2025-09-20 15:47:56.844029",
+  "name": "Inventory",
+  "private": 0,
+  "roles": [],
+  "script": null,
+  "style": null
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Custom HTML Block",
   "html": "<iframe\n  src=\"/mis_report_list\"\n  width=\"100%\"\n  height=\"600px\"\n  style=\"border: none; margin: 0; padding: 0; width: 100%; max-width: 100%;\"\n></iframe>\n",
   "modified": "2025-08-02 15:28:15.461525",
   "name": "MIS Report List",
