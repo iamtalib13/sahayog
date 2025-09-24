@@ -6,6 +6,7 @@ frappe.ui.form.on("Lead", {
       addAssignButton(frm); // ✅ Only show when form is not new
       customizeButtons(frm);
       addAppointmentButton(frm);
+      setIntro(frm); // Display assigned employee details
     }
 
     if (!isAdmin()) {
@@ -23,61 +24,121 @@ frappe.ui.form.on("Lead", {
 });
 
 /* ---------------- Utility Functions ---------------- */
-
 // Add "Assign" button
 function addAssignButton(frm) {
-  frm.add_custom_button(__("Assign"), () => {
-    const d = new frappe.ui.Dialog({
-      title: __("Assign Lead"),
+  frm.add_custom_button(__("Assign"), function () {
+    let dialog = new frappe.ui.Dialog({
+      title: __("Assign User"),
       fields: [
         {
-          label: "Branch",
           fieldname: "branch",
           fieldtype: "Link",
+          label: __("Branch"),
           options: "Branch",
           reqd: 1,
-          change: function () {
-            // Update employee query whenever branch changes
-            d.set_query("employee", () => {
-              const branch = d.get_value("branch") || "";
-              return { filters: { branch } };
-            });
+          onchange: function () {
+            // Clear user field when branch changes
+            dialog.set_value("user", "");
 
-            d.set_value("employee", "");
+            // Update user field options based on selected branch
+            let branch = dialog.get_value("branch");
+            if (branch) {
+              dialog.fields_dict.user.get_query = function () {
+                return {
+                  query:
+                    "sahayog.scrm.controller.lead.lead.get_users_by_branch",
+                  filters: {
+                    branch: branch,
+                  },
+                };
+              };
+              dialog.fields_dict.user.refresh();
+            }
           },
         },
         {
-          label: "Employee",
-          fieldname: "employee",
+          fieldname: "user",
           fieldtype: "Link",
-          options: "Employee",
-          ignore_user_permissions: 1,
+          label: __("User"),
+          options: "User",
           reqd: 1,
         },
       ],
       primary_action_label: __("Assign"),
-      primary_action(values) {
-        if (!values.branch || !values.employee) {
-          frappe.msgprint(__("Please select both Branch and Employee"));
-          return;
-        }
-
-        frappe.db.get_value("Employee", values.employee, "branch", (r) => {
-          if (r && r.branch !== values.branch) {
-            frappe.msgprint(
-              __("Selected employee does not belong to the chosen branch.")
-            );
-            return;
-          }
-
-          frm.set_value("custom_assigned_to", values.employee);
-          d.hide();
+      primary_action: function (values) {
+        // Assign using Frappe's built-in assign_to API
+        frappe.call({
+          method: "frappe.desk.form.assign_to.add",
+          args: {
+            assign_to: [values.user], // must be an array
+            doctype: frm.doc.doctype,
+            name: frm.doc.name,
+            notify: 1,
+            description: __("Assigned via dialog"),
+          },
+          callback: function () {
+            frappe.show_alert({
+              message: __("Lead assigned successfully"),
+              indicator: "green",
+            });
+            dialog.hide();
+            frm.reload_doc();
+          },
         });
       },
     });
 
-    d.show();
+    dialog.show();
   });
+}
+
+// Set introductory message showing Lead Owner + Assigned User
+function setIntro(frm) {
+  frm.set_intro(""); // clear first
+
+  if (!frm.doc.__islocal) {
+    // Fetch lead owner info
+    frappe.call({
+      method: "sahayog.scrm.controller.lead.lead.get_lead_owner_info",
+      args: { lead_name: frm.doc.name },
+      callback: function (ownerRes) {
+        const owner = ownerRes.message || {};
+        console.log("Fetched owner info:", owner);
+
+        // Fetch assigned employee info
+        frappe.call({
+          method:
+            "sahayog.scrm.controller.lead.lead.get_assigned_employee_info",
+          args: { lead_name: frm.doc.name },
+          callback: function (assignedRes) {
+            const assigned = assignedRes.message || {};
+
+            console.log("Owner:", owner);
+            console.log("Assigned:", assigned);
+
+            // Build intro HTML
+            const html = `
+          <div style="display: flex; gap: 40px; flex-wrap: wrap; font-size: 13px;">
+            <div style="flex: 1; min-width: 200px; padding: 8px; background: #f5f5f5; border-radius: 5px;">
+              <strong>Lead Owner</strong><br>
+              Name: ${owner.employee_name || "-"}<br>
+              Employee ID: ${owner.employee_number || "-"}<br>
+              Branch: ${owner.branch || "-"}
+            </div>
+            <div style="flex: 1; min-width: 200px; padding: 8px; background: #e8f0fe; border-radius: 5px;">
+              <strong>Assigned To</strong><br>
+              Name: ${assigned.employee_name || "-"}<br>
+              Employee ID: ${assigned.employee_number || "-"}<br>
+              Branch: ${assigned.branch || "-"}
+            </div>
+          </div>
+        `;
+            frm.set_intro(html);
+          },
+        });
+      },
+    });
+  }
 }
 
 // Hide naming_series field

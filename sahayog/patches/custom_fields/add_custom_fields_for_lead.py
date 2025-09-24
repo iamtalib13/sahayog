@@ -76,15 +76,7 @@ def execute():
                 "default": 0,
                 "insert_after": "custom_zone",
             },
-            {
-                "label":"Assigned To",
-                "fieldname": "custom_assigned_to",
-                "fieldtype": "Link",
-                "options": "Employee",
-                "insert_after": "custom_is_operation_lead",
-                "ignore_user_permissions": 1,
-            }
-
+            
 
         ],
     }
