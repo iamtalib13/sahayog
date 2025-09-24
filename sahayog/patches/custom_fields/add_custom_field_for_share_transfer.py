@@ -16,9 +16,23 @@ def execute():
                 "insert_after": "sol_id",
                 "label": "Account Number",
             },
-            
-
-         
+            {
+                "fieldname": "download_counter",
+                "fieldtype": "Int",
+                "default": "0",
+                "insert_after": "date",
+                "label": "Download Counter",
+                "read_only": 1,
+                "allow_on_submit":1,
+            },
+            {
+                "fieldname": "downloaded_by",
+                "fieldtype": "Text",
+                "insert_after": "download_counter",
+                "label": "Downloaded By<br>User - Download Time - Certificate Type",
+                "read_only": 1,
+                "allow_on_submit":1,
+            },
         ]
     }
 
