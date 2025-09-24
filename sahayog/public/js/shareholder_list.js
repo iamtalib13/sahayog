@@ -1,4 +1,10 @@
 frappe.listview_settings["Shareholder"] = {
+  refresh(listview) {
+    const btn = listview.page.btn_primary;
+    if (btn) {
+      btn.hide(); // completely hides the Add Shareholder button
+    }
+  },
   onload(listview) {
     // Hide sidebar elements
     $(".layout-side-section").hide();
