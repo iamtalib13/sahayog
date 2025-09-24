@@ -107,8 +107,8 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
         draw_text(draw, (2890, 1145), str(doc.get("from_no") or ""), font=title_font, fill=text_color)
         draw_text(draw, (3415, 1145), str(doc.get("to_no") or ""), font=title_font, fill=text_color)
         draw_text(draw, (3230, 1255), formatted_amount, font=title_font, fill=text_color)
-        draw_text(draw, (1990, 675), str(doc.get("name") or ""), font=title_font, fill=text_color)
-        draw_text(draw, (3600, 675), str(doc.get("account_number") or ""), font=title_font, fill=text_color)
+        draw_text(draw, (1990, 685), str(doc.get("name") or ""), font=ImageFont.truetype(font_path_str, size=35), fill=text_color)
+        draw_text(draw, (3600, 685), str(doc.get("account_number") or ""), font=ImageFont.truetype(font_path_str, size=35), fill=text_color)
         draw_text(draw, (2280, 1920), formatted_date, font=title_font, fill=text_color)
         # RIGHT side ends
 
