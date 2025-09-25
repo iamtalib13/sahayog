@@ -83,12 +83,12 @@ frappe.ui.form.on("Shareholder", {
       const isPrinted = t.download_counter && t.download_counter > 0;
 
       const actionHtml = isPrinted
-        ? `<span>Original already downloaded.</span><br>
+        ? `<span>Original Certificate downloaded.</span><br>
        <button class="btn btn-sm btn-primary" id="btn_${t.name.replace(
          /[^a-zA-Z0-9]/g,
          ""
        )}">Get duplicate</button>`
-        : `<span>Download original certificate:</span><br>
+        : `<span>Download original certificate</span><br>
        <button class="btn btn-sm btn-success" id="btn_${t.name.replace(
          /[^a-zA-Z0-9]/g,
          ""
