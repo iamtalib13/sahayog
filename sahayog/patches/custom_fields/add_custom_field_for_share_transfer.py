@@ -49,7 +49,7 @@ def execute():
             {
                 "fieldname": "printed_by",
                 "fieldtype": "Text",
-                "insert_after": "download_counter",
+                "insert_after": "print_type",
                 "label": "Printed By<br>User - Download Time - Certificate Type",
                 "read_only": 1,
                 "allow_on_submit":1,
