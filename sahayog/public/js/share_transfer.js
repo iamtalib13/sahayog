@@ -20,6 +20,7 @@ frappe.ui.form.on("Share Transfer", {
             },
             callback: function (r) {
               frappe.dom.unfreeze();
+              
 
               if (r.message) {
                 const file_data_base64 = r.message.file_data;
