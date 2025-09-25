@@ -59,28 +59,33 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
                 formatted_date = str(doc.get("date"))
 
         # 7. Log user + timestamp, always include status in Text field
-        status_textfield = "Original" if (doc.download_counter or 0) == 0 else "Duplicate"
+        status_textfield = doc.print_type
         log_entry = f"{frappe.session.user} - {frappe.utils.now()} - {status_textfield}"
 
-        if doc.downloaded_by:
-            doc.downloaded_by += f"\n{log_entry}"
+        if doc.printed_by:
+            doc.printed_by += f"\n{log_entry}"
         else:
-            doc.downloaded_by = log_entry
+            doc.printed_by = log_entry
 
         # Increment download counter AFTER logging
-        doc.download_counter = (doc.download_counter or 0) + 1
+        doc.print_counter = (doc.print_counter or 0) + 1
+        doc.enable_print = 0
         doc.save(ignore_permissions=True)
         frappe.db.commit()
 
-        # 8. Draw status on certificate (RED) ONLY if download_counter > 0
-        if doc.download_counter > 1:  # because we incremented it above
+        # 8. Draw status on certificate if print_type is Duplicate
+        if doc.print_type and "duplicate" in doc.print_type.lower():
             red_color = (139, 0, 0)
             try:
                 status_font = ImageFont.truetype(font_path_str, size=40)
             except:
                 status_font = title_font  # fallback
-            draw.text((2630, 600), "DUPLICATE", font=status_font, fill=red_color)
-            draw.text((600, 530), "DUPLICATE", font=status_font, fill=red_color)
+            # Watermark text
+            watermark_text = "DUPLICATE"
+            draw.text((2630, 600), watermark_text, font=status_font, fill=red_color)
+            draw.text((600, 530), watermark_text, font=status_font, fill=red_color)
+
+
 
 
         # 8. Draw dynamic data
@@ -201,12 +206,12 @@ def format_indian_number(number):
     return ",".join(parts) + "," + last_three
 
 
-
 @frappe.whitelist()
-def reset_download_counter(docname):
+def reset_enable_print(docname, print_type=None):
     doc = frappe.get_doc("Share Transfer", docname)
-    doc.download_counter = 0
-    #doc.downloaded_by = ""  # optional: clear log
+    doc.enable_print = 1
+    if print_type:
+        doc.print_type = print_type
     doc.save(ignore_permissions=True)
     frappe.db.commit()
     return True
