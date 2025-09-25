@@ -139,7 +139,8 @@ frappe.ui.form.on("Shareholder", {
           frappe.dom.freeze(__("Downloading..."));
 
           frappe.call({
-            method: "sahayog.api.generate_share_certificate",
+            method:
+              "sahayog.api.generate_share_certificate.generate_share_certificate",
             args: { transfer_doc_name: cur_frm.doc.name },
             callback: function (r) {
               if (r.message) {
