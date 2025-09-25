@@ -119,7 +119,7 @@ frappe.ui.form.on("Shareholder", {
 
     html += `</tbody></table>`;
 
-    frm.set_df_property("share_transaction_details", "options", html);
+    frm.fields_dict.share_transaction_details.$wrapper.html(html);
 
     // Attach click handlers
     transfers.message.forEach((t) => {
@@ -152,6 +152,8 @@ frappe.ui.form.on("Shareholder", {
                 // Open PDF in a new tab for preview
                 const blobUrl = URL.createObjectURL(blob);
                 window.open(blobUrl, "_blank");
+
+                frm.trigger("populate_summary_html");
 
                 // Optional: trigger download as well
                 // const link = document.createElement('a');

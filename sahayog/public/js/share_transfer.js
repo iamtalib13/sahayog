@@ -83,7 +83,11 @@ frappe.ui.form.on("Share Transfer", {
               .val();
 
             frappe.confirm(
-              __("Are you sure you want to reset the download counter?"),
+              __(
+                "Are you sure you want to enable print? This will allow the user to print a <b>" +
+                  selected +
+                  "</b> certificate."
+              ),
               function () {
                 frappe.call({
                   method:
@@ -95,7 +99,7 @@ frappe.ui.form.on("Share Transfer", {
                   callback: function (r) {
                     if (!r.exc) {
                       frappe.show_alert({
-                        message: __("Download counter reset!"),
+                        message: __("Print Enabled Successfully!"),
                         indicator: "green",
                       });
                       frm.reload_doc();
