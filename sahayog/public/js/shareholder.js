@@ -31,7 +31,7 @@ frappe.ui.form.on("Shareholder", {
           "amount",
           "from_no",
           "to_no",
-          "download_counter",
+          "enable_print",
         ],
         order_by: "date desc",
       },
@@ -80,19 +80,25 @@ frappe.ui.form.on("Shareholder", {
 
     // Attach click handlers
     transfers.message.forEach((t) => {
-      const isPrinted = t.download_counter && t.download_counter > 0;
+      let actionHtml = "";
 
-      const actionHtml = isPrinted
-        ? `<span>Original Certificate downloaded.</span><br>
-       <button class="btn btn-sm btn-primary" id="btn_${t.name.replace(
-         /[^a-zA-Z0-9]/g,
-         ""
-       )}">Get duplicate</button>`
-        : `<span>Download original certificate</span><br>
-       <button class="btn btn-sm btn-success" id="btn_${t.name.replace(
-         /[^a-zA-Z0-9]/g,
-         ""
-       )}">Download</button>`;
+      if (t.enable_print || t.enable_print == 1) {
+        // ✅ allow download
+        actionHtml = `
+    <span>Print certificate</span><br>
+    <button class="btn btn-sm btn-success" id="btn_${t.name.replace(
+      /[^a-zA-Z0-9]/g,
+      ""
+    )}">Print</button>
+  `;
+      } else {
+        // ❌ block download, show message instead of button
+        actionHtml = `
+    <span style="color:red; font-size:12px;">
+      You cannot Print certificate without approval.<br>Please contact the operations team.
+    </span>
+  `;
+      }
 
       html += `
     <tr>
@@ -123,7 +129,7 @@ frappe.ui.form.on("Shareholder", {
       if (btn) {
         btn.addEventListener("click", () => {
           console.log("clicked");
-          frappe.dom.freeze(__("Downloading..."));
+          frappe.dom.freeze(__("Printing..."));
           frappe.call({
             method:
               "sahayog.api.generate_share_certificate.generate_share_certificate",
