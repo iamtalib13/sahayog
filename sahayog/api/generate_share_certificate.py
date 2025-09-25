@@ -145,7 +145,8 @@ def generate_share_certificate(transfer_doc_name, debug_mode=False):
 
         return {
             "file_data": img_str,
-            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.png"
+            "file_name": f"Certificate-{shareholder_name.replace(' ', '_')}-{doc.name}.png",
+            "auto_print": True
         }
 
     except Exception as e:

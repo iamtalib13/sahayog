@@ -139,28 +139,24 @@ frappe.ui.form.on("Shareholder", {
           frappe.dom.freeze(__("Downloading..."));
 
           frappe.call({
-            method:
-              "sahayog.api.generate_share_certificate.generate_share_certificate",
-            args: { transfer_doc_name: t.name },
+            method: "sahayog.api.generate_share_certificate",
+            args: { transfer_doc_name: cur_frm.doc.name },
             callback: function (r) {
-              frappe.dom.unfreeze();
-
               if (r.message) {
-                trigger_download(r.message.file_data, r.message.file_name);
+                let fileData = "data:image/png;base64," + r.message.file_data;
 
-                frappe.msgprint(
-                  __(
-                    `Certificate for <strong>${t.name}</strong> downloaded successfully.<br>Please check your Downloads folder.`
-                  )
+                // Naya window kholke image inject karo
+                let printWindow = window.open("", "_blank");
+                printWindow.document.write(
+                  "<img src='" + fileData + "' style='width:100%'>"
                 );
+                printWindow.document.close();
+                printWindow.focus();
 
-                setTimeout(() => frm.trigger("populate_summary_html"), 1000);
-              } else {
-                frappe.msgprint({
-                  title: __("Error"),
-                  indicator: "red",
-                  message: __("Could not generate the certificate."),
-                });
+                // Direct print dialog trigger
+                if (r.message.auto_print) {
+                  printWindow.print();
+                }
               }
             },
           });
