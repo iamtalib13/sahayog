@@ -8,7 +8,18 @@ from frappe.model.document import Document
 class DisciplinaryCase(Document):
     def before_insert(self):
         user = frappe.session.user
-        hr_employee_data = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name"])
+
+        # Agar admin hai to dono field "Administrator" set karo
+        if user == "Administrator":
+            self.hr_employee_id = "Administrator"
+            self.hr_name = "Administrator"
+            return
+
+        hr_employee_data = frappe.db.get_value(
+            "Employee",
+            {"user_id": user},
+            ["name", "employee_name"]
+        )
         if hr_employee_data:
             self.hr_employee_id, self.hr_name = hr_employee_data
         else:
@@ -17,4 +28,5 @@ class DisciplinaryCase(Document):
     def after_insert(self):
         # Set case_id = name after record is created
         self.db_set("case_id", self.name, update_modified=False)
+
 
