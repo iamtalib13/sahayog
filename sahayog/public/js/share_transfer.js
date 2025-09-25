@@ -20,7 +20,6 @@ frappe.ui.form.on("Share Transfer", {
             },
             callback: function (r) {
               frappe.dom.unfreeze();
-              
 
               if (r.message) {
                 const file_data_base64 = r.message.file_data;
@@ -62,29 +61,55 @@ frappe.ui.form.on("Share Transfer", {
     //add multiple roles in allowed role if required
     let allowed_roles = ["System Manager", "Share Admin"];
     if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
-      frm.add_custom_button(__("Reset Counter"), function () {
-        frappe.confirm(
-          __("Are you sure you want to reset the download counter?"),
-          function () {
-            // Call server method to reset counter
-            frappe.call({
-              method:
-                "sahayog.api.generate_share_certificate.reset_download_counter",
-              args: {
-                docname: frm.doc.name,
-              },
-              callback: function (r) {
-                if (!r.exc) {
-                  frappe.show_alert({
-                    message: __("Download counter reset!"),
-                    indicator: "green",
-                  });
-                  frm.reload_doc();
-                }
-              },
-            });
-          }
-        );
+      frm.add_custom_button(__("Enable Print"), function () {
+        // Create a custom dialog with radio buttons
+        let d = new frappe.ui.Dialog({
+          title: __("Select Print Type"),
+          fields: [
+            {
+              fieldname: "print_type_html",
+              fieldtype: "HTML",
+              options: `
+                        <label><input type="radio" name="print_type" value="Original"> Original</label><br>
+                        <label><input type="radio" name="print_type" value="Duplicate"> Duplicate</label>
+                    `,
+            },
+          ],
+          primary_action_label: __("Proceed"),
+          primary_action() {
+            // Get selected radio button value
+            let selected = d.$wrapper
+              .find('input[name="print_type"]:checked')
+              .val();
+
+            frappe.confirm(
+              __("Are you sure you want to reset the download counter?"),
+              function () {
+                frappe.call({
+                  method:
+                    "sahayog.api.generate_share_certificate.reset_enable_print",
+                  args: {
+                    docname: frm.doc.name,
+                    print_type: selected,
+                  },
+                  callback: function (r) {
+                    if (!r.exc) {
+                      frappe.show_alert({
+                        message: __("Download counter reset!"),
+                        indicator: "green",
+                      });
+                      frm.reload_doc();
+                    }
+                  },
+                });
+              }
+            );
+
+            d.hide();
+          },
+        });
+
+        d.show();
       });
     }
   },
