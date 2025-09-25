@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "format:DC-{####}",
+ "autoname": "format:DIS-FY-{YYYY}-{####}",
  "creation": "2025-08-18 11:19:16.961586",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -16,6 +16,7 @@
   "suspension_required",
   "document_upload",
   "remarks",
+  "closing_remark",
   "column_break_bnqh",
   "case_id",
   "designation",
@@ -28,6 +29,7 @@
   "hr_employee_id",
   "hr_name",
   "status",
+  "response_time",
   "section_break_fakz",
   "enquiry_item_html",
   "schedule_enquiry_btn",
@@ -41,7 +43,7 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Case Type",
-   "options": "\nComplaint\nMisconduct\nGrievance",
+   "options": "\nViolation Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nOthers",
    "reqd": 1
   },
   {
@@ -64,8 +66,10 @@
    "default": "Open",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
-   "options": "\nOpen\nIn Progress\nOn Hold\nClosed\nAction Taken"
+   "options": "\nOpen\nClosed",
+   "read_only": 1
   },
   {
    "fieldname": "schedule_enquiry_btn",
@@ -87,18 +91,21 @@
    "default": "Today",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Date",
-   "label": "Issue Occurrence Date"
+   "label": "Issue Occurrence Date",
+   "reqd": 1
   },
   {
    "fieldname": "issue_report_to_hr",
    "fieldtype": "Date",
-   "label": "Issue Reported To HR"
+   "label": "Issue Reported To HR",
+   "reqd": 1
   },
   {
    "fieldname": "suspension_required",
    "fieldtype": "Select",
    "label": "Suspension Required",
-   "options": "\nYes\nNo"
+   "options": "\nYes\nNo",
+   "reqd": 1
   },
   {
    "fieldname": "hr_employee_id",
@@ -111,7 +118,7 @@
    "fieldname": "level",
    "fieldtype": "Select",
    "label": "Level",
-   "options": "\n1\n2\n3"
+   "options": "\n1\n2\n3\n4"
   },
   {
    "fieldname": "document_upload",
@@ -164,6 +171,7 @@
    "fieldname": "employee_id",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
+   "in_list_view": 1,
    "label": "Employee ID",
    "options": "Employee"
   },
@@ -171,6 +179,7 @@
    "fetch_from": "employee_id.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Employee Name",
    "read_only": 1
   },
@@ -201,6 +210,18 @@
    "fieldtype": "Data",
    "label": "Zone Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "response_time",
+   "fieldtype": "Select",
+   "label": "Response Time",
+   "options": "\n24 hours\n48 hours"
+  },
+  {
+   "depends_on": "eval:doc.status==\"Closed\";\n\n\n",
+   "fieldname": "closing_remark",
+   "fieldtype": "Small Text",
+   "label": "Closing Remark"
   }
  ],
  "grid_page_length": 50,
@@ -211,7 +232,7 @@
    "link_fieldname": "disciplinary_case"
   }
  ],
- "modified": "2025-09-23 13:53:03.656382",
+ "modified": "2025-09-25 12:11:28.578319",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
