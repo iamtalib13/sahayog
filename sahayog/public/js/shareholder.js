@@ -78,34 +78,37 @@ frappe.ui.form.on("Shareholder", {
         <tbody>
     `;
 
+    // Attach click handlers
     transfers.message.forEach((t) => {
       const isPrinted = t.download_counter && t.download_counter > 0;
-      const buttonText = isPrinted ? "Already Printed" : "Print";
-      const buttonClass = isPrinted
-        ? "btn btn-sm btn-secondary"
-        : "btn btn-sm btn-primary";
+
+      const actionHtml = isPrinted
+        ? `<span>Original already downloaded.</span><br>
+       <button class="btn btn-sm btn-primary" id="btn_${t.name.replace(
+         /[^a-zA-Z0-9]/g,
+         ""
+       )}">Get duplicate</button>`
+        : `<span>Download original certificate:</span><br>
+       <button class="btn btn-sm btn-success" id="btn_${t.name.replace(
+         /[^a-zA-Z0-9]/g,
+         ""
+       )}">Download</button>`;
 
       html += `
-        <tr>
-          <td><a href="/app/share-transfer/${t.name}" target="_blank">${
+    <tr>
+      <td><a href="/app/share-transfer/${t.name}" target="_blank">${
         t.name
       }</a></td>
-          <td>${formatDate(t.date)}</td>
-          <td>${t.account_number || ""}</td>
-          <td>${t.rate || ""}</td>
-          <td>${t.no_of_shares || ""}</td>
-          <td>${formatAmountIndian(t.amount)}</td>
-          <td>${t.from_no || ""}</td>
-          <td>${t.to_no || ""}</td>
-          <td>
-            <button class="${buttonClass}" 
-                    id="btn_${t.name.replace(/[^a-zA-Z0-9]/g, "")}" 
-                    data-download-counter="${t.download_counter || 0}">
-              ${buttonText}
-            </button>
-          </td>
-        </tr>
-      `;
+      <td>${formatDate(t.date)}</td>
+      <td>${t.account_number || ""}</td>
+      <td>${t.rate || ""}</td>
+      <td>${t.no_of_shares || ""}</td>
+      <td>${formatAmountIndian(t.amount)}</td>
+      <td>${t.from_no || ""}</td>
+      <td>${t.to_no || ""}</td>
+      <td>${actionHtml}</td>
+    </tr>
+  `;
     });
 
     html += `</tbody></table>`;
@@ -117,63 +120,52 @@ frappe.ui.form.on("Shareholder", {
       const btn = document.getElementById(
         `btn_${t.name.replace(/[^a-zA-Z0-9]/g, "")}`
       );
-
       if (btn) {
         btn.addEventListener("click", () => {
-          const downloadCounter =
-            parseInt(btn.getAttribute("data-download-counter")) || 0;
-
-          // If already printed → just show alert
-          if (downloadCounter > 0) {
-            frappe.show_alert(
-              {
-                message: __("Please contact to Operation Department"),
-                indicator: "red",
-              },
-              10
-            );
-            return;
-          }
-
-          // Otherwise → normal download
+          console.log("clicked");
           frappe.dom.freeze(__("Downloading..."));
-
           frappe.call({
             method:
               "sahayog.api.generate_share_certificate.generate_share_certificate",
-            args: { transfer_doc_name: cur_frm.doc.name },
+            args: { transfer_doc_name: t.name },
             callback: function (r) {
+              frappe.dom.unfreeze();
               if (r.message) {
-                let fileData = "data:image/png;base64," + r.message.file_data;
+                const file_data_base64 = r.message.file_data;
+                const file_name = r.message.file_name;
 
-                // Naya window kholke image inject karo
-                let printWindow = window.open("", "_blank");
-                printWindow.document.write(
-                  "<img src='" + fileData + "' style='width:100%'>"
-                );
-                printWindow.document.close();
-                printWindow.focus();
-
-                // Direct print dialog trigger
-                if (r.message.auto_print) {
-                  printWindow.print();
+                // Convert base64 to Blob
+                const byteCharacters = atob(file_data_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: "application/pdf" });
+
+                // Open PDF in a new tab for preview
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, "_blank");
+
+                // Optional: trigger download as well
+                // const link = document.createElement('a');
+                // link.href = blobUrl;
+                // link.download = file_name;
+                // document.body.appendChild(link);
+                // link.click();
+                // document.body.removeChild(link);
+              } else {
+                frappe.msgprint({
+                  title: __("Error"),
+                  indicator: "red",
+                  message: __("Could not generate the certificate."),
+                });
               }
             },
           });
         });
       }
     });
-
-    // Download helper
-    function trigger_download(file_data_base64, file_name) {
-      const link = document.createElement("a");
-      link.href = `data:image/png;base64,${file_data_base64}`;
-      link.download = file_name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
   },
 
   onload: function (frm) {
