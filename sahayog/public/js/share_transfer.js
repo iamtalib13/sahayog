@@ -10,29 +10,41 @@ frappe.ui.form.on("Share Transfer", {
     ) {
       frm
         .add_custom_button(__("Get Certificate"), function () {
-          // Freeze the screen with a "Downloading..." message
-          frappe.dom.freeze(__("Downloading..."));
+          frappe.dom.freeze(__("Generating Certificate..."));
 
-          // Call the server-side Python method
           frappe.call({
             method:
-              "sahayog.api.generate_share_certificate.generate_share_certificate", // Your app name and method path
+              "sahayog.api.generate_share_certificate.generate_share_certificate",
             args: {
               transfer_doc_name: frm.doc.name,
             },
             callback: function (r) {
-              frappe.dom.unfreeze(); // Unfreeze the screen
+              frappe.dom.unfreeze();
 
               if (r.message) {
-                // The server returns the file data; trigger the download
-                trigger_download(r.message.file_data, r.message.file_name);
+                const file_data_base64 = r.message.file_data;
+                const file_name = r.message.file_name;
 
-                // Show success message after download is triggered
-                frappe.msgprint(
-                  __(
-                    `Certificate for <strong>${frm.doc.name}</strong> downloaded successfully.<br>Please check your Downloads folder.`
-                  )
-                );
+                // Convert base64 to Blob
+                const byteCharacters = atob(file_data_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: "application/pdf" });
+
+                // Open PDF in a new tab for preview
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, "_blank");
+
+                // Optional: trigger download as well
+                // const link = document.createElement('a');
+                // link.href = blobUrl;
+                // link.download = file_name;
+                // document.body.appendChild(link);
+                // link.click();
+                // document.body.removeChild(link);
               } else {
                 frappe.msgprint({
                   title: __("Error"),
@@ -43,7 +55,7 @@ frappe.ui.form.on("Share Transfer", {
             },
           });
         })
-        .addClass("btn-primary"); // Optional: Makes the button stand out
+        .addClass("btn-primary");
     }
 
     //add multiple roles in allowed role if required
@@ -77,26 +89,26 @@ frappe.ui.form.on("Share Transfer", {
   },
 });
 
-// This helper function triggers the browser download
-function trigger_download(file_data_base64, file_name) {
-  // Create a temporary link element
-  const link = document.createElement("a");
+// // This helper function triggers the browser download
+// function trigger_download(file_data_base64, file_name) {
+//   // Create a temporary link element
+//   const link = document.createElement("a");
 
-  // Set the link's href to the base64 data URL
-  link.href = `data:image/png;base64,${file_data_base64}`;
+//   // Set the link's href to the base64 data URL
+//   link.href = `data:image/png;base64,${file_data_base64}`;
 
-  // Set the download attribute with the desired file name
-  link.download = file_name;
+//   // Set the download attribute with the desired file name
+//   link.download = file_name;
 
-  // Append the link to the body (required for Firefox)
-  document.body.appendChild(link);
+//   // Append the link to the body (required for Firefox)
+//   document.body.appendChild(link);
 
-  // Programmatically click the link to trigger the download
-  link.click();
+//   // Programmatically click the link to trigger the download
+//   link.click();
 
-  // Clean up by removing the link
-  document.body.removeChild(link);
-}
+// Clean up by removing the link
+//   document.body.removeChild(link);
+// }
 // Function to replace breadcrumbs
 function set_custom_breadcrumbs(frm) {
   const breadcrumbs = document.getElementById("navbar-breadcrumbs");
