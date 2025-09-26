@@ -35,6 +35,14 @@ frappe.listview_settings["Shareholder"] = {
             // Validate if account number is numeric only
             const account_number = values.account_number.trim();
 
+            // Validation for scheme code '9001'
+            if (!account_number.includes("9001")) {
+              frappe.msgprint(
+                __("Only 9001 scheme code account number is allowed")
+              );
+              return;
+            }
+
             // Check if input is empty
             if (!account_number) {
               frappe.msgprint(__("Account Number is required"));
@@ -57,6 +65,9 @@ frappe.listview_settings["Shareholder"] = {
               );
               return;
             }
+
+            // If all validations pass
+            frappe.msgprint(__("Account Number accepted: " + account_number));
 
             // If validation passes, make the frappe.call
             frappe.call({
