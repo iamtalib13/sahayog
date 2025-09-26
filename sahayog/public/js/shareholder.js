@@ -108,9 +108,9 @@ function generate_transactions_table_html(transfers) {
     ].join("/");
   };
 
-  // --- Generate table rows ---
+  // --- Generate table rows with Sr. No ---
   const rows = transfers
-    .map((t) => {
+    .map((t, index) => {
       const btn_id = `btn_print_${t.name.replace(/[^a-zA-Z0-9]/g, "")}`;
       const actionHtml = t.enable_print
         ? `<button class="btn btn-sm btn-success" id="${btn_id}">Print Share Certificate</button>`
@@ -118,6 +118,7 @@ function generate_transactions_table_html(transfers) {
 
       return `
         <tr>
+          <td>${index + 1}</td>
           <td><a href="/app/share-transfer/${t.name}" target="_blank">${
         t.name
       }</a></td>
@@ -137,7 +138,12 @@ function generate_transactions_table_html(transfers) {
   // --- Assemble the final HTML with embedded CSS ---
   return `
   <style>
-    .simple-share-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+    .simple-share-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 15px; 
+      font-size: 13px; 
+    }
     .simple-share-table th, .simple-share-table td {
       padding: 12px 8px;
       text-align: left; 
@@ -157,16 +163,46 @@ function generate_transactions_table_html(transfers) {
       line-height: 1.4;
       display: inline-block; /* keeps it neat */
     }
-    .simple-share-table thead th { background-color: #f8f9fa; font-weight: 600; color: #495057; border-bottom-width: 2px; }
-    .simple-share-table tbody tr:hover { background-color: #f1f3f5; }
-    .simple-share-table td a { color: var(--primary-color); font-weight: 500; }
-    .simple-share-table .btn { font-size: 12px; padding: 4px 10px; }
+    .simple-share-table thead th { 
+      background-color: #f8f9fa; 
+      font-weight: 600; 
+      color: #495057; 
+      border-bottom-width: 2px; 
+    }
+    .simple-share-table tbody tr:hover { 
+      background-color: #f1f3f5; 
+    }
+    .simple-share-table td a { 
+      color: var(--primary-color); 
+      font-weight: 500; 
+    }
+    .simple-share-table .btn { 
+      font-size: 12px; 
+      padding: 4px 10px; 
+    }
   </style>
+
+  <p style="font-size: 13.5px; line-height: 1.5;">
+    <strong>Note: The Share Investment Certificate can be printed only once via the MYSAHAYOG portal. 
+    For printing issues, contact the central team at 
+    <a href="mailto:supportdesk@sahayogmultistate.com" style="color: #1a73e8; text-decoration: none;">
+      supportdesk@sahayogmultistate.com
+    </a>.</strong>
+  </p>
+
   <table class="simple-share-table">
     <thead>
       <tr>
-        <th>Share Certificate No</th><th>Date</th><th>Account</th><th>Rate</th>
-        <th>No. of Shares</th><th>Amount</th><th>From No</th><th>To No</th><th>Action</th>
+        <th>Sr. No</th>
+        <th>Share Certificate No</th>
+        <th>Date</th>
+        <th>Account</th>
+        <th>Rate</th>
+        <th>No. of Shares</th>
+        <th>Amount</th>
+        <th>From No</th>
+        <th>To No</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
