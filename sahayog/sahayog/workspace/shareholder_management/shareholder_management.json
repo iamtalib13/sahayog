@@ -1,0 +1,48 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"zdjperm1_c\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Shareholder Management</b></span>\",\"col\":12}},{\"id\":\"tkAbiuNkhL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Shareholder\",\"col\":3}}]",
+ "creation": "2025-09-23 10:32:38.656673",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "expenses",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Shareholder Management",
+ "links": [],
+ "modified": "2025-09-26 16:46:17.113263",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Shareholder Management",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Share Admin"
+  },
+  {
+   "role": "Share User"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 92.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Shareholder",
+   "link_to": "Shareholder",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Shareholder Management"
+}
