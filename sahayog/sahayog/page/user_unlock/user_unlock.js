@@ -93,7 +93,7 @@ frappe.pages['user-unlock'].on_page_load = function(wrapper) {
                 <div class="instructions">
                     <strong>How to use</strong>
                     <ul class="steps">
-                        <li><span class="step-label">Step 1:</span> Enter <b>Finacle User ID (email)</b> or <b>Account Number</b>.</li>
+                        <li><span class="step-label">Step 1:</span> Enter <b>Finacle User ID </b>.</li>
                         <li><span class="step-label">Step 2:</span> Click <b>Check Lock</b> to verify status.</li>
                         <li><span class="step-label">Step 3:</span> If locked, click <b>Unlock</b> to reset.</li>
                     </ul>
