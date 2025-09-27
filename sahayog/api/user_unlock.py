@@ -48,7 +48,34 @@ def db_connection():
         # Raise a frappe exception so frontend receives helpful message
         frappe.throw(_("Database Connection Error: {0}").format(str(e)))
 
-
+@frappe.whitelist()
+def test_db_connection():
+    """
+    Test connection to the external PostgreSQL DB (Finacle) without affecting normal db_connection().
+    Returns: {"success": True/False, "message": "..."}
+    """
+    try:
+        # Get credentials
+        creds = frappe.get_single("Finacle Settings")
+        
+        # Attempt connection with a timeout
+        conn = psycopg2.connect(
+            host=creds.host,
+            port=creds.port,
+            user=creds.user,
+            password=creds.get_password("password"),
+            database=creds.database_name,
+            connect_timeout=10  # 10 seconds timeout
+        )
+        conn.close()
+        return {"success": True, "message": "Database connection successful!"}
+    
+    except Exception as e:
+        # Log error internally for debugging
+        frappe.log_error(frappe.get_traceback(), "DB Test Connection Failed")
+        # Return failure to frontend without raising exception
+        return {"success": False, "message": f"Database connection failed: {str(e)}"}
+    
 @frappe.whitelist(allow_guest=False)
 def get_locked_flg(account_number=None, user_id=None):
     """
