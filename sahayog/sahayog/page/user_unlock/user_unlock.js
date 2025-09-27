@@ -77,17 +77,14 @@ frappe.pages['user-unlock'].on_page_load = function(wrapper) {
         const content = `
             <div class="unlock-container">
                 <div class="unlock-header">
-                    <img src="/assets/sahayog/images/sahayog_logo_2025.png"
-                         alt="Logo" style="width:190px;height:44px;margin-bottom:10px;
-                         border-radius:12px;box-shadow:0 3px 12px rgba(0,0,0,0.1);"/>
                     <div class="unlock-title">Unlock Finacle User ID</div>
                     <div class="unlock-sub">Branch Manager / Branch Operation Manager access required</div>
                 </div>
                 <label class="input-label" for="user-id">
-                    Enter User ID (Email) or Account Number.
+                    Enter User ID
                 </label>
                 <input type="text" id="user-id" class="form-control"
-                       placeholder="eg. user@example.com or 1002345678" maxlength="30" />
+                       placeholder="" maxlength="30" />
                 <div class="row">
                     <div class="flex-1"><button id="check-btn" class="btn-primary">Check Lock</button></div>
                     <div><button id="unlock-btn" class="btn-primary" disabled>Unlock</button></div>
