@@ -2,16 +2,30 @@ import frappe
 from frappe import _
 import psycopg2
 from psycopg2.extras import RealDictCursor
-
 @frappe.whitelist()
 def check_user_access():
-    import frappe
+
     user = frappe.get_doc("User", frappe.session.user)
-    if "System Manager" in [role.role for role in user.get("roles")]:
+    roles = [role.role.lower().strip() for role in user.get("roles")]
+
+    if "system manager" in roles:
         return {"allowed": True}
-    employee = frappe.get_all("Employee", filters={"user_id": frappe.session.user}, fields=["designation"])
-    if employee and employee[0].designation in ["Branch Manager", "Branch Operation Manager"]:
-        return {"allowed": True}
+
+    employee = frappe.get_all(
+        "Employee",
+        filters={"user_id": frappe.session.user},
+        fields=["designation"],
+        limit=1
+    )
+    if employee:
+        designation = (employee[0].designation or "").strip().lower()
+        if (
+            "branch manager" in designation
+            or "branch operation manager" in designation
+            or "branch opration manager" in designation  # typo handling
+        ):
+            return {"allowed": True}
+
     return {"allowed": False}
 
 

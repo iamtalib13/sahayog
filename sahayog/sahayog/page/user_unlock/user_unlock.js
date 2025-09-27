@@ -125,6 +125,11 @@ frappe.pages['user-unlock'].on_page_load = function(wrapper) {
         };
 
         $input.on('input', () => {
+            const pos = $input[0].selectionStart;
+            $input.val($input.val().toUpperCase());
+            $input[0].setSelectionRange(pos, pos);
+
+            // Enable unlock button only if input is non-empty
             $unlockBtn.prop('disabled', !$input.val().trim());
         });
 
