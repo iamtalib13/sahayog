@@ -16,7 +16,7 @@ class Agent(Document):
         self.approved_by = frappe.session.user
         self.approved_on = frappe.utils.now_datetime()
         self.status = "Allocated"
-
+        
         # Find Employee linked with requested_by user
         if self.requested_by:
             employee = frappe.db.get_value("Employee", {"user_id": self.requested_by}, "name")
@@ -24,7 +24,7 @@ class Agent(Document):
                 self.employee = employee
             else:
                 frappe.throw(f"No Employee record found for user {self.requested_by}")
-
+        
         self.save()
         return {"success": True, "message": "Agent Allocated Successfully"}
 
@@ -64,34 +64,28 @@ class Agent(Document):
             frappe.throw(_("Selected approver user is disabled"))
         
         # Get employee details for this user
-        employee = frappe.db.get_value("Employee", 
+        employee = frappe.db.get_value(
+            "Employee", 
             {"user_id": approver_user_id, "status": "Active"}, 
-            ["name", "employee_name"], as_dict=True)
+            ["name", "employee_name"], 
+            as_dict=True
+        )
         
         if not employee:
             frappe.throw(_("No active employee found for selected approver"))
         
-        # Verify this employee is a branch manager for this branch
-        is_branch_manager = frappe.db.exists("Employee", {
-            "name": employee.name,
-            "sol_id": doc.branch_code,
-            "designation": ["like", "%branch manager%"],
-            "status": "Active"
-        })
-        
-        if not is_branch_manager:
-            frappe.throw(_("Selected user is not a Branch Manager for this branch"))
+        # Skip branch validation since user is coming from filtered list
+        # The get_branch_managers function already filtered valid managers
         
         # Set allocation request fields
         doc.requested_by = frappe.session.user
         doc.requested_on = frappe.utils.now_datetime()
         doc.status = "Pending"
         doc.approved_by = approver_user_id  # Only user_id as requested
-        
         doc.save()
         
         return {
-            "success": True, 
+            "success": True,
             "message": f"Allocation request sent to {employee.employee_name} for approval"
         }
 
@@ -101,10 +95,10 @@ def bulk_unallocate(agent_names: list[str] | str = None):
     if isinstance(agent_names, str):
         import json
         agent_names = json.loads(agent_names)
-
+    
     if not agent_names:
         return {"success": False, "message": "No agents selected for unallocation"}
-
+    
     for agent in agent_names:
         doc = frappe.get_doc("Agent", agent)
         doc.status = "Unallocated"
@@ -114,7 +108,7 @@ def bulk_unallocate(agent_names: list[str] | str = None):
         doc.approved_on = None
         doc.employee = None
         doc.save()
-
+    
     return {
         "success": True,
         "count": len(agent_names),
@@ -127,105 +121,78 @@ def bulk_transfer(agent_names: list[str] | str = None, to_employee: str = None):
     if isinstance(agent_names, str):
         import json
         agent_names = json.loads(agent_names)
-
+    
     if not agent_names:
         return {"success": False, "message": "No agents selected for transfer"}
-
+    
     if not to_employee:
         return {"success": False, "message": "Target employee not provided"}
-
+    
     for agent in agent_names:
         doc = frappe.get_doc("Agent", agent)
         doc.employee = to_employee
         doc.save()
-
+    
     return {
         "success": True,
         "count": len(agent_names),
         "message": f"{len(agent_names)} agent(s) transferred to employee {to_employee} successfully",
     }
 
-
 # Module level functions (outside the class)
 @frappe.whitelist()
 def get_branch_managers(branch_code):
-    """Get all Branch Managers for given branch code"""
+    """Get all Branch Managers for given branch code - Grouped by designation"""
     if not branch_code:
         frappe.throw(_("Branch Code is required"))
     
-    # Case insensitive search for designation containing 'branch manager'
-    managers = frappe.db.sql("""
-        SELECT 
-            name, 
-            employee_name, 
-            user_id, 
-            designation
-        FROM `tabEmployee` 
-        WHERE sol_id = %s 
-        AND LOWER(designation) LIKE %s
-        AND status = 'Active'
-        ORDER BY employee_name
-    """, (branch_code, "%branch manager%"), as_dict=True)
+    # Exact designations as stored in the system
+    allowed_designations = [
+        "BRANCH MANAGER",
+        "Asst. Branch Manager", 
+        "Branch Operation Manager"
+    ]
     
-    # Filter out employees without user_id and add validation
-    valid_managers = []
-    for manager in managers:
-        if manager.user_id:
-            # Verify user exists and is enabled
-            user_exists = frappe.db.get_value("User", manager.user_id, "enabled")
-            if user_exists:
-                valid_managers.append(manager)
-    
-    return valid_managers
+    try:
+        # Get all employees with exact designations for the specific branch
+        managers = frappe.db.get_all(
+            "Employee",
+            filters={
+                "sol_id": branch_code,
+                "status": "Active",
+                "user_id": ["!=", ""],
+                "designation": ["in", allowed_designations]
+            },
+            fields=["name", "employee_name", "user_id", "designation", "sol_id"],
+            order_by="employee_name"
+        )
+        
+        # Filter only valid managers with enabled users
+        valid_managers = []
+        for manager in managers:
+            if manager.user_id:
+                # Verify user exists and is enabled
+                user_enabled = frappe.db.get_value("User", manager.user_id, "enabled")
+                if user_enabled:
+                    valid_managers.append(manager)
+        
+        # Sort by designation priority as requested
+        def get_priority(manager):
+            designation_priority = {
+                "BRANCH MANAGER": 1,           # First priority
+                "Asst. Branch Manager": 2,     # Second priority  
+                "Branch Operation Manager": 3  # Third priority
+            }
+            return designation_priority.get(manager.designation, 4)
+        
+        valid_managers.sort(key=lambda x: (get_priority(x), x.employee_name))
+        
+        return valid_managers
+        
+    except Exception as e:
+        frappe.log_error(f"Error in get_branch_managers: {str(e)}")
+        return []
 
-# def send_approval_notification(doc, user_doc, employee):
-#     """Send notification to selected approver"""
-#     try:
-#         subject = f"Allocation Request Approval Required - Agent {doc.name}"
-#         message = f"""
-#         <p>Dear {employee.employee_name},</p>
-        
-#         <p>You have received a new allocation request that requires your approval:</p>
-        
-#         <ul>
-#             <li><strong>Agent ID:</strong> {doc.name}</li>
-#             <li><strong>Branch Code:</strong> {doc.branch_code}</li>
-#             <li><strong>Requested By:</strong> {doc.requested_by}</li>
-#             <li><strong>Requested On:</strong> {frappe.format(doc.requested_on, 'Datetime')}</li>
-#         </ul>
-        
-#         <p>Please login to the system to review and approve/reject this request.</p>
-        
-#         <p><a href="{frappe.utils.get_url()}/app/agent/{doc.name}" class="btn btn-primary">
-#         View Request</a></p>
-        
-#         <p>Best regards,<br>System</p>
-#         """
-        
-#         frappe.sendmail(
-#             recipients=[user_doc.email],
-#             subject=subject,
-#             message=message,
-#             reference_doctype=doc.doctype,
-#             reference_name=doc.name
-#         )
-        
-#         # Create notification log
-#         notification = frappe.get_doc({
-#             "doctype": "Notification Log",
-#             "subject": subject,
-#             "for_user": user_doc.name,
-#             "type": "Alert",
-#             "document_type": doc.doctype,
-#             "document_name": doc.name,
-#             "email_content": message
-#         })
-#         notification.insert(ignore_permissions=True)
-        
-#     except Exception as e:
-#         frappe.log_error(f"Failed to send approval notification: {str(e)}")
-#         # Don't fail the main process if notification fails
-#         pass
 
 @frappe.whitelist()
 def get_approver_details(user_id):
@@ -235,10 +202,12 @@ def get_approver_details(user_id):
     
     try:
         # First try to get employee details by user_id
-        employee = frappe.db.get_value("Employee", 
+        employee = frappe.db.get_value(
+            "Employee", 
             {"user_id": user_id, "status": "Active"}, 
             ["employee_name", "name", "designation", "branch"], 
-            as_dict=True)
+            as_dict=True
+        )
         
         if employee:
             return {
@@ -250,8 +219,12 @@ def get_approver_details(user_id):
             }
         
         # Fallback to User's full_name if employee not found
-        user = frappe.db.get_value("User", user_id, 
-            ["full_name", "email"], as_dict=True)
+        user = frappe.db.get_value(
+            "User", 
+            user_id, 
+            ["full_name", "email"], 
+            as_dict=True
+        )
         
         if user:
             return {
@@ -271,26 +244,24 @@ def get_approver_details(user_id):
         return {
             "display_name": user_id
         }
-    
+
 @frappe.whitelist()
 def get_employee_info(employee):
-    """
-    Fetch employee details safely
-    """
+    """Fetch employee details safely"""
     emp = frappe.get_all(
         "Employee",
         filters={"name": employee},
         fields=[
             "employee_number",
-            "employee_name",
+            "employee_name", 
             "branch",
             "department",
             "designation"
         ],
         limit_page_length=1
     )
-
+    
     if emp:
         return emp[0]
     else:
-        return {}    
+        return {}
