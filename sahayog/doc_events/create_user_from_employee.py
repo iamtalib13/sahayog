@@ -12,7 +12,8 @@ def create_user(doc, method):
         last_name = doc.last_name
         employee_number = doc.employee_number
         email = f"{employee_number}@sahayog.com"
-
+        module_profile = "Employee"
+        
         # --- Check if User already exists ---
         if frappe.db.exists('User', {'email': email}) or frappe.db.exists('User', {'username': employee_number}):
             frappe.msgprint(f"User with email '{email}' or username '{employee_number}' already exists. Skipping creation.")
@@ -27,7 +28,7 @@ def create_user(doc, method):
         user_doc.username = employee_number
         user_doc.send_welcome_email = 0
         user_doc.new_password = employee_number
-
+        user_doc.module_profile = module_profile
         # Assign roles
         roles_to_assign = ["Sales User", "Employee"]
         for r in roles_to_assign:
