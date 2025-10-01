@@ -456,12 +456,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         <!-- Export Progress Modal -->
         <div class="modal-overlay" id="export-progress-overlay"></div>
         <div class="export-progress-modal" id="export-progress-modal">
-          <h4>Exporting Data</h4>
+          <h4>Exporting Selected Date Range</h4>
           <div class="export-progress-percentage" id="export-progress-percentage">0%</div>
           <div class="export-progress-bar">
             <div class="export-progress-fill" id="export-progress-fill" style="width: 0%"></div>
           </div>
           <div class="export-progress-text" id="export-progress-text">Preparing export...</div>
+          <div id="export-date-info" style="margin: 15px 0; font-size: 14px; color: #6c7680;"></div>
           <button class="export-cancel-btn" id="export-cancel-btn">Cancel</button>
         </div>
 
@@ -631,6 +632,11 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         $("#export-progress-overlay").show();
         $("#export-progress-modal").show();
         updateExportProgress(0, "Preparing export...");
+
+        // Show selected date range
+        const fromDate = $("#from-date").val();
+        const toDate = $("#to-date").val();
+        $("#export-date-info").text(`Date Range: ${fromDate} to ${toDate}`);
       }
 
       function hideExportProgress() {
@@ -1425,7 +1431,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         document.body.removeChild(link);
       });
 
-      // Export CSV functionality using existing expanded rows with proper permission handling
       // Export CSV functionality using existing expanded rows with proper permission handling
       $("#export-csv").on("click", async function () {
         try {
