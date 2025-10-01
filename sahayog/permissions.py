@@ -20,16 +20,24 @@ def get_lead_permission(user, doctype=None):
         as_dict=True
     )
 
+    # Branch Manager - Only their branch leads
     if "Branch Manager" in user_roles and employee and employee.branch:
         conditions.append(f"`tabLead`.custom_branch = '{employee.branch}'")
 
+    # Zonal Manager - All leads in their zone
     if "Zonal Manager" in user_roles and employee and employee.custom_zone:
         conditions.append(f"`tabLead`.custom_zone = '{employee.custom_zone}'")
 
-    if "Regional Manager" in user_roles and employee and employee.custom_region:
-        conditions.append(f"`tabLead`.custom_region = '{employee.custom_region}'")
+    # ✅ Regional Manager - Only their region within their zone
+    if "Regional Manager" in user_roles and employee:
+        if employee.custom_zone and employee.custom_region:
+            # Both zone AND region must match (proper hierarchy)
+            conditions.append(f"(`tabLead`.custom_zone = '{employee.custom_zone}' AND `tabLead`.custom_region = '{employee.custom_region}')")
+        elif employee.custom_zone:
+            # Fallback to zone if region not set
+            conditions.append(f"`tabLead`.custom_zone = '{employee.custom_zone}'")
 
-    # Also allow access if user owns or is assigned to the lead
+    # Universal access - Owner and assigned leads (all roles get this)
     conditions.append(f"`tabLead`.owner = '{user}'")
     conditions.append(f"`tabLead`._assign LIKE '%\"{user}\"%'")
 
