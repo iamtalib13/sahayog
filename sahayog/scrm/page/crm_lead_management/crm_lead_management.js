@@ -1426,16 +1426,222 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       });
 
       // Export CSV functionality using existing expanded rows with proper permission handling
-      $("#export-csv").on("click", function () {
-        if (expandedLeadRows.length === 0) {
-          frappe.msgprint(
-            "No data available for export. Please load some leads first."
-          );
-          return;
-        }
-
+      // Export CSV functionality using existing expanded rows with proper permission handling
+      $("#export-csv").on("click", async function () {
         try {
-          // Create comprehensive CSV content from expanded rows (already permission-filtered)
+          showExportProgress();
+          updateExportProgress(5, "Initializing backend export...");
+
+          if (exportCancelled) return;
+
+          updateExportProgress(10, "Fetching complete data from backend...");
+
+          const filters = getDateFilters();
+
+          // Single API call to get all data from backend
+          const response = await frappe.call({
+            method: "sahayog.scrm.api.lead_owner_data.get_complete_crm_data",
+            args: {
+              filters: filters,
+              limit_start: 0,
+              limit_page_length: 50000, // Large limit to get all data
+            },
+            freeze: false,
+          });
+
+          if (exportCancelled) return;
+
+          const data = response.message;
+
+          if (!data.success) {
+            hideExportProgress();
+            frappe.msgprint(`Error loading data: ${data.error}`);
+            return;
+          }
+
+          updateExportProgress(
+            30,
+            `Found ${data.pagination.total_count} leads. Processing data...`
+          );
+
+          if (data.pagination.total_count === 0) {
+            hideExportProgress();
+            frappe.msgprint("No leads found for the selected filters.");
+            return;
+          }
+
+          const maxRecords = 50000;
+          if (data.pagination.total_count > maxRecords) {
+            hideExportProgress();
+            frappe.msgprint(
+              `Dataset too large (${data.pagination.total_count} records). Maximum export limit is ${maxRecords} records. Please apply date filters to reduce the dataset size.`
+            );
+            return;
+          }
+
+          updateExportProgress(50, "Processing leads with products...");
+
+          if (exportCancelled) return;
+
+          // Get employee and branch mappings from backend response
+          const employeeMap = data.employees;
+          const branchMap = data.branches;
+          const allLeads = data.leads;
+
+          updateExportProgress(65, "Applying column filters...");
+
+          // Apply client-side column filters (same logic as existing table)
+          const filteredLeads = allLeads.filter((lead) => {
+            const emp = employeeMap[lead.lead_owner];
+            const empName = emp ? emp.name : lead.lead_owner || "Unknown";
+            const empId = emp ? emp.id : "-";
+            const empDesignation = emp ? emp.designation : "-";
+            const empBranch = emp ? emp.branch : lead.branch || "-";
+            const empDistrict = emp ? emp.district : "-";
+            const solId = branchMap[empBranch] || "-";
+
+            // Check each lead against column filters if they exist
+            if (typeof columnFilters !== "undefined" && columnFilters) {
+              let matchesAllFilters = true;
+
+              Object.entries(columnFilters).forEach(([col, filter]) => {
+                if (!filter || !matchesAllFilters) return;
+
+                const colIndex = parseInt(col);
+                let fieldMatches = false;
+
+                switch (colIndex) {
+                  case 0: // Sr.No. - always match
+                    fieldMatches = true;
+                    break;
+                  case 1: // Lead ID
+                    fieldMatches = lead.name
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 2: // Customer
+                    fieldMatches = (lead.lead_name || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 3: // Contact
+                    fieldMatches = (lead.contact || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 4: // Source
+                    fieldMatches = (lead.source || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 5: // Product Code
+                    if (lead.products && lead.products.length > 0) {
+                      fieldMatches = lead.products.some((p) =>
+                        (p.product || "")
+                          .toLowerCase()
+                          .includes(filter.toLowerCase())
+                      );
+                    } else {
+                      fieldMatches = "-".includes(filter.toLowerCase());
+                    }
+                    break;
+                  case 6: // Product Name
+                    if (lead.products && lead.products.length > 0) {
+                      fieldMatches = lead.products.some((p) =>
+                        (p.product_name || "")
+                          .toLowerCase()
+                          .includes(filter.toLowerCase())
+                      );
+                    } else {
+                      fieldMatches = "-".includes(filter.toLowerCase());
+                    }
+                    break;
+                  case 7: // Amount
+                    if (lead.products && lead.products.length > 0) {
+                      fieldMatches = lead.products.some((p) =>
+                        (p.amount || "")
+                          .toString()
+                          .toLowerCase()
+                          .includes(filter.toLowerCase())
+                      );
+                    } else {
+                      fieldMatches = "-".includes(filter.toLowerCase());
+                    }
+                    break;
+                  case 8: // Employee Name
+                    fieldMatches = empName
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 9: // Employee ID
+                    fieldMatches = empId
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 10: // Designation
+                    fieldMatches = empDesignation
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 11: // SOL ID
+                    fieldMatches = solId
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 12: // Branch
+                    fieldMatches = empBranch
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 13: // District
+                    fieldMatches = empDistrict
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 14: // Status
+                    fieldMatches = (lead.status || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 15: // Region
+                    fieldMatches = (lead.region || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 16: // Zone
+                    fieldMatches = (lead.zone || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 17: // Created On
+                    fieldMatches = formatDateTimeForDisplay(lead.creation)
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  default:
+                    fieldMatches = true;
+                }
+
+                if (!fieldMatches) {
+                  matchesAllFilters = false;
+                }
+              });
+
+              return matchesAllFilters;
+            }
+
+            return true; // If no column filters, include all leads
+          });
+
+          if (filteredLeads.length === 0) {
+            hideExportProgress();
+            frappe.msgprint("No data available for the current filters.");
+            return;
+          }
+
+          updateExportProgress(75, "Generating CSV data...");
+
+          // CSV headers - same structure as web interface
           const headers = [
             "#",
             "Lead ID",
@@ -1458,71 +1664,140 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           ];
 
           let csvContent = headers.join(",") + "\n";
+          let rowIndex = 1;
 
-          expandedLeadRows.forEach((row, index) => {
-            const csvData = [
-              index + 1,
-              row.leadId,
-              row.customerName,
-              row.contact,
-              row.source,
-              row.productCode,
-              row.productName,
-              row.amount,
-              row.empName,
-              row.empId,
-              row.empDesignation,
-              row.solId,
-              row.empBranch,
-              row.empDistrict,
-              row.status,
-              row.region,
-              row.zone,
-              row.createdOn,
-            ];
+          // Process each lead and create CSV rows
+          filteredLeads.forEach((lead) => {
+            const emp = employeeMap[lead.lead_owner];
+            const empName = emp ? emp.name : lead.lead_owner || "Unknown";
+            const empId = emp ? emp.id : "-";
+            const empDesignation = emp ? emp.designation : "-";
+            const empBranch = emp ? emp.branch : lead.branch || "-";
+            const empDistrict = emp ? emp.district : "-";
+            const solId = branchMap[empBranch] || "-";
 
-            // Properly escape CSV values that contain commas or quotes
-            const escapedData = csvData.map((value) => {
-              if (
-                typeof value === "string" &&
-                (value.includes(",") ||
-                  value.includes("\n") ||
-                  value.includes('"'))
-              ) {
-                return `"${value.replace(/"/g, '""')}"`;
-              }
-              return value;
-            });
+            if (lead.products && lead.products.length > 0) {
+              // Create separate row for each product
+              lead.products.forEach((product) => {
+                const productCode = product.product || "-";
+                const productName = product.product_name || "-";
+                const amount = parseFloat(product.amount) || 0;
+                const formattedAmount =
+                  amount > 0 ? `₹${amount.toLocaleString("en-IN")}` : "-";
 
-            csvContent += escapedData.join(",") + "\n";
+                const rowData = [
+                  rowIndex,
+                  lead.name || "-",
+                  lead.lead_name || "-",
+                  lead.contact || "-",
+                  lead.source || "-",
+                  productCode,
+                  productName,
+                  formattedAmount,
+                  empName,
+                  empId,
+                  empDesignation,
+                  solId,
+                  empBranch,
+                  empDistrict,
+                  lead.status || "-",
+                  lead.region || "-",
+                  lead.zone || "-",
+                  formatDateTimeForDisplay(lead.creation),
+                ];
+
+                // Properly escape CSV values
+                const escapedData = rowData.map((value) => {
+                  if (
+                    typeof value === "string" &&
+                    (value.includes(",") ||
+                      value.includes("\n") ||
+                      value.includes('"'))
+                  ) {
+                    return `"${value.replace(/"/g, '""')}"`;
+                  }
+                  return value;
+                });
+
+                csvContent += escapedData.join(",") + "\n";
+                rowIndex++;
+              });
+            } else {
+              // Lead with no products - single row with empty product fields
+              const rowData = [
+                rowIndex,
+                lead.name || "-",
+                lead.lead_name || "-",
+                lead.contact || "-",
+                lead.source || "-",
+                "-", // Product Code
+                "-", // Product Name
+                "-", // Amount
+                empName,
+                empId,
+                empDesignation,
+                solId,
+                empBranch,
+                empDistrict,
+                lead.status || "-",
+                lead.region || "-",
+                lead.zone || "-",
+                formatDateTimeForDisplay(lead.creation),
+              ];
+
+              // Properly escape CSV values
+              const escapedData = rowData.map((value) => {
+                if (
+                  typeof value === "string" &&
+                  (value.includes(",") ||
+                    value.includes("\n") ||
+                    value.includes('"'))
+                ) {
+                  return `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+              });
+
+              csvContent += escapedData.join(",") + "\n";
+              rowIndex++;
+            }
           });
 
-          // Create and trigger download
+          updateExportProgress(90, "Creating download file...");
+
           const blob = new Blob([csvContent], {
             type: "text/csv;charset=utf-8;",
           });
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = `crm_leads_with_products_sol_id_${frappe.datetime.get_today()}_${
-            expandedLeadRows.length
+          link.download = `crm_leads_backend_export_${frappe.datetime.get_today()}_${
+            rowIndex - 1
           }_rows.csv`;
 
           document.body.appendChild(link);
+          updateExportProgress(100, "Download starting...");
           link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
 
-          frappe.msgprint({
-            title: "Export Completed Successfully",
-            message: `Successfully exported ${expandedLeadRows.length} product rows with complete lead owner and SOL ID information! (Permission-filtered data)`,
-            indicator: "green",
-          });
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            hideExportProgress();
+
+            frappe.msgprint({
+              title: "Export Completed Successfully",
+              message: `Successfully exported ${
+                rowIndex - 1
+              } rows from backend data with complete lead and product information!`,
+              indicator: "green",
+            });
+          }, 1000);
         } catch (error) {
-          console.error("Export error:", error);
+          console.error("Backend export error:", error);
+          hideExportProgress();
           frappe.msgprint({
             title: "Export Failed",
-            message: `An error occurred while exporting: ${error.message}`,
+            message: `An error occurred while exporting from backend: ${error.message}`,
             indicator: "red",
           });
         }
