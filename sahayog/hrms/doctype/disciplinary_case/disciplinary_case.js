@@ -140,25 +140,25 @@ frappe.ui.form.on("Disciplinary Case", {
     });
   },
 
-  case_type(frm) {
-    let desc = "";
-    if (frm.doc.case_type == "Complaint") {
-      desc =
-        "Formal report raised by an employee or HR against another employee for inappropriate behavior or action.";
-    }
-    if (frm.doc.case_type == "Misconduct") {
-      desc =
-        "Violation of company rules, policies, or code of conduct by an employee requiring disciplinary action.";
-    }
-    if (frm.doc.case_type == "Grievance") {
-      desc =
-        "Concern or dissatisfaction raised by an employee regarding unfair treatment, policies, or workplace issues.";
-    }
+  // case_type(frm) {
+  //   let desc = "";
+  //   if (frm.doc.case_type == "Complaint") {
+  //     desc =
+  //       "Formal report raised by an employee or HR against another employee for inappropriate behavior or action.";
+  //   }
+  //   if (frm.doc.case_type == "Misconduct") {
+  //     desc =
+  //       "Violation of company rules, policies, or code of conduct by an employee requiring disciplinary action.";
+  //   }
+  //   if (frm.doc.case_type == "Grievance") {
+  //     desc =
+  //       "Concern or dissatisfaction raised by an employee regarding unfair treatment, policies, or workplace issues.";
+  //   }
 
-    if (desc) {
-      frm.set_df_property("case_type_description", "options", desc);
-    }
-  },
+  //   if (desc) {
+  //     frm.set_df_property("case_type_description", "options", desc);
+  //   }
+  // },
 
   validate(frm) {
     let today = frappe.datetime.now_date();
