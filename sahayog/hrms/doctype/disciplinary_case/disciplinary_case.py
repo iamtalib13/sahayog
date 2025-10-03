@@ -9,7 +9,7 @@ class DisciplinaryCase(Document):
     def before_insert(self):
         user = frappe.session.user
 
-        # Agar admin hai to dono field "Administrator" set karo
+        # If user is Administrator, set hr_employee_id and hr_name to "Administrator"
         if user == "Administrator":
             self.hr_employee_id = "Administrator"
             self.hr_name = "Administrator"
