@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 # Function to update employee details in the Lead document
 def update_employee_details(doc, method):
@@ -46,6 +47,38 @@ def set_is_operation_lead(doc, method):
         doc.custom_is_operation_lead = 1
     else:
         doc.custom_is_operation_lead = 0
+
+@frappe.whitelist()
+def assign_employee_to_lead(lead_name, user):
+    """
+    Assigns a user to a lead and sets custom fields based on Employee doctype
+    """
+    if not lead_name or not user:
+        frappe.throw(frappe._("Lead name and user are required"))
+
+    # Fetch Employee linked to this user
+    employee = frappe.get_all(
+        "Employee",
+        filters={"user_id": user},
+        fields=["name", "custom_zone", "custom_region", "branch"],
+        limit=1,
+    )
+
+    if not employee:
+        frappe.throw(frappe._("No Employee found for this user"))
+
+    emp = employee[0]
+
+    # Update the Lead
+    frappe.db.set_value("Lead", lead_name, "custom_employee_id", emp["name"])
+    frappe.db.set_value("Lead", lead_name, "custom_zone", emp["custom_zone"])
+    frappe.db.set_value("Lead", lead_name, "custom_region", emp["custom_region"])
+    frappe.db.set_value("Lead", lead_name, "custom_branch", emp["branch"])
+
+
+    frappe.db.commit()
+
+    return {"status": "success", "employee": emp}
 
 # Get assigned employee info 
 @frappe.whitelist()

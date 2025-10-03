@@ -66,23 +66,46 @@ function addAssignButton(frm) {
       ],
       primary_action_label: __("Assign"),
       primary_action: function (values) {
-        // Assign using Frappe's built-in assign_to API
+        // First call custom API to validate and update Lead fields
         frappe.call({
-          method: "frappe.desk.form.assign_to.add",
+          method: "sahayog.scrm.controller.lead.lead.assign_employee_to_lead",
           args: {
-            assign_to: [values.user], // must be an array
-            doctype: frm.doc.doctype,
-            name: frm.doc.name,
-            notify: 1,
-            description: __("Assigned via dialog"),
+            lead_name: frm.doc.name,
+            user: values.user,
           },
-          callback: function () {
-            frappe.show_alert({
-              message: __("Lead assigned successfully"),
-              indicator: "green",
-            });
-            dialog.hide();
-            frm.reload_doc();
+          callback: function (r) {
+            if (r.message && r.message.status === "success") {
+              // Only if custom API succeeds → then assign
+              frappe.call({
+                method: "frappe.desk.form.assign_to.add",
+                args: {
+                  assign_to: [values.user],
+                  doctype: frm.doc.doctype,
+                  name: frm.doc.name,
+                  notify: 1,
+                  description: __("Assigned via dialog"),
+                },
+                callback: function () {
+                  frappe.show_alert({
+                    message: __(
+                      "Lead assigned and assigned user details updated successfully"
+                    ),
+                    indicator: "green",
+                  });
+                  frm.reload_doc();
+                  dialog.hide();
+                },
+              });
+            } else {
+              frappe.throw(
+                __("Failed to update employee fields. Assignment cancelled.")
+              );
+            }
+          },
+          error: function () {
+            frappe.throw(
+              __("Error while updating employee fields. Assignment cancelled.")
+            );
           },
         });
       },
@@ -103,7 +126,6 @@ function setIntro(frm) {
       args: { lead_name: frm.doc.name },
       callback: function (ownerRes) {
         const owner = ownerRes.message || {};
-        console.log("Fetched owner info:", owner);
 
         // Fetch assigned employee info
         frappe.call({
@@ -111,28 +133,32 @@ function setIntro(frm) {
             "sahayog.scrm.controller.lead.lead.get_assigned_employee_info",
           args: { lead_name: frm.doc.name },
           callback: function (assignedRes) {
-            const assigned = assignedRes.message || {};
-
-            console.log("Owner:", owner);
-            console.log("Assigned:", assigned);
+            const assigned = assignedRes.message || null;
 
             // Build intro HTML
-            const html = `
-          <div style="display: flex; gap: 40px; flex-wrap: wrap; font-size: 13px;">
-            <div style="flex: 1; min-width: 200px; padding: 8px; background: #f5f5f5; border-radius: 5px;">
-              <strong>Lead Owner</strong><br>
-              Name: ${owner.employee_name || "-"}<br>
-              Employee ID: ${owner.employee_number || "-"}<br>
-              Branch: ${owner.branch || "-"}
-            </div>
-            <div style="flex: 1; min-width: 200px; padding: 8px; background: #e8f0fe; border-radius: 5px;">
-              <strong>Assigned To</strong><br>
-              Name: ${assigned.employee_name || "-"}<br>
-              Employee ID: ${assigned.employee_number || "-"}<br>
-              Branch: ${assigned.branch || "-"}
-            </div>
-          </div>
-        `;
+            let html = `
+              <div style="display: flex; gap: 40px; flex-wrap: wrap; font-size: 13px;">
+                <div style="flex: 1; min-width: 200px; padding: 8px; background: #f5f5f5; border-radius: 5px;">
+                  <strong>Lead Owner</strong><br>
+                  Name: ${owner.employee_name || "-"}<br>
+                  Employee ID: ${owner.employee_number || "-"}<br>
+                  Branch: ${owner.branch || "-"}
+                </div>
+            `;
+
+            if (assigned) {
+              html += `
+                <div style="flex: 1; min-width: 200px; padding: 8px; background: #e8f0fe; border-radius: 5px;">
+                  <strong>Assigned To</strong><br>
+                  Name: ${assigned.employee_name || "-"}<br>
+                  Employee ID: ${assigned.employee_number || "-"}<br>
+                  Branch: ${assigned.branch || "-"}
+                </div>
+              `;
+            }
+
+            html += `</div>`;
+
             frm.set_intro(html);
           },
         });
