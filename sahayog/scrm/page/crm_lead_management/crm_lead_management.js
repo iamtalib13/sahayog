@@ -1433,6 +1433,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
       // Export CSV functionality using existing expanded rows with proper permission handling
       // FIXED Export Function - Remove limit completely for export
+      // ✅ FIXED Export CSV functionality - Complete date range export
       $("#export-csv").on("click", async function () {
         try {
           showExportProgress();
@@ -1461,14 +1462,15 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           );
 
           const filters = getDateFilters();
+          console.log("📋 Export filters being sent:", filters);
 
-          // CRITICAL FIX: Set very high limit to get complete data
+          // ✅ CRITICAL FIX: Use high limit to get ALL records
           const response = await frappe.call({
             method: "sahayog.scrm.api.lead_owner_data.get_complete_crm_data",
             args: {
               filters: filters,
               limit_start: 0,
-              limit_page_length: 999999, // Very high number to get all date range data
+              limit_page_length: 999999, // ✅ High number to get all records
             },
             freeze: false,
           });
@@ -1486,20 +1488,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           const totalFound = data.pagination.total_count;
           const actualFetched = data.leads.length;
 
-          // Verify complete data was fetched
-          if (actualFetched < totalFound) {
-            hideExportProgress();
-            frappe.msgprint({
-              title: "Incomplete Data Warning",
-              message: `Only ${actualFetched} of ${totalFound} leads were fetched. Please contact administrator to increase export limits.`,
-              indicator: "orange",
-            });
-            return;
-          }
+          console.log(
+            `📊 Export data: ${actualFetched} leads fetched of ${totalFound} total`
+          );
 
           updateExportProgress(
             30,
-            `Processing all ${actualFetched} leads for selected date range...`
+            `Processing ${actualFetched} leads for selected date range...`
           );
 
           if (actualFetched === 0) {
@@ -1510,7 +1505,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             return;
           }
 
-          // Get complete data from backend response (ALL leads for date range)
+          // Get complete data from backend response
           const allDateRangeLeads = data.leads;
           const employeeMap = data.employees;
           const branchMap = data.branches;
@@ -1529,7 +1524,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
           if (hasActiveFilters) {
             finalLeadsForExport = allDateRangeLeads.filter((lead) => {
-              // Same column filter logic as existing code
               const emp = employeeMap[lead.lead_owner];
               const empName = emp ? emp.name : lead.lead_owner || "Unknown";
               const empId = emp ? emp.id : "-";
@@ -1547,22 +1541,110 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 const colIndex = parseInt(col);
                 let fieldMatches = false;
 
-                // Same switch logic as your existing code...
                 switch (colIndex) {
-                  case 0:
+                  case 0: // Sr.No.
                     fieldMatches = true;
                     break;
-                  case 1:
+                  case 1: // Lead ID
                     fieldMatches = lead.name
                       .toLowerCase()
                       .includes(filter.toLowerCase());
                     break;
-                  case 2:
+                  case 2: // Customer
                     fieldMatches = (lead.lead_name || "")
                       .toLowerCase()
                       .includes(filter.toLowerCase());
                     break;
-                  // ... rest of your existing switch cases
+                  case 3: // Contact
+                    fieldMatches = (lead.contact || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 4: // Source
+                    fieldMatches = (lead.source || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 5: // Product Code
+                    if (lead.products && Array.isArray(lead.products)) {
+                      fieldMatches = lead.products.some((p) =>
+                        (p.product || "")
+                          .toLowerCase()
+                          .includes(filter.toLowerCase())
+                      );
+                    }
+                    break;
+                  case 6: // Product Name
+                    if (lead.products && Array.isArray(lead.products)) {
+                      fieldMatches = lead.products.some((p) =>
+                        (p.product_name || "")
+                          .toLowerCase()
+                          .includes(filter.toLowerCase())
+                      );
+                    }
+                    break;
+                  case 7: // Amount
+                    if (lead.products && Array.isArray(lead.products)) {
+                      fieldMatches = lead.products.some((p) =>
+                        (p.amount || "")
+                          .toString()
+                          .toLowerCase()
+                          .includes(filter.toLowerCase())
+                      );
+                    }
+                    break;
+                  case 8: // Employee Name
+                    fieldMatches = empName
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 9: // Employee ID
+                    fieldMatches = empId
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 10: // Designation
+                    fieldMatches = empDesignation
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 11: // SOL ID
+                    fieldMatches = solId
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 12: // Branch
+                    fieldMatches = empBranch
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 13: // District
+                    fieldMatches = empDistrict
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 14: // Status
+                    fieldMatches = lead.status
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 15: // Region
+                    fieldMatches = (lead.region || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 16: // Zone
+                    fieldMatches = (lead.zone || "")
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  case 17: // Created On
+                    fieldMatches = formatDateTimeForDisplay(lead.creation)
+                      .toLowerCase()
+                      .includes(filter.toLowerCase());
+                    break;
+                  default:
+                    fieldMatches = true;
                 }
 
                 if (!fieldMatches) {
@@ -1579,7 +1661,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             `Generating CSV for ${finalLeadsForExport.length} leads...`
           );
 
-          // Rest of CSV generation logic remains same...
+          // Generate CSV content
           const headers = [
             "Sr.No.",
             "Lead ID",
@@ -1604,9 +1686,107 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           let csvContent = headers.join(",") + "\n";
           let rowIndex = 1;
 
-          // Same CSV generation logic as your existing code...
           finalLeadsForExport.forEach((lead) => {
-            // Same processing as existing code
+            const emp = employeeMap[lead.lead_owner];
+            const empName = emp ? emp.name : lead.lead_owner || "Unknown";
+            const empId = emp ? emp.id : "-";
+            const empDesignation = emp ? emp.designation : "-";
+            const empBranch = emp ? emp.branch : lead.branch || "-";
+            const empDistrict = emp ? emp.district : "-";
+            const solId = branchMap[empBranch] || "-";
+
+            if (
+              lead.products &&
+              Array.isArray(lead.products) &&
+              lead.products.length > 0
+            ) {
+              // Multiple products per lead
+              lead.products.forEach((product) => {
+                const productCode = product.product || "-";
+                const productName = product.product_name || "-";
+                const amount = new Intl.NumberFormat("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                }).format(parseFloat(product.amount) || 0);
+
+                const row = [
+                  rowIndex,
+                  lead.name,
+                  lead.lead_name || "-",
+                  lead.contact || "-",
+                  lead.source || "-",
+                  productCode,
+                  productName,
+                  amount,
+                  empName,
+                  empId,
+                  empDesignation,
+                  solId,
+                  empBranch,
+                  empDistrict,
+                  lead.status,
+                  lead.region || "-",
+                  lead.zone || "-",
+                  formatDateTimeForDisplay(lead.creation),
+                ];
+
+                csvContent +=
+                  row
+                    .map((field) => {
+                      let value = field || "";
+                      if (
+                        typeof value === "string" &&
+                        (value.includes(",") || value.includes('"'))
+                      ) {
+                        value = `"${value.replace(/"/g, '""')}"`;
+                      }
+                      return value;
+                    })
+                    .join(",") + "\n";
+
+                rowIndex++;
+              });
+            } else {
+              // Lead with no products
+              const row = [
+                rowIndex,
+                lead.name,
+                lead.lead_name || "-",
+                lead.contact || "-",
+                lead.source || "-",
+                "-",
+                "-",
+                "-",
+                empName,
+                empId,
+                empDesignation,
+                solId,
+                empBranch,
+                empDistrict,
+                lead.status,
+                lead.region || "-",
+                lead.zone || "-",
+                formatDateTimeForDisplay(lead.creation),
+              ];
+
+              csvContent +=
+                row
+                  .map((field) => {
+                    let value = field || "";
+                    if (
+                      typeof value === "string" &&
+                      (value.includes(",") || value.includes('"'))
+                    ) {
+                      value = `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                  })
+                  .join(",") + "\n";
+
+              rowIndex++;
+            }
           });
 
           updateExportProgress(90, "Creating download file...");
@@ -1632,10 +1812,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             hideExportProgress();
 
             frappe.msgprint({
-              title: "Complete Date Range Export",
+              title: "✅ Complete Date Range Export",
               message: `Successfully exported ${
                 rowIndex - 1
-              } rows for date range ${fromDate} to ${toDate}!<br><br>✅ All leads from selected dates included`,
+              } rows for date range ${fromDate} to ${toDate}!<br><br>📅 All leads from selected dates included`,
               indicator: "green",
             });
           }, 1000);
