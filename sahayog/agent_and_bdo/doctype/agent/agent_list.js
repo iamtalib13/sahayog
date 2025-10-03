@@ -274,135 +274,56 @@ frappe.listview_settings["Agent"] = {
       d.show();
     });
 
-    // Download Report button - downloads complete Agent data with Employee details
+    // Optimized Download Report button
     listview.page.add_inner_button(__("Download Report"), () => {
-      // Step 1: Get all Agent data
+      // Single API call to get all required data
       frappe.call({
-        method: "frappe.client.get_list",
-        args: {
-          doctype: "Agent",
-          fields: [
-            "name",
-            "status",
-            "agent_code",
-            "agent_name",
-            "agent_status",
-            "branch_code",
-            "branch_name",
-            "role",
-            "employee",
-            "creation",
-          ],
-          limit_page_length: 0,
-          order_by: "creation desc",
-        },
+        method: "sahayog.api.get_agent_report_data",
         freeze: true,
-        freeze_message: __("Fetching Agent data..."),
+        freeze_message: __("Generating report..."),
         callback: function (r) {
-          if (r.message && r.message.length) {
-            // Step 2: Get unique employee IDs
-            const employeeIds = [
-              ...new Set(
-                r.message
-                  .filter((agent) => agent.employee)
-                  .map((agent) => agent.employee)
-              ),
-            ];
+          if (r.message && r.message.status === "success") {
+            const data = r.message.data;
 
-            if (employeeIds.length > 0) {
-              // Step 3: Fetch Employee data for all employees
-              frappe.call({
-                method: "frappe.client.get_list",
-                args: {
-                  doctype: "Employee",
-                  fields: [
-                    "name",
-                    "employee_name",
-                    "custom_region",
-                    "custom_zone",
-                    "custom_district",
-                  ],
-                  filters: [["name", "in", employeeIds]],
-                  limit_page_length: 0,
-                },
-                freeze_message: __("Fetching Employee data..."),
-                callback: function (emp_response) {
-                  // Step 4: Create employee lookup map
-                  const employeeMap = {};
-                  if (emp_response.message) {
-                    emp_response.message.forEach((emp) => {
-                      employeeMap[emp.name] = emp;
-                    });
-                  }
+            if (data && data.length > 0) {
+              generateAndDownloadCSV(data);
 
-                  // Step 5: Merge Agent and Employee data
-                  const enrichedData = r.message.map((agent) => ({
-                    ...agent,
-                    employee_name: agent.employee
-                      ? employeeMap[agent.employee]?.employee_name || ""
-                      : "",
-                    custom_region: agent.employee
-                      ? employeeMap[agent.employee]?.custom_region || ""
-                      : "",
-                    custom_zone: agent.employee
-                      ? employeeMap[agent.employee]?.custom_zone || ""
-                      : "",
-                    custom_district: agent.employee
-                      ? employeeMap[agent.employee]?.custom_district || ""
-                      : "",
-                  }));
-
-                  // Step 6: Generate and download CSV
-                  generateAndDownloadCSV(enrichedData);
-                },
+              frappe.show_alert({
+                message: __("Report downloaded successfully with {0} records", [
+                  data.length,
+                ]),
+                indicator: "green",
               });
             } else {
-              // No employees found, download with Agent data only
-              const enrichedData = r.message.map((agent) => ({
-                ...agent,
-                employee_name: "",
-                custom_region: "",
-                custom_zone: "",
-                custom_district: "",
-              }));
-              generateAndDownloadCSV(enrichedData);
+              frappe.msgprint(__("No data found to export"));
             }
           } else {
-            frappe.msgprint(__("No data found to export"));
+            frappe.msgprint(__("Failed to generate report. Please try again."));
           }
+        },
+        error: function (xhr, status, error) {
+          frappe.msgprint(__("Error occurred while generating report"));
         },
       });
     });
 
-    // Function to generate and download CSV
+    // Optimized CSV generation function
     function generateAndDownloadCSV(data) {
-      // Convert data to CSV with proper headers
-      const csvData = convertToCSVWithEmployeeData(data);
-
-      // Create filename with current date
-      const today = new Date().toISOString().split("T")[0];
+      const csvData = convertToOptimizedCSV(data);
+      const today = frappe.datetime.nowdate();
       const filename = `Agent_Report_${today}.csv`;
-
-      // Download the CSV file
       downloadCSV(csvData, filename);
-
-      frappe.show_alert({
-        message: __("Report downloaded successfully with {0} records", [
-          data.length,
-        ]),
-        indicator: "green",
-      });
     }
 
-    // Updated CSV converter function with Employee fields
-    function convertToCSVWithEmployeeData(data) {
+    // Updated CSV converter with new field names and AUTH ID
+    // Updated CSV converter with better error handling
+    function convertToOptimizedCSV(data) {
       if (!data || data.length === 0) return "";
 
-      // Define headers in desired order
       const headers = [
-        "name",
+        "agent_id",
         "status",
-        "agent_code",
+        "sol_id",
         "agent_name",
         "agent_status",
         "branch_code",
@@ -410,16 +331,18 @@ frappe.listview_settings["Agent"] = {
         "role",
         "employee",
         "employee_name",
-        "custom_region",
-        "custom_zone",
-        "custom_district",
+        "auth_id",
+        "branch",
+        "zone",
+        "region",
+        "district",
         "creation",
       ];
 
       const headerLabels = [
         "Agent ID",
         "Status",
-        "Agent Code",
+        "SOL ID",
         "Agent Name",
         "Agent Status",
         "Branch Code",
@@ -427,104 +350,58 @@ frappe.listview_settings["Agent"] = {
         "Role",
         "Employee ID",
         "Employee Name",
-        "Region",
+        "AUTH ID",
+        "Branch",
         "Zone",
+        "Region",
         "District",
         "Created Date",
       ];
 
-      // Create CSV content
       let csvContent = headerLabels.join(",") + "\n";
 
       data.forEach((row) => {
         const values = headers.map((header) => {
-          let value = row[header] || "";
+          let value = row[header];
 
-          // Format creation date
-          if (header === "creation" && value) {
-            try {
-              const date = new Date(value);
-              value = date.toLocaleString();
-            } catch (e) {
-              // Keep original value if date parsing fails
-            }
+          // Clean up any problematic values
+          if (
+            value === null ||
+            value === undefined ||
+            value === "null" ||
+            value === "None" ||
+            value === "#VALUE!" ||
+            String(value).includes("#VALUE!")
+          ) {
+            value = "";
+          } else {
+            value = String(value).trim();
           }
 
-          // Escape commas and quotes in values
+          // Escape CSV special characters
           if (
-            typeof value === "string" &&
+            value &&
             (value.includes(",") || value.includes('"') || value.includes("\n"))
           ) {
             value = '"' + value.replace(/"/g, '""') + '"';
           }
+
           return value;
         });
+
         csvContent += values.join(",") + "\n";
       });
 
       return csvContent;
     }
 
-    // Helper function to download CSV file (same as before)
+    // Optimized download function
     function downloadCSV(csvData, filename) {
       const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
 
       if (navigator.msSaveBlob) {
-        // IE 10+
         navigator.msSaveBlob(blob, filename);
       } else {
-        // Modern browsers
-        const link = document.createElement("a");
-        if (link.download !== undefined) {
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", filename);
-          link.style.visibility = "hidden";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-      }
-    }
-
-    // Helper function to convert data to CSV
-    function convertToCSV(data) {
-      if (!data || data.length === 0) return "";
-
-      // Get headers from the first object
-      const headers = Object.keys(data[0]);
-
-      // Create CSV content
-      let csvContent = headers.join(",") + "\n";
-
-      data.forEach((row) => {
-        const values = headers.map((header) => {
-          let value = row[header] || "";
-          // Escape commas and quotes in values
-          if (
-            typeof value === "string" &&
-            (value.includes(",") || value.includes('"') || value.includes("\n"))
-          ) {
-            value = '"' + value.replace(/"/g, '""') + '"';
-          }
-          return value;
-        });
-        csvContent += values.join(",") + "\n";
-      });
-
-      return csvContent;
-    }
-
-    // Helper function to download CSV file
-    function downloadCSV(csvData, filename) {
-      const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-
-      if (navigator.msSaveBlob) {
-        // IE 10+
-        navigator.msSaveBlob(blob, filename);
-      } else {
-        // Modern browsers
         const link = document.createElement("a");
         if (link.download !== undefined) {
           const url = URL.createObjectURL(blob);
