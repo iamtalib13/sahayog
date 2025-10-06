@@ -278,7 +278,7 @@ frappe.listview_settings["Agent"] = {
     listview.page.add_inner_button(__("Download Report"), () => {
       // Single API call to get all required data
       frappe.call({
-        method: "sahayog.api.get_agent_report_data",
+        method: "sahayog.custom_api.get_agent_report_data",
         freeze: true,
         freeze_message: __("Generating report..."),
         callback: function (r) {

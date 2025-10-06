@@ -1,4 +1,4 @@
-# File: sahayog/api.py
+
 import frappe
 import json
 from datetime import datetime
@@ -80,3 +80,8 @@ def get_agent_report_data():
             'status': 'error',
             'message': 'Failed to generate report'
         }
+
+
+@frappe.whitelist()
+def ping():
+    return "pong"
