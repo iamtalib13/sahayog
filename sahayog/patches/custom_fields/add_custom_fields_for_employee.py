@@ -63,7 +63,13 @@ def execute():
                 "insert_after": "branch",
                 "label": "Sol ID"
             },
-          
+               {
+                "fieldname": "sahayog_branch",
+                "fieldtype": "Link",
+                "options": "Sahayog Branch",
+                "insert_after": "reports_to",
+                "label": "Sahayog Branch"
+            },
         ]
     }
 
