@@ -24,9 +24,9 @@ frappe.ui.form.on("Lead", {
 });
 
 /* ---------------- Utility Functions ---------------- */
-// Add "Assign" button
+// Add "Assign to" button
 function addAssignButton(frm) {
-  frm.add_custom_button(__("Assign"), function () {
+  frm.add_custom_button(__("Assign to"), function () {
     let dialog = new frappe.ui.Dialog({
       title: __("Assign User"),
       fields: [
