@@ -10,7 +10,8 @@
   "branch",
   "district",
   "region",
-  "zone"
+  "zone",
+  "state"
  ],
  "fields": [
   {
@@ -46,12 +47,17 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "ZONE"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "STATE"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-03 15:00:23.781972",
+ "modified": "2025-10-06 13:58:47.206139",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
