@@ -42,8 +42,8 @@ def set_is_operation_lead(doc, method):
 
     roles = frappe.get_roles(user)
 
-    # If user has the role "Operation Executive", set flag
-    if "Operations Executive" in roles:
+    # If user has the role "Operations Support Executive", set flag
+    if "Operations Support Executive" in roles:
         doc.custom_is_operation_lead = 1
     else:
         doc.custom_is_operation_lead = 0
