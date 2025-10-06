@@ -22,7 +22,6 @@ def check_user_access():
         if (
             "branch manager" in designation
             or "branch operation manager" in designation
-            or "branch opration manager" in designation  # typo handling
         ):
             return {"allowed": True}
 
@@ -47,6 +46,7 @@ def db_connection():
         frappe.log_error(frappe.get_traceback(), "PostgreSQL Connection Failed")
         # Raise a frappe exception so frontend receives helpful message
         frappe.throw(_("Database Connection Error: {0}").format(str(e)))
+
 
 @frappe.whitelist()
 def test_db_connection():
@@ -165,3 +165,8 @@ def unlock_user(account_number=None, user_id=None):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Unlock User Error")
         return {"status": "error", "message": f"Error unlocking user: {str(e)}"}
+
+
+@frappe.whitelist()
+def ping():
+    return "pong"
