@@ -7,15 +7,16 @@
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
+ "icon": "",
  "idx": 0,
- "indicator_color": "green",
+ "indicator_color": "",
  "is_hidden": 0,
- "label": "CRM-Opertions",
+ "label": "CRM-Operations",
  "links": [],
- "modified": "2025-10-04 15:59:42.619044",
+ "modified": "2025-10-07 13:05:32.176899",
  "modified_by": "Administrator",
  "module": "Sahayog",
- "name": "CRM-Opertions",
+ "name": "CRM-Operations",
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "Employee CRM",
@@ -55,5 +56,5 @@
    "type": "DocType"
   }
  ],
- "title": "CRM-Opertions"
+ "title": "CRM-Operations"
 }
