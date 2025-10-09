@@ -1554,12 +1554,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               lead.products.forEach((product) => {
                 const productCode = product.product || "-";
                 const productName = product.product_name || "-";
-                const amount = new Intl.NumberFormat("en-IN", {
-                  style: "currency",
-                  currency: "INR",
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                }).format(parseFloat(product.amount) || 0);
+                const amount = parseFloat(product.amount || 0).toLocaleString(
+                  "en-IN",
+                  {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  }
+                );
 
                 const row = [
                   rowIndex,
