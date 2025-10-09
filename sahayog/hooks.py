@@ -517,7 +517,8 @@ fixtures = [
                 "BDO Performance",
                 "MIS Report List",
                 "Disciplinary Management",
-                "Inventory"
+                "Inventory",
+                "Product Type Chart"
 			}
         ]
     ]},
