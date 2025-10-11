@@ -10,11 +10,13 @@
   "agent_code",
   "agent_name",
   "agent_status",
+  "creation_date",
   "column_break_dxwu",
   "branch_code",
   "branch_name",
   "role",
   "employee",
+  "auth_id",
   "bdo_details_section",
   "requested_by",
   "requested_on",
@@ -89,8 +91,7 @@
   },
   {
    "fieldname": "employee",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
+   "fieldtype": "Data",
    "label": "Employee",
    "options": "Employee",
    "read_only": 1
@@ -130,12 +131,24 @@
    "fieldtype": "Datetime",
    "label": "Approved On",
    "read_only": 1
+  },
+  {
+   "fieldname": "auth_id",
+   "fieldtype": "Data",
+   "label": "Auth ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "creation_date",
+   "fieldtype": "Date",
+   "label": "Creation Date",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-18 13:19:31.823371",
+ "modified": "2025-10-11 10:35:03.749001",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",

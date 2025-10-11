@@ -347,6 +347,7 @@ doc_events = {
 
 scheduler_events = {
     "cron": {
+        
         # 🕔 Run daily at 5:00 AM — Early morning summary
         "0 5 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
@@ -356,6 +357,10 @@ scheduler_events = {
         "30 10 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
         ],
+
+        "0 1 * * *": [  # Runs daily at 1:00 AM
+            "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
+        ]
     }
     # "cron": {
     #     "*": [
