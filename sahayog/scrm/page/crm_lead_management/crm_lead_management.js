@@ -306,6 +306,17 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             overflow-y: auto;
             font-size: 11px;
           }
+
+          /* Limit Product Name column width */
+          .lead-table th:nth-child(8),
+          .lead-table td:nth-child(8) {
+            max-width: 180px; /* Adjust this value as needed */
+            width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
           .lead-table {
             width: 100%;
             min-width: 1800px;
