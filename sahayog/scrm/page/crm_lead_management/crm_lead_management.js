@@ -17,33 +17,76 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
       // Complete CSS styling for modern CRM interface with analytics and export progress
       $container.append(`
         <style>
-          /* Modern Minimal UI Card Styles */
+          /* Card Grid Layout - auto width based on content */
+          .row.mb-4 {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: flex-start; /* Align cards to the left */
+          }
+
+          .col-md-3 {
+            width: auto; /* Auto width based on content */
+            flex: 0 0 auto; /* Don't grow or shrink */
+          }
+
+          /* Card styles with auto width */
           .custom-card {
             border: none;
             background-color: #ffffff;
             color: #2e3338;
-            height: 100px;
+            height: auto;
+            min-height: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            width: max-content; /* Width based on content */
+            min-width: 180px; /* Minimum width to prevent too small cards */
           }
+
           .custom-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.12);
           }
+
+          .custom-card .card-body {
+            padding: 9px 9px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            white-space: nowrap; /* Prevent text wrapping */
+          }
+
           .custom-card .card-title {
             color: #6c7680 !important;
-            margin: 0 0 8px 0;
+            margin: 0 15px 0 0;
             font-size: 13px;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
+
           .custom-card .card-text {
             color: #2e3338 !important;
             font-weight: 600;
-            font-size: 22px;
+            font-size: 14px;
             margin: 0;
+          }
+
+          /* For tablet/mobile - 2 cards per row */
+          @media (max-width: 1024px) {
+            .col-md-3 {
+              flex: 1 1 calc(50% - 8px); /* 2 cards per row with gap */
+              min-width: 0; /* Allow shrinking */
+            }
+            
+            .custom-card {
+              width: 100%; /* Full width on mobile */
+              min-width: 0;
+            }
           }
           
           /* Status-based card border colors */
@@ -298,9 +341,9 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             border-bottom: 1px solid #5e64ff;
           }
           .lead-table tbody td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #f0f2f5;
-            white-space: nowrap;
+              padding: 12px 8px;
+              border-bottom: 1px solid #c2c7cf;
+              white-space: nowrap;
           }
           .lead-table tbody tr:hover {
             background: #f8f9fb;
@@ -329,34 +372,78 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           
           /* Status badge styling */
           .badge-success {
-            background-color: #28a745;
-            color: white;
+            background-color: #ffffffff;
+            color: #00c72e;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
+            border: 0.5px solid #00c72e; /* Set border width and color */
+            display: inline-flex;     /* enables horizontal layout */
+            align-items: center;      /* vertical centering */
+            gap: 8px;                 /* controls the space between dot and text */                
+          }
+          .badge-success .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00c72e;
+            display: inline-block;
           }
           .badge-warning {
-            background-color: #ffa00a;
-            color: white;
+            background-color: #ffffff;
+            color: #ff9c00;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
+            border: 0.5px solid #ff9c00;
+            display: inline-flex;   
+            align-items: center;  
+            gap: 8px;                 
+          }
+          .badge-warning .status-dot {  
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff9c00;
+            display: inline-block;
           }
           .badge-danger {
-            background-color: #ff5858;
-            color: white;
+            background-color: #ffffffff;
+            color: #e71e1e;
             padding: 4px 8px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 12px;            
+            border: 0.5px solid #e71e1e;
+            display: inline-flex;   
+            align-items: center;  
+            gap: 8px;                
+          }
+          .badge-danger .status-dot {
+            width: 8px; 
+            height: 8px;
+            border-radius: 50%;
+            background: #e71e1e;
+            display: inline-block;
           }
           .badge-secondary {
-            background-color: #6c7680;
-            color: white;
+            background-color: #fff;
+            color: #007fff;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
+            border: 0.5px solid #007fff;
+            display: inline-flex;     
+            align-items: center;     
+            gap: 8px;                 
           }
-          
+
+          .badge-secondary .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #007fff;
+            display: inline-block;
+          }     
           /* Link and interactive elements */
           .lead-link {
             color: #5e64ff;
@@ -403,6 +490,22 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             background-color: #f1f3f5;
           }
           
+          @media (max-width: 900px) {
+          .card-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+          .card-header > div {
+            width: 100% !important;
+            justify-content: space-between !important;
+          }
+          .card-header .btn-analytics,
+          .card-header .btn-export {
+            width: 48%;
+            margin-right: 2%;
+            margin-bottom: 4px;
+          }
         </style>
 
         <!-- Analytics Modal Overlay -->
@@ -471,58 +574,65 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           <div class="col-md-3">
             <div class="card custom-card card-lead">
               <div class="card-body">
-                <h6 class="card-title">Total Leads</h6>
-                <p class="card-text" id="total-leads">0</p>
+                <h6 class="card-title">Total Leads
+                <span class="card-text" id="total-leads">0</span></h6>
               </div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card custom-card card-converted">
               <div class="card-body">
-                <h6 class="card-title">Converted</h6>
-                <p class="card-text" id="converted-leads">0</p>
+                <h6 class="card-title">Converted
+                <span class="card-text" id="converted-leads">0</span></h6>
               </div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card custom-card card-follow-up">
               <div class="card-body">
-                <h6 class="card-title">Follow Up</h6>
-                <p class="card-text" id="follow-up-leads">0</p>
+                <h6 class="card-title">Follow Up
+                <span class="card-text" id="follow-up-leads">0</span></h6>
               </div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card custom-card card-not-interested">
               <div class="card-body">
-                <h6 class="card-title">Not Interested</h6>
-                <p class="card-text" id="not-interested-leads">0</p>
+                <h6 class="card-title">Not Interested
+                <span class="card-text" id="not-interested-leads">0</span></h6>
               </div>
             </div>
           </div>
         </div>
-
         <!-- Main Lead Data Table -->
         <div class="card" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          <div class="card-header d-flex justify-content-between align-items-center" style="border: none; background: none;">
-            <div class="d-flex justify-content-between align-items-center">  
-              <h5 class="mb-0" style="font-weight: 600;">Lead List</h5>
-              <div id="date-filters" class="date-filters d-flex align-items-center ml-3">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap" style="border: none; background: none;">
+            <div class="d-flex align-items-center flex-wrap">
+              <h5 class="mb-0 mr-3" style="font-weight: 600;">Lead List</h5>
+              <div id="date-filters" class="date-filters d-flex align-items-center">
                 <div class="d-flex align-items-center">
                   <span class="small text-muted mr-2">From Date</span>
-                  <input type="date" class="form-control form-control-sm" id="from-date" style="width: 120px;" value="${
-                    urlParams.get("from_date") || today
-                  }">
+                  <input
+                    type="date"
+                    class="form-control form-control-sm"
+                    id="from-date"
+                    style="width: 120px;"
+                    value="${urlParams.get("from_date") || today}"
+                  >
                 </div>
                 <div class="d-flex align-items-center ml-2">
                   <span class="small text-muted mr-2">To Date</span>
-                  <input type="date" class="form-control form-control-sm" id="to-date" style="width: 120px;" value="${
-                    urlParams.get("to_date") || today
-                  }">
+                  <input
+                    type="date"
+                    class="form-control form-control-sm"
+                    id="to-date"
+                    style="width: 120px;"
+                    value="${urlParams.get("to_date") || today}"
+                  >
                 </div>
               </div>
             </div>
-            <div>
+            <div class="d-flex align-items-center mt-2 mt-md-0">
               <button class="btn btn-sm btn-analytics mr-2" id="view-analytics">
                 <i class="fa fa-chart-bar mr-1"></i> Analytics
               </button>
@@ -531,13 +641,14 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               </button>
             </div>
           </div>
-          
+        </div>
           <div class="card-body p-0">
             <div class="lead-table-container">
               <table class="table table-sm lead-table">
                 <thead>
                   <tr class="table-header">
                     <th width="60">Sr.No.</th>
+                    <th>Status</th>
                     <th>Lead ID</th>
                     <th>Customer</th>
                     <th width="110">Contact</th>
@@ -551,13 +662,13 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                     <th>SOL ID</th>
                     <th>Branch</th>
                     <th>District</th>
-                    <th>Status</th>
                     <th>Region</th>
                     <th>Zone</th>
                     <th>Created On</th>
                   </tr>
                   <tr class="filter-row">
                     <th width="60"><input type="text" id="col-0-filter" placeholder="Filter Sr. No." class="col-filter"></th>
+                    <th><input type="text" id="col-14-filter" placeholder="Filter Status" class="col-filter"></th>
                     <th><input type="text" id="col-1-filter" placeholder="Filter Lead ID" class="col-filter"></th>
                     <th><input type="text" id="col-2-filter" placeholder="Filter Customer" class="col-filter"></th>
                     <th width="110"><input type="text" id="col-3-filter" placeholder="Filter Contact" class="col-filter"></th>
@@ -571,7 +682,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                     <th><input type="text" id="col-11-filter" placeholder="Filter SOL ID" class="col-filter"></th>
                     <th><input type="text" id="col-12-filter" placeholder="Filter Branch" class="col-filter"></th>
                     <th><input type="text" id="col-13-filter" placeholder="Filter District" class="col-filter"></th>
-                    <th><input type="text" id="col-14-filter" placeholder="Filter Status" class="col-filter"></th>
                     <th><input type="text" id="col-15-filter" placeholder="Filter Region" class="col-filter"></th>
                     <th><input type="text" id="col-16-filter" placeholder="Filter Zone" class="col-filter"></th>
                     <th><input type="text" id="col-17-filter" placeholder="Filter Date" class="col-filter"></th>
@@ -867,24 +977,23 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
         const allRows = [];
         let rowIndex = 1;
 
-        // Process each lead and create table rows
         filteredLeads.forEach((lead) => {
-          // Get employee information from mapping
+          // Lead ID: only show last part after the last '-'
+          const leadIdDisplayed = lead.name?.split("-").pop() || lead.name;
+
           const emp = employeeMap[lead.lead_owner];
           const empName = emp ? emp.name : lead.lead_owner || "Unknown";
           const empId = emp ? emp.id : "-";
           const empDesignation = emp ? emp.designation : "-";
           const empDistrict = emp ? emp.district : "-";
           const empBranch = emp ? emp.branch : lead.branch || "-";
-          const solId = branchMap[empBranch] || "-"; // Get SOL ID from branch mapping
+          const solId = branchMap[empBranch] || "-";
 
-          // Check if lead has products to determine row structure
           if (
             lead.products &&
             Array.isArray(lead.products) &&
             lead.products.length > 0
           ) {
-            // Create separate row for each product in the lead
             lead.products.forEach((product, productIndex) => {
               const productCode = product.product || "-";
               const productName = product.product_name || "-";
@@ -902,36 +1011,35 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
               const row = {
                 html: `
-                  <tr class="${rowClass}">
-                    <td width="60" class="row-number">${rowIndex}</td>
-                    <td>
-                      <span class="lead-link" onclick="frappe.set_route('Form/Lead/${
-                        lead.name
-                      }')">
-                        ${lead.name}
-                      </span>
-                    </td>
-                    <td>${lead.lead_name || "-"}</td>
-                    <td width="110">${lead.contact || "-"}</td>
-                    <td>${lead.source || "-"}</td>
-                    <td>${productCode}</td>
-                    <td>${productName}</td>
-                    <td>${amount}</td>
-                    <td>${empName}</td>
-                    <td>${empId}</td>
-                    <td>${empDesignation}</td>
-                    <td>${solId}</td>
-                    <td>${empBranch}</td>
-                    <td>${empDistrict}</td>
-                    <td><span class="badge ${getStatusBadgeClass(
-                      lead.status
-                    )}">${lead.status}</span></td>
-                    <td>${lead.region || "-"}</td>
-                    <td>${lead.zone || "-"}</td>
-                    <td>${formatDateTimeForDisplay(lead.creation)}</td>
-                  </tr>
-                `,
-                // Store data for filtering and export functionality
+            <tr class="${rowClass}">
+              <td width="60" class="row-number">${rowIndex}</td>
+              <td><span class="badge ${getStatusBadgeClass(lead.status)}"> 
+              <span class="status-dot"></span>${lead.status}</span></td>
+              <td>
+                <span class="lead-link" onclick="frappe.set_route('Form/Lead/${
+                  lead.name
+                }')">
+                  ${leadIdDisplayed}
+                </span>
+              </td>
+              <td>${lead.lead_name || "-"}</td>
+              <td width="110">${lead.contact || "-"}</td>
+              <td>${lead.source || "-"}</td>
+              <td>${productCode}</td>
+              <td>${productName}</td>
+              <td>${amount}</td>
+              <td>${empName}</td>
+              <td>${empId}</td>
+              <td>${empDesignation}</td>
+              <td>${solId}</td>
+              <td>${empBranch}</td>
+              <td>${empDistrict}</td>
+              <td>${lead.region || "-"}</td>
+              <td>${lead.zone || "-"}</td>
+              <td>${formatDateTimeForDisplay(lead.creation)}</td>
+            </tr>
+          `,
+                // export/filter data unchanged
                 leadId: lead.name,
                 productCode: productCode,
                 productName: productName,
@@ -955,39 +1063,37 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               rowIndex++;
             });
           } else {
-            // Lead with no products - create single row with empty product fields
             const row = {
               html: `
-                <tr>
-                  <td width="60" class="row-number">${rowIndex}</td>
-                  <td>
-                    <span class="lead-link" onclick="frappe.set_route('Form/Lead/${
-                      lead.name
-                    }')">
-                      ${lead.name}
-                    </span>
-                  </td>
-                  <td>${lead.lead_name || "-"}</td>
-                  <td width="110">${lead.contact || "-"}</td>
-                  <td>${lead.source || "-"}</td>
-                  <td>-</td>
-                  <td>-</td>
-                  <td>-</td>
-                  <td>${empName}</td>
-                  <td>${empId}</td>
-                  <td>${empDesignation}</td>
-                  <td>${solId}</td>
-                  <td>${empBranch}</td>
-                  <td>${empDistrict}</td>
-                  <td><span class="badge ${getStatusBadgeClass(lead.status)}">${
-                lead.status
-              }</span></td>
-                  <td>${lead.region || "-"}</td>
-                  <td>${lead.zone || "-"}</td>
-                  <td>${formatDateTimeForDisplay(lead.creation)}</td>
-                </tr>
-              `,
-              // Store data for filtering and export functionality
+          <tr>
+            <td width="60" class="row-number">${rowIndex}</td>
+            <td><span class="badge ${getStatusBadgeClass(lead.status)}">
+            <span class="status-dot"></span>${lead.status}</span></td>
+            <td>
+              <span class="lead-link" onclick="frappe.set_route('Form/Lead/${
+                lead.name
+              }')">
+                ${leadIdDisplayed}
+              </span>
+            </td>
+            <td>${lead.lead_name || "-"}</td>
+            <td width="110">${lead.contact || "-"}</td>
+            <td>${lead.source || "-"}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>${empName}</td>
+            <td>${empId}</td>
+            <td>${empDesignation}</td>
+            <td>${solId}</td>
+            <td>${empBranch}</td>
+            <td>${empDistrict}</td>
+            <td>${lead.region || "-"}</td>
+            <td>${lead.zone || "-"}</td>
+            <td>${formatDateTimeForDisplay(lead.creation)}</td>
+          </tr>
+        `,
+              // export/filter data unchanged
               leadId: lead.name,
               productCode: "-",
               productName: "-",
@@ -1012,23 +1118,18 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           }
         });
 
-        // Store expanded rows for export functionality
         expandedLeadRows = allRows;
         const htmlContent = allRows.map((row) => row.html).join("");
 
-        // Update table body with rendered HTML content
         const tbody = document.getElementById("lead-content");
         if (tbody) {
           tbody.innerHTML = htmlContent;
           console.log("✅ Table rows updated successfully");
         }
 
-        // Update record count display at bottom of table
         $("#record-count").text(
           `Showing ${allRows.length} product rows from ${filteredLeads.length} leads of ${totalLeadsCount} total leads (${currentLeads.length} loaded)`
         );
-
-        // Setup infinite scroll for additional page loading
         if (currentLeads.length > 0) setupInfiniteScroll();
       }
 
@@ -1514,6 +1615,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           // CSV headers
           const headers = [
             "Sr.No.",
+            "Status",
             "Lead ID",
             "Customer",
             "Contact",
@@ -1527,7 +1629,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             "SOL ID",
             "Branch",
             "District",
-            "Status",
             "Region",
             "Zone",
             "Created On",
