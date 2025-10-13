@@ -1040,6 +1040,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             </tr>
           `,
                 // export/filter data unchanged
+                status: lead.status || "",
                 leadId: lead.name,
                 productCode: productCode,
                 productName: productName,
@@ -1053,7 +1054,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 customerName: lead.lead_name || "",
                 contact: lead.contact || "",
                 source: lead.source || "",
-                status: lead.status || "",
                 region: lead.region || "",
                 zone: lead.zone || "",
                 createdOn: formatDateTimeForDisplay(lead.creation),
@@ -1094,6 +1094,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
           </tr>
         `,
               // export/filter data unchanged
+              status: lead.status || "",
               leadId: lead.name,
               productCode: "-",
               productName: "-",
@@ -1107,7 +1108,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
               customerName: lead.lead_name || "",
               contact: lead.contact || "",
               source: lead.source || "",
-              status: lead.status || "",
               region: lead.region || "",
               zone: lead.zone || "",
               createdOn: formatDateTimeForDisplay(lead.creation),
@@ -1665,6 +1665,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
 
                 const row = [
                   rowIndex,
+                  lead.status,
                   lead.name,
                   lead.lead_name || "-",
                   lead.contact || "-",
@@ -1678,7 +1679,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                   solId,
                   empBranch,
                   empDistrict,
-                  lead.status,
                   lead.region || "-",
                   lead.zone || "-",
                   formatDateTimeForDisplay(lead.creation),
@@ -1703,6 +1703,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             } else {
               const row = [
                 rowIndex,
+                lead.status,
                 lead.name,
                 lead.lead_name || "-",
                 lead.contact || "-",
@@ -1716,7 +1717,6 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
                 solId,
                 empBranch,
                 empDistrict,
-                lead.status,
                 lead.region || "-",
                 lead.zone || "-",
                 formatDateTimeForDisplay(lead.creation),
