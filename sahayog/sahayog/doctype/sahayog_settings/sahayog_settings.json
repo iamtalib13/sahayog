@@ -12,7 +12,11 @@
   "loc_perm_settings_section",
   "location_table_permissions",
   "inventory_tab",
-  "wh_dept_map"
+  "wh_dept_map",
+  "agent_setting_tab",
+  "agent_automation_days",
+  "create_agents",
+  "column_break_wzyr"
  ],
  "fields": [
   {
@@ -56,13 +60,32 @@
    "fieldname": "wh_dept_map",
    "fieldtype": "Table",
    "options": "Default Warehouse"
+  },
+  {
+   "fieldname": "agent_setting_tab",
+   "fieldtype": "Tab Break",
+   "label": "Agent Setting"
+  },
+  {
+   "fieldname": "agent_automation_days",
+   "fieldtype": "Data",
+   "label": "Agent Automation Days"
+  },
+  {
+   "fieldname": "column_break_wzyr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "create_agents",
+   "fieldtype": "Button",
+   "label": "Create Agents"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-16 17:00:02.154063",
+ "modified": "2025-10-11 11:28:31.650826",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
