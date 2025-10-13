@@ -304,6 +304,7 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             max-height: 600px;
             overflow-x: auto;
             overflow-y: auto;
+            font-size: 11px;
           }
           .lead-table {
             width: 100%;
@@ -377,10 +378,10 @@ frappe.pages["crm-lead-management"].on_page_load = async function (wrapper) {
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
-            border: 0.5px solid #00c72e; /* Set border width and color */
-            display: inline-flex;     /* enables horizontal layout */
-            align-items: center;      /* vertical centering */
-            gap: 8px;                 /* controls the space between dot and text */                
+            border: 0.5px solid #00c72e; 
+            display: inline-flex;    
+            align-items: center;      
+            gap: 8px;                                
           }
           .badge-success .status-dot {
             width: 8px;
