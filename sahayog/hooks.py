@@ -356,6 +356,10 @@ scheduler_events = {
         "30 10 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
         ],
+
+        "31 10 * * *": [  # Runs daily at 1:00 AM.
+            "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
+        ]
     }
     # "cron": {
     #     "*": [

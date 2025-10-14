@@ -1,16 +1,16 @@
 import frappe
 
-
 def get_agents_sol_wise(user=None):
     if not user:
         user = frappe.session.user
 
     user_roles = frappe.get_roles(user)
 
-    # Check if user is Administrator or MIS Admin
+    # ✅ Step 1: Admins (Administrator / MIS Admin) can see all records
     if "Administrator" in user_roles or "MIS Admin" in user_roles:
         return ""
 
+    # ✅ Step 2: Get employee info linked with the user
     employee = frappe.db.get_value(
         "Employee",
         {"user_id": user},
@@ -18,34 +18,48 @@ def get_agents_sol_wise(user=None):
         as_dict=True,
     )
 
+    # If employee not found or SOL ID missing → no access
     if not employee or not employee.sol_id:
         return "1=0"
 
     conditions = []
-    
-    # Check if employee is a Branch Manager
-    if employee.designation == "BRANCH MANAGER":
-        # For Branch Managers, show all records from their branch without status conditions
-        branch_manager_condition = f"`tabAgent`.branch_code = '{employee.sol_id}'"
-        conditions.append(f"({branch_manager_condition})")
+
+    # ✅ Step 3: Define designations that can see entire branch data
+    full_branch_access_designations = [
+        "BRANCH MANAGER",
+        "Asst. Branch Manager",
+        "Branch Operation Manager"
+    ]
+
+    # ✅ Step 4: If user’s designation is in full access list
+    if employee.designation in full_branch_access_designations:
+        branch_condition = f"`tabAgent`.branch_code = '{employee.sol_id}'"
+        conditions.append(f"({branch_condition})")
+
     else:
-        # For non-Branch Managers, apply the existing logic
-        
-        # Always include branch-wise unallocated data
-        branch_unallocated = f"`tabAgent`.branch_code = '{employee.sol_id}' AND IFNULL(`tabAgent`.status, '') IN ('', 'Unallocated')"
+        # ✅ Step 5: Normal employee logic
+
+        # Unallocated records of the same branch
+        branch_unallocated = (
+            f"`tabAgent`.branch_code = '{employee.sol_id}' "
+            f"AND IFNULL(`tabAgent`.status, '') IN ('', 'Unallocated')"
+        )
         conditions.append(f"({branch_unallocated})")
-        
-        # If employee number exists, add allocated records for this specific employee
+
+        # Allocated records specifically assigned to the employee
         if employee.employee_number:
-            employee_allocated = f"`tabAgent`.branch_code = '{employee.sol_id}' AND `tabAgent`.employee = '{employee.employee_number}' AND `tabAgent`.status = 'Allocated'"
+            employee_allocated = (
+                f"`tabAgent`.branch_code = '{employee.sol_id}' "
+                f"AND `tabAgent`.employee = '{employee.employee_number}' "
+                f"AND `tabAgent`.status = 'Allocated'"
+            )
             conditions.append(f"({employee_allocated})")
-    
-    # Show records where current user is the approver (approved_by field)
+
+    # ✅ Step 6: Records where user is approver or requester
     user_approver = f"`tabAgent`.approved_by = '{user}'"
-    conditions.append(f"({user_approver})")
-    
-    # Show records where current user is the requester (requested_by field)
     user_requester = f"`tabAgent`.requested_by = '{user}'"
+    conditions.append(f"({user_approver})")
     conditions.append(f"({user_requester})")
 
+    # ✅ Step 7: Return final OR-based condition
     return " OR ".join(conditions) if conditions else "1=0"
