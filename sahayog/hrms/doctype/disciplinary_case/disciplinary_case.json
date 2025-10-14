@@ -29,12 +29,7 @@
   "hr_employee_id",
   "hr_name",
   "status",
-  "response_time",
-  "section_break_fakz",
-  "enquiry_item_html",
-  "schedule_enquiry_btn",
-  "suspension_order_tab",
-  "issue_suspension_letter"
+  "response_time"
  ],
  "fields": [
   {
@@ -43,7 +38,7 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Case Type",
-   "options": "\nViolation Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nOthers",
+   "options": "\nViolation Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nUnauthorized Absence\nOthers",
    "reqd": 1
   },
   {
@@ -53,33 +48,19 @@
    "reqd": 1
   },
   {
-   "fieldname": "section_break_fakz",
-   "fieldtype": "Section Break",
-   "label": "Enquiry Details"
-  },
-  {
    "fieldname": "case_information_section",
    "fieldtype": "Section Break",
    "label": "Case Information"
   },
   {
-   "default": "Open",
+   "default": "Under Process",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
-   "options": "\nOpen\nClosed",
+   "options": "\nUnder Process\nClosed",
    "read_only": 1
-  },
-  {
-   "fieldname": "schedule_enquiry_btn",
-   "fieldtype": "Button",
-   "label": "Schedule Enquiry"
-  },
-  {
-   "fieldname": "enquiry_item_html",
-   "fieldtype": "HTML",
-   "label": "Enquiry"
   },
   {
    "fieldname": "category",
@@ -139,16 +120,6 @@
    "fieldname": "issue_show_cause_notice_tab",
    "fieldtype": "Tab Break",
    "label": "Issue Show Cause Notice"
-  },
-  {
-   "fieldname": "suspension_order_tab",
-   "fieldtype": "Tab Break",
-   "label": "Suspension Order"
-  },
-  {
-   "fieldname": "issue_suspension_letter",
-   "fieldtype": "Data",
-   "label": "Issue Suspension Letter"
   },
   {
    "fieldname": "column_break_bnqh",
@@ -226,13 +197,8 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [
-  {
-   "link_doctype": "Enquiry",
-   "link_fieldname": "disciplinary_case"
-  }
- ],
- "modified": "2025-09-25 12:11:28.578319",
+ "links": [],
+ "modified": "2025-10-13 15:20:54.999511",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
