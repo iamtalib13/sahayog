@@ -6,6 +6,7 @@ def get_operation_lead_report(from_date=None, to_date=None):
     Custom API to fetch detailed lead report with product breakdown.
     Includes child table data from 'Lead Product' and employee details
     from 'Employee' doctype.
+    Owner data from 'owner' field and Assigned data from 'lead_owner' field.
     """
     try:
         # ========== Build Lead filters ==========
@@ -21,12 +22,13 @@ def get_operation_lead_report(from_date=None, to_date=None):
             "Lead",
             fields=[
                 "name",
-                "lead_name",
+                "lead_name", 
                 "mobile_no",
                 "email_id",
                 "status",
                 "source",
                 "lead_owner",
+                "owner",
                 "creation"
             ],
             filters=lead_filters,
@@ -53,16 +55,17 @@ def get_operation_lead_report(from_date=None, to_date=None):
                     "idx": p.idx or 0
                 })
 
-        # ========== Fetch Employee details (ignore permissions) ==========
-        employee_user_ids = list({lead.lead_owner for lead in leads if lead.lead_owner})
+        # ========== Fetch Employee details for both lead_owner and owner ==========
+        all_user_ids = list({lead.lead_owner for lead in leads if lead.lead_owner} | 
+                           {lead.owner for lead in leads if lead.owner})
         employees_map = {}
-        if employee_user_ids:
+        if all_user_ids:
             employees = frappe.get_all(
                 "Employee",
-                filters={"user_id": ["in", employee_user_ids]},
+                filters={"user_id": ["in", all_user_ids]},
                 fields=[
                     "name",
-                    "user_id",
+                    "user_id", 
                     "employee_name",
                     "designation",
                     "branch",
@@ -80,7 +83,11 @@ def get_operation_lead_report(from_date=None, to_date=None):
         # ========== Combine data ==========
         detailed_leads = []
         for lead in leads:
-            owner = employees_map.get(lead.lead_owner, {})
+            # Owner employee (from owner field)
+            owner_emp = employees_map.get(lead.owner, {})
+            # Assigned employee (from lead_owner field)
+            assigned_emp = employees_map.get(lead.lead_owner, {})
+            
             lead_products = products_map.get(lead.name, [])
             
             detailed_leads.append({
@@ -91,9 +98,11 @@ def get_operation_lead_report(from_date=None, to_date=None):
                 "status": lead.status,
                 "source": lead.source,
                 "lead_owner": lead.lead_owner,
+                "owner": lead.owner,
                 "creation": lead.creation,
                 "products": lead_products,
-                "lead_owner_details": owner
+                "owner_details": owner_emp,  # From owner field
+                "assigned_employee_details": assigned_emp  # From lead_owner field
             })
 
         # ========== Summary ==========
@@ -116,13 +125,12 @@ def get_operation_lead_report(from_date=None, to_date=None):
             "error": str(e)
         }
 
-
-
 @frappe.whitelist()
 def get_employee_lead_summary(from_date=None, to_date=None):
     """
     Return total leads per employee for the given date range.
     Respects Lead doctype permissions.
+    Shows both Owner (owner) and Assigned (lead_owner) counts.
     """
     try:
         # Build lead filters
@@ -137,28 +145,34 @@ def get_employee_lead_summary(from_date=None, to_date=None):
         leads = frappe.get_list(
             "Lead",
             filters=lead_filters,
-            fields=["lead_owner", "name"],
+            fields=["lead_owner", "owner", "name"],
             order_by="lead_owner"
         )
 
-        # Count leads per owner
-        lead_count_map = {}
+        # Count leads per employee (both owner and assigned)
+        owner_count_map = {}
+        assigned_count_map = {}
+        
         for lead in leads:
+            # Count by owner (owner)
+            if lead.owner:
+                owner_count_map[lead.owner] = owner_count_map.get(lead.owner, 0) + 1
+            # Count by assigned (lead_owner)
             if lead.lead_owner:
-                lead_count_map[lead.lead_owner] = lead_count_map.get(lead.lead_owner, 0) + 1
+                assigned_count_map[lead.lead_owner] = assigned_count_map.get(lead.lead_owner, 0) + 1
 
         # Fetch employee details ignoring permissions
-        user_ids = list(lead_count_map.keys())
+        all_user_ids = list(set(list(owner_count_map.keys()) + list(assigned_count_map.keys())))
         employees = {}
-        if user_ids:
+        if all_user_ids:
             emp_list = frappe.get_all(
                 "Employee",
-                filters={"user_id": ["in", user_ids]},
+                filters={"user_id": ["in", all_user_ids]},
                 fields=[
                     "name",
                     "user_id",
                     "employee_name",
-                    "designation",
+                    "designation", 
                     "sol_id",
                     "branch",
                     "custom_district"
@@ -168,10 +182,14 @@ def get_employee_lead_summary(from_date=None, to_date=None):
             for emp in emp_list:
                 employees[emp.user_id] = emp
 
-        # Combine
+        # Combine data with both owner and assigned counts
         data = []
-        for user_id, count in lead_count_map.items():
+        processed_users = set()
+        
+        # Add owner data
+        for user_id, count in owner_count_map.items():
             emp = employees.get(user_id, {})
+            assigned_count = assigned_count_map.get(user_id, 0)
             data.append({
                 "Employee ID": emp.get("name") or "",
                 "Employee Name": emp.get("employee_name") or "",
@@ -179,8 +197,25 @@ def get_employee_lead_summary(from_date=None, to_date=None):
                 "SOL ID": emp.get("sol_id") or "",
                 "Branch": emp.get("branch") or "",
                 "District": emp.get("custom_district") or "",
-                "Total Leads": count
+                "Owner Leads": count,
+                "Assigned Leads": assigned_count
             })
+            processed_users.add(user_id)
+        
+        # Add remaining assigned users not in owner list
+        for user_id, count in assigned_count_map.items():
+            if user_id not in processed_users:
+                emp = employees.get(user_id, {})
+                data.append({
+                    "Employee ID": emp.get("name") or "",
+                    "Employee Name": emp.get("employee_name") or "",
+                    "Designation": emp.get("designation") or "",
+                    "SOL ID": emp.get("sol_id") or "",
+                    "Branch": emp.get("branch") or "",
+                    "District": emp.get("custom_district") or "",
+                    "Owner Leads": 0,
+                    "Assigned Leads": count
+                })
 
         return {"success": True, "data": data}
 
