@@ -46,8 +46,8 @@
  {
   "docstatus": 0,
   "doctype": "Custom HTML Block",
-  "html": "<div style=\"text-align: right;\">\n  <a href=\"javascript:void(0)\" id=\"change-password-btn\" style=\"color: #007bff; text-decoration: underline; cursor: pointer;\">\n    Change Password\n  </a>\n  <span> • </span>\n   <a href=\"javascript:void(0)\" id=\"update-details-btn\" style=\"color: #007bff; text-decoration: underline; cursor: pointer;\">\n    Update Your Details\n  </a>\n</div>\n<iframe src=\"/homepage\" id=\"home_frame\" width=\"100%\" height=\"610px\" style=\"border: none;\"></iframe>",
-  "modified": "2025-09-20 10:43:45.204854",
+  "html": "<div style=\"text-align: right;\">\n  <a href=\"javascript:void(0)\" id=\"change-password-btn\" style=\"color: #007bff; text-decoration: underline; cursor: pointer;\">\n    Change Password\n  </a>\n  <span> • </span>\n   <a href=\"javascript:void(0)\" id=\"update-details-btn\" style=\"color: #007bff; text-decoration: underline; cursor: pointer;\">\n    Update Your Details\n  </a>\n    <span> • </span>\n   <a href=\"https://sahayogmultistate-my.sharepoint.com/:w:/p/talib_s/Eci65dk0CllKhY5d2UA4wv4BEH9R-umUfw1Pf4NdahTbEw?e=Om9jbA\" id=\"update-details-btn\" style=\"color: #007bff; text-decoration: underline; cursor: pointer;\">\n User Manual\n  </a>  \n</div>\n<iframe src=\"/homepage\" id=\"home_frame\" width=\"100%\" height=\"610px\" style=\"border: none;\"></iframe>",
+  "modified": "2025-10-14 10:58:15.984838",
   "name": "Sahayog Home",
   "private": 0,
   "roles": [],
