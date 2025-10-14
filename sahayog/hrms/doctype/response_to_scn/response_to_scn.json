@@ -1,0 +1,180 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-13 10:59:38.141450",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_id",
+  "employee_name",
+  "branch_id",
+  "zone_name",
+  "issue_in_details",
+  "issue_occurrence_date",
+  "status",
+  "status_of_response",
+  "remarks",
+  "column_break_ytlf",
+  "case_id",
+  "designation",
+  "branch_name",
+  "case_type",
+  "category",
+  "issue_reported_to_hr",
+  "response_to_scn",
+  "document_upload",
+  "domestic_enquiry"
+ ],
+ "fields": [
+  {
+   "fetch_from": "case_id.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "label": "Employee ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Link",
+   "label": "Case ID",
+   "options": "Disciplinary Case",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ytlf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "case_id.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_id",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_name",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.zone",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.case_type",
+   "fieldname": "case_type",
+   "fieldtype": "Data",
+   "label": "Case Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.description",
+   "fieldname": "issue_in_details",
+   "fieldtype": "Small Text",
+   "label": "Issue In Details",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.category",
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.issue_occurrence_date",
+   "fieldname": "issue_occurrence_date",
+   "fieldtype": "Data",
+   "label": "Issue Occurrence Date",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.issue_report_to_hr",
+   "fieldname": "issue_reported_to_hr",
+   "fieldtype": "Data",
+   "label": "Issue Reported To HR",
+   "read_only": 1
+  },
+  {
+   "fieldname": "response_to_scn",
+   "fieldtype": "Select",
+   "label": "Response to SCN",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "document_upload",
+   "fieldtype": "Attach",
+   "label": "Document Upload"
+  },
+  {
+   "fieldname": "status_of_response",
+   "fieldtype": "Select",
+   "label": "Status of Response",
+   "options": "\nSatisfactory\nNot-Satisfactory"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "domestic_enquiry",
+   "fieldtype": "Select",
+   "label": "Domestic Enquiry",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fetch_from": "case_id.status",
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Case Status",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-14 12:40:04.456566",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Response to SCN",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
