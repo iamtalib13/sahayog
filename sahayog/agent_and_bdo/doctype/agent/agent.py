@@ -194,6 +194,58 @@ def get_branch_managers(branch_code):
         return []
 
 
+# @frappe.whitelist()
+# def get_approver_details(user_id):
+#     """Get employee details by user_id for approver display"""
+#     if not user_id:
+#         return None
+    
+#     try:
+#         # First try to get employee details by user_id
+#         employee = frappe.db.get_value(
+#             "Employee", 
+#             {"user_id": user_id, "status": "Active"}, 
+#             ["employee_name", "name", "designation", "branch"], 
+#             as_dict=True
+#         )
+        
+#         if employee:
+#             return {
+#                 "employee_name": employee.employee_name,
+#                 "employee_id": employee.name,
+#                 "designation": employee.designation,
+#                 "branch": employee.branch,
+#                 "display_name": employee.employee_name
+#             }
+        
+#         # Fallback to User's full_name if employee not found
+#         user = frappe.db.get_value(
+#             "User", 
+#             user_id, 
+#             ["full_name", "email"], 
+#             as_dict=True
+#         )
+        
+#         if user:
+#             return {
+#                 "employee_name": None,
+#                 "employee_id": None,
+#                 "designation": None,
+#                 "branch": None,
+#                 "display_name": user.full_name or user.email
+#             }
+        
+#         return {
+#             "display_name": user_id
+#         }
+        
+#     except Exception as e:
+#         frappe.log_error(f"Error getting approver details: {str(e)}")
+#         return {
+#             "display_name": user_id
+#         }
+
+
 @frappe.whitelist()
 def get_approver_details(user_id):
     """Get employee details by user_id for approver display"""
@@ -201,11 +253,11 @@ def get_approver_details(user_id):
         return None
     
     try:
-        # First try to get employee details by user_id
+        # First try to get employee details by user_id, including email and phone
         employee = frappe.db.get_value(
             "Employee", 
             {"user_id": user_id, "status": "Active"}, 
-            ["employee_name", "name", "designation", "branch"], 
+            ["employee_name", "name", "designation", "branch", "company_email", "cell_number"], 
             as_dict=True
         )
         
@@ -215,6 +267,8 @@ def get_approver_details(user_id):
                 "employee_id": employee.name,
                 "designation": employee.designation,
                 "branch": employee.branch,
+                "company_email": employee.company_email,
+                "cell_number": employee.cell_number,
                 "display_name": employee.employee_name
             }
         
@@ -232,6 +286,8 @@ def get_approver_details(user_id):
                 "employee_id": None,
                 "designation": None,
                 "branch": None,
+                "company_email": None,
+                "cell_number": None,
                 "display_name": user.full_name or user.email
             }
         
@@ -244,6 +300,8 @@ def get_approver_details(user_id):
         return {
             "display_name": user_id
         }
+
+
 
 @frappe.whitelist()
 def get_employee_info(employee):

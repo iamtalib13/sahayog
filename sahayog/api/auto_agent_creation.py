@@ -89,7 +89,8 @@ def get_agents_by_rm_start_date(start_date=None, end_date=None):
                 "Agent Name": agent.get("agent_name"),
                 "Branch Code": agent.get("user_sol_id"),
                 "Branch Name": branch_mapping.get(agent.get("user_sol_id"), "Unknown"),
-                "Agent Reportee Id": auth_id_raw,
+                # "Agent Reportee Id": auth_id_raw,
+                "Agent Reportee Id": "",
                 "Employee": employee,
                 "ID": agent.get("agent_id"),
             })
@@ -127,9 +128,12 @@ def sync_agents_to_doctype(start_date=None, end_date=None):
 
     for agent in api_response:
         agent_code = agent.get("ID")
-        if not agent_code:
+        # Fix: Accept all 'RDDSA...' and 'DDDSA...' codes
+        if not (str(agent_code).startswith("RDDSA") or str(agent_code).startswith("DDDSA")):
             skipped += 1
             continue
+
+    # --- baaki aapka purana code as-is ---
 
         auth_id = agent.get("Agent Reportee Id")
         status = "Allocated" if auth_id else "Unallocated"
