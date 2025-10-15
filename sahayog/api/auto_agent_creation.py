@@ -125,11 +125,19 @@ def sync_agents_to_doctype(start_date=None, end_date=None):
 
     print(f"🔍 Total agents fetched: {len(api_response)}")
 
+    # for agent in api_response:
+    #     agent_code = agent.get("ID")
+    #     if not agent_code:
+    #         skipped += 1
+    #         continue
+
     for agent in api_response:
         agent_code = agent.get("ID")
-        if not agent_code:
+        # Fix: Accept all 'RDDSA...' and 'DDDSA...' codes
+        if not (str(agent_code).startswith("RDDSA") or str(agent_code).startswith("DDDSA")):
             skipped += 1
             continue
+
 
         auth_id = agent.get("Agent Reportee Id")
         status = "Allocated" if auth_id else "Unallocated"
