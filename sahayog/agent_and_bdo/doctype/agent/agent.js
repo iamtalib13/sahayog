@@ -5,6 +5,7 @@ frappe.ui.form.on("Agent", {
   refresh(frm) {
     frm.clear_custom_buttons(); // remove old buttons
     frm.trigger("employee_details"); // trigger employee details display
+    frm.trigger("read_only_fields");
 
     // --- Unallocated: Show Allocate ---
     if (frm.doc.status === "Unallocated") {
@@ -274,6 +275,18 @@ frappe.ui.form.on("Agent", {
                 `);
       },
     });
+  },
+  read_only_fields(frm) {
+    // Allow only MIS and MIS Admin roles to edit
+    const hasRequiredRole =
+      frappe.user.has_role("System Manager") ||
+      frappe.user.has_role("MIS Admin");
+
+    if (!hasRequiredRole) {
+      frm.disable_save();
+      frm.set_read_only();
+      console.log("Form made read-only for non-MIS users");
+    }
   },
 });
 
