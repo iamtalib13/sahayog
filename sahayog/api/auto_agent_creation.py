@@ -115,29 +115,27 @@ def get_branch_by_code(branch_code):
 def sync_agents_to_doctype(start_date=None, end_date=None):
     """
     Sync agents (filtered by RM start date) to the Agent Doctype.
-    Creates new docs if not exist, updates existing ones.
+    Only creates new docs if not exist, skips existing ones.
     """
     api_response_url = get_agents_by_rm_start_date(start_date, end_date)
     api_response = api_response_url.get("agents", [])
     created = 0
-    updated = 0
     skipped = 0
 
     print(f"🔍 Total agents fetched: {len(api_response)}")
 
-    # for agent in api_response:
-    #     agent_code = agent.get("ID")
-    #     if not agent_code:
-    #         skipped += 1
-    #         continue
-
     for agent in api_response:
         agent_code = agent.get("ID")
-        # Fix: Accept all 'RDDSA...' and 'DDDSA...' codes
+        # Accept only codes 'RDDSA...' or 'DDDSA...'
         if not (str(agent_code).startswith("RDDSA") or str(agent_code).startswith("DDDSA")):
             skipped += 1
             continue
 
+        # Skip if already exists
+        if frappe.db.exists("Agent", agent_code):
+            print(f"⏭️ Skipped (already exists): {agent_code}")
+            skipped += 1
+            continue
 
         auth_id = agent.get("Agent Reportee Id")
         status = "Allocated" if auth_id else "Unallocated"
@@ -155,7 +153,7 @@ def sync_agents_to_doctype(start_date=None, end_date=None):
             "status": status,
             "agent_name": agent.get("Agent Name"),
             "branch_code": branch_code,
-            "branch_name": branch_name,  # <-- Updated branch name
+            "branch_name": branch_name,
             "role": role,
             "employee": employee_cleaned,
             "auth_id": auth_id,
@@ -164,33 +162,22 @@ def sync_agents_to_doctype(start_date=None, end_date=None):
             "creation_date": start_date,
         }
 
-        if frappe.db.exists("Agent", agent_code):
-            doc = frappe.get_doc("Agent", agent_code)
-            for field, value in data.items():
-                if value is not None:
-                    doc.set(field, value)
-            doc.save(ignore_permissions=True)
-            print(f"🔄 Updated Agent: {agent_code} (Employee={employee_cleaned})")
-            updated += 1
-        else:
-            doc = frappe.get_doc({"doctype": "Agent", **data})
-            doc.insert(ignore_permissions=True)
-            print(f"🆕 Created Agent: {agent_code} (Employee={employee_cleaned})")
-            created += 1
+        doc = frappe.get_doc({"doctype": "Agent", **data})
+        doc.insert(ignore_permissions=True)
+        print(f"🆕 Created Agent: {agent_code} (Employee={employee_cleaned})")
+        created += 1
 
     frappe.db.commit()
 
     print("\nSummary:")
     print(f"  ➕ Created: {created}")
-    print(f"  🔄 Updated: {updated}")
     print(f"  ⏭️ Skipped: {skipped}")
 
     return {
         "status": "success",
-        # "message": f"{created} agents created, {updated} updated, {skipped} skipped."
-        "message": f"{created} agents created"
-
+        "message": f"{created} agents created, {skipped} skipped"
     }
+
 
 ######################################################################
 
