@@ -9,7 +9,6 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
     <style>
 .operation-lead-container {
   margin: 0;
-  
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #f8fafc;
   min-height: 100vh;
@@ -174,7 +173,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   border-collapse: collapse;
   font-size: 14px;
   background: white;
-  min-width: 1400px;
+  min-width: 1800px;
 }
 
 .modern-table thead {
@@ -229,11 +228,10 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   color: #2d3748;
   font-weight: 400;
   vertical-align: middle;
-  white-space: nowrap; /* allow wrapping */
-  overflow: visible;   /* show full text */
+  white-space: nowrap;
+  overflow: visible;
   text-overflow: clip;
 }
-
 
 .lead-id-cell {
   font-weight: 600;
@@ -277,6 +275,17 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
 }
 
 .employee-cell {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.assigned-employee-cell {
+  font-weight: 500;
+  color: #2d3748;
+
+}
+
+.owner-employee-cell {
   font-weight: 500;
   color: #2d3748;
 }
@@ -353,168 +362,6 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   animation: fadeInUp 0.3s ease forwards;
 }
 
-/* Analytics Modal Styles */
-.analytics-metric-card {
-  background: #f7fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 12px;
-  text-align: center;
-  transition: all 0.2s ease;
-}
-
-.analytics-metric-card:hover {
-  border-color: #006767;
-  transform: translateY(-1px);
-}
-
-.analytics-metric-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: #006767;
-  margin-bottom: 4px;
-}
-
-.analytics-metric-label {
-  font-size: 11px;
-  color: #718096;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.analytics-section-header {
-  font-size: 14px;
-  font-weight: 500;
-  color: #2d3748;
-  margin: 0 0 8px 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.top-performer-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.top-performer-item:last-child {
-  border-bottom: none;
-}
-
-.performer-name {
-  font-weight: 500;
-  color: #2d3748;
-  font-size: 12px;
-}
-
-.performer-count {
-  background: #006767;
-  color: white;
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 500;
-}
-
-/* Custom scrollbar */
-.table-container::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
-}
-
-.table-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.table-container::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 3px;
-}
-
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: #006767;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .operation-lead-container {
-    padding: 12px;
-  }
-  
-  .table-header-section {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px 12px;
-  }
-  
-  .table-title-main {
-    text-align: center;
-    min-width: auto;
-    font-size: 16px;
-  }
-  
-  .header-controls {
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .date-filters {
-    justify-content: center;
-    width: 100%;
-    gap: 6px;
-  }
-  
-  .modern-table {
-    font-size: 10px;
-    min-width: 1200px;
-  }
-  
-  .modern-table th,
-  .modern-table td {
-    padding: 6px 4px;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-controls {
-    flex-direction: column;
-    width: 100%;
-    gap: 6px;
-  }
-  
-  .date-filters {
-    flex-direction: column;
-    width: 100%;
-    gap: 6px;
-  }
-  
-  .filter-group {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .date-input {
-    flex: 1;
-    min-width: auto;
-  }
-  
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 8px 12px;
-  }
-  
-  .record-counter {
-    order: -1;
-    align-self: center;
-  }
-}
-
 .custom-modal {
   display: none;
   position: fixed;
@@ -559,17 +406,10 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   color: #000;
 }
 
-.table-container {
-  max-height: 500px;
-  overflow-y: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-}
-
 .custom-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px; /* ✅ Increased font size */
+  font-size: 14px;
 }
 
 .custom-table thead {
@@ -581,7 +421,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
 
 .custom-table th,
 .custom-table td {
-  padding: 10px 14px; /* ✅ Larger cell padding */
+  padding: 10px 14px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -615,6 +455,83 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .operation-lead-container {
+    padding: 12px;
+  }
+  
+  .table-header-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  
+  .table-title-main {
+    text-align: center;
+    min-width: auto;
+    font-size: 16px;
+  }
+  
+  .header-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .date-filters {
+    justify-content: center;
+    width: 100%;
+    gap: 6px;
+  }
+  
+  .modern-table {
+    font-size: 10px;
+    min-width: 1600px;
+  }
+  
+  .modern-table th,
+  .modern-table td {
+    padding: 6px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 6px;
+  }
+  
+  .date-filters {
+    flex-direction: column;
+    width: 100%;
+    gap: 6px;
+  }
+  
+  .filter-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .date-input {
+    flex: 1;
+    min-width: auto;
+  }
+  
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+  
+  .record-counter {
+    order: -1;
+    align-self: center;
   }
 }
 
@@ -673,20 +590,23 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
                 <th>Product Code</th>
                 <th>Product Name</th>
                 <th>Amount</th>
-                <th>Employee Name</th>
-                <th>Employee ID</th>
+                <th>Owner Employee Name</th>
+                <th>Owner Employee ID</th>
                 <th>Designation</th>
                 <th>SOL ID</th>
                 <th>Branch</th>
                 <th>District</th>
                 <th>Region</th>
                 <th>Zone</th>
+                <th>Assigned Employee Name</th>
+                <th>Assigned Employee ID</th>
+                <th>Assigned Branch</th>
                 <th>Created On</th>
               </tr>
             </thead>
             <tbody id="lead-table-body">
               <tr>
-                <td colspan="17" class="loading-state">
+                <td colspan="21" class="loading-state">
                   <div class="loading-spinner"></div>
                   <div>Loading detailed lead data...</div>
                 </td>
@@ -797,11 +717,11 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   // Process detailed lead data from API
   function processDetailedApiData(apiData, summary) {
     summaryData = summary || {};
-
     cachedData = [];
 
     apiData.forEach((lead) => {
-      const owner = lead.lead_owner_details || {};
+      const ownerEmp = lead.owner_details || {}; // From owner field
+      const assignedEmp = lead.assigned_employee_details || {}; // From lead_owner field
       const products = lead.products || [];
 
       if (products.length > 0) {
@@ -815,16 +735,20 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             "Product Code": p.product || "",
             "Product Name": p.product_name || "",
             Amount: p.amount || 0,
-            "Employee Name": owner.employee_name || "",
-            "Employee ID": owner.name || "",
-            Designation: owner.designation || "",
-            "SOL ID": owner.sol_id || "",
-            Branch: owner.branch || "",
-            District: owner.custom_district || "",
-            Region: owner.custom_region || "",
-            Zone: owner.custom_zone || "",
+            "Owner Employee Name": ownerEmp.employee_name || "",
+            "Owner Employee ID": ownerEmp.name || "",
+            Designation: ownerEmp.designation || "",
+            "SOL ID": ownerEmp.sol_id || "",
+            Branch: ownerEmp.branch || "",
+            District: ownerEmp.custom_district || "",
+            Region: ownerEmp.custom_region || "",
+            Zone: ownerEmp.custom_zone || "",
+            "Assigned Employee Name": assignedEmp.employee_name || "",
+            "Assigned Employee ID": assignedEmp.name || "",
+            "Assigned Branch": assignedEmp.branch || "", // Added assigned branch
             "Created On": lead.creation || "",
-            Owner: lead.lead_owner || "",
+            Owner: lead.owner || "",
+            LeadOwner: lead.lead_owner || "",
           });
         });
       } else {
@@ -838,16 +762,20 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
           "Product Code": "",
           "Product Name": "",
           Amount: 0,
-          "Employee Name": owner.employee_name || "",
-          "Employee ID": owner.name || "",
-          Designation: owner.designation || "",
-          "SOL ID": owner.sol_id || "",
-          Branch: owner.branch || "",
-          District: owner.custom_district || "",
-          Region: owner.custom_region || "",
-          Zone: owner.custom_zone || "",
+          "Owner Employee Name": ownerEmp.employee_name || "",
+          "Owner Employee ID": ownerEmp.name || "",
+          Designation: ownerEmp.designation || "",
+          "SOL ID": ownerEmp.sol_id || "",
+          Branch: ownerEmp.branch || "",
+          District: ownerEmp.custom_district || "",
+          Region: ownerEmp.custom_region || "",
+          Zone: ownerEmp.custom_zone || "",
+          "Assigned Employee Name": assignedEmp.employee_name || "",
+          "Assigned Employee ID": assignedEmp.name || "",
+          "Assigned Branch": assignedEmp.branch || "", // Added assigned branch
           "Created On": lead.creation || "",
-          Owner: lead.lead_owner || "",
+          Owner: lead.owner || "",
+          LeadOwner: lead.lead_owner || "",
         });
       }
     });
@@ -893,18 +821,27 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             </td>
             <td title="${d["Product Name"]}">${d["Product Name"] || ""}</td>
             <td class="amount-cell">${formatCurrency(d["Amount"])}</td>
-            <td class="employee-cell" title="${d["Employee Name"]}">${
-          d["Employee Name"] || ""
-        }</td>
-            <td style="font-weight: 600;" title="${d["Employee ID"]}">${
-          d["Employee ID"] || ""
-        }</td>
+            <td class="owner-employee-cell" title="${
+              d["Owner Employee Name"]
+            }">${d["Owner Employee Name"] || ""}</td>
+            <td class="owner-employee-cell" style="font-weight: 600;" title="${
+              d["Owner Employee ID"]
+            }">${d["Owner Employee ID"] || ""}</td>
             <td title="${d["Designation"]}">${d["Designation"] || ""}</td>
             <td title="${d["SOL ID"]}">${d["SOL ID"] || ""}</td>
             <td title="${d["Branch"]}">${d["Branch"] || ""}</td>
             <td title="${d["District"]}">${d["District"] || ""}</td>
             <td title="${d["Region"]}">${d["Region"] || ""}</td>
             <td title="${d["Zone"]}">${d["Zone"] || ""}</td>
+            <td class="assigned-employee-cell" title="${
+              d["Assigned Employee Name"]
+            }">${d["Assigned Employee Name"] || ""}</td>
+            <td class="assigned-employee-cell" style="font-weight: 600;" title="${
+              d["Assigned Employee ID"]
+            }">${d["Assigned Employee ID"] || ""}</td>
+            <td class="assigned-employee-cell" title="${
+              d["Assigned Branch"]
+            }">${d["Assigned Branch"] || ""}</td>
             <td title="${d["Created On"]}">${formatDate(d["Created On"])}</td>
         </tr>
         `;
@@ -964,8 +901,11 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             <td>${emp["SOL ID"] || "-"}</td>
             <td>${emp["Branch"] || "-"}</td>
             <td>${emp["District"] || "-"}</td>
+            <td style="font-weight:600; color:#f59e0b;">${
+              emp["Owner Leads"] || 0
+            }</td>
             <td style="font-weight:600; color:#006767;">${
-              emp["Total Leads"] || 0
+              emp["Assigned Leads"] || 0
             }</td>
           </tr>`
             )
@@ -991,7 +931,8 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
                       <th>SOL ID</th>
                       <th>Branch</th>
                       <th>District</th>
-                      <th>Total Leads</th>
+                      <th>Owner Leads</th>
+                      <th>Assigned Leads</th>
                     </tr>
                   </thead>
                   <tbody>${rows}</tbody>
@@ -1041,7 +982,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   function showLoadingState() {
     $("#lead-table-body").html(`
       <tr>
-        <td colspan="17" class="loading-state">
+        <td colspan="21" class="loading-state">
           <div class="loading-spinner"></div>
           <div>Fetching detailed lead data with products...</div>
         </td>
@@ -1054,7 +995,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   function showNoDataState() {
     $("#lead-table-body").html(`
       <tr>
-        <td colspan="17" class="no-data-state">
+        <td colspan="21" class="no-data-state">
           <div class="no-data-icon">
             <i class="fas fa-inbox"></i>
           </div>
@@ -1070,7 +1011,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   function showErrorState() {
     $("#lead-table-body").html(`
       <tr>
-        <td colspan="17" class="no-data-state">
+        <td colspan="21" class="no-data-state">
           <div class="no-data-icon" style="color: #ef4444;">
             <i class="fas fa-exclamation-triangle"></i>
           </div>
@@ -1125,7 +1066,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
     showEmployeeLeadAnalytics();
   });
 
-  // Enhanced CSV export with all fields
+  // Enhanced CSV export with all fields including owner and assigned employee
   $("#export-btn").click(function () {
     if (!cachedData.length) {
       frappe.msgprint({
@@ -1148,14 +1089,17 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
         "Product Code",
         "Product Name",
         "Amount",
-        "Employee Name",
-        "Employee ID",
+        "Owner Employee Name",
+        "Owner Employee ID",
         "Designation",
         "SOL ID",
         "Branch",
         "District",
         "Region",
         "Zone",
+        "Assigned Employee Name",
+        "Assigned Employee ID",
+        "Assigned Branch",
         "Created On",
       ];
 

@@ -48,10 +48,12 @@ def set_is_operation_lead(doc, method):
     else:
         doc.custom_is_operation_lead = 0
 
+# Assign employee to lead and replace lead owner details with assign employee info
 @frappe.whitelist()
 def assign_employee_to_lead(lead_name, user):
     """
-    Assigns a user to a lead and sets custom fields based on Employee doctype
+    Assigns a user to a lead and sets custom fields based on Employee doctype.
+    Also updates lead_owner with the employee's user_id.
     """
     if not lead_name or not user:
         frappe.throw(frappe._("Lead name and user are required"))
@@ -60,7 +62,7 @@ def assign_employee_to_lead(lead_name, user):
     employee = frappe.get_all(
         "Employee",
         filters={"user_id": user},
-        fields=["name", "custom_zone", "custom_region", "branch"],
+        fields=["name", "custom_zone", "custom_region", "branch", "user_id"],
         limit=1,
     )
 
@@ -69,16 +71,22 @@ def assign_employee_to_lead(lead_name, user):
 
     emp = employee[0]
 
-    # Update the Lead
+    # Update the Lead fields
     frappe.db.set_value("Lead", lead_name, "custom_employee_id", emp["name"])
     frappe.db.set_value("Lead", lead_name, "custom_zone", emp["custom_zone"])
     frappe.db.set_value("Lead", lead_name, "custom_region", emp["custom_region"])
     frappe.db.set_value("Lead", lead_name, "custom_branch", emp["branch"])
 
+    # ✅ Update lead_owner with the employee's user_id
+    frappe.db.set_value("Lead", lead_name, "lead_owner", emp["user_id"])
 
     frappe.db.commit()
 
-    return {"status": "success", "employee": emp}
+    return {
+        "status": "success",
+        "employee": emp,
+        "lead_owner": emp["user_id"]
+    }
 
 # Get assigned employee info 
 @frappe.whitelist()
@@ -122,7 +130,7 @@ def get_lead_owner_info(lead_name):
     # Assuming 'lead_owner' links to a User, and each User has employee info
     employee = frappe.get_all(
         "Employee",
-        filters={"user_id": lead.lead_owner},
+        filters={"user_id": lead.owner},
         fields=["employee_name", "employee_number", "branch"],
         limit_page_length=1,
     )

@@ -1,0 +1,194 @@
+{
+ "actions": [
+  {
+   "action": "sahayog.hrms.doctype.suspension_process.suspension_process.",
+   "action_type": "Server Action",
+   "label": "Execute"
+  }
+ ],
+ "allow_rename": 1,
+ "creation": "2025-10-13 12:01:24.822566",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_id",
+  "employee_name",
+  "branch_id",
+  "zone_name",
+  "issue_in_detail",
+  "issue_occurrence_date",
+  "case_status",
+  "suspenstion_from_date",
+  "number_of_days_suspension_required",
+  "remarks",
+  "column_break_zukp",
+  "case_id",
+  "designation",
+  "branch_name",
+  "case_type",
+  "category",
+  "issue_reported_to_hr",
+  "suspenstion_required",
+  "suspenstion_to_date",
+  "subsistance_allowances"
+ ],
+ "fields": [
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Link",
+   "label": "Case ID",
+   "options": "Disciplinary Case"
+  },
+  {
+   "fetch_from": "case_id.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_name",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.case_type",
+   "fieldname": "case_type",
+   "fieldtype": "Data",
+   "label": "Case Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.category",
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "\nMajor\nMinor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zukp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "case_id.issue_report_to_hr",
+   "fieldname": "issue_reported_to_hr",
+   "fieldtype": "Date",
+   "label": "Issue Reported to HR",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.suspension_required",
+   "fieldname": "suspenstion_required",
+   "fieldtype": "Select",
+   "label": "Suspenstion Required",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "suspenstion_to_date",
+   "fieldtype": "Date",
+   "label": "Suspenstion to date"
+  },
+  {
+   "fieldname": "subsistance_allowances",
+   "fieldtype": "Select",
+   "label": "Subsistance Allowances",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fetch_from": "case_id.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "label": "Employee ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_id",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.zone",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.description",
+   "fieldname": "issue_in_detail",
+   "fieldtype": "Data",
+   "label": "Issue in Detail",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.issue_occurrence_date",
+   "fieldname": "issue_occurrence_date",
+   "fieldtype": "Date",
+   "label": "Issue Occurrence Date"
+  },
+  {
+   "fetch_from": "case_id.status",
+   "fieldname": "case_status",
+   "fieldtype": "Data",
+   "label": "Case Status"
+  },
+  {
+   "fieldname": "suspenstion_from_date",
+   "fieldtype": "Date",
+   "label": "Suspenstion from date"
+  },
+  {
+   "fieldname": "number_of_days_suspension_required",
+   "fieldtype": "Select",
+   "label": "Number of Days Suspension required",
+   "options": "\n30\n60\n90"
+  },
+  {
+   "fetch_from": "case_id.remarks",
+   "fieldname": "remarks",
+   "fieldtype": "Data",
+   "label": "Remarks",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-14 16:39:20.371102",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Suspension Process",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
