@@ -1,12 +1,16 @@
 frappe.ui.form.on("Disciplinary Case", {
   refresh(frm) {
-    // Hide default ERPNext buttons with icons
+    // -------------------
+    // Hide unwanted ERPNext default icon buttons
+    // -------------------
     $(".button.text-muted.btn.btn-default.icon-btn")
       .has("svg.icon.icon-sm")
       .hide();
     $("button:has(svg.icon.icon-sm)").hide();
 
+    // -------------------
     // Add Print Button
+    // -------------------
     frm.add_custom_button("Print", function () {
       const url = frappe.urllib.get_full_url(
         `/api/method/frappe.utils.weasyprint.download_pdf?doctype=Disciplinary+Case&name=${encodeURIComponent(
@@ -16,7 +20,9 @@ frappe.ui.form.on("Disciplinary Case", {
       window.open(url, "_blank");
     });
 
-    // Add Close Case Button (if not already closed)
+    // -------------------
+    // Add Close Case Button (only if not closed)
+    // -------------------
     if (frm.doc.status !== "Closed") {
       frm.add_custom_button("Close", function () {
         frappe.prompt(
@@ -41,13 +47,17 @@ frappe.ui.form.on("Disciplinary Case", {
       });
     }
 
+    // -------------------
     // Disable future dates in date fields
+    // -------------------
     let today = frappe.datetime.now_date();
     frm.set_df_property("issue_occurrence_date", "options", { max: today });
     frm.set_df_property("issue_report_to_hr", "options", { max: today });
   },
 
-  // Instant pop-up on selecting future dates
+  // -------------------
+  // Field-level triggers (not inside refresh)
+  // -------------------
   issue_occurrence_date(frm) {
     let today = frappe.datetime.now_date();
     if (

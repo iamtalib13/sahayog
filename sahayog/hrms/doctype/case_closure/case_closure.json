@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-10-13 10:59:38.141450",
+ "creation": "2025-10-15 13:04:24.780019",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -11,130 +11,111 @@
   "zone_name",
   "issue_in_details",
   "issue_occurrence_date",
-  "status",
-  "status_of_response",
+  "case_status",
+  "domestic_enquiry",
+  "place_of_enquiry",
   "remarks",
-  "column_break_ytlf",
+  "column_break_eecd",
   "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "response_to_scn",
-  "document_upload",
-  "domestic_enquiry"
+  "status_of_response",
+  "date_of_enquiry",
+  "enquiry_officer_name",
+  "enquiry_status",
+  "enquiry_report_upload"
  ],
  "fields": [
   {
    "fetch_from": "case_id.employee_id",
    "fieldname": "employee_id",
    "fieldtype": "Data",
-   "label": "Employee ID",
-   "read_only": 1
+   "label": "Employee ID"
   },
   {
    "fieldname": "case_id",
    "fieldtype": "Link",
    "label": "Case ID",
-   "options": "Disciplinary Case",
-   "read_only": 1
+   "options": "Disciplinary Case"
+  },
+  {
+   "fieldname": "column_break_eecd",
+   "fieldtype": "Column Break"
   },
   {
    "fetch_from": "case_id.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
-   "label": "Employee Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_ytlf",
-   "fieldtype": "Column Break"
+   "label": "Employee Name"
   },
   {
    "fetch_from": "case_id.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
-   "label": "Designation",
-   "read_only": 1
+   "label": "Designation"
   },
   {
    "fetch_from": "case_id.branch_id",
    "fieldname": "branch_id",
    "fieldtype": "Data",
-   "label": "Branch ID",
-   "read_only": 1
+   "label": "Branch ID"
   },
   {
    "fetch_from": "case_id.branch_name",
    "fieldname": "branch_name",
    "fieldtype": "Data",
-   "label": "Branch Name",
-   "read_only": 1
+   "label": "Branch Name"
   },
   {
    "fetch_from": "case_id.zone",
    "fieldname": "zone_name",
    "fieldtype": "Data",
-   "label": "Zone Name",
-   "read_only": 1
+   "label": "Zone Name"
   },
   {
    "fetch_from": "case_id.case_type",
    "fieldname": "case_type",
    "fieldtype": "Data",
-   "label": "Case Type",
-   "read_only": 1
+   "label": "Case Type"
   },
   {
    "fetch_from": "case_id.description",
    "fieldname": "issue_in_details",
    "fieldtype": "Small Text",
-   "label": "Issue In Details",
-   "read_only": 1
+   "label": "Issue In Details"
   },
   {
    "fetch_from": "case_id.category",
    "fieldname": "category",
    "fieldtype": "Data",
-   "label": "Category",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.issue_occurrence_date",
-   "fieldname": "issue_occurrence_date",
-   "fieldtype": "Data",
-   "label": "Issue Occurrence Date",
-   "read_only": 1
+   "label": "Category"
   },
   {
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Data",
-   "label": "Issue Reported To HR",
-   "read_only": 1
+   "label": "Issue Reported To HR"
   },
   {
-   "fieldname": "response_to_scn",
-   "fieldtype": "Select",
-   "label": "Response to SCN",
-   "options": "\nYes\nNo"
+   "fetch_from": "case_id.issue_occurrence_date",
+   "fieldname": "issue_occurrence_date",
+   "fieldtype": "Data",
+   "label": "Issue Occurrence Date"
   },
   {
-   "fieldname": "document_upload",
-   "fieldtype": "Attach",
-   "label": "Document Upload"
+   "fetch_from": "case_id.status",
+   "fieldname": "case_status",
+   "fieldtype": "Data",
+   "label": "Case Status"
   },
   {
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot-Satisfactory"
-  },
-  {
-   "fieldname": "remarks",
-   "fieldtype": "Small Text",
-   "label": "Remarks"
+   "options": "\nSatisfactory\nNot-Satisfactory\nNot-Submitted"
   },
   {
    "fieldname": "domestic_enquiry",
@@ -143,20 +124,44 @@
    "options": "\nYes\nNo"
   },
   {
-   "fetch_from": "case_id.status",
-   "fieldname": "status",
+   "fieldname": "date_of_enquiry",
+   "fieldtype": "Date",
+   "label": "Date of Enquiry"
+  },
+  {
+   "fieldname": "enquiry_officer_name",
    "fieldtype": "Data",
-   "label": "Case Status",
-   "read_only": 1
+   "label": "Enquiry Officer Name"
+  },
+  {
+   "fieldname": "enquiry_status",
+   "fieldtype": "Select",
+   "label": "Enquiry Status",
+   "options": "\nNot-Responded\nCompleted Enquiry"
+  },
+  {
+   "fieldname": "place_of_enquiry",
+   "fieldtype": "Data",
+   "label": "Place of Enquiry"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "enquiry_report_upload",
+   "fieldtype": "Attach",
+   "label": "Enquiry Report Upload"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-15 13:44:03.015995",
+ "modified": "2025-10-15 13:52:41.077848",
  "modified_by": "Administrator",
  "module": "HRMS",
- "name": "Response to SCN",
+ "name": "Case Closure",
  "owner": "Administrator",
  "permissions": [
   {
