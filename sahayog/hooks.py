@@ -344,47 +344,44 @@ doc_events = {
 
 # Scheduled Tasks
 # ---------------
-
 scheduler_events = {
     "cron": {
-        # 🕔 Run daily at 5:00 AM — Early morning summary
+        # Run daily at 5:00 AM — Early morning department ticket summary email
         "0 5 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
         ],
-
-        # 🕥 Run daily at 10:30 AM — Mid-morning follow-up summary
+        # Run daily at 10:30 AM — Mid-morning follow-up ticket summary email
         "30 10 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
         ],
-
-        "31 10 * * *": [  # Runs daily at 1:00 AM.
+        # Run daily at 1:00 AM — Agent auto-creation sync job
+        "0 1 * * *": [
             "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
-        ],
-        "daily": [
-        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
         ]
-    }
-    # "cron": {
-    #     "*": [
-    #        
-    #     ]
-    # }
-    # You can uncomment these if needed later:
+    },
+
+    # Runs all listed methods once per day (typically at midnight server time)
+    "daily": [
+        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
+    ],
+
+    # --- Example blocks below: Uncomment if/when needed ---
     # "all": [
+    #     # These tasks would be triggered every scheduler tick (default: every 60s)
     #     "sahayog.tasks.all"
     # ],
-    # "daily": [
-    #     "sahayog.tasks.daily"
-    # ],
     # "hourly": [
+    #     # Runs once every hour
     #     "sahayog.tasks.hourly"
     # ],
     # "weekly": [
+    #     # Runs once every week (Sunday midnight)
     #     "sahayog.tasks.weekly"
     # ],
     # "monthly": [
+    #     # Runs once every month (1st day of month, midnight)
     #     "sahayog.tasks.monthly"
-    # ],
+    # ]
 }
 
 # Testing
