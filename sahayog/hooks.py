@@ -361,7 +361,7 @@ scheduler_events = {
             "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
         ],
         "daily": [
-        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.SahayogBranch.auto_create_from_finacle"
+        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
         ]
     }
     # "cron": {
