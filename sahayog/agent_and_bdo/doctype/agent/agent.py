@@ -18,20 +18,21 @@ class Agent(Document):
 
     def set_employee_from_auth_id(self):
         """Extract employee number from auth_id if it starts with SAH"""
-        if self.auth_id:
-            auth = self.auth_id.strip().upper()
+        if not self.auth_id:
+            # No auth_id → do nothing
+            return
 
-            if auth.startswith("SAH"):
-                match = re.search(r'\d+', auth)
-                if match:
-                    number_part = match.group(0).lstrip('0')  # remove leading zeros
-                    self.employee = number_part if number_part else ""
-                else:
-                    self.employee = ""
+        auth = self.auth_id.strip().upper()
+
+        if auth.startswith("SAH"):
+            match = re.search(r'\d+', auth)
+            if match:
+                number_part = match.group(0).lstrip('0')  # remove leading zeros
+                self.employee = number_part if number_part else ""
             else:
-                # Not SAH prefix → clear employee
                 self.employee = ""
         else:
+            # Not SAH prefix → clear employee
             self.employee = ""
 
     @frappe.whitelist()
