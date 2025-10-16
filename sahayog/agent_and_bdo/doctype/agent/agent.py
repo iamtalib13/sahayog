@@ -4,11 +4,35 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+import re
 
 class Agent(Document):
     def before_save(self):
+        
         if self.agent_name:
             self.agent_name = self.agent_name.upper()
+
+        # Call helper method
+        self.set_employee_from_auth_id()
+
+
+    def set_employee_from_auth_id(self):
+        """Extract employee number from auth_id if it starts with SAH"""
+        if self.auth_id:
+            auth = self.auth_id.strip().upper()
+
+            if auth.startswith("SAH"):
+                match = re.search(r'\d+', auth)
+                if match:
+                    number_part = match.group(0).lstrip('0')  # remove leading zeros
+                    self.employee = number_part if number_part else ""
+                else:
+                    self.employee = ""
+            else:
+                # Not SAH prefix → clear employee
+                self.employee = ""
+        else:
+            self.employee = ""
 
     @frappe.whitelist()
     def approve_allocation(self):
