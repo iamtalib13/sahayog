@@ -131,6 +131,32 @@ frappe.ui.form.on("Agent", {
         );
       });
     }
+    
+    // --- Allocated: Show Cancel ---
+    if (frm.doc.status === "Pending" ) {
+      frm.add_custom_button(__("Cancel"), () => {
+        frappe.confirm(
+          __("Are you sure you want to cancel this allocation?"),
+          () => {
+            frm.call({
+              method: "unallocate_agent",
+              doc: frm.doc,
+              freeze: true,
+              freeze_message: __("Unallocating Agent..."),
+              callback: function (r) {
+                if (r.message?.success) {
+                  frappe.show_alert({
+                    message: r.message.message,
+                    indicator: "red",
+                  });
+                  frm.reload_doc();
+                }
+              },
+            });
+          }
+        );
+      });
+    }
 
     frm.trigger("hide_sidebar_options");
   },
@@ -142,40 +168,59 @@ frappe.ui.form.on("Agent", {
 
   employee_details(frm) {
     let employee = frm.doc.employee;
-    if (!employee) {
-      // Check if status is Pending and approved_by exists
-      if (frm.doc.status === "Pending" && frm.doc.approved_by) {
+   if (!employee) {
+    if (frm.doc.status === "Pending" && frm.doc.approved_by && frm.doc.requested_by) {
         frappe.call({
-          method:
-            "sahayog.agent_and_bdo.doctype.agent.agent.get_approver_details",
-          args: {
-            user_id: frm.doc.approved_by,
-          },
-          callback: function (r) {
-            if (r.message && r.message.display_name) {
-              frm.set_intro(
-                "Approval Pending from " + r.message.display_name,
-                "red"
-              );
-            } else {
-              frm.set_intro(
-                "Approval Pending from " + frm.doc.approved_by,
-                "red"
-              );
+            method: "sahayog.agent_and_bdo.doctype.agent.agent.get_approver_details",
+            args: { user_id: frm.doc.requested_by },
+            callback: function (rq) {
+                let req = rq.message || {};
+                frappe.call({
+                    method: "sahayog.agent_and_bdo.doctype.agent.agent.get_approver_details",
+                    args: { user_id: frm.doc.approved_by },
+                    callback: function (ap) {
+                        let appr = ap.message || {};
+                        let html = `
+                        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,0.03);padding:22px 28px 18px 28px;color:#56423d;font-size:15px;min-width:320px;">
+                            <div style="color:#c8ad63;font-weight:600;margin-bottom:13px;letter-spacing:0.3px;display:flex;align-items:center;">
+                                <i class="fa fa-info-circle" style="margin-right:7px;font-size:16px;"></i>
+                                Approval Workflow Info
+                            </div>
+                            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                                <div style="min-width:130px;">
+                                    <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Requested By</div>
+                                    <div style="font-weight:600;margin-bottom:3px;">${req.employee_name || req.display_name || frm.doc.requested_by}</div>
+                                    <div style="font-size:12px;color:#bfaf86;">${req.branch||"-"}<br>${req.cell_number ? "  " + req.cell_number : ""}${req.company_email ? " | " + req.company_email : ""}</div>
+                                </div>
+                                <!-- Step Progress Bar -->
+                                <div style="flex:1;min-width:70px;max-width:850px;display:flex;align-items:center;justify-content:center;">
+                                    <div style="width:16px;height:16px;border-radius:8px;background:#c8ad63;display:flex;align-items:center;justify-content:center;">
+                                        <i class="fa fa-check" style="color:#fff;font-size:10px;"></i>
+                                    </div>
+                                    <div style="flex:1;height:2.7px;background:linear-gradient(90deg,#c8ad63 70%,#eee 100%);margin:0 14px;"></div>
+                                    <div style="width:16px;height:16px;border-radius:8px;background:#eee;display:flex;align-items:center;justify-content:center;">
+                                        <i class="fa fa-user" style="color:#c8ad63;font-size:10px;"></i>
+                                    </div>
+                                </div>
+                                <div style="min-width:130px;text-align:right;">
+                                    <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Approval Pending From</div>
+                                    <div style="font-weight:600;margin-bottom:3px;">${appr.employee_name || appr.display_name || frm.doc.approved_by}</div>
+                                    <div style="font-size:12px;color:#bfaf86;">${appr.branch||"-"}<br>${appr.cell_number ? "  " + appr.cell_number : ""}${appr.company_email ? " | " + appr.company_email : ""}</div>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                        frm.set_intro(html);
+                    }
+                });
             }
-          },
-          error: function () {
-            frm.set_intro(
-              "Approval Pending from " + frm.doc.approved_by,
-              "red"
-            );
-          },
         });
-      } else {
+    } else {
         frm.set_intro("");
-      }
-      return;
     }
+    return;
+}
+
 
     frm.call({
       method: "get_employee_info",
@@ -195,75 +240,154 @@ frappe.ui.form.on("Agent", {
         // Helper function for safe field access
         const safe = (value, fallback = "Not Provided") => value || fallback;
 
-        frm.set_intro(`
-                    <div style="background: linear-gradient(135deg, #006767 0%, #004a4b 100%); border-radius: 12px; padding: 0; margin: 10px 0; box-shadow: 0 4px 15px rgba(0,103,104,0.2); overflow: hidden;">
-                        <!-- Header -->
-                        <div style="color: white; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.2);">
-                            <h4 style="margin: 0; display: flex; align-items: center;">
-                                <i class="fa fa-id-card-o" style="margin-right: 8px;"></i>
-                                Employee Information
-                            </h4>
+
+        // if (!employee) {
+    if (
+        (frm.doc.status === "Pending" || frm.doc.status === "Allocated") &&
+        frm.doc.approved_by && frm.doc.requested_by
+    ) {
+        frappe.call({
+            method: "sahayog.agent_and_bdo.doctype.agent.agent.get_approver_details",
+            args: { user_id: frm.doc.requested_by },
+            callback: function (rq) {
+                let req = rq.message || {};
+                frappe.call({
+                    method: "sahayog.agent_and_bdo.doctype.agent.agent.get_approver_details",
+                    args: { user_id: frm.doc.approved_by },
+                    callback: function (ap) {
+                        let appr = ap.message || {};
+
+                        // Green color/heading/icon for Allocated
+                        let isAllocated = frm.doc.status === "Allocated";
+                        let heading = isAllocated ? "Allocation Completed" : "Approval Workflow Info";
+                        let headingColor = isAllocated ? "#43b353" : "#c8ad63";
+                        let icon =
+                            isAllocated
+                                ? `<i class="fa fa-check-circle" style="margin-right:7px;color:#43b353;font-size:16px;"></i>`
+                                : `<i class="fa fa-info-circle" style="margin-right:7px;color:#c8ad63;font-size:16px;"></i>`;
+                        let approverLabel = isAllocated ? "Approved By" : "Approval Pending From";
+                        let stepLeftColor = isAllocated ? "#43b353" : "#c8ad63";
+                        let stepLineColor =
+                            isAllocated
+                                ? "linear-gradient(90deg,#43b353 80%,#eee 100%)"
+                                : "linear-gradient(90deg,#c8ad63 70%,#eee 100%)";
+                        let stepRightBg = isAllocated ? "#43b35322" : "#eee";
+                        let stepRightIcon = isAllocated
+                            ? `<i class="fa fa-user" style="color:#43b353;font-size:10px;"></i>`
+                            : `<i class="fa fa-user" style="color:#c8ad63;font-size:10px;"></i>`;
+
+                        let html = `
+                        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,0.03);padding:22px 28px 18px 28px;color:#56423d;font-size:15px;min-width:320px;">
+                            <div style="color:${headingColor};font-weight:600;margin-bottom:13px;letter-spacing:0.3px;display:flex;align-items:center;">
+                                ${icon}
+                                ${heading}
+                            </div>
+                            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                                <div style="min-width:130px;">
+                                    <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Requested By</div>
+                                    <div style="font-weight:600;margin-bottom:3px;">${req.employee_name || req.display_name || frm.doc.requested_by}</div>
+                                    <div style="font-size:12px;color:#43b35399;">${req.branch||"-"}<br>${req.cell_number ? "  " + req.cell_number : ""}${req.company_email ? " | " + req.company_email : ""}</div>
+
+                                </div>
+                                <!-- Step Progress Bar -->
+                                <div style="flex:1;min-width:70px;max-width:850px;display:flex;align-items:center;justify-content:center;">
+                                    <div style="width:16px;height:16px;border-radius:8px;background:${stepLeftColor};display:flex;align-items:center;justify-content:center;">
+                                        <i class="fa fa-check" style="color:#fff;font-size:10px;"></i>
+                                    </div>
+                                    <div style="flex:1;height:2.7px;background:${stepLineColor};margin:0 14px;"></div>
+                                    <div style="width:16px;height:16px;border-radius:8px;background:${stepRightBg};display:flex;align-items:center;justify-content:center;">
+                                        ${stepRightIcon}
+                                    </div>
+                                </div>
+                                <div style="min-width:130px;text-align:right;">
+                                    <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">${approverLabel}</div>
+                                    <div style="font-weight:600;margin-bottom:3px;">${appr.employee_name || appr.display_name || frm.doc.approved_by}</div>
+                                    <div style="font-size:12px;color:#43b35399;">${appr.branch||"-"}<br>${appr.cell_number ? "  " + appr.cell_number : ""}${appr.company_email ? " | " + appr.company_email : ""}</div>
+
+                                </div>
+                            </div>
                         </div>
-                        <!-- Content -->
-                        <div style="color: white; padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                            ${[
-                              {
-                                icon: "fa-hashtag",
-                                label: "EMPLOYEE NUMBER",
-                                value: safe(
-                                  emp.employee_number,
-                                  "Not Assigned"
-                                ),
-                              },
-                              {
-                                icon: "fa-user",
-                                label: "FULL NAME",
-                                value: safe(emp.employee_name),
-                              },
-                              {
-                                icon: "fa-building",
-                                label: "BRANCH",
-                                value: safe(emp.branch, "Not Assigned"),
-                              },
-                              emp.department
-                                ? {
-                                    icon: "fa-users",
-                                    label: "DEPARTMENT",
-                                    value: emp.department,
-                                  }
-                                : null,
-                              emp.designation
-                                ? {
-                                    icon: "fa-star",
-                                    label: "DESIGNATION",
-                                    value: emp.designation,
-                                  }
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .map(
-                                (item) => `
-                                        <div style="display: flex; align-items: center;">
-                                            <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
-                                                <i class="fa ${item.icon}" style="color: white; font-size: 14px;"></i>
-                                            </div>
-                                            <div>
-                                                <div style="font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500;">${item.label}</div>
-                                                <div style="font-size: 16px; font-weight: 600; color: white;">${item.value}</div>
-                                            </div>
-                                        </div>
-                                    `
-                              )
-                              .join("")}
-                        </div>
-                        <!-- Quick Actions -->
-                        <div style="padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center;">
-                            <button class="btn btn-sm" onclick="frappe.set_route('List', 'Agent', {'employee': '${employee}'})" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); transition: all 0.3s ease; padding: 8px 20px;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                                <i class="fa fa-list"></i> View All Agents
-                            </button>
-                        </div>
-                    </div>
-                `);
+                        `;
+                        frm.set_intro(html);
+                    }
+                });
+            }
+        });
+    } else {
+        frm.set_intro("");
+    }
+    return;
+// }
+
+        // frm.set_intro(`
+        //             <div style="background: linear-gradient(135deg, #006767 0%, #004a4b 100%); border-radius: 12px; padding: 0; margin: 10px 0; box-shadow: 0 4px 15px rgba(0,103,104,0.2); overflow: hidden;">
+        //                 <!-- Header -->
+        //                 <div style="color: white; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.2);">
+        //                     <h4 style="margin: 0; display: flex; align-items: center;">
+        //                         <i class="fa fa-id-card-o" style="margin-right: 8px;"></i>
+        //                         Employee Information
+        //                     </h4>
+        //                 </div>
+        //                 <!-- Content -->
+        //                 <div style="color: white; padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        //                     ${[
+        //                       {
+        //                         icon: "fa-hashtag",
+        //                         label: "EMPLOYEE NUMBER",
+        //                         value: safe(
+        //                           emp.employee_number,
+        //                           "Not Assigned"
+        //                         ),
+        //                       },
+        //                       {
+        //                         icon: "fa-user",
+        //                         label: "FULL NAME",
+        //                         value: safe(emp.employee_name),
+        //                       },
+        //                       {
+        //                         icon: "fa-building",
+        //                         label: "BRANCH",
+        //                         value: safe(emp.branch, "Not Assigned"),
+        //                       },
+        //                       emp.department
+        //                         ? {
+        //                             icon: "fa-users",
+        //                             label: "DEPARTMENT",
+        //                             value: emp.department,
+        //                           }
+        //                         : null,
+        //                       emp.designation
+        //                         ? {
+        //                             icon: "fa-star",
+        //                             label: "DESIGNATION",
+        //                             value: emp.designation,
+        //                           }
+        //                         : null,
+        //                     ]
+        //                       .filter(Boolean)
+        //                       .map(
+        //                         (item) => `
+        //                                 <div style="display: flex; align-items: center;">
+        //                                     <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+        //                                         <i class="fa ${item.icon}" style="color: white; font-size: 14px;"></i>
+        //                                     </div>
+        //                                     <div>
+        //                                         <div style="font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500;">${item.label}</div>
+        //                                         <div style="font-size: 16px; font-weight: 600; color: white;">${item.value}</div>
+        //                                     </div>
+        //                                 </div>
+        //                             `
+        //                       )
+        //                       .join("")}
+        //                 </div>
+        //                 <!-- Quick Actions -->
+        //                 <div style="padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center;">
+        //                     <button class="btn btn-sm" onclick="frappe.set_route('List', 'Agent', {'employee': '${employee}'})" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); transition: all 0.3s ease; padding: 8px 20px;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+        //                         <i class="fa fa-list"></i> View All Agents
+        //                     </button>
+        //                 </div>
+        //             </div>
+        //         `);
       },
       error: function (err) {
         console.error("Error fetching employee info:", err);
