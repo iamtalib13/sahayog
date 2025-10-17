@@ -102,6 +102,7 @@ def get_agents_by_rm_start_date(start_date=None, end_date=None):
         return {"status": "error", "message": f"Error fetching agents: {str(e)}"}
 
 # Sync Agents to Doctype
+@frappe.whitelist(allow_guest=False)
 def sync_agents_to_doctype(start_date=None, end_date=None):
     """
     Sync agents (filtered by RM start date) to the Agent Doctype.
