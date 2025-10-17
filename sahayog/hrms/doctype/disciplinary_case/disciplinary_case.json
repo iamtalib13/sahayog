@@ -16,7 +16,6 @@
   "suspension_required",
   "document_upload",
   "remarks",
-  "closing_remark",
   "column_break_bnqh",
   "case_id",
   "designation",
@@ -66,7 +65,8 @@
    "fieldname": "category",
    "fieldtype": "Select",
    "label": "Category",
-   "options": "\nMajor\nMinor"
+   "options": "\nMajor\nMinor",
+   "reqd": 1
   },
   {
    "default": "Today",
@@ -78,7 +78,7 @@
   {
    "fieldname": "issue_report_to_hr",
    "fieldtype": "Date",
-   "label": "Issue Reported To HR",
+   "label": "Issue Date Reported To HR",
    "reqd": 1
   },
   {
@@ -99,7 +99,8 @@
    "fieldname": "level",
    "fieldtype": "Select",
    "label": "Level",
-   "options": "\n1\n2\n3\n4"
+   "options": "\n1\n2\n3\n4",
+   "reqd": 1
   },
   {
    "fieldname": "document_upload",
@@ -144,7 +145,8 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Employee ID",
-   "options": "Employee"
+   "options": "Employee",
+   "reqd": 1
   },
   {
    "fetch_from": "employee_id.employee_name",
@@ -187,39 +189,23 @@
    "fieldtype": "Select",
    "label": "Response Time",
    "options": "\n24 hours\n48 hours"
-  },
-  {
-   "depends_on": "eval:doc.status==\"Closed\";\n\n\n",
-   "fieldname": "closing_remark",
-   "fieldtype": "Small Text",
-   "label": "Closing Remark"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [
   {
-   "link_doctype": "Response to SCN",
-   "link_fieldname": "case_id"
-  },
-  {
+   "group": "Suspension",
    "link_doctype": "Suspension Process",
    "link_fieldname": "case_id"
   },
   {
-   "link_doctype": "Domestic Enquiry",
-   "link_fieldname": "case_id"
-  },
-  {
-   "link_doctype": "Enquiry Reminder",
-   "link_fieldname": "case_id"
-  },
-  {
-   "link_doctype": "Case Closure",
+   "group": "Response SCN",
+   "link_doctype": "Response to SCN",
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-15 16:37:26.195395",
+ "modified": "2025-10-17 15:10:27.017404",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

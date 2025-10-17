@@ -37,7 +37,8 @@
    "fieldname": "case_id",
    "fieldtype": "Link",
    "label": "Case ID",
-   "options": "Disciplinary Case"
+   "options": "Disciplinary Case",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.designation",
@@ -75,26 +76,30 @@
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Data",
-   "label": "Issue Reported to HR",
+   "label": "Issue Date Reported to HR",
    "read_only": 1
   },
   {
    "fetch_from": "case_id.suspension_required",
    "fieldname": "suspenstion_required",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Suspenstion Required",
-   "options": "\n"
+   "options": "\n",
+   "read_only": 1
   },
   {
    "fieldname": "suspenstion_to_date",
    "fieldtype": "Date",
-   "label": "Suspenstion to date"
+   "label": "Suspenstion to date",
+   "reqd": 1
   },
   {
    "fieldname": "subsistance_allowances",
    "fieldtype": "Select",
    "label": "Subsistance Allowances",
-   "options": "\nYes\nNo"
+   "options": "\nYes\nNo",
+   "reqd": 1
   },
   {
    "fetch_from": "case_id.employee_id",
@@ -135,24 +140,28 @@
    "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Data",
-   "label": "Issue Occurrence Date"
+   "label": "Issue Occurrence Date",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.status",
    "fieldname": "case_status",
    "fieldtype": "Data",
-   "label": "Case Status"
+   "label": "Case Status",
+   "read_only": 1
   },
   {
    "fieldname": "suspenstion_from_date",
    "fieldtype": "Date",
-   "label": "Suspenstion from date"
+   "label": "Suspenstion from date",
+   "reqd": 1
   },
   {
    "fieldname": "number_of_days_suspension_required",
    "fieldtype": "Select",
    "label": "Number of Days Suspension required",
-   "options": "\n30\n60\n90"
+   "options": "\n30\n60\n90",
+   "reqd": 1
   },
   {
    "fetch_from": "case_id.remarks",
@@ -164,8 +173,14 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-16 13:35:10.633410",
+ "links": [
+  {
+   "group": "Response SCN",
+   "link_doctype": "Response to SCN",
+   "link_fieldname": "case_id"
+  }
+ ],
+ "modified": "2025-10-17 15:40:54.094915",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

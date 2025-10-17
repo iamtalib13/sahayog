@@ -111,14 +111,16 @@
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Data",
-   "label": "Issue Reported To HR",
+   "label": "Issue Date Reported To HR",
    "read_only": 1
   },
   {
    "fieldname": "response_to_scn",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Response to SCN",
-   "options": "\nYes\nNo"
+   "options": "\nYes\nNo",
+   "reqd": 1
   },
   {
    "fieldname": "document_upload",
@@ -129,7 +131,8 @@
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot-Satisfactory"
+   "options": "\nSatisfactory\nNot-Satisfactory",
+   "reqd": 1
   },
   {
    "fieldname": "remarks",
@@ -140,7 +143,8 @@
    "fieldname": "domestic_enquiry",
    "fieldtype": "Select",
    "label": "Domestic Enquiry",
-   "options": "\nYes\nNo"
+   "options": "\nYes\nNo",
+   "reqd": 1
   },
   {
    "fetch_from": "case_id.status",
@@ -152,8 +156,19 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-15 13:44:03.015995",
+ "links": [
+  {
+   "group": "Enquiry Process",
+   "link_doctype": "Domestic Enquiry",
+   "link_fieldname": "case_id"
+  },
+  {
+   "group": "Case Closed",
+   "link_doctype": "Case Closure",
+   "link_fieldname": "case_id"
+  }
+ ],
+ "modified": "2025-10-17 15:38:32.771662",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",
