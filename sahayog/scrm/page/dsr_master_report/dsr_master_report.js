@@ -5,7 +5,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     single_column: true,
   });
 
-  // Complete CSS styles with infinite scroll (unchanged)
   $(`
     <style>
       .dsr-master-content {
@@ -115,7 +114,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         opacity: 0.6;
       }
       
-      /* BATCH LOADING: Infinite scroll container */
       .lead-table-container {
         max-height: 600px;
         overflow-y: auto;
@@ -380,13 +378,11 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     </style>
   `).appendTo(page.body);
 
-  // Function to get current date in YYYY-MM-DD format
   function getCurrentDate() {
     const today = new Date();
     return today.toISOString().split("T")[0];
   }
 
-  // Add filters: Start Date and End Date with user-friendly restrictions
   page.add_field({
     fieldname: "start_date",
     label: __("Start Date"),
@@ -397,7 +393,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       const endDate = page.fields_dict.end_date.get_value();
       const today = getCurrentDate();
 
-      // Validate start date is not in future
       if (startDate > today) {
         frappe.show_alert({
           message: "❌ Start Date cannot be in the future. Setting to today.",
@@ -407,12 +402,10 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      // Update end date to match start date if end date is earlier
       if (endDate && startDate > endDate) {
         page.fields_dict.end_date.set_value(startDate);
       }
 
-      // Update end date picker restrictions
       setTimeout(() => {
         if (page.fields_dict.end_date.datepicker) {
           page.fields_dict.end_date.datepicker.update({
@@ -436,7 +429,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       const endDate = page.fields_dict.end_date.get_value();
       const today = getCurrentDate();
 
-      // Validate that end_date is not in the future
       if (endDate > today) {
         frappe.show_alert({
           message: "❌ End Date cannot be in the future. Setting to today.",
@@ -446,7 +438,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      // Validate that end_date is not before start_date
       if (startDate && endDate < startDate) {
         frappe.show_alert({
           message:
@@ -461,18 +452,15 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     },
   });
 
-  // SET DATEPICKER RESTRICTIONS after fields are created
   setTimeout(() => {
     const today = getCurrentDate();
 
-    // Restrict start date picker - no future dates
     if (page.fields_dict.start_date.datepicker) {
       page.fields_dict.start_date.datepicker.update({
         maxDate: new Date(today),
       });
     }
 
-    // Restrict end date picker - no future dates
     if (page.fields_dict.end_date.datepicker) {
       page.fields_dict.end_date.datepicker.update({
         maxDate: new Date(today),
@@ -480,14 +468,12 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }, 200);
 
-  // MODIFIED: Zone filter with logical hierarchy dependency
   page.add_field({
     fieldname: "zone_filter",
     label: __("Zone"),
     fieldtype: "Link",
     options: "Zone",
     change: () => {
-      // Clear dependent filters when zone changes
       page.fields_dict.region_filter.set_value("");
       page.fields_dict.branch_filter.set_value("");
       page.fields_dict.employee_filter.set_value("");
@@ -495,14 +481,12 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     },
   });
 
-  // MODIFIED: Region filter with zone validation
   page.add_field({
     fieldname: "region_filter",
     label: __("Region"),
     fieldtype: "Link",
     options: "Region",
     change: () => {
-      // Validate zone is selected for region
       const zoneValue = page.fields_dict.zone_filter.get_value();
       const regionValue = page.fields_dict.region_filter.get_value();
 
@@ -515,7 +499,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      // Clear dependent filters when region changes
       page.fields_dict.branch_filter.set_value("");
       page.fields_dict.employee_filter.set_value("");
       debouncedLoad();
@@ -523,26 +506,22 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     get_query: function () {
       const zoneValue = page.fields_dict.zone_filter.get_value();
       if (!zoneValue) {
-        // Don't show any regions if zone not selected
         return {
           filters: {
-            name: ["=", ""], // This will show no results
+            name: ["=", ""],
           },
         };
       }
-      // If zone is selected, show all regions (since they're not linked in DB)
       return {};
     },
   });
 
-  // MODIFIED: Branch filter with zone/region validation
   page.add_field({
     fieldname: "branch_filter",
     label: __("Branch"),
     fieldtype: "Link",
     options: "Branch",
     change: () => {
-      // Validate hierarchy before allowing branch selection
       const zoneValue = page.fields_dict.zone_filter.get_value();
       const regionValue = page.fields_dict.region_filter.get_value();
       const branchValue = page.fields_dict.branch_filter.get_value();
@@ -557,7 +536,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      // Clear dependent filters when branch changes
       page.fields_dict.employee_filter.set_value("");
       debouncedLoad();
     },
@@ -566,19 +544,16 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       const regionValue = page.fields_dict.region_filter.get_value();
 
       if (!zoneValue || !regionValue) {
-        // Don't show any branches if zone/region not selected
         return {
           filters: {
-            name: ["=", ""], // This will show no results
+            name: ["=", ""],
           },
         };
       }
-      // If zone and region selected, show all branches
       return {};
     },
   });
 
-  // MODIFIED: Employee filter with full hierarchy validation
   page.add_field({
     fieldname: "employee_filter",
     label: __("Employee"),
@@ -590,7 +565,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         user_id: ["is", "set"],
       };
 
-      // Apply hierarchy filters based on selections
       const zoneValue = page.fields_dict.zone_filter.get_value();
       const regionValue = page.fields_dict.region_filter.get_value();
       const branchValue = page.fields_dict.branch_filter.get_value();
@@ -609,7 +583,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     },
   });
 
-  // Content area with infinite scroll structure
   const content_area = $(`
     <div class="dsr-master-content">
       <div class="summary-info" id="period-summary" style="display: none;"></div>
@@ -661,9 +634,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     </div>
   `).appendTo(page.body);
 
-  // OPTIMIZED VARIABLES
   let masterData = [];
-  let employeeDataMap = new Map(); // Use Map for better performance
+  let employeeDataMap = new Map();
   let currentEmployees = [];
   let totalEmployeeCount = 0;
   let isLoading = false;
@@ -674,11 +646,9 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
   let allDatesInPeriod = [];
   let allProcessedData = [];
 
-  // PERFORMANCE OPTIMIZATION: Add caching and debouncing
   const ratingCache = new Map();
   let loadTimeout;
 
-  // Debounced loading function
   const debouncedLoad = function () {
     clearTimeout(loadTimeout);
     loadTimeout = setTimeout(() => {
@@ -686,7 +656,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }, 500);
   };
 
-  // MODIFIED: Helper function to generate consistent date range excluding Sundays
   function generateDateRangeFromDates(startDate, endDate) {
     const dates = [];
     const start = new Date(startDate);
@@ -697,11 +666,10 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
     while (current <= end) {
       const dateString = current.toISOString().split("T")[0];
-      const dayOfWeek = current.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const dayOfWeek = current.getDay();
 
       totalDays++;
 
-      // Exclude Sundays (dayOfWeek === 0)
       if (dayOfWeek !== 0) {
         dates.push(dateString);
         workingDays++;
@@ -711,18 +679,16 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
 
     return {
-      dates, // Only working days (excluding Sundays)
+      dates,
       startDate: start,
       endDate: end,
-      totalDays: totalDays, // All calendar days
-      workingDays: workingDays, // Excluding Sundays
+      totalDays: totalDays,
+      workingDays: workingDays,
     };
   }
 
-  // ENHANCED: Hierarchy validation in data filtering
   function getLeadFilters() {
     const filters = { docstatus: 0 };
-
     const startDate = page.fields_dict.start_date.get_value();
     const endDate = page.fields_dict.end_date.get_value();
 
@@ -732,18 +698,16 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       filters.creation = [">=", startDate];
     }
 
-    // Apply hierarchical lead filters with validation
     const zoneFilter = page.fields_dict.zone_filter.get_value();
     const regionFilter = page.fields_dict.region_filter.get_value();
     const branchFilter = page.fields_dict.branch_filter.get_value();
 
-    // Validate hierarchy before applying filters
     if (regionFilter && !zoneFilter) {
       frappe.show_alert({
         message: "⚠️ Region filter requires Zone to be selected",
         indicator: "orange",
       });
-      return filters; // Return basic filters only
+      return filters;
     }
 
     if (branchFilter && (!zoneFilter || !regionFilter)) {
@@ -751,10 +715,9 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         message: "⚠️ Branch filter requires Zone and Region to be selected",
         indicator: "orange",
       });
-      return filters; // Return basic filters only
+      return filters;
     }
 
-    // Apply valid hierarchy filters
     if (zoneFilter) {
       filters.custom_zone = zoneFilter;
     }
@@ -768,7 +731,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     return filters;
   }
 
-  // Enhanced loading with progress tracking
   function showLoadingWithProgress(message, progress = 0) {
     $(".loading-spinner h4").text(message);
     $(".progress-fill").css("width", `${progress}%`);
@@ -788,7 +750,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     `);
   }
 
-  // OPTIMIZED: Function to calculate DAILY rating with caching
   function calculateDailyRating(dailyLeads) {
     const totalLeads = dailyLeads.length;
 
@@ -802,7 +763,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       };
     }
 
-    // Create cache key for similar lead patterns
     const convertedCount = dailyLeads.filter(
       (l) => (l.status || "").toLowerCase() === "converted"
     ).length;
@@ -837,7 +797,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       performance,
     };
 
-    // Cache the performance calculation
     ratingCache.set(cacheKey, {
       qualification: result.qualification,
       performance: result.performance,
@@ -846,7 +805,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     return result;
   }
 
-  // Setup infinite scroll for batch loading
   function setupInfiniteScroll() {
     const tableContainer = document.querySelector(".lead-table-container");
     if (!tableContainer) return;
@@ -869,7 +827,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     });
   }
 
-  // Render next batch of 20 employees from processed data
   function renderNextBatch() {
     if (isLoading || !hasMoreEmployees) return;
 
@@ -917,7 +874,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }
 
-  // Render employee table (batch version)
   function renderEmployeeTable(employees) {
     console.log(`🎨 Rendering ${employees.length} employees in table...`);
 
@@ -959,16 +915,12 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       `Showing ${employees.length} of ${totalEmployeeCount} employees (loaded in batches of 20)`
     );
 
-    showDataSummary(employees);
-
     if (employees.length > 0) setupInfiniteScroll();
   }
 
-  // OPTIMIZED: Preprocess data with better data structures
   function preprocessDataOptimized(allLeads, employees, appointments) {
     console.log("🚀 Starting optimized preprocessing...");
 
-    // Create lookup maps for O(1) access
     const employeeMap = new Map();
     employees.forEach((emp) => {
       employeeMap.set(emp.user_id, {
@@ -980,16 +932,13 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       });
     });
 
-    // Create appointment lookup for faster checking
     const appointmentSet = new Set(appointments.map((apt) => apt.party));
 
-    // Group leads by employee efficiently
     const employeeLeadsMap = new Map();
 
     allLeads.forEach((lead) => {
       if (!lead.lead_owner || !employeeMap.has(lead.lead_owner)) return;
 
-      // Add followup info directly
       lead.has_followup = appointmentSet.has(lead.name);
 
       if (!employeeLeadsMap.has(lead.lead_owner)) {
@@ -1001,7 +950,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     return { employeeMap, employeeLeadsMap };
   }
 
-  // SMART FALLBACK LOGIC - Show all employees when no assigned leads found
   function handleNoLeadsScenario(
     allEmployees,
     allLeads,
@@ -1012,7 +960,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       "🔍 No assigned leads found. Showing all employees with zero lead counts."
     );
 
-    // Create employee map with all employees
     const employeeMap = new Map();
     allEmployees.forEach((emp) => {
       employeeMap.set(emp.user_id, {
@@ -1024,7 +971,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       });
     });
 
-    // Process all employees with zero metrics
     const processedData = [];
     employeeMap.forEach((employee, userId) => {
       processedData.push({
@@ -1034,8 +980,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         custom_zone: employee.custom_zone || "-",
         custom_region: employee.custom_region || "-",
         qualified: 0,
-        disqualified: dates.length, // All days are disqualified (no leads)
-        bad_rating: dates.length, // All days are bad (no leads)
+        disqualified: dates.length,
+        bad_rating: dates.length,
         average_rating: 0,
         good_rating: 0,
         total_leads: 0,
@@ -1047,20 +993,18 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     return processedData.sort((a, b) => b.total_leads - a.total_leads);
   }
 
-  // OPTIMIZED: Process employees in batches to prevent UI blocking
   async function processEmployeesInBatches(
     employeeMap,
     employeeLeadsMap,
     allDatesInPeriod
   ) {
-    const BATCH_SIZE = 10; // Process 10 employees at a time
+    const BATCH_SIZE = 10;
     const allEmployees = Array.from(employeeMap.keys());
     const processedData = [];
 
     for (let i = 0; i < allEmployees.length; i += BATCH_SIZE) {
       const batchEmployees = allEmployees.slice(i, i + BATCH_SIZE);
 
-      // Show progress
       const progress = Math.round(65 + (i / allEmployees.length) * 25);
       showLoadingWithProgress(
         `Processing employees ${i + 1}-${Math.min(
@@ -1070,7 +1014,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         progress
       );
 
-      // Process batch
       const batchResults = processBatch(
         batchEmployees,
         employeeMap,
@@ -1079,7 +1022,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       );
       processedData.push(...batchResults);
 
-      // Allow UI to update between batches
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
@@ -1098,7 +1040,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       const employee = employeeMap.get(employeeId);
       const employeeLeads = employeeLeadsMap.get(employeeId) || [];
 
-      // Group leads by date efficiently using Map
       const leadsByDate = new Map();
       employeeLeads.forEach((lead) => {
         const dateKey = new Date(lead.creation).toISOString().split("T")[0];
@@ -1108,7 +1049,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         leadsByDate.get(dateKey).push(lead);
       });
 
-      // Calculate metrics for all dates
       const metrics = calculateEmployeeMetricsFast(
         leadsByDate,
         allDatesInPeriod
@@ -1123,14 +1063,13 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         ...metrics,
         total_leads: employeeLeads.length,
         working_days: leadsByDate.size,
-        total_days: allDatesInPeriod.length, // Total working days in period (excluding Sundays)
+        total_days: allDatesInPeriod.length,
       });
     });
 
     return results;
   }
 
-  // OPTIMIZED: Fast metrics calculation
   function calculateEmployeeMetricsFast(leadsByDate, allDatesInPeriod) {
     let qualifiedDays = 0;
     let disqualifiedDays = 0;
@@ -1138,12 +1077,10 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     let averageRatingDays = 0;
     let badRatingDays = 0;
 
-    // Use for...of for better performance with large arrays
     for (const dateKey of allDatesInPeriod) {
       const dailyLeads = leadsByDate.get(dateKey) || [];
       const dailyRating = calculateDailyRating(dailyLeads);
 
-      // Increment counters directly (faster than arrays)
       if (dailyRating.qualification === "Qualified") {
         qualifiedDays++;
       } else {
@@ -1168,10 +1105,8 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     };
   }
 
-  // OPTIMIZED: Load data efficiently with better chunking
   async function loadDataInChunks(doctype, filters, fields, totalCount) {
     if (totalCount <= 5000) {
-      // Load all at once for smaller datasets
       return await frappe.db.get_list(doctype, {
         filters,
         fields,
@@ -1179,7 +1114,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         order_by: doctype === "Lead" ? "creation desc" : undefined,
       });
     } else {
-      // Load in chunks for large datasets
       const chunks = Math.ceil(totalCount / 5000);
       let allRecords = [];
 
@@ -1194,7 +1128,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
         allRecords = allRecords.concat(chunkRecords);
 
-        // Allow UI to breathe between chunks
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
 
@@ -1202,17 +1135,14 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }
 
-  // OPTIMIZED: Reset data structures with cleanup
   function resetDataStructures() {
     masterData = [];
     employeeDataMap = new Map();
     currentEmployees = [];
     allProcessedData = [];
 
-    // Clear caches
     ratingCache.clear();
 
-    // Reset pagination
     currentPage = 1;
     hasMoreEmployees = true;
     isLoading = false;
@@ -1221,13 +1151,11 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     console.log("🧹 Data structures reset and memory cleared");
   }
 
-  // MAIN OPTIMIZED FUNCTION
   async function loadMasterDSRDataOptimized() {
     console.log("=== Starting OPTIMIZED DSR Master Data Load ===");
     showLoading("Initializing optimized data load...");
 
     try {
-      // Reset everything
       resetDataStructures();
 
       const leadFilters = getLeadFilters();
@@ -1239,12 +1167,11 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      // MODIFIED: Now returns workingDays and totalDays
       const { dates, totalDays, workingDays } = generateDateRangeFromDates(
         startDate,
         endDate
       );
-      allDatesInPeriod = dates; // Now contains only working days (no Sundays)
+      allDatesInPeriod = dates;
 
       console.log("1. Date Range:", {
         startDate,
@@ -1257,18 +1184,15 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
       updatePeriodSummary(startDate, endDate, totalDays, workingDays);
 
-      // ENHANCED: Employee filter - build employee filters with hierarchy validation
       const employeeFilters = {
         user_id: ["is", "set"],
       };
 
-      // Apply hierarchical employee filters with validation
       const zoneValue = page.fields_dict.zone_filter.get_value();
       const regionValue = page.fields_dict.region_filter.get_value();
       const branchValue = page.fields_dict.branch_filter.get_value();
       const employeeValue = page.fields_dict.employee_filter.get_value();
 
-      // Validate hierarchy before applying filters
       if (regionValue && !zoneValue) {
         frappe.show_alert({
           message: "⚠️ Region filter requires Zone to be selected",
@@ -1285,7 +1209,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         return;
       }
 
-      // Apply valid filters
       if (zoneValue) {
         employeeFilters.custom_zone = zoneValue;
       }
@@ -1299,7 +1222,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         employeeFilters.name = employeeValue;
       }
 
-      // Get counts first for optimization decisions
       const [totalLeadCount, totalEmpCount] = await Promise.all([
         frappe.db.count("Lead", { filters: leadFilters }),
         frappe.db.count("Employee", { filters: employeeFilters }),
@@ -1319,7 +1241,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
       showLoadingWithProgress("Loading data in parallel...", 15);
 
-      // Load all data in parallel with optimized chunking - Include zone/region fields for leads
       const [allLeads, allEmployees, allAppointments] = await Promise.all([
         loadDataInChunks(
           "Lead",
@@ -1332,7 +1253,7 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
             "custom_branch",
             "custom_zone",
             "custom_region",
-          ], // Added zone/region
+          ],
           totalLeadCount
         ),
         loadDataInChunks(
@@ -1367,17 +1288,15 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         allAppointments.length
       );
 
-      // SMART FALLBACK LOGIC - Filter employees who have leads OR show all employees with zero counts
       const leadsWithOwners = allLeads.filter((lead) => lead.lead_owner);
       const uniqueLeadOwners = new Set(
         leadsWithOwners.map((lead) => lead.lead_owner)
       );
 
       let employeesWithLeads;
-      let displayMode = "with_leads"; // Track what we're showing
+      let displayMode = "with_leads";
 
       if (uniqueLeadOwners.size === 0) {
-        // No leads are assigned to anyone - show all employees with zero counts
         allProcessedData = handleNoLeadsScenario(
           allEmployees,
           allLeads,
@@ -1390,13 +1309,10 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
           "🔍 No assigned leads found. Showing all employees with zero lead counts."
         );
 
-        // Store display mode for use in other functions
         window.currentDisplayMode = displayMode;
 
-        // Skip normal processing and go directly to rendering
         showLoadingWithProgress("Initializing table...", 90);
 
-        // Initialize table structure
         $(".lead-table-container").html(`
           <table class="table table-sm" id="master-dsr-table">
             <thead>
@@ -1425,19 +1341,16 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
           </div>
         `);
 
-        // Start batch rendering
         setTimeout(() => {
           renderNextBatch();
         }, 500);
         return;
       } else {
-        // Some leads are assigned - check if filtered employees have any leads
         employeesWithLeads = allEmployees.filter((emp) =>
           uniqueLeadOwners.has(emp.user_id)
         );
 
         if (employeesWithLeads.length === 0) {
-          // No employees match the lead assignments after filtering
           allProcessedData = handleNoLeadsScenario(
             allEmployees,
             allLeads,
@@ -1450,13 +1363,10 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
             "🔄 No employees match assigned leads after filtering. Showing all employees."
           );
 
-          // Store display mode
           window.currentDisplayMode = displayMode;
 
-          // Skip normal processing and go directly to rendering
           showLoadingWithProgress("Initializing table...", 90);
 
-          // Initialize table structure
           $(".lead-table-container").html(`
             <table class="table table-sm" id="master-dsr-table">
               <thead>
@@ -1485,7 +1395,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
             </div>
           `);
 
-          // Start batch rendering
           setTimeout(() => {
             renderNextBatch();
           }, 500);
@@ -1497,12 +1406,10 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         }
       }
 
-      // Store display mode for use in other functions
       window.currentDisplayMode = displayMode;
 
       showLoadingWithProgress("Preprocessing data structures...", 40);
 
-      // Preprocess data efficiently
       const { employeeMap, employeeLeadsMap } = preprocessDataOptimized(
         leadsWithOwners,
         employeesWithLeads,
@@ -1518,14 +1425,12 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
 
       showLoadingWithProgress("Processing employee metrics...", 50);
 
-      // Process in batches to prevent UI blocking
       const processedData = await processEmployeesInBatches(
         employeeMap,
         employeeLeadsMap,
-        dates // Only working days
+        dates
       );
 
-      // Sort by total leads descending
       allProcessedData = processedData.sort(
         (a, b) => b.total_leads - a.total_leads
       );
@@ -1539,7 +1444,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         "unique employees"
       );
 
-      // Initialize table structure
       $(".lead-table-container").html(`
         <table class="table table-sm" id="master-dsr-table">
           <thead>
@@ -1568,7 +1472,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
         </div>
       `);
 
-      // Start batch rendering - first batch of 20 employees
       setTimeout(() => {
         renderNextBatch();
       }, 500);
@@ -1578,12 +1481,10 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     }
   }
 
-  // ENHANCED: Update period summary to show hierarchical filter information
   function updatePeriodSummary(startDate, endDate, totalDays, workingDays) {
     const startDateFormatted = frappe.datetime.str_to_user(startDate);
     const endDateFormatted = frappe.datetime.str_to_user(endDate);
 
-    // Hierarchical filter text with validation
     let filterText = "";
 
     const zoneValue = page.fields_dict.zone_filter.get_value();
@@ -1609,7 +1510,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       filterText = " | All Zones, Regions, Branches & Employees";
     }
 
-    // Add hierarchy validation message
     let hierarchyNote = "";
     if (regionValue && !zoneValue) {
       hierarchyNote = " | ❌ Invalid: Region requires Zone";
@@ -1617,7 +1517,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       hierarchyNote = " | ❌ Invalid: Branch requires Zone & Region";
     }
 
-    // Display mode indicator
     let modeText = "";
     if (window.currentDisplayMode === "all_employees_no_leads") {
       modeText = " | ⚠️ No assigned leads found - showing all employees";
@@ -1635,34 +1534,6 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
       `
       )
       .show();
-  }
-
-  function showDataSummary(data) {
-    const displayedEmployees = data.length;
-    const totalLeads = data.reduce((sum, emp) => sum + emp.total_leads, 0);
-    const avgLeadsPerEmployee =
-      displayedEmployees > 0 ? Math.round(totalLeads / displayedEmployees) : 0;
-    const topPerformer = data[0];
-
-    const summaryHTML = `
-      <div style="background: #f8f9fa; padding: 10px; margin-top: 15px; border-radius: 6px; font-size: 12px; color: #495057;">
-        <strong>📊 Summary:</strong> 
-        ${displayedEmployees} employees displayed (of ${totalEmployeeCount} total) | 
-        ${totalLeads} total leads shown | 
-        ~${avgLeadsPerEmployee} leads per employee | 
-        Top: ${topPerformer ? topPerformer.employee_name : "N/A"} (${
-      topPerformer ? topPerformer.total_leads : 0
-    } leads) 
-       
-      </div>
-    `;
-
-    // Remove existing summary and add new one
-    $(".lead-table-container")
-      .parent()
-      .find("div[style*='background: #f8f9fa']")
-      .remove();
-    $(".lead-table-container").parent().append(summaryHTML);
   }
 
   function renderNoData(message) {
@@ -1688,142 +1559,9 @@ frappe.pages["dsr-master-report"].on_page_load = function (wrapper) {
     `);
   }
 
-  // Export to Excel (exports ALL data, not just displayed 20)
-  function exportToExcel() {
-    if (allProcessedData.length === 0) {
-      frappe.show_alert({
-        message: "❌ No data available to export",
-        indicator: "orange",
-      });
-      return;
-    }
-
-    const startDate = page.fields_dict.start_date.get_value();
-    const endDate = page.fields_dict.end_date.get_value() || getCurrentDate();
-    const zoneName = page.fields_dict.zone_filter.get_value() || "All_Zones";
-    const regionName =
-      page.fields_dict.region_filter.get_value() || "All_Regions";
-    const branchName =
-      page.fields_dict.branch_filter.get_value() || "All_Branches";
-    const employeeName =
-      page.fields_dict.employee_filter.get_value() || "All_Employees";
-
-    const sortedData = allProcessedData.sort(
-      (a, b) => b.total_leads - a.total_leads
-    );
-
-    const exportData = sortedData.map((row, index) => [
-      index + 1,
-      row.branch,
-      row.employee_code,
-      row.employee_name,
-      row.qualified,
-      row.disqualified,
-      row.bad_rating,
-      row.average_rating,
-      row.good_rating,
-      row.total_leads,
-      `${row.working_days}/${row.total_days}`,
-    ]);
-
-    const totals = sortedData.reduce(
-      (acc, row) => ({
-        qualified: acc.qualified + row.qualified,
-        disqualified: acc.disqualified + row.disqualified,
-        bad_rating: acc.bad_rating + row.bad_rating,
-        average_rating: acc.average_rating + row.average_rating,
-        good_rating: acc.good_rating + row.good_rating,
-        total_leads: acc.total_leads + row.total_leads,
-        working_days: acc.working_days + row.working_days,
-      }),
-      {
-        qualified: 0,
-        disqualified: 0,
-        bad_rating: 0,
-        average_rating: 0,
-        good_rating: 0,
-        total_leads: 0,
-        working_days: 0,
-      }
-    );
-
-    exportData.push([
-      "",
-      "",
-      "TOTALS",
-      `${sortedData.length} Employees`,
-      totals.qualified,
-      totals.disqualified,
-      totals.bad_rating,
-      totals.average_rating,
-      totals.good_rating,
-      totals.total_leads,
-      `${totals.working_days} working days`,
-    ]);
-
-    exportData.unshift([
-      "Sr. No.",
-      "Branch",
-      "Employee Code",
-      "Employee Name",
-      "Qualification - No. of Qualified Days",
-      "Qualification - No. of Disqualified Days",
-      "Rating - No. of Bad Days",
-      "Rating - No. of Average Days",
-      "Rating - No. of Good Days",
-      "Total Leads",
-      "Working Days/Total Working Days (Sundays Excluded)",
-    ]);
-
-    const csvContent = exportData
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-
-    const startDateStr = startDate.replace(/-/g, "");
-    const endDateStr = endDate.replace(/-/g, "");
-
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `DSR_Master_Report_Hierarchical_${startDateStr}_to_${endDateStr}_${zoneName}_${regionName}_${branchName}_${employeeName}.csv`
-    );
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    frappe.show_alert({
-      message: `✅ DSR Master Report exported successfully! (${sortedData.length} employees - Hierarchical filtering)`,
-      indicator: "green",
-    });
-  }
-
-  function clearFilters() {
-    // Clear in reverse hierarchy order
-    page.fields_dict.employee_filter.set_value("");
-    page.fields_dict.branch_filter.set_value("");
-    page.fields_dict.region_filter.set_value("");
-    page.fields_dict.zone_filter.set_value("");
-    page.fields_dict.start_date.set_value(getCurrentDate());
-    page.fields_dict.end_date.set_value(getCurrentDate());
-
-    loadMasterDSRDataOptimized();
-
-    frappe.show_alert({
-      message: "🔄 All filters reset to default (hierarchy maintained)",
-      indicator: "blue",
-    });
-  }
-
-  // Cleanup on page destroy
   $(window).on("beforeunload", function () {
     resetDataStructures();
   });
 
-  // Load initial data
   loadMasterDSRDataOptimized();
 };
