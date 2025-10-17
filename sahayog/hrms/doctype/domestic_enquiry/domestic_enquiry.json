@@ -14,7 +14,6 @@
   "status",
   "domestic_enquiry",
   "place_of_enquiry",
-  "remarks",
   "column_break_efjl",
   "case_id",
   "designation",
@@ -24,7 +23,8 @@
   "issue_reported_to_hr",
   "status_of_response",
   "date_of_enquiry",
-  "enquiry_officer_name"
+  "enquiry_officer_name",
+  "remarks"
  ],
  "fields": [
   {
@@ -113,7 +113,7 @@
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot-Satisfactory"
+   "options": "\nSatisfactory\nNot-Satisfactory\nNot-Submitted"
   },
   {
    "fieldname": "domestic_enquiry",
@@ -145,7 +145,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-14 13:38:30.736209",
+ "modified": "2025-10-15 11:15:39.619598",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",

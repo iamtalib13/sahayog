@@ -63,9 +63,8 @@
   {
    "fetch_from": "case_id.category",
    "fieldname": "category",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Category",
-   "options": "\nMajor\nMinor",
    "read_only": 1
   },
   {
@@ -75,16 +74,16 @@
   {
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
-   "fieldtype": "Date",
+   "fieldtype": "Data",
    "label": "Issue Reported to HR",
    "read_only": 1
   },
   {
    "fetch_from": "case_id.suspension_required",
    "fieldname": "suspenstion_required",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Suspenstion Required",
-   "options": "\nYes\nNo"
+   "options": "\n"
   },
   {
    "fieldname": "suspenstion_to_date",
@@ -128,14 +127,14 @@
   {
    "fetch_from": "case_id.description",
    "fieldname": "issue_in_detail",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Issue in Detail",
    "read_only": 1
   },
   {
    "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
-   "fieldtype": "Date",
+   "fieldtype": "Data",
    "label": "Issue Occurrence Date"
   },
   {
@@ -158,7 +157,7 @@
   {
    "fetch_from": "case_id.remarks",
    "fieldname": "remarks",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Remarks",
    "read_only": 1
   }
@@ -166,7 +165,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-14 16:39:20.371102",
+ "modified": "2025-10-16 13:35:10.633410",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

@@ -197,8 +197,29 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-13 15:20:54.999511",
+ "links": [
+  {
+   "link_doctype": "Response to SCN",
+   "link_fieldname": "case_id"
+  },
+  {
+   "link_doctype": "Suspension Process",
+   "link_fieldname": "case_id"
+  },
+  {
+   "link_doctype": "Domestic Enquiry",
+   "link_fieldname": "case_id"
+  },
+  {
+   "link_doctype": "Enquiry Reminder",
+   "link_fieldname": "case_id"
+  },
+  {
+   "link_doctype": "Case Closure",
+   "link_fieldname": "case_id"
+  }
+ ],
+ "modified": "2025-10-15 16:37:26.195395",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
