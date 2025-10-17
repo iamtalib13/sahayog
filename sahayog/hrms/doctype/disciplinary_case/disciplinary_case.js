@@ -3,6 +3,7 @@ frappe.ui.form.on("Disciplinary Case", {
     // -------------------
     // Hide unwanted ERPNext default icon buttons
     // -------------------
+
     // $(".button.text-muted.btn.btn-default.icon-btn")
     //   .has("svg.icon.icon-sm")
     //   .hide();
