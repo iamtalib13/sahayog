@@ -361,3 +361,21 @@ const countdownInterval = setInterval(() => {
     refreshSeconds < 10 ? "0" + refreshSeconds : refreshSeconds
   );
 }, 1000);
+
+            frappe.call({
+  method: "sahayog.sahayog.page.mvcd_status.mvcd.check_user_access",
+  callback: function(r) {
+    if (!r.message || !r.message.allowed) {
+      frappe.msgprint(__("You are not authorized to access this page."));
+      frappe.set_route('desk'); // or any other route
+    } else {
+      // User is authorized; continue with page setup
+      render_mvcd_status_page();
+    }
+  }
+});
+
+function render_mvcd_status_page() {
+  // Your existing code for setting up the page
+  // Move all the code from on_page_load here
+}
