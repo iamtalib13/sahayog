@@ -1,16 +1,20 @@
 {
- "actions": [
-  {
-   "action": "sahayog.hrms.doctype.suspension_process.suspension_process.",
-   "action_type": "Server Action",
-   "label": "Execute"
-  }
- ],
+ "actions": [],
  "allow_rename": 1,
  "creation": "2025-10-13 12:01:24.822566",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "suspension_details",
+  "section_break_vphh",
+  "number_of_days_suspension_required",
+  "suspenstion_from_date",
+  "column_break_zynj",
+  "subsistance_allowances",
+  "suspenstion_to_date",
+  "section_break_rseg",
+  "case_details",
+  "section_break_peuy",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -18,8 +22,6 @@
   "issue_in_detail",
   "issue_occurrence_date",
   "case_status",
-  "suspenstion_from_date",
-  "number_of_days_suspension_required",
   "remarks",
   "column_break_zukp",
   "case_id",
@@ -28,9 +30,7 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "suspenstion_required",
-  "suspenstion_to_date",
-  "subsistance_allowances"
+  "suspenstion_required"
  ],
  "fields": [
   {
@@ -75,7 +75,7 @@
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Data",
-   "label": "Issue Reported to HR",
+   "label": "Issue Date Reported to HR",
    "read_only": 1
   },
   {
@@ -83,7 +83,8 @@
    "fieldname": "suspenstion_required",
    "fieldtype": "Data",
    "label": "Suspenstion Required",
-   "options": "\n"
+   "options": "\n",
+   "read_only": 1
   },
   {
    "fieldname": "suspenstion_to_date",
@@ -160,12 +161,38 @@
    "fieldtype": "Small Text",
    "label": "Remarks",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zynj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_peuy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_details",
+   "fieldtype": "Heading",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "section_break_vphh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_rseg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "suspension_details",
+   "fieldtype": "Heading",
+   "label": "Suspension Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-16 13:35:10.633410",
+ "modified": "2025-10-17 15:39:48.194963",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

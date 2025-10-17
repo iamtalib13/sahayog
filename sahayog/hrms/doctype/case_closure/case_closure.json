@@ -5,6 +5,21 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_break_ticb",
+  "closure_details",
+  "section_break_ugpn",
+  "domestic_enquiry",
+  "place_of_enquiry",
+  "remarks",
+  "column_break_vvwf",
+  "status_of_response",
+  "date_of_enquiry",
+  "enquiry_officer_name",
+  "enquiry_status",
+  "enquiry_report_upload",
+  "section_break_aork",
+  "case_details",
+  "section_break_guvy",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -12,21 +27,13 @@
   "issue_in_details",
   "issue_occurrence_date",
   "case_status",
-  "domestic_enquiry",
-  "place_of_enquiry",
-  "remarks",
   "column_break_eecd",
   "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr",
-  "status_of_response",
-  "date_of_enquiry",
-  "enquiry_officer_name",
-  "enquiry_status",
-  "enquiry_report_upload"
+  "issue_reported_to_hr"
  ],
  "fields": [
   {
@@ -153,12 +160,42 @@
    "fieldname": "enquiry_report_upload",
    "fieldtype": "Attach",
    "label": "Enquiry Report Upload"
+  },
+  {
+   "fieldname": "case_details",
+   "fieldtype": "Heading",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "section_break_guvy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_ticb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "closure_details",
+   "fieldtype": "Heading",
+   "label": "Closure Details"
+  },
+  {
+   "fieldname": "section_break_aork",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_ugpn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_vvwf",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-15 13:52:41.077848",
+ "modified": "2025-10-17 15:39:12.021822",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

@@ -5,6 +5,18 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_break_xhme",
+  "response_scn_details",
+  "section_break_fjel",
+  "status_of_response",
+  "remarks",
+  "column_break_nzce",
+  "response_to_scn",
+  "document_upload",
+  "domestic_enquiry",
+  "section_break_folo",
+  "case_details",
+  "section_break_pyck",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -12,18 +24,13 @@
   "issue_in_details",
   "issue_occurrence_date",
   "status",
-  "status_of_response",
-  "remarks",
   "column_break_ytlf",
   "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr",
-  "response_to_scn",
-  "document_upload",
-  "domestic_enquiry"
+  "issue_reported_to_hr"
  ],
  "fields": [
   {
@@ -148,12 +155,42 @@
    "fieldtype": "Data",
    "label": "Case Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "case_details",
+   "fieldtype": "Heading",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "section_break_xhme",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_fjel",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_nzce",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_folo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_pyck",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "response_scn_details",
+   "fieldtype": "Heading",
+   "label": "Response SCN Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-15 13:44:03.015995",
+ "modified": "2025-10-17 15:39:59.069669",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

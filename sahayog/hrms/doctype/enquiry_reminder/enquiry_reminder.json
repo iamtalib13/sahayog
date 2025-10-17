@@ -5,6 +5,22 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_break_lamr",
+  "reminder_details",
+  "section_break_xncl",
+  "domestic_enquiry",
+  "place_of_enquiry",
+  "remarks",
+  "column_break_bxtv",
+  "status_of_response",
+  "date_of_enquiry",
+  "enquiry_officer_name",
+  "enquiry_status",
+  "date_of_2nd_enquiry",
+  "column_break_vhbi",
+  "section_break_iaxz",
+  "case_details",
+  "section_break_qdhz",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -12,21 +28,13 @@
   "issue_in_details",
   "issue_occurrence_date",
   "case_status",
-  "domestic_enquiry",
-  "place_of_enquiry",
-  "remarks",
   "column_break_etui",
   "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr",
-  "status_of_response",
-  "date_of_enquiry",
-  "enquiry_officer_name",
-  "enquiry_status",
-  "date_of_2nd_enquiry"
+  "issue_reported_to_hr"
  ],
  "fields": [
   {
@@ -153,12 +161,46 @@
    "fieldname": "date_of_2nd_enquiry",
    "fieldtype": "Date",
    "label": "Date of 2nd Enquiry"
+  },
+  {
+   "fieldname": "section_break_iaxz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_details",
+   "fieldtype": "Heading",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "section_break_qdhz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_lamr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_xncl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_bxtv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_vhbi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reminder_details",
+   "fieldtype": "Heading",
+   "label": "Reminder Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-15 11:12:27.337224",
+ "modified": "2025-10-17 15:39:26.070265",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
