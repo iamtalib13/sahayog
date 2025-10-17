@@ -111,8 +111,48 @@ def get_mvcd_status(tran_date=None):
         return {"status": "error", "message": str(e)}
 
 
+
+
 @frappe.whitelist(allow_guest=False)
-def get_pending_transactions():
+def get_pending_transactions(tran_date=None):
+    """
+    Fetch MVCD Status for the given date (default: today).
+    Returns default data if no records found.
+    """
+    try:
+        if not tran_date:
+            tran_date = date.today().strftime("%Y-%m-%d")
+            
+        
+        conn = db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        sql = """
+            SELECT DISTINCT tran_id, a.dth_init_sol_id, b.sol_desc, tran_type, tran_sub_type, entry_user_id
+            FROM tbaadm.dtd a, tbaadm.sol b
+            WHERE pstd_flg ='N'
+              AND a.del_flg ='N'
+              AND a.dth_init_sol_id = b.sol_id
+              AND tran_date = %s
+        """
+        cursor.execute(sql, (tran_date,))
+        rows = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        
+        return {"status": "success", "data": rows}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "MVCD Status Query Error")
+        return {"status": "error", "message": str(e)}
+
+
+
+
+
+@frappe.whitelist(allow_guest=False)
+def get_mvcd_status():
     """
     Fetch Pending Transactions where clr_bal_amt != 0 and bacid in specific list
     """
@@ -126,7 +166,7 @@ def get_pending_transactions():
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
         sql = """
-            SELECT a.sol_id, a.acct_name, a.foracid, a.clr_bal_amt, b.sol_desc
+            SELECT a.sol_id, b.sol_desc, a.acct_name, a.foracid, a.clr_bal_amt
             FROM tbaadm.gam a, tbaadm.sol b
             WHERE a.bacid IN %s
               AND a.clr_bal_amt != '0'
