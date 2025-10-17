@@ -3,7 +3,6 @@ from frappe import _
 from psycopg2.extras import RealDictCursor
 import psycopg2
 from frappe.utils import today, add_days
-# from sahayog.api.auto_agent_creation import sync_agents_to_doctype
 
 # Database Connection
 def db_connection():
@@ -28,87 +27,79 @@ def db_connection():
 @frappe.whitelist(allow_guest=False)
 def get_agents_by_rm_start_date(start_date=None, end_date=None):
     """
-    Fetch agents linked with RM start date from custom.dsaauth & custom.dsamap.
-    Returns structured list of dicts:
-    RM Start Date, Agent User Id, Agent Name, Branch Code, Branch Name,
-    Agent Reportee Id, Employee, ID
+    Fetch agents linked with RM start date from custom.dsaauth including branch name from tbaadm.sol.
     """
     try:
         conn = db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Default to today's date if not provided
         if not start_date:
             start_date = frappe.utils.nowdate()
         if not end_date:
             end_date = start_date
 
-        sql = """
-        SELECT
-            g.rm_start_date,
-            d.user_id AS agent_id,
-            d.user_role_id AS agent_name,
-            d.user_sol_id,
-            d.auth_id,
-            d.auth_role_id,
-            d.auth_sol_id
-        FROM custom.dsaauth d
-        JOIN custom.dsamap g ON d.user_id = g.rm_id
-        WHERE
-            g.entity_cre_flg = 'Y'
-            AND g.del_flg = 'N'
-            AND d.ent_cre_flg = 'Y'
-            AND d.del_flg = 'N'
-            AND g.rm_start_date ~ '^[0-9]{2}-[0-9]{2}-[0-9]{4}$'
-            AND TO_DATE(g.rm_start_date, 'DD-MM-YYYY')
-                BETWEEN TO_DATE(%s, 'YYYY-MM-DD')
-                    AND TO_DATE(%s, 'YYYY-MM-DD');
-        """
+        from datetime import datetime, timedelta
 
-        cursor.execute(sql, (start_date, end_date))
-        agents = cursor.fetchall()
+        def date_str_to_datetime(date_str):
+            return datetime.strptime(date_str, "%Y-%m-%d")
+
+        def datetime_to_str(date_obj):
+            return date_obj.strftime("%d-%m-%Y")
+
+        start_dt = date_str_to_datetime(start_date)
+        end_dt = date_str_to_datetime(end_date)
+        delta = (end_dt - start_dt).days
+
+        agents_all = []
+
+        for i in range(delta + 1):
+            current_date_obj = start_dt + timedelta(days=i)
+            current_date_str = datetime_to_str(current_date_obj)
+
+            sql = """
+            SELECT
+                d.lchg_time AS agent_start_date,
+                d.user_id AS agent_id,
+                d.user_role_id AS agent_name,
+                d.user_sol_id,
+                d.auth_id,
+                s.sol_desc AS branch_name
+            FROM custom.dsaauth d
+            LEFT JOIN tbaadm.sol s ON d.user_sol_id = s.sol_id
+            WHERE TRIM(d.lchg_time) = %s
+            AND d.ent_cre_flg = 'Y'
+            AND d.del_flg = 'N';
+            """
+
+            cursor.execute(sql, (current_date_str,))
+            agents = cursor.fetchall()
+            agents_all.extend(agents)
+
         cursor.close()
         conn.close()
 
-        branch_mapping = {
-            "1003": "Delhi Branch",
-            "1024": "Mumbai Branch",
-            "1181": "Pune Branch",
-            # Add more mappings if needed
-        }
-
         structured_agents = []
-        for agent in agents:
+        for agent in agents_all:
             auth_id_raw = agent.get("auth_id", "")
             employee = auth_id_raw.upper().replace("SAH0", "") if auth_id_raw.upper().startswith("SAH0") else auth_id_raw
 
             structured_agents.append({
-                "RM Start Date": agent.get("rm_start_date"),
+                "RM Start Date": agent.get("agent_start_date"),
                 "Status": "Allocated",
                 "Agent User Id": agent.get("agent_id"),
                 "Agent Name": agent.get("agent_name"),
                 "Branch Code": agent.get("user_sol_id"),
-                "Branch Name": branch_mapping.get(agent.get("user_sol_id"), "Unknown"),
+                "Branch Name": agent.get("branch_name") or "Unknown",
                 "Agent Reportee Id": auth_id_raw,
                 "Employee": employee,
                 "ID": agent.get("agent_id"),
             })
-
-            # print("Agents fetched:", len(structured_agents))
-            # frappe.logger().info(f"Agents fetched: {len(structured_agents)}")
-
 
         return {"status": "success", "agents": structured_agents}
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Get Agents by RM Start Date Error")
         return {"status": "error", "message": f"Error fetching agents: {str(e)}"}
-
-# Helper to get branch name by code
-@frappe.whitelist(allow_guest=True)
-def get_branch_by_code(branch_code):
-    branch = frappe.db.get_value('Sahayog Branch', branch_code, 'branch')
-    return branch
 
 # Sync Agents to Doctype
 @frappe.whitelist()
@@ -147,7 +138,7 @@ def sync_agents_to_doctype(start_date=None, end_date=None):
         employee_cleaned = digits.lstrip("0") if digits else "0"
 
         branch_code = agent.get("Branch Code")
-        branch_name = get_branch_by_code(branch_code) or "undefined"
+        branch_name = agent.get("Branch Name") or "undefined"
 
         data = {
             "status": status,
@@ -209,4 +200,3 @@ def auto_create_agents_from_scheduler():
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Auto Agent Sync Failed")
         return {"status": "error", "message": str(e)}
-    
