@@ -102,16 +102,16 @@ def get_agents_by_rm_start_date(start_date=None, end_date=None):
         return {"status": "error", "message": f"Error fetching agents: {str(e)}"}
 
 # Sync Agents to Doctype
-@frappe.whitelist()
 def sync_agents_to_doctype(start_date=None, end_date=None):
     """
     Sync agents (filtered by RM start date) to the Agent Doctype.
-    Only creates new docs if not exist, skips existing ones.
+    Creates new docs if not exist, else updates only creation_date if agent exists.
     """
     api_response_url = get_agents_by_rm_start_date(start_date, end_date)
     api_response = api_response_url.get("agents", [])
     created = 0
     skipped = 0
+    updated = 0
 
     print(f"🔍 Total agents fetched: {len(api_response)}")
 
@@ -122,10 +122,12 @@ def sync_agents_to_doctype(start_date=None, end_date=None):
             skipped += 1
             continue
 
-        # Skip if already exists
-        if frappe.db.exists("Agent", agent_code):
-            print(f"⏭️ Skipped (already exists): {agent_code}")
-            skipped += 1
+        existing_agent_name = frappe.db.exists("Agent", agent_code)
+        if existing_agent_name:
+            # Update only creation_date for existing agent
+            frappe.db.set_value("Agent", existing_agent_name, "creation_date", start_date, update_modified=False)
+            updated += 1
+            print(f"🔄 Updated creation_date for existing Agent: {agent_code}")
             continue
 
         auth_id = agent.get("Agent Reportee Id")
@@ -162,11 +164,12 @@ def sync_agents_to_doctype(start_date=None, end_date=None):
 
     print("\nSummary:")
     print(f"  ➕ Created: {created}")
+    print(f"  🔄 Updated: {updated}")
     print(f"  ⏭️ Skipped: {skipped}")
 
     return {
         "status": "success",
-        "message": f"{created} agents created, {skipped} skipped"
+        "message": f"{created} agents created, {updated} updated, {skipped} skipped"
     }
 
 
