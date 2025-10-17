@@ -112,6 +112,7 @@ frappe.pages['mvcd-status'].on_page_load = function(wrapper) {
     // Append card HTML with styles to page body
     $(page.body).append(cardHtml);
 
+    // Handler to test DB connection
 	frappe.call({
     method: "sahayog.sahayog.page.mvcd_status.mvcd.test_db_connection",  // Replace with the correct path to your method
     callback: function(response) {
@@ -159,6 +160,7 @@ frappe.pages['mvcd-status'].on_page_load = function(wrapper) {
         callback: function(r) {
             tbody.empty(); // Clear loading row
             if (r.message && r.message.status === 'success' && r.message.data.length) {
+                console.log(`   Data fetched:`, r.message.data);
                 r.message.data.forEach(row => {
                     const tr = $('<tr>').appendTo(tbody);
                     columns.forEach(col => {
