@@ -3,8 +3,9 @@
 
 frappe.ui.form.on("Suspension Process", {
 	refresh(frm) {
-        
+
 	},
+    // Auto-calculate suspension_to_date based on suspenstion_from_date and number_of_days_suspension_required  
      number_of_days_suspension_required: function(frm) {
         frm.trigger("calculate_suspension_to_date");
     },
