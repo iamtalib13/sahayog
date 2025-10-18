@@ -168,7 +168,7 @@ h4 {
             <table class="table" id="mvcd-table">
                 <thead></thead>
                 <tbody></tbody>
-            </table>    max-height: 328px;
+            </table>
 
         </div>
     </div>
