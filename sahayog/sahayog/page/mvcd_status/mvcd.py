@@ -22,9 +22,9 @@ def check_user_access():
     if employee:
         designation = (employee[0].designation or "").strip().lower()
         if (
-            "Branch Operation Manager" in designation
-            or "CLUSTER OPERATION MANAGER" in designation
-            or "Regional Operation Manager" in designation 
+            "branch operation manager" in designation
+            or "cluster operation manager" in designation
+            or "regional operation manager" in designation
         ):
             return {"allowed": True}
 
