@@ -17,6 +17,7 @@
   "section_break_folo",
   "case_details",
   "section_break_pyck",
+  "case_id",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -25,7 +26,6 @@
   "issue_occurrence_date",
   "status",
   "column_break_ytlf",
-  "case_id",
   "designation",
   "branch_name",
   "case_type",
@@ -45,7 +45,7 @@
    "fieldtype": "Link",
    "label": "Case ID",
    "options": "Disciplinary Case",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
    "fetch_from": "case_id.employee_name",
@@ -190,7 +190,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-17 15:39:59.069669",
+ "modified": "2025-10-18 13:40:09.998437",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

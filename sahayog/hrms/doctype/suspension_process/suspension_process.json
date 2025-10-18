@@ -15,6 +15,7 @@
   "section_break_rseg",
   "case_details",
   "section_break_peuy",
+  "case_id",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -22,22 +23,22 @@
   "issue_in_detail",
   "issue_occurrence_date",
   "case_status",
-  "remarks",
-  "column_break_zukp",
-  "case_id",
+  "column_break_fuzl",
   "designation",
   "branch_name",
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "suspenstion_required"
+  "suspenstion_required",
+  "remarks"
  ],
  "fields": [
   {
    "fieldname": "case_id",
    "fieldtype": "Link",
    "label": "Case ID",
-   "options": "Disciplinary Case"
+   "options": "Disciplinary Case",
+   "set_only_once": 1
   },
   {
    "fetch_from": "case_id.designation",
@@ -66,10 +67,6 @@
    "fieldtype": "Data",
    "label": "Category",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_zukp",
-   "fieldtype": "Column Break"
   },
   {
    "fetch_from": "case_id.issue_report_to_hr",
@@ -136,13 +133,15 @@
    "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Data",
-   "label": "Issue Occurrence Date"
+   "label": "Issue Occurrence Date",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.status",
    "fieldname": "case_status",
    "fieldtype": "Data",
-   "label": "Case Status"
+   "label": "Case Status",
+   "read_only": 1
   },
   {
    "fieldname": "suspenstion_from_date",
@@ -187,12 +186,16 @@
    "fieldname": "suspension_details",
    "fieldtype": "Heading",
    "label": "Suspension Details"
+  },
+  {
+   "fieldname": "column_break_fuzl",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-17 15:39:48.194963",
+ "modified": "2025-10-18 13:28:04.699743",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

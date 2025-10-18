@@ -17,37 +17,38 @@
   "enquiry_officer_name",
   "enquiry_status",
   "date_of_2nd_enquiry",
-  "column_break_vhbi",
   "section_break_iaxz",
   "case_details",
   "section_break_qdhz",
+  "case_id",
   "employee_id",
   "employee_name",
   "branch_id",
   "zone_name",
   "issue_in_details",
-  "issue_occurrence_date",
-  "case_status",
   "column_break_etui",
-  "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr"
+  "issue_reported_to_hr",
+  "issue_occurrence_date",
+  "case_status"
  ],
  "fields": [
   {
    "fetch_from": "case_id.employee_id",
    "fieldname": "employee_id",
    "fieldtype": "Data",
-   "label": "Employee ID"
+   "label": "Employee ID",
+   "read_only": 1
   },
   {
    "fieldname": "case_id",
    "fieldtype": "Link",
    "label": "Case ID",
-   "options": "Disciplinary Case"
+   "options": "Disciplinary Case",
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_etui",
@@ -57,67 +58,78 @@
    "fetch_from": "case_id.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
-   "label": "Employee Name"
+   "label": "Employee Name",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
-   "label": "Designation"
+   "label": "Designation",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.branch_id",
    "fieldname": "branch_id",
    "fieldtype": "Data",
-   "label": "Branch ID"
+   "label": "Branch ID",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.branch_name",
    "fieldname": "branch_name",
    "fieldtype": "Data",
-   "label": "Branch Name"
+   "label": "Branch Name",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.zone",
    "fieldname": "zone_name",
    "fieldtype": "Data",
-   "label": "Zone Name"
+   "label": "Zone Name",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.case_type",
    "fieldname": "case_type",
    "fieldtype": "Data",
-   "label": "Case Type"
+   "label": "Case Type",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.description",
    "fieldname": "issue_in_details",
    "fieldtype": "Small Text",
-   "label": "Issue In Details"
+   "label": "Issue In Details",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.category",
    "fieldname": "category",
    "fieldtype": "Data",
-   "label": "Category"
+   "label": "Category",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Data",
-   "label": "Issue Reported To HR"
+   "label": "Issue Reported To HR",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Data",
-   "label": "Issue Occurrence Date"
+   "label": "Issue Occurrence Date",
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.status",
    "fieldname": "case_status",
    "fieldtype": "Data",
-   "label": "Case Status"
+   "label": "Case Status",
+   "read_only": 1
   },
   {
    "fieldname": "status_of_response",
@@ -188,10 +200,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_vhbi",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "reminder_details",
    "fieldtype": "Heading",
    "label": "Reminder Details"
@@ -200,7 +208,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-17 15:39:26.070265",
+ "modified": "2025-10-18 13:40:39.105276",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
