@@ -36,22 +36,21 @@ body, .page-container {background: #fafbfc !important;}
 
 .custom-card {
     height: 32px;
-    margin-bottom: 10px;
+    margin-bottom: 0px;
     padding: 0 1rem;
     border-radius: 9px;
-    background: #256a69;
-    color: #fff;
+    color: #256a69;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 500;
-    font-size: 0.72rem;
+    font-size: 1.8rem;
     cursor: default;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+    
     width: fit-content;
     max-width: 320px;
 }
@@ -104,7 +103,8 @@ h4 {
 
 .table tbody {
     display: block;
-    max-height: 164px;
+    min-height: 328px;
+    max-height: 328px;
     overflow-y: auto;
     width: 100%;
     scroll-behavior: smooth;
@@ -125,26 +125,56 @@ h4 {
     color: #555;
     font-size: 0.8rem;
 }
+
+.page-head {
+  display: none;
+}
+
+
+/* Scrollbar styling for .table tbody (Chrome, Edge, Safari) */
+.table tbody::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table tbody::-webkit-scrollbar-thumb {
+    background-color: #256a69;
+    border-radius: 8px;
+}
+
+.table tbody::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+}
+
+/* Scrollbar styling for Firefox */
+.table tbody {
+    scrollbar-color: #256a69 #f1f1f1;
+    scrollbar-width: thin;
+}
+
+
+
+
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
-<h4>Refresh in: <span id="refresh-timer">10</span> seconds</h4>
+
 <div class="container-flex">
     <div class="column">
         <div class="custom-card mvcd-card" id="mvcd-card">
-            MVCD Pending Count: <span id="mvcd-count"> Loading...</span>
+            <span id="mvcd-count"> Loading...</span>
         </div>
-        <h4>MVCD Status</h4>
+        <h4>Pending MVCD</h4>
         <div class="table-wrap">
             <table class="table" id="mvcd-table">
                 <thead></thead>
                 <tbody></tbody>
-            </table>
+            </table>    max-height: 328px;
+
         </div>
     </div>
     <div class="column">
         <div class="custom-card transaction-card" id="transaction-card">
-            Transaction Pending Count: <span id="transaction-count"> Loading...</span>
+            <span id="transaction-count"> Loading...</span>
         </div>
         <h4>Pending Transactions</h4>
         <div class="table-wrap">
@@ -254,7 +284,7 @@ h4 {
           r.message.status === "success" &&
           r.message.data.length
         ) {
-          // console.log("Updating MVCD data...", r.message.data);
+          console.log("Updating MVCD data...", r.message.data);
           $("#mvcd-count").text(`${r.message.data.length}`);
           r.message.data.forEach((row, idx) => {
             const tr = $("<tr>").appendTo($mvcdTbody);
@@ -323,7 +353,7 @@ h4 {
           r.message.status === "success" &&
           r.message.data.length
         ) {
-          // console.log("Updating Transaction data...", r.message.data);
+          console.log("Updating Transaction data...", r.message.data);
           $("#transaction-count").text(`${r.message.data.length}`);
           r.message.data.forEach((row, idx) => {
             const tr = $("<tr>").appendTo($transTbody);
@@ -349,33 +379,33 @@ h4 {
 };
 
 // Countdown timer setup
-let refreshSeconds = 10;
-$("#refresh-timer").text(refreshSeconds);
+// let refreshSeconds = 10;
+// $("#refresh-timer").text(refreshSeconds);
 
-const countdownInterval = setInterval(() => {
-  refreshSeconds--;
-  if (refreshSeconds <= 0) {
-    refreshSeconds = 10; // Reset countdown
-  }
-  $("#refresh-timer").text(
-    refreshSeconds < 10 ? "0" + refreshSeconds : refreshSeconds
-  );
-}, 1000);
+// const countdownInterval = setInterval(() => {
+//   refreshSeconds--;
+//   if (refreshSeconds <= 0) {
+//     refreshSeconds = 10; // Reset countdown
+//   }
+//   $("#refresh-timer").text(
+//     refreshSeconds < 10 ? "0" + refreshSeconds : refreshSeconds
+//   );
+// }, 1000);
 
-            frappe.call({
-  method: "sahayog.sahayog.page.mvcd_status.mvcd.check_user_access",
-  callback: function(r) {
-    if (!r.message || !r.message.allowed) {
-      frappe.msgprint(__("You are not authorized to access this page."));
-      frappe.set_route('desk'); // or any other route
-    } else {
-      // User is authorized; continue with page setup
-      render_mvcd_status_page();
-    }
-  }
-});
+//             frappe.call({
+//   method: "sahayog.sahayog.page.mvcd_status.mvcd.check_user_access",
+//   callback: function(r) {
+//     if (!r.message || !r.message.allowed) {
+//       frappe.msgprint(__("You are not authorized to access this page."));
+//       frappe.set_route('desk'); // or any other route
+//     } else {
+//       // User is authorized; continue with page setup
+//       render_mvcd_status_page();
+//     }
+//   }
+// });
 
-function render_mvcd_status_page() {
-  // Your existing code for setting up the page
-  // Move all the code from on_page_load here
-}
+// function render_mvcd_status_page() {
+//   // Your existing code for setting up the page
+//   // Move all the code from on_page_load here
+// }
