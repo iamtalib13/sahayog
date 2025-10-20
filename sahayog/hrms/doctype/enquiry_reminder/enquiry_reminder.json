@@ -5,6 +5,21 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "enquiry_reminder_details",
+  "section_break_clxr",
+  "domestic_enquiry",
+  "place_of_enquiry",
+  "remarks",
+  "column_break_yybn",
+  "status_of_response",
+  "date_of_enquiry",
+  "enquiry_officer_name",
+  "enquiry_status",
+  "date_of_2nd_enquiry",
+  "section_break_ugzg",
+  "case_details",
+  "section_break_yxjs",
+  "case_id",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -12,21 +27,12 @@
   "issue_in_details",
   "issue_occurrence_date",
   "case_status",
-  "domestic_enquiry",
-  "place_of_enquiry",
-  "remarks",
   "column_break_etui",
-  "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr",
-  "status_of_response",
-  "date_of_enquiry",
-  "enquiry_officer_name",
-  "enquiry_status",
-  "date_of_2nd_enquiry"
+  "issue_reported_to_hr"
  ],
  "fields": [
   {
@@ -41,7 +47,7 @@
    "fieldtype": "Link",
    "label": "Case ID",
    "options": "Disciplinary Case",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_etui",
@@ -172,6 +178,32 @@
    "in_list_view": 1,
    "label": "Date of 2nd Enquiry",
    "reqd": 1
+  },
+  {
+   "fieldname": "enquiry_reminder_details",
+   "fieldtype": "Heading",
+   "label": "Enquiry Reminder Details"
+  },
+  {
+   "fieldname": "section_break_clxr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_yybn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ugzg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_details",
+   "fieldtype": "Heading",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "section_break_yxjs",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
@@ -183,7 +215,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-17 15:41:58.073730",
+ "modified": "2025-10-20 13:28:11.177243",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",

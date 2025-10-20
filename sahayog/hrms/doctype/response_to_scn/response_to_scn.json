@@ -5,6 +5,18 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "response_scn_details",
+  "section_break_kpne",
+  "status_of_response",
+  "remarks",
+  "column_break_aduu",
+  "response_to_scn",
+  "document_upload",
+  "domestic_enquiry",
+  "section_break_jqxw",
+  "case_details",
+  "section_break_hbzm",
+  "case_id",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -12,18 +24,12 @@
   "issue_in_details",
   "issue_occurrence_date",
   "status",
-  "status_of_response",
-  "remarks",
   "column_break_ytlf",
-  "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr",
-  "response_to_scn",
-  "document_upload",
-  "domestic_enquiry"
+  "issue_reported_to_hr"
  ],
  "fields": [
   {
@@ -38,7 +44,7 @@
    "fieldtype": "Link",
    "label": "Case ID",
    "options": "Disciplinary Case",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
    "fetch_from": "case_id.employee_name",
@@ -152,6 +158,32 @@
    "fieldtype": "Data",
    "label": "Case Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "response_scn_details",
+   "fieldtype": "Heading",
+   "label": "Response SCN Details"
+  },
+  {
+   "fieldname": "section_break_kpne",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_aduu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_jqxw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_details",
+   "fieldtype": "Heading",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "section_break_hbzm",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
@@ -168,7 +200,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-17 15:38:32.771662",
+ "modified": "2025-10-20 13:27:03.071865",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

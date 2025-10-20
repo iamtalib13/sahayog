@@ -5,6 +5,19 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "domestic_details",
+  "section_break_ddef",
+  "domestic_enquiry",
+  "place_of_enquiry",
+  "column_break_wdmq",
+  "status_of_response",
+  "date_of_enquiry",
+  "enquiry_officer_name",
+  "remarks",
+  "section_break_fkcq",
+  "case_details",
+  "section_break_vvzj",
+  "case_id",
   "employee_id",
   "employee_name",
   "branch_id",
@@ -12,19 +25,12 @@
   "issue_in_details",
   "issue_occurrence_date",
   "status",
-  "domestic_enquiry",
-  "place_of_enquiry",
   "column_break_efjl",
-  "case_id",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr",
-  "status_of_response",
-  "date_of_enquiry",
-  "enquiry_officer_name",
-  "remarks"
+  "issue_reported_to_hr"
  ],
  "fields": [
   {
@@ -43,7 +49,7 @@
    "fieldtype": "Link",
    "label": "Case ID",
    "options": "Disciplinary Case",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
    "fetch_from": "case_id.employee_name",
@@ -161,6 +167,32 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "fieldname": "domestic_details",
+   "fieldtype": "Heading",
+   "label": "Domestic Details"
+  },
+  {
+   "fieldname": "section_break_ddef",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_wdmq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_fkcq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_details",
+   "fieldtype": "Heading",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "section_break_vvzj",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
@@ -177,7 +209,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-17 15:41:20.165762",
+ "modified": "2025-10-20 13:27:51.603483",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
