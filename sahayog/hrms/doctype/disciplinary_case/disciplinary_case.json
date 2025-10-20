@@ -188,7 +188,8 @@
    "fieldname": "response_time",
    "fieldtype": "Select",
    "label": "Response Time",
-   "options": "\n24 hours\n48 hours"
+   "options": "\n24 hours\n48 hours",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -205,7 +206,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-17 15:10:27.017404",
+ "modified": "2025-10-20 10:37:36.386413",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

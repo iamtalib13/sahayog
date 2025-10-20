@@ -1,8 +1,8 @@
 frappe.ui.form.on("Disciplinary Case", {
   refresh(frm) {
     // -------------------
-    // Hide unwanted ERPNext default icon buttons
-    // // -------------------
+    // Hide unwanted ERPNext default icon buttons (commented for now)
+    // -------------------
     // $(".button.text-muted.btn.btn-default.icon-btn")
     //   .has("svg.icon.icon-sm")
     //   .hide();
@@ -53,6 +53,18 @@ frappe.ui.form.on("Disciplinary Case", {
     let today = frappe.datetime.now_date();
     frm.set_df_property("issue_occurrence_date", "options", { max: today });
     frm.set_df_property("issue_report_to_hr", "options", { max: today });
+
+    // -------------------
+    // Prevent typing alphabets in Amount of Fraud field
+    // -------------------
+    if (frm.fields_dict.amount_of_fraud) {
+      frm.fields_dict.amount_of_fraud.$input.on("keypress", function (e) {
+        const char = String.fromCharCode(e.which);
+        if (!/[0-9.]/.test(char)) {
+          e.preventDefault();
+        }
+      });
+    }
   },
 
   // -------------------
@@ -81,6 +93,24 @@ frappe.ui.form.on("Disciplinary Case", {
     }
   },
 
+  amount_of_fraud(frm) {
+    let value = frm.doc.amount_of_fraud;
+
+    // If user entered alphabets or invalid symbols
+    if (value && isNaN(value)) {
+      frappe.msgprint({
+        title: __("Invalid Input"),
+        message: __(
+          "Please enter a valid numeric amount in 'Amount of Fraud'."
+        ),
+        indicator: "red",
+      });
+
+      // Reset field
+      frm.set_value("amount_of_fraud", 0);
+    }
+  },
+
   validate(frm) {
     let today = frappe.datetime.now_date();
     if (
@@ -91,6 +121,11 @@ frappe.ui.form.on("Disciplinary Case", {
     }
     if (frm.doc.issue_report_to_hr && frm.doc.issue_report_to_hr > today) {
       frappe.throw(__("Issue Reported to HR Date cannot be in the future."));
+    }
+
+    // Validate Amount of Fraud again before saving
+    if (frm.doc.amount_of_fraud && isNaN(frm.doc.amount_of_fraud)) {
+      frappe.throw(__("Amount of Fraud must be a valid number."));
     }
   },
 });
