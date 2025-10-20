@@ -91,8 +91,7 @@
   {
    "fieldname": "suspenstion_to_date",
    "fieldtype": "Date",
-   "label": "Suspenstion to date",
-   "reqd": 1
+   "label": "Suspenstion to date"
   },
   {
    "fieldname": "subsistance_allowances",
@@ -180,7 +179,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-17 15:40:54.094915",
+ "modified": "2025-10-18 13:20:40.617997",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
