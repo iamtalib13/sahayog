@@ -5,7 +5,6 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "closure_details",
   "section_break_webc",
   "domestic_enquiry",
   "place_of_enquiry",
@@ -16,8 +15,6 @@
   "enquiry_officer_name",
   "enquiry_status",
   "enquiry_report_upload",
-  "section_break_hicy",
-  "case_details",
   "section_break_ulcv",
   "case_id",
   "employee_id",
@@ -174,36 +171,24 @@
    "label": "Enquiry Report Upload"
   },
   {
-   "fieldname": "closure_details",
-   "fieldtype": "Heading",
-   "label": "Closure Details"
-  },
-  {
    "fieldname": "section_break_webc",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Closure Details"
   },
   {
    "fieldname": "column_break_hoah",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "section_break_hicy",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "case_details",
-   "fieldtype": "Heading",
-   "label": "Case Details"
-  },
-  {
    "fieldname": "section_break_ulcv",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Case Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-20 13:28:30.748350",
+ "modified": "2025-10-20 15:02:41.578052",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

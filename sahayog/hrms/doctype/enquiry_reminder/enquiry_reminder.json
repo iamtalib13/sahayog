@@ -5,7 +5,6 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "enquiry_reminder_details",
   "section_break_clxr",
   "domestic_enquiry",
   "place_of_enquiry",
@@ -16,8 +15,6 @@
   "enquiry_officer_name",
   "enquiry_status",
   "date_of_2nd_enquiry",
-  "section_break_ugzg",
-  "case_details",
   "section_break_yxjs",
   "case_id",
   "employee_id",
@@ -180,30 +177,18 @@
    "reqd": 1
   },
   {
-   "fieldname": "enquiry_reminder_details",
-   "fieldtype": "Heading",
-   "label": "Enquiry Reminder Details"
-  },
-  {
    "fieldname": "section_break_clxr",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Enquiry Reminder Details"
   },
   {
    "fieldname": "column_break_yybn",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "section_break_ugzg",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "case_details",
-   "fieldtype": "Heading",
-   "label": "Case Details"
-  },
-  {
    "fieldname": "section_break_yxjs",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Case Details"
   }
  ],
  "grid_page_length": 50,
@@ -215,7 +200,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-20 13:28:11.177243",
+ "modified": "2025-10-20 15:01:53.399805",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
