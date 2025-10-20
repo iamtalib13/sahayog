@@ -5,17 +5,14 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "domestic_details",
   "section_break_ddef",
   "domestic_enquiry",
   "place_of_enquiry",
+  "remarks",
   "column_break_wdmq",
   "status_of_response",
   "date_of_enquiry",
   "enquiry_officer_name",
-  "remarks",
-  "section_break_fkcq",
-  "case_details",
   "section_break_vvzj",
   "case_id",
   "employee_id",
@@ -169,30 +166,18 @@
    "label": "Remarks"
   },
   {
-   "fieldname": "domestic_details",
-   "fieldtype": "Heading",
-   "label": "Domestic Details"
-  },
-  {
    "fieldname": "section_break_ddef",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Domestic Details"
   },
   {
    "fieldname": "column_break_wdmq",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "section_break_fkcq",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "case_details",
-   "fieldtype": "Heading",
-   "label": "Case Details"
-  },
-  {
    "fieldname": "section_break_vvzj",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Case Details"
   }
  ],
  "grid_page_length": 50,
@@ -209,7 +194,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-20 13:27:51.603483",
+ "modified": "2025-10-20 15:00:59.650996",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
