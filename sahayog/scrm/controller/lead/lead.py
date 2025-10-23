@@ -9,13 +9,13 @@ def update_employee_details(doc, method):
             result = frappe.db.get_value(
                 "Employee",
                 {"user_id": frappe.session.user},
-                ["employee_number", "branch", "custom_region", "custom_zone"],
+                ["employee_number", "branch", "custom_region", "custom_zone", "sol_id"],
             )
 
             if not result:
                 frappe.throw("Could not fetch employee details. Please ensure your employee profile is properly set.")
 
-            employee_number, branch, region, zone = result
+            employee_number, branch, region, zone, sol_id = result
 
             # Always set employee number
             doc.custom_employee_id = employee_number
@@ -27,10 +27,34 @@ def update_employee_details(doc, method):
                 doc.custom_region = region
             if zone:
                 doc.custom_zone = zone
+            if sol_id:
+                doc.sol_id = sol_id
 
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Lead Update Employee Details Error")
             frappe.throw("An error occurred while updating employee details.")
+
+
+def validate_required_employee_fields(doc, method):
+    """Validate that all required employee fields are set before allowing Lead creation"""
+    if frappe.session.user != "Administrator":
+        try:
+            employee_doc = frappe.get_doc("Employee", {"user_id": frappe.session.user})
+            
+            # Check for required fields
+            if not employee_doc.get("sol_id"):
+                frappe.throw(
+                    title="Missing Required Field",
+                    msg="SOL ID is required in your employee profile. Please contact your administrator to set the SOL ID before creating leads."
+                )
+                
+        except frappe.DoesNotExistError:
+            frappe.throw("Could not find employee record for current user.")
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Lead Validation Error")
+            frappe.throw("An error occurred while validating employee details.")
+
+
 
 # Function to set the 'Is Operation Lead' field before saving the document
 def set_is_operation_lead(doc, method):
