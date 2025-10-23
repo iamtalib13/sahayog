@@ -129,19 +129,22 @@
   },
   {
    "fieldname": "status_of_response",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot-Satisfactory\nNot Submitted"
+   "read_only": 1
   },
   {
    "fieldname": "date_of_enquiry",
    "fieldtype": "Date",
-   "label": "Date of Enquiry"
+   "in_list_view": 1,
+   "label": "Date of Enquiry",
+   "read_only": 1
   },
   {
    "fieldname": "enquiry_officer_name",
    "fieldtype": "Data",
-   "label": "Enquiry Officer Name"
+   "label": "Enquiry Officer Name",
+   "read_only": 1
   },
   {
    "fieldname": "enquiry_status",
@@ -153,16 +156,16 @@
   },
   {
    "fieldname": "domestic_enquiry",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Domestic Enquiry",
-   "options": "\nYes\nNo"
+   "read_only": 1
   },
   {
    "fieldname": "place_of_enquiry",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Place of Enquiry",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "remarks",
@@ -200,7 +203,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-20 15:01:53.399805",
+ "modified": "2025-10-23 15:57:32.101459",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
