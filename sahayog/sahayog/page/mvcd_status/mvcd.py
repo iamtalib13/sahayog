@@ -134,6 +134,7 @@ def get_pending_transactions(tran_date=None):
               AND a.del_flg ='N'
               AND a.dth_init_sol_id = b.sol_id
               AND tran_date = %s
+            ORDER BY tran_date DESC
         """
         cursor.execute(sql, (tran_date,))
         rows = cursor.fetchall()
