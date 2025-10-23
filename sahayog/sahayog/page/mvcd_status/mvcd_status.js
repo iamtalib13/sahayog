@@ -1,5 +1,5 @@
 frappe.pages["mvcd-status"].on_page_load = function (wrapper) {
-  const DEBUG = true; // Set true to use dummy data
+  const DEBUG = false; // Set true to use dummy data
 
   const page = frappe.ui.make_app_page({
     parent: wrapper,
