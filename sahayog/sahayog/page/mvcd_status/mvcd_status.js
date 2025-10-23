@@ -1,5 +1,5 @@
 frappe.pages["mvcd-status"].on_page_load = function (wrapper) {
-  const DEBUG = false; // Set true to use dummy data
+  const DEBUG = true; // Set true to use dummy data
 
   const page = frappe.ui.make_app_page({
     parent: wrapper,
@@ -113,6 +113,14 @@ h4 {
 .table tbody::-webkit-scrollbar-thumb {background-color: #256a69;border-radius: 8px;}
 .table tbody::-webkit-scrollbar-track {background-color: #f1f1f1;}
 .table tbody {scrollbar-color: #256a69 #f1f1f1;scrollbar-width: thin;}
+#mvcd-table th:first-child,
+#mvcd-table td:first-child,
+#transaction-table th:first-child,
+#transaction-table td:first-child {
+  width: 40px;
+  max-width: 40px;
+  white-space: nowrap;
+}
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
@@ -122,38 +130,43 @@ h4 {
          style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.8rem;width:180px;">
   <button id="apply-filter"
           style="margin-left:6px;padding:6px 10px;background:#256a69;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
-    Filter
+    Apply
   </button>
   <button id="clear-filter"
           style="margin-left:6px;padding:6px 10px;background:#eee;color:#333;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
     Clear
   </button>
 </div>
+
+<!-- Filter applied message -->
+<div id="filter-message" style="text-align:center; font-size:0.8rem; color:#256a69; margin-bottom:12px;">
+</div>
+
 <div class="container-flex">
-    <div class="column">
-        <div class="custom-card mvcd-card" id="mvcd-card">
-            <span id="mvcd-count"> Loading...</span>
-        </div>
-        <h4>Pending MVCD</h4>
-        <div class="table-wrap">
-            <table class="table" id="mvcd-table">
-                <thead></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+  <div class="column">
+    <div class="custom-card mvcd-card" id="mvcd-card">
+      <span id="mvcd-count"> Loading...</span>
     </div>
-    <div class="column">
-        <div class="custom-card transaction-card" id="transaction-card">
-            <span id="transaction-count"> Loading...</span>
-        </div>
-        <h4>Pending Transactions</h4>
-        <div class="table-wrap">
-            <table class="table" id="transaction-table">
-                <thead></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+    <h4>Pending MVCD</h4>
+    <div class="table-wrap">
+      <table class="table" id="mvcd-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
     </div>
+  </div>
+  <div class="column">
+    <div class="custom-card transaction-card" id="transaction-card">
+      <span id="transaction-count"> Loading...</span>
+    </div>
+    <h4>Pending Transactions</h4>
+    <div class="table-wrap">
+      <table class="table" id="transaction-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 `;
 
@@ -161,10 +174,10 @@ h4 {
 
   const columnsMVCD = [
     { key: "sol_id", label: "SOL ID" },
+    { key: "sol_desc", label: "Branch" },
     { key: "acct_name", label: "Account Name" },
     { key: "foracid", label: "For Account ID" },
     { key: "clr_bal_amt", label: "Clear Balance Amount" },
-    { key: "sol_desc", label: "Branch Description" },
   ];
   const $mvcdTable = $("#mvcd-table");
   const $mvcdTbody = $mvcdTable.find("tbody");
@@ -176,8 +189,8 @@ h4 {
 
   const columnsTrans = [
     { key: "tran_id", label: "Transaction ID" },
-    { key: "dth_init_sol_id", label: "Initial Branch ID" },
-    { key: "sol_desc", label: "Branch Description" },
+    { key: "dth_init_sol_id", label: "SOL ID" },
+    { key: "sol_desc", label: "Branch" },
     { key: "tran_type", label: "Transaction Type" },
     { key: "tran_sub_type", label: "Transaction Sub-Type" },
     { key: "entry_user_id", label: "Entry User ID" },
@@ -201,8 +214,9 @@ h4 {
     sol_desc: `Branch ${100 + i}`,
   }));
 
+  // Use DG prefix format for tran_id here
   const transDummy = Array.from({ length: 20 }, (_, i) => ({
-    tran_id: `T${1000 + i}`,
+    tran_id: `DG${5734 + i}`,
     dth_init_sol_id: `SOL${100 + (i % 20)}`,
     sol_desc: `Branch ${100 + (i % 20)}`,
     tran_type: i % 2 === 0 ? "Deposit" : "Withdrawal",
@@ -216,6 +230,16 @@ h4 {
   // Load filter from storage
   let cachedFilter = localStorage.getItem("mvcd_sol_filter") || "";
   $("#sol-filter").val(cachedFilter);
+
+  function updateFilterMessage(sol) {
+    if (sol && sol.trim() !== "") {
+      $("#filter-message").html(
+        `<span style="color: grey;">FILTER APPLIED FOR SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`
+      );
+    } else {
+      $("#filter-message").text("");
+    }
+  }
 
   function renderMVCD(data) {
     $mvcdTbody.empty();
@@ -284,6 +308,7 @@ h4 {
     localStorage.setItem("mvcd_sol_filter", sol);
     renderMVCDFiltered(sol);
     renderTransactionFiltered(sol);
+    updateFilterMessage(sol);
   }
 
   $("#apply-filter").on("click", applyFilter);
@@ -316,6 +341,7 @@ h4 {
       });
     }
   }
+
   function fetchRenderTransaction() {
     if (DEBUG) {
       onTransactionDataLoaded(transDummy);
@@ -334,6 +360,5 @@ h4 {
   setInterval(fetchRenderMVCD, 10000);
   setInterval(fetchRenderTransaction, 10000);
 
-  // Initial apply filter on page load
   applyFilter();
 };
