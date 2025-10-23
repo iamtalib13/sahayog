@@ -1,5 +1,5 @@
 frappe.ui.form.on("Disciplinary Case", {
-  refresh(frm) {
+  refresh: function (frm) {
     // -------------------
     // Hide unwanted ERPNext default icon buttons (commented for now)
     // -------------------
@@ -48,29 +48,66 @@ frappe.ui.form.on("Disciplinary Case", {
     }
 
     // -------------------
-    // Disable future dates in date fields
+    // Disable future dates in date fields (set df.max and refresh)
     // -------------------
     let today = frappe.datetime.now_date();
-    frm.set_df_property("issue_occurrence_date", "options", { max: today });
-    frm.set_df_property("issue_report_to_hr", "options", { max: today });
+
+    if (frm.fields_dict.issue_occurrence_date) {
+      frm.fields_dict.issue_occurrence_date.df.max = today;
+      frm.fields_dict.issue_occurrence_date.refresh();
+    }
+
+    if (frm.fields_dict.issue_report_to_hr) {
+      frm.fields_dict.issue_report_to_hr.df.max = today;
+      frm.fields_dict.issue_report_to_hr.refresh();
+    }
 
     // -------------------
     // Prevent typing alphabets in Amount of Fraud field
     // -------------------
-    if (frm.fields_dict.amount_of_fraud) {
-      frm.fields_dict.amount_of_fraud.$input.on("keypress", function (e) {
-        const char = String.fromCharCode(e.which);
-        if (!/[0-9.]/.test(char)) {
-          e.preventDefault();
+    if (
+      frm.fields_dict.amount_of_fraud &&
+      frm.fields_dict.amount_of_fraud.$input
+    ) {
+      // remove any previous handler first to avoid duplicate bindings
+      frm.fields_dict.amount_of_fraud.$input.off("keypress.amount_check");
+      frm.fields_dict.amount_of_fraud.$input.on(
+        "keypress.amount_check",
+        function (e) {
+          const char = String.fromCharCode(e.which || e.keyCode);
+          if (!/[0-9.]/.test(char)) {
+            e.preventDefault();
+          }
         }
-      });
+      );
     }
+    setTimeout(() => {
+      const $btn = $('button[data-doctype="Suspension Process"]');
+
+      // Remove any previous handler and attach new one
+      $btn
+        .off("click.suspension_check")
+        .on("mousedown.suspension_check", function (e) {
+          if (frm.doc.suspension_required === "No") {
+            e.stopImmediatePropagation();
+            e.preventDefault(); // ✅ stops form opening
+            frappe.msgprint({
+              title: __("Not Allowed"),
+              message: __(
+                "Suspension Process cannot be created because 'Suspension Required' is set to 'No'."
+              ),
+              indicator: "red",
+            });
+            return false;
+          }
+        });
+    }, 1000);
   },
 
   // -------------------
   // Field-level triggers (not inside refresh)
   // -------------------
-  issue_occurrence_date(frm) {
+  issue_occurrence_date: function (frm) {
     let today = frappe.datetime.now_date();
     if (
       frm.doc.issue_occurrence_date &&
@@ -83,7 +120,7 @@ frappe.ui.form.on("Disciplinary Case", {
     }
   },
 
-  issue_report_to_hr(frm) {
+  issue_report_to_hr: function (frm) {
     let today = frappe.datetime.now_date();
     if (frm.doc.issue_report_to_hr && frm.doc.issue_report_to_hr > today) {
       frappe.msgprint(
@@ -93,10 +130,9 @@ frappe.ui.form.on("Disciplinary Case", {
     }
   },
 
-  amount_of_fraud(frm) {
+  amount_of_fraud: function (frm) {
     let value = frm.doc.amount_of_fraud;
 
-    // If user entered alphabets or invalid symbols
     if (value && isNaN(value)) {
       frappe.msgprint({
         title: __("Invalid Input"),
@@ -105,13 +141,11 @@ frappe.ui.form.on("Disciplinary Case", {
         ),
         indicator: "red",
       });
-
-      // Reset field
       frm.set_value("amount_of_fraud", 0);
     }
   },
 
-  validate(frm) {
+  validate: function (frm) {
     let today = frappe.datetime.now_date();
     if (
       frm.doc.issue_occurrence_date &&
@@ -123,7 +157,6 @@ frappe.ui.form.on("Disciplinary Case", {
       frappe.throw(__("Issue Reported to HR Date cannot be in the future."));
     }
 
-    // Validate Amount of Fraud again before saving
     if (frm.doc.amount_of_fraud && isNaN(frm.doc.amount_of_fraud)) {
       frappe.throw(__("Amount of Fraud must be a valid number."));
     }
