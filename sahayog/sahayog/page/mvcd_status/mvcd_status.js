@@ -1,4 +1,6 @@
 frappe.pages["mvcd-status"].on_page_load = function (wrapper) {
+  const DEBUG = false; // Set true to use dummy data
+
   const page = frappe.ui.make_app_page({
     parent: wrapper,
     title: "",
@@ -24,11 +26,10 @@ body, .page-container {background: #fafbfc !important;}
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 50%; /* Exactly half page each on desktop */
+    width: 50%;
     min-width: 0;
 }
 
-/* Responsive: stack columns if screen <900px */
 @media (max-width: 900px) {
     .container-flex {flex-direction: column;align-items: stretch;}
     .column {width: 100%;margin-bottom: 12px;}
@@ -50,7 +51,6 @@ body, .page-container {background: #fafbfc !important;}
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    
     width: fit-content;
     max-width: 320px;
 }
@@ -70,10 +70,8 @@ h4 {
     box-shadow: 0 1px 6px rgba(0,0,0,0.04);
     margin-bottom: 24px;
     border: 1px solid #ececec;
-    /* Prevent horizontal scrolling on desktop/web */
     overflow-x: hidden;
 }
-
 .table {
     font-size: 0.61rem;
     border-collapse: separate;
@@ -83,7 +81,6 @@ h4 {
     min-width: 180px;
     table-layout: fixed;
 }
-
 .table thead th {
     font-size: 0.74rem;
     background: #256a69;
@@ -93,14 +90,12 @@ h4 {
     z-index: 10;
     padding: 7px 4px;
 }
-
 .table th, .table td {
     padding: 5px;
     word-wrap: break-word;
     text-overflow: ellipsis;
     max-width: 120px;
 }
-
 .table tbody {
     display: block;
     min-height: 328px;
@@ -109,55 +104,31 @@ h4 {
     width: 100%;
     scroll-behavior: smooth;
 }
-
 .table thead, .table tbody tr {display: table; width: 100%; table-layout: fixed;}
-
-.table tbody tr:nth-child(odd) {
-    background-color: #f5f8f7;
-}
-.table tbody tr:nth-child(even) {
-    background-color: #eaf1f0;
-}
-
-.no-data {
-    padding: 13px;
-    text-align: center;
-    color: #555;
-    font-size: 0.8rem;
-}
-
-.page-head {
-  display: none;
-}
-
-
-/* Scrollbar styling for .table tbody (Chrome, Edge, Safari) */
-.table tbody::-webkit-scrollbar {
-    width: 8px;
-}
-
-.table tbody::-webkit-scrollbar-thumb {
-    background-color: #256a69;
-    border-radius: 8px;
-}
-
-.table tbody::-webkit-scrollbar-track {
-    background-color: #f1f1f1;
-}
-
-/* Scrollbar styling for Firefox */
-.table tbody {
-    scrollbar-color: #256a69 #f1f1f1;
-    scrollbar-width: thin;
-}
-
-
-
-
+.table tbody tr:nth-child(odd) {background-color: #f5f8f7;}
+.table tbody tr:nth-child(even) {background-color: #eaf1f0;}
+.no-data {padding: 13px;text-align: center;color: #555;font-size: 0.8rem;}
+.page-head {display: none;}
+.table tbody::-webkit-scrollbar {width: 8px;}
+.table tbody::-webkit-scrollbar-thumb {background-color: #256a69;border-radius: 8px;}
+.table tbody::-webkit-scrollbar-track {background-color: #f1f1f1;}
+.table tbody {scrollbar-color: #256a69 #f1f1f1;scrollbar-width: thin;}
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
-
+<!-- SOL ID Filter -->
+<div style="text-align:center;margin:10px 0;">
+  <input type="text" id="sol-filter" placeholder="Enter SOL ID to filter"
+         style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:0.8rem;width:180px;">
+  <button id="apply-filter"
+          style="margin-left:6px;padding:6px 10px;background:#256a69;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
+    Filter
+  </button>
+  <button id="clear-filter"
+          style="margin-left:6px;padding:6px 10px;background:#eee;color:#333;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
+    Clear
+  </button>
+</div>
 <div class="container-flex">
     <div class="column">
         <div class="custom-card mvcd-card" id="mvcd-card">
@@ -169,7 +140,6 @@ h4 {
                 <thead></thead>
                 <tbody></tbody>
             </table>
-
         </div>
     </div>
     <div class="column">
@@ -189,7 +159,6 @@ h4 {
 
   $(page.body).append(cardHtml);
 
-  // Prepare MVCD table headers
   const columnsMVCD = [
     { key: "sol_id", label: "SOL ID" },
     { key: "acct_name", label: "Account Name" },
@@ -198,22 +167,13 @@ h4 {
     { key: "sol_desc", label: "Branch Description" },
   ];
   const $mvcdTable = $("#mvcd-table");
-  const $mvcdThead = $mvcdTable.find("thead");
   const $mvcdTbody = $mvcdTable.find("tbody");
+  const $mvcdThead = $mvcdTable.find("thead");
   const mvcdHeaderRow = $("<tr>");
   mvcdHeaderRow.append($("<th>").text("S. No."));
   columnsMVCD.forEach((col) => mvcdHeaderRow.append($("<th>").text(col.label)));
   $mvcdThead.append(mvcdHeaderRow);
-  $mvcdTbody.append(
-    $("<tr>").append(
-      $("<td>")
-        .attr("colspan", columnsMVCD.length + 1)
-        .text("Loading MVCD data...")
-        .css("text-align", "center")
-    )
-  );
 
-  // Prepare Transaction table headers
   const columnsTrans = [
     { key: "tran_id", label: "Transaction ID" },
     { key: "dth_init_sol_id", label: "Initial Branch ID" },
@@ -223,189 +183,157 @@ h4 {
     { key: "entry_user_id", label: "Entry User ID" },
   ];
   const $transTable = $("#transaction-table");
-  const $transThead = $transTable.find("thead");
   const $transTbody = $transTable.find("tbody");
+  const $transThead = $transTable.find("thead");
   const transHeaderRow = $("<tr>");
   transHeaderRow.append($("<th>").text("S. No."));
   columnsTrans.forEach((col) =>
     transHeaderRow.append($("<th>").text(col.label))
   );
   $transThead.append(transHeaderRow);
-  $transTbody.append(
-    $("<tr>").append(
-      $("<td>")
-        .attr("colspan", columnsTrans.length + 1)
-        .text("Loading Transaction data...")
-        .css("text-align", "center")
-    )
-  );
 
-  // Fetch MVCD data and update
-  frappe.call({
-    method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_status",
-    args: {},
-    callback: function (r) {
-      $mvcdTbody.empty();
-      if (
-        r.message &&
-        r.message.status === "success" &&
-        r.message.data.length
-      ) {
-        $("#mvcd-count").text(`${r.message.data.length}`);
-        r.message.data.forEach((row, idx) => {
-          const tr = $("<tr>").appendTo($mvcdTbody);
-          tr.append($("<td>").text(idx + 1));
-          columnsMVCD.forEach((col) => {
-            tr.append($("<td>").text(row[col.key] || ""));
-          });
+  // Dummy data for testing (20 records each)
+  const mvcdDummy = Array.from({ length: 20 }, (_, i) => ({
+    sol_id: `SOL${100 + i}`,
+    acct_name: `Account ${i + 1}`,
+    foracid: `FAC${200 + i}`,
+    clr_bal_amt: `${(1000 + i * 50).toFixed(2)}`,
+    sol_desc: `Branch ${100 + i}`,
+  }));
+
+  const transDummy = Array.from({ length: 20 }, (_, i) => ({
+    tran_id: `T${1000 + i}`,
+    dth_init_sol_id: `SOL${100 + (i % 20)}`,
+    sol_desc: `Branch ${100 + (i % 20)}`,
+    tran_type: i % 2 === 0 ? "Deposit" : "Withdrawal",
+    tran_sub_type: i % 3 === 0 ? "Cash" : "Cheque",
+    entry_user_id: `user${i + 1}`,
+  }));
+
+  let currentMVCDData = [];
+  let currentTransData = [];
+
+  // Load filter from storage
+  let cachedFilter = localStorage.getItem("mvcd_sol_filter") || "";
+  $("#sol-filter").val(cachedFilter);
+
+  function renderMVCD(data) {
+    $mvcdTbody.empty();
+    if (data && data.length) {
+      data.forEach((row, idx) => {
+        const tr = $("<tr>");
+        tr.append($("<td>").text(idx + 1));
+        columnsMVCD.forEach((col) => {
+          tr.append($("<td>").text(row[col.key] || ""));
         });
-      } else {
-        $("#mvcd-count").text("0");
-        $mvcdTbody.append(
-          $("<tr>").append(
-            $("<td>")
-              .attr("colspan", columnsMVCD.length + 1)
-              .addClass("no-data")
-              .text("No MVCD data available.")
-          )
-        );
-      }
-    },
+        $mvcdTbody.append(tr);
+      });
+    } else {
+      $mvcdTbody.append(
+        $("<tr>").append(
+          $("<td>")
+            .attr("colspan", columnsMVCD.length + 1)
+            .addClass("no-data")
+            .text("No MVCD data available.")
+        )
+      );
+    }
+  }
+
+  function renderTransaction(data) {
+    $transTbody.empty();
+    if (data && data.length) {
+      data.forEach((row, idx) => {
+        const tr = $("<tr>");
+        tr.append($("<td>").text(idx + 1));
+        columnsTrans.forEach((col) => {
+          tr.append($("<td>").text(row[col.key] || ""));
+        });
+        $transTbody.append(tr);
+      });
+    } else {
+      $transTbody.append(
+        $("<tr>").append(
+          $("<td>")
+            .attr("colspan", columnsTrans.length + 1)
+            .addClass("no-data")
+            .text("No transaction data available.")
+        )
+      );
+    }
+  }
+
+  function renderMVCDFiltered(filter) {
+    const filtered = currentMVCDData.filter((row) =>
+      (row.sol_id || "").toLowerCase().includes(filter)
+    );
+    renderMVCD(filtered);
+    $("#mvcd-count").text(filtered.length);
+  }
+
+  function renderTransactionFiltered(filter) {
+    const filtered = currentTransData.filter((row) =>
+      (row.dth_init_sol_id || "").toLowerCase().includes(filter)
+    );
+    renderTransaction(filtered);
+    $("#transaction-count").text(filtered.length);
+  }
+
+  function applyFilter() {
+    const sol = $("#sol-filter").val().trim().toLowerCase();
+    localStorage.setItem("mvcd_sol_filter", sol);
+    renderMVCDFiltered(sol);
+    renderTransactionFiltered(sol);
+  }
+
+  $("#apply-filter").on("click", applyFilter);
+  $("#sol-filter").on("keyup", function (e) {
+    if (e.key === "Enter") applyFilter();
+  });
+  $("#clear-filter").on("click", function () {
+    $("#sol-filter").val("");
+    localStorage.removeItem("mvcd_sol_filter");
+    applyFilter();
   });
 
-  setInterval(() => {
-    frappe.call({
-      method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_status",
-      args: {},
-      callback: function (r) {
-        $mvcdTbody.empty();
-        if (
-          r.message &&
-          r.message.status === "success" &&
-          r.message.data.length
-        ) {
-          console.log("Updating MVCD data...", r.message.data);
-          $("#mvcd-count").text(`${r.message.data.length}`);
-          r.message.data.forEach((row, idx) => {
-            const tr = $("<tr>").appendTo($mvcdTbody);
-            tr.append($("<td>").text(idx + 1));
-            columnsMVCD.forEach((col) => {
-              tr.append($("<td>").text(row[col.key] || ""));
-            });
-          });
-        } else {
-          $("#mvcd-count").text("0");
-          $mvcdTbody.append(
-            $("<tr>").append(
-              $("<td>")
-                .attr("colspan", columnsMVCD.length + 1)
-                .addClass("no-data")
-                .text("No MVCD data available.")
-            )
-          );
-        }
-      },
-    });
-  }, 10000);
+  function onMVCDDataLoaded(data) {
+    currentMVCDData = data || [];
+    applyFilter();
+  }
+  function onTransactionDataLoaded(data) {
+    currentTransData = data || [];
+    applyFilter();
+  }
 
-  // Fetch Transaction data and update
-  frappe.call({
-    method: "sahayog.sahayog.page.mvcd_status.mvcd.get_pending_transactions",
-    args: {},
-    callback: function (r) {
-      $transTbody.empty();
-      if (
-        r.message &&
-        r.message.status === "success" &&
-        r.message.data.length
-      ) {
-        $("#transaction-count").text(`${r.message.data.length}`);
-        r.message.data.forEach((row, idx) => {
-          const tr = $("<tr>").appendTo($transTbody);
-          tr.append($("<td>").text(idx + 1));
-          columnsTrans.forEach((col) => {
-            tr.append($("<td>").text(row[col.key] || ""));
-          });
-        });
-      } else {
-        $("#transaction-count").text("0");
-        $transTbody.append(
-          $("<tr>").append(
-            $("<td>")
-              .attr("colspan", columnsTrans.length + 1)
-              .addClass("no-data")
-              .text("No transaction data available.")
-          )
-        );
-      }
-    },
-  });
+  function fetchRenderMVCD() {
+    if (DEBUG) {
+      onMVCDDataLoaded(mvcdDummy);
+    } else {
+      frappe.call({
+        method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_status",
+        args: {},
+        callback: (r) => onMVCDDataLoaded(r.message?.data || []),
+      });
+    }
+  }
+  function fetchRenderTransaction() {
+    if (DEBUG) {
+      onTransactionDataLoaded(transDummy);
+    } else {
+      frappe.call({
+        method:
+          "sahayog.sahayog.page.mvcd_status.mvcd.get_pending_transactions",
+        args: {},
+        callback: (r) => onTransactionDataLoaded(r.message?.data || []),
+      });
+    }
+  }
 
-  setInterval(() => {
-    // Fetch Transaction data and update
-    frappe.call({
-      method: "sahayog.sahayog.page.mvcd_status.mvcd.get_pending_transactions",
-      args: {},
-      callback: function (r) {
-        $transTbody.empty();
-        if (
-          r.message &&
-          r.message.status === "success" &&
-          r.message.data.length
-        ) {
-          console.log("Updating Transaction data...", r.message.data);
-          $("#transaction-count").text(`${r.message.data.length}`);
-          r.message.data.forEach((row, idx) => {
-            const tr = $("<tr>").appendTo($transTbody);
-            tr.append($("<td>").text(idx + 1));
-            columnsTrans.forEach((col) => {
-              tr.append($("<td>").text(row[col.key] || ""));
-            });
-          });
-        } else {
-          $("#transaction-count").text("0");
-          $transTbody.append(
-            $("<tr>").append(
-              $("<td>")
-                .attr("colspan", columnsTrans.length + 1)
-                .addClass("no-data")
-                .text("No transaction data available.")
-            )
-          );
-        }
-      },
-    });
-  }, 10000);
+  fetchRenderMVCD();
+  fetchRenderTransaction();
+  setInterval(fetchRenderMVCD, 10000);
+  setInterval(fetchRenderTransaction, 10000);
+
+  // Initial apply filter on page load
+  applyFilter();
 };
-
-// Countdown timer setup
-// let refreshSeconds = 10;
-// $("#refresh-timer").text(refreshSeconds);
-
-// const countdownInterval = setInterval(() => {
-//   refreshSeconds--;
-//   if (refreshSeconds <= 0) {
-//     refreshSeconds = 10; // Reset countdown
-//   }
-//   $("#refresh-timer").text(
-//     refreshSeconds < 10 ? "0" + refreshSeconds : refreshSeconds
-//   );
-// }, 1000);
-
-//             frappe.call({
-//   method: "sahayog.sahayog.page.mvcd_status.mvcd.check_user_access",
-//   callback: function(r) {
-//     if (!r.message || !r.message.allowed) {
-//       frappe.msgprint(__("You are not authorized to access this page."));
-//       frappe.set_route('desk'); // or any other route
-//     } else {
-//       // User is authorized; continue with page setup
-//       render_mvcd_status_page();
-//     }
-//   }
-// });
-
-// function render_mvcd_status_page() {
-//   // Your existing code for setting up the page
-//   // Move all the code from on_page_load here
-// }
