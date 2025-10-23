@@ -15,7 +15,7 @@ body, .page-container {background: #fafbfc !important;}
     flex-wrap: nowrap;
     margin-top: 10px;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -45,7 +45,7 @@ body, .page-container {background: #fafbfc !important;}
     align-items: center;
     justify-content: center;
     font-weight: 500;
-    font-size: 1.8rem;
+    font-size: 2.5rem;
     cursor: default;
     white-space: nowrap;
     overflow: hidden;
