@@ -339,6 +339,9 @@ doc_events = {
     }, 
     "Share Transfer": {
         "autoname": "sahayog.doc_events.share_transfer.share_transfer_autoname"
+    },
+    "Report": {
+        "before_save": "sahayog.doc_events.report.prevent_prepared_report"
     }
 }
 
