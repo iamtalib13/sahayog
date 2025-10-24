@@ -6,12 +6,12 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_fqsb",
-  "number_of_days_suspension_required",
-  "suspenstion_from_date",
-  "remarks",
+  "days_of_suspension",
+  "suspension_from_date",
+  "suspension_to_date",
   "column_break_utmg",
-  "suspenstion_to_date",
   "subsistance_allowances",
+  "remarks",
   "section_break_pdpy",
   "case_id",
   "employee_id",
@@ -27,7 +27,7 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "suspenstion_required"
+  "suspension_required"
  ],
  "fields": [
   {
@@ -75,20 +75,6 @@
    "fieldtype": "Data",
    "label": "Issue Date Reported to HR",
    "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.suspension_required",
-   "fieldname": "suspenstion_required",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Suspenstion Required",
-   "options": "\n",
-   "read_only": 1
-  },
-  {
-   "fieldname": "suspenstion_to_date",
-   "fieldtype": "Date",
-   "label": "Suspenstion to date"
   },
   {
    "fieldname": "subsistance_allowances",
@@ -147,19 +133,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "suspenstion_from_date",
-   "fieldtype": "Date",
-   "label": "Suspenstion from date",
-   "reqd": 1
-  },
-  {
-   "fieldname": "number_of_days_suspension_required",
-   "fieldtype": "Select",
-   "label": "Number of Days Suspension required",
-   "options": "\n30\n60\n90",
-   "reqd": 1
-  },
-  {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks",
@@ -178,6 +151,35 @@
    "fieldname": "section_break_pdpy",
    "fieldtype": "Section Break",
    "label": "Case Details"
+  },
+  {
+   "fieldname": "days_of_suspension",
+   "fieldtype": "Select",
+   "label": "Number of Days Suspension required",
+   "options": "\n30\n60\n90",
+   "reqd": 1
+  },
+  {
+   "fieldname": "suspension_from_date",
+   "fieldtype": "Date",
+   "label": "Suspension from date",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.suspension_from_date",
+   "fieldname": "suspension_to_date",
+   "fieldtype": "Date",
+   "label": "Suspension to date",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "case_id.suspension_required",
+   "fieldname": "suspension_required",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Suspension Required",
+   "options": "\n",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -189,7 +191,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-24 13:31:43.251573",
+ "modified": "2025-10-24 16:01:18.736720",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
