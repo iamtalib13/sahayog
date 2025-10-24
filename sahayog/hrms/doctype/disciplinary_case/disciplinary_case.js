@@ -81,20 +81,45 @@ frappe.ui.form.on("Disciplinary Case", {
         }
       );
     }
-    setTimeout(() => {
-      const $btn = $('button[data-doctype="Suspension Process"]');
 
-      // Remove any previous handler and attach new one
-      $btn
-        .off("click.suspension_check")
+    // -------------------
+    // Restrict "+ New Suspension Process" when Suspension Required = "No"
+    // -------------------
+    setTimeout(() => {
+      const $suspension_btn = $('button[data-doctype="Suspension Process"]');
+      $suspension_btn
+        .off("mousedown.suspension_check")
         .on("mousedown.suspension_check", function (e) {
           if (frm.doc.suspension_required === "No") {
             e.stopImmediatePropagation();
-            e.preventDefault(); // ✅ stops form opening
+            e.preventDefault();
             frappe.msgprint({
               title: __("Not Allowed"),
               message: __(
                 "Suspension Process cannot be created because 'Suspension Required' is set to 'No'."
+              ),
+              indicator: "red",
+            });
+            return false;
+          }
+        });
+    }, 1000);
+
+    // -------------------
+    // Restrict "+ New Response to SCN" when Suspension Required = "Yes"
+    // -------------------
+    setTimeout(() => {
+      const $response_btn = $('button[data-doctype="Response to SCN"]');
+      $response_btn
+        .off("mousedown.response_check")
+        .on("mousedown.response_check", function (e) {
+          if (frm.doc.suspension_required === "Yes") {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            frappe.msgprint({
+              title: __("Not Allowed"),
+              message: __(
+                "Response to SCN cannot be created because 'Suspension Required' is set to 'Yes'."
               ),
               indicator: "red",
             });

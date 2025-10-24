@@ -1,11 +1,5 @@
 {
- "actions": [
-  {
-   "action": "sahayog.hrms.doctype.suspension_process.suspension_process.",
-   "action_type": "Server Action",
-   "label": "Execute"
-  }
- ],
+ "actions": [],
  "allow_rename": 1,
  "creation": "2025-10-13 12:01:24.822566",
  "doctype": "DocType",
@@ -195,7 +189,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-20 14:56:57.059835",
+ "modified": "2025-10-24 13:31:43.251573",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
