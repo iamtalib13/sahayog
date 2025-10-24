@@ -134,7 +134,7 @@
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot-Satisfactory",
+   "options": "\nSatisfactory\nNot Satisfactory",
    "reqd": 1
   },
   {
@@ -147,7 +147,7 @@
    "fieldtype": "Select",
    "label": "Domestic Enquiry",
    "options": "\nYes\nNo",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fetch_from": "case_id.status",
@@ -185,7 +185,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-20 14:59:05.519020",
+ "modified": "2025-10-24 16:32:19.407788",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",
