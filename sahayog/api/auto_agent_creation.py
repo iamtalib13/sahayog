@@ -3,12 +3,11 @@ from frappe import _
 from psycopg2.extras import RealDictCursor
 import psycopg2
 from frappe.utils import today, add_days
+from datetime import datetime, timedelta
 
-# Database Connection
+
 def db_connection():
-    """
-    Connect to external PostgreSQL (Finacle). Uses Finacle Settings single doctype.
-    """
+    """Connect to external PostgreSQL (Finacle)."""
     try:
         creds = frappe.get_single("Finacle Settings")
         conn = psycopg2.connect(
@@ -23,184 +22,175 @@ def db_connection():
         frappe.log_error(frappe.get_traceback(), "PostgreSQL Connection Failed")
         frappe.throw(_("Database Connection Error: {0}").format(str(e)))
 
-# Get Agents by RM Start Date
-@frappe.whitelist(allow_guest=False)
-def get_agents_by_rm_start_date(start_date=None, end_date=None):
+
+@frappe.whitelist()
+def auto_create_agents_from_scheduler():
     """
-    Fetch agents linked with RM start date from custom.dsaauth including branch name from tbaadm.sol.
+    Automatically sync agents based on Sahayog Settings.
+    Runs via scheduler.
+    """
+    try:
+        # Get settings
+        settings = frappe.get_single("Sahayog Settings")
+        if not settings.agent_automation_days:
+            frappe.log_error("Agent Automation Days not set", "Auto Agent Creation")
+            return {"status": "error", "message": "Missing agent_automation_days"}
+
+        # Calculate date range
+        end_date = today()
+        start_date = add_days(end_date, -int(settings.agent_automation_days))
+        
+        frappe.logger().info(f"🔁 Auto agent sync: {start_date} to {end_date}")
+
+        # Fetch and sync agents
+        result = fetch_and_sync_agents(start_date, end_date)
+        
+        frappe.logger().info(f"✅ Sync completed: {result}")
+        return result
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Auto Agent Sync Failed")
+        return {"status": "error", "message": str(e)}
+
+
+def fetch_and_sync_agents(start_date, end_date):
+    """
+    Fetch agents from PostgreSQL and sync to Agent doctype.
+    Creates new agents or updates existing ones.
     """
     try:
         conn = db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        if not start_date:
-            start_date = frappe.utils.nowdate()
-        if not end_date:
-            end_date = start_date
-
-        from datetime import datetime, timedelta
-
-        def date_str_to_datetime(date_str):
-            return datetime.strptime(date_str, "%Y-%m-%d")
-
-        def datetime_to_str(date_obj):
-            return date_obj.strftime("%d-%m-%Y")
-
-        start_dt = date_str_to_datetime(start_date)
-        end_dt = date_str_to_datetime(end_date)
+        # Convert dates
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         delta = (end_dt - start_dt).days
 
-        agents_all = []
+        created = 0
+        updated = 0
+        skipped = 0
 
+        # Loop through each date in range
         for i in range(delta + 1):
-            current_date_obj = start_dt + timedelta(days=i)
-            current_date_str = datetime_to_str(current_date_obj)
+            current_date = start_dt + timedelta(days=i)
+            current_date_str = current_date.strftime("%d-%m-%Y")
 
+            # SQL Query
             sql = """
             SELECT
-                d.lchg_time AS agent_start_date,
+                d.lchg_time as agent_start_date,
                 d.user_id AS agent_id,
                 d.user_role_id AS agent_name,
                 d.user_sol_id,
                 d.auth_id,
-                s.sol_desc AS branch_name
+                s.sol_desc
             FROM custom.dsaauth d
-            LEFT JOIN tbaadm.sol s ON d.user_sol_id = s.sol_id
-            WHERE TRIM(d.lchg_time) = %s
-            AND d.ent_cre_flg = 'Y'
+            JOIN tbaadm.sol s ON d.user_sol_id = s.sol_id
+            WHERE TRIM(d.lchg_time) = %s 
+            AND d.ent_cre_flg = 'Y' 
             AND d.del_flg = 'N';
             """
 
             cursor.execute(sql, (current_date_str,))
             agents = cursor.fetchall()
-            agents_all.extend(agents)
+
+            # Process each agent
+            for agent in agents:
+                agent_code = agent.get("agent_id")
+
+                # Filter: only RDDSA or DDDSA codes
+                if not (str(agent_code).startswith("RDDSA") or str(agent_code).startswith("DDDSA")):
+                    skipped += 1
+                    continue
+
+                # Get agent_start_date from SQL
+                agent_start_date = agent.get("agent_start_date")
+                
+                # Convert DD-MM-YYYY to YYYY-MM-DD for Frappe
+                creation_date = convert_date_format(agent_start_date)
+
+                # Check if agent exists
+                existing_agent = frappe.db.exists("Agent", agent_code)
+
+                if existing_agent:
+                    # Update existing agent with SQL date
+                    frappe.db.set_value("Agent", existing_agent, "creation_date", creation_date, update_modified=False)
+                    updated += 1
+                    print(f"🔄 Updated: {agent_code} | Date: {creation_date}")
+                else:
+                    # Create new agent with SQL date
+                    create_agent(agent, agent_code, creation_date)
+                    created += 1
+                    print(f"🆕 Created: {agent_code} | Date: {creation_date}")
 
         cursor.close()
         conn.close()
+        frappe.db.commit()
 
-        structured_agents = []
-        for agent in agents_all:
-            auth_id_raw = agent.get("auth_id", "")
-            employee = auth_id_raw.upper().replace("SAH0", "") if auth_id_raw.upper().startswith("SAH0") else auth_id_raw
+        summary = f"✅ Created: {created} | Updated: {updated} | Skipped: {skipped}"
+        print(summary)
 
-            structured_agents.append({
-                "RM Start Date": agent.get("agent_start_date"),
-                "Status": "Allocated",
-                "Agent User Id": agent.get("agent_id"),
-                "Agent Name": agent.get("agent_name"),
-                "Branch Code": agent.get("user_sol_id"),
-                "Branch Name": agent.get("branch_name") or "Unknown",
-                "Agent Reportee Id": auth_id_raw,
-                "Employee": employee,
-                "ID": agent.get("agent_id"),
-            })
-
-        return {"status": "success", "agents": structured_agents}
-
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Get Agents by RM Start Date Error")
-        return {"status": "error", "message": f"Error fetching agents: {str(e)}"}
-
-# Sync Agents to Doctype
-@frappe.whitelist(allow_guest=False)
-def sync_agents_to_doctype(start_date=None, end_date=None):
-    """
-    Sync agents (filtered by RM start date) to the Agent Doctype.
-    Creates new docs if not exist, else updates only creation_date if agent exists.
-    """
-    api_response_url = get_agents_by_rm_start_date(start_date, end_date)
-    api_response = api_response_url.get("agents", [])
-    created = 0
-    skipped = 0
-    updated = 0
-
-    print(f"🔍 Total agents fetched: {len(api_response)}")
-
-    for agent in api_response:
-        agent_code = agent.get("ID")
-        # Accept only codes 'RDDSA...' or 'DDDSA...'
-        if not (str(agent_code).startswith("RDDSA") or str(agent_code).startswith("DDDSA")):
-            skipped += 1
-            continue
-
-        existing_agent_name = frappe.db.exists("Agent", agent_code)
-        if existing_agent_name:
-            # Update only creation_date for existing agent
-            frappe.db.set_value("Agent", existing_agent_name, "creation_date", start_date, update_modified=False)
-            updated += 1
-            print(f"🔄 Updated creation_date for existing Agent: {agent_code}")
-            continue
-
-        auth_id = agent.get("Agent Reportee Id")
-        status = "Allocated" if auth_id else "Unallocated"
-        role = agent_code[:2] if agent_code else None
-
-        raw_employee = str(agent.get("Employee") or "").strip()
-        import re
-        digits = re.sub(r"\D", "", raw_employee)
-        employee_cleaned = digits.lstrip("0") if digits else "0"
-
-        branch_code = agent.get("Branch Code")
-        branch_name = agent.get("Branch Name") or "undefined"
-
-        data = {
-            "status": status,
-            "agent_name": agent.get("Agent Name"),
-            "branch_code": branch_code,
-            "branch_name": branch_name,
-            "role": role,
-            "employee": employee_cleaned,
-            "auth_id": auth_id,
-            "agent_status": "LIVE",
-            "agent_code": agent_code,
-            "creation_date": start_date,
+        return {
+            "status": "success",
+            "message": summary,
+            "created": created,
+            "updated": updated,
+            "skipped": skipped
         }
 
-        doc = frappe.get_doc({"doctype": "Agent", **data})
-        doc.insert(ignore_permissions=True)
-        print(f"🆕 Created Agent: {agent_code} (Employee={employee_cleaned})")
-        created += 1
-
-    frappe.db.commit()
-
-    print("\nSummary:")
-    print(f"  ➕ Created: {created}")
-    print(f"  🔄 Updated: {updated}")
-    print(f"  ⏭️ Skipped: {skipped}")
-
-    return {
-        "status": "success",
-        "message": f"{created} agents created, {updated} updated, {skipped} skipped"
-    }
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Fetch and Sync Agents Error")
+        return {"status": "error", "message": str(e)}
 
 
-######################################################################
-
-
-@frappe.whitelist()
-def auto_create_agents_from_scheduler():
+def convert_date_format(date_str):
     """
-    This runs automatically via scheduler.
-    Reads `agent_automation_days` from "Sahayog Settings",
-    calculates date range, and calls sync_agents_to_doctype().
+    Convert DD-MM-YYYY to YYYY-MM-DD format for Frappe.
     """
     try:
-        settings = frappe.get_single("Sahayog Settings")
-
-        if not settings.agent_automation_days:
-            frappe.log_error("Agent Automation Days not set in Sahayog Settings", "Auto Agent Creation")
-            return {"status": "error", "message": "Missing agent_automation_days in settings"}
-
-        end_date = today()
-        start_date = add_days(end_date, -int(settings.agent_automation_days))
-
-        frappe.logger().info(f"🔁 Auto agent sync running from {start_date} to {end_date}")
-
-        result = sync_agents_to_doctype(start_date=start_date, end_date=end_date)
-
-        frappe.logger().info(f"✅ Agent sync completed: {result}")
-        return {"status": "success", "message": "Auto sync completed", "data": result}
-
+        if not date_str:
+            return today()
+        
+        # Parse DD-MM-YYYY format
+        date_obj = datetime.strptime(date_str.strip(), "%d-%m-%Y")
+        # Return in YYYY-MM-DD format
+        return date_obj.strftime("%Y-%m-%d")
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Auto Agent Sync Failed")
-        return {"status": "error", "message": str(e)}
+        frappe.log_error(f"Date conversion error: {date_str} | {str(e)}", "Date Format Error")
+        return today()
+
+
+def create_agent(agent, agent_code, creation_date):
+    """Create a new Agent document."""
+    import re
+    
+    # Extract employee ID
+    auth_id = agent.get("auth_id") or ""
+    employee_raw = auth_id.upper().replace("SAH0", "") if auth_id.upper().startswith("SAH0") else auth_id
+    employee = re.sub(r"\D", "", employee_raw).lstrip("0") or "0"
+
+    # Determine status
+    status = "Allocated" if auth_id else "Unallocated"
+    
+    # Extract role
+    role = agent_code[:2] if agent_code else None
+
+    # Prepare data
+    data = {
+        "doctype": "Agent",
+        "agent_code": agent_code,
+        "agent_name": agent.get("agent_name"),
+        "branch_code": agent.get("user_sol_id"),
+        "branch_name": agent.get("sol_desc") or "Unknown",
+        "role": role,
+        "employee": employee,
+        "auth_id": auth_id,
+        "status": status,
+        "agent_status": "LIVE",
+        "creation_date": creation_date,  # SQL se aayi hui date
+    }
+
+    # Create document
+    doc = frappe.get_doc(data)
+    doc.insert(ignore_permissions=True)

@@ -19,43 +19,37 @@ frappe.ui.form.on("Sahayog Settings", {
   },
 
   create_agents: function (frm) {
+    // Simple validation
     if (!frm.doc.agent_automation_days) {
       frappe.msgprint({
         title: __("Missing Value"),
-        message: __("Please enter Agent Automation Days before creating agents."),
+        message: __(
+          "Please enter Agent Automation Days before creating agents."
+        ),
         indicator: "orange",
       });
       return;
     }
 
-    // Calculate dates based on user input
-    const end_date = frappe.datetime.get_today();
-    const start_date = frappe.datetime.add_days(
-      end_date,
-      -frm.doc.agent_automation_days
-    );
-
+    // Direct API call - no need to calculate dates in frontend
     frappe.call({
-      method: "sahayog.api.auto_agent_creation.sync_agents_to_doctype",
-      args: {
-        start_date: start_date,
-        end_date: end_date,
-      },
+      method:
+        "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler",
       freeze: true,
       freeze_message: __("Creating Agents... Please wait."),
       callback: function (r) {
-        if (r && r.message && r.message.status === "success") {
+        if (r.message && r.message.status === "success") {
           frappe.msgprint({
             title: __("Success"),
             message: __(r.message.message),
             indicator: "green",
           });
+          frm.reload_doc(); // Refresh form after success
         } else {
           frappe.msgprint({
             title: __("Error"),
             message: __("Something went wrong. Check server logs."),
             indicator: "red",
-            // 
           });
         }
       },

@@ -1,11 +1,5 @@
 {
- "actions": [
-  {
-   "action": "sahayog.hrms.doctype.suspension_process.suspension_process.",
-   "action_type": "Server Action",
-   "label": "Execute"
-  }
- ],
+ "actions": [],
  "allow_rename": 1,
  "creation": "2025-10-13 12:01:24.822566",
  "doctype": "DocType",
