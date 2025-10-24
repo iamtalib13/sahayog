@@ -7,13 +7,64 @@ from frappe.model.document import Document
 import re
 
 class Agent(Document):
+    def validate(self):
+           # Skip if requested_by is blank
+        if not self.requested_by:
+            return
+
+        # Proceed only if employee exists
+        if self.requested_by:
+            expected_email = f"{self.employee}@sahayog.com"
+            if str(self.requested_by).strip().lower() != expected_email.lower():
+                # frappe.throw(_(
+                #     f"Employee  '{self.employee}' and '{self.requested_by}' does not match, Please connect MIS Team or AppTech Team apptech@sahayogmultistate.com."
+                # ))
+                frappe.throw(_(
+    f"""
+    <div style='font-size:14px; line-height:1.6; color:#333;'>
+        <p>
+            <strong>Validation Error:</strong><br>
+            Employee <b style='color:#d9534f;'>{self.employee}</b> 
+            and Requested By <b style='color:#d9534f;'>{self.requested_by}</b> 
+            do not match.
+        </p>
+        <p>
+            Please contact the MIS Team or AppTech Team for verification.<br>
+            <a href='mailto:apptech@sahayogmultistate.com' 
+               style='color:#0275d8; text-decoration:none; font-weight:500;'>
+               apptech@sahayogmultistate.com
+            </a>
+        </p>
+    </div>
+    """
+))
+
+
+
+
     def before_save(self):
-        
+        # if getattr(self, "_requested_by_validated", False):
+        #     return
+        self._requested_by_validated = True
+
         if self.agent_name:
             self.agent_name = self.agent_name.upper()
 
         if self.status == "Unallocated":
             self.clear_allocation_fields()
+
+
+        # Skip if requested_by is blank
+        # if not self.requested_by:
+        #     return
+
+        # # Proceed only if employee exists
+        # if self.requested_by:
+        #     expected_email = f"{self.employee}@sahayog.com"
+        #     if str(self.requested_by).strip().lower() != expected_email.lower():
+        #         frappe.throw(_(
+        #             f"Invalid Requested By value. It must match '{expected_email}'."
+        #         ))
 
         # Call helper method
         # self.set_employee_from_auth_id()
