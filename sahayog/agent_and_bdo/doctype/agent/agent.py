@@ -13,7 +13,7 @@ class Agent(Document):
             self.agent_name = self.agent_name.upper()
 
         # Call helper method
-        self.set_employee_from_auth_id()
+        # self.set_employee_from_auth_id()
 
 
     def set_employee_from_auth_id(self):
