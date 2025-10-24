@@ -12,6 +12,9 @@ class Agent(Document):
         if self.agent_name:
             self.agent_name = self.agent_name.upper()
 
+        if self.status == "Unallocated":
+            self.clear_allocation_fields()
+
         # Call helper method
         # self.set_employee_from_auth_id()
 
@@ -62,15 +65,20 @@ class Agent(Document):
         self.save()
         return {"success": True, "message": "Agent Allocation Rejected"}
 
-    @frappe.whitelist()
-    def unallocate_agent(self):
-        """Unallocate agent and clear all mapping"""
-        self.status = "Unallocated"
+    def clear_allocation_fields(self):
+        """Clear allocation fields without saving"""
         self.requested_by = None
         self.requested_on = None
         self.approved_by = None
         self.approved_on = None
         self.employee = None
+        self.auth_id = None
+
+    @frappe.whitelist()
+    def unallocate_agent(self):
+        """Public method to unallocate and save changes"""
+        self.status = "Unallocated"
+        self.clear_allocation_fields()
         self.save()
         return {"success": True, "message": "Agent Unallocated Successfully"}
 
@@ -218,57 +226,6 @@ def get_branch_managers(branch_code):
         frappe.log_error(f"Error in get_branch_managers: {str(e)}")
         return []
 
-
-# @frappe.whitelist()
-# def get_approver_details(user_id):
-#     """Get employee details by user_id for approver display"""
-#     if not user_id:
-#         return None
-    
-#     try:
-#         # First try to get employee details by user_id
-#         employee = frappe.db.get_value(
-#             "Employee", 
-#             {"user_id": user_id, "status": "Active"}, 
-#             ["employee_name", "name", "designation", "branch"], 
-#             as_dict=True
-#         )
-        
-#         if employee:
-#             return {
-#                 "employee_name": employee.employee_name,
-#                 "employee_id": employee.name,
-#                 "designation": employee.designation,
-#                 "branch": employee.branch,
-#                 "display_name": employee.employee_name
-#             }
-        
-#         # Fallback to User's full_name if employee not found
-#         user = frappe.db.get_value(
-#             "User", 
-#             user_id, 
-#             ["full_name", "email"], 
-#             as_dict=True
-#         )
-        
-#         if user:
-#             return {
-#                 "employee_name": None,
-#                 "employee_id": None,
-#                 "designation": None,
-#                 "branch": None,
-#                 "display_name": user.full_name or user.email
-#             }
-        
-#         return {
-#             "display_name": user_id
-#         }
-        
-#     except Exception as e:
-#         frappe.log_error(f"Error getting approver details: {str(e)}")
-#         return {
-#             "display_name": user_id
-#         }
 
 
 @frappe.whitelist()
