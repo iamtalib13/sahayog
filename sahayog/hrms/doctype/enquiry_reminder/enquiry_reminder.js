@@ -15,7 +15,6 @@ frappe.ui.form.on("Enquiry Reminder", {
             "date_of_enquiry",
             "place_of_enquiry",
             "enquiry_officer_name",
-            "remarks",
           ],
         })
         .then((list) => {
@@ -27,7 +26,6 @@ frappe.ui.form.on("Enquiry Reminder", {
             frm.set_value("date_of_enquiry", de.date_of_enquiry);
             frm.set_value("place_of_enquiry", de.place_of_enquiry);
             frm.set_value("enquiry_officer_name", de.enquiry_officer_name);
-            frm.set_value("remarks", de.remarks);
           }
         });
     }
