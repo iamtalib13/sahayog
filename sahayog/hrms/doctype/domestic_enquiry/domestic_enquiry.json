@@ -126,12 +126,14 @@
    "read_only": 1
   },
   {
+   "default": "Not Satisfactory",
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot-Satisfactory\nNot-Submitted"
+   "options": "\nSatisfactory\nNot Satisfactory\nNot Submitted"
   },
   {
+   "default": "Yes",
    "fieldname": "domestic_enquiry",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -194,7 +196,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-20 15:00:59.650996",
+ "modified": "2025-10-25 10:38:01.408647",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
