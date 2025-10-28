@@ -131,7 +131,7 @@
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot-Satisfactory\nNot-Submitted"
+   "options": "\nSatisfactory\nNot Satisfactory\nNot Submitted"
   },
   {
    "fieldname": "domestic_enquiry",
@@ -153,7 +153,7 @@
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
    "label": "Enquiry Status",
-   "options": "\nNot-Responded\nCompleted Enquiry"
+   "options": "\nNot Responded\nCompleted Enquiry"
   },
   {
    "fieldname": "place_of_enquiry",
@@ -188,7 +188,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-20 15:02:41.578052",
+ "modified": "2025-10-28 10:29:11.374342",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

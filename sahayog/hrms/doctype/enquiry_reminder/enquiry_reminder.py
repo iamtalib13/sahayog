@@ -2,6 +2,16 @@ import frappe
 from frappe.model.document import Document
 
 class EnquiryReminder(Document):
+    def autoname(self):
+        if self.case_id:
+            # Count how many Enquiry Reminder records already exist for this case
+            count = frappe.db.count("Enquiry Reminder", {"case_id": self.case_id}) + 1
+            # Name pattern: <CaseID>-ENQREM-<count in 2 digits>
+            self.name = f"{self.case_id}-ENQREM-{count:02d}"
+        else:
+            # Fallback autoname if case_id not provided
+            self.name = frappe.model.naming.make_autoname("ENQREM-.#####")
+            
     def before_insert(self):
         """Auto-fetch fields from latest Domestic Enquiry for the same case_id"""
         if self.case_id:
@@ -21,3 +31,4 @@ class EnquiryReminder(Document):
                 self.place_of_enquiry = de.place_of_enquiry
                 self.enquiry_officer_name = de.enquiry_officer_name
                 self.remarks = de.remarks
+       
