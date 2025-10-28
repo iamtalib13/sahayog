@@ -147,11 +147,12 @@
    "read_only": 1
   },
   {
+   "default": "Not Responded",
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Enquiry Status",
-   "options": "\nNot-Responded\nCompleted Enquiry",
+   "options": "\nNot Responded\nCompleted Enquiry",
    "reqd": 1
   },
   {
@@ -203,7 +204,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-23 15:57:32.101459",
+ "modified": "2025-10-28 10:24:58.791632",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
