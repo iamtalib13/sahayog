@@ -108,7 +108,7 @@ h4 {
 .table tbody tr:nth-child(odd) {background-color: #f5f8f7;}
 .table tbody tr:nth-child(even) {background-color: #eaf1f0;}
 .no-data {padding: 13px;text-align: center;color: #555;font-size: 0.8rem;}
-.page-head {display: none;}
+
 .table tbody::-webkit-scrollbar {width: 8px;}
 .table tbody::-webkit-scrollbar-thumb {background-color: #256a69;border-radius: 8px;}
 .table tbody::-webkit-scrollbar-track {background-color: #f1f1f1;}
