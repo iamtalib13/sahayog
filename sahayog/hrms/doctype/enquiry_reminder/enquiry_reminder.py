@@ -11,16 +11,17 @@ class EnquiryReminder(Document):
         else:
             # Fallback autoname if case_id not provided
             self.name = frappe.model.naming.make_autoname("ENQREM-.#####")
-            
+
+        """Auto-fetch fields from latest Domestic Enquiry for the same case_id"""     
     def before_insert(self):
-        """Auto-fetch fields from latest Domestic Enquiry for the same case_id"""
+      
         if self.case_id:
             de_list = frappe.get_all(
                 "Domestic Enquiry",
                 filters={"case_id": self.case_id},
                 order_by="creation desc",
                 fields=["name", "domestic_enquiry", "status_of_response", "date_of_enquiry",
-                        "place_of_enquiry", "enquiry_officer_name", "remarks"]
+                        "place_of_enquiry", "enquiry_officer_name", ]
             )
             if de_list:
                 de = de_list[0]  # latest Domestic Enquiry
@@ -30,5 +31,5 @@ class EnquiryReminder(Document):
                 self.date_of_enquiry = de.date_of_enquiry
                 self.place_of_enquiry = de.place_of_enquiry
                 self.enquiry_officer_name = de.enquiry_officer_name
-                self.remarks = de.remarks
+              
        

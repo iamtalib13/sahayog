@@ -24,33 +24,6 @@ frappe.ui.form.on("Disciplinary Case", {
     });
 
     // -------------------
-    // Add Close Case Button (only if not closed)
-    // -------------------
-    if (frm.doc.status !== "Closed") {
-      frm.add_custom_button("Close", function () {
-        frappe.prompt(
-          [
-            {
-              label: "Closing Remark",
-              fieldname: "closing_remark",
-              fieldtype: "Small Text",
-              reqd: 1,
-            },
-          ],
-          function (values) {
-            frm.set_value("closing_remark", values.closing_remark);
-            frm.set_value("status", "Closed");
-            frm.save().then(() => {
-              frappe.msgprint("The case has been closed successfully.");
-            });
-          },
-          __("Close Disciplinary Case"),
-          __("Close")
-        );
-      });
-    }
-
-    // -------------------
     // Disable future dates in date fields (set df.max and refresh)
     // -------------------
     let today = frappe.datetime.now_date();

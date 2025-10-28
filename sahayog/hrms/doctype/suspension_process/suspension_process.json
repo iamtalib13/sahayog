@@ -126,17 +126,17 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.status",
+   "fetch_from": "case_id.case_status",
    "fieldname": "case_status",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Case Status",
    "read_only": 1
   },
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "read_only": 1
+   "label": "Remarks"
   },
   {
    "fieldname": "section_break_fqsb",
@@ -191,7 +191,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-24 16:01:18.736720",
+ "modified": "2025-10-28 15:42:23.565318",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

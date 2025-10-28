@@ -19,6 +19,6 @@ class DomesticEnquiry(Document):
             )
             if status == "Satisfactory":
                 frappe.throw(
-                    _("Cannot create Domestic Enquiry when 'Status of Response' is 'Satisfactory'."),
-                    title=_("Action Restricted")
+                    ("Cannot create Domestic Enquiry when 'Status of Response' is 'Satisfactory'."),
+                    title=("Action Restricted")
                 )
