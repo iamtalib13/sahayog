@@ -1,3 +1,6 @@
+// Copyright (c) 2025, Developer Team and contributors
+// For license information, please see license.txt
+
 frappe.ui.form.on("Disciplinary Case", {
   refresh: function (frm) {
     // -------------------
@@ -69,7 +72,6 @@ frappe.ui.form.on("Disciplinary Case", {
       frm.fields_dict.amount_of_fraud &&
       frm.fields_dict.amount_of_fraud.$input
     ) {
-      // remove any previous handler first to avoid duplicate bindings
       frm.fields_dict.amount_of_fraud.$input.off("keypress.amount_check");
       frm.fields_dict.amount_of_fraud.$input.on(
         "keypress.amount_check",
@@ -83,54 +85,67 @@ frappe.ui.form.on("Disciplinary Case", {
     }
 
     // -------------------
-    // Restrict "+ New Suspension Process" when Suspension Required = "No"
+    // Restrict linked records with save-check
     // -------------------
     setTimeout(() => {
       const $suspension_btn = $('button[data-doctype="Suspension Process"]');
-      $suspension_btn
-        .off("mousedown.suspension_check")
-        .on("mousedown.suspension_check", function (e) {
-          if (frm.doc.suspension_required === "No") {
-            e.stopImmediatePropagation();
-            e.preventDefault();
-            frappe.msgprint({
-              title: __("Not Allowed"),
-              message: __(
-                "Suspension Process cannot be created because 'Suspension Required' is set to 'No'."
-              ),
-              indicator: "red",
-            });
-            return false;
-          }
-        });
-    }, 1000);
-
-    // -------------------
-    // Restrict "+ New Response to SCN" when Suspension Required = "Yes"
-    // -------------------
-    setTimeout(() => {
       const $response_btn = $('button[data-doctype="Response to SCN"]');
-      $response_btn
-        .off("mousedown.response_check")
-        .on("mousedown.response_check", function (e) {
-          if (frm.doc.suspension_required === "Yes") {
-            e.stopImmediatePropagation();
-            e.preventDefault();
-            frappe.msgprint({
-              title: __("Not Allowed"),
-              message: __(
-                "Response to SCN cannot be created because 'Suspension Required' is set to 'Yes'."
-              ),
-              indicator: "red",
-            });
-            return false;
-          }
-        });
+
+      // Remove previous handlers
+      $suspension_btn.off("mousedown.suspension_check");
+      $response_btn.off("mousedown.response_check");
+
+      // 🧩 Common Save Check
+      const ensureSaved = (e) => {
+        if (frm.is_dirty()) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Please Save First"),
+            message: __("Save the form before creating a linked record."),
+            indicator: "orange",
+          });
+          return false;
+        }
+        return true;
+      };
+
+      // 🔸 Suspension Process Restriction
+      $suspension_btn.on("mousedown.suspension_check", (e) => {
+        if (!ensureSaved(e)) return;
+        if (frm.doc.suspension_required === "No") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Suspension Process cannot be created because 'Suspension Required' is set to 'No'."
+            ),
+            indicator: "red",
+          });
+        }
+      });
+
+      // 🔸 Response to SCN Restriction
+      $response_btn.on("mousedown.response_check", (e) => {
+        if (!ensureSaved(e)) return;
+        if (frm.doc.suspension_required === "Yes") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Response to SCN cannot be created because 'Suspension Required' is set to 'Yes'."
+            ),
+            indicator: "red",
+          });
+        }
+      });
     }, 1000);
   },
 
   // -------------------
-  // Field-level triggers (not inside refresh)
+  // Field-level triggers
   // -------------------
   issue_occurrence_date: function (frm) {
     let today = frappe.datetime.now_date();
@@ -157,7 +172,6 @@ frappe.ui.form.on("Disciplinary Case", {
 
   amount_of_fraud: function (frm) {
     let value = frm.doc.amount_of_fraud;
-
     if (value && isNaN(value)) {
       frappe.msgprint({
         title: __("Invalid Input"),
@@ -181,7 +195,6 @@ frappe.ui.form.on("Disciplinary Case", {
     if (frm.doc.issue_report_to_hr && frm.doc.issue_report_to_hr > today) {
       frappe.throw(__("Issue Reported to HR Date cannot be in the future."));
     }
-
     if (frm.doc.amount_of_fraud && isNaN(frm.doc.amount_of_fraud)) {
       frappe.throw(__("Amount of Fraud must be a valid number."));
     }
