@@ -20,7 +20,7 @@
   "zone_name",
   "issue_in_details",
   "issue_occurrence_date",
-  "status",
+  "case_status",
   "column_break_ytlf",
   "designation",
   "branch_name",
@@ -150,13 +150,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.status",
-   "fieldname": "status",
-   "fieldtype": "Data",
-   "label": "Case Status",
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_kpne",
    "fieldtype": "Section Break",
    "label": "Response SCN Details"
@@ -169,6 +162,13 @@
    "fieldname": "section_break_hbzm",
    "fieldtype": "Section Break",
    "label": "Case Details"
+  },
+  {
+   "fetch_from": "case_id.case_status",
+   "fieldname": "case_status",
+   "fieldtype": "Data",
+   "label": "Case Status",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -185,7 +185,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-24 16:32:19.407788",
+ "modified": "2025-10-28 13:31:09.325900",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

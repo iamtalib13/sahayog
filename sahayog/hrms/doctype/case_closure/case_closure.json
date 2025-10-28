@@ -121,9 +121,10 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.status",
+   "fetch_from": "case_id.case_status",
    "fieldname": "case_status",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Case Status",
    "read_only": 1
   },
@@ -152,6 +153,7 @@
   {
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Enquiry Status",
    "options": "\nNot Responded\nCompleted Enquiry"
   },
@@ -188,7 +190,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-28 10:29:11.374342",
+ "modified": "2025-10-28 15:45:03.276886",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

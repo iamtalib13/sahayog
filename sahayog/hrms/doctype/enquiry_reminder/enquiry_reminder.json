@@ -121,7 +121,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.status",
+   "fetch_from": "case_id.case_status",
    "fieldname": "case_status",
    "fieldtype": "Data",
    "label": "Case Status",
@@ -204,7 +204,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-28 10:24:58.791632",
+ "modified": "2025-10-28 13:32:24.319706",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
