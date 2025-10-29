@@ -1,6 +1,7 @@
 frappe.ui.form.on("Share Transfer", {
   refresh: function (frm) {
     set_custom_breadcrumbs(frm);
+    frm.trigger("shareholder_details");
     frm.remove_custom_button("Create Journal Entry");
     // Only show the button for saved, submitted documents
     if (
@@ -9,52 +10,58 @@ frappe.ui.form.on("Share Transfer", {
       frappe.user.has_role("System Manager")
     ) {
       frm
-        .add_custom_button(__("Get Certificate"), function () {
-          frappe.dom.freeze(__("Generating Certificate..."));
+        .add_custom_button(
+          __("Download PDF"),
+          function () {
+            frappe.dom.freeze(__("Generating Certificate..."));
 
-          frappe.call({
-            method:
-              "sahayog.api.generate_share_certificate.generate_share_certificate",
-            args: {
-              transfer_doc_name: frm.doc.name,
-            },
-            callback: function (r) {
-              frappe.dom.unfreeze();
+            frappe.call({
+              method:
+                "sahayog.api.generate_share_certificate.generate_share_certificate",
+              args: {
+                transfer_doc_name: frm.doc.name,
+              },
+              callback: function (r) {
+                frappe.dom.unfreeze();
 
-              if (r.message) {
-                const file_data_base64 = r.message.file_data;
-                const file_name = r.message.file_name;
+                if (r.message) {
+                  const file_data_base64 = r.message.file_data;
+                  const file_name = r.message.file_name;
 
-                // Convert base64 to Blob
-                const byteCharacters = atob(file_data_base64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                  // Convert base64 to Blob
+                  const byteCharacters = atob(file_data_base64);
+                  const byteNumbers = new Array(byteCharacters.length);
+                  for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                  }
+                  const byteArray = new Uint8Array(byteNumbers);
+                  const blob = new Blob([byteArray], {
+                    type: "application/pdf",
+                  });
+
+                  // Open PDF in a new tab for preview
+                  const blobUrl = URL.createObjectURL(blob);
+                  window.open(blobUrl, "_blank");
+
+                  // Optional: trigger download as well
+                  // const link = document.createElement('a');
+                  // link.href = blobUrl;
+                  // link.download = file_name;
+                  // document.body.appendChild(link);
+                  // link.click();
+                  // document.body.removeChild(link);
+                } else {
+                  frappe.msgprint({
+                    title: __("Error"),
+                    indicator: "red",
+                    message: __("Could not generate the certificate."),
+                  });
                 }
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: "application/pdf" });
-
-                // Open PDF in a new tab for preview
-                const blobUrl = URL.createObjectURL(blob);
-                window.open(blobUrl, "_blank");
-
-                // Optional: trigger download as well
-                // const link = document.createElement('a');
-                // link.href = blobUrl;
-                // link.download = file_name;
-                // document.body.appendChild(link);
-                // link.click();
-                // document.body.removeChild(link);
-              } else {
-                frappe.msgprint({
-                  title: __("Error"),
-                  indicator: "red",
-                  message: __("Could not generate the certificate."),
-                });
-              }
-            },
-          });
-        })
+              },
+            });
+          },
+          __("Print Certificate")
+        ) // 👈 3rd parameter = Button Group Name
         .addClass("btn-primary");
     }
 
@@ -117,6 +124,65 @@ frappe.ui.form.on("Share Transfer", {
       });
     }
   },
+  shareholder_details: function (frm) {
+    const shareholder = frm.doc.to_shareholder;
+
+    if (shareholder) {
+      frappe.db
+        .get_doc("Shareholder", shareholder)
+        .then((doc) => {
+          const html = `
+          <div style="
+          
+            font-size: 14px;
+            line-height: 1.6;
+          ">
+          Customer Detail
+            <div style="display: flex; align-items: center; margin-bottom: 6px;">
+              <a 
+                href="/app/shareholder/${doc.name}" 
+                style="
+                  font-size:16px; 
+                  font-weight:600; 
+                  color:#1e40af; 
+                  text-decoration: underline;
+                  cursor:pointer;
+                "
+                title="Open Shareholder Record"
+              >
+                👤 ${doc.customer_name || "N/A"}
+              </a>
+            </div>
+            <div style="color:#475569; margin-bottom:4px;">
+              <b>📍 CIF:</b> ${doc.cif || "-"}<br>
+              <b>📍 Address:</b> ${doc.address || "-"}
+            </div>
+            <div style="color:#475569;">
+              <b>📍 SOL ID:</b> ${doc.sol_id || "-"} <br>
+              <b>📍 SOL Description:</b> ${doc.sol_desc || "-"} <br>
+            </div>
+          </div>
+
+          <style>
+            a:hover {
+              color: #0f172a !important; /* dark hover color */
+            }
+          </style>
+        `;
+
+          frm.set_intro(html, "blue");
+        })
+        .catch(() => {
+          frm.set_intro(
+            "<b style='color:red;'>Error fetching shareholder details.</b>"
+          );
+        });
+    } else {
+      frm.set_intro(
+        "<b style='color:#555;'>Please select a Shareholder to view details.</b>"
+      );
+    }
+  },
 });
 
 // // This helper function triggers the browser download
@@ -167,108 +233,104 @@ function set_custom_breadcrumbs(frm) {
 frappe.ui.form.on("Share Transfer", {
   refresh: function (frm) {
     if (!frm.is_new()) {
-      frm.add_custom_button("🖨️ Print Share Certificate", function () {
-        // Create overlay
-        let overlay = document.createElement("div");
-        overlay.id = "print-overlay";
-        overlay.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(255,255,255,0.6);
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          color: #333;
-        `;
-        overlay.innerHTML = "Preparing print preview...";
-        document.body.appendChild(overlay);
+      // Allow specific roles
+      const allowed_roles = ["System Manager", "Share Admin"];
 
-        // Create hidden iframe
-        let iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = frappe.urllib.get_full_url(
-          `/printview?doctype=${encodeURIComponent(
-            frm.doc.doctype
-          )}&name=${encodeURIComponent(
-            frm.doc.name
-          )}&format=${encodeURIComponent(
-            "Share Certificate"
-          )}&no_letterhead=0&letterhead=${encodeURIComponent(
-            "Sahayog Letter Head"
-          )}&_lang=en`
-        );
-        document.body.appendChild(iframe);
+      if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
+        frm
+          .add_custom_button(
+            __("Print"),
+            function () {
+              // --- Create overlay ---
+              const overlay = document.createElement("div");
+              overlay.id = "print-overlay";
+              overlay.style.cssText = `
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(255,255,255,0.6);
+              z-index: 9999;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+              color: #333;
+            `;
+              overlay.innerHTML = "Preparing print preview...";
+              document.body.appendChild(overlay);
 
-        iframe.onload = () => {
-          setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
+              // --- Create hidden iframe ---
+              const iframe = document.createElement("iframe");
+              iframe.style.display = "none";
+              iframe.src = frappe.urllib.get_full_url(
+                `/printview?doctype=${encodeURIComponent(
+                  frm.doc.doctype
+                )}&name=${encodeURIComponent(
+                  frm.doc.name
+                )}&format=${encodeURIComponent(
+                  "Share Certificate"
+                )}&no_letterhead=0&letterhead=${encodeURIComponent(
+                  "Sahayog Letter Head"
+                )}&_lang=en`
+              );
+              document.body.appendChild(iframe);
 
-            // Enhanced cleanup with multiple fallbacks
-            let cleanupCompleted = false;
+              iframe.onload = () => {
+                setTimeout(() => {
+                  iframe.contentWindow.focus();
+                  iframe.contentWindow.print();
 
-            const cleanup = () => {
-              if (cleanupCompleted) return;
-              cleanupCompleted = true;
+                  // --- Cleanup logic ---
+                  let cleanupCompleted = false;
 
-              console.log("Cleaning up print overlay...");
+                  const cleanup = () => {
+                    if (cleanupCompleted) return;
+                    cleanupCompleted = true;
 
-              if (overlay && overlay.parentNode) {
-                overlay.remove();
-              }
-              if (iframe && iframe.parentNode) {
-                iframe.remove();
-              }
-            };
+                    console.log("Cleaning up print overlay...");
+                    if (overlay?.parentNode) overlay.remove();
+                    if (iframe?.parentNode) iframe.remove();
+                  };
 
-            // Method 1: Use afterprint event (most reliable)
-            if (iframe.contentWindow) {
-              iframe.contentWindow.addEventListener("afterprint", cleanup);
-            }
+                  // Method 1: afterprint event
+                  iframe.contentWindow.addEventListener("afterprint", cleanup);
 
-            // Method 2: Check for focus with shorter intervals
-            let focusCheckCount = 0;
-            const maxFocusChecks = 20; // 5 seconds max (20 * 250ms)
+                  // Method 2: Focus check
+                  let focusCheckCount = 0;
+                  const maxFocusChecks = 20; // 5 sec max
+                  const checkFocus = () => {
+                    focusCheckCount++;
+                    if (document.hasFocus() && focusCheckCount > 2) {
+                      cleanup();
+                    } else if (focusCheckCount < maxFocusChecks) {
+                      setTimeout(checkFocus, 250);
+                    } else {
+                      cleanup();
+                    }
+                  };
 
-            const checkFocus = () => {
-              focusCheckCount++;
-              if (document.hasFocus() && focusCheckCount > 2) {
-                cleanup();
-              } else if (focusCheckCount < maxFocusChecks) {
-                setTimeout(checkFocus, 250);
-              } else {
-                cleanup(); // Final fallback
-              }
-            };
+                  setTimeout(() => {
+                    if (!cleanupCompleted) checkFocus();
+                  }, 1000);
 
-            // Start focus checking after a brief delay
-            setTimeout(() => {
-              if (!cleanupCompleted) {
-                checkFocus();
-              }
-            }, 1000);
+                  // Method 3: Final fallback
+                  setTimeout(cleanup, 8000);
+                }, 800);
+              };
 
-            // Method 3: Final safety cleanup (8 seconds)
-            setTimeout(cleanup, 8000);
-          }, 800);
-        };
-
-        // Handle iframe errors
-        iframe.onerror = () => {
-          frappe.msgprint(__("Error loading print preview"));
-          if (overlay && overlay.parentNode) {
-            overlay.remove();
-          }
-          if (iframe && iframe.parentNode) {
-            iframe.remove();
-          }
-        };
-      });
+              // --- Handle iframe errors ---
+              iframe.onerror = () => {
+                frappe.msgprint(__("Error loading print preview"));
+                if (overlay?.parentNode) overlay.remove();
+                if (iframe?.parentNode) iframe.remove();
+              };
+            },
+            __("Print Certificate") // 👈 Group name
+          )
+          .addClass("btn-primary");
+      }
     }
   },
 });
