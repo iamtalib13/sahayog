@@ -121,6 +121,27 @@ h4 {
   max-width: 40px;
   white-space: nowrap;
 }
+
+/* Keyframe animation for counting */
+@keyframes count-to {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.counter {
+  display: inline-block;
+  font-size: 2.5rem; /* Adjust this based on your design */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 600;
+  color: #256a69;
+  animation: count-to 1s ease-in-out forwards;
+}
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
@@ -361,4 +382,62 @@ h4 {
   setInterval(fetchRenderTransaction, 10000);
 
   applyFilter();
+
+  // Function to animate the count from 0 to target number
+  // Animate number smoothly
+function animateNumber(element, target) {
+  let current = 0;
+  const increment = target / 100;
+  const duration = 1500; // ms
+  const stepTime = Math.max(10, Math.floor(duration / 100)); // avoid 0
+
+  // Stop previous animation if still running
+  clearInterval(element._counterInterval);
+
+  element._counterInterval = setInterval(() => {
+    current += increment;
+    if (current >= target) {
+      current = target;
+      clearInterval(element._counterInterval);
+    }
+    element.textContent = Math.floor(current);
+  }, stepTime);
+}
+
+// Update MVCD count
+function updateMVCDCount(count) {
+  const el = document.getElementById('mvcd-count');
+  el.classList.remove('counter'); // reset animation
+  void el.offsetWidth; // force reflow
+  el.classList.add('counter');
+  animateNumber(el, count);
+}
+
+// Update Transaction count
+function updateTransactionCount(count) {
+  const el = document.getElementById('transaction-count');
+  el.classList.remove('counter');
+  void el.offsetWidth; // force reflow
+  el.classList.add('counter');
+  animateNumber(el, count);
+}
+
+// Call after data is loaded
+function onMVCDDataLoaded(data) {
+  currentMVCDData = data || [];
+  applyFilter(); // your existing filter logic
+  updateMVCDCount(currentMVCDData.length);
+}
+
+function onTransactionDataLoaded(data) {
+  currentTransData = data || [];
+  applyFilter(); // your existing filter logic
+  updateTransactionCount(currentTransData.length);
+}
+
+// Example initial calls
+updateMVCDCount(currentMVCDData.length);
+updateTransactionCount(currentTransData.length);
+
+
 };
