@@ -261,19 +261,45 @@ function attach_print_handlers(frm, transfers) {
         title: __("Certificate Print Confirmation"),
         fields: fields,
         primary_action_label: __("🖨️ Submit & Print"),
-        primary_action(values) {
+        async primary_action(values) {
           d.hide();
 
-          // If serial number missing
-          if (!t.serial_number && !values.serial_number) {
+          const serial_to_save = t.serial_number || values.serial_number;
+
+          if (!serial_to_save) {
             frappe.msgprint("Please enter the serial number.");
             return;
           }
 
-          const serial_to_save = t.serial_number || values.serial_number;
+          frappe.dom.freeze("Validating serial number...");
+
+          // ✅ Step 1: Check duplicate before saving
+          const existing = await frappe.db.get_list("Share Transfer", {
+            filters: { serial_number: serial_to_save },
+            fields: ["name"],
+            limit: 1,
+          });
+
+          if (existing.length > 0 && existing[0].name !== t.name) {
+            frappe.dom.unfreeze();
+            frappe.msgprint({
+              title: "Duplicate Serial Number",
+              message: `
+                <div style="font-size:14px;line-height:1.6;color:#334155;">
+                  🚫 <b>Serial Number already exists!</b><br>
+                  Please use a unique serial number for this certificate.<br><br>
+                  <b>हिंदी:</b> यह सीरियल नंबर पहले से मौजूद है। कृपया नया नंबर डालें।<br>
+                  <b>मराठी:</b> हा क्रमांक आधीपासून अस्तित्वात आहे. कृपया नवीन क्रमांक द्या.
+                </div>
+              `,
+              indicator: "red",
+            });
+            return;
+          }
 
           frappe.dom.freeze("Processing...");
 
+          // ✅ Step 2: Save and print
           frappe.call({
             method: "frappe.client.set_value",
             args: {
@@ -288,7 +314,6 @@ function attach_print_handlers(frm, transfers) {
               frappe.dom.unfreeze();
 
               if (!r.exc) {
-                // ✅ Trigger print
                 const print_url = frappe.urllib.get_full_url(
                   `/printview?doctype=Share%20Transfer&name=${encodeURIComponent(
                     t.name
