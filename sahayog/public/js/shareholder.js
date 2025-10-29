@@ -2,9 +2,6 @@
 // Main Event Handlers for Shareholder Doctype
 // =================================================================
 frappe.ui.form.on("Shareholder", {
-  /**
-   * `refresh` event is triggered when the form is loaded or refreshed.
-   */
   refresh: function (frm) {
     // --- UI Cleanup ---
     $(".layout-side-section").hide();
@@ -24,13 +21,9 @@ frappe.ui.form.on("Shareholder", {
     frm.trigger("populate_summary_html");
   },
 
-  /**
-   * Main function to orchestrate fetching data and rendering the HTML table.
-   */
   async populate_summary_html(frm) {
     if (!frm.doc.name) return;
 
-    // 1. Fetch data from the server
     const transfers = await frappe.call({
       method: "frappe.client.get_list",
       args: {
@@ -46,29 +39,25 @@ frappe.ui.form.on("Shareholder", {
           "from_no",
           "to_no",
           "enable_print",
+          "serial_number",
         ],
         order_by: "date desc",
       },
     });
 
-    if (!transfers.message || transfers.message.length === 0) {
+    const data = transfers.message || [];
+    if (data.length === 0) {
       frm.fields_dict.share_transaction_details.$wrapper.html(
         `<div class="text-muted" style="margin-top: 15px;">No share transactions found.</div>`
       );
       return;
     }
 
-    // 2. Generate the HTML for the table
-    const html = generate_transactions_table_html(transfers.message);
+    const html = generate_transactions_table_html(data);
     frm.fields_dict.share_transaction_details.$wrapper.html(html);
-
-    // 3. Attach click handlers to the 'Print' buttons
-    attach_print_handlers(frm, transfers.message);
+    attach_print_handlers(frm, data);
   },
 
-  /**
-   * `onload` is triggered when the form is first loaded.
-   */
   onload: function (frm) {
     set_custom_breadcrumbs();
   },
@@ -77,14 +66,7 @@ frappe.ui.form.on("Shareholder", {
 // =================================================================
 // Helper Functions
 // =================================================================
-
-/**
- * Generates the complete HTML structure for the share transactions table.
- * @param {Array} transfers - Array of share transfer documents.
- * @returns {String} - The complete HTML string for the table.
- */
 function generate_transactions_table_html(transfers) {
-  // --- Helper functions for formatting ---
   const formatAmountIndian = (x) => {
     if (!x) return "";
     let [intPart, decPart] = x.toString().split(".");
@@ -108,13 +90,17 @@ function generate_transactions_table_html(transfers) {
     ].join("/");
   };
 
-  // --- Generate table rows with Sr. No ---
   const rows = transfers
     .map((t, index) => {
       const btn_id = `btn_print_${t.name.replace(/[^a-zA-Z0-9]/g, "")}`;
-      const actionHtml = t.enable_print
-        ? `<button class="btn btn-sm btn-success" id="${btn_id}">Print Share Certificate</button>`
-        : `<div class="print-disabled-msg">Needs approval from <br>the Operations team to <br>print the certificate again.</div>`;
+
+      // ✅ Print button only when enable_print = 1
+      const actionHtml =
+        t.enable_print === 1
+          ? `<button class="btn btn-sm btn-success" id="${btn_id}">🖨️ Print Share Certificate</button>`
+          : `<div class="print-disabled-msg">
+              Needs approval from <br>the Operations team to <br>print the certificate again.
+            </div>`;
 
       return `
         <tr>
@@ -130,64 +116,38 @@ function generate_transactions_table_html(transfers) {
           <td>${t.from_no || ""}</td>
           <td>${t.to_no || ""}</td>
           <td>${actionHtml}</td>
-        </tr>
-      `;
+        </tr>`;
     })
     .join("");
 
-  // --- Assemble the final HTML with embedded CSS ---
   return `
   <style>
-    .simple-share-table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 15px; 
-      font-size: 13px; 
-    }
+    .simple-share-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
     .simple-share-table th, .simple-share-table td {
       padding: 12px 8px;
-      text-align: left; 
-      vertical-align: middle; 
+      text-align: left;
+      vertical-align: middle;
       border-bottom: 1px solid #e9ecef;
     }
-    /* Center only Action column */
-    .simple-share-table th:last-child,
-    .simple-share-table td:last-child {
-      text-align: center;
-    }
-    /* Override disabled msg inside Action column to left */
+    .simple-share-table th:last-child, .simple-share-table td:last-child { text-align: center; }
     .simple-share-table .print-disabled-msg {
-      text-align: left;
-      color: var(--red-600);
-      font-size: 12px;
-      line-height: 1.4;
-      display: inline-block; /* keeps it neat */
+      text-align: left; color: var(--red-600);
+      font-size: 12px; line-height: 1.4; display: inline-block;
     }
-    .simple-share-table thead th { 
-      background-color: #f8f9fa; 
-      font-weight: 600; 
-      color: #495057; 
-      border-bottom-width: 2px; 
+    .simple-share-table thead th {
+      background-color: #f8f9fa; font-weight: 600; color: #495057; border-bottom-width: 2px;
     }
-    .simple-share-table tbody tr:hover { 
-      background-color: #f1f3f5; 
-    }
-    .simple-share-table td a { 
-      color: var(--primary-color); 
-      font-weight: 500; 
-    }
-    .simple-share-table .btn { 
-      font-size: 12px; 
-      padding: 4px 10px; 
-    }
+    .simple-share-table tbody tr:hover { background-color: #f1f3f5; }
+    .simple-share-table td a { color: var(--primary-color); font-weight: 500; }
+    .simple-share-table .btn { font-size: 12px; padding: 4px 10px; }
   </style>
 
   <p style="font-size: 13.5px; line-height: 1.5;">
-    <strong>Note: The Share Investment Certificate can be printed only once via the MYSAHAYOG portal. 
-    For printing issues, contact the central team at 
-    <a href="mailto:supportdesk@sahayogmultistate.com" style="color: #1a73e8; text-decoration: none;">
+    <strong>Note:</strong> The Share Investment Certificate can be printed only once via the MYSAHAYOG portal.
+    For reprint or issues, contact the central team at
+    <a href="mailto:supportdesk@sahayogmultistate.com" style="color:#1a73e8;text-decoration:none;">
       supportdesk@sahayogmultistate.com
-    </a>.</strong>
+    </a>.
   </p>
 
   <table class="simple-share-table">
@@ -206,82 +166,194 @@ function generate_transactions_table_html(transfers) {
       </tr>
     </thead>
     <tbody>${rows}</tbody>
-  </table>
-`;
+  </table>`;
 }
 
 /**
- * Attaches click event handlers to the 'Print' buttons in the table.
- * @param {Object} frm - The form object.
- * @param {Array} transfers - Array of share transfer documents.
+ * Handles print button logic with serial number dialog + print.
  */
 function attach_print_handlers(frm, transfers) {
   const wrapper = frm.fields_dict.share_transaction_details.$wrapper;
 
   transfers.forEach((t) => {
-    if (!t.enable_print) return;
+    if (t.enable_print !== 1) return;
 
     const btn_id = `btn_print_${t.name.replace(/[^a-zA-Z0-9]/g, "")}`;
-    wrapper.find(`#${btn_id}`).on("click", () => {
-      frappe.dom.freeze(__("Generating Certificate..."));
-      frappe.call({
-        method:
-          "sahayog.api.generate_share_certificate.generate_share_certificate",
-        args: { transfer_doc_name: t.name },
-        callback: function (r) {
-          frappe.dom.unfreeze();
-          if (r.message && r.message.file_data) {
-            const { file_data } = r.message;
-            const byteCharacters = atob(file_data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-              byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: "application/pdf" });
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, "_blank");
 
-            frm.trigger("populate_summary_html");
-          } else {
-            frappe.msgprint({
-              title: __("Error"),
-              indicator: "red",
-              message: __(
-                "Could not generate the certificate. Please contact support."
-              ),
-            });
+    wrapper.find(`#${btn_id}`).on("click", () => {
+      const fields = [];
+
+      if (t.serial_number) {
+        // 🟢 Serial number already exists → show info card
+        fields.push({
+          fieldtype: "HTML",
+          options: `
+            <div style="
+              text-align:center;
+              padding: 18px;
+              border: 1px solid #e2e8f0;
+              border-radius: 10px;
+              background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+              box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            ">
+              <img src="https://cdn-icons-gif.flaticon.com/17569/17569512.gif" 
+                   width="70" height="70" 
+                   style="margin-bottom: 10px; mix-blend-mode: multiply;" 
+                   alt="printer-icon" />
+              <h4 style="margin: 0; color: #0f172a; font-weight: 600;">
+                Certificate Ready for Print
+              </h4>
+              <div style="margin-top: 8px; font-size: 14px; color: #334155;">
+                <b>Serial Number:</b> 
+                <span style="color:#2563eb;">${t.serial_number}</span>
+              </div>
+              <p style="margin-top: 12px; font-size: 13.5px; color:#1e293b; line-height:1.6;">
+                🖨️ Please insert the certificate with this serial number into the printer.<br>
+                <span style="color:#0284c7;">Use only this certificate for printing.</span>
+              </p>
+              <div style="margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:10px; font-size:12.5px; color:#475569;">
+                <b>हिंदी:</b> कृपया इस सीरियल नंबर वाले प्रमाणपत्र को प्रिंटर में डालें।<br>
+                <b>मराठी:</b> कृपया या क्रमांकाचा प्रमाणपत्र प्रिंटरमध्ये ठेवा.
+              </div>
+            </div>
+          `,
+        });
+      } else {
+        // 🟡 Serial number not yet entered → show input + info
+        fields.push({
+          fieldtype: "HTML",
+          options: `
+            <div style="
+              background: linear-gradient(135deg, #ecfeff, #f0f9ff);
+              border-left: 4px solid #0ea5e9;
+              padding: 10px 12px;
+              border-radius: 8px;
+              margin-bottom: 12px;
+              color: #0c4a6e;
+              font-size: 13.5px;
+              line-height: 1.6;
+              animation: fadeIn 0.5s ease;
+            ">
+              <b>📋 Please enter the new certificate serial number below:</b><br>
+              <b>हिंदी:</b> कृपया नीचे नए प्रमाणपत्र का सीरियल नंबर दर्ज करें।<br>
+              <b>मराठी:</b> कृपया खाली नवीन प्रमाणपत्राचा क्रमांक प्रविष्ट करा.
+            </div>
+            <style>
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-4px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            </style>
+          `,
+        });
+
+        fields.push({
+          fieldname: "serial_number",
+          fieldtype: "Data",
+          label: "Serial Number",
+          reqd: 1,
+          description:
+            "Enter the new certificate serial number before printing.",
+        });
+      }
+
+      const d = new frappe.ui.Dialog({
+        title: __("Certificate Print Confirmation"),
+        fields: fields,
+        primary_action_label: __("🖨️ Submit & Print"),
+        primary_action(values) {
+          d.hide();
+
+          // If serial number missing
+          if (!t.serial_number && !values.serial_number) {
+            frappe.msgprint("Please enter the serial number.");
+            return;
           }
+
+          const serial_to_save = t.serial_number || values.serial_number;
+
+          frappe.dom.freeze("Processing...");
+
+          frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+              doctype: "Share Transfer",
+              name: t.name,
+              fieldname: {
+                serial_number: serial_to_save,
+                enable_print: 0,
+              },
+            },
+            callback: function (r) {
+              frappe.dom.unfreeze();
+
+              if (!r.exc) {
+                // ✅ Trigger print
+                const print_url = frappe.urllib.get_full_url(
+                  `/printview?doctype=Share%20Transfer&name=${encodeURIComponent(
+                    t.name
+                  )}&format=Share%20Certificate&no_letterhead=0&letterhead=${encodeURIComponent(
+                    "Sahayog Letter Head"
+                  )}&_lang=en`
+                );
+
+                const iframe = document.createElement("iframe");
+                iframe.style.display = "none";
+                iframe.src = print_url;
+                document.body.appendChild(iframe);
+
+                iframe.onload = () => {
+                  setTimeout(() => {
+                    iframe.contentWindow.print();
+                    setTimeout(() => iframe.remove(), 5000);
+                  }, 800);
+                };
+
+                frm.trigger("populate_summary_html");
+              } else {
+                frappe.msgprint("Failed to save serial number.");
+              }
+            },
+          });
         },
       });
+
+      // 💫 Smooth animation when dialog opens
+      setTimeout(() => {
+        d.$wrapper.find(".modal-content").css({
+          transition: "transform 0.3s ease",
+          transform: "scale(1.02)",
+        });
+        setTimeout(() => {
+          d.$wrapper.find(".modal-content").css("transform", "scale(1)");
+        }, 250);
+      }, 100);
+
+      d.show();
     });
   });
 }
 
 /**
- * Sets custom breadcrumbs for the form view.
+ * Custom breadcrumbs.
  */
 function set_custom_breadcrumbs(frm) {
   const breadcrumbs = document.getElementById("navbar-breadcrumbs");
-  if (breadcrumbs) {
-    breadcrumbs.innerHTML = ""; // Clear existing
+  if (!breadcrumbs) return;
+  breadcrumbs.innerHTML = "";
 
-    // Home link
-    const homeLi = document.createElement("li");
-    const homeA = document.createElement("a");
-    homeA.href = "/app/shareholder-management/";
-    homeA.innerText = "Home";
-    homeLi.appendChild(homeA);
+  const homeLi = document.createElement("li");
+  const homeA = document.createElement("a");
+  homeA.href = "/app/shareholder-management/";
+  homeA.innerText = "Home";
+  homeLi.appendChild(homeA);
 
-    // Shareholder List link
-    const listLi = document.createElement("li");
-    const listA = document.createElement("a");
-    listA.href = "/app/shareholder/view/list";
-    listA.innerText = "Shareholder List";
-    listLi.appendChild(listA);
+  const listLi = document.createElement("li");
+  const listA = document.createElement("a");
+  listA.href = "/app/shareholder/view/list";
+  listA.innerText = "Shareholder List";
+  listLi.appendChild(listA);
 
-    // Append to breadcrumbs
-    breadcrumbs.appendChild(homeLi);
-    breadcrumbs.appendChild(listLi);
-  }
+  breadcrumbs.appendChild(homeLi);
+  breadcrumbs.appendChild(listLi);
 }
