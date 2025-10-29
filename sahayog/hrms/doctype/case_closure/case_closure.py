@@ -9,6 +9,48 @@ class CaseClosure(Document):
         else:
             self.name = frappe.model.naming.make_autoname("CLS-.#####")
 
+    def before_insert(self):
+        """Auto-fetch data from Domestic Enquiry or Enquiry Reminder if available"""
+        if self.case_id:
+            # Try to fetch from Domestic Enquiry
+            de_data = frappe.db.get_value(
+                "Domestic Enquiry",
+                {"case_id": self.case_id},
+                [
+                    "domestic_enquiry",
+                    "place_of_enquiry",
+                    "status_of_response",
+                    "date_of_enquiry",
+                    "enquiry_officer_name",
+                ],
+                as_dict=True,
+            )
+
+            if de_data:
+                for key, value in de_data.items():
+                    if value and not self.get(key):
+                        self.set(key, value)
+            else:
+                # Fallback to Enquiry Reminder if Domestic Enquiry not found
+                er_data = frappe.db.get_value(
+                    "Enquiry Reminder",
+                    {"case_id": self.case_id},
+                    [
+                        "domestic_enquiry",
+                        "place_of_enquiry",
+                        "status_of_response",
+                        "date_of_enquiry",
+                        "enquiry_officer_name",
+                        "enquiry_status",
+                        "date_of_2nd_enquiry",
+                    ],
+                    as_dict=True,
+                )
+                if er_data:
+                    for key, value in er_data.items():
+                        if value and not self.get(key):
+                            self.set(key, value)
+
 
 @frappe.whitelist()
 def close_linked_case(case_id):
