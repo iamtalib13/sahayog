@@ -111,7 +111,7 @@ frappe.ui.form.on("Case Closure", {
               )}&name=${encodeURIComponent(
                 frm.doc.name
               )}&format=${encodeURIComponent(
-                "Case Closure Report"
+                "Case Closure Reports"
               )}&no_letterhead=0&letterhead=${encodeURIComponent("")}`
             );
             document.body.appendChild(iframe);
