@@ -80,97 +80,94 @@ frappe.ui.form.on("Enquiry Reminder", {
   refresh(frm) {
     frm.trigger("show_print_button");
   },
-
   show_print_button: function (frm) {
     if (!frm.is_new()) {
-      // Allow specific roles
       const allowed_roles = ["System Manager", "Share Admin"];
 
       if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
         frm
           .add_custom_button(__("Print"), function () {
-            // --- Create overlay ---
             const overlay = document.createElement("div");
             overlay.id = "print-overlay";
             overlay.style.cssText = `
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(255,255,255,0.6);
-              z-index: 9999;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 18px;
-              color: #333;
-            `;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(255,255,255,0.6);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          color: #333;
+        `;
             overlay.innerHTML = "Preparing print preview...";
             document.body.appendChild(overlay);
 
-            // --- Create hidden iframe ---
             const iframe = document.createElement("iframe");
             iframe.style.display = "none";
             iframe.src = frappe.urllib.get_full_url(
-              `/printview?doctype=${encodeURIComponent(
-                frm.doc.doctype
-              )}&name=${encodeURIComponent(
-                frm.doc.name
-              )}&format=${encodeURIComponent(
-                "Reminder Notice Of Enquiry"
-              )}&no_letterhead=0&letterhead=${encodeURIComponent("")}`
+              `/printview?doctype=${encodeURIComponent(frm.doc.doctype)}
+           &name=${encodeURIComponent(frm.doc.name)}
+           &format=${encodeURIComponent("Reminder Notice Of Enquiry")}
+           &no_letterhead=1`.replace(/\s+/g, "")
             );
             document.body.appendChild(iframe);
 
             iframe.onload = () => {
               setTimeout(() => {
+                const doc = iframe.contentWindow.document;
+
+                const style = doc.createElement("style");
+                style.innerHTML = `
+ @media print {
+                                html, body {
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    height: 100%;
+                                    background: url('/assets/sahayog/images/letter_head_and_footer_.png') no-repeat top center;
+                                    background-size: 100% auto;
+                                    -webkit-print-color-adjust: exact !important;
+                                    color-adjust: exact !important;
+                                }
+
+                                @page {
+                                    margin: 10mm !important;
+                                }
+
+                                .print-content {
+                                    position: relative;
+                                    padding-top: 0px; /* Push text below header image */
+                                }
+                            }
+            `;
+                doc.head.appendChild(style);
+
+                const originalContent = doc.body.innerHTML;
+                doc.body.innerHTML = `<div class="print-container">${originalContent}</div>`;
+
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
 
-                // --- Cleanup logic ---
-                let cleanupCompleted = false;
-
+                let cleaned = false;
                 const cleanup = () => {
-                  if (cleanupCompleted) return;
-                  cleanupCompleted = true;
-
-                  console.log("Cleaning up print overlay...");
-                  if (overlay?.parentNode) overlay.remove();
-                  if (iframe?.parentNode) iframe.remove();
+                  if (cleaned) return;
+                  cleaned = true;
+                  overlay.remove();
+                  iframe.remove();
                 };
 
-                // Method 1: afterprint event
                 iframe.contentWindow.addEventListener("afterprint", cleanup);
-
-                // Method 2: Focus check
-                let focusCheckCount = 0;
-                const maxFocusChecks = 20; // 5 sec max
-                const checkFocus = () => {
-                  focusCheckCount++;
-                  if (document.hasFocus() && focusCheckCount > 2) {
-                    cleanup();
-                  } else if (focusCheckCount < maxFocusChecks) {
-                    setTimeout(checkFocus, 250);
-                  } else {
-                    cleanup();
-                  }
-                };
-
-                setTimeout(() => {
-                  if (!cleanupCompleted) checkFocus();
-                }, 1000);
-
-                // Method 3: Final fallback
-                setTimeout(cleanup, 8000);
-              }, 800);
+                setTimeout(cleanup, 3000);
+              }, 600);
             };
 
-            // --- Handle iframe errors ---
             iframe.onerror = () => {
-              frappe.msgprint(__("Error loading print preview"));
-              if (overlay?.parentNode) overlay.remove();
-              if (iframe?.parentNode) iframe.remove();
+              frappe.msgprint("Error loading print preview");
+              overlay.remove();
+              iframe.remove();
             };
           })
           .addClass("btn-primary");
