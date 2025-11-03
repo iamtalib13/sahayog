@@ -87,32 +87,34 @@ frappe.ui.form.on("Enquiry Reminder", {
       if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
         frm
           .add_custom_button(__("Print"), function () {
+            // Create overlay while loading
             const overlay = document.createElement("div");
             overlay.id = "print-overlay";
             overlay.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(255,255,255,0.6);
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          color: #333;
-        `;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.6);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #333;
+          `;
             overlay.innerHTML = "Preparing print preview...";
             document.body.appendChild(overlay);
 
+            // Create hidden iframe loading the print view
             const iframe = document.createElement("iframe");
             iframe.style.display = "none";
             iframe.src = frappe.urllib.get_full_url(
               `/printview?doctype=${encodeURIComponent(frm.doc.doctype)}
-           &name=${encodeURIComponent(frm.doc.name)}
-           &format=${encodeURIComponent("Reminder Notice Of Enquiry")}
-           &no_letterhead=1`.replace(/\s+/g, "")
+            &name=${encodeURIComponent(frm.doc.name)}
+            &format=${encodeURIComponent("Reminder Notice Of Enquiry")}
+            &no_letterhead=1`.replace(/\s+/g, "")
             );
             document.body.appendChild(iframe);
 
@@ -120,36 +122,50 @@ frappe.ui.form.on("Enquiry Reminder", {
               setTimeout(() => {
                 const doc = iframe.contentWindow.document;
 
+                // Inject print CSS including background image
                 const style = doc.createElement("style");
                 style.innerHTML = `
- @media print {
-                                html, body {
-                                    margin: 0 !important;
-                                    padding: 0 !important;
-                                    height: 100%;
-                                    background: url('/assets/sahayog/images/letter_head_and_footer_.png') no-repeat top center;
-                                    background-size: 100% auto;
-                                    -webkit-print-color-adjust: exact !important;
-                                    color-adjust: exact !important;
-                                }
+                @media print {
+                  html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    height: 100%;
+                    background: url('/assets/sahayog/images/letter_head_and_footer_.png') no-repeat top center;
+                    background-size: 100% auto;
+                    -webkit-print-color-adjust: exact !important;
+                    color-adjust: exact !important;
+                  }
 
-                                @page {
-                                    margin: 10mm !important;
-                                }
+                  @page {
+                    margin: 10mm !important;
+                  }
 
-                                .print-content {
-                                    position: relative;
-                                    padding-top: 0px; /* Push text below header image */
-                                }
-                            }
-            `;
+                  .print-content {
+                    position: relative;
+                    padding-top: 0px;
+                  }
+                }
+              `;
                 doc.head.appendChild(style);
 
+                // Wrap body content for styling
                 const originalContent = doc.body.innerHTML;
-                doc.body.innerHTML = `<div class="print-container">${originalContent}</div>`;
+                doc.body.innerHTML = `<div class="print-content">${originalContent}</div>`;
 
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
+                // Preload the background image before printing
+                const bgImg = new Image();
+                bgImg.src =
+                  "/assets/sahayog/images/letter_head_and_footer_.png";
+                bgImg.onload = function () {
+                  iframe.contentWindow.focus();
+                  iframe.contentWindow.print();
+                };
+
+                // Fallback timeout to trigger print anyway
+                setTimeout(() => {
+                  iframe.contentWindow.focus();
+                  iframe.contentWindow.print();
+                }, 3000);
 
                 let cleaned = false;
                 const cleanup = () => {
@@ -160,7 +176,7 @@ frappe.ui.form.on("Enquiry Reminder", {
                 };
 
                 iframe.contentWindow.addEventListener("afterprint", cleanup);
-                setTimeout(cleanup, 3000);
+                setTimeout(cleanup, 6000);
               }, 600);
             };
 
