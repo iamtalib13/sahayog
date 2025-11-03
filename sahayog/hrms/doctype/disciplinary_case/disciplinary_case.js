@@ -172,12 +172,11 @@ frappe.ui.form.on("Disciplinary Case", {
 
       frm
         .add_custom_button(__("Print"), function () {
-          // Loading overlay
           const overlay = document.createElement("div");
           overlay.style = `
                 position: fixed; top:0; left:0;
                 width:100%; height:100%;
-                background: rgba(255,255,255,0.7);
+                background: rgba(255,255,255,0.65);
                 display:flex; align-items:center; justify-content:center;
                 font-size:18px; z-index:99999;
             `;
@@ -196,65 +195,51 @@ frappe.ui.form.on("Disciplinary Case", {
           iframe.onload = () => {
             const doc = iframe.contentWindow.document;
 
-            // Background fixed layer
-            const bg = doc.createElement("div");
-            bg.style = `
-                    position: fixed;
-                    top:0; left:0;
-                    width: 100%;
-                    height: 100%;
-                    background: url('/assets/sahayog/images/letter_head_and_footer_.png') no-repeat top center;
-                    background-size: cover;
-                    z-index: -1;
-                `;
-            doc.body.appendChild(bg);
-
-            // Print CSS
             const style = doc.createElement("style");
             style.innerHTML = `
                     @page {
                         size: A4;
                         margin: 0 !important;
                     }
+
                     html, body {
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        width: 210mm !important;
-                        height: 297mm !important;
-                        overflow: hidden !important;
+                        margin:0 !important;
+                        padding:0 !important;
+                        width:210mm !important;
+                        height:297mm !important;
+                        overflow:hidden !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
-                    .print-content {
-                        padding-top: 160px; /* adjust for header space */
-                        page-break-inside: avoid !important;
-                        height: 100% !important;
-                        box-sizing: border-box;
+
+                    .print-page {
+                        position:relative;
+                        width:210mm; height:297mm;
+                        overflow:hidden;
+                    }
+
+                    .print-body {
+                        padding: 145px 30px 40px 30px;
+                        height:100%;
+                        box-sizing:border-box;
+                        page-break-inside: avoid;
                     }
                 `;
             doc.head.appendChild(style);
 
             const original = doc.body.innerHTML;
-            doc.body.innerHTML = `<div class="print-content">${original}</div>`;
 
-            // Explicit image load logic
-            const img = new Image();
-            img.src = "/assets/sahayog/images/letter_head_and_footer_.png";
+            doc.body.innerHTML = `
+                    <div class="print-page">
+                        ${original}
+                    </div>
+                `;
 
-            img.onload = () => {
-              setTimeout(() => {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-              }, 300);
-            };
-
-            // Fallback print after 2 sec
             setTimeout(() => {
               iframe.contentWindow.focus();
               iframe.contentWindow.print();
-            }, 2000);
+            }, 500);
 
-            // Cleanup
             const cleanup = () => {
               overlay.remove();
               iframe.remove();

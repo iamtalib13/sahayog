@@ -73,24 +73,33 @@ frappe.ui.form.on("Suspension Process", {
               // Inject CSS with background image for print
               const style = doc.createElement("style");
               style.innerHTML = `
-              @media print {
-                html, body {
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  height: 100%;
-                  background: url('/assets/sahayog/images/letter_head_and_footer_.png') no-repeat top center;
-                  background-size: 100% auto;
-                  -webkit-print-color-adjust: exact !important;
-                  color-adjust: exact !important;
-                }
-                @page {
-                  margin: 10mm !important;
-                }
-                .print-content {
-                  position: relative;
-                  padding-top: 0px; /* Adjust this if needed */
-                }
-              }
+                    @page {
+                        size: A4;
+                        margin: 0 !important;
+                    }
+
+                    html, body {
+                        margin:0 !important;
+                        padding:0 !important;
+                        width:210mm !important;
+                        height:297mm !important;
+                        overflow:hidden !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+
+                    .print-page {
+                        position:relative;
+                        width:210mm; height:297mm;
+                        overflow:hidden;
+                    }
+
+                    .print-body {
+                        padding: 145px 30px 40px 30px;
+                        height:100%;
+                        box-sizing:border-box;
+                        page-break-inside: avoid;
+                    }
             `;
               doc.head.appendChild(style);
 
