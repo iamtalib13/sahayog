@@ -94,7 +94,6 @@ function generate_transactions_table_html(transfers) {
     .map((t, index) => {
       const btn_id = `btn_print_${t.name.replace(/[^a-zA-Z0-9]/g, "")}`;
 
-      // ✅ Print button only when enable_print = 1
       const actionHtml =
         t.enable_print === 1
           ? `<button class="btn btn-sm btn-success" id="${btn_id}">🖨️ Print Share Certificate</button>`
@@ -166,7 +165,21 @@ function generate_transactions_table_html(transfers) {
       </tr>
     </thead>
     <tbody>${rows}</tbody>
-  </table>`;
+  </table>
+
+  <div style="margin-top: 18px; padding: 12px 16px; background: linear-gradient(135deg, #fee2e2, #fecaca); border-left: 4px solid #dc2626; border-radius: 6px; font-size: 13.5px; line-height: 1.6; color: #7f1d1d; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.15);">
+    🖨️ <b>Print Guideline:</b> When printing the certificate, please ensure that you select 
+    <span style="background: #fca5a5; padding: 2px 5px; border-radius: 3px; font-weight: 700; color: #991b1b;">Margins: None</span> 
+    in the Print Settings.
+    <br><br>
+    <b>हिंदी:</b> प्रमाणपत्र प्रिंट करते समय, कृपया सुनिश्चित करें कि आप प्रिंट सेटिंग्स में 
+    <span style="background: #fca5a5; padding: 2px 5px; border-radius: 3px; font-weight: 700; color: #991b1b;">Margins: None</span> 
+    का चयन करें।
+    <br><br>
+    <b>मराठी:</b> प्रमाणपत्र प्रिंट करताना, कृपया खात्री करा की तुम्ही प्रिंट सेटिंग्जमध्ये 
+    <span style="background: #fca5a5; padding: 2px 5px; border-radius: 3px; font-weight: 700; color: #991b1b;">Margins: None</span> 
+    निवडले आहे.
+  </div>`;
 }
 
 /**
