@@ -174,19 +174,19 @@ frappe.ui.form.on("Disciplinary Case", {
             const overlay = document.createElement("div");
             overlay.id = "print-overlay";
             overlay.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(255,255,255,0.6);
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 18px;
-                    color: #333;
-                `;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(255,255,255,0.6);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          color: #333;
+        `;
             overlay.innerHTML = "Preparing print preview...";
             document.body.appendChild(overlay);
 
@@ -197,58 +197,69 @@ frappe.ui.form.on("Disciplinary Case", {
                 frm.doc.doctype
               )}&name=${encodeURIComponent(
                 frm.doc.name
-              )}&format=${encodeURIComponent("Show Cause Notice")}`
+              )}&format=${encodeURIComponent("Disciplinary Case Notice")}`
             );
             document.body.appendChild(iframe);
 
             iframe.onload = () => {
-              setTimeout(() => {
-                const doc = iframe.contentWindow.document;
+              const doc = iframe.contentWindow.document;
 
-                // Inject CSS to set background image
-                const style = doc.createElement("style");
-                style.innerHTML = `
-                            @media print {
-                                html, body {
-                                    margin: 0 !important;
-                                    padding: 0 !important;
-                                    height: 100%;
-                                    background: url('/assets/sahayog/images/letter_head_and_footer_.png') no-repeat top center;
-                                    background-size: 100% auto;
-                                    -webkit-print-color-adjust: exact !important;
-                                    color-adjust: exact !important;
-                                }
+              // Inject CSS for proper print layout
+              const style = doc.createElement("style");
+              style.innerHTML = `
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box;
+                height: auto !important;
+                overflow: visible !important;
+                background: url('/assets/sahayog/images/letter_head_and_footer_.png') no-repeat top center;
+                background-size: 100% auto;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              @page {
+                size: A4;
+                margin: 10mm !important;
+              }
+              .print-content {
+                position: relative;
+                padding-top: 160px;
+                page-break-inside: avoid;
+              }
+            }
+          `;
+              doc.head.appendChild(style);
 
-                                @page {
-                                    margin: 10mm !important;
-                                }
+              // Wrap content inside print-content div
+              const bodyHTML = doc.body.innerHTML;
+              doc.body.innerHTML = `<div class="print-content">${bodyHTML}</div>`;
 
-                                .print-content {
-                                    position: relative;
-                                    padding-top: 160px; /* Push text below header image */
-                                }
-                            }
-                        `;
-                doc.head.appendChild(style);
-
-                // Wrap content inside container so it prints above background
-                const bodyHTML = doc.body.innerHTML;
-                doc.body.innerHTML = `<div class="print-content">${bodyHTML}</div>`;
-
+              // Preload background image before print
+              const bgImg = new Image();
+              bgImg.src = "/assets/sahayog/images/letter_head_and_footer_.png";
+              bgImg.onload = function () {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
+              };
 
-                let done = false;
-                const cleanup = () => {
-                  if (done) return;
-                  done = true;
-                  overlay.remove();
-                  iframe.remove();
-                };
+              // Fallback if image fails to load
+              setTimeout(() => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+              }, 3000);
 
-                iframe.contentWindow.addEventListener("afterprint", cleanup);
-                setTimeout(cleanup, 3000);
-              }, 800);
+              let done = false;
+              const cleanup = () => {
+                if (done) return;
+                done = true;
+                overlay.remove();
+                iframe.remove();
+              };
+
+              iframe.contentWindow.addEventListener("afterprint", cleanup);
+              setTimeout(cleanup, 6000);
             };
 
             iframe.onerror = () => {
