@@ -1,15 +1,15 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-11-04 12:21:25.888669",
+ "creation": "2025-11-04 13:24:44.054076",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "unauthorized_absence_details_section",
   "date_of_1st_letter",
   "level",
   "remarks",
-  "column_break_fdtt",
+  "column_break_yufo",
+  "date_of_reminder_letter",
   "amount_of_fraud",
   "hr_employee_id",
   "document_upload",
@@ -21,7 +21,7 @@
   "zone_name",
   "issue_in_details",
   "issue_occurrence_date",
-  "column_break_mqjo",
+  "column_break_zqwy",
   "designation",
   "branch_name",
   "case_type",
@@ -31,11 +31,49 @@
  ],
  "fields": [
   {
-   "fetch_from": "case_id.employee_id",
-   "fieldname": "employee_id",
+   "fieldname": "date_of_1st_letter",
    "fieldtype": "Data",
-   "label": "Employee ID",
+   "label": "Date of 1st Unauthorized Absence letter",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yufo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_of_reminder_letter",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date of Reminder Unauthorized Absence letter",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "case_id.level",
+   "fieldname": "level",
+   "fieldtype": "Data",
+   "label": "level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hr_employee_id",
+   "fieldtype": "Data",
+   "label": "HR Employee ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "document_upload",
+   "fieldtype": "Attach",
+   "label": "Document Upload"
+  },
+  {
+   "fieldname": "case_details_section",
+   "fieldtype": "Section Break",
+   "label": "Case Details"
   },
   {
    "fieldname": "case_id",
@@ -45,19 +83,21 @@
    "set_only_once": 1
   },
   {
-   "fieldname": "case_details_section",
-   "fieldtype": "Section Break",
-   "label": "Case Details"
-  },
-  {
-   "fieldname": "column_break_mqjo",
-   "fieldtype": "Column Break"
-  },
-  {
    "fetch_from": "case_id.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zqwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "case_id.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "label": "Employee ID",
    "read_only": 1
   },
   {
@@ -110,10 +150,10 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.issue_occurrence_date",
-   "fieldname": "issue_occurrence_date",
-   "fieldtype": "Data",
-   "label": "Issue Occurrence Date",
+   "fetch_from": "case_id.description",
+   "fieldname": "issue_in_details",
+   "fieldtype": "Small Text",
+   "label": "Issue in Details",
    "read_only": 1
   },
   {
@@ -124,50 +164,10 @@
    "read_only": 1
   },
   {
-   "fieldname": "unauthorized_absence_details_section",
-   "fieldtype": "Section Break",
-   "label": "Unauthorized Absence Details"
-  },
-  {
-   "fieldname": "date_of_1st_letter",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Date of 1st Unauthorized Absence letter",
-   "reqd": 1
-  },
-  {
-   "fetch_from": "case_id.level",
-   "fieldname": "level",
+   "fetch_from": "case_id.issue_occurrence_date",
+   "fieldname": "issue_occurrence_date",
    "fieldtype": "Data",
-   "label": "level",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_fdtt",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "case_id.hr_employee_id",
-   "fieldname": "hr_employee_id",
-   "fieldtype": "Data",
-   "label": "HR Employee ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "document_upload",
-   "fieldtype": "Attach",
-   "label": "Document Upload"
-  },
-  {
-   "fieldname": "remarks",
-   "fieldtype": "Small Text",
-   "label": "Remarks"
-  },
-  {
-   "fetch_from": "case_id.description",
-   "fieldname": "issue_in_details",
-   "fieldtype": "Small Text",
-   "label": "Issue in Details",
+   "label": "Issue Occurrence Date",
    "read_only": 1
   },
   {
@@ -181,10 +181,10 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-04 13:57:17.109163",
+ "modified": "2025-11-04 13:57:00.261821",
  "modified_by": "Administrator",
  "module": "HRMS",
- "name": "Unauthorized Absence",
+ "name": "Reminder Of Unauthorized Absence",
  "owner": "Administrator",
  "permissions": [
   {
