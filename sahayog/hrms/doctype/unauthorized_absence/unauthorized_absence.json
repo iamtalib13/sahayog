@@ -1,29 +1,28 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-10-15 13:04:24.780019",
+ "creation": "2025-11-04 12:21:25.888669",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_webc",
-  "domestic_enquiry",
-  "place_of_enquiry",
+  "unauthorized_absence_details_section",
+  "date_of_1st_letter",
+  "level",
   "remarks",
-  "column_break_hoah",
-  "status_of_response",
-  "date_of_enquiry",
-  "enquiry_officer_name",
-  "enquiry_status",
-  "enquiry_report_upload",
-  "section_break_ulcv",
+  "column_break_fdtt",
+  "date_of_reminder_letter",
+  "fraud_amount",
+  "hr_employee_id",
+  "document_upload",
+  "case_details_section",
   "case_id",
   "employee_id",
   "employee_name",
   "branch_id",
   "zone_name",
-  "issue_in_details",
+  "issue_in_detail",
   "issue_occurrence_date",
-  "column_break_eecd",
+  "column_break_mqjo",
   "designation",
   "branch_name",
   "case_type",
@@ -47,28 +46,19 @@
    "set_only_once": 1
   },
   {
-   "fieldname": "column_break_eecd",
-   "fieldtype": "Column Break"
+   "fieldname": "case_details_section",
+   "fieldtype": "Section Break",
+   "label": "Case Details"
   },
   {
-   "fetch_from": "case_id.employee_name",
-   "fieldname": "employee_name",
-   "fieldtype": "Data",
-   "label": "Employee Name",
-   "read_only": 1
+   "fieldname": "column_break_mqjo",
+   "fieldtype": "Column Break"
   },
   {
    "fetch_from": "case_id.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.branch_id",
-   "fieldname": "branch_id",
-   "fieldtype": "Data",
-   "label": "Branch ID",
    "read_only": 1
   },
   {
@@ -79,10 +69,10 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.zone",
-   "fieldname": "zone_name",
+   "fetch_from": "case_id.employee_name",
+   "fieldname": "employee_name",
    "fieldtype": "Data",
-   "label": "Zone Name",
+   "label": "Employee Name",
    "read_only": 1
   },
   {
@@ -93,10 +83,10 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.description",
-   "fieldname": "issue_in_details",
-   "fieldtype": "Small Text",
-   "label": "Issue In Details",
+   "fetch_from": "case_id.branch_id",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
    "read_only": 1
   },
   {
@@ -107,10 +97,24 @@
    "read_only": 1
   },
   {
+   "fetch_from": "case_id.zone",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "read_only": 1
+  },
+  {
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Data",
-   "label": "Issue Date Reported To HR",
+   "label": "Issue Date Reported to HR",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.description",
+   "fieldname": "issue_in_detail",
+   "fieldtype": "Data",
+   "label": "Issue in Detail",
    "read_only": 1
   },
   {
@@ -124,76 +128,71 @@
    "fetch_from": "case_id.case_status",
    "fieldname": "case_status",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Case Status",
    "read_only": 1
   },
   {
-   "fieldname": "status_of_response",
-   "fieldtype": "Select",
-   "label": "Status of Response",
-   "options": "\nSatisfactory\nNot Satisfactory\nNot Submitted"
+   "fieldname": "unauthorized_absence_details_section",
+   "fieldtype": "Section Break",
+   "label": "Unauthorized Absence Details"
   },
   {
-   "fieldname": "domestic_enquiry",
-   "fieldtype": "Select",
-   "label": "Domestic Enquiry",
-   "options": "\nYes\nNo"
-  },
-  {
-   "fieldname": "date_of_enquiry",
+   "fieldname": "date_of_1st_letter",
    "fieldtype": "Date",
-   "label": "Date of Enquiry"
-  },
-  {
-   "fieldname": "enquiry_officer_name",
-   "fieldtype": "Data",
-   "label": "Enquiry Officer Name"
-  },
-  {
-   "fieldname": "enquiry_status",
-   "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Enquiry Status",
-   "options": "\nNot Responded\nCompleted Enquiry"
+   "label": "Date of 1st Unauthorized Absence letter",
+   "reqd": 1
   },
   {
-   "fieldname": "place_of_enquiry",
+   "fieldname": "date_of_reminder_letter",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date of Reminder Unauthorized Absence letter",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "case_id.level",
+   "fieldname": "level",
    "fieldtype": "Data",
-   "label": "Place of Enquiry"
+   "label": "level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_fdtt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "case_id.amount_of_fraud",
+   "fieldname": "fraud_amount",
+   "fieldtype": "Data",
+   "label": "Fraud amount",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.hr_employee_id",
+   "fieldname": "hr_employee_id",
+   "fieldtype": "Data",
+   "label": "HR Employee ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "document_upload",
+   "fieldtype": "Attach",
+   "label": "Document Upload"
   },
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
-  },
-  {
-   "fieldname": "enquiry_report_upload",
-   "fieldtype": "Attach",
-   "label": "Enquiry Report Upload"
-  },
-  {
-   "fieldname": "section_break_webc",
-   "fieldtype": "Section Break",
-   "label": "Closure Details"
-  },
-  {
-   "fieldname": "column_break_hoah",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_ulcv",
-   "fieldtype": "Section Break",
-   "label": "Case Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-04 12:44:39.571462",
+ "modified": "2025-11-04 12:58:53.830000",
  "modified_by": "Administrator",
  "module": "HRMS",
- "name": "Case Closure",
+ "name": "Unauthorized Absence",
  "owner": "Administrator",
  "permissions": [
   {

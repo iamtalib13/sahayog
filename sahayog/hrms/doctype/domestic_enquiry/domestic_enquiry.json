@@ -21,13 +21,13 @@
   "zone_name",
   "issue_in_details",
   "issue_occurrence_date",
-  "case_status",
   "column_break_efjl",
   "designation",
   "branch_name",
   "case_type",
   "category",
-  "issue_reported_to_hr"
+  "issue_reported_to_hr",
+  "case_status"
  ],
  "fields": [
   {
@@ -162,7 +162,7 @@
   {
    "fieldname": "section_break_ddef",
    "fieldtype": "Section Break",
-   "label": "Domestic Details"
+   "label": "Enquiry Details"
   },
   {
    "fieldname": "column_break_wdmq",
@@ -196,7 +196,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-28 15:46:54.767333",
+ "modified": "2025-11-04 12:42:10.858972",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
