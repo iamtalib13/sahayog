@@ -171,7 +171,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.case_status",
+   "fetch_from": "case_id.status",
    "fieldname": "status",
    "fieldtype": "Data",
    "label": "Case Status",
@@ -181,7 +181,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-04 16:35:57.772772",
+ "modified": "2025-11-04 17:05:59.348970",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Reminder Of Unauthorized Absence",
