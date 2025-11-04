@@ -1,13 +1,8 @@
 {
  "charts": [],
- "content": "[{\"id\":\"NALlztd3o5\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Disciplinary Management\",\"col\":12}}]",
+ "content": "[{\"id\":\"Mc4lEHfLgz\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Disciplinary Action Management System</b></span>\",\"col\":12}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}}]",
  "creation": "2025-09-13 11:17:55.133668",
- "custom_blocks": [
-  {
-   "custom_block_name": "Disciplinary Management",
-   "label": "Disciplinary Management"
-  }
- ],
+ "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -17,7 +12,7 @@
  "is_hidden": 0,
  "label": "Disciplinary Management",
  "links": [],
- "modified": "2025-09-22 10:33:45.394215",
+ "modified": "2025-11-04 15:40:49.455840",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Disciplinary Management",
@@ -35,6 +30,15 @@
   }
  ],
  "sequence_id": 86.0,
- "shortcuts": [],
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Disciplinary Cases",
+   "link_to": "Disciplinary Cases",
+   "report_ref_doctype": "Disciplinary Case",
+   "type": "Report"
+  }
+ ],
  "title": "Disciplinary Management"
 }
