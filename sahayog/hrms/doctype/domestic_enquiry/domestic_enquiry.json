@@ -174,7 +174,7 @@
    "label": "Case Details"
   },
   {
-   "fetch_from": "case_id.case_status",
+   "fetch_from": "case_id.status",
    "fieldname": "status",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -196,7 +196,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-04 16:35:13.079533",
+ "modified": "2025-11-04 17:04:17.081202",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
