@@ -27,7 +27,7 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "case_status"
+  "status"
  ],
  "fields": [
   {
@@ -117,13 +117,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.case_status",
-   "fieldname": "case_status",
-   "fieldtype": "Data",
-   "label": "Case Status",
-   "read_only": 1
-  },
-  {
    "fieldname": "unauthorized_absence_details_section",
    "fieldtype": "Section Break",
    "label": "Unauthorized Absence Details"
@@ -176,12 +169,19 @@
    "fieldtype": "Data",
    "label": "Fraud amount",
    "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.case_status",
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Case Status",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-04 13:57:17.109163",
+ "modified": "2025-11-04 16:36:11.530243",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",

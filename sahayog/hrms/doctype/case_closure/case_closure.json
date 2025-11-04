@@ -29,7 +29,7 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "case_status"
+  "status"
  ],
  "fields": [
   {
@@ -121,14 +121,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.case_status",
-   "fieldname": "case_status",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Case Status",
-   "read_only": 1
-  },
-  {
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
@@ -185,12 +177,20 @@
    "fieldname": "section_break_ulcv",
    "fieldtype": "Section Break",
    "label": "Case Details"
+  },
+  {
+   "fetch_from": "case_id.case_status",
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Case Status",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-04 12:44:39.571462",
+ "modified": "2025-11-04 16:35:45.862127",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
