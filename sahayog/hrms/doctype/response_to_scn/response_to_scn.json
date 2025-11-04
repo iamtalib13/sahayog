@@ -26,7 +26,7 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "case_status"
+  "status"
  ],
  "fields": [
   {
@@ -165,7 +165,7 @@
   },
   {
    "fetch_from": "case_id.case_status",
-   "fieldname": "case_status",
+   "fieldname": "status",
    "fieldtype": "Data",
    "label": "Case Status",
    "read_only": 1
@@ -185,7 +185,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-04 12:44:00.068882",
+ "modified": "2025-11-04 16:34:56.616048",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

@@ -42,7 +42,7 @@ class CaseClosure(Document):
                         "date_of_enquiry",
                         "enquiry_officer_name",
                         "enquiry_status",
-                        "date_of_2nd_enquiry",
+                        
                     ],
                     as_dict=True,
                 )
@@ -72,4 +72,4 @@ def close_linked_case(case_id):
             docs = frappe.get_all(doctype, filters={"case_id": case_id}, fields=["name"])
             for d in docs:
                 # Directly set field and save without permission issues
-                frappe.db.set_value(doctype, d.name, "case_status", "Closed", update_modified=True)
+                frappe.db.set_value(doctype, d.name, "status", "Closed", update_modified=True)
