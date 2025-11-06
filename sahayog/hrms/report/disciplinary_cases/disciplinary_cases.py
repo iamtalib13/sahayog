@@ -9,9 +9,8 @@ def execute(filters=None):
         filters = {}
 
     # Extract filters
-    status = filters.get("case_status")
+    status = filters.get("status")
     branch = filters.get("branch_name")
-    zone = filters.get("zone")
     from_date = filters.get("from_date")
     to_date = filters.get("to_date")
 
@@ -21,7 +20,7 @@ def execute(filters=None):
     conditions = "WHERE 1=1"
 
     if status:
-        conditions += " AND dc.case_status = %(case_status)s"
+        conditions += " AND dc.status = %(status)s"
     if branch:
         conditions += " AND dc.branch_name = %(branch_name)s"
     if from_date:
@@ -34,8 +33,8 @@ def execute(filters=None):
     # ---------------------------
     columns = [
         {"label": "Case ID", "fieldname": "case_id", "fieldtype": "Link", "options": "Disciplinary Case", "width": 165},
-        {"label": "Status", "fieldname": "case_status", "fieldtype": "Data", "width": 120},
-		{"label": "Employee ID", "fieldname": "employee_id", "fieldtype": "Data", "width": 100},
+        {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
+        {"label": "Employee ID", "fieldname": "employee_id", "fieldtype": "Data", "width": 100},
         {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 180},
         {"label": "Designation", "fieldname": "designation", "fieldtype": "Data", "width": 150},
         {"label": "Branch", "fieldname": "branch_name", "fieldtype": "Data", "width": 95},
@@ -62,21 +61,25 @@ def execute(filters=None):
             dc.category,
             dc.issue_occurrence_date,
             dc.issue_report_to_hr,
-            dc.case_status
+            dc.status,
+            dc.creation,
+            dc.modified
         FROM `tabDisciplinary Case` dc
         {conditions}
-        ORDER BY dc.issue_occurrence_date DESC
+        ORDER BY dc.modified DESC, dc.creation DESC
     """, filters, as_dict=True)
 
     # ---------------------------
     # Summary Counts of the Report
     # ---------------------------
     total_cases = len(data)
-    under_process = sum(1 for d in data if d.case_status == "Under Process")
-    closed = sum(1 for d in data if d.case_status == "Closed")
+    draft = sum(1 for d in data if d.status == "Draft")
+    under_process = sum(1 for d in data if d.status == "Under Process")
+    closed = sum(1 for d in data if d.status == "Closed")
 
     report_summary = [
         {"label": "Total Cases", "value": total_cases, "indicator": "Blue"},
+        {"label": "Draft", "value": draft, "indicator": "gray"},
         {"label": "Under Process", "value": under_process, "indicator": "red"},
         {"label": "Closed", "value": closed, "indicator": "Green"},
     ]
@@ -85,12 +88,12 @@ def execute(filters=None):
     # Chart: Case Status Count
     # ---------------------------
     chart_data = frappe.db.sql("""
-        SELECT case_status, COUNT(name) as count
+        SELECT status, COUNT(name) as count
         FROM `tabDisciplinary Case`
-        GROUP BY case_status
+        GROUP BY status
     """, as_dict=True)
 
-    chart_labels = [d.case_status for d in chart_data]
+    chart_labels = [d.status for d in chart_data]
     chart_values = [d.count for d in chart_data]
 
     chart = {
