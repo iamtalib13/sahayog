@@ -3,12 +3,19 @@
 
 frappe.ui.form.on("Agent Activation Call Log", {
   refresh(frm) {
+    frm.trigger("hide_sidebar_options");
     // Refresh on load also
     if (frm.doc.agent) {
       frm.trigger("agent");
     }
+    if (frm.doc.trainer) {
+      frm.trigger("show_trainer_name");
+    }
   },
-
+  hide_sidebar_options(frm) {
+    $(".layout-side-section").hide();
+    $(".sidebar-toggle-btn").hide();
+  },
   // wants_to_stay checkbox par click karne par
   wants_to_stay: function (frm) {
     if (frm.doc.wants_to_stay === 1) {
@@ -94,6 +101,24 @@ frappe.ui.form.on("Agent Activation Call Log", {
         `<div style="color: #888; font-size: 13px;">No agent selected.</div>`
       );
       frm.fields_dict.branch_details_html.$wrapper.html("");
+    }
+  },
+  show_trainer_name: function (frm) {
+    // 👇 Add this block for showing trainer's full name in description
+    if (frm.doc.trainer) {
+      frappe.db.get_value("User", frm.doc.trainer, ["full_name"]).then((r) => {
+        if (r && r.message && r.message.full_name) {
+          const fullName = r.message.full_name;
+          frm.fields_dict.trainer.df.description = `Employee Name: <b>${frappe.utils.escape_html(
+            fullName
+          )}</b>`;
+          frm.refresh_field("trainer");
+        }
+      });
+    } else {
+      // Agar trainer blank hai
+      frm.fields_dict.trainer.df.description = "Trainer not assigned.";
+      frm.refresh_field("trainer");
     }
   },
 });
