@@ -9,12 +9,14 @@
   "domestic_enquiry",
   "place_of_enquiry",
   "remarks",
+  "linked_enquiry_type",
   "column_break_hoah",
   "status_of_response",
   "date_of_enquiry",
   "enquiry_officer_name",
   "enquiry_status",
   "enquiry_report_upload",
+  "linked_enquiry",
   "section_break_ulcv",
   "case_id",
   "employee_id",
@@ -122,37 +124,42 @@
   },
   {
    "fieldname": "status_of_response",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot Satisfactory\nNot Submitted"
+   "options": "\n",
+   "read_only": 1
   },
   {
    "fieldname": "domestic_enquiry",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Domestic Enquiry",
-   "options": "\nYes\nNo"
+   "read_only": 1
   },
   {
    "fieldname": "date_of_enquiry",
-   "fieldtype": "Date",
-   "label": "Date of Enquiry"
+   "fieldtype": "Data",
+   "label": "Date of Enquiry",
+   "read_only": 1
   },
   {
    "fieldname": "enquiry_officer_name",
    "fieldtype": "Data",
-   "label": "Enquiry Officer Name"
+   "label": "Enquiry Officer Name",
+   "read_only": 1
   },
   {
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Enquiry Status",
-   "options": "\nNot Responded\nCompleted Enquiry"
+   "options": "\nNot Responded\nCompleted Enquiry",
+   "read_only": 1
   },
   {
    "fieldname": "place_of_enquiry",
    "fieldtype": "Data",
-   "label": "Place of Enquiry"
+   "label": "Place of Enquiry",
+   "read_only": 1
   },
   {
    "fieldname": "remarks",
@@ -185,12 +192,26 @@
    "in_list_view": 1,
    "label": "Case Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "linked_enquiry_type",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Linked Enquiry Type",
+   "options": "\nResponse to SCN\nDomestic Enquiry\nEnquiry Reminder"
+  },
+  {
+   "fieldname": "linked_enquiry",
+   "fieldtype": "Dynamic Link",
+   "hidden": 1,
+   "label": "Linked Enquiry",
+   "options": "linked_enquiry_type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-06 11:33:41.951219",
+ "modified": "2025-11-06 15:32:50.312949",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

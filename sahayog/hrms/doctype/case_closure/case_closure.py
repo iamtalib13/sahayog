@@ -9,55 +9,10 @@ class CaseClosure(Document):
         else:
             self.name = frappe.model.naming.make_autoname("CLS-.#####")
 
-    def before_insert(self):
-        """Auto-fetch data from Domestic Enquiry or Enquiry Reminder if available"""
-        if self.case_id:
-            # Try to fetch from Domestic Enquiry
-            de_data = frappe.db.get_value(
-                "Domestic Enquiry",
-                {"case_id": self.case_id},
-                [
-                    "domestic_enquiry",
-                    "place_of_enquiry",
-                    "status_of_response",
-                    "date_of_enquiry",
-                    "enquiry_officer_name",
-                ],
-                as_dict=True,
-            )
-
-            if de_data:
-                for key, value in de_data.items():
-                    if value and not self.get(key):
-                        self.set(key, value)
-            else:
-                # Fallback to Enquiry Reminder if Domestic Enquiry not found
-                er_data = frappe.db.get_value(
-                    "Enquiry Reminder",
-                    {"case_id": self.case_id},
-                    [
-                        "domestic_enquiry",
-                        "place_of_enquiry",
-                        "status_of_response",
-                        "date_of_enquiry",
-                        "enquiry_officer_name",
-                        "enquiry_status",
-                        
-                    ],
-                    as_dict=True,
-                )
-                if er_data:
-                    for key, value in er_data.items():
-                        if value and not self.get(key):
-                            self.set(key, value)
-
 
 @frappe.whitelist()
 def close_linked_case(case_id):
-    """
-    Update case_status to 'Closed' for all linked doctypes for a given case_id.
-    """
-
+    """Marks all linked docs for a case_id as Closed (if they have a status field)."""
     linked_doctypes = [
         "Disciplinary Case",
         "Suspension Process",
@@ -67,9 +22,99 @@ def close_linked_case(case_id):
     ]
 
     for doctype in linked_doctypes:
-        # Check if doctype exists in DB to avoid TableMissingError
-        if frappe.db.exists("DocType", doctype):
-            docs = frappe.get_all(doctype, filters={"case_id": case_id}, fields=["name"])
-            for d in docs:
-                # Directly set field and save without permission issues
+        if not frappe.db.exists("DocType", doctype):
+            continue
+
+        for d in frappe.get_all(doctype, filters={"case_id": case_id}, fields=["name"]):
+            if frappe.db.has_column(doctype, "status"):
                 frappe.db.set_value(doctype, d.name, "status", "Closed", update_modified=True)
+
+@frappe.whitelist()
+def get_latest_linked_enquiry(case_id):
+    """Determine the latest record in the case workflow and return all available field data."""
+    if not case_id:
+        return {}
+
+    docs = []
+
+    # Fetch latest Response to SCN
+    rscn = frappe.get_all(
+        "Response to SCN",
+        filters={"case_id": case_id},
+        fields=["name", "modified", "status_of_response", "domestic_enquiry"],
+        order_by="modified desc",
+        limit=1,
+    )
+    if rscn and rscn[0].status_of_response == "Satisfactory":
+        docs.append({
+            "doctype": "Response to SCN",
+            "name": rscn[0].name,
+            "modified": rscn[0].modified,
+            "data": {
+                "status_of_response": rscn[0].status_of_response,
+                "domestic_enquiry": rscn[0].domestic_enquiry,
+            },
+        })
+
+    # Fetch latest Domestic Enquiry
+    de = frappe.get_all(
+        "Domestic Enquiry",
+        filters={"case_id": case_id},
+        fields=[
+            "name",
+            "modified",
+            "status_of_response",
+            "domestic_enquiry",
+            "place_of_enquiry",
+            "date_of_enquiry",
+            "enquiry_officer_name",
+        ],
+        order_by="modified desc",
+        limit=1,
+    )
+    if de:
+        d = de[0]
+        docs.append({
+            "doctype": "Domestic Enquiry",
+            "name": d.name,
+            "modified": d.modified,
+            "data": d,
+        })
+
+    # Fetch latest Enquiry Reminder
+    er = frappe.get_all(
+        "Enquiry Reminder",
+        filters={"case_id": case_id},
+        fields=[
+            "name",
+            "modified",
+            "status_of_response",
+            "domestic_enquiry",
+            "place_of_enquiry",
+            "date_of_enquiry",
+            "enquiry_officer_name",
+            "enquiry_status",
+        ],
+        order_by="modified desc",
+        limit=1,
+    )
+    if er:
+        e = er[0]
+        docs.append({
+            "doctype": "Enquiry Reminder",
+            "name": e.name,
+            "modified": e.modified,
+            "data": e,
+        })
+
+    if not docs:
+        return {}
+
+    # Pick the document with the latest modification
+    latest_doc = max(docs, key=lambda x: x["modified"])
+
+    return {
+        "linked_enquiry_type": latest_doc["doctype"],
+        "linked_enquiry": latest_doc["name"],
+        "data": latest_doc["data"],
+    }
