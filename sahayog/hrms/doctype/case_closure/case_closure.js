@@ -1,56 +1,82 @@
-// Copyright (c) 2025, Developer Team and contributors
-// For license information, please see license.txt
-
 frappe.ui.form.on("Case Closure", {
   onload(frm) {
     if (!frm.doc.case_id) return;
 
-    // 1️⃣ Try fetching from Domestic Enquiry
-    frappe.db
-      .get_value("Domestic Enquiry", { case_id: frm.doc.case_id }, [
-        "domestic_enquiry",
-        "place_of_enquiry",
-        "status_of_response",
-        "date_of_enquiry",
-        "enquiry_officer_name",
-      ])
-      .then((de_res) => {
-        console.log("🟡 Domestic Enquiry fetched data:", de_res.message);
-        if (de_res.message && Object.keys(de_res.message).length > 0) {
-          const de = de_res.message;
-          frm.set_value("domestic_enquiry", de.domestic_enquiry);
-          frm.set_value("place_of_enquiry", de.place_of_enquiry);
-          frm.set_value("status_of_response", de.status_of_response);
-          frm.set_value("date_of_enquiry", de.date_of_enquiry);
-          frm.set_value("enquiry_officer_name", de.enquiry_officer_name);
-        } else {
-          // 2️⃣ If no Domestic Enquiry found, fetch from Enquiry Reminder
-          frappe.db
-            .get_value("Enquiry Reminder", { case_id: frm.doc.case_id }, [
-              "domestic_enquiry",
-              "place_of_enquiry",
-              "status_of_response",
-              "date_of_enquiry",
-              "enquiry_officer_name",
-              "enquiry_status",
-            ])
-            .then((r) => {
-              console.log("🔍 Enquiry Reminder fetched data:", r.message);
-              if (r.message) {
-                const data = r.message;
-                frm.set_value("domestic_enquiry", data.domestic_enquiry);
-                frm.set_value("place_of_enquiry", data.place_of_enquiry);
-                frm.set_value("status_of_response", data.status_of_response);
-                frm.set_value("date_of_enquiry", data.date_of_enquiry);
-                frm.set_value(
-                  "enquiry_officer_name",
-                  data.enquiry_officer_name
-                );
-                frm.set_value("enquiry_status", data.enquiry_status);
-              }
-            });
-        }
-      });
+    const workflow_fields = [
+      "status_of_response",
+      "domestic_enquiry",
+      "place_of_enquiry",
+      "date_of_enquiry",
+      "date_of_2nd_enquiry",
+      "enquiry_officer_name",
+      "enquiry_status",
+    ];
+
+    // Hide all workflow fields initially
+    workflow_fields.forEach((f) => frm.set_df_property(f, "hidden", 1));
+
+    // Fetch the latest linked enquiry for this case
+    frappe.call({
+      method:
+        "sahayog.hrms.doctype.case_closure.case_closure.get_latest_linked_enquiry",
+      args: { case_id: frm.doc.case_id },
+      callback: function (r) {
+        if (!r.message) return;
+
+        const { linked_enquiry_type, linked_enquiry, data } = r.message;
+        if (!linked_enquiry_type || !linked_enquiry) return;
+
+        // Store reference silently
+        frm.set_value("linked_enquiry_type", linked_enquiry_type);
+        frm.set_value("linked_enquiry", linked_enquiry);
+
+        // Define visible fields by linked doctype
+        const visible_fields_by_doctype = {
+          "Response to SCN": ["status_of_response", "domestic_enquiry"],
+          "Domestic Enquiry": [
+            "status_of_response",
+            "domestic_enquiry",
+            "place_of_enquiry",
+            "date_of_enquiry",
+            "enquiry_officer_name",
+          ],
+          "Enquiry Reminder": [
+            "status_of_response",
+            "domestic_enquiry",
+            "place_of_enquiry",
+            "date_of_enquiry",
+            "date_of_2nd_enquiry",
+            "enquiry_officer_name",
+            "enquiry_status",
+          ],
+        };
+
+        // Initialize fields_to_show before logging
+        const fields_to_show =
+          visible_fields_by_doctype[linked_enquiry_type] || [];
+
+        console.group("Case Closure Fetch Debug");
+        console.log("Linked Doctype:", linked_enquiry_type);
+        console.log("Linked Record:", linked_enquiry);
+        console.log("Fields requested:", fields_to_show);
+        console.log("Fetched data:", data);
+        console.groupEnd();
+
+        // Unhide & populate relevant fields
+        fields_to_show.forEach((f) => {
+          frm.set_df_property(f, "hidden", 0);
+          frm.set_df_property(f, "read_only", 1);
+          if (data && data[f] !== undefined && data[f] !== null) {
+            frm.set_value(f, data[f]);
+          }
+        });
+
+        frappe.show_alert({
+          message: `Fetched details from <b>${linked_enquiry_type}</b> (${linked_enquiry})`,
+          indicator: "green",
+        });
+      },
+    });
   },
 
   before_save(frm) {
@@ -59,7 +85,6 @@ frappe.ui.form.on("Case Closure", {
         method:
           "sahayog.hrms.doctype.case_closure.case_closure.close_linked_case",
         args: { case_id: frm.doc.case_id },
-        async: false,
       });
     }
   },
@@ -71,10 +96,12 @@ frappe.ui.form.on("Case Closure", {
       indicator: "green",
     });
   },
+
   refresh(frm) {
     frm.trigger("show_print_button");
   },
-  show_print_button: function (frm) {
+
+  show_print_button(frm) {
     if (!frm.is_new()) {
       const allowed_roles = ["System Manager", "Share Admin"];
       if (!frappe.user_roles.some((role) => allowed_roles.includes(role)))
@@ -84,12 +111,12 @@ frappe.ui.form.on("Case Closure", {
         .add_custom_button(__("Print"), function () {
           const overlay = document.createElement("div");
           overlay.style = `
-                position: fixed; top:0; left:0;
-                width:100%; height:100%;
-                background: rgba(255,255,255,0.65);
-                display:flex; align-items:center; justify-content:center;
-                font-size:18px; z-index:99999;
-            `;
+          position: fixed; top:0; left:0;
+          width:100%; height:100%;
+          background: rgba(255,255,255,0.65);
+          display:flex; align-items:center; justify-content:center;
+          font-size:18px; z-index:99999;
+        `;
           overlay.innerHTML = "Preparing print...";
           document.body.appendChild(overlay);
 
@@ -107,43 +134,15 @@ frappe.ui.form.on("Case Closure", {
 
             const style = doc.createElement("style");
             style.innerHTML = `
-                    @page {
-                        size: A4;
-                        margin: 0 !important;
-                    }
-
-                    html, body {
-                        margin:0 !important;
-                        padding:0 !important;
-                        width:210mm !important;
-                        height:297mm !important;
-                        overflow:hidden !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
-
-                    .print-page {
-                        position:relative;
-                        width:210mm; height:297mm;
-                        overflow:hidden;
-                    }
-
-                    .print-body {
-                        padding: 145px 30px 40px 30px;
-                        height:100%;
-                        box-sizing:border-box;
-                        page-break-inside: avoid;
-                    }
-                `;
+            @page { size: A4; margin: 0 !important; }
+            html, body { margin:0 !important; padding:0 !important; width:210mm !important; height:297mm !important; overflow:hidden !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .print-page { position:relative; width:210mm; height:297mm; overflow:hidden; }
+            .print-body { padding: 145px 30px 40px 30px; height:100%; box-sizing:border-box; page-break-inside: avoid; }
+          `;
             doc.head.appendChild(style);
 
             const original = doc.body.innerHTML;
-
-            doc.body.innerHTML = `
-                    <div class="print-page">
-                        ${original}
-                    </div>
-                `;
+            doc.body.innerHTML = `<div class="print-page">${original}</div>`;
 
             setTimeout(() => {
               iframe.contentWindow.focus();
