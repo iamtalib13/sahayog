@@ -1,7 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
- "autoname": "format:CALL-{DD}{MM}{YY}-{###}",
+ "autoname": "format:C-{agent}-{MM}-{YYYY}",
  "creation": "2025-06-04 15:57:17.561506",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -29,7 +28,8 @@
   "wants_to_stay",
   "want_to_exit",
   "exited",
-  "remarks"
+  "remarks",
+  "amended_from"
  ],
  "fields": [
   {
@@ -59,7 +59,7 @@
    "label": "Trainer",
    "link_filters": "[[\"User\",\"role\",\"=\",\"Trainer\"]]",
    "options": "User",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "agent_details_section",
@@ -161,12 +161,23 @@
    "fieldname": "branch_details_html",
    "fieldtype": "HTML",
    "options": "<div class=\"branch-details\"></div>"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Agent Activation Call Log",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-11-06 20:00:45.093306",
+ "modified": "2025-11-06 22:54:01.387938",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Activation Call Log",
