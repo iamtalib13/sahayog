@@ -206,7 +206,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-04 17:01:20.660516",
+ "modified": "2025-11-06 11:29:07.188028",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
@@ -222,6 +222,30 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Executive",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Manager",
    "share": 1,
    "write": 1
   }
