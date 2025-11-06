@@ -7,27 +7,36 @@
  "engine": "InnoDB",
  "field_order": [
   "trainer_details_section",
+  "column_break_trainer",
   "report_date",
-  "trainer",
-  "column_break_qcmo",
+  "column_break_jplm",
   "calling_date",
-  "section_break_upui",
-  "agent",
+  "column_break_hust",
+  "trainer",
+  "agent_details_section",
   "agent_phone_number",
+  "agent",
+  "agent_details_html",
+  "column_break_agent",
+  "branch_details_html",
+  "column_break_location",
   "date_of_joining",
+  "call_response_section",
   "connected_status",
+  "column_break_response",
   "reply_type",
-  "column_break_jxgr",
-  "agent_name",
-  "branch",
-  "district",
+  "status_section",
   "wants_to_stay",
   "want_to_exit",
   "exited",
-  "section_break_qvyu",
   "remarks"
  ],
  "fields": [
+  {
+   "fieldname": "trainer_details_section",
+   "fieldtype": "Section Break",
+   "label": "Trainer Details"
+  },
   {
    "default": "Today",
    "fieldname": "report_date",
@@ -35,13 +44,7 @@
    "label": "Report Date"
   },
   {
-   "fieldname": "trainer",
-   "fieldtype": "Link",
-   "label": "Trainer",
-   "options": "Employee"
-  },
-  {
-   "fieldname": "column_break_qcmo",
+   "fieldname": "column_break_trainer",
    "fieldtype": "Column Break"
   },
   {
@@ -51,25 +54,51 @@
    "label": "Calling Date"
   },
   {
-   "fieldname": "agent",
+   "fieldname": "trainer",
    "fieldtype": "Link",
-   "label": "Agent",
-   "options": "Agent"
+   "label": "Trainer",
+   "link_filters": "[[\"User\",\"role\",\"=\",\"Trainer\"]]",
+   "options": "User",
+   "reqd": 1
   },
   {
-   "fieldname": "section_break_upui",
+   "fieldname": "agent_details_section",
    "fieldtype": "Section Break",
    "label": "Agent Details"
   },
   {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Agent",
+   "options": "Agent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_agent",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "+91-",
    "fieldname": "agent_phone_number",
-   "fieldtype": "Data",
-   "label": "Agent Phone Number"
+   "fieldtype": "Phone",
+   "in_list_view": 1,
+   "label": "Agent Phone Number",
+   "reqd": 1
   },
   {
    "fieldname": "date_of_joining",
    "fieldtype": "Date",
    "label": "Date of Joining"
+  },
+  {
+   "fieldname": "column_break_location",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "call_response_section",
+   "fieldtype": "Section Break",
+   "label": "Call Response"
   },
   {
    "fieldname": "connected_status",
@@ -78,25 +107,19 @@
    "options": "\nYes\nNo"
   },
   {
+   "fieldname": "column_break_response",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "reply_type",
    "fieldtype": "Select",
    "label": "Reply Type",
    "options": "\nPositive\nNegative"
   },
   {
-   "fieldname": "column_break_jxgr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "branch",
-   "fieldtype": "Link",
-   "label": "Branch",
-   "options": "Branch"
-  },
-  {
-   "fieldname": "district",
-   "fieldtype": "Data",
-   "label": "District"
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Agent Status"
   },
   {
    "default": "0",
@@ -117,30 +140,33 @@
    "label": "Exited"
   },
   {
-   "fieldname": "section_break_qvyu",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "remarks",
    "fieldtype": "Text Editor",
    "label": "Remarks"
   },
   {
-   "fieldname": "trainer_details_section",
-   "fieldtype": "Section Break",
-   "label": "Trainer Details"
+   "fieldname": "column_break_jplm",
+   "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "agent.agent_name",
-   "fieldname": "agent_name",
-   "fieldtype": "Data",
-   "label": "Agent Name"
+   "fieldname": "column_break_hust",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_details_html",
+   "fieldtype": "HTML",
+   "options": "<div class=\"agent-details\"></div>"
+  },
+  {
+   "fieldname": "branch_details_html",
+   "fieldtype": "HTML",
+   "options": "<div class=\"branch-details\"></div>"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-04 16:12:48.038729",
+ "modified": "2025-11-06 20:00:45.093306",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Activation Call Log",
