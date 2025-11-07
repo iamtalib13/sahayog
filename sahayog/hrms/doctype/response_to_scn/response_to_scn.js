@@ -2,6 +2,18 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Response to SCN", {
+  response_to_scn(frm) {
+    // Toggle visibility of Status of Response & Domestic Enquiry
+    const show_fields = frm.doc.response_to_scn === "Yes";
+    frm.toggle_display("status_of_response", show_fields);
+    frm.toggle_display("domestic_enquiry", show_fields);
+
+    // If "No", clear dependent fields
+    if (!show_fields) {
+      frm.set_value("status_of_response", "");
+      frm.set_value("domestic_enquiry", "");
+    }
+  },
   refresh(frm) {
     // Wait until all buttons are loaded
     frappe.after_ajax(() => {
@@ -68,7 +80,14 @@ frappe.ui.form.on("Response to SCN", {
     } else if (frm.doc.status_of_response === "Not Satisfactory") {
       frm.set_value("domestic_enquiry", "Yes");
     } else {
-      frm.set_value("domestic_enquiry", ""); // optional: clear if something else
+      frm.set_value("domestic_enquiry", "");
     }
+  },
+
+  onload(frm) {
+    // Handle visibility when re-opening existing form
+    const show_fields = frm.doc.response_to_scn === "Yes";
+    frm.toggle_display("status_of_response", show_fields);
+    frm.toggle_display("domestic_enquiry", show_fields);
   },
 });
