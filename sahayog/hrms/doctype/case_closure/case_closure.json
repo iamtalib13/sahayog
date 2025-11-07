@@ -31,7 +31,8 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "status"
+  "status",
+  "amended_from"
  ],
  "fields": [
   {
@@ -206,12 +207,23 @@
    "hidden": 1,
    "label": "Linked Enquiry",
    "options": "linked_enquiry_type"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Case Closure",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-11-06 15:32:50.312949",
+ "modified": "2025-11-07 11:49:23.191121",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
