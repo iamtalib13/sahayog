@@ -6,12 +6,12 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_kpne",
+  "response_to_scn",
   "status_of_response",
   "remarks",
   "column_break_aduu",
-  "response_to_scn",
-  "document_upload",
   "domestic_enquiry",
+  "document_upload",
   "section_break_hbzm",
   "case_id",
   "employee_id",
@@ -131,11 +131,11 @@
    "label": "Document Upload"
   },
   {
+   "depends_on": "eval:doc.response_to_scn==\"Yes\"\n",
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
-   "options": "\nSatisfactory\nNot Satisfactory",
-   "reqd": 1
+   "options": "\nSatisfactory\nNot Satisfactory"
   },
   {
    "fieldname": "remarks",
@@ -185,7 +185,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-06 11:31:16.437689",
+ "modified": "2025-11-07 10:33:29.883014",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",
