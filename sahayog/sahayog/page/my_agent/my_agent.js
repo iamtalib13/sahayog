@@ -185,7 +185,7 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
       main
         .find("#employeeInfo")
         .html(
-          `<h2>${user.employee_name}</h2><p>Employee ID: ${user.name} |  Sol ID: ${user.sol_id}</p>`
+          `<h2>${user.employee_name}</h2><p>Employee ID: ${user.name} | Sol ID: ${user.sol_id}</p>`
         );
     } else {
       main.find("#employeeInfo").html("<p>Employee info not available</p>");
