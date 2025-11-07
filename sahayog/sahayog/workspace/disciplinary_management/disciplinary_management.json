@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"Mc4lEHfLgz\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Disciplinary Action Management System</b></span>\",\"col\":12}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}}]",
+ "content": "[{\"id\":\"Mc4lEHfLgz\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Disciplinary Action Management System</b></span>\",\"col\":12}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}}]",
  "creation": "2025-09-13 11:17:55.133668",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "Disciplinary Management",
  "links": [],
- "modified": "2025-11-04 15:40:49.455840",
+ "modified": "2025-11-06 17:20:40.004650",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Disciplinary Management",
@@ -36,6 +36,14 @@
    "doc_view": "List",
    "label": "Disciplinary Cases",
    "link_to": "Disciplinary Cases",
+   "report_ref_doctype": "Disciplinary Case",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "HR Wise Cases",
+   "link_to": "HR Wise Cases",
    "report_ref_doctype": "Disciplinary Case",
    "type": "Report"
   }

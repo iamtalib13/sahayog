@@ -28,14 +28,21 @@ frappe.query_reports["Disciplinary Cases"] = {
     ],
 
     // ---------------------------
-    // On Load (Add Clear Filters Button)
+    // On Load (Add Clear Filters & New Case Button)
     // ---------------------------
     onload: function (report) {
+        const btn = report.page.add_inner_button(__('New Case'), () => frappe.new_doc('Disciplinary Case'));
+        $(btn).css({ background: '#000', color: '#fff', borderRadius: '6px', transition: '0.2s',})
+		.hover(
+          function () { $(this).css('background', '#444'); },
+          function () { $(this).css('background', '#000'); }
+        );
         report.page.add_inner_button(__('Clear Filters'), function () {
             // Clear all filter values
             report.filters.forEach(f => f.set_value(''));
             report.refresh();
         }).addClass('btn-secondary'); // Grey style button
+
     },
 
     // ---------------------------
