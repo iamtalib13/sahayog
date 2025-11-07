@@ -262,7 +262,7 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         allocated_employee: "5888",
       },
       callback: function (r) {
-        if (r.message) updateDashboards({ message: r.message });
+        if (r.message) updateDashboard({ message: r.message });
       },
     });
   }
