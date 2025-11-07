@@ -28,7 +28,8 @@
   "hr_employee_id",
   "hr_name",
   "response_time",
-  "status"
+  "status",
+  "amended_from"
  ],
  "fields": [
   {
@@ -190,10 +191,21 @@
    "label": "Case Status",
    "options": "\nDraft\nUnder Process\nClosed",
    "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Disciplinary Case",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
    "group": "Suspension",
@@ -206,7 +218,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-06 11:29:07.188028",
+ "modified": "2025-11-07 11:47:57.279996",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

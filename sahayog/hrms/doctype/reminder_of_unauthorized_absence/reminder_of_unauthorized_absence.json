@@ -27,7 +27,8 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "status"
+  "status",
+  "amended_from"
  ],
  "fields": [
   {
@@ -176,12 +177,23 @@
    "fieldtype": "Data",
    "label": "Case Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Reminder Of Unauthorized Absence",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-11-06 11:34:32.272900",
+ "modified": "2025-11-07 11:49:15.335164",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Reminder Of Unauthorized Absence",

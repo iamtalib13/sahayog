@@ -27,7 +27,8 @@
   "category",
   "issue_reported_to_hr",
   "suspension_required",
-  "status"
+  "status",
+  "amended_from"
  ],
  "fields": [
   {
@@ -180,10 +181,21 @@
    "in_list_view": 1,
    "label": "Case Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Suspension Process",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
    "group": "Response SCN",
@@ -191,7 +203,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-06 11:30:33.662811",
+ "modified": "2025-11-07 11:48:11.395934",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

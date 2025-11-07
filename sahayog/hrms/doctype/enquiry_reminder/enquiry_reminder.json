@@ -29,7 +29,8 @@
   "case_type",
   "category",
   "issue_reported_to_hr",
-  "status"
+  "status",
+  "amended_from"
  ],
  "fields": [
   {
@@ -192,10 +193,21 @@
    "fieldtype": "Data",
    "label": "Case Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Enquiry Reminder",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
    "group": "Case Closed",
@@ -203,7 +215,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-06 16:08:42.955499",
+ "modified": "2025-11-07 11:49:30.023850",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
