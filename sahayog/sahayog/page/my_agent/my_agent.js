@@ -5,7 +5,7 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     single_column: true,
   });
 
-  // Inject full HTML markup
+  // ---------------- HTML UI ----------------
   page.main.html(`
       <section id="employeeInfo" aria-label="Employee Information">
         <h2>Loading employee info...</h2>
@@ -13,28 +13,29 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
       </section>
 
       <nav class="tabs" role="tablist" aria-label="Agent Status Tabs">
-        <div class="tab active" role="tab" tabindex="0" aria-selected="true" id="unallocatedTab2">
-          My Agents<span class="tab-count" id="unallocatedCountBadge2">0</span>
+        <div class="tab" role="tab" id="unallocatedTab2">
+          My Agents <span class="tab-count" id="unallocatedCountBadge2">0</span>
         </div>
-        <div class="tab" role="tab" tabindex="-1" aria-selected="false" id="pendingTab">
-          Approval Pending<span class="tab-count" id="pendingCountBadge">0</span>
+        <div class="tab" role="tab" id="pendingTab">
+          Approval Pending <span class="tab-count" id="pendingCountBadge">0</span>
         </div>
-        <div class="tab" role="tab" tabindex="-1" aria-selected="false" id="allocatedTab">
-          Branch Allocated<span class="tab-count" id="allocatedCountBadge">0</span>
+        <div class="tab" role="tab" id="allocatedTab">
+          Branch Allocated <span class="tab-count" id="allocatedCountBadge">0</span>
         </div>
-        <div class="tab" role="tab" tabindex="-1" aria-selected="false" id="unallocatedTab">
-          Branch Unallocated<span class="tab-count" id="unallocatedCountBadge">0</span>
+        <div class="tab" role="tab" id="unallocatedTab">
+          Branch Unallocated <span class="tab-count" id="unallocatedCountBadge">0</span>
         </div>
       </nav>
 
       <section class="tab-panels">
-        <div id="pendingPanel" class="tab-panel" role="tabpanel" aria-labelledby="pendingTab" tabindex="0">
-          <table aria-label="My Agents List">
+        <div id="pendingPanel" class="tab-panel">
+          <table>
             <thead>
               <tr>
+			    <th>#</th>
                 <th>Agent ID</th>
                 <th>Agent Name</th>
-				<th>Branch Code</th>
+                <th>Branch Code</th>
                 <th>Status</th>
                 <th>Modified</th>
               </tr>
@@ -43,13 +44,14 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
           </table>
         </div>
 
-        <div id="allocatedPanel" class="tab-panel" role="tabpanel" aria-labelledby="allocatedTab" tabindex="0">
-          <table aria-label="Approval Pending List">
+        <div id="allocatedPanel" class="tab-panel">
+          <table>
             <thead>
               <tr>
+			    <th>#</th>
                 <th>Agent ID</th>
                 <th>Agent Name</th>
-				<th>Branch Code</th>
+                <th>Branch Code</th>
                 <th>Status</th>
                 <th>Modified</th>
               </tr>
@@ -58,13 +60,14 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
           </table>
         </div>
 
-        <div id="unallocatedPanel" class="tab-panel" role="tabpanel" aria-labelledby="unallocatedTab" tabindex="0">
-          <table aria-label="Branch Allocated List">
+        <div id="unallocatedPanel" class="tab-panel">
+          <table>
             <thead>
               <tr>
-                <th>Agent ID</th>
+			    <th>#</th>
+			    <th>Agent ID</th>
                 <th>Agent Name</th>
-				<th>Branch Code</th>
+                <th>Branch Code</th>
                 <th>Status</th>
                 <th>Modified</th>
               </tr>
@@ -73,13 +76,14 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
           </table>
         </div>
 
-        <div id="unallocatedPanel2" class="tab-panel active" role="tabpanel" aria-labelledby="unallocatedTab2" tabindex="0">
-          <table aria-label="Branch Unallocated List">
+        <div id="unallocatedPanel2" class="tab-panel">
+          <table>
             <thead>
               <tr>
+			    <th>#</th>
                 <th>Agent ID</th>
                 <th>Agent Name</th>
-				<th>Branch Code</th>
+                <th>Branch Code</th>
                 <th>Status</th>
                 <th>Modified</th>
               </tr>
@@ -89,178 +93,237 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         </div>
       </section>
 
+      <!-- Toast container -->
+      <div id="toast-container"></div>
+
       <style>
-        :root {
-          --primary: #036d6a;
-          --pending: #ffc107;
-          --allocated: #28a745;
-          --unallocated: #dc3545;
-          --gray: #6c757d;
-          --light-gray: #f9fafc;
+        #employeeInfo {
+          margin-bottom: 15px;
         }
-        h1 {margin-bottom: 20px;}
-        #employeeInfo {margin-bottom: 30px;}
-        #employeeInfo h2 {margin-bottom: 6px; font-weight: 700;}
-        #employeeInfo p {color: var(--gray); font-weight: 600;}
-        .tabs {display: flex; gap: 1.5rem; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; margin-bottom: 15px; background: #f8f9fa; user-select: none;}
-        .tab {flex: 1; padding: 12px 1rem; text-align: center; font-weight: 600; color: var(--gray); cursor: pointer; position: relative; transition: background 0.3s, color 0.3s; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0;}
-        .tab.active {background: white; color: var(--primary); border-bottom: 3px solid var(--primary); box-shadow: 0 -2px 8px rgba(67, 97, 238, 0.3);}
-        .tab-count {background: var(--primary); color: white; font-size: 12px; font-weight: 700; border-radius: 12px; padding: 2px 10px; margin-left: 8px; vertical-align: middle;}
-        .tab-panels {background: white; border-radius: 0 0 8px 8px; box-shadow: 0 2px 8px rgba(67, 97, 238, 0.15); border: 1px solid #ccc; padding: 20px;}
-        .tab-panel {display: none;}
-        .tab-panel.active {display: block;}
-        table {width: 100%; border-collapse: collapse; font-size: 14px;}
-        thead tr {background: var(--light-gray); font-weight: 600; color: var(--gray);}
-        thead th {padding: 12px 10px; text-align: left; border-bottom: 2px solid #eee;}
-        tbody tr {border-bottom: 1px solid #eee;}
-        tbody tr:hover {background: #f0f4ff; cursor: pointer;}
-        tbody td {padding: 10px;}
-        .status-badge {padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; display: inline-block; color: white; min-width: 90px; text-align: center;}
-        .pending-badge {background-color: var(--pending); color: #613c00;}
-        .allocated-badge {background-color: var(--allocated);}
-        .unallocated-badge {background-color: var(--unallocated);}
-        footer {text-align: center; font-size: 12px; margin-top: 30px; color: var(--gray);}
+
+        .tabs {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+
+        .tab {
+          padding: 10px 18px;
+          border-radius: 8px;
+          background: #f4f4f4;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .tab.active {
+          background: white;
+          border-bottom: 3px solid #036d6a;
+        }
+
+        .tab-count {
+          background: #036d6a;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+        }
+
+        .tab-panel {
+          display: none;
+        }
+
+        .tab-panel.active {
+          display: block;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+          background: white;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        thead {
+          background: #f9fafc;
+          font-weight: bold;
+        }
+
+        td, th {
+          padding: 10px;
+          border-bottom: 1px solid #eee;
+        }
+
+        /* ✅ Toast Styling */
+        #toast-container {
+          position: fixed;
+          top: 120px;
+          right: 30px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          z-index: 10000;
+        }
+
+        .toast-card {
+          background: #036d6a;
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: 14px 18px;
+          border-radius: 14px;
+          backdrop-filter: blur(10px);
+          color: white;
+          display: flex;
+          justify-content: space-between;
+          min-width: 260px;
+          animation: fadeIn .3s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeOut {
+          to { opacity: 0; transform: translateY(-10px); }
+        }
       </style>
     `);
 
+  // ---------------- TAB LOGIC ----------------
   const main = $(page.main);
 
-  // ✅ FORCE DEFAULT = My Agents
-  main.find(".tab").removeClass("active").attr("aria-selected", false);
-  main.find(".tab-panel").removeClass("active");
-
-  main
-    .find("#unallocatedTab2")
-    .addClass("active")
-    .attr("aria-selected", true)
-    .attr("tabindex", 0);
-
-  main.find("#unallocatedPanel2").addClass("active");
-
-  // --- Tab logic ---
-  main.find(".tab").on("click", function () {
-    const newActiveId = $(this).attr("id");
-
-    main
-      .find(".tab")
-      .removeClass("active")
-      .attr("aria-selected", false)
-      .attr("tabindex", -1);
-
-    $(this).addClass("active").attr("aria-selected", true).attr("tabindex", 0);
-
+  function activeTab(tabID) {
+    main.find(".tab").removeClass("active");
     main.find(".tab-panel").removeClass("active");
 
-    const targetPanel = newActiveId.replace("Tab", "Panel");
-    main.find(`#${targetPanel}`).addClass("active");
+    main.find(`#${tabID}`).addClass("active");
+    const panelID = tabID.replace("Tab", "Panel");
+    main.find(`#${panelID}`).addClass("active");
+  }
+
+  // Default
+  activeTab("unallocatedTab2");
+
+  main.find(".tab").on("click", function () {
+    activeTab($(this).attr("id"));
   });
 
-  function formatRow(r) {
-    const statusClass =
-      r.status === "Pending"
-        ? "pending-badge"
-        : r.status === "Allocated"
-        ? "allocated-badge"
-        : r.status === "Unallocated" || r.status === "Branch Unallocated"
-        ? "unallocated-badge"
-        : "";
+  // ---------------- Toast Function ----------------
+  function showToast({ title, message, icon = "⏳", timeout = 3500 }) {
+    const container = document.getElementById("toast-container");
+    const toast = document.createElement("div");
+    toast.className = "toast-card";
 
-    const modifiedDate = frappe.datetime.str_to_user(r.modified);
+    toast.innerHTML = `
+        <div>
+          <strong>${title}</strong><br>
+          <small>${message}</small>
+        </div>
+        <div>${icon}</div>
+      `;
 
-    return `<tr onclick="window.top.location.href='/app/agent/${r.name}'">
-        <td>${r.name}</td>
-        <td>${r.employee || "No employee"}</td>
-		<td>${r.branch_code || "N/A"}</td>
-        <td><span class="status-badge ${statusClass}">${r.status}</span></td>
-        <td>${modifiedDate}</td>
-      </tr>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.animation = "fadeOut .3s forwards";
+      setTimeout(() => toast.remove(), 300);
+    }, timeout);
+  }
+
+  // ---------------- Pending Toast Rotation ----------------
+  let pendingAgentQueue = [];
+  let pendingToastInterval = null;
+
+  function startPendingAgentToasts() {
+    if (pendingToastInterval) return;
+
+    let index = 0;
+    pendingToastInterval = setInterval(() => {
+      if (!pendingAgentQueue.length) return;
+
+      const agentID = pendingAgentQueue[index];
+      showToast({
+        title: "Pending Agent",
+        message: `Agent ID: ${agentID}`,
+        icon: "⏳",
+      });
+
+      index = (index + 1) % pendingAgentQueue.length;
+    }, 5000);
+  }
+
+  // ---------------- Update UI ----------------
+  function formatRow(r, i) {
+    const modified = frappe.datetime.str_to_user(r.modified);
+    return `
+    <tr onclick="window.top.location.href='/app/agent/${r.name}'">
+      <td>${i + 1}</td>
+      <td>${r.name}</td>
+      <td>${r.employee ?? "No employee"}</td>
+      <td>${r.branch_code ?? "N/A"}</td>
+      <td>${r.status}</td>
+      <td>${modified}</td>
+    </tr>
+  `;
+  }
+
+  function blank() {
+    return `<tr><td colspan="5" style="text-align:center">No Records</td></tr>`;
   }
 
   function updateDashboard(data) {
     const user = data.message.user;
-    const counts = data.message.counts;
     const records = data.message.records;
 
     if (user) {
-      main
-        .find("#employeeInfo")
-        .html(
-          `<h2>${user.employee_name}</h2><p>Employee ID: ${user.name} |  Sol ID: ${user.sol_id}</p>`
-        );
-    } else {
-      main.find("#employeeInfo").html("<p>Employee info not available</p>");
+      $("#employeeInfo").html(
+        `<h2>${user.employee_name}</h2><p>Employee ID: ${user.name} | Sol ID: ${user.sol_id}</p>`
+      );
     }
 
-    counts.forEach((item) => {
-      let badgeId;
-      switch (item.status) {
-        case "Pending":
-          badgeId = "#pendingCountBadge";
-          break;
-        case "Allocated":
-          badgeId = "#allocatedCountBadge";
-          break;
-        case "Unallocated":
-          badgeId = "#unallocatedCountBadge";
-          break;
-        case "Branch Unallocated":
-          badgeId = "#unallocatedCountBadge2";
-          break;
-      }
-      if (badgeId) main.find(badgeId).text(item.count);
-    });
-
     const groups = {
-      "Branch Unallocated": [],
       Pending: [],
       Allocated: [],
       Unallocated: [],
+      "Branch Unallocated": [],
     };
 
     records.forEach((r) => {
       if (groups[r.status]) groups[r.status].push(r);
     });
 
-    main
-      .find("#pendingRecords")
-      .html(
-        groups.Pending.length
-          ? groups.Pending.map(formatRow).join("")
-          : `<tr><td colspan="4">No records</td></tr>`
-      );
+    // ✅ update counts
+    $("#pendingCountBadge").text(groups.Pending.length);
+    $("#allocatedCountBadge").text(groups.Allocated.length);
+    $("#unallocatedCountBadge").text(groups.Unallocated.length);
+    $("#unallocatedCountBadge2").text(groups["Branch Unallocated"].length);
 
-    main
-      .find("#allocatedRecords")
-      .html(
-        groups.Allocated.length
-          ? groups.Allocated.map(formatRow).join("")
-          : `<tr><td colspan="4">No records</td></tr>`
-      );
+    // ✅ rotating toast
+    pendingAgentQueue = groups.Pending.map((r) => r.name);
+    startPendingAgentToasts();
 
-    main
-      .find("#unallocatedRecords")
-      .html(
-        groups.Unallocated.length
-          ? groups.Unallocated.map(formatRow).join("")
-          : `<tr><td colspan="4">No records</td></tr>`
-      );
-
-    main
-      .find("#unallocatedRecords2")
-      .html(
-        groups["Branch Unallocated"].length
-          ? groups["Branch Unallocated"].map(formatRow).join("")
-          : `<tr><td colspan="4">No records</td></tr>`
-      );
+    // ✅ tables
+    $("#pendingRecords").html(
+      groups.Pending.map((r, i) => formatRow(r, i)).join("") || blank()
+    );
+    $("#allocatedRecords").html(
+      groups.Allocated.map((r, i) => formatRow(r, i)).join("") || blank()
+    );
+    $("#unallocatedRecords").html(
+      groups.Unallocated.map((r, i) => formatRow(r, i)).join("") || blank()
+    );
+    $("#unallocatedRecords2").html(
+      groups["Branch Unallocated"].map((r, i) => formatRow(r, i)).join("") ||
+        blank()
+    );
   }
 
+  // ---------------- Load Data ----------------
   function loadAgentData() {
     frappe.call({
       method: "sahayog.api.get_employee_details.get_agent_records_filtered",
-      args: {
-        branch_code: "1133",
-        allocated_employee: "5888",
-      },
+      args: { branch_code: "1133", allocated_employee: "5888" },
       callback: function (r) {
         if (r.message) updateDashboard({ message: r.message });
       },
