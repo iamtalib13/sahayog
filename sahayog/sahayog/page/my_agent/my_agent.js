@@ -266,4 +266,6 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
       },
     });
   }
+
+  loadAgentData();
 };
