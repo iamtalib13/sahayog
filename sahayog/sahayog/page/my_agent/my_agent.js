@@ -91,7 +91,7 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
 
       <style>
         :root {
-          --primary: #ffffffff;
+          --primary: #036d6a;
           --pending: #ffc107;
           --allocated: #28a745;
           --unallocated: #dc3545;
