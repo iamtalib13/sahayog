@@ -133,18 +133,35 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
   });
 
   // ---------------- Toast Function ----------------
-  function showToast({ title, message, icon = "⏳", timeout = 3500 }) {
+  function showToast({
+    title,
+    message,
+    icon = "⏳",
+    timeout = 3500,
+    agent_id = null,
+  }) {
     const container = document.getElementById("toast-container");
     const toast = document.createElement("div");
     toast.className = "toast-card";
+    toast.style.cursor = agent_id ? "pointer" : "default";
+
     toast.innerHTML = `
-        <div>
-          <strong>${title}</strong><br>
-          <small>${message}</small>
-        </div>
-        <div>${icon}</div>
-      `;
+      <div>
+        <strong>${title}</strong><br>
+        <small>${message}</small>
+      </div>
+      <div>${icon}</div>
+    `;
+
+    // ✅ Redirect on click if agent ID provided
+    if (agent_id) {
+      toast.onclick = () => {
+        window.top.location.href = `/app/agent/${agent_id}`;
+      };
+    }
+
     container.appendChild(toast);
+
     setTimeout(() => {
       toast.style.animation = "fadeOut .3s forwards";
       setTimeout(() => toast.remove(), 300);
@@ -157,15 +174,20 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
 
   function startPendingAgentToasts() {
     if (pendingToastInterval) return;
+
     let index = 0;
     pendingToastInterval = setInterval(() => {
       if (!pendingAgentQueue.length) return;
+
       const agentID = pendingAgentQueue[index];
+
       showToast({
         title: "Pending Approval Request",
         message: `Agent ID: ${agentID}`,
         icon: "⏳",
+        agent_id: agentID,
       });
+
       index = (index + 1) % pendingAgentQueue.length;
     }, 5000);
   }
