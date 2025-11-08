@@ -244,37 +244,19 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
   }
 
   // ---------- JS replacement for your Python API (uses client-side helpers)
-  async function get_agent_records_filtered_js() {
-    // ✅ Get logged user id → "4046@sahayog.com" → "4046"
-    let emp_code = frappe.session.user.split("@")[0];
-
-    // ✅ Get employee details
-    let empRes = await frappe.db.get_value("Employee", emp_code, [
-      "name",
-      "employee_name",
-      "sol_id",
-    ]);
-
-    let employee = empRes?.message || null;
-    if (!employee) {
-      console.error("Employee not found for:", emp_code);
-      return { user: null, counts: [], records: [] };
-    }
-
-    let allocated_employee = employee.name; // 4046
-    let branch_code = employee.sol_id; // example: 1133
-
+  async function get_agent_records_filtered_js(
+    branch_code = "1133",
+    allocated_employee = "5888"
+  ) {
     const always_show_statuses = ["pending", "unallocated"];
 
-    // ✅ Fetch agent records in parallel
-    const [other_records, allocated_records] = await Promise.all([
+    const [other_records, allocated_records, userResp] = await Promise.all([
       frappe.db.get_list("Agent", {
         fields: ["name", "status", "employee", "modified", "branch_code"],
         filters: { branch_code, status: ["in", always_show_statuses] },
         order_by: "status asc",
         limit_page_length: 1000,
       }),
-
       frappe.db.get_list("Agent", {
         fields: ["name", "status", "employee", "modified", "branch_code"],
         filters: {
@@ -285,29 +267,26 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         order_by: "name asc",
         limit_page_length: 1000,
       }),
+      frappe.db.get_value("Employee", { name: allocated_employee }, [
+        "name",
+        "user_id",
+        "employee_name",
+        "sol_id",
+      ]),
     ]);
 
-    // ✅ Combine
+    const user = userResp?.message || null;
     const records = [...allocated_records, ...other_records];
 
-    // ✅ Group counts
     const status_counts = {};
     for (const rec of records) {
       const s = rec.status || "";
       status_counts[s] = (status_counts[s] || 0) + 1;
     }
-
     const counts = Object.keys(status_counts).map((status) => ({
       status,
       count: status_counts[status],
     }));
-
-    // ✅ Final user structure
-    const user = {
-      name: employee.name,
-      employee_name: employee.employee_name,
-      sol_id: employee.sol_id,
-    };
 
     return { user, counts, records };
   }
