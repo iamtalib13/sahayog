@@ -174,10 +174,13 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
 
   function startPendingAgentToasts() {
     if (pendingToastInterval) return;
+
     let index = 0;
     pendingToastInterval = setInterval(() => {
       if (!pendingAgentQueue.length) return;
+
       const agentID = pendingAgentQueue[index];
+
       showToast({
         title: "Pending Approval Request",
         message: `Agent ID: ${agentID}`,
