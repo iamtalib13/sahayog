@@ -182,7 +182,9 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         title: "Pending Approval Request",
         message: `Agent ID: ${agentID}`,
         icon: "⏳",
+        agent_id: agentID,
       });
+
       index = (index + 1) % pendingAgentQueue.length;
     }, 5000);
   }
