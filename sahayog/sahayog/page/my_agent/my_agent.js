@@ -275,6 +275,7 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
       ]),
     ]);
 
+    //
     const user = userResp?.message || null;
     const records = [...allocated_records, ...other_records];
 
