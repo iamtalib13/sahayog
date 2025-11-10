@@ -342,9 +342,11 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     let branch_code = employee.sol_id;
 
     let my_agents = await frappe.db.get_list("Agent", {
-
-
-
+      fields: ["name", "status", "employee", "modified", "branch_code"],
+      filters: { employee: user_id },
+      order_by: "modified desc",
+      limit_page_length: 5000,
+    });
 
     let final = [...my_agents, ...other_records];
     let unique = {};
