@@ -153,6 +153,7 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval: doc.days_of_suspension",
    "fieldname": "suspension_from_date",
    "fieldtype": "Date",
    "label": "Suspension from date",
@@ -203,7 +204,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-07 11:48:11.395934",
+ "modified": "2025-11-10 17:27:41.835692",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
