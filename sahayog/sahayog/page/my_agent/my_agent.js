@@ -341,6 +341,11 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     let user_id = employee.name;
     let branch_code = employee.sol_id;
 
+    let my_agents = await frappe.db.get_list("Agent", {
+
+
+
+
     let final = [...my_agents, ...other_records];
     let unique = {};
     final.forEach((r) => {
