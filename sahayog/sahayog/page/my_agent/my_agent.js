@@ -348,6 +348,16 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
       limit_page_length: 5000,
     });
 
+    let other_records = await frappe.db.get_list("Agent", {
+      fields: ["name", "status", "employee", "modified", "branch_code"],
+      filters: {
+        branch_code,
+        status: ["in", ["Pending", "Unallocated"]],
+      },
+      order_by: "modified desc",
+      limit_page_length: 5000,
+    });
+
     let final = [...my_agents, ...other_records];
     let unique = {};
     final.forEach((r) => {
