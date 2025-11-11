@@ -21,7 +21,7 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
             margin-bottom:12px;
           "
         >
-          If you don’t see the agent name correctly,
+          If you don’t see the agent name,
           the record may have been created by someone else.
         </div>
 
