@@ -23,6 +23,9 @@ frappe.ui.form.on("Enquiry Reminder", {
           if (list.length) {
             const de = list[0];
 
+            // Store date_of_enquiry for later validation
+            frm._date_of_enquiry = de.date_of_enquiry;
+
             // Set field values fetched from Domestic Enquiry
             frm.set_value("domestic_enquiry", de.domestic_enquiry);
             frm.set_value("status_of_response", de.status_of_response);
@@ -32,18 +35,23 @@ frappe.ui.form.on("Enquiry Reminder", {
 
             // 💡 Force UI refresh so the value reflects immediately
             frm.refresh_field("status_of_response");
+
+            // Optional: restrict date picker for date_of_2nd_enquiry
+            frm.set_df_property("date_of_2nd_enquiry", "options", {
+              min: de.date_of_enquiry,
+            });
           }
         });
     }
 
-    // ✅ Ensure button restrictions always reflect latest form value
+    // Ensure button restrictions always reflect latest form value
     frappe.after_ajax(() => {
       const $caseClosureBtn = $('button[data-doctype="Case Closure"]');
 
       // Remove old event handlers (avoid duplicate binding)
       $caseClosureBtn.off("mousedown.cc_check");
 
-      // 🧩 Common Save Check
+      // Common Save Check
       const ensureSaved = (e) => {
         if (frm.is_dirty()) {
           e.preventDefault();
@@ -58,7 +66,7 @@ frappe.ui.form.on("Enquiry Reminder", {
         return true;
       };
 
-      // 🔸 Case Closure Restriction based on Status of Response
+      // Case Closure Restriction based on Status of Response
       $caseClosureBtn.on("mousedown.cc_check", (e) => {
         if (!ensureSaved(e)) return;
         const current_status = frm.doc.status_of_response;
@@ -77,6 +85,29 @@ frappe.ui.form.on("Enquiry Reminder", {
       });
     });
   },
+
+  // Validation for date_of_2nd_enquiry
+  date_of_2nd_enquiry: function (frm) {
+    if (frm.doc.date_of_2nd_enquiry && frm._date_of_enquiry) {
+      const firstDate = frappe.datetime.str_to_obj(frm._date_of_enquiry);
+      const secondDate = frappe.datetime.str_to_obj(
+        frm.doc.date_of_2nd_enquiry
+      );
+
+      // Check if selected date is same or before date_of_enquiry
+      if (secondDate <= firstDate) {
+        frappe.msgprint({
+          title: __("Invalid Date"),
+          message: __(
+            "Date of 2nd Enquiry must be after the Date of Enquiry of the related Domestic Enquiry."
+          ),
+          indicator: "red",
+        });
+        frm.set_value("date_of_2nd_enquiry", null);
+      }
+    }
+  },
+
   refresh(frm) {
     frm.trigger("show_print_button");
   },
