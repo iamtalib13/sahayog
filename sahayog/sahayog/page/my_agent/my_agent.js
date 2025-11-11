@@ -40,7 +40,6 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
 
         <!-- ✅ Pending -->
         <div id="pendingPanel" class="tab-panel">
-        <div><h1>kjkj</h></div>
           <table>
             <thead>
               <tr>
