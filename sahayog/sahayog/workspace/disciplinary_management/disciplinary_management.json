@@ -1,8 +1,13 @@
 {
  "charts": [],
- "content": "[{\"id\":\"Mc4lEHfLgz\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\"><b>Disciplinary Action Management System</b></span>\",\"col\":12}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}},{\"id\":\"jZ1c-hBdWE\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Case History\",\"col\":3}}]",
+ "content": "[{\"id\":\"paM8GUnrbP\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Disciplinary Management\",\"col\":12}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}}]",
  "creation": "2025-09-13 11:17:55.133668",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "Disciplinary Management",
+   "label": "Disciplinary Management"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -12,7 +17,7 @@
  "is_hidden": 0,
  "label": "Disciplinary Management",
  "links": [],
- "modified": "2025-11-10 16:36:18.562592",
+ "modified": "2025-11-10 17:26:14.575439",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Disciplinary Management",
