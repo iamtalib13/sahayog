@@ -1,0 +1,408 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disciplinary Management</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+    }
+
+    .dm-dashboard { color: #333; background: #fff; }
+
+    /* Header */
+    .dm-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border: 1px solid #d3d3d3;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    .dm-header h2 { font-size: 1.8rem; color: #016868; }
+    .dm-btn-new {
+      background-color: #016868;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .dm-btn-new:hover { background-color: #014f4d; }
+
+    /* Widgets */
+    .dm-widgets {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+      border: 1px solid #d3d3d3;
+      border-radius: 8px;
+      padding: 16px;
+      background-color: #f9f9f9;
+    }
+    .dm-widget {
+      flex: 1;
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      border: 1px solid #d3d3d3;
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+    .dm-widget:hover { 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+      transform: translateY(-2px); 
+    }
+    .dm-widget .label { font-weight: bold; color: #000; font-size: 0.9rem; margin-bottom: 8px; }
+    .dm-widget .value { font-size: 1.5rem; font-weight: 600; color: #016868; }
+
+    /* Chart Section */
+    .dm-cases-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid #d3d3d3;
+      text-align: center;
+    }
+    .dm-cases-section h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      color: #016868;
+      font-weight: 600;
+    }
+
+    /* Chart container */
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      height: 400px;
+      margin: 0 auto;
+    }
+
+    @media(max-width: 768px){
+      .dm-widgets { flex-direction: column; }
+      .dm-header { flex-direction: column; gap: 8px; }
+      .dm-cases-section { padding: 12px; }
+      .chart-container { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dm-dashboard">
+    <!-- Header -->
+    <!-- <div class="dm-header">
+      <h2>Disciplinary Action Management System</h2>
+      <button class="dm-btn-new">New Case</button>
+    </div>
+
+    <!-- Widgets -->
+    <!-- <div class="dm-widgets">
+      <div class="dm-widget" id="widget-total">
+        <div class="label">Total Cases</div>
+        <div class="value" id="total-cases">29</div>
+      </div>
+      <div class="dm-widget" id="widget-under-process">
+        <div class="label">Under Process</div>
+        <div class="value" id="under-process">19</div>
+      </div>
+      <div class="dm-widget" id="widget-closed">
+        <div class="label">Closed</div>
+        <div class="value" id="closed">4</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <!-- <div class="dm-cases-section">
+      <h3>Month-wise Case Trend</h3>
+      <div class="chart-container">
+        <canvas id="cases-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let casesChart = null;
+
+    function renderCasesChart() {
+      const ctx = document.getElementById("cases-chart").getContext("2d");
+      if (casesChart) casesChart.destroy();
+
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const caseCounts = [5, 8, 12, 7, 9, 14, 10, 13, 6, 11, 15, 9];
+
+      casesChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: months,
+          datasets: [{
+            label: "Number of Cases",
+            data: caseCounts,
+            backgroundColor: "rgba(1, 104, 104, 0.2)",
+            borderColor: "#016868",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2,
+          scales: {
+            x: { title: { display: true, text: "Month" } },
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: "Number of Cases" },
+              suggestedMax: 20
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "#016868",
+              titleColor: "#fff",
+              bodyColor: "#fff"
+            }
+          }
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderCasesChart();
+
+      // New Case Button
+      document.querySelector(".dm-btn-new").onclick = () => {
+        window.location.href = "/app/disciplinary-case/new";
+      };
+
+      // Widget Click Events
+      document.getElementById("widget-total").onclick = () =>
+        window.top.location.href = "/app/disciplinary-case";
+
+      document.getElementById("widget-under-process").onclick = () =>
+        window.top.location.href = "/app/disciplinary-case?status=Under+Process";
+
+      document.getElementById("widget-closed").onclick = () =>
+        window.top.location.href = "/app/disciplinary-case?status=Closed";
+    });
+  </script>
+</body> -->
+<!-- </html>   -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disciplinary Management</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+    }
+
+    .dm-dashboard { color: #333; background: #fff; }
+
+    /* Header + Widgets Wrapper */
+    .dm-top-section {
+      border: 1px solid #d3d3d3;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      background-color: #fff;
+    }
+
+    /* Header */
+    .dm-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .dm-header h2 { font-size: 1.6rem; color: #016868; }
+    .dm-btn-new {
+      background-color: #016868;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .dm-btn-new:hover { background-color: #014f4d; }
+
+    /* Widgets */
+    .dm-widgets {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .dm-widget {
+      flex: 0 0 150px;
+      background-color: #f0f0f0;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #d3d3d3;
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+    .dm-widget:hover { 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+      transform: translateY(-2px); 
+    }
+    .dm-widget .label { font-weight: bold; color: #000; font-size: 0.8rem; margin-bottom: 4px; }
+    .dm-widget .value { font-size: 1.2rem; font-weight: 600; color: #016868; }
+
+    /* Chart Section */
+    .dm-cases-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid #d3d3d3;
+      text-align: center;
+    }
+    .dm-cases-section h3 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: #016868;
+      font-weight: 600;
+    }
+
+    /* Chart container */
+    .chart-container {
+      position: relative;
+      width: 80%;
+      max-width: 600px;
+      height: 250px;
+      margin: 0 auto; /* ✅ Center chart */
+    }
+
+    @media(max-width: 768px){
+      .dm-widgets { flex-direction: column; align-items: center; }
+      .dm-widget { width: 80%; }
+      .chart-container { width: 95%; height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dm-dashboard">
+
+    <!-- 🔹 Header + Cards Wrapper -->
+    <div class="dm-top-section">
+      <!-- Header -->
+      <div class="dm-header">
+        <h2>Disciplinary Action Management System</h2>
+        <button class="dm-btn-new">New Case</button>
+      </div>
+
+      <!-- Widgets -->
+      <div class="dm-widgets">
+        <div class="dm-widget" id="widget-total">
+          <div class="label">Total Cases</div>
+          <div class="value" id="total-cases">29</div>
+        </div>
+        <div class="dm-widget" id="widget-under-process">
+          <div class="label">Under Process</div>
+          <div class="value" id="under-process">19</div>
+        </div>
+        <div class="dm-widget" id="widget-closed">
+          <div class="label">Closed</div>
+          <div class="value" id="closed">4</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="dm-cases-section">
+      <h3>Month-wise Case Trend</h3>
+      <div class="chart-container">
+        <canvas id="cases-chart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let casesChart = null;
+
+    function renderCasesChart() {
+      const ctx = document.getElementById("cases-chart").getContext("2d");
+      if (casesChart) casesChart.destroy();
+
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const caseCounts = [5, 8, 12, 7, 9, 14, 10, 13, 6, 11, 15, 9];
+
+      casesChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: months,
+          datasets: [{
+            label: "Number of Cases",
+            data: caseCounts,
+            backgroundColor: "rgba(1, 104, 104, 0.2)",
+            borderColor: "#016868",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2,
+          scales: {
+            x: { title: { display: true, text: "Month" } },
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: "Number of Cases" },
+              suggestedMax: 20
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "#016868",
+              titleColor: "#fff",
+              bodyColor: "#fff"
+            }
+          }
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderCasesChart();
+
+      // New Case Button
+      document.querySelector(".dm-btn-new").onclick = () => {
+        window.location.href = "/app/disciplinary-case/new";
+      };
+
+      // Widget Click Events
+      document.getElementById("widget-total").onclick = () =>
+        window.top.location.href = "/app/disciplinary-case";
+
+      document.getElementById("widget-under-process").onclick = () =>
+        window.top.location.href = "/app/disciplinary-case?status=Under+Process";
+
+      document.getElementById("widget-closed").onclick = () =>
+        window.top.location.href = "/app/disciplinary-case?status=Closed";
+    });
+  </script>
+</body>
+</html>
+
