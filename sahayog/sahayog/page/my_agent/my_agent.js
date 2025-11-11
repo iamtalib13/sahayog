@@ -11,6 +11,21 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         <h2>Loading employee info...</h2>
         <p></p>
       </section>
+              <div id="infoBox"
+          style="
+            display:none;
+            background:#eee;
+            padding:12px 14px;
+            border-radius:8px;
+            font-size:14px;
+            margin-bottom:12px;
+          "
+        >
+          If you don’t see the agent name correctly,
+          the record may have been created by someone else.
+        </div>
+
+
 
       <input id="searchBox" type="text" class="form-control"
         placeholder="Search Agent ID / Name..."
@@ -140,6 +155,13 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     main.find(".tab-panel").removeClass("active");
     main.find(`#${tabID}`).addClass("active");
     main.find(`#${tabID.replace("Tab", "Panel")}`).addClass("active");
+
+    // ✅ Show message only for My Agents + Pending
+    if (tabID === "myAgentsTab" || tabID === "pendingTab") {
+      $("#infoBox").show();
+    } else {
+      $("#infoBox").hide();
+    }
   }
   activeTab("myAgentsTab");
   main.find(".tab").on("click", function () {
