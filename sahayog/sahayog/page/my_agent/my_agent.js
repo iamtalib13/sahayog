@@ -193,34 +193,34 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
   }
 }
 
-/* rising sparks */
-.bubble-anim::before,
-.bubble-anim::after {
-  content: "";
-  position: absolute;
-  bottom: -2px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: rgba(255, 230, 0, 0.8);
-  animation: fireSpark 1.6s infinite ease-out;
-  opacity: 0;
-}
+  /* rising sparks */
+  .bubble-anim::before,
+  .bubble-anim::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 230, 0, 0.8);
+    animation: fireSpark 1.6s infinite ease-out;
+    opacity: 0;
+  }
 
-.bubble-anim::before {
-  left: 20%;
-  animation-delay: 0.3s;
-}
-.bubble-anim::after {
-  left: 70%;
-  animation-delay: 0.9s;
-}
+  .bubble-anim::before {
+    left: 20%;
+    animation-delay: 0.3s;
+  }
+  .bubble-anim::after {
+    left: 70%;
+    animation-delay: 0.9s;
+  }
 
-@keyframes fireSpark {
-  0%   { transform: translateY(0) scale(0.3); opacity: 0.4; }
-  30%  { opacity: 1; }
-  100% { transform: translateY(-16px) scale(0.1); opacity: 0; }
-}
+  @keyframes fireSpark {
+    0%   { transform: translateY(0) scale(0.3); opacity: 0.4; }
+    30%  { opacity: 1; }
+    100% { transform: translateY(-16px) scale(0.1); opacity: 0; }
+  }
 
       </style>
     `);
