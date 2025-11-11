@@ -542,7 +542,8 @@ fixtures = [
                 "MIS Report List",
                 "Disciplinary Management",
                 "Inventory",
-                "Product Type Chart"
+                "Product Type Chart",
+                "DAMS dashboard"
 			}
         ]
     ]},

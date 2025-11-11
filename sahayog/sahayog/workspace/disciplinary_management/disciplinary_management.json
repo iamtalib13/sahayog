@@ -1,11 +1,11 @@
 {
  "charts": [],
- "content": "[{\"id\":\"paM8GUnrbP\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Disciplinary Management\",\"col\":12}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}}]",
+ "content": "[{\"id\":\"Ne1ezAAiPw\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"DAMS dashboard\",\"col\":12}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}}]",
  "creation": "2025-09-13 11:17:55.133668",
  "custom_blocks": [
   {
-   "custom_block_name": "Disciplinary Management",
-   "label": "Disciplinary Management"
+   "custom_block_name": "DAMS dashboard",
+   "label": "DAMS dashboard"
   }
  ],
  "docstatus": 0,
@@ -17,7 +17,7 @@
  "is_hidden": 0,
  "label": "Disciplinary Management",
  "links": [],
- "modified": "2025-11-10 17:26:14.575439",
+ "modified": "2025-11-11 16:34:09.075356",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Disciplinary Management",
@@ -40,14 +40,6 @@
    "color": "Grey",
    "doc_view": "List",
    "label": "Disciplinary Cases",
-   "link_to": "Disciplinary Cases",
-   "report_ref_doctype": "Disciplinary Case",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Case History",
    "link_to": "Disciplinary Cases",
    "report_ref_doctype": "Disciplinary Case",
    "type": "Report"
