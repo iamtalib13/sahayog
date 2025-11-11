@@ -145,6 +145,69 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         .toast-card { background: #036d6a; padding: 14px 18px; border-radius: 14px; color: white; display: flex; justify-content: space-between; min-width: 260px; animation: fadeIn .3s ease-out; cursor: pointer; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+/* ---- Water bubble main wobble ---- */
+.bubble-anim {
+  animation: bubbleWobble 2s infinite ease-in-out;
+  position: relative;
+  overflow: visible;
+}
+
+@keyframes bubbleWobble {
+  0%   { transform: scale(1);   }
+  50%  { transform: scale(1.16); }
+  100% { transform: scale(1);   }
+}
+
+/* ---- Rising small bubbles ---- */
+.bubble-anim::before,
+.bubble-anim::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 6px;
+  height: 6px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 50%;
+  opacity: 0;
+  animation: riseBubble 2s infinite ease-out;
+}
+
+.bubble-anim::after {
+  left: 60%;
+  animation-delay: 1s;
+}
+
+.bubble-anim::before {
+  left: 30%;
+  animation-delay: 0.4s;
+}
+
+@keyframes riseBubble {
+  0%   { transform: translateY(0) scale(0.6); opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { transform: translateY(-14px) scale(0.2); opacity: 0; }
+}
+
+        @keyframes pulseAlert {
+          0%   { background-color: #036d6a; }
+          50%  { background-color: #18a085; }
+          100% { background-color: #036d6a; }
+        }
+
+        /* Loading dots animation on text */
+        .loading-dots::after {
+          content: "...";
+          animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+          0%   { content: ""; }
+          25%  { content: "."; }
+          50%  { content: ".."; }
+          75%  { content: "..."; }
+          100% { content: ""; }
+        }
+
       </style>
     `);
 
@@ -329,7 +392,15 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
 
     STATE.grouped = groups;
 
+    // ✅ Add animation if pending > 0
     $("#pendingCountBadge").text(groups.Pending.length);
+    if (groups.Pending.length > 0) {
+      $("#pendingCountBadge").addClass("pulse");
+      $("#pendingTab span:first").addClass("loading-dots");
+    } else {
+      $("#pendingCountBadge").removeClass("pulse");
+      $("#pendingTab span:first").removeClass("loading-dots");
+    }
     $("#allocatedCountBadge").text(groups.Allocated.length);
     $("#unallocatedCountBadge").text(groups.Unallocated.length);
     $("#myAgentsCountBadge").text(groups.MyAgents.length);
