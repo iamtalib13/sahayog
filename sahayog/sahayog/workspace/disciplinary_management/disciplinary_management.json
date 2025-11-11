@@ -47,6 +47,14 @@
   {
    "color": "Grey",
    "doc_view": "List",
+   "label": "Case History",
+   "link_to": "Disciplinary Cases",
+   "report_ref_doctype": "Disciplinary Case",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
    "label": "HR Wise Cases",
    "link_to": "HR Wise Cases",
    "report_ref_doctype": "Disciplinary Case",

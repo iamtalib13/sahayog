@@ -73,6 +73,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "suspension_required",
    "fieldtype": "Select",
    "label": "Suspension Required",
@@ -104,6 +105,7 @@
    "label": "Remarks"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "amount_of_fraud",
    "fieldtype": "Currency",
    "label": "Amount of Fraud"
@@ -218,7 +220,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-07 11:47:57.279996",
+ "modified": "2025-11-10 11:53:51.016032",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

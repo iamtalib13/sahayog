@@ -76,6 +76,9 @@ app_include_js = [
     "/assets/sahayog/js/assignmate.js"
 ]
 
+
+
+
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -476,12 +479,14 @@ override_doctype_dashboards = {
 # }
 
 fixtures = [
-    {
-        "dt": "Print Format",
-        "filters": [
-            ["name", "in", ["LOI","Letter of Intent Print Format", "Show Cause Notice"]]
-        ]
-    },
+    # {
+    #     "dt": "Print Format",
+    #     "filters": [
+    #         ["name", "in", ["LOI","Letter of Intent Print Format", "Show Cause Notice"]]
+    #     ]
+    # },
+   
+
     {
         "dt": "Prodtech",
         
@@ -497,6 +502,18 @@ fixtures = [
     {
         "dt": "Custom DocPerm",
         "filters": [["parent", "in", ["Issue Register", "Branch Proposal","Project","Project Template","Task"]]]
+    },
+    {
+        "dt": "Workflow",
+        "filters": [["name", "in", ["Disciplinary Case"]]]
+    },
+    {
+        "dt": "Workflow State",
+        "filters": [["workflow_state_name", "in", ["Draft", "Under Process", "Closed"]]]
+    },
+    {
+        "dt": "Workflow Action Master",
+        "filters": [["workflow_action_name", "in", ["Submit"]]]
     },
     {
         "dt":"Workflow",
@@ -560,3 +577,4 @@ fixtures = [
     },
 
     ]
+
