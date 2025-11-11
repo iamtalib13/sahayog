@@ -40,6 +40,7 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
 
         <!-- ✅ Pending -->
         <div id="pendingPanel" class="tab-panel">
+        <div><h1>kjkj</h></div>
           <table>
             <thead>
               <tr>
@@ -285,9 +286,23 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     };
 
     records.forEach((r) => {
-      if (r.status_label === "Pending") groups.Pending.push(r);
+      // ✅ ✅ Updated Pending Logic
+      if (
+        r.status_label === "Pending" &&
+        (r.requested_by?.toLowerCase() ===
+          user.name?.toLowerCase() + "@sahayog.com" ||
+          r.approved_by?.toLowerCase() ===
+            user.name?.toLowerCase() + "@sahayog.com")
+      ) {
+        groups.Pending.push(r);
+        groups.MyAgents.push(r);
+      }
+
+      // ✅ No change below ↓
       if (r.status_label === "Allocated") groups.Allocated.push(r);
+
       if (r.status_label === "Unallocated") groups.Unallocated.push(r);
+
       if (r.employee === user.name) groups.MyAgents.push(r);
     });
 
@@ -349,7 +364,15 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     });
 
     let other_records = await frappe.db.get_list("Agent", {
-      fields: ["name", "status", "employee", "modified", "branch_code"],
+      fields: [
+        "name",
+        "status",
+        "employee",
+        "modified",
+        "branch_code",
+        "requested_by",
+        "approved_by",
+      ],
       filters: {
         branch_code,
         status: ["in", ["Pending", "Unallocated"]],
