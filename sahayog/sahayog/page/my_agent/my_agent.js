@@ -11,6 +11,21 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         <h2>Loading employee info...</h2>
         <p></p>
       </section>
+              <div id="infoBox"
+          style="
+            display:none;
+            background:#eee;
+            padding:12px 14px;
+            border-radius:8px;
+            font-size:14px;
+            margin-bottom:12px;
+          "
+        >
+          If you don’t see the agent name,
+          the record may have been created by someone else.
+        </div>
+
+
 
       <input id="searchBox" type="text" class="form-control"
         placeholder="Search Agent ID / Name..."
@@ -24,7 +39,8 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         </div>
 
         <div class="tab" role="tab" id="pendingTab">
-          Approval Pending <span class="tab-count" id="pendingCountBadge">0</span>
+          Approval Pending 
+          <span class="tab-count bubble-anim" id="pendingCountBadge">0</span>
         </div>
 
         <div class="tab" role="tab" id="allocatedTab">
@@ -130,6 +146,82 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         .toast-card { background: #036d6a; padding: 14px 18px; border-radius: 14px; color: white; display: flex; justify-content: space-between; min-width: 260px; animation: fadeIn .3s ease-out; cursor: pointer; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+/* ---- FIRE BALL COUNT ---- */
+.bubble-anim {
+  position: relative;
+  background: radial-gradient(circle at 50% 60%, #ffea00, #ff7a00, #ff002f);
+  box-shadow:
+    0 0 6px #ff6a00,
+    0 0 12px #ff2f00,
+    0 0 18px #ff002f,
+    inset 0 0 6px #ffe600;
+  border-radius: 50%;
+  padding: 3px 8px;
+  animation: firePulse 1.6s infinite ease-in-out;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+/* hotter pulsing center */
+@keyframes firePulse {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 0 6px #ff6a00,
+      0 0 12px #ff2f00,
+      0 0 18px #ff002f,
+      inset 0 0 6px #ffe600;
+    background: radial-gradient(circle at 50% 60%, #ffe600, #ff7a00, #ff002f);
+  }
+  50% {
+    transform: scale(1.22);
+    box-shadow:
+      0 0 10px #ff8800,
+      0 0 20px #ff3300,
+      0 0 28px #ff0040,
+      inset 0 0 10px #fff200;
+    background: radial-gradient(circle at 50% 60%, #fff200, #ff8100, #ff0034);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 6px #ff6a00,
+      0 0 12px #ff2f00,
+      0 0 18px #ff002f,
+      inset 0 0 6px #ffe600;
+    background: radial-gradient(circle at 50% 60%, #ffe600, #ff7a00, #ff002f);
+  }
+}
+
+  /* rising sparks */
+  .bubble-anim::before,
+  .bubble-anim::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 230, 0, 0.8);
+    animation: fireSpark 1.6s infinite ease-out;
+    opacity: 0;
+  }
+
+  .bubble-anim::before {
+    left: 20%;
+    animation-delay: 0.3s;
+  }
+  .bubble-anim::after {
+    left: 70%;
+    animation-delay: 0.9s;
+  }
+
+  @keyframes fireSpark {
+    0%   { transform: translateY(0) scale(0.3); opacity: 0.4; }
+    30%  { opacity: 1; }
+    100% { transform: translateY(-16px) scale(0.1); opacity: 0; }
+  }
+
       </style>
     `);
 
@@ -140,6 +232,12 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     main.find(".tab-panel").removeClass("active");
     main.find(`#${tabID}`).addClass("active");
     main.find(`#${tabID.replace("Tab", "Panel")}`).addClass("active");
+
+    if (tabID === "myAgentsTab" || tabID === "pendingTab") {
+      $("#infoBox").show();
+    } else {
+      $("#infoBox").hide();
+    }
   }
   activeTab("myAgentsTab");
   main.find(".tab").on("click", function () {
@@ -285,15 +383,35 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     };
 
     records.forEach((r) => {
-      if (r.status_label === "Pending") groups.Pending.push(r);
+      if (
+        r.status_label === "Pending" &&
+        (r.requested_by?.toLowerCase() ===
+          user.name?.toLowerCase() + "@sahayog.com" ||
+          r.approved_by?.toLowerCase() ===
+            user.name?.toLowerCase() + "@sahayog.com")
+      ) {
+        groups.Pending.push(r);
+        groups.MyAgents.push(r);
+      }
+
       if (r.status_label === "Allocated") groups.Allocated.push(r);
+
       if (r.status_label === "Unallocated") groups.Unallocated.push(r);
+
       if (r.employee === user.name) groups.MyAgents.push(r);
     });
 
     STATE.grouped = groups;
 
+    // ✅ ✅ UPDATED ONLY THIS BLOCK
     $("#pendingCountBadge").text(groups.Pending.length);
+
+    if (groups.Pending.length > 0) {
+      $("#pendingCountBadge").addClass("bubble-anim");
+    } else {
+      $("#pendingCountBadge").removeClass("bubble-anim");
+    }
+
     $("#allocatedCountBadge").text(groups.Allocated.length);
     $("#unallocatedCountBadge").text(groups.Unallocated.length);
     $("#myAgentsCountBadge").text(groups.MyAgents.length);
@@ -349,7 +467,15 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     });
 
     let other_records = await frappe.db.get_list("Agent", {
-      fields: ["name", "status", "employee", "modified", "branch_code"],
+      fields: [
+        "name",
+        "status",
+        "employee",
+        "modified",
+        "branch_code",
+        "requested_by",
+        "approved_by",
+      ],
       filters: {
         branch_code,
         status: ["in", ["Pending", "Unallocated"]],
