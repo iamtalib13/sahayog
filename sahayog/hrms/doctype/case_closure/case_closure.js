@@ -65,7 +65,18 @@ frappe.ui.form.on("Case Closure", {
         // Unhide & populate relevant fields
         fields_to_show.forEach((f) => {
           frm.set_df_property(f, "hidden", 0);
-          frm.set_df_property(f, "read_only", 1);
+
+          // Make fields read-only, except enquiry_status if source is Enquiry Reminder
+          if (
+            !(
+              linked_enquiry_type === "Enquiry Reminder" &&
+              f === "enquiry_status"
+            )
+          ) {
+            frm.set_df_property(f, "read_only", 1);
+          }
+
+          // Populate value from fetched data
           if (data && data[f] !== undefined && data[f] !== null) {
             frm.set_value(f, data[f]);
           }

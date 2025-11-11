@@ -66,12 +66,7 @@ def get_columns(filters):
             "options": "doctype_name",
             "width": 200
         },
-        {
-            "label": _("Status"),
-            "fieldname": "status",
-            "fieldtype": "Data",
-            "width": 110
-        },
+        
         {
             "label": _("Workflow State"),
             "fieldname": "workflow_state",
@@ -101,6 +96,12 @@ def get_columns(filters):
             "fieldname": "modified",
             "fieldtype": "Datetime",
             "width": 160
+        },
+        {
+            "label": _("Status"),
+            "fieldname": "status",
+            "fieldtype": "Data",
+            "width": 110
         },
     ]
 
