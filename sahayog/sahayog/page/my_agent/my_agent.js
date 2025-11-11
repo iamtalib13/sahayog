@@ -11,6 +11,21 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
         <h2>Loading employee info...</h2>
         <p></p>
       </section>
+              <div id="infoBox"
+          style="
+            display:none;
+            background:#eee;
+            padding:12px 14px;
+            border-radius:8px;
+            font-size:14px;
+            margin-bottom:12px;
+          "
+        >
+          If you don’t see the agent name,
+          the record may have been created by someone else.
+        </div>
+
+
 
       <input id="searchBox" type="text" class="form-control"
         placeholder="Search Agent ID / Name..."
@@ -140,6 +155,13 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     main.find(".tab-panel").removeClass("active");
     main.find(`#${tabID}`).addClass("active");
     main.find(`#${tabID.replace("Tab", "Panel")}`).addClass("active");
+
+    // ✅ Show message only for My Agents + Pending
+    if (tabID === "myAgentsTab" || tabID === "pendingTab") {
+      $("#infoBox").show();
+    } else {
+      $("#infoBox").hide();
+    }
   }
   activeTab("myAgentsTab");
   main.find(".tab").on("click", function () {
@@ -285,9 +307,23 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     };
 
     records.forEach((r) => {
-      if (r.status_label === "Pending") groups.Pending.push(r);
+      // ✅ ✅ Updated Pending Logic
+      if (
+        r.status_label === "Pending" &&
+        (r.requested_by?.toLowerCase() ===
+          user.name?.toLowerCase() + "@sahayog.com" ||
+          r.approved_by?.toLowerCase() ===
+            user.name?.toLowerCase() + "@sahayog.com")
+      ) {
+        groups.Pending.push(r);
+        groups.MyAgents.push(r);
+      }
+
+      // ✅ No change below ↓
       if (r.status_label === "Allocated") groups.Allocated.push(r);
+
       if (r.status_label === "Unallocated") groups.Unallocated.push(r);
+
       if (r.employee === user.name) groups.MyAgents.push(r);
     });
 
@@ -349,7 +385,15 @@ frappe.pages["my-agent"].on_page_load = function (wrapper) {
     });
 
     let other_records = await frappe.db.get_list("Agent", {
-      fields: ["name", "status", "employee", "modified", "branch_code"],
+      fields: [
+        "name",
+        "status",
+        "employee",
+        "modified",
+        "branch_code",
+        "requested_by",
+        "approved_by",
+      ],
       filters: {
         branch_code,
         status: ["in", ["Pending", "Unallocated"]],
