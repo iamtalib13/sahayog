@@ -20,6 +20,7 @@
   "case_id",
   "designation",
   "branch_name",
+  "region",
   "case_type",
   "category",
   "issue_report_to_hr",
@@ -203,6 +204,13 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "employee_id.custom_region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -220,7 +228,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-10 11:53:51.016032",
+ "modified": "2025-11-11 15:37:44.706038",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
