@@ -39,7 +39,7 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Case Type",
-   "options": "\nViolation Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nUnauthorized Absence\nOthers",
+   "options": "\nViolation of Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nUnauthorized Absence\nOthers",
    "reqd": 1
   },
   {
@@ -103,7 +103,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "allow_on_submit": 1,
@@ -226,9 +227,14 @@
    "group": "Response SCN",
    "link_doctype": "Response to SCN",
    "link_fieldname": "case_id"
+  },
+  {
+   "group": "Unauthorized",
+   "link_doctype": "Unauthorized Absence",
+   "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-11 15:37:44.706038",
+ "modified": "2025-11-12 11:26:40.396218",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
