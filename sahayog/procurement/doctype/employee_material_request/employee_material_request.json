@@ -1,31 +1,224 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "naming_series:",
  "creation": "2025-03-03 17:36:23.334484",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "basic_information_section",
+  "naming_series",
   "employee",
-  "sahayog_status",
-  "items",
+  "column_break_basic",
+  "request_date",
+  "required_by_date",
+  "request_type",
+  "status",
+  "section_break_items",
+  "asset_items",
+  "section_break_stock",
+  "stock_items",
+  "approval_section",
+  "requested_by",
+  "request_datetime",
+  "column_break_approval",
+  "reporting_person",
+  "reporting_person_status",
+  "reporting_person_approval_date",
+  "reporting_person_remarks",
+  "section_break_ho",
+  "head_office_officer",
+  "ho_officer_status",
+  "ho_officer_approval_date",
+  "ho_officer_remarks",
+  "workflow_section",
+  "workflow_state",
   "amended_from"
  ],
  "fields": [
   {
+   "fieldname": "basic_information_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Information"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "EMR-.employee.-.YYYY.-##",
+   "reqd": 1
+  },
+  {
    "fieldname": "employee",
    "fieldtype": "Link",
-   "ignore_user_permissions": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Employee",
    "options": "Employee",
    "reqd": 1
   },
   {
-   "fieldname": "items",
-   "fieldtype": "Table",
-   "label": "Items",
-   "options": "Material Request Items",
+   "fieldname": "column_break_basic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "request_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Request Date",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "required_by_date",
+   "fieldtype": "Date",
+   "label": "Required By Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Request Type",
+   "options": "New\nReturn\nIssue",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending Reporting Person\nPending HO Approval\nApproved\nRejected\nCancelled",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.request_type!='Issue'",
+   "fieldname": "section_break_items",
+   "fieldtype": "Section Break",
+   "label": "Asset Items"
+  },
+  {
+   "fieldname": "asset_items",
+   "fieldtype": "Table",
+   "label": "Asset Request Items",
+   "options": "Asset Request Item"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_stock",
+   "fieldtype": "Section Break",
+   "label": "Stock Items"
+  },
+  {
+   "fieldname": "stock_items",
+   "fieldtype": "Table",
+   "label": "Stock Request Items",
+   "options": "Stock Request Item"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval Details"
+  },
+  {
+   "default": "user",
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "now",
+   "fieldname": "request_datetime",
+   "fieldtype": "Datetime",
+   "label": "Request Date & Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reporting_person",
+   "fieldtype": "Link",
+   "label": "Reporting Person",
+   "options": "User"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "reporting_person_status",
+   "fieldtype": "Select",
+   "label": "Reporting Person Status",
+   "options": "Pending\nApproved\nRejected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reporting_person_approval_date",
+   "fieldtype": "Datetime",
+   "label": "Reporting Person Approval Date",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.reporting_person==frappe.session.user",
+   "fieldname": "reporting_person_remarks",
+   "fieldtype": "Small Text",
+   "label": "Reporting Person Remarks"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_ho",
+   "fieldtype": "Section Break",
+   "label": "Head Office Approval"
+  },
+  {
+   "fieldname": "head_office_officer",
+   "fieldtype": "Link",
+   "label": "Head Office Officer",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "ho_officer_status",
+   "fieldtype": "Select",
+   "label": "HO Officer Status",
+   "options": "Pending\nApproved\nRejected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ho_officer_approval_date",
+   "fieldtype": "Datetime",
+   "label": "HO Officer Approval Date",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:frappe.user.has_role('Head Office Officer')",
+   "fieldname": "ho_officer_remarks",
+   "fieldtype": "Small Text",
+   "label": "HO Officer Remarks"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "workflow_state",
+   "fieldname": "workflow_section",
+   "fieldtype": "Section Break",
+   "label": "Workflow Info"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Workflow State",
+   "options": "Workflow State",
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
@@ -36,24 +229,16 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "sahayog_status",
-   "fieldtype": "Select",
-   "ignore_user_permissions": 1,
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "Draft\nApproval Pending\nApproved\nDispatched\nDelivered\nCancelled",
-   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-04 16:38:18.183950",
+ "modified": "2025-11-12 15:32:03.970037",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -66,7 +251,30 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1
   },
   {
    "create": 1,
@@ -75,14 +283,31 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Employee",
-   "select": 1,
+   "role": "Branch User",
    "share": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Head Office Officer",
+   "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],
  "row_format": "Dynamic",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "employee",
+ "track_changes": 1
 }
