@@ -1,85 +1,170 @@
-# Copyright (c) 2025, Your Company and contributors
-# For license information, please see license.txt
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now, getdate
+from frappe.utils import now, getdate, today, add_days
 
 class EmployeeMaterialRequest(Document):
     def validate(self):
-        """Validate document before save"""
+        """Main validation - runs before save"""
+        self.validate_dates()  # Date validation first
         self.validate_items()
-        self.validate_dates()
         self.set_requested_by()
-        self.validate_request_type_items()
     
     def before_workflow_action(self):
-        """Called before workflow action"""
+        """Called before workflow transitions"""
         self.update_approval_fields()
     
     def before_submit(self):
-        """Validate before submit"""
+        """Validate before document submission"""
         self.validate_final_approval()
         self.check_stock_availability()
+        self.validate_dates()  # Revalidate dates before submit
     
     def on_submit(self):
-        """Actions on submit"""
+        """Actions after successful submission"""
         self.db_set('status', 'Approved')
         self.send_approval_notification()
-        frappe.msgprint(_("Material Request {0} has been approved").format(self.name))
     
     def on_cancel(self):
-        """Actions on cancel"""
-        self.validate_cancellation()
+        """Actions when document is cancelled"""
         self.cancel_linked_stock_entries()
         self.db_set('status', 'Cancelled')
-        self.add_comment('Edit', 'Document cancelled')
-    
-    def validate_items(self):
-        """Validate items in both tables"""
-        has_asset_items = len(self.asset_items or []) > 0
-        has_stock_items = len(self.stock_items or []) > 0
-        
-        if not has_asset_items and not has_stock_items:
-            frappe.throw(_("Please add at least one item (Asset or Stock)"))
-        
-        # Validate individual items
-        for item in (self.asset_items or []):
-            self.validate_asset_item(item)
-        
-        for item in (self.stock_items or []):
-            self.validate_stock_item(item)
-    
-    def validate_asset_item(self, item):
-        """Validate individual asset item"""
-        if self.request_type == "New":
-            if not item.assigned_to_employee:
-                frappe.throw(_("Row {0} (Asset): Please specify employee for assignment").format(item.idx))
-        
-        elif self.request_type == "Return":
-            if not item.asset:
-                frappe.throw(_("Row {0} (Asset): Please select asset to return").format(item.idx))
-            
-            # Validate asset is assigned
-            asset_custodian = frappe.db.get_value("Asset", item.asset, "custodian")
-            if not asset_custodian:
-                frappe.throw(_("Row {0}: Asset {1} is not assigned to anyone").format(item.idx, item.asset))
-    
-    def validate_stock_item(self, item):
-        """Validate individual stock item"""
-        if self.request_type == "Issue":
-            if not item.is_consumable:
-                frappe.throw(_("Row {0} (Stock): Issue type only for consumable items").format(item.idx))
-        
-        # Set default warehouse if not set
-        if not item.warehouse:
-            item.warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
     
     def validate_dates(self):
-        """Validate dates"""
-        if self.required_by_date and getdate(self.required_by_date) < getdate(self.request_date):
-            frappe.throw(_("Required By Date cannot be before Request Date"))
+        """
+        Comprehensive date validation
+        Validates:
+        1. Request Date cannot be in future
+        2. Required By Date is mandatory
+        3. Required By Date cannot be in past
+        4. Required By Date cannot be before Request Date
+        """
+        # Validate Request Date (should not be future)
+        if self.request_date:
+            if getdate(self.request_date) > getdate(today()):
+                frappe.throw(
+                    _("Request Date cannot be in the future. Maximum date: {0}").format(
+                        frappe.format(today(), {'fieldtype': 'Date'})
+                    ),
+                    title=_("Invalid Request Date")
+                )
+        
+        # Validate Required By Date is provided
+        if not self.required_by_date:
+            frappe.throw(
+                _("Required By Date is mandatory"),
+                title=_("Missing Required Field")
+            )
+        
+        # Main Validation 1: Required By Date cannot be in past
+        if getdate(self.required_by_date) < getdate(today()):
+            frappe.throw(
+                _("Required By Date cannot be in the past.<br><br>"
+                  "<b>Selected Date:</b> {0}<br>"
+                  "<b>Minimum Date:</b> {1} (Today)").format(
+                    frappe.format(self.required_by_date, {'fieldtype': 'Date'}),
+                    frappe.format(today(), {'fieldtype': 'Date'})
+                ),
+                title=_("Invalid Date - Past Date Not Allowed")
+            )
+        
+        # Main Validation 2: Required By Date cannot be before Request Date
+        if getdate(self.required_by_date) < getdate(self.request_date):
+            frappe.throw(
+                _("Required By Date cannot be before Request Date.<br><br>"
+                  "<b>Request Date:</b> {0}<br>"
+                  "<b>Required By Date:</b> {1}<br><br>"
+                  "Please select a date equal to or after the Request Date.").format(
+                    frappe.format(self.request_date, {'fieldtype': 'Date'}),
+                    frappe.format(self.required_by_date, {'fieldtype': 'Date'})
+                ),
+                title=_("Invalid Date Range")
+            )
+        
+        # Optional: Warning for far future dates (90+ days)
+        days_ahead = frappe.utils.date_diff(self.required_by_date, today())
+        if days_ahead > 90:
+            frappe.msgprint(
+                _("Notice: Required By Date is <b>{0} days</b> in the future.<br><br>"
+                  "Selected Date: {1}<br><br>"
+                  "Please verify if this is intentional.").format(
+                    days_ahead,
+                    frappe.format(self.required_by_date, {'fieldtype': 'Date'})
+                ),
+                indicator='orange',
+                alert=True
+            )
+        
+        # Optional: Validate reasonable date range (not more than 1 year)
+        if days_ahead > 365:
+            frappe.throw(
+                _("Required By Date cannot be more than 1 year in the future.<br><br>"
+                  "Selected Date: {0}<br>"
+                  "Maximum Date: {1}").format(
+                    frappe.format(self.required_by_date, {'fieldtype': 'Date'}),
+                    frappe.format(add_days(today(), 365), {'fieldtype': 'Date'})
+                ),
+                title=_("Date Too Far in Future")
+            )
+    
+    def validate_items(self):
+        """Validate all items have category set"""
+        if not self.items:
+            frappe.throw(_("Please add at least one item"))
+        
+        for item in self.items:
+            # Check if category is set
+            if not item.item_category:
+                frappe.throw(
+                    _("Row {0}: Item Category not set. Please reselect the item.").format(item.idx)
+                )
+            
+            # Validate based on category
+            if item.item_category == "Asset":
+                self.validate_asset_item(item)
+            elif item.item_category == "Stock Item":
+                self.validate_stock_item(item)
+    
+    def validate_asset_item(self, item):
+        """Validate asset item"""
+        # Verify item is actually an asset
+        is_asset = frappe.db.get_value("Item", item.item_code, "is_fixed_asset")
+        if not is_asset:
+            frappe.throw(
+                _("Row {0}: {1} is not an Asset item").format(item.idx, item.item_code)
+            )
+        
+        if self.request_type == "New" and not item.assigned_to_employee:
+            frappe.throw(
+                _("Row {0}: Employee required for asset assignment").format(item.idx)
+            )
+        
+        if self.request_type == "Return" and not item.asset:
+            frappe.throw(
+                _("Row {0}: Asset required for return").format(item.idx)
+            )
+        
+        # Issue type not allowed for assets
+        if self.request_type == "Issue":
+            frappe.throw(
+                _("Row {0}: Asset items cannot have Issue request type").format(item.idx)
+            )
+    
+    def validate_stock_item(self, item):
+        """Validate stock item"""
+        # Verify item is actually a stock item
+        item_details = frappe.db.get_value("Item", item.item_code, 
+            ["is_stock_item", "is_fixed_asset"], as_dict=1)
+        
+        if not item_details or not item_details.is_stock_item or item_details.is_fixed_asset:
+            frappe.throw(
+                _("Row {0}: {1} is not a Stock item").format(item.idx, item.item_code)
+            )
+        
+        if self.request_type == "Issue" and not item.is_consumable:
+            frappe.throw(
+                _("Row {0}: Issue type only for consumables").format(item.idx)
+            )
     
     def set_requested_by(self):
         """Set requested by on first save"""
@@ -87,115 +172,154 @@ class EmployeeMaterialRequest(Document):
             self.requested_by = frappe.session.user
             self.request_datetime = now()
     
-    def validate_request_type_items(self):
-        """Validate items match request type"""
-        if self.request_type == "Issue":
-            # Issue type should only have stock items
-            if len(self.asset_items or []) > 0:
-                frappe.throw(_("Issue type cannot have asset items. Please remove asset items."))
-    
     def update_approval_fields(self):
         """Update approval fields based on workflow action"""
         current_user = frappe.session.user
         action = frappe.form_dict.get('action')
         
-        # Reporting Person approval
         if self.workflow_state == "Pending Reporting Person Approval":
-            if current_user == self.reporting_person:
-                if "Approve" in action:
-                    self.reporting_person_status = "Approved"
-                    self.reporting_person_approval_date = now()
-                elif "Reject" in action:
-                    self.reporting_person_status = "Rejected"
-                    self.reporting_person_approval_date = now()
+            if current_user == self.reporting_person and "Approve" in action:
+                self.reporting_person_status = "Approved"
+                self.reporting_person_approval_date = now()
+            elif "Reject" in action:
+                self.reporting_person_status = "Rejected"
+                self.reporting_person_approval_date = now()
         
-        # Head Office Officer approval
         elif self.workflow_state == "Pending HO Approval":
-            if frappe.has_permission(self.doctype, ptype="write", user=current_user):
-                if "Final Approve" in action or "Approve" in action:
-                    if not self.head_office_officer:
-                        self.head_office_officer = current_user
-                    self.ho_officer_status = "Approved"
-                    self.ho_officer_approval_date = now()
-                elif "Reject" in action:
-                    if not self.head_office_officer:
-                        self.head_office_officer = current_user
-                    self.ho_officer_status = "Rejected"
-                    self.ho_officer_approval_date = now()
+            if "Approve" in action:
+                if not self.head_office_officer:
+                    self.head_office_officer = current_user
+                self.ho_officer_status = "Approved"
+                self.ho_officer_approval_date = now()
+            elif "Reject" in action:
+                if not self.head_office_officer:
+                    self.head_office_officer = current_user
+                self.ho_officer_status = "Rejected"
+                self.ho_officer_approval_date = now()
     
     def validate_final_approval(self):
         """Validate all approvals before submit"""
         if self.reporting_person_status != "Approved":
-            frappe.throw(_("Reporting Person approval is required before submission"))
+            frappe.throw(
+                _("Reporting Person approval is required before submission"),
+                title=_("Approval Required")
+            )
         
         if self.ho_officer_status != "Approved":
-            frappe.throw(_("Head Office Officer approval is required before submission"))
+            frappe.throw(
+                _("Head Office Officer approval is required before submission"),
+                title=_("Approval Required")
+            )
     
     def check_stock_availability(self):
-        """Check stock availability before approval"""
+        """Check stock availability for stock items"""
         if self.request_type in ["New", "Issue"]:
-            for item in (self.stock_items or []):
-                available_qty = frappe.db.get_value(
-                    "Bin",
-                    {"item_code": item.item_code, "warehouse": item.warehouse},
-                    "actual_qty"
-                ) or 0
-                
-                if item.quantity > available_qty:
-                    frappe.msgprint(
-                        _("Row {0}: Insufficient stock. Available: {1}, Requested: {2}").format(
-                            item.idx, available_qty, item.quantity
-                        ),
-                        indicator='orange',
-                        alert=True
-                    )
-    
-    def validate_cancellation(self):
-        """Validate before cancellation"""
-        completed_entries = 0
-        
-        for item in (self.asset_items or []):
-            if item.stock_entry:
-                se_status = frappe.db.get_value("Stock Entry", item.stock_entry, "docstatus")
-                if se_status == 1:
-                    completed_entries += 1
-        
-        for item in (self.stock_items or []):
-            if item.stock_entry:
-                se_status = frappe.db.get_value("Stock Entry", item.stock_entry, "docstatus")
-                if se_status == 1:
-                    completed_entries += 1
-        
-        if completed_entries > 0:
-            frappe.msgprint(
-                _("{0} items have completed stock entries. These will be cancelled.").format(completed_entries),
-                indicator='orange'
-            )
+            insufficient_items = []
+            
+            for item in self.items:
+                if item.item_category == "Stock Item" and item.warehouse:
+                    available = frappe.db.get_value("Bin", 
+                        {"item_code": item.item_code, "warehouse": item.warehouse}, 
+                        "actual_qty") or 0
+                    
+                    if item.quantity > available:
+                        insufficient_items.append(
+                            _("Row {0}: {1} - Available: {2}, Requested: {3}").format(
+                                item.idx, item.item_code, available, item.quantity
+                            )
+                        )
+            
+            # Show all insufficient items in one message
+            if insufficient_items:
+                frappe.msgprint(
+                    _("<b>Insufficient Stock for following items:</b><br><br>{0}").format(
+                        "<br>".join(insufficient_items)
+                    ),
+                    indicator='orange',
+                    alert=True,
+                    title=_("Stock Warning")
+                )
     
     def cancel_linked_stock_entries(self):
         """Cancel all linked stock entries"""
-        for item in (self.asset_items or []):
-            if item.stock_entry:
-                cancel_stock_entry(item.stock_entry)
-                item.db_set("stock_entry", None, update_modified=False)
+        cancelled_count = 0
         
-        for item in (self.stock_items or []):
+        for item in self.items:
             if item.stock_entry:
-                cancel_stock_entry(item.stock_entry)
-                item.db_set("stock_entry", None, update_modified=False)
+                try:
+                    se = frappe.get_doc("Stock Entry", item.stock_entry)
+                    if se.docstatus == 1:
+                        se.add_comment("Edit", 
+                            f"Cancelled due to Material Request {self.name} cancellation")
+                        se.cancel()
+                        cancelled_count += 1
+                    item.db_set("stock_entry", None, update_modified=False)
+                except Exception as e:
+                    frappe.log_error(
+                        frappe.get_traceback(), 
+                        f"Error cancelling Stock Entry: {item.stock_entry}"
+                    )
+        
+        if cancelled_count > 0:
+            frappe.msgprint(
+                _("{0} linked Stock Entry(ies) have been cancelled").format(cancelled_count),
+                indicator='orange',
+                alert=True
+            )
     
     def send_approval_notification(self):
-        """Send notification after approval"""
+        """Send email notification after approval"""
         try:
+            # Count items by category
+            asset_count = sum(1 for item in self.items if item.item_category == "Asset")
+            stock_count = sum(1 for item in self.items if item.item_category == "Stock Item")
+            
+            category_info = []
+            if asset_count > 0:
+                category_info.append(f"{asset_count} Asset item(s)")
+            if stock_count > 0:
+                category_info.append(f"{stock_count} Stock item(s)")
+            
+            # Send email
             frappe.sendmail(
                 recipients=[self.requested_by],
                 subject=f"Material Request {self.name} Approved",
                 message=f"""
-                    <p>Dear User,</p>
-                    <p>Your Material Request <b>{self.name}</b> has been approved.</p>
-                    <p>Request Type: {self.request_type}</p>
-                    <p>Approved by: {self.head_office_officer}</p>
-                    <p><a href="{frappe.utils.get_url()}/app/employee-material-request/{self.name}">View Document</a></p>
+                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <h3 style="color: #2ecc71;">Material Request Approved ✓</h3>
+                        <p>Dear User,</p>
+                        <p>Your Material Request <b>{self.name}</b> has been approved.</p>
+                        
+                        <table style="border-collapse: collapse; margin: 20px 0;">
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Request Type:</td>
+                                <td style="padding: 8px;">{self.request_type}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Items:</td>
+                                <td style="padding: 8px;">{', '.join(category_info)}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Required By:</td>
+                                <td style="padding: 8px;">{frappe.format(self.required_by_date, {'fieldtype': 'Date'})}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Approved By:</td>
+                                <td style="padding: 8px;">{self.head_office_officer}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Approval Date:</td>
+                                <td style="padding: 8px;">{frappe.format(self.ho_officer_approval_date, {'fieldtype': 'Datetime'})}</td>
+                            </tr>
+                        </table>
+                        
+                        <p>
+                            <a href="{frappe.utils.get_url()}/app/employee-material-request/{self.name}" 
+                               style="background: #2ecc71; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                                View Document
+                            </a>
+                        </p>
+                    </div>
                 """,
                 reference_doctype=self.doctype,
                 reference_name=self.name
@@ -204,87 +328,140 @@ class EmployeeMaterialRequest(Document):
             frappe.log_error(frappe.get_traceback(), "Material Request Notification Error")
 
 
-# Helper Functions
-def cancel_stock_entry(stock_entry_name):
-    """Cancel a stock entry"""
-    try:
-        se = frappe.get_doc("Stock Entry", stock_entry_name)
-        if se.docstatus == 1:
-            se.add_comment("Edit", "Cancelled due to Material Request cancellation")
-            se.cancel()
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), f"Error cancelling Stock Entry: {stock_entry_name}")
+# Whitelisted API Methods
 
-
-# API Methods
 @frappe.whitelist()
-def create_stock_entry_from_request(material_request, item_type='both'):
+def create_stock_entry_from_request(material_request):
     """
-    Create Stock Entry from Material Request
-    item_type: 'asset', 'stock', or 'both'
+    Create stock entry from approved material request
+    
+    Args:
+        material_request (str): Name of the Material Request document
+    
+    Returns:
+        str: Name of created Stock Entry
     """
     mr = frappe.get_doc("Employee Material Request", material_request)
     
+    # Validate request is approved
     if mr.docstatus != 1:
-        frappe.throw(_("Only submitted requests can be processed"))
+        frappe.throw(
+            _("Only approved and submitted requests can be processed"),
+            title=_("Invalid Request")
+        )
     
-    # Determine entry type
+    # Check if user has permission
+    if not frappe.has_permission("Stock Entry", "create"):
+        frappe.throw(
+            _("You do not have permission to create Stock Entry"),
+            frappe.PermissionError
+        )
+    
+    # Map request type to stock entry type
     entry_type_map = {
         "New": "Material Issue",
         "Return": "Material Receipt",
         "Issue": "Material Consumption"
     }
     
+    # Create new Stock Entry
     se = frappe.new_doc("Stock Entry")
-    se.stock_entry_type = entry_type_map.get(mr.request_type, "Material Issue")
+    se.stock_entry_type = entry_type_map.get(mr.request_type)
     se.custom_material_request = mr.name
+    se.company = mr.company if hasattr(mr, 'company') else frappe.defaults.get_user_default("Company")
     
-    # Set warehouses
-    if mr.request_type in ["New", "Issue"]:
-        se.from_warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
-    elif mr.request_type == "Return":
-        se.to_warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
-    
-    # Add items
     items_added = 0
     
-    if item_type in ['asset', 'both'] and mr.asset_items:
-        for item in mr.asset_items:
-            if item.status in ["Pending", "Approved"]:
-                add_item_to_stock_entry(se, item, mr.request_type, 'asset')
-                items_added += 1
-    
-    if item_type in ['stock', 'both'] and mr.stock_items:
-        for item in mr.stock_items:
-            if item.status in ["Pending", "Approved"]:
-                add_item_to_stock_entry(se, item, mr.request_type, 'stock')
-                items_added += 1
+    # Add items to stock entry
+    for item in mr.items:
+        if item.status in ["Pending", "Approved"]:
+            se_item = se.append("items", {})
+            se_item.item_code = item.item_code
+            se_item.qty = item.quantity
+            se_item.uom = item.uom
+            
+            # Set warehouses based on request type
+            if mr.request_type == "New":
+                se_item.s_warehouse = item.warehouse
+            elif mr.request_type == "Return":
+                se_item.t_warehouse = item.warehouse
+            elif mr.request_type == "Issue":
+                se_item.s_warehouse = item.warehouse
+            
+            # Link asset if applicable
+            if item.item_category == "Asset" and item.asset:
+                se_item.asset = item.asset
+            
+            items_added += 1
     
     if items_added == 0:
-        frappe.throw(_("No items to process"))
+        frappe.throw(
+            _("No items found to process. Please check item status."),
+            title=_("No Items")
+        )
     
+    # Save stock entry
     se.save()
     
-    # Update status
+    # Update material request status
     mr.db_set("status", "In Progress")
+    
+    # Add comment to material request
+    mr.add_comment("Edit", f"Stock Entry {se.name} created")
+    
+    frappe.msgprint(
+        _("Stock Entry {0} created successfully with {1} items").format(se.name, items_added),
+        indicator='green',
+        alert=True
+    )
     
     return se.name
 
 
-def add_item_to_stock_entry(se, item, request_type, item_category):
-    """Add item to stock entry"""
-    se_item = se.append("items", {})
-    se_item.item_code = item.item_code
-    se_item.qty = item.quantity
-    se_item.uom = item.uom
+@frappe.whitelist()
+def validate_required_date(required_by_date, request_date=None):
+    """
+    Server-side validation for required by date (callable from client)
     
-    if request_type == "New":
-        se_item.s_warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
-    elif request_type == "Return":
-        se_item.t_warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
-    elif request_type == "Issue":
-        se_item.s_warehouse = item.warehouse if item_category == 'stock' else None
+    Args:
+        required_by_date (str): Required by date to validate
+        request_date (str): Request date for comparison
     
-    # Link asset if applicable
-    if item_category == 'asset' and hasattr(item, 'asset') and item.asset:
-        se_item.asset = item.asset
+    Returns:
+        dict: Validation result with 'valid' and 'message' keys
+    """
+    try:
+        if not required_by_date:
+            return {
+                "valid": False,
+                "message": _("Required By Date is mandatory")
+            }
+        
+        req_date = getdate(required_by_date)
+        today_date = getdate(today())
+        req_request_date = getdate(request_date) if request_date else today_date
+        
+        # Check past date
+        if req_date < today_date:
+            return {
+                "valid": False,
+                "message": _("Required By Date cannot be in the past")
+            }
+        
+        # Check before request date
+        if req_date < req_request_date:
+            return {
+                "valid": False,
+                "message": _("Required By Date cannot be before Request Date")
+            }
+        
+        return {
+            "valid": True,
+            "message": _("Date is valid")
+        }
+    
+    except Exception as e:
+        return {
+            "valid": False,
+            "message": str(e)
+        }
