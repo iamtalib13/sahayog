@@ -49,15 +49,21 @@ frappe.ui.form.on("Disciplinary Case", {
     }
 
     // -------------------
+    // Conditional Mandatory + Hide for suspension_required
+    // -------------------
+    handle_suspension_required(frm);
+    // -------------------
     // Restrict linked records with save-check
     // -------------------
     setTimeout(() => {
       const $suspension_btn = $('button[data-doctype="Suspension Process"]');
       const $response_btn = $('button[data-doctype="Response to SCN"]');
+      const $unauth_abs_btn = $('button[data-doctype="Unauthorized Absence"]');
 
-      // Remove previous handlers
+      // Remove previous handlers (avoid duplicates)
       $suspension_btn.off("mousedown.suspension_check");
       $response_btn.off("mousedown.response_check");
+      $unauth_abs_btn.off("mousedown.ua_check");
 
       // 🧩 Common Save Check
       const ensureSaved = (e) => {
@@ -77,6 +83,22 @@ frappe.ui.form.on("Disciplinary Case", {
       // 🔸 Suspension Process Restriction
       $suspension_btn.on("mousedown.suspension_check", (e) => {
         if (!ensureSaved(e)) return;
+
+        // 🚫 Block if Case Type = Unauthorized Absence
+        if (frm.doc.case_type === "Unauthorized Absence") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Suspension Process cannot be created when Case Type is 'Unauthorized Absence'."
+            ),
+            indicator: "red",
+          });
+          return;
+        }
+
+        // Normal rule based on suspension_required
         if (frm.doc.suspension_required === "No") {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -93,6 +115,22 @@ frappe.ui.form.on("Disciplinary Case", {
       // 🔸 Response to SCN Restriction
       $response_btn.on("mousedown.response_check", (e) => {
         if (!ensureSaved(e)) return;
+
+        // 🚫 Block if Case Type = Unauthorized Absence
+        if (frm.doc.case_type === "Unauthorized Absence") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Response to SCN cannot be created when Case Type is 'Unauthorized Absence'."
+            ),
+            indicator: "red",
+          });
+          return;
+        }
+
+        // Normal rule based on suspension_required
         if (frm.doc.suspension_required === "Yes") {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -105,8 +143,32 @@ frappe.ui.form.on("Disciplinary Case", {
           });
         }
       });
+
+      // 🔸 Unauthorized Absence Restriction (only allowed for that case type)
+      $unauth_abs_btn.on("mousedown.ua_check", (e) => {
+        if (!ensureSaved(e)) return;
+
+        if (frm.doc.case_type !== "Unauthorized Absence") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Unauthorized Absence record can only be created when Case Type is 'Unauthorized Absence'."
+            ),
+            indicator: "red",
+          });
+        }
+      });
     }, 1000);
+
     frm.trigger("show_print_button");
+  },
+  // -------------------
+  // Case Type Change
+  // -------------------
+  case_type(frm) {
+    handle_suspension_required(frm);
   },
 
   // -------------------
@@ -258,3 +320,17 @@ frappe.ui.form.on("Disciplinary Case", {
     }
   },
 });
+
+// -------------------
+// Helper Function
+// -------------------
+function handle_suspension_required(frm) {
+  if (frm.doc.case_type === "Unauthorized Absence") {
+    frm.set_df_property("suspension_required", "hidden", 1);
+    frm.set_df_property("suspension_required", "reqd", 0);
+    frm.set_value("suspension_required", ""); // clear previous value
+  } else {
+    frm.set_df_property("suspension_required", "hidden", 0);
+    frm.set_df_property("suspension_required", "reqd", 1);
+  }
+}

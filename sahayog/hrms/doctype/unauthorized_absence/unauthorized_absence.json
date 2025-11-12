@@ -192,8 +192,19 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2025-11-07 11:49:07.192625",
+ "links": [
+  {
+   "group": "Reminder Unauthorized",
+   "link_doctype": "Reminder Of Unauthorized Absence",
+   "link_fieldname": "case_id"
+  },
+  {
+   "group": "Case Closed",
+   "link_doctype": "Case Closure",
+   "link_fieldname": "case_id"
+  }
+ ],
+ "modified": "2025-11-12 11:30:50.119965",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",
