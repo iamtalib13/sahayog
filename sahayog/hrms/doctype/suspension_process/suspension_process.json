@@ -78,6 +78,7 @@
    "read_only": 1
   },
   {
+   "default": "No",
    "fieldname": "subsistance_allowances",
    "fieldtype": "Select",
    "label": "Subsistance Allowances",
@@ -204,7 +205,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-10 17:27:41.835692",
+ "modified": "2025-11-11 17:47:23.392033",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
