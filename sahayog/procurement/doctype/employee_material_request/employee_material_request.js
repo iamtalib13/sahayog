@@ -1,20 +1,15 @@
 frappe.ui.form.on("Employee Material Request", {
   refresh: function (frm) {
-    // Apply status indicator
     apply_status_indicator(frm);
-
-    // Setup action buttons
     setup_action_buttons(frm);
 
-    // Show approval timeline
+    // Set date restrictions
+    set_date_restrictions(frm);
+
     if (frm.doc.docstatus > 0 || frm.doc.workflow_state) {
       show_approval_timeline(frm);
     }
 
-    // Set query filters
-    set_query_filters(frm);
-
-    // Show amendment button for cancelled
     if (frm.doc.docstatus === 2) {
       frm.add_custom_button(__("Amend"), function () {
         frappe.model.open_amended_doc(
@@ -26,26 +21,28 @@ frappe.ui.form.on("Employee Material Request", {
   },
 
   onload: function (frm) {
-    // Set default values
     if (frm.is_new()) {
       frm.set_value("request_date", frappe.datetime.get_today());
       frm.set_value("status", "Draft");
+
+      // Set default required by date to today
+      if (!frm.doc.required_by_date) {
+        frm.set_value("required_by_date", frappe.datetime.get_today());
+      }
     }
   },
 
   employee: function (frm) {
-    // Auto-fetch reporting person from employee
     if (frm.doc.employee && !frm.doc.reporting_person) {
       frappe.call({
         method: "frappe.client.get_value",
         args: {
           doctype: "Employee",
           filters: { name: frm.doc.employee },
-          fieldname: ["reports_to", "employee_name"],
+          fieldname: ["reports_to"],
         },
         callback: function (r) {
           if (r.message && r.message.reports_to) {
-            // Get user ID of reporting employee
             frappe.call({
               method: "frappe.client.get_value",
               args: {
@@ -58,7 +55,7 @@ frappe.ui.form.on("Employee Material Request", {
                   frm.set_value("reporting_person", resp.message.user_id);
                   frappe.show_alert(
                     {
-                      message: __("Reporting Person set to: {0}", [
+                      message: __("Reporting Person: {0}", [
                         resp.message.employee_name,
                       ]),
                       indicator: "green",
@@ -68,49 +65,40 @@ frappe.ui.form.on("Employee Material Request", {
                 }
               },
             });
-          } else {
-            frappe.msgprint(__("No reporting person found for this employee"));
           }
         },
       });
     }
   },
 
-  request_type: function (frm) {
-    // Update labels and visibility based on request type
-    update_table_labels(frm);
-    toggle_table_visibility(frm);
+  // Date validation - Main logic
+  required_by_date: function (frm) {
+    validate_required_by_date(frm);
+  },
 
-    // Warn if items exist
-    let has_items =
-      (frm.doc.asset_items && frm.doc.asset_items.length > 0) ||
-      (frm.doc.stock_items && frm.doc.stock_items.length > 0);
-
-    if (has_items) {
-      frappe.msgprint({
-        title: __("Warning"),
-        message: __("Changing Request Type may require you to re-enter items"),
-        indicator: "orange",
-      });
+  request_date: function (frm) {
+    // Revalidate required by date when request date changes
+    if (frm.doc.required_by_date) {
+      validate_required_by_date(frm);
     }
   },
 
   before_workflow_action: function (frm) {
-    // Validate before workflow actions
     let action = frm.selected_workflow_action;
 
     if (action === "Submit for Approval") {
       if (!frm.doc.reporting_person) {
-        frappe.throw(__("Please set Reporting Person before submitting"));
+        frappe.throw(__("Please set Reporting Person"));
         return false;
       }
 
-      let has_items =
-        (frm.doc.asset_items && frm.doc.asset_items.length > 0) ||
-        (frm.doc.stock_items && frm.doc.stock_items.length > 0);
-
-      if (!has_items) {
+      if (!frm.doc.items || frm.doc.items.length === 0) {
         frappe.throw(__("Please add at least one item"));
+        return false;
+      }
+
+      // Validate required by date before submit
+      if (!validate_required_by_date(frm)) {
         return false;
       }
     }
@@ -121,33 +109,21 @@ frappe.ui.form.on("Employee Material Request", {
   before_submit: function (frm) {
     return new Promise((resolve, reject) => {
       frappe.confirm(
-        __(
-          "Are you sure you want to submit this Material Request? It cannot be edited after submission."
-        ),
+        __("Submit this Material Request?"),
         () => resolve(),
         () => reject()
       );
     });
   },
-
-  after_cancel: function (frm) {
-    frappe.show_alert(
-      {
-        message: __("Material Request has been cancelled"),
-        indicator: "red",
-      },
-      5
-    );
-  },
 });
 
-// Asset Items Child Table
-frappe.ui.form.on("Asset Request Item", {
+// Child Table Events - Auto Category Detection
+frappe.ui.form.on("Material Request Items", {
   item_code: function (frm, cdt, cdn) {
     let row = locals[cdt][cdn];
 
     if (row.item_code) {
-      // Fetch item details
+      // Fetch item and auto-detect category
       frappe.call({
         method: "frappe.client.get",
         args: {
@@ -157,25 +133,69 @@ frappe.ui.form.on("Asset Request Item", {
         callback: function (r) {
           if (r.message) {
             let item = r.message;
+
+            // Set basic fields
             frappe.model.set_value(cdt, cdn, "item_name", item.item_name);
             frappe.model.set_value(cdt, cdn, "uom", item.stock_uom);
             frappe.model.set_value(cdt, cdn, "description", item.description);
 
-            // Set quantity to 1 for assets
-            if (!row.quantity || row.quantity === 0) {
-              frappe.model.set_value(cdt, cdn, "quantity", 1);
+            // AUTO-DETECT CATEGORY (Main Logic)
+            let category = "";
+            if (item.is_fixed_asset) {
+              category = "Asset";
+              // Set quantity to 1 for assets
+              if (!row.quantity || row.quantity === 0) {
+                frappe.model.set_value(cdt, cdn, "quantity", 1);
+              }
+            } else if (item.is_stock_item) {
+              category = "Stock Item";
+            } else {
+              frappe.msgprint({
+                title: __("Invalid Item"),
+                message: __(
+                  "Row {0}: {1} is neither an Asset nor a Stock Item",
+                  [row.idx, item.item_code]
+                ),
+                indicator: "red",
+              });
+              frappe.model.set_value(cdt, cdn, "item_code", "");
+              return;
             }
+
+            // Set category automatically
+            frappe.model.set_value(cdt, cdn, "item_category", category);
+
+            // Show alert
+            frappe.show_alert(
+              {
+                message: __("Category auto-set: {0}", [category]),
+                indicator: category === "Asset" ? "blue" : "purple",
+              },
+              3
+            );
+
+            // Get available stock for stock items
+            if (category === "Stock Item" && row.warehouse) {
+              get_available_stock(frm, cdt, cdn);
+            }
+
+            // Refresh to show conditional fields
+            frm.refresh_field("items");
           }
         },
       });
     }
   },
 
+  item_category: function (frm, cdt, cdn) {
+    // Category changed, refresh fields
+    frm.refresh_field("items");
+  },
+
   asset: function (frm, cdt, cdn) {
     let row = locals[cdt][cdn];
 
     if (row.asset && frm.doc.request_type === "Return") {
-      // Fetch asset details for return
       frappe.call({
         method: "frappe.client.get",
         args: {
@@ -197,47 +217,10 @@ frappe.ui.form.on("Asset Request Item", {
       });
     }
   },
-});
-
-// Stock Items Child Table
-frappe.ui.form.on("Stock Request Item", {
-  item_code: function (frm, cdt, cdn) {
-    let row = locals[cdt][cdn];
-
-    if (row.item_code) {
-      // Fetch item details
-      frappe.call({
-        method: "frappe.client.get",
-        args: {
-          doctype: "Item",
-          name: row.item_code,
-        },
-        callback: function (r) {
-          if (r.message) {
-            let item = r.message;
-            frappe.model.set_value(cdt, cdn, "item_name", item.item_name);
-            frappe.model.set_value(cdt, cdn, "uom", item.stock_uom);
-            frappe.model.set_value(cdt, cdn, "description", item.description);
-            frappe.model.set_value(
-              cdt,
-              cdn,
-              "is_consumable",
-              item.is_stock_item && !item.has_serial_no
-            );
-          }
-        },
-      });
-
-      // Get available stock
-      if (row.warehouse) {
-        get_available_stock(frm, cdt, cdn);
-      }
-    }
-  },
 
   warehouse: function (frm, cdt, cdn) {
     let row = locals[cdt][cdn];
-    if (row.item_code && row.warehouse) {
+    if (row.item_code && row.warehouse && row.item_category === "Stock Item") {
       get_available_stock(frm, cdt, cdn);
     }
   },
@@ -245,14 +228,17 @@ frappe.ui.form.on("Stock Request Item", {
   quantity: function (frm, cdt, cdn) {
     let row = locals[cdt][cdn];
 
-    // Warn if quantity exceeds available
-    if (row.quantity > row.available_qty && frm.doc.request_type !== "Return") {
+    if (
+      row.item_category === "Stock Item" &&
+      row.quantity > row.available_qty
+    ) {
       frappe.msgprint({
         title: __("Stock Warning"),
-        message: __(
-          "Row {0}: Requested quantity ({1}) exceeds available stock ({2})",
-          [row.idx, row.quantity, row.available_qty]
-        ),
+        message: __("Row {0}: Requested ({1}) exceeds available ({2})", [
+          row.idx,
+          row.quantity,
+          row.available_qty,
+        ]),
         indicator: "orange",
       });
     }
@@ -261,261 +247,122 @@ frappe.ui.form.on("Stock Request Item", {
 
 // Helper Functions
 function apply_status_indicator(frm) {
-  const status_colors = {
+  const colors = {
     Draft: "gray",
     "Pending Reporting Person Approval": "orange",
     "Pending HO Approval": "blue",
     Approved: "green",
     "In Progress": "light-blue",
-    "Partially Completed": "yellow",
     Completed: "darkgreen",
     Rejected: "red",
     Cancelled: "darkred",
   };
 
-  if (frm.doc.status && status_colors[frm.doc.status]) {
-    frm.page.set_indicator(frm.doc.status, status_colors[frm.doc.status]);
+  if (frm.doc.status && colors[frm.doc.status]) {
+    frm.page.set_indicator(frm.doc.status, colors[frm.doc.status]);
   }
 }
 
 function show_approval_timeline(frm) {
-  if (frm.doc.workflow_state || frm.doc.docstatus > 0) {
-    let html =
-      '<div class="approval-timeline" style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 10px;">';
-    html += '<h5 style="margin-bottom: 10px;">Approval Timeline</h5>';
+  let html =
+    '<div class="approval-timeline" style="background: #f9f9f9; padding: 15px; border-radius: 5px;">';
+  html += "<h5>Approval Timeline</h5>";
 
-    // Requested By
+  html += "<div><b>Requested By:</b> " + frm.doc.requested_by;
+  if (frm.doc.request_datetime) {
+    html += " on " + frappe.datetime.str_to_user(frm.doc.request_datetime);
+  }
+  html += "</div><br>";
+
+  if (frm.doc.reporting_person) {
     html +=
-      '<div style="margin: 8px 0;"><b>Requested By:</b> ' +
-      frm.doc.requested_by;
-    if (frm.doc.request_datetime) {
-      html += " on " + frappe.datetime.str_to_user(frm.doc.request_datetime);
-    }
-    html += "</div>";
+      "<div><b>1. Reporting Person:</b> " + frm.doc.reporting_person + " - ";
 
-    // Reporting Person
-    if (frm.doc.reporting_person) {
-      html +=
-        '<div style="margin: 8px 0;"><b>1. Reporting Person:</b> ' +
-        frm.doc.reporting_person +
-        " - ";
-
-      if (frm.doc.reporting_person_status === "Approved") {
-        html += '<span class="indicator-pill green">✓ Approved</span>';
-        if (frm.doc.reporting_person_approval_date) {
-          html +=
-            " on " +
-            frappe.datetime.str_to_user(frm.doc.reporting_person_approval_date);
-        }
-      } else if (frm.doc.reporting_person_status === "Rejected") {
-        html += '<span class="indicator-pill red">✗ Rejected</span>';
-      } else {
-        html += '<span class="indicator-pill orange">⏱ Pending</span>';
-      }
-      html += "</div>";
-    }
-
-    // Head Office Officer
-    html += '<div style="margin: 8px 0;"><b>2. Head Office Officer:</b> ';
-
-    if (frm.doc.head_office_officer) {
-      html += frm.doc.head_office_officer + " - ";
-    }
-
-    if (frm.doc.ho_officer_status === "Approved") {
+    if (frm.doc.reporting_person_status === "Approved") {
       html += '<span class="indicator-pill green">✓ Approved</span>';
-      if (frm.doc.ho_officer_approval_date) {
+      if (frm.doc.reporting_person_approval_date) {
         html +=
           " on " +
-          frappe.datetime.str_to_user(frm.doc.ho_officer_approval_date);
+          frappe.datetime.str_to_user(frm.doc.reporting_person_approval_date);
       }
-    } else if (frm.doc.ho_officer_status === "Rejected") {
+    } else if (frm.doc.reporting_person_status === "Rejected") {
       html += '<span class="indicator-pill red">✗ Rejected</span>';
     } else {
       html += '<span class="indicator-pill orange">⏱ Pending</span>';
     }
-    html += "</div>";
-
-    html += "</div>";
-
-    // Add to dashboard
-    frm.dashboard.add_section(html);
+    html += "</div><br>";
   }
+
+  html += "<div><b>2. Head Office Officer:</b> ";
+  if (frm.doc.head_office_officer) {
+    html += frm.doc.head_office_officer + " - ";
+  }
+
+  if (frm.doc.ho_officer_status === "Approved") {
+    html += '<span class="indicator-pill green">✓ Approved</span>';
+    if (frm.doc.ho_officer_approval_date) {
+      html +=
+        " on " + frappe.datetime.str_to_user(frm.doc.ho_officer_approval_date);
+    }
+  } else if (frm.doc.ho_officer_status === "Rejected") {
+    html += '<span class="indicator-pill red">✗ Rejected</span>';
+  } else {
+    html += '<span class="indicator-pill orange">⏱ Pending</span>';
+  }
+  html += "</div>";
+
+  html += "</div>";
+  frm.dashboard.add_section(html);
 }
 
 function setup_action_buttons(frm) {
-  // Only for submitted documents
-  if (frm.doc.docstatus === 1) {
-    // Create Stock Entry button for HO Officer
-    if (
-      frappe.user.has_role("Head Office Officer") &&
-      frm.doc.status === "Approved"
-    ) {
-      if (frm.doc.asset_items && frm.doc.asset_items.length > 0) {
-        frm
-          .add_custom_button(
-            __("Process Assets"),
-            function () {
-              create_stock_entry_dialog(frm, "asset");
-            },
-            __("Actions")
-          )
-          .addClass("btn-primary");
-      }
-
-      if (frm.doc.stock_items && frm.doc.stock_items.length > 0) {
-        frm
-          .add_custom_button(
-            __("Process Stock Items"),
-            function () {
-              create_stock_entry_dialog(frm, "stock");
-            },
-            __("Actions")
-          )
-          .addClass("btn-primary");
-      }
-    }
-
-    // View stock entries
-    if (has_stock_entries(frm)) {
-      frm.add_custom_button(__("View Stock Entries"), function () {
-        view_stock_entries(frm);
-      });
-    }
-  }
-}
-
-function set_query_filters(frm) {
-  // Asset items - only fixed assets
-  frm.set_query("item_code", "asset_items", function () {
-    return {
-      filters: {
-        is_fixed_asset: 1,
-        disabled: 0,
-      },
-    };
-  });
-
-  // Asset filter for return type
-  frm.set_query("asset", "asset_items", function (doc, cdt, cdn) {
-    let row = locals[cdt][cdn];
-    let filters = {
-      status: ["in", ["Issued", "In Use"]],
-    };
-
-    if (row.item_code) {
-      filters["item_code"] = row.item_code;
-    }
-
-    return { filters: filters };
-  });
-
-  // Stock items - only stock items, not fixed assets
-  frm.set_query("item_code", "stock_items", function () {
-    return {
-      filters: {
-        is_stock_item: 1,
-        is_fixed_asset: 0,
-        disabled: 0,
-      },
-    };
-  });
-
-  // Employee filter - only active
-  frm.set_query("assigned_to_employee", "asset_items", function (doc) {
-    return {
-      filters: {
-        status: "Active",
-      },
-    };
-  });
-}
-
-function update_table_labels(frm) {
-  let asset_label = "Asset Items";
-  let stock_label = "Stock Items";
-
-  if (frm.doc.request_type === "Return") {
-    asset_label = "Assets to Return";
-    stock_label = "Stock Items to Return";
-  } else if (frm.doc.request_type === "Issue") {
-    stock_label = "Consumable Items to Issue";
-  }
-
-  frm.fields_dict["asset_items"].df.label = asset_label;
-  frm.fields_dict["stock_items"].df.label = stock_label;
-  frm.refresh_fields();
-}
-
-function toggle_table_visibility(frm) {
-  // Hide asset table for Issue type
-  if (frm.doc.request_type === "Issue") {
-    frm.set_df_property("asset_items", "hidden", 1);
-  } else {
-    frm.set_df_property("asset_items", "hidden", 0);
+  if (
+    frm.doc.docstatus === 1 &&
+    frappe.user.has_role("Head Office Officer") &&
+    frm.doc.status === "Approved"
+  ) {
+    frm
+      .add_custom_button(__("Create Stock Entry"), function () {
+        create_stock_entry(frm);
+      })
+      .addClass("btn-primary");
   }
 }
 
 function get_available_stock(frm, cdt, cdn) {
   let row = locals[cdt][cdn];
 
-  if (row.item_code && row.warehouse) {
-    frappe.call({
-      method: "frappe.client.get_value",
-      args: {
-        doctype: "Bin",
-        filters: {
-          item_code: row.item_code,
-          warehouse: row.warehouse,
-        },
-        fieldname: "actual_qty",
+  frappe.call({
+    method: "frappe.client.get_value",
+    args: {
+      doctype: "Bin",
+      filters: {
+        item_code: row.item_code,
+        warehouse: row.warehouse,
       },
-      callback: function (r) {
-        if (r.message) {
-          frappe.model.set_value(
-            cdt,
-            cdn,
-            "available_qty",
-            r.message.actual_qty || 0
-          );
-        }
-      },
-    });
-  }
-}
-
-function has_stock_entries(frm) {
-  let has_entries = false;
-
-  (frm.doc.asset_items || []).forEach((item) => {
-    if (item.stock_entry) has_entries = true;
+      fieldname: "actual_qty",
+    },
+    callback: function (r) {
+      if (r.message) {
+        frappe.model.set_value(
+          cdt,
+          cdn,
+          "available_qty",
+          r.message.actual_qty || 0
+        );
+      }
+    },
   });
-
-  (frm.doc.stock_items || []).forEach((item) => {
-    if (item.stock_entry) has_entries = true;
-  });
-
-  return has_entries;
 }
 
-function view_stock_entries(frm) {
-  frappe.route_options = {
-    custom_material_request: frm.doc.name,
-  };
-  frappe.set_route("List", "Stock Entry");
-}
-
-function create_stock_entry_dialog(frm, item_type) {
+function create_stock_entry(frm) {
   frappe.confirm(
-    __("Create Stock Entry for {0}?", [
-      item_type === "asset" ? "Asset Items" : "Stock Items",
-    ]),
+    __("Create Stock Entry for this Material Request?"),
     function () {
       frappe.call({
         method: "your_app.api.create_stock_entry_from_request",
         args: {
           material_request: frm.doc.name,
-          item_type: item_type,
         },
         callback: function (r) {
           if (r.message) {
@@ -529,10 +376,102 @@ function create_stock_entry_dialog(frm, item_type) {
             frappe.set_route("Form", "Stock Entry", r.message);
           }
         },
-        error: function (r) {
-          frappe.msgprint(__("Error creating Stock Entry"));
-        },
       });
     }
   );
+}
+
+// NEW FUNCTIONS - Date Validation
+
+function set_date_restrictions(frm) {
+  // Set minimum date for required_by_date field
+  let today = frappe.datetime.get_today();
+
+  // Add description below field
+  frm.set_df_property(
+    "required_by_date",
+    "description",
+    __("Cannot select past dates. Minimum date: Today")
+  );
+
+  // Set datepicker to disable past dates
+  if (
+    frm.fields_dict.required_by_date &&
+    frm.fields_dict.required_by_date.datepicker
+  ) {
+    frm.fields_dict.required_by_date.datepicker.update({
+      minDate: new Date(),
+      maxDate: null,
+    });
+  }
+}
+
+function validate_required_by_date(frm) {
+  if (!frm.doc.required_by_date) {
+    frappe.msgprint({
+      title: __("Required Field Missing"),
+      message: __("Please select Required By Date"),
+      indicator: "red",
+    });
+    return false;
+  }
+
+  let today = frappe.datetime.get_today();
+  let required_date = frm.doc.required_by_date;
+  let request_date = frm.doc.request_date || today;
+
+  // Check 1: Required By Date cannot be in past
+  if (required_date < today) {
+    frappe.msgprint({
+      title: __("Invalid Date"),
+      message: __(
+        "Required By Date cannot be in the past.<br>Minimum date: <b>{0}</b>",
+        [frappe.datetime.str_to_user(today)]
+      ),
+      indicator: "red",
+    });
+
+    // Auto-correct to today
+    frm.set_value("required_by_date", today);
+    frappe.validated = false;
+    return false;
+  }
+
+  // Check 2: Required By Date cannot be before Request Date
+  if (required_date < request_date) {
+    frappe.msgprint({
+      title: __("Invalid Date Range"),
+      message: __(
+        "Required By Date cannot be before Request Date.<br>" +
+          "Request Date: <b>{0}</b><br>" +
+          "Required By Date: <b>{1}</b>",
+        [
+          frappe.datetime.str_to_user(request_date),
+          frappe.datetime.str_to_user(required_date),
+        ]
+      ),
+      indicator: "red",
+    });
+
+    // Auto-correct to request date
+    frm.set_value("required_by_date", request_date);
+    frappe.validated = false;
+    return false;
+  }
+
+  // Optional: Warning for far future dates (90 days)
+  let days_diff = frappe.datetime.get_day_diff(required_date, today);
+  if (days_diff > 90) {
+    frappe.msgprint({
+      title: __("Notice"),
+      message: __(
+        "Required By Date is <b>{0} days</b> in the future.<br>Please verify if this is correct.",
+        [days_diff]
+      ),
+      indicator: "orange",
+    });
+    // Don't block, just warning
+  }
+
+  return true;
 }

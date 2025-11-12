@@ -9,15 +9,15 @@
   "basic_information_section",
   "naming_series",
   "employee",
+  "source_warehouse",
+  "destination_warehouse",
   "column_break_basic",
   "request_date",
   "required_by_date",
   "request_type",
   "status",
   "section_break_items",
-  "asset_items",
-  "section_break_stock",
-  "stock_items",
+  "items",
   "approval_section",
   "requested_by",
   "request_datetime",
@@ -45,7 +45,7 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "EMR-.employee.-.YYYY.-##",
+   "options": "EMR-.YYYY.-",
    "reqd": 1
   },
   {
@@ -71,6 +71,7 @@
    "reqd": 1
   },
   {
+   "default": "Today",
    "fieldname": "required_by_date",
    "fieldtype": "Date",
    "label": "Required By Date",
@@ -91,34 +92,21 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPending Reporting Person\nPending HO Approval\nApproved\nRejected\nCancelled",
+   "options": "Draft\nPending Reporting Person Approval\nPending HO Approval\nApproved\nIn Progress\nPartially Completed\nCompleted\nRejected\nCancelled",
    "read_only": 1,
    "reqd": 1
   },
   {
-   "collapsible": 1,
-   "depends_on": "eval:doc.request_type!='Issue'",
    "fieldname": "section_break_items",
    "fieldtype": "Section Break",
-   "label": "Asset Items"
+   "label": "Material Request Items"
   },
   {
-   "fieldname": "asset_items",
+   "fieldname": "items",
    "fieldtype": "Table",
-   "label": "Asset Request Items",
-   "options": "Asset Request Item"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_stock",
-   "fieldtype": "Section Break",
-   "label": "Stock Items"
-  },
-  {
-   "fieldname": "stock_items",
-   "fieldtype": "Table",
-   "label": "Stock Request Items",
-   "options": "Stock Request Item"
+   "label": "Items",
+   "options": "Material Request Items",
+   "reqd": 1
   },
   {
    "collapsible": 1,
@@ -229,12 +217,26 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "source_warehouse",
+   "fieldtype": "Link",
+   "label": "Source Warehouse",
+   "link_filters": "[[\"Warehouse\",\"custom_warehouse_category\",\"=\",\"Store\"]]",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "destination_warehouse",
+   "fieldtype": "Link",
+   "label": "Destination Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-12 15:32:03.970037",
+ "modified": "2025-11-12 17:55:14.953335",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
@@ -263,27 +265,6 @@
    "read": 1,
    "report": 1,
    "role": "Employee",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "permlevel": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Employee",
-   "share": 1
-  },
-  {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Branch User",
    "share": 1,
    "write": 1
   },
