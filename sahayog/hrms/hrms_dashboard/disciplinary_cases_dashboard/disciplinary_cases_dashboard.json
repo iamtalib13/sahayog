@@ -1,0 +1,42 @@
+{
+ "cards": [
+  {
+   "card": "Total Cases"
+  },
+  {
+   "card": "Draft"
+  },
+  {
+   "card": "Under Process"
+  },
+  {
+   "card": "closed-1"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Month-wise Cases",
+   "width": "Half"
+  },
+  {
+   "chart": "Zone-Wise Cases",
+   "width": "Half"
+  },
+  {
+   "chart": "Region-Wise Cases",
+   "width": "Half"
+  }
+ ],
+ "creation": "2025-11-12 11:53:57.979787",
+ "dashboard_name": "Disciplinary Cases Dashboard",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2025-11-12 16:07:31.168373",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Disciplinary Cases Dashboard",
+ "owner": "Administrator"
+}
