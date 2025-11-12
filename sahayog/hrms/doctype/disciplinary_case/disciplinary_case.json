@@ -78,8 +78,7 @@
    "fieldname": "suspension_required",
    "fieldtype": "Select",
    "label": "Suspension Required",
-   "options": "\nYes\nNo",
-   "reqd": 1
+   "options": "\nYes\nNo"
   },
   {
    "fieldname": "hr_employee_id",
@@ -234,7 +233,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-12 11:26:40.396218",
+ "modified": "2025-11-12 12:44:29.104891",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
