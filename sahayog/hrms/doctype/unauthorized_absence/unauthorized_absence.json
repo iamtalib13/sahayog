@@ -155,7 +155,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "fetch_from": "case_id.description",
@@ -204,7 +205,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-12 11:30:50.119965",
+ "modified": "2025-11-13 10:31:50.612138",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",
