@@ -166,7 +166,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.amount_of_fraud",
    "fieldname": "amount_of_fraud",
    "fieldtype": "Data",
    "label": "Fraud amount",
@@ -200,7 +199,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-13 11:23:07.068046",
+ "modified": "2025-11-13 11:52:13.988690",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Reminder Of Unauthorized Absence",

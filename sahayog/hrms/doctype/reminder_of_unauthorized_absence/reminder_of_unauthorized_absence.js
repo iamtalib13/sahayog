@@ -53,5 +53,25 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
           }
         });
     }
+    if (frm.doc.case_id) {
+      frappe.db
+        .get_list("Unauthorized Absence", {
+          filters: { case_id: frm.doc.case_id },
+          order_by: "creation desc",
+          limit_page_length: 1,
+          fields: ["amount_of_fraud"],
+        })
+        .then((list) => {
+          if (list.length && list[0].amount_of_fraud) {
+            frm.set_value("amount_of_fraud", list[0].amount_of_fraud);
+            frm.set_df_property("amount_of_fraud", "hidden", 0);
+          } else {
+            frm.set_value("amount_of_fraud", "");
+            frm.set_df_property("amount_of_fraud", "hidden", 1);
+          }
+        });
+    } else {
+      frm.set_df_property("amount_of_fraud", "hidden", 1);
+    }
   },
 });
