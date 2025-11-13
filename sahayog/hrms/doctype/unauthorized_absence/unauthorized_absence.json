@@ -155,7 +155,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "fetch_from": "case_id.description",
@@ -165,11 +166,9 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.amount_of_fraud",
    "fieldname": "amount_of_fraud",
    "fieldtype": "Data",
-   "label": "Fraud amount",
-   "read_only": 1
+   "label": "Fraud amount"
   },
   {
    "fetch_from": "case_id.status",
@@ -204,7 +203,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-12 11:30:50.119965",
+ "modified": "2025-11-13 11:45:45.640768",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",
