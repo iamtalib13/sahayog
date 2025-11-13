@@ -56,7 +56,7 @@ frappe.query_reports["Case History"] = {
       })
       .addClass("btn-secondary");
 
-    // Export Audit Trail button
+    // Export button
     report.page
       .add_inner_button(__("Export to Excel"), function () {
         report.export_report();
@@ -69,18 +69,18 @@ frappe.query_reports["Case History"] = {
     });
   },
 
-  // Format cells for better visibility
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
 
-    // ✅ Highlight Disciplinary Case (main record) with different color
-    if (data.doctype_name === "Disciplinary Case") {
-      if (column.fieldname === "doctype_name") {
-        value = `<span style="color: #2196f3; font-weight: bold;">🔷 ${value}</span>`;
-      }
+    // ✅ Highlight Disciplinary Case
+    if (
+      data.doctype_name === "Disciplinary Case" &&
+      column.fieldname === "doctype_name"
+    ) {
+      value = `<span style="color: #2196f3; font-weight: bold;">🔷 ${value}</span>`;
     }
 
-    // Highlight status column
+    // ✅ Status colors
     if (column.fieldname === "status") {
       if (data.status === "Draft") {
         value = `<span style="color: #ff9800; font-weight: bold;">${value}</span>`;
@@ -91,14 +91,31 @@ frappe.query_reports["Case History"] = {
       }
     }
 
-    // Highlight not created documents
+    // 🚫 Not Created rows
     if (data.name === "Not Created") {
       if (column.fieldname === "doctype_name" || column.fieldname === "name") {
-        value = `<span style="color: #999; font-style: italic;">${value}</span>`;
+        value = `<span 
+          style="color: #999; background-color: #f1f1f1; font-style: italic; 
+                 padding: 2px 6px; border-radius: 4px; cursor: default; 
+                 pointer-events: none; user-select: none;">
+          ${value}
+        </span>`;
       }
+      return value;
     }
 
-    // Highlight high version counts (indicating multiple edits)
+    // 🔵 Created records — blue clickable span
+    if (column.fieldname === "name" && data.name !== "Not Created") {
+      value = `<span 
+        class="clickable-record" 
+        data-doctype="${data.doctype_name}" 
+        data-name="${data.name}" 
+        style="color: #1976d2; font-weight: 600; cursor: pointer;">
+        ${value}
+      </span>`;
+    }
+
+    // ⚠️ High version counts
     if (column.fieldname === "version_count" && data.version_count > 5) {
       value = `<span style="color: #f44336; font-weight: bold;">${value}</span>`;
     }
@@ -106,12 +123,28 @@ frappe.query_reports["Case History"] = {
     return value;
   },
 
-  // Validate filters before running
   get_datatable_options(options) {
     return Object.assign(options, {
       checkboxColumn: false,
+      escape: false, // ✅ Allow HTML rendering
       events: {
-        onRemoveColumn: function (column) {},
+        onClick: function (cell, rowIndex, colIndex, e) {
+          if (!cell || !cell.row || !cell.row.doc) return;
+          const data = cell.row.doc;
+          const column = cell.column && cell.column.fieldname;
+
+          // 🚫 Block clicks on Not Created rows
+          if (data.name === "Not Created") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }
+
+          // ✅ Open valid records when clicked
+          if (column === "name" && data.name && data.name !== "Not Created") {
+            frappe.set_route("Form", data.doctype_name, data.name);
+          }
+        },
       },
     });
   },
