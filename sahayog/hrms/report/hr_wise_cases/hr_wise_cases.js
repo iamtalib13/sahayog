@@ -1,9 +1,9 @@
 frappe.query_reports["HR Wise Cases"] = {
     // -------------------------------
-    // On Load (Add New Case Button)
+    // On Load (Add Initiate Case Button)
     // -------------------------------
     onload: function (report) {
-        const btn = report.page.add_inner_button(__('New Case'), () => frappe.new_doc('Disciplinary Case'));
+        const btn = report.page.add_inner_button(__('Initiate Case'), () => frappe.new_doc('Disciplinary Case'));
         $(btn).css({
             background: '#000',
             color: '#fff',
