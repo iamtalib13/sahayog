@@ -4,6 +4,8 @@
 import frappe
 from frappe import _
 from frappe.utils import get_fullname, format_datetime, now_datetime, getdate
+from frappe.utils import today, getdate, now_datetime, days_diff
+
 
 
 def execute(filters=None):
@@ -66,13 +68,13 @@ def get_columns(filters):
             "options": "doctype_name",
             "width": 200
         },
-        
         {
-            "label": _("Workflow State"),
-            "fieldname": "workflow_state",
+            "label": _("Case Age"),
+            "fieldname": "case_age",
             "fieldtype": "Data",
-            "width": 130
+            "width": 120
         },
+       
         {
             "label": _("Created By"),
             "fieldname": "owner",
@@ -255,6 +257,8 @@ def get_report_data(filters, case_doc):
 
         # Execute query
         docs = frappe.db.sql(query, query_params, as_dict=True)
+        
+		
 
         if not docs:
             # ✅ Don't show "Not Created" for main Disciplinary Case
@@ -276,6 +280,17 @@ def get_report_data(filters, case_doc):
         else:
             # Process each document
             for doc in docs:
+                
+				# Calculate case age
+                # Calculate age only if creation date exists
+                if doc.get("creation"):
+                   creation_date = getdate(doc.creation)
+                   today_date = getdate(today())
+                   diff_days = days_diff(today_date, creation_date)
+                   doc["case_age"] = f"{diff_days} days"
+                else:
+                   doc["case_age"] = "-"
+						
                 # Get version count if enabled
                 version_count = 0
                 if filters.get("show_versions"):
