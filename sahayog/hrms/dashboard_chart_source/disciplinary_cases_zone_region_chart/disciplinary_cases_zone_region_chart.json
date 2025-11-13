@@ -1,0 +1,13 @@
+{
+ "creation": "2025-11-13 11:28:31.200508",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart Source",
+ "idx": 0,
+ "modified": "2025-11-13 11:28:31.200508",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Disciplinary Cases Zone Region Chart",
+ "owner": "Administrator",
+ "source_name": "Disciplinary Cases Zone Region Chart",
+ "timeseries": 0
+}
