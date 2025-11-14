@@ -164,7 +164,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "fieldname": "date_of_2nd_enquiry",
@@ -215,7 +216,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-07 11:49:30.023850",
+ "modified": "2025-11-14 11:37:20.991007",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",

@@ -141,7 +141,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "fieldname": "domestic_enquiry",
@@ -197,7 +198,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-07 11:48:26.106185",
+ "modified": "2025-11-14 11:37:12.628318",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

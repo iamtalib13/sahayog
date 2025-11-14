@@ -158,7 +158,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_ddef",
@@ -208,7 +209,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-07 11:48:35.600381",
+ "modified": "2025-11-14 11:37:02.581236",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
