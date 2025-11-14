@@ -7,12 +7,7 @@ frappe.query_reports["Case History"] = {
       options: "Disciplinary Case",
       reqd: 1,
     },
-    {
-      fieldname: "employee",
-      label: __("Employee"),
-      fieldtype: "Link",
-      options: "Employee",
-    },
+
     {
       fieldname: "from_date",
       label: __("From Date"),
@@ -48,10 +43,21 @@ frappe.query_reports["Case History"] = {
   ],
 
   onload: function (report) {
-    // Clear Filter button
+    // Clear Filter button (WORKING)
     report.page
       .add_inner_button(__("Clear Filter"), function () {
-        report.clear_filters();
+        // Reset all filter fields manually
+        report.set_filter_value({
+          case_id: "",
+          employee: "",
+          from_date: "",
+          to_date: frappe.datetime.get_today(),
+          doctype_filter: "All",
+          sort_by: "Creation Date",
+          show_versions: 1,
+        });
+
+        // Refresh report after resetting
         report.refresh();
       })
       .addClass("btn-secondary");
@@ -79,15 +85,23 @@ frappe.query_reports["Case History"] = {
     ) {
       value = `<span style="color: #2196f3; font-weight: bold;">🔷 ${value}</span>`;
     }
-
-    // ✅ Status colors
     if (column.fieldname === "status") {
-      if (data.status === "Draft") {
-        value = `<span style="color: #ff9800; font-weight: bold;">${value}</span>`;
-      } else if (data.status === "Submitted") {
-        value = `<span style="color: #4caf50; font-weight: bold;">${value}</span>`;
+      if (data.status === "Pending") {
+        value = `<span style="
+      color: #ff9800; 
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #fff3e0;
+    ">${value}</span>`;
       } else if (data.status === "Completed") {
-        value = `<span style="color: #2196f3; font-weight: bold;">${value}</span>`;
+        value = `<span style="
+      color: #4caf50; 
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #e8f5e9;
+    ">${value}</span>`;
       }
     }
 
@@ -103,16 +117,21 @@ frappe.query_reports["Case History"] = {
       }
       return value;
     }
-
-    // 🔵 Created records — blue clickable span
     if (column.fieldname === "name" && data.name !== "Not Created") {
       value = `<span 
-        class="clickable-record" 
-        data-doctype="${data.doctype_name}" 
-        data-name="${data.name}" 
-        style="color: #1976d2; font-weight: 600; cursor: pointer;">
-        ${value}
-      </span>`;
+    class="clickable-record" 
+    data-doctype="${data.doctype_name}" 
+    data-name="${data.name}" 
+    style="
+      background: #e3f2fd;
+      color: #1976d2; 
+      font-weight: 600; 
+      padding: 2px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    ">
+    ${value}
+  </span>`;
     }
 
     // ⚠️ High version counts

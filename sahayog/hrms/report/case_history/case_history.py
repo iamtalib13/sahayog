@@ -49,12 +49,7 @@ def execute(filters=None):
 def get_columns(filters):
     """Define report columns"""
     columns = [
-        {
-            "label": _("S.No"),
-            "fieldname": "serial_no",
-            "fieldtype": "Int",
-            "width": 60
-        },
+       
         {
             "label": _("Document Type"),
             "fieldname": "doctype_name",
@@ -290,7 +285,22 @@ def get_report_data(filters, case_doc):
                    doc["case_age"] = f"{diff_days} days"
                 else:
                    doc["case_age"] = "-"
-						
+
+                                # 🔥 Map docstatus → custom status
+                docstatus = doc.get("docstatus", 0)
+
+                if docstatus == 0:
+                    display_status = "Pending"
+                elif docstatus == 1:
+                    display_status = "Completed"
+                elif docstatus == 2:
+                    display_status = "Pending"
+                else:
+                    display_status = "-"
+
+                doc["status"] = display_status
+
+                                    
                 # Get version count if enabled
                 version_count = 0
                 if filters.get("show_versions"):
