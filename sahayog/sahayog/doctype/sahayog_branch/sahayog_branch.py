@@ -98,11 +98,13 @@ class SahayogBranch(Document):
         return value
 
 # MOVE THIS FUNCTION OUTSIDE THE CLASS:
-@frappe.whitelist()
 def auto_create_sahayog_branches_from_finacle():
     """
-    Whitelisted for scheduler/API: Bulk create branches from Finacle.
-    Duplicates/incomplete skipped. Returns stats.
+    Whitelisted for scheduler/API: Bulk create/update branches from Finacle.
+    Updates zone and region if existing record found; else creates new record.
+    Also creates a Warehouse record per sol_id if not existing, setting
+    warehouse_name=sol_id and custom_warehouse_category='Branch'.
+    Returns stats summary.
     """
     conn = db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -112,7 +114,7 @@ def auto_create_sahayog_branches_from_finacle():
     """
     cursor.execute(sql)
     data = cursor.fetchall()
-    created, skipped, existed = 0, 0, 0
+    created, skipped, existed, updated, warehouses_created = 0, 0, 0, 0, 0
 
     for row in data:
         sol_id = str(row.get("sol_id") or "").strip()
@@ -132,25 +134,62 @@ def auto_create_sahayog_branches_from_finacle():
             "state_code": state_code,
             "state": state
         }
+
         if all(doc_data.get(f) for f in ["sol_id", "branch", "district", "region", "zone", "state_code"]):
-            if not frappe.db.exists("Sahayog Branch", {"sol_id": sol_id}):
+            existing_branch = frappe.get_all("Sahayog Branch", filters={"sol_id": sol_id}, limit=1)
+            if existing_branch:
+                doc = frappe.get_doc("Sahayog Branch", existing_branch[0].name)
+                updated_flag = False
+                if doc.zone != zone:
+                    doc.zone = zone
+                    updated_flag = True
+                if doc.region != region:
+                    doc.region = region
+                    updated_flag = True
+                if updated_flag:
+                    try:
+                        doc.save(ignore_permissions=True)
+                        frappe.db.commit()
+                        updated += 1
+                    except Exception:
+                        frappe.log_error(frappe.get_traceback(), "Auto Update Sahayog Branch Failed")
+                        skipped += 1
+                else:
+                    existed += 1
+            else:
                 try:
                     frappe.get_doc({"doctype": "Sahayog Branch", **doc_data}).insert(ignore_permissions=True)
                     created += 1
                 except Exception:
                     frappe.log_error(frappe.get_traceback(), "Auto Create Sahayog Branch Failed")
                     skipped += 1
-            else:
-                existed += 1
+
+            # Create warehouse if not exists for this sol_id
+            if not frappe.db.exists("Warehouse", sol_id):
+                try:
+                    warehouse_doc = frappe.get_doc({
+                        "doctype": "Warehouse",
+                        "warehouse_name": sol_id,
+                        "custom_warehouse_category": "Branch"
+                    })
+                    warehouse_doc.insert(ignore_permissions=True)
+                    frappe.db.commit()
+                    warehouses_created += 1
+                except Exception:
+                    frappe.log_error(frappe.get_traceback(), f"Warehouse creation failed for {sol_id}")
+                    skipped += 1
         else:
             skipped += 1
 
     conn.close()
     frappe.db.commit()
+
     return {
         "inserted": created,
+        "updated": updated,
         "skipped_missing_detail": skipped,
-        "already_exists": existed,
+        "already_exists_no_change": existed,
+        "warehouses_created": warehouses_created,
         "read_from_source": len(data)
     }
 

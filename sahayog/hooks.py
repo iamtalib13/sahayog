@@ -297,7 +297,6 @@ doc_events = {
     },
 
     "Branch": {
-        "after_insert": "sahayog.doc_events.branch_warehouse.create_branch_warehouse",
         "before_save":"sahayog.doc_events.branch.update_employee_sol_id"
     },
 
@@ -368,7 +367,7 @@ scheduler_events = {
 
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
-        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
+        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle" 
     ],
 
     # --- Example blocks below: Uncomment if/when needed ---
