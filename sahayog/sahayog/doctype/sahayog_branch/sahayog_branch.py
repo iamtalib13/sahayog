@@ -102,8 +102,9 @@ def auto_create_sahayog_branches_from_finacle():
     """
     Whitelisted for scheduler/API: Bulk create/update branches from Finacle.
     Updates zone and region if existing record found; else creates new record.
-    Also creates a Warehouse record per sol_id if not existing, setting
-    warehouse_name=sol_id and custom_warehouse_category='Branch'.
+    Also creates Warehouse and Location records per sol_id if not existing,
+    setting warehouse_name=sol_id, custom_warehouse_category='Branch',
+    and location_name=sol_id respectively.
     Returns stats summary.
     """
     conn = db_connection()
@@ -114,7 +115,7 @@ def auto_create_sahayog_branches_from_finacle():
     """
     cursor.execute(sql)
     data = cursor.fetchall()
-    created, skipped, existed, updated, warehouses_created = 0, 0, 0, 0, 0
+    created, skipped, existed, updated, warehouses_created, locations_created = 0, 0, 0, 0, 0, 0
 
     for row in data:
         sol_id = str(row.get("sol_id") or "").strip()
@@ -164,7 +165,7 @@ def auto_create_sahayog_branches_from_finacle():
                     frappe.log_error(frappe.get_traceback(), "Auto Create Sahayog Branch Failed")
                     skipped += 1
 
-            # Create warehouse if not exists for this sol_id
+            # Create Warehouse if not exists
             if not frappe.db.exists("Warehouse", sol_id):
                 try:
                     warehouse_doc = frappe.get_doc({
@@ -178,6 +179,21 @@ def auto_create_sahayog_branches_from_finacle():
                 except Exception:
                     frappe.log_error(frappe.get_traceback(), f"Warehouse creation failed for {sol_id}")
                     skipped += 1
+
+            # Create Location if not exists
+            if not frappe.db.exists("Location", sol_id):
+                try:
+                    location_doc = frappe.get_doc({
+                        "doctype": "Location",
+                        "location_name": sol_id
+                    })
+                    location_doc.insert(ignore_permissions=True)
+                    frappe.db.commit()
+                    locations_created += 1
+                except Exception:
+                    frappe.log_error(frappe.get_traceback(), f"Location creation failed for {sol_id}")
+                    skipped += 1
+
         else:
             skipped += 1
 
@@ -190,9 +206,9 @@ def auto_create_sahayog_branches_from_finacle():
         "skipped_missing_detail": skipped,
         "already_exists_no_change": existed,
         "warehouses_created": warehouses_created,
+        "locations_created": locations_created,
         "read_from_source": len(data)
     }
-
 
 @frappe.whitelist()
 def ping():
