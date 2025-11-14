@@ -11,6 +11,7 @@
   "employee",
   "source_warehouse",
   "destination_warehouse",
+  "location",
   "column_break_basic",
   "request_date",
   "required_by_date",
@@ -231,12 +232,19 @@
    "label": "Destination Warehouse",
    "options": "Warehouse",
    "read_only": 1
+  },
+  {
+   "fetch_from": "employee.sol_id",
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-12 17:55:14.953335",
+ "modified": "2025-11-13 13:20:40.709092",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
