@@ -75,36 +75,28 @@ frappe.ui.form.on("Employee Material Request", {
             // -----------------------------
             // NEW LOGIC: Get Branch Code (sol_id)
             // -----------------------------
+            // inside target_location event
+            if (frm.doc.target_location) {
+              frm.set_value("target_warehouse", frm.doc.target_location);
 
-            if (branch) {
-              frappe.call({
-                method: "frappe.client.get",
-                args: {
-                  doctype: "Branch",
-                  name: branch,
-                },
-                callback: function (r) {
-                  if (r.message) {
-                    let branch_code = r.message.sol_id; // Example: 1101
-                    let warehouse = r.message.custom_warehouse; // Example: ANJANGAON SURJI
-
-                    if (branch_code && warehouse) {
-                      let warehouse_name = warehouse.split(" - ").pop();
-
-                      let final_value = branch_code + "-" + warehouse_name;
-
-                      frm.set_value("destination_warehouse", final_value);
-
-                      frappe.show_alert({
-                        message: __("Destination Warehouse: {0}", [
-                          final_value,
-                        ]),
-                        indicator: "blue",
-                      });
-                    }
-                  }
-                },
-              });
+              frappe.db
+                .get_value("Sahayog Branch", frm.doc.target_location, [
+                  "branch",
+                  "state",
+                ])
+                .then((r) => {
+                  let b = r?.message?.branch || "Not Found";
+                  let s = r?.message?.state || "N/A";
+                  frm.set_df_property(
+                    "target_warehouse",
+                    "description",
+                    `Branch: <b>${frappe.utils.escape_html(
+                      b
+                    )}</b> | State: <b>${frappe.utils.escape_html(s)}</b>`
+                  );
+                });
+            } else {
+              frm.set_df_property("target_warehouse", "description", "");
             }
           }
         },
