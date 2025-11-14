@@ -49,14 +49,12 @@ frappe.query_reports["Case History"] = {
         // Reset all filter fields manually
         report.set_filter_value({
           case_id: "",
-          employee: "",
           from_date: "",
           to_date: frappe.datetime.get_today(),
           doctype_filter: "All",
           sort_by: "Creation Date",
           show_versions: 1,
         });
-
         // Refresh report after resetting
         report.refresh();
       })
