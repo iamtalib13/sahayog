@@ -153,8 +153,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Enquiry Status",
-   "options": "\nNot Responded\nCompleted Enquiry",
-   "read_only": 1
+   "options": "\nNot Responded\nCompleted Enquiry"
   },
   {
    "fieldname": "place_of_enquiry",
@@ -165,7 +164,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "fieldname": "enquiry_report_upload",
@@ -223,7 +223,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-07 11:49:23.191121",
+ "modified": "2025-11-14 11:36:50.163372",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
