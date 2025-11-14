@@ -33,44 +33,84 @@ frappe.ui.form.on("Employee Material Request", {
   },
 
   employee: function (frm) {
-    if (frm.doc.employee && !frm.doc.reporting_person) {
+    if (frm.doc.employee) {
+      // First: get employee details (including branch)
       frappe.call({
-        method: "frappe.client.get_value",
+        method: "frappe.client.get",
         args: {
           doctype: "Employee",
-          filters: { name: frm.doc.employee },
-          fieldname: ["reports_to"],
+          name: frm.doc.employee,
         },
-        callback: function (r) {
-          if (r.message && r.message.reports_to) {
-            frappe.call({
-              method: "frappe.client.get_value",
-              args: {
-                doctype: "Employee",
-                filters: { name: r.message.reports_to },
-                fieldname: ["user_id", "employee_name"],
-              },
-              callback: function (resp) {
-                if (resp.message && resp.message.user_id) {
-                  frm.set_value("reporting_person", resp.message.user_id);
-                  frappe.show_alert(
-                    {
-                      message: __("Reporting Person: {0}", [
-                        resp.message.employee_name,
-                      ]),
-                      indicator: "green",
-                    },
-                    5
-                  );
-                }
-              },
-            });
+        callback: function (res) {
+          if (res.message) {
+            let branch = res.message.branch;
+
+            // Set Reporting Person (your existing logic)
+            if (!frm.doc.reporting_person && res.message.reports_to) {
+              frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "Employee",
+                  filters: { name: res.message.reports_to },
+                  fieldname: ["user_id", "employee_name"],
+                },
+                callback: function (resp) {
+                  if (resp.message && resp.message.user_id) {
+                    frm.set_value("reporting_person", resp.message.user_id);
+
+                    frappe.show_alert(
+                      {
+                        message: __("Reporting Person: {0}", [
+                          resp.message.employee_name,
+                        ]),
+                        indicator: "green",
+                      },
+                      5
+                    );
+                  }
+                },
+              });
+            }
+
+            // -----------------------------
+            // NEW LOGIC: Get Branch Code (sol_id)
+            // -----------------------------
+
+            if (branch) {
+              frappe.call({
+                method: "frappe.client.get",
+                args: {
+                  doctype: "Branch",
+                  name: branch,
+                },
+                callback: function (r) {
+                  if (r.message) {
+                    let branch_code = r.message.sol_id; // Example: 1101
+                    let warehouse = r.message.custom_warehouse; // Example: ANJANGAON SURJI
+
+                    if (branch_code && warehouse) {
+                      let warehouse_name = warehouse.split(" - ").pop();
+
+                      let final_value = branch_code + "-" + warehouse_name;
+
+                      frm.set_value("destination_warehouse", final_value);
+
+                      frappe.show_alert({
+                        message: __("Destination Warehouse: {0}", [
+                          final_value,
+                        ]),
+                        indicator: "blue",
+                      });
+                    }
+                  }
+                },
+              });
+            }
           }
         },
       });
     }
   },
-
   // Date validation - Main logic
   required_by_date: function (frm) {
     validate_required_by_date(frm);
