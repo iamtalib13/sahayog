@@ -70,6 +70,10 @@ frappe.ui.form.on("Employee Material Request", {
                   }
                 },
               });
+            } else {
+              frappe.show_alert(
+                "Reporting Person not set for selected Employee"
+              );
             }
 
             // -----------------------------
@@ -96,6 +100,7 @@ frappe.ui.form.on("Employee Material Request", {
                   );
                 });
             } else {
+              frappe.show_alert("sol id not set for selected Employee");
               frm.set_df_property("target_warehouse", "description", "");
             }
           }
