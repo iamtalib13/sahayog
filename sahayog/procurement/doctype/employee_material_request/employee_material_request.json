@@ -19,6 +19,7 @@
   "status",
   "section_break_items",
   "items",
+  "remark",
   "approval_section",
   "requested_by",
   "request_datetime",
@@ -121,14 +122,16 @@
    "fieldtype": "Link",
    "label": "Requested By",
    "options": "User",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "default": "now",
    "fieldname": "request_datetime",
    "fieldtype": "Datetime",
    "label": "Request Date & Time",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "column_break_approval",
@@ -138,7 +141,8 @@
    "fieldname": "reporting_person",
    "fieldtype": "Link",
    "label": "Reporting Person",
-   "options": "User"
+   "options": "User",
+   "reqd": 1
   },
   {
    "default": "Pending",
@@ -167,11 +171,13 @@
    "label": "Head Office Approval"
   },
   {
+   "default": "2800@sahayog.com",
    "fieldname": "head_office_officer",
    "fieldtype": "Link",
    "label": "Head Office Officer",
    "options": "User",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "default": "Pending",
@@ -224,27 +230,36 @@
    "fieldtype": "Link",
    "label": "Source Warehouse",
    "link_filters": "[[\"Warehouse\",\"custom_warehouse_category\",\"=\",\"Store\"]]",
-   "options": "Warehouse"
+   "options": "Warehouse",
+   "reqd": 1
   },
   {
    "fetch_from": "employee.sol_id",
    "fieldname": "target_location",
    "fieldtype": "Data",
    "label": "Target Location",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "target_warehouse",
    "fieldtype": "Link",
    "label": "Target  Warehouse",
    "options": "Warehouse",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Long Text",
+   "label": "Remark",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-14 11:56:16.756516",
+ "modified": "2025-11-14 13:01:17.439611",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
