@@ -28,6 +28,19 @@ frappe.ui.form.on("Suspension Process", {
       frm.set_value("suspension_to_date", frappe.datetime.obj_to_str(toDate));
     }
   },
+  // ✅ Restrict Past Dates in Suspension From Date
+  suspension_from_date(frm) {
+    let today = frappe.datetime.now_date();
+    if (frm.doc.suspension_from_date && frm.doc.suspension_from_date < today) {
+      frappe.msgprint({
+        title: __("Invalid Date"),
+        message: __("You cannot select a past date for Suspension From Date."),
+        indicator: "red",
+      });
+      frm.set_value("suspension_from_date", "");
+    }
+  },
+
   show_print_button: function (frm) {
     if (!frm.is_new()) {
       const allowed_roles = ["System Manager", "Share Admin"];
