@@ -478,103 +478,10 @@ override_doctype_dashboards = {
 # }
 
 fixtures = [
-    # {
-    #     "dt": "Print Format",
-    #     "filters": [
-    #         ["name", "in", ["LOI","Letter of Intent Print Format", "Show Cause Notice"]]
-    #     ]
-    # },
-   
-
-    {
-        "dt": "Prodtech",
-        
-    },
-     {
-        "dt": "Item Department",
-        
-    },
-    {
-        "dt": "Module",
-        
-    },
-    {
-        "dt": "Custom DocPerm",
-        "filters": [["parent", "in", ["Issue Register", "Branch Proposal","Project","Project Template","Task"]]]
-    },
-    {
+      {
         "dt": "Workflow",
-        "filters": [["name", "in", ["Disciplinary Case"]]]
-    },
-    {
-        "dt": "Workflow State",
-        "filters": [["workflow_state_name", "in", ["Draft", "Under Process", "Closed"]]]
-    },
-    {
-        "dt": "Workflow Action Master",
-        "filters": [["workflow_action_name", "in", ["Submit"]]]
-    },
-    {
-        "dt":"Workflow",
-        "filters": [["name", "in", ["Branch Proposal"]]]
-    },
-     {
-        "dt": "Task",
-        "filters": [["is_template", "=", "1"]]
-    },
-
-    {
-        "dt": "Project Template",
-        
-    },
-    {
-        "dt":"Letter Head",
-    },
-    {"dt": "Custom HTML Block", "filters": [
-        [
-            "name",
-            "in",
-            {
-				"Sahayog Projects",
-                "Sahayog Home",
-                "BDO Performance",
-                "MIS Report List",
-                "Disciplinary Management",
-                "Inventory",
-                "Product Type Chart",
-                "DAMS dashboard"
-			}
-        ]
-    ]},
-
-    {
-        "doctype": "Workspace",
-        "filters": [
-            ["name", "in", [
-                "Inventory Management",  
-            ]]
-        ]
-    },
-
-    {
-        "doctype": "Property Setter",
-        "filters": [
-            ["name", "in", [
-                "Material Request-schedule_date-reqd",
-                "Purchase Receipt-main-field_order"
-            ]]
-        ]
-    },
-     {
-        "doctype": "Stock Entry",
-        "filters": [
-            [
-                "name", "in", [
-                    "Stock Entry-section_break_jwgn-collapsible"
-                ]
-            ]
-        ]
-    },
+        "filters": [["name", "=", "Employee Material Request"]]
+    }
 
     ]
 
