@@ -28,32 +28,36 @@ frappe.ui.form.on("Domestic Enquiry", {
         return true;
       };
 
-      // 🔸 Enquiry Reminder Restriction
+      // 🔸 Enquiry Reminder Restriction (NEW LOGIC)
       $enquiryReminderBtn.on("mousedown.er_check", (e) => {
         if (!ensureSaved(e)) return;
-        if (frm.doc.status_of_response !== "Not Submitted") {
+
+        // ❌ If Satisfactory → NOT allowed
+        if (frm.doc.status_of_response === "Satisfactory") {
           e.preventDefault();
           e.stopImmediatePropagation();
           frappe.msgprint({
             title: __("Not Allowed"),
             message: __(
-              "Enquiry Reminder can only be created when 'Status of Response' is <b>Not Submitted</b>."
+              "Enquiry Reminder cannot be created when 'Status of Response' is <b>Satisfactory</b>."
             ),
             indicator: "red",
           });
         }
       });
 
-      // 🔸 Case Closure Restriction
+      // 🔸 Case Closure Restriction (NEW LOGIC)
       $caseClosureBtn.on("mousedown.cc_check", (e) => {
         if (!ensureSaved(e)) return;
-        if (frm.doc.status_of_response === "Not Submitted") {
+
+        // ✔ Allowed only when Satisfactory
+        if (frm.doc.status_of_response !== "Satisfactory") {
           e.preventDefault();
           e.stopImmediatePropagation();
           frappe.msgprint({
             title: __("Not Allowed"),
             message: __(
-              "Case Closure cannot be created until 'Status of Response' is submitted (either <b>Satisfactory</b> or <b>Not Satisfactory</b>)."
+              "Case Closure can only be created when 'Status of Response' is <b>Satisfactory</b>."
             ),
             indicator: "orange",
           });
