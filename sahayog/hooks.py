@@ -479,20 +479,12 @@ override_doctype_dashboards = {
 
 fixtures = [
 
-   
-
-    {
+      {
         "dt": "Workflow",
         "filters": [["name", "=", "Employee Material Request"]]
-    },
-    {
-        "dt": "Workflow Document State",
-        "filters": [["parent", "=", "Employee Material Request"]]
-    },
-    {
-        "dt": "Workflow Transition",
-        "filters": [["parent", "=", "Employee Material Request"]]
     }
+
+
 
     ]
 
