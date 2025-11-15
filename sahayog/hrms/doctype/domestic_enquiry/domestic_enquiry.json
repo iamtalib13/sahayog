@@ -120,7 +120,6 @@
    "read_only": 1
   },
   {
-   "default": "Not Satisfactory",
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -209,7 +208,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-14 11:37:02.581236",
+ "modified": "2025-11-15 11:54:25.568808",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
