@@ -12,9 +12,9 @@ def execute(filters=None):
     conditions = []
     values = {}
 
-    if filters.get('warehouse'):
-        conditions.append('bin.warehouse = %(warehouse)s')
-        values['warehouse'] = filters['warehouse']
+    # Only show records for "Stores - S"
+    conditions.append('bin.warehouse = %(warehouse)s')
+    values['warehouse'] = 'Stores - S'
 
     where_clause = 'WHERE ' + ' AND '.join(conditions) if conditions else ''
 
