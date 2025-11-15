@@ -141,6 +141,7 @@
    "read_only": 1
   },
   {
+   "default": "Not Responded",
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -216,7 +217,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-14 11:37:20.991007",
+ "modified": "2025-11-15 12:58:49.655951",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
