@@ -478,12 +478,13 @@ override_doctype_dashboards = {
 # }
 
 fixtures = [
+
       {
         "dt": "Workflow",
         "filters": [["name", "=", "Employee Material Request"]]
     }
 
-    
+
 
     ]
 
