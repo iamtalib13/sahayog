@@ -477,115 +477,100 @@ override_doctype_dashboards = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
-fixtures = [
+
     
 fixtures = [
-    # {
-    #     "dt": "Print Format",
-    #     "filters": [
-    #         ["name", "in", ["LOI","Letter of Intent Print Format", "Show Cause Notice"]]
-    #     ]
-    # },
-
-
-
-    {
-        "dt": "Prodtech",
-        
-    },
-     {
-        "dt": "Item Department",
-        
-    },
-    {
-        "dt": "Module",
-        
-    },
-    {
-        "dt": "Custom DocPerm",
-        "filters": [["parent", "in", ["Issue Register", "Branch Proposal","Project","Project Template","Task"]]]
-    },
+    # Workflow Fixtures - Employee Material Request
     {
         "dt": "Workflow",
-        "filters": [["name", "in", ["Disciplinary Case"]]]
         "filters": [["name", "=", "Employee Material Request"]]
     },
+    
+    # Other Workflow Fixtures
+    {
+        "dt": "Workflow",
+        "filters": [["name", "in", ["Disciplinary Case", "Branch Proposal"]]]
+    },
+    
+    # Workflow State (Global - reusable across workflows)
     {
         "dt": "Workflow State",
         "filters": [["workflow_state_name", "in", ["Draft", "Under Process", "Closed"]]]
-        "dt": "Workflow Document State",
-        "filters": [["parent", "=", "Employee Material Request"]]
     },
+    
+    # Workflow Action Master
     {
         "dt": "Workflow Action Master",
         "filters": [["workflow_action_name", "in", ["Submit"]]]
     },
+    
+    # Master Data
     {
-        "dt":"Workflow",
-        "filters": [["name", "in", ["Branch Proposal"]]]
+        "dt": "Prodtech"
     },
-     {
+    {
+        "dt": "Item Department"
+    },
+    {
+        "dt": "Module"
+    },
+    {
+        "dt": "Letter Head"
+    },
+    {
+        "dt": "Project Template"
+    },
+    
+    # Permissions
+    {
+        "dt": "Custom DocPerm",
+        "filters": [["parent", "in", ["Issue Register", "Branch Proposal", "Project", "Project Template", "Task"]]]
+    },
+    
+    # Task Templates
+    {
         "dt": "Task",
         "filters": [["is_template", "=", "1"]]
     },
-
+    
+    # Workspaces
     {
-        "dt": "Project Template",
-        
+        "doctype": "Workspace",
+        "filters": [["name", "in", ["Inventory Management"]]]
     },
+    
+    # Custom HTML Blocks
     {
-        "dt":"Letter Head",
-    },
-    {"dt": "Custom HTML Block", "filters": [
-        [
-            "name",
-            "in",
-            {
-				"Sahayog Projects",
+        "dt": "Custom HTML Block",
+        "filters": [[
+            "name", "in", [
+                "Sahayog Projects",
                 "Sahayog Home",
                 "BDO Performance",
                 "MIS Report List",
                 "Disciplinary Management",
                 "Inventory",
                 "Product Type Chart",
-                "DAMS dashboard"
-			}
-        ]
-    ]},
-
-    {
-        "doctype": "Workspace",
-        "filters": [
-            ["name", "in", [
-                "Inventory Management",  
-            ]]
-        ]
+                "DAMS dashboard",
+                "Audit Management",
+                "Tickets Dashboard",
+                "Finacle Dashboard",
+                "IT Dashboard"
+            ]
+        ]]
     },
-
+    
+    # Property Setters
     {
         "doctype": "Property Setter",
-        "filters": [
-            ["name", "in", [
+        "filters": [[
+            "name", "in", [
                 "Material Request-schedule_date-reqd",
-                "Purchase Receipt-main-field_order"
-            ]]
-        ]
-    },
-     {
-        "doctype": "Stock Entry",
-        "filters": [
-            [
-                "name", "in", [
-                    "Stock Entry-section_break_jwgn-collapsible"
-                ]
+                "Purchase Receipt-main-field_order",
+                "Stock Entry-section_break_jwgn-collapsible"
             ]
-        ]
-    },
-       {
-         "dt": "Workflow Transition",
-        "filters": [["parent", "=", "Employee Material Request"]]
+        ]]
     }
+]
 
-    ]
-    ]
-
+    
