@@ -1,4 +1,6 @@
 frappe.ui.form.on("Employee Material Request", {
+
+
   refresh: function (frm) {
     apply_status_indicator(frm);
     setup_action_buttons(frm);
@@ -6,7 +8,7 @@ frappe.ui.form.on("Employee Material Request", {
     // Set date restrictions
     set_date_restrictions(frm);
 
-    if (frm.doc.docstatus > 0 || frm.doc.workflow_state) {
+    if (frm.doc.docstatus > 0 || frm.doc.status) {
       show_approval_timeline(frm);
     }
 
@@ -512,3 +514,239 @@ function validate_required_by_date(frm) {
 
   return true;
 }
+
+
+
+frappe.ui.form.on('Employee Material Request', {
+    refresh: function(frm) {
+        // Remove default Submit button if workflow is active
+        if (frm.doc.status && !frm.doc.__islocal) {
+            frm.page.clear_inner_toolbar();
+        }
+        
+        // Draft state me Submit button dikhana
+        if (frm.doc.docstatus === 0 && frm.doc.status === 'Draft') {
+            frm.add_custom_button(__('Submit'), function() {
+                frappe.confirm(
+                    __('Are you sure you want to submit this request?'),
+                    function() {
+                        // On yes - Change workflow state to Pending Reporting Person
+                        frappe.call({
+                            method: 'frappe.client.set_value',
+                            args: {
+                                doctype: 'Employee Material Request',
+                                name: frm.doc.name,
+                                fieldname: 'status',
+                                value: 'Pending Reporting Person'
+                            },
+                            callback: function(r) {
+                                if (!r.exc) {
+                                    frappe.msgprint(__('Request submitted successfully'));
+                                    frm.reload_doc();
+                                }
+                            }
+                        });
+                    }
+                );
+            }).addClass('btn-primary');
+        }
+        
+        // Reporting Person ke liye buttons - only if user has permission
+        if (frm.doc.status === 'Pending Reporting Person' && frm.doc.docstatus === 0) {
+            // Check if current user has Reporting Person role
+            if (frappe.user_roles.includes('Reporting Person')) {
+                // Approve button
+                frm.add_custom_button(__('Approve'), function() {
+                    frappe.confirm(
+                        __('Are you sure you want to approve this request?'),
+                        function() {
+                            // On yes
+                            frappe.call({
+                                method: 'your_app_name.your_module.doctype.employee_material_request.employee_material_request.approve_by_reporting_person',
+                                args: {
+                                    docname: frm.doc.name
+                                },
+                                freeze: true,
+                                freeze_message: __('Processing...'),
+                                callback: function(r) {
+                                    if (!r.exc) {
+                                        frappe.msgprint(__('Request approved and sent to HO'));
+                                        frm.reload_doc();
+                                    }
+                                }
+                            });
+                        }
+                    );
+                }, __('Actions')).addClass('btn-success');
+                
+                // Reject button
+                frm.add_custom_button(__('Reject'), function() {
+                    frappe.confirm(
+                        __('Are you sure you want to reject this request?'),
+                        function() {
+                            // On yes
+                            frappe.prompt({
+                                label: __('Rejection Reason'),
+                                fieldname: 'rejection_reason',
+                                fieldtype: 'Small Text',
+                                reqd: 1
+                            }, function(values) {
+                                frappe.call({
+                                    method: 'your_app_name.your_module.doctype.employee_material_request.employee_material_request.reject_by_reporting_person',
+                                    args: {
+                                        docname: frm.doc.name,
+                                        reason: values.rejection_reason
+                                    },
+                                    freeze: true,
+                                    freeze_message: __('Processing...'),
+                                    callback: function(r) {
+                                        if (!r.exc) {
+                                            frappe.msgprint(__('Request rejected'));
+                                            frm.reload_doc();
+                                        }
+                                    }
+                                });
+                            }, __('Rejection Reason'), __('Reject'));
+                        }
+                    );
+                }, __('Actions')).addClass('btn-danger');
+            }
+        }
+        
+        // HO Person ke liye buttons
+        if (frm.doc.status === 'Pending HO Approval' && frm.doc.docstatus === 0) {
+            // Check if current user has HO Approver role
+            if (frappe.user_roles.includes('HO Approver')) {
+                // Approve button
+                frm.add_custom_button(__('Approve'), function() {
+                    frappe.confirm(
+                        __('Are you sure you want to approve this request?'),
+                        function() {
+                            // On yes
+                            frappe.call({
+                                method: 'your_app_name.your_module.doctype.employee_material_request.employee_material_request.approve_by_ho',
+                                args: {
+                                    docname: frm.doc.name
+                                },
+                                freeze: true,
+                                freeze_message: __('Processing...'),
+                                callback: function(r) {
+                                    if (!r.exc) {
+                                        frappe.msgprint(__('Request approved successfully'));
+                                        frm.reload_doc();
+                                    }
+                                }
+                            });
+                        }
+                    );
+                }, __('Actions')).addClass('btn-success');
+                
+                // Reject button
+                frm.add_custom_button(__('Reject'), function() {
+                    frappe.confirm(
+                        __('Are you sure you want to reject this request?'),
+                        function() {
+                            // On yes
+                            frappe.prompt({
+                                label: __('Rejection Reason'),
+                                fieldname: 'rejection_reason',
+                                fieldtype: 'Small Text',
+                                reqd: 1
+                            }, function(values) {
+                                frappe.call({
+                                    method: 'your_app_name.your_module.doctype.employee_material_request.employee_material_request.reject_by_ho',
+                                    args: {
+                                        docname: frm.doc.name,
+                                        reason: values.rejection_reason
+                                    },
+                                    freeze: true,
+                                    freeze_message: __('Processing...'),
+                                    callback: function(r) {
+                                        if (!r.exc) {
+                                            frappe.msgprint(__('Request rejected'));
+                                            frm.reload_doc();
+                                        }
+                                    }
+                                });
+                            }, __('Rejection Reason'), __('Reject'));
+                        }
+                    );
+                }, __('Actions')).addClass('btn-danger');
+            }
+        }
+        
+        // Approved state me Complete button
+        if (frm.doc.status === 'Approved' && frm.doc.docstatus === 1) {
+            frm.add_custom_button(__('Mark as Completed'), function() {
+                frappe.confirm(
+                    __('Are you sure you want to mark this as completed?'),
+                    function() {
+                        frappe.call({
+                            method: 'your_app_name.your_module.doctype.employee_material_request.employee_material_request.mark_as_completed',
+                            args: {
+                                docname: frm.doc.name
+                            },
+                            callback: function(r) {
+                                if (!r.exc) {
+                                    frappe.msgprint(__('Request marked as completed'));
+                                    frm.reload_doc();
+                                }
+                            }
+                        });
+                    }
+                );
+            }).addClass('btn-primary');
+        }
+    }
+});
+
+frappe.ui.form.on("Employee Material Request", {
+  before_workflow_action: function(frm) {
+    let action = frm.selected_workflow_action;
+    
+    // Unfreeze screen immediately before showing any dialog
+    frappe.dom.unfreeze();
+    
+    if (action === "Submit") {
+      return new Promise((resolve, reject) => {
+        frappe.confirm(
+          __("<b>Are all fields correctly entered?</b>"),
+          function() {
+            resolve();
+          },
+          function() {
+            reject("❌ Submission cancelled by user.");
+          }
+        );
+      });
+    }
+    
+    else if (action === "Approve") {
+      return new Promise((resolve, reject) => {
+        frappe.confirm(
+          __("Are you sure you want to approve this request?"),
+          function() {
+            resolve();
+          },
+          function() {
+            reject("❌ Approval cancelled by user.");
+          }
+        );
+      });
+    }
+    
+    else if (action === "Reject") {
+      return new Promise((resolve, reject) => {
+        frappe.confirm(
+          __("Are you sure you want to reject this request?"),
+          function() {
+            resolve();
+          },
+          function() {
+            reject("❌ Rejection cancelled by user.");
+          }
+        );
+      });
+    }
+  }
+});
