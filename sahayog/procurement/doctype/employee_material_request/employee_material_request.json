@@ -34,7 +34,6 @@
   "ho_officer_approval_date",
   "ho_officer_remarks",
   "workflow_section",
-  "workflow_state",
   "amended_from"
  ],
  "fields": [
@@ -94,7 +93,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPending Reporting Person Approval\nPending HO Approval\nApproved\nIn Progress\nPartially Completed\nCompleted\nRejected\nCancelled",
+   "options": "Draft\nPending Reporting Person\nPending HO Approval\nApproved\nCompleted\nRejected\nCancelled",
    "read_only": 1,
    "reqd": 1
   },
@@ -142,6 +141,7 @@
    "fieldtype": "Link",
    "label": "Reporting Person",
    "options": "User",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -207,15 +207,6 @@
    "label": "Workflow Info"
   },
   {
-   "allow_on_submit": 1,
-   "fieldname": "workflow_state",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Workflow State",
-   "options": "Workflow State",
-   "read_only": 1
-  },
-  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -259,7 +250,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-14 13:01:17.439611",
+ "modified": "2025-11-14 16:56:51.141413",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
@@ -311,7 +302,36 @@
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending Reporting Person"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending HO Approval"
+  },
+  {
+   "color": "Green",
+   "title": "Approved"
+  },
+  {
+   "color": "Green",
+   "title": "Completed"
+  },
+  {
+   "color": "Red",
+   "title": "Rejected"
+  },
+  {
+   "color": "Red",
+   "title": "Cancelled"
+  }
+ ],
  "title_field": "employee",
  "track_changes": 1
 }
