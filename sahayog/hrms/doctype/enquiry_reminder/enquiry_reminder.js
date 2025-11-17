@@ -112,120 +112,109 @@ frappe.ui.form.on("Enquiry Reminder", {
     frm.trigger("show_print_button");
   },
   show_print_button: function (frm) {
-    if (!frm.is_new()) {
-      const allowed_roles = ["System Manager", "Share Admin"];
+    if (frm.is_new()) return;
 
-      if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
-        frm
-          .add_custom_button(__("Print"), function () {
-            // Create overlay while loading
-            const overlay = document.createElement("div");
-            overlay.id = "print-overlay";
-            overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.6);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: #333;
-          `;
-            overlay.innerHTML = "Preparing print preview...";
-            document.body.appendChild(overlay);
+    const allowed_roles = ["System Manager", "Share Admin"];
+    if (!frappe.user_roles.some((r) => allowed_roles.includes(r))) return;
 
-            // Create hidden iframe loading the print view
-            const iframe = document.createElement("iframe");
-            iframe.style.display = "none";
-            iframe.src = frappe.urllib.get_full_url(
-              `/printview?doctype=${encodeURIComponent(frm.doc.doctype)}
-            &name=${encodeURIComponent(frm.doc.name)}
-            &format=${encodeURIComponent("Reminder Notice Of Enquiry")}
-            &no_letterhead=1`.replace(/\s+/g, "")
-            );
-            document.body.appendChild(iframe);
+    // Remove old versions if exist
+    try {
+      frm.page.remove_custom_button("Print");
+    } catch (e) {}
+    try {
+      frm.page.remove_menu_item("Print");
+    } catch (e) {}
 
-            iframe.onload = () => {
-              setTimeout(() => {
-                const doc = iframe.contentWindow.document;
+    // Create a dropdown-style primary button
+    let $btn = frm.page.add_button("Select Print Format", null, "btn-primary");
 
-                // Inject print CSS including background image
-                const style = doc.createElement("style");
-                style.innerHTML = `
-                    @page {
-                        size: A4;
-                        margin: 0 !important;
-                    }
+    // Convert button to dropdown
+    $btn.addClass("dropdown-toggle");
+    $btn.attr("data-toggle", "dropdown");
 
-                    html, body {
-                        margin:0 !important;
-                        padding:0 !important;
-                        width:210mm !important;
-                        height:297mm !important;
-                        overflow:hidden !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
+    // Dropdown container
+    let $wrapper = $btn.parent();
+    $wrapper.addClass("dropdown");
 
-                    .print-page {
-                        position:relative;
-                        width:210mm; height:297mm;
-                        overflow:hidden;
-                    }
+    // Add dropdown menu
+    let $menu = $(`
+    <ul class="dropdown-menu">
+      <li><a class="print-opt" data-format="Reminder Notice Of Enquiry" href="#">Reminder Notice Of Enquiry</a></li>
+      <li><a class="print-opt" data-format="Ex Parte Enquiry" href="#">Ex Parte Enquiry</a></li>
+    </ul>
+  `);
 
-                    .print-body {
-                        padding: 145px 30px 40px 30px;
-                        height:100%;
-                        box-sizing:border-box;
-                        page-break-inside: avoid;
-                    }
-              `;
-                doc.head.appendChild(style);
+    $wrapper.append($menu);
 
-                // Wrap body content for styling
-                const originalContent = doc.body.innerHTML;
-                doc.body.innerHTML = `<div class="print-content">${originalContent}</div>`;
+    // Handle click on dropdown option
+    $wrapper.on("click", ".print-opt", function (e) {
+      e.preventDefault();
+      let format = $(this).data("format");
 
-                // Preload the background image before printing
-                const bgImg = new Image();
-                bgImg.src =
-                  "/assets/sahayog/images/letter_head_and_footer_.png";
-                bgImg.onload = function () {
-                  iframe.contentWindow.focus();
-                  iframe.contentWindow.print();
-                };
+      open_print_for_format(format);
+    });
 
-                // Fallback timeout to trigger print anyway
-                setTimeout(() => {
-                  iframe.contentWindow.focus();
-                  iframe.contentWindow.print();
-                }, 3000);
+    // PRINT LOGIC
+    function open_print_for_format(format) {
+      console.log("Selected print format:", format);
 
-                let cleaned = false;
-                const cleanup = () => {
-                  if (cleaned) return;
-                  cleaned = true;
-                  overlay.remove();
-                  iframe.remove();
-                };
+      const overlay = document.createElement("div");
+      overlay.id = "print-overlay";
+      overlay.style.cssText = `
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255,255,255,0.6);
+      z-index: 9999; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 18px; color: #333;
+    `;
+      overlay.innerHTML = "Preparing print preview...";
+      document.body.appendChild(overlay);
 
-                iframe.contentWindow.addEventListener("afterprint", cleanup);
-                setTimeout(cleanup, 6000);
-              }, 600);
-            };
+      const url = frappe.urllib.get_full_url(
+        `/printview?doctype=${encodeURIComponent(
+          frm.doc.doctype
+        )}&name=${encodeURIComponent(frm.doc.name)}&format=${encodeURIComponent(
+          format
+        )}&no_letterhead=1`
+      );
 
-            iframe.onerror = () => {
-              frappe.msgprint("Error loading print preview");
-              overlay.remove();
-              iframe.remove();
-            };
-          })
-          .addClass("btn-primary");
-      }
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = url;
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        try {
+          const win = iframe.contentWindow;
+
+          setTimeout(() => {
+            win.focus();
+            win.print();
+          }, 700);
+
+          win.addEventListener("afterprint", () => {
+            overlay.remove();
+            iframe.remove();
+          });
+
+          setTimeout(() => {
+            overlay.remove();
+            iframe.remove();
+          }, 5000);
+        } catch (err) {
+          console.error(err);
+          frappe.msgprint("Printing Error. Check console.");
+          overlay.remove();
+          iframe.remove();
+        }
+      };
+
+      iframe.onerror = () => {
+        frappe.msgprint("Failed to load print preview");
+        overlay.remove();
+        iframe.remove();
+      };
     }
   },
 });
