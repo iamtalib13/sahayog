@@ -1,5 +1,23 @@
 import frappe
 from frappe.utils import nowdate
+frappe.flags.ignore_permissions = True
+frappe.flags.ignore_user_permissions = True
+
+
+def get_user_warehouse():
+    session_user = frappe.session.user  # e.g., "4046@sahyog.com"
+    user_lookup = session_user.strip().lower()
+
+    settings_doc = frappe.get_single("Sahayog Settings")
+    wh_map = settings_doc.wh_dept_map or []
+
+    for row in wh_map:
+        user_id = row.get('user_id', '').strip().lower()
+        if user_id == user_lookup:
+            return row.get('warehouse')
+
+    return None
+
 
 def execute(filters=None):
     columns = [
@@ -19,7 +37,16 @@ def execute(filters=None):
         {"fieldname": "request_age", "label": "Request Age (days)", "fieldtype": "Int", "width": 90},
         {"fieldname": "remark", "label": "Remark", "fieldtype": "Data", "width": 200},
     ]
-# 
+
+    # Get warehouse assigned to active user
+    warehouse = get_user_warehouse()
+
+    # No warehouse assigned → no data
+    if not warehouse:
+        return columns, []
+    frappe.flags.ignore_permissions = True
+
+    # FIX: Case-insensitive + whitespace-safe warehouse matching
     data = frappe.db.sql("""
         SELECT 
             emr.name AS request_id,
@@ -36,11 +63,12 @@ def execute(filters=None):
             emr.head_office_officer,
             emr.ho_officer_status,
             DATEDIFF(%s, emr.creation) AS request_age,
-            emr.remarkgit commit -
+            emr.remark
         FROM `tabEmployee Material Request` emr
         LEFT JOIN `tabSahayog Branch` branch ON emr.target_warehouse = branch.name
         LEFT JOIN `tabUser` user ON emr.reporting_person = user.name
+        WHERE TRIM(LOWER(emr.source_warehouse)) = TRIM(LOWER(%s))
         ORDER BY emr.creation DESC
-    """, (nowdate(),), as_dict=True)
+    """, (nowdate(), warehouse), as_dict=True)
 
     return columns, data
