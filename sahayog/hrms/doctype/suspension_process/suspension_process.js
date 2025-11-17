@@ -6,30 +6,13 @@ frappe.ui.form.on("Suspension Process", {
     frm.trigger("show_print_button");
   },
 
-  // Auto calculate suspension_to_date based on days_of_suspension and suspension_from_date
-  days_of_suspension: function (frm) {
+  // Auto calculate suspension_to_date when these change
+  days_of_suspension(frm) {
     frm.trigger("calculate_suspension_to_date");
   },
-  suspension_from_date: function (frm) {
-    frm.trigger("calculate_suspension_to_date");
-  },
-  calculate_suspension_to_date: function (frm) {
-    if (frm.doc.days_of_suspension && frm.doc.suspension_from_date) {
-      // Convert date to JS Date object
-      let fromDate = frappe.datetime.str_to_obj(frm.doc.suspension_from_date);
 
-      // Add days
-      let toDate = frappe.datetime.add_days(
-        fromDate,
-        frm.doc.days_of_suspension
-      );
-
-      // Set auto to_date
-      frm.set_value("suspension_to_date", frappe.datetime.obj_to_str(toDate));
-    }
-  },
-  // ✅ Restrict Past Dates in Suspension From Date
   suspension_from_date(frm) {
+    // Validate past date
     let today = frappe.datetime.now_date();
     if (frm.doc.suspension_from_date && frm.doc.suspension_from_date < today) {
       frappe.msgprint({
@@ -38,6 +21,23 @@ frappe.ui.form.on("Suspension Process", {
         indicator: "red",
       });
       frm.set_value("suspension_from_date", "");
+      return;
+    }
+
+    // Auto calculate after setting valid date
+    frm.trigger("calculate_suspension_to_date");
+  },
+
+  calculate_suspension_to_date(frm) {
+    if (frm.doc.days_of_suspension && frm.doc.suspension_from_date) {
+      let fromDate = frappe.datetime.str_to_obj(frm.doc.suspension_from_date);
+
+      let toDate = frappe.datetime.add_days(
+        fromDate,
+        frm.doc.days_of_suspension
+      );
+
+      frm.set_value("suspension_to_date", frappe.datetime.obj_to_str(toDate));
     }
   },
 
@@ -64,11 +64,11 @@ frappe.ui.form.on("Suspension Process", {
               justify-content: center;
               font-size: 18px;
               color: #333;
-          `;
+            `;
             overlay.innerHTML = "Preparing print preview...";
             document.body.appendChild(overlay);
 
-            // Create hidden iframe for print preview
+            // Create hidden iframe
             const iframe = document.createElement("iframe");
             iframe.style.display = "none";
             iframe.src = frappe.urllib.get_full_url(
@@ -83,44 +83,43 @@ frappe.ui.form.on("Suspension Process", {
             iframe.onload = () => {
               const doc = iframe.contentWindow.document;
 
-              // Inject CSS with background image for print
+              // Inject CSS
               const style = doc.createElement("style");
               style.innerHTML = `
-                    @page {
-                        size: A4;
-                        margin: 0 !important;
-                    }
+                @page {
+                    size: A4;
+                    margin: 0 !important;
+                }
 
-                    html, body {
-                        margin:0 !important;
-                        padding:0 !important;
-                        width:210mm !important;
-                        height:297mm !important;
-                        overflow:hidden !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
+                html, body {
+                    margin:0 !important;
+                    padding:0 !important;
+                    width:210mm !important;
+                    height:297mm !important;
+                    overflow:hidden !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
 
-                    .print-page {
-                        position:relative;
-                        width:210mm; height:297mm;
-                        overflow:hidden;
-                    }
+                .print-page {
+                    position:relative;
+                    width:210mm; height:297mm;
+                    overflow:hidden;
+                }
 
-                    .print-body {
-                        padding: 145px 30px 40px 30px;
-                        height:100%;
-                        box-sizing:border-box;
-                        page-break-inside: avoid;
-                    }
-            `;
+                .print-body {
+                    padding: 145px 30px 40px 30px;
+                    height:100%;
+                    box-sizing:border-box;
+                    page-break-inside: avoid;
+                }
+              `;
               doc.head.appendChild(style);
 
-              // Wrap all body content inside print-content div
+              // Wrap content
               const bodyHTML = doc.body.innerHTML;
               doc.body.innerHTML = `<div class="print-content">${bodyHTML}</div>`;
 
-              // Preload the background image before printing to fix first-click issue
               const bgImg = new Image();
               bgImg.src = "/assets/sahayog/images/letter_head_and_footer_.png";
               bgImg.onload = function () {
@@ -128,7 +127,6 @@ frappe.ui.form.on("Suspension Process", {
                 iframe.contentWindow.print();
               };
 
-              // Fallback in case image load event doesn't fire
               setTimeout(() => {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
