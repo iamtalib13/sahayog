@@ -1,0 +1,35 @@
+{
+ "chart_name": "Designation Wise Cases",
+ "chart_type": "Report",
+ "creation": "2025-11-18 13:59:45.712075",
+ "currency": "",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{}",
+ "group_by_type": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "modified": "2025-11-18 15:50:01.772599",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Designation Wise Cases",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "report_name": "Designation Cases",
+ "roles": [],
+ "show_values_over_chart": 0,
+ "time_interval": "Yearly",
+ "timeseries": 0,
+ "timespan": "Last Year",
+ "type": "Bar",
+ "use_report_chart": 0,
+ "x_field": "designation",
+ "y_axis": [
+  {
+   "color": "#245c5c",
+   "y_field": "total_cases"
+  }
+ ]
+}
