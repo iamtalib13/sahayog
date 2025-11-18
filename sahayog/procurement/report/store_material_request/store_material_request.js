@@ -4,20 +4,22 @@ frappe.query_reports["Store material request"] = {
 
     // 🔵 Clickable Request ID Link
     if (column.fieldname == "request_id" && data.request_id) {
-      value = `<a href="/app/employee-material-request/${data.request_id}"
-                style="
-                    color: #2196F3;
-                    font-weight: 600;
-                    padding: 4px 10px;
-                    border-radius: 4px;
-                    background: #E3F2FD;
-                    text-decoration: none;
-                    display: inline-block;
-                    border: 1px solid #BBDEFB;
-                "
-                onmouseover="this.style.background='#2196F3'; this.style.color='#fff';"
-                onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';"
-            >${data.request_id}</a>`;
+      value = `<a href="/app/employee-material-request/${encodeURIComponent(
+        data.request_id
+      )}"
+            style="
+                color: #2196F3;
+                font-weight: 600;
+                padding: 4px 10px;
+                border-radius: 4px;
+                background: #E3F2FD;
+                text-decoration: none;
+                display: inline-block;
+                border: 1px solid #BBDEFB;
+            "
+            onmouseover="this.style.background='#2196F3'; this.style.color='#fff';"
+            onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';"
+        >${data.request_id}</a>`;
     }
 
     // 🌈 STATUS BADGE (ALL 7 STATUSES)
