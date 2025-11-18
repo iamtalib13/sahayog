@@ -2,108 +2,160 @@ frappe.query_reports["Store material request"] = {
   onload: function (report) {
     frappe.call({
       method: "frappe.desk.query_report.run",
-      args: {
-        report_name: "Store material request",
-        filters: {},
-      },
+      args: { report_name: "Store material request", filters: {} },
       callback: function (r) {
-        // ⭐ Correct location of your data
-        let summary = r.message.chart || {};
-
-        console.log("SUMMARY FROM PYTHON:", summary);
-
+        const summary = (r && r.message && r.message.chart) || {};
+        // replace previous intro and insert new one
         $(report.page.wrapper).find(".report-custom-intro").remove();
-
-        let intro = `
-          <div class="report-custom-intro"
-            style="background:#f7f9fc;border-left:4px solid #2196F3;
-            padding:15px;margin-bottom:15px;border-radius:6px;font-size:14px;">
-
-            <b>User:</b> ${summary.user || "-"} <br>
-            <b>Warehouse:</b> ${summary.warehouse || "-"} <br><br>
-
-            <span style="background:#E8F5E9;padding:6px 10px;border-radius:6px;
-              color:#2E7D32;font-weight:600;">
-              ✔ Approved: ${summary.approved || 0}
-            </span>
-
-            &nbsp;&nbsp;
-
-            <span style="background:#FFF3E0;padding:6px 10px;border-radius:6px;
-              color:#EF6C00;font-weight:600;">
-              ⏳ Pending: ${summary.pending || 0}
-            </span>
-          </div>
-        `;
-
-        $(report.page.wrapper).find(".page-form").before(intro);
+        $(report.page.wrapper).find(".page-form").before(renderIntro(summary));
       },
     });
   },
-
+  //
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
 
-    // 🔵 Clickable Request ID Link
-    if (column.fieldname == "request_id" && data.request_id) {
-      value = `<a href="/app/employee-material-request/${encodeURIComponent(
-        data.request_id
-      )}" style=" color: #2196F3; font-weight: 600; padding: 4px 10px; border-radius: 4px; background: #E3F2FD; text-decoration: none; display: inline-block; border: 1px solid #BBDEFB; " onmouseover="this.style.background='#2196F3'; this.style.color='#fff';" onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';" >${
-        data.request_id
-      }</a>`;
+    const field = column.fieldname;
+
+    if (field === "request_id" && data.request_id) {
+      return createRequestLink(data.request_id);
     }
 
-    // 🌈 STATUS BADGE (ALL 7 STATUSES)
-    if (column.fieldname == "status") {
-      let s = data.status;
-      if (s == "Draft") value = badge("📝 Draft", "#546E7A", "#ECEFF1");
-      else if (s == "Pending Reporting Person")
-        value = badge("👤 Pending Reporting", "#FB8C00", "#FFF3E0");
-      else if (s == "Pending HO Approval")
-        value = badge("🏢 Pending HO Approval", "#039BE5", "#E1F5FE");
-      else if (s == "Approved")
-        value = badge("✔ Approved", "#2E7D32", "#E8F5E9");
-      else if (s == "Completed")
-        value = badge("🎉 Completed", "#6A1B9A", "#F3E5F5");
-      else if (s == "Rejected")
-        value = badge("✖ Rejected", "#C62828", "#FFEBEE");
-      else if (s == "Cancelled")
-        value = badge("⚠ Cancelled", "#616161", "#F5F5F5");
-      else value = badge(s, "#1565C0", "#E3F2FD"); // fallback
+    if (field === "status") {
+      return (
+        badgeForStatus(data.status) || badge(data.status, "#1565C0", "#E3F2FD")
+      );
     }
 
-    // 🟢 Reporting Person Status badges
-    if (column.fieldname == "reporting_person_status") {
-      let s = data.reporting_person_status;
-      if (s == "Approved") value = badge("✓ Approved", "#4CAF50", "#E8F5E9");
-      else if (s == "Rejected")
-        value = badge("✗ Rejected", "#F44336", "#FFEBEE");
-      else if (s == "Pending") value = badge("⏱ Pending", "#FF9800", "#FFF3E0");
-      else if (s == "Skip") value = badge("⤭ Skip", "#2196F3", "#E3F2FD");
+    if (field === "reporting_person_status") {
+      return badgeForReportingPerson(data.reporting_person_status) || value;
     }
 
-    // 🔵 HO Officer Status badges
-    if (column.fieldname == "ho_officer_status") {
-      let s = data.ho_officer_status;
-      if (s == "Approved") value = badge("✓ Approved", "#4CAF50", "#E8F5E9");
-      else if (s == "Rejected")
-        value = badge("✗ Rejected", "#F44336", "#FFEBEE");
-      else if (s == "Pending") value = badge("⏱ Pending", "#FF9800", "#FFF3E0");
+    if (field === "ho_officer_status") {
+      return badgeForHoOfficer(data.ho_officer_status) || value;
     }
 
-    // 🟡 Request Age Highlight
-    if (column.fieldname == "request_age") {
-      let days = parseInt(data.request_age);
-      if (days > 7) value = badge(days + " days", "#C62828", "#FFEBEE");
-      else if (days > 3) value = badge(days + " days", "#EF6C00", "#FFF3E0");
-      else value = badge(days + " days", "#2E7D32", "#E8F5E9");
+    if (field === "request_age") {
+      const days = parseInt(data.request_age, 10);
+      return isFinite(days) ? badgeForAge(days) : value;
     }
 
     return value;
   },
 };
 
-// ⭐ Badge Generator Function
+// ---------- Constants & Maps ----------
+
+const INTRO_STYLE =
+  [
+    "background:#f7f9fc",
+    "border-left:4px solid #2196F3",
+    "padding:15px",
+    "margin-bottom:15px",
+    "border-radius:6px",
+    "font-size:14px",
+  ].join(";") + ";";
+
+const STATUS_MAP = {
+  Draft: { label: "📝 Draft", color: "#546E7A", bg: "#ECEFF1" },
+  "Pending Reporting Person": {
+    label: "👤 Pending Reporting",
+    color: "#FB8C00",
+    bg: "#FFF3E0",
+  },
+  "Pending HO Approval": {
+    label: "🏢 Pending HO Approval",
+    color: "#039BE5",
+    bg: "#E1F5FE",
+  },
+  Approved: { label: "✔ Approved", color: "#2E7D32", bg: "#E8F5E9" },
+  Completed: { label: "🎉 Completed", color: "#6A1B9A", bg: "#F3E5F5" },
+  Rejected: { label: "✖ Rejected", color: "#C62828", bg: "#FFEBEE" },
+  Cancelled: { label: "⚠ Cancelled", color: "#616161", bg: "#F5F5F5" },
+};
+
+const REPORTING_PERSON_MAP = {
+  Approved: { label: "✓ Approved", color: "#4CAF50", bg: "#E8F5E9" },
+  Rejected: { label: "✗ Rejected", color: "#F44336", bg: "#FFEBEE" },
+  Pending: { label: "⏱ Pending", color: "#FF9800", bg: "#FFF3E0" },
+  Skip: { label: "⤭ Skip", color: "#2196F3", bg: "#E3F2FD" },
+};
+
+const HO_OFFICER_MAP = {
+  Approved: { label: "✓ Approved", color: "#4CAF50", bg: "#E8F5E9" },
+  Rejected: { label: "✗ Rejected", color: "#F44336", bg: "#FFEBEE" },
+  Pending: { label: "⏱ Pending", color: "#FF9800", bg: "#FFF3E0" },
+};
+
+// ---------- Helper functions ----------
+
+function renderIntro(summary = {}) {
+  const approvedBadge = badge(
+    `✔ Approved: ${summary.approved || 0}`,
+    "#2E7D32",
+    "#E8F5E9"
+  );
+  const pendingBadge = badge(
+    `⏳ Pending: ${summary.pending || 0}`,
+    "#EF6C00",
+    "#FFF3E0"
+  );
+
+  return `
+		<div class="report-custom-intro" style="${INTRO_STYLE}">
+			<b>User:</b> ${summary.user || "-"} <br>
+			<b>Warehouse:</b> ${summary.warehouse || "-"} <br><br>
+			${approvedBadge}&nbsp;&nbsp;${pendingBadge}
+		</div>
+	`;
+}
+
+function createRequestLink(requestId) {
+  const url = "/app/employee-material-request/" + encodeURIComponent(requestId);
+  const baseStyle =
+    "color: #2196F3; font-weight: 600; padding: 4px 10px; border-radius: 4px; background: #E3F2FD; text-decoration: none; display: inline-block; border: 1px solid #BBDEFB;";
+  // keep same inline hover behavior for compatibility within report cells
+  return `<a href="${url}" style="${baseStyle}" onmouseover="this.style.background='#2196F3'; this.style.color='#fff';" onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';">${escapeHtml(
+    requestId
+  )}</a>`;
+}
+
 function badge(text, color, bg) {
-  return `<span style=" color: ${color}; font-weight: bold; padding: 4px 10px; border-radius: 6px; background: ${bg}; display: inline-block; ">${text}</span>`;
+  return `<span style="color: ${color}; font-weight: bold; padding: 4px 10px; border-radius: 6px; background: ${bg}; display: inline-block;">${escapeHtml(
+    text
+  )}</span>`;
+}
+
+function getBadgeFromMap(map, key) {
+  const m = map && map[key];
+  return m ? badge(m.label, m.color, m.bg) : null;
+}
+
+function badgeForStatus(status) {
+  return getBadgeFromMap(STATUS_MAP, status);
+}
+
+function badgeForReportingPerson(status) {
+  return getBadgeFromMap(REPORTING_PERSON_MAP, status);
+}
+
+function badgeForHoOfficer(status) {
+  return getBadgeFromMap(HO_OFFICER_MAP, status);
+}
+
+function badgeForAge(days) {
+  if (days > 7) return badge(`${days} days`, "#C62828", "#FFEBEE");
+  if (days > 3) return badge(`${days} days`, "#EF6C00", "#FFF3E0");
+  return badge(`${days} days`, "#2E7D32", "#E8F5E9");
+}
+
+// small utility to avoid injecting raw HTML from data fields
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
