@@ -23,36 +23,28 @@ def execute(filters=None):
     columns = [
         {"fieldname": "request_id", "label": "Request ID", "fieldtype": "Link", "options": "Employee Material Request", "width": 150},
         {"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 140},
-
         {"fieldname": "reporting_person_name", "label": "Reporting Person", "fieldtype": "Data", "width": 160},
         {"fieldname": "reporting_person_status", "label": "Reporting Person Status", "fieldtype": "Data", "width": 160},
-
         {"fieldname": "ho_person_name", "label": "HO Officer", "fieldtype": "Data", "width": 160},
         {"fieldname": "ho_officer_status", "label": "HO Officer Status", "fieldtype": "Data", "width": 160},
-
         {"fieldname": "requested_by_name", "label": "Executive", "fieldtype": "Data", "width": 160},
         {"fieldname": "request_age", "label": "Request Age (days)", "fieldtype": "Int", "width": 100},
-
         {"fieldname": "employee", "label": "Employee", "fieldtype": "Link", "options": "Employee", "width": 140},
         {"fieldname": "branch", "label": "Branch", "fieldtype": "Data", "width": 140},
         {"fieldname": "zone", "label": "Zone", "fieldtype": "Data", "width": 140},
         {"fieldname": "region", "label": "Region", "fieldtype": "Data", "width": 140},
         {"fieldname": "state", "label": "State", "fieldtype": "Data", "width": 140},
-
         {"fieldname": "remark", "label": "Remark", "fieldtype": "Data", "width": 200},
     ]
 
     session_user = frappe.session.user.lower().strip()
     warehouse = get_user_warehouse()
 
-    # If not admin AND no warehouse → no output
     if session_user not in ("administrator", "admin") and not warehouse:
         return columns, []
 
-    # Determine if logged in user is admin
     is_admin = 1 if session_user in ("administrator", "admin") else 0
 
-    # Single SQL with conditional WHERE
     data = frappe.db.sql("""
         SELECT 
             emr.name AS request_id,
@@ -64,7 +56,6 @@ def execute(filters=None):
             branch.region,
             branch.state,
 
-            -- Full names via joins
             req_user.full_name AS requested_by_name,
             rep_user.full_name AS reporting_person_name,
             emr.reporting_person_status,
@@ -90,14 +81,9 @@ def execute(filters=None):
             ON emr.head_office_officer = ho_user.name
 
         WHERE
-            (
-                %(is_admin)s = 1
-            )
+            (%(is_admin)s = 1)
             OR
-            (
-                %(is_admin)s = 0
-                AND TRIM(LOWER(emr.source_warehouse)) = TRIM(LOWER(%(warehouse)s))
-            )
+            (%(is_admin)s = 0 AND TRIM(LOWER(emr.source_warehouse)) = TRIM(LOWER(%(warehouse)s)))
 
         ORDER BY emr.creation DESC
     """, {
@@ -106,4 +92,23 @@ def execute(filters=None):
         "today": nowdate(),
     }, as_dict=True)
 
-    return columns, data
+    approved_count = sum(1 for d in data if d["status"] == "Approved")
+    pending_count = sum(
+        1 for d in data if d["status"] in ("Pending Reporting Person", "Pending HO Approval")
+    )
+
+    summary = {
+        "warehouse": warehouse or "-",
+        "user": frappe.get_value("User", frappe.session.user, "full_name"),
+        "approved": approved_count,
+        "pending": pending_count
+    }
+
+    # # 🔍 DEBUG POPUP
+    # frappe.msgprint(f"""
+    # <h4>Debug Data</h4>
+    # <b>Summary:</b><br>{summary}<br><br>
+    # <b>Data Rows:</b><br>{data}
+    # """)
+
+    return columns, data, None, summary

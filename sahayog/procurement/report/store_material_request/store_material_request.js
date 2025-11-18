@@ -1,4 +1,46 @@
 frappe.query_reports["Store material request"] = {
+  onload: function (report) {
+    frappe.call({
+      method: "frappe.desk.query_report.run",
+      args: {
+        report_name: "Store material request",
+        filters: {},
+      },
+      callback: function (r) {
+        // ⭐ Correct location of your data
+        let summary = r.message.chart || {};
+
+        console.log("SUMMARY FROM PYTHON:", summary);
+
+        $(report.page.wrapper).find(".report-custom-intro").remove();
+
+        let intro = `
+          <div class="report-custom-intro"
+            style="background:#f7f9fc;border-left:4px solid #2196F3;
+            padding:15px;margin-bottom:15px;border-radius:6px;font-size:14px;">
+
+            <b>User:</b> ${summary.user || "-"} <br>
+            <b>Warehouse:</b> ${summary.warehouse || "-"} <br><br>
+
+            <span style="background:#E8F5E9;padding:6px 10px;border-radius:6px;
+              color:#2E7D32;font-weight:600;">
+              ✔ Approved: ${summary.approved || 0}
+            </span>
+
+            &nbsp;&nbsp;
+
+            <span style="background:#FFF3E0;padding:6px 10px;border-radius:6px;
+              color:#EF6C00;font-weight:600;">
+              ⏳ Pending: ${summary.pending || 0}
+            </span>
+          </div>
+        `;
+
+        $(report.page.wrapper).find(".page-form").before(intro);
+      },
+    });
+  },
+
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
 
@@ -6,26 +48,14 @@ frappe.query_reports["Store material request"] = {
     if (column.fieldname == "request_id" && data.request_id) {
       value = `<a href="/app/employee-material-request/${encodeURIComponent(
         data.request_id
-      )}"
-            style="
-                color: #2196F3;
-                font-weight: 600;
-                padding: 4px 10px;
-                border-radius: 4px;
-                background: #E3F2FD;
-                text-decoration: none;
-                display: inline-block;
-                border: 1px solid #BBDEFB;
-            "
-            onmouseover="this.style.background='#2196F3'; this.style.color='#fff';"
-            onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';"
-        >${data.request_id}</a>`;
+      )}" style=" color: #2196F3; font-weight: 600; padding: 4px 10px; border-radius: 4px; background: #E3F2FD; text-decoration: none; display: inline-block; border: 1px solid #BBDEFB; " onmouseover="this.style.background='#2196F3'; this.style.color='#fff';" onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';" >${
+        data.request_id
+      }</a>`;
     }
 
     // 🌈 STATUS BADGE (ALL 7 STATUSES)
     if (column.fieldname == "status") {
       let s = data.status;
-
       if (s == "Draft") value = badge("📝 Draft", "#546E7A", "#ECEFF1");
       else if (s == "Pending Reporting Person")
         value = badge("👤 Pending Reporting", "#FB8C00", "#FFF3E0");
@@ -45,7 +75,6 @@ frappe.query_reports["Store material request"] = {
     // 🟢 Reporting Person Status badges
     if (column.fieldname == "reporting_person_status") {
       let s = data.reporting_person_status;
-
       if (s == "Approved") value = badge("✓ Approved", "#4CAF50", "#E8F5E9");
       else if (s == "Rejected")
         value = badge("✗ Rejected", "#F44336", "#FFEBEE");
@@ -56,7 +85,6 @@ frappe.query_reports["Store material request"] = {
     // 🔵 HO Officer Status badges
     if (column.fieldname == "ho_officer_status") {
       let s = data.ho_officer_status;
-
       if (s == "Approved") value = badge("✓ Approved", "#4CAF50", "#E8F5E9");
       else if (s == "Rejected")
         value = badge("✗ Rejected", "#F44336", "#FFEBEE");
@@ -66,7 +94,6 @@ frappe.query_reports["Store material request"] = {
     // 🟡 Request Age Highlight
     if (column.fieldname == "request_age") {
       let days = parseInt(data.request_age);
-
       if (days > 7) value = badge(days + " days", "#C62828", "#FFEBEE");
       else if (days > 3) value = badge(days + " days", "#EF6C00", "#FFF3E0");
       else value = badge(days + " days", "#2E7D32", "#E8F5E9");
@@ -78,12 +105,5 @@ frappe.query_reports["Store material request"] = {
 
 // ⭐ Badge Generator Function
 function badge(text, color, bg) {
-  return `<span style="
-        color: ${color};
-        font-weight: bold;
-        padding: 4px 10px;
-        border-radius: 6px;
-        background: ${bg};
-        display: inline-block;
-    ">${text}</span>`;
+  return `<span style=" color: ${color}; font-weight: bold; padding: 4px 10px; border-radius: 6px; background: ${bg}; display: inline-block; ">${text}</span>`;
 }
