@@ -135,7 +135,12 @@ frappe.ui.form.on("Case Closure", {
     } catch (e) {}
 
     // Create a dropdown-style primary button
-    let $btn = frm.page.add_button("Select Print Format", null, "btn-primary");
+    const $btn = $(
+      frm.page.add_button("Select Print Format", null, "btn-primary")
+    );
+    $btn
+      .removeClass("btn-default")
+      .addClass("btn-primary print-format-highlight");
 
     // Convert button to dropdown
     $btn.addClass("dropdown-toggle");
