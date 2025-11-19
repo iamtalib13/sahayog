@@ -15,6 +15,16 @@ frappe.ui.form.on("Response to SCN", {
     }
   },
   refresh(frm) {
+    if (!frm.is_new()) {
+      const btn = frm.add_custom_button("View Case History", function () {
+        frappe.set_route("query-report", "Case History", {
+          case_id: frm.doc.name,
+        });
+      });
+
+      btn.removeClass("btn-default").addClass("btn-primary");
+    }
+
     // Wait until all buttons are loaded
     frappe.after_ajax(() => {
       const $domesticBtn = $('button[data-doctype="Domestic Enquiry"]');
