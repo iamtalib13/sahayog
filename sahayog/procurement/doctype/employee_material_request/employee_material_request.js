@@ -19,12 +19,7 @@ frappe.ui.form.on("Employee Material Request", {
   refresh: function (frm) {
     // Set intro message based on document status
     set_form_intro(frm);
-
-    // Approval Timeline 
- if (frm.doc.docstatus > 0 || frm.doc.status) {
-      show_approval_timeline(frm);
-    }
-    
+     
     
     // Apply date restrictions on required_by_date field
     set_date_restrictions(frm);
@@ -39,6 +34,10 @@ frappe.ui.form.on("Employee Material Request", {
       });
     }
   },
+
+  
+
+
 
   // ------------------------------------------------------------------
   // ONLOAD EVENT - Triggered once when form is first created
@@ -313,129 +312,526 @@ frappe.ui.form.on("Material Request Items", {
 // HELPER FUNCTIONS
 // ==================================================================
 
-// ------------------------------------------------------------------
-// SET FORM INTRO - Display contextual messages at top of form
-// ------------------------------------------------------------------
+// ==================================================================
+// EMPLOYEE MATERIAL REQUEST - CLIENT SCRIPT
+// ==================================================================
+
+// frappe.ui.form.on("Employee Material Request", {
+//     refresh: function(frm) {
+//         set_form_intro(frm);
+//     },
+    
+//     onload: function(frm) {
+//         set_form_intro(frm);
+//     }
+// });
+
+// ==================================================================
+// SET FORM INTRO - Production-level implementation with caching
+// ==================================================================
 
 function set_form_intro(frm) {
+  console.log("hello from intro")
   // Clear any existing intro
   frm.set_intro("");
   
   // Only show intro for brand new, unsaved documents
   if (frm.doc.__islocal) {
     frm.set_intro(__("Fill all required fields and save the document"), "blue");
-  }
-}
-
-// ------------------------------------------------------------------
-// SHOW APPROVAL TIMELINE - Display approval chain in dashboard
-// ------------------------------------------------------------------
-function show_approval_timeline(frm) {
-  // Clear existing custom sections
-  frm.dashboard.clear_section("custom");
-  
-  // Add timeline after slight delay
-  setTimeout(function() {
-    let html = '<div class="approval-timeline" style="background: #f9f9f9; padding: 15px; border-radius: 5px;">';
-    html += "<h5>Approval Timeline</h5>";
-
-    html += "<div><b>Requested By:</b> " + frm.doc.requested_by;
-    if (frm.doc.request_datetime) {
-      html += " on " + frappe.datetime.str_to_user(frm.doc.request_datetime);
-    }
-    html += "</div><br>";
-
-    if (frm.doc.reporting_person) {
-      html += "<div><b>1. Reporting Person:</b> " + frm.doc.reporting_person + " - ";
-
-      if (frm.doc.reporting_person_status === "Approved") {
-        html += '<span class="indicator-pill green">✓ Approved</span>';
-        if (frm.doc.reporting_person_approval_date) {
-          html += " on " + frappe.datetime.str_to_user(frm.doc.reporting_person_approval_date);
-        }
-      } else if (frm.doc.reporting_person_status === "Rejected") {
-        html += '<span class="indicator-pill red">✗ Rejected</span>';
-      } else {
-        html += '<span class="indicator-pill orange">⏱ Pending</span>';
-      }
-      html += "</div><br>";
-    }
-
-    html += "<div><b>2. Head Office Officer:</b> ";
-    if (frm.doc.head_office_officer) {
-      html += frm.doc.head_office_officer + " - ";
-    }
-
-    if (frm.doc.ho_officer_status === "Approved") {
-      html += '<span class="indicator-pill green">✓ Approved</span>';
-      if (frm.doc.ho_officer_approval_date) {
-        html += " on " + frappe.datetime.str_to_user(frm.doc.ho_officer_approval_date);
-      }
-    } else if (frm.doc.ho_officer_status === "Rejected") {
-      html += '<span class="indicator-pill red">✗ Rejected</span>';
-    } else {
-      html += '<span class="indicator-pill orange">⏱ Pending</span>';
-    }
-    html += "</div>";
-
-    html += "</div>";
-    
-    frm.dashboard.add_section(html, "Approval Status");
-  }, 200);
-}
-
-
-function show_approval_timeline(frm) {
-  let html =
-    '<div class="approval-timeline" style="background: #f9f9f9; padding: 15px; border-radius: 5px;">';
-  html += "<h5>Approval Timeline</h5>";
-
-  html += "<div><b>Requested By:</b> " + frm.doc.requested_by;
-  if (frm.doc.request_datetime) {
-    html += " on " + frappe.datetime.str_to_user(frm.doc.request_datetime);
-  }
-  html += "</div><br>";
-
-  if (frm.doc.reporting_person) {
-    html +=
-      "<div><b>1. Reporting Person:</b> " + frm.doc.reporting_person + " - ";
-
-    if (frm.doc.reporting_person_status === "Approved") {
-      html += '<span class="indicator-pill green">✓ Approved</span>';
-      if (frm.doc.reporting_person_approval_date) {
-        html +=
-          " on " +
-          frappe.datetime.str_to_user(frm.doc.reporting_person_approval_date);
-      }
-    } else if (frm.doc.reporting_person_status === "Rejected") {
-      html += '<span class="indicator-pill red">✗ Rejected</span>';
-    } else {
-      html += '<span class="indicator-pill orange">⏱ Pending</span>';
-    }
-    html += "</div><br>";
-  }
-
-  html += "<div><b>2. Head Office Officer:</b> ";
-  if (frm.doc.head_office_officer) {
-    html += frm.doc.head_office_officer + " - ";
-  }
-
-  if (frm.doc.ho_officer_status === "Approved") {
-    html += '<span class="indicator-pill green">✓ Approved</span>';
-    if (frm.doc.ho_officer_approval_date) {
-      html +=
-        " on " + frappe.datetime.str_to_user(frm.doc.ho_officer_approval_date);
-    }
-  } else if (frm.doc.ho_officer_status === "Rejected") {
-    html += '<span class="indicator-pill red">✗ Rejected</span>';
   } else {
-    html += '<span class="indicator-pill orange">⏱ Pending</span>';
+    // Fetch data with caching and render intro
+    fetch_intro_data_with_cache(frm);
   }
-  html += "</div>";
-
-  html += "</div>";
-  frm.dashboard.add_section(html);
 }
+
+// ------------------------------------------------------------------
+// FETCH INTRO DATA WITH CACHING
+// Implements intelligent caching with localStorage
+// ------------------------------------------------------------------
+function fetch_intro_data_with_cache(frm) {
+  frm.set_intro("");
+  const CACHE_KEY_PREFIX = "emr_intro_";
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const MAX_CACHE_ITEMS = 50; // Maximum cached items
+  
+  const cache_key = CACHE_KEY_PREFIX + frm.doc.name;
+  
+  // Try to get from cache first
+  const cached_data = get_from_cache(cache_key, CACHE_DURATION);
+  
+  if (cached_data) {
+    // Cache hit - render immediately
+    console.log("Loading intro from cache:", frm.doc.name);
+    render_intro_html(frm, cached_data);
+    return;
+  }
+  
+  // Cache miss - fetch from server
+  console.log("Fetching intro from server:", frm.doc.name);
+  
+  frappe.call({
+    method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
+    args: {
+      doc_name: frm.doc.name
+    },
+    freeze: true,
+    freeze_message: __("Loading details..."),
+    callback: function(r) {
+      if (r.message && r.message.success) {
+        const data = r.message.data;
+        
+        // Save to cache
+        save_to_cache(cache_key, data, MAX_CACHE_ITEMS, CACHE_KEY_PREFIX);
+        
+        // Render intro
+        render_intro_html(frm, data);
+      } else {
+        // Error handling - show fallback
+        frappe.msgprint({
+          title: __("Error Loading Details"),
+          message: r.message?.error || __("Unable to load intro details"),
+          indicator: "red"
+        });
+        render_intro_fallback(frm);
+      }
+    },
+    error: function(err) {
+      console.error("Error fetching intro data:", err);
+      render_intro_fallback(frm);
+    }
+  });
+}
+
+// ------------------------------------------------------------------
+// GET FROM CACHE
+// Retrieves data from localStorage with expiry check
+// ------------------------------------------------------------------
+function get_from_cache(key, duration) {
+  try {
+    const cached = localStorage.getItem(key);
+    if (!cached) return null;
+    
+    const parsed = JSON.parse(cached);
+    const now = Date.now();
+    
+    // Check if cache is expired
+    if (now - parsed.timestamp > duration) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    
+    return parsed.data;
+  } catch (e) {
+    console.error("Cache read error:", e);
+    return null;
+  }
+}
+
+// ------------------------------------------------------------------
+// SAVE TO CACHE
+// Saves data to localStorage with LRU (Least Recently Used) eviction
+// ------------------------------------------------------------------
+function save_to_cache(key, data, max_items, key_prefix) {
+  try {
+    // Prepare cache entry
+    const cache_entry = {
+      data: data,
+      timestamp: Date.now()
+    };
+    
+    // Save current item
+    localStorage.setItem(key, JSON.stringify(cache_entry));
+    
+    // Clean old cache entries if limit exceeded
+    clean_old_cache(max_items, key_prefix);
+    
+  } catch (e) {
+    // localStorage full - clean and retry
+    if (e.name === 'QuotaExceededError') {
+      console.warn("localStorage full, cleaning old entries...");
+      clean_old_cache(Math.floor(max_items / 2), key_prefix);
+      
+      // Retry save
+      try {
+        localStorage.setItem(key, JSON.stringify(cache_entry));
+      } catch (e2) {
+        console.error("Failed to save to cache after cleanup:", e2);
+      }
+    } else {
+      console.error("Cache write error:", e);
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// CLEAN OLD CACHE
+// Removes oldest cache entries when limit exceeded (LRU strategy)
+// ------------------------------------------------------------------
+function clean_old_cache(max_items, key_prefix) {
+  try {
+    // Get all cache keys
+    const cache_entries = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(key_prefix)) {
+        try {
+          const value = JSON.parse(localStorage.getItem(key));
+          cache_entries.push({
+            key: key,
+            timestamp: value.timestamp || 0
+          });
+        } catch (e) {
+          // Invalid cache entry - remove it
+          localStorage.removeItem(key);
+        }
+      }
+    }
+    
+    // If over limit, remove oldest entries
+    if (cache_entries.length > max_items) {
+      // Sort by timestamp (oldest first)
+      cache_entries.sort((a, b) => a.timestamp - b.timestamp);
+      
+      // Remove oldest entries
+      const to_remove = cache_entries.length - max_items;
+      for (let i = 0; i < to_remove; i++) {
+        localStorage.removeItem(cache_entries[i].key);
+      }
+      
+      console.log(`Cleaned ${to_remove} old cache entries`);
+    }
+  } catch (e) {
+    console.error("Cache cleanup error:", e);
+  }
+}
+
+// ------------------------------------------------------------------
+// RENDER INTRO HTML
+// Renders the intro section with fetched/cached data
+// ------------------------------------------------------------------
+function render_intro_html(frm, data) {
+  let html = `
+    <style>
+      .emr-quick-guide {
+        background: transparent;
+        border-radius: 6px;
+        padding: 0px;
+        margin: 8px 0;
+      }
+      
+      .emr-grid-parent {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 8px;
+        min-height: 100px;
+      }
+      
+      .emr-grid-card {
+        background: transparent !important;
+        border-radius: 4px;
+        padding: 10px;
+      }
+      
+      .emr-div1, .emr-div2, .emr-div3, .emr-div4 {
+        background: transparent !important;
+      }
+      
+      .emr-div1 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+      }
+      
+      .emr-div2 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+        grid-column-start: 3;
+      }
+      
+      .emr-div3 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+        grid-row-start: 3;
+      }
+      
+      .emr-div4 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+        grid-column-start: 3;
+        grid-row-start: 3;
+      }
+      
+      .emr-card-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        background: rgb(215, 140, 9) !important;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 11px;
+        color: white;
+        margin-right: 6px;
+      }
+      
+      .emr-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      
+      .emr-card-title {
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .emr-card-line {
+        font-size: 11px;
+        line-height: 1.6;
+        margin: 2px 0;
+      }
+      
+      .emr-status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        height: 2.25rem;
+        padding: 0.5rem 1rem;
+        cursor: default;
+        border: none;
+      }
+      
+      .emr-status-badge:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transform: translateY(-1px);
+      }
+      
+      .close-message {
+        display: none;
+      }
+
+      /* ========== LIGHT MODE STYLES ========== */
+      html[data-theme-mode="light"] .form-message.blue {
+        border: none !important;
+        background-color: #f8f9fa !important;
+        background-image: linear-gradient(to right bottom, rgba(215, 140, 9, 0.15), #f8f9fa) !important;
+        padding: 12px !important;
+        border-radius: 6px !important;
+      }
+      
+      html[data-theme-mode="light"] .emr-card-title {
+        color: #212529 !important;
+      }
+      
+      html[data-theme-mode="light"] .emr-card-line {
+        color: #495057 !important;
+      }
+      
+      /* Light Mode Status Badge Colors */
+      html[data-theme-mode="light"] .status-approved {
+        background: rgb(46, 184, 92) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="light"] .status-rejected {
+        background: rgb(220, 53, 69) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="light"] .status-pending {
+        background: rgb(215, 140, 9) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="light"] .status-skip {
+        background: rgb(13, 110, 253) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="light"] .status-draft {
+        background: rgb(215, 140, 9) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="light"] .status-submitted {
+        background: rgb(46, 184, 92) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="light"] .status-cancelled {
+        background: rgb(220, 53, 69) !important;
+        color: #ffffff !important;
+      }
+
+      /* ========== DARK MODE STYLES ========== */
+      html[data-theme-mode="dark"] .form-message.blue {
+        border: none !important;
+        background-color: rgb(50, 50, 50) !important;
+        background-image: linear-gradient(to right bottom, rgba(215, 140, 9, 0.2), rgb(50, 50, 50)) !important;
+        padding: 12px !important;
+        border-radius: 6px !important;
+      }
+      
+      html[data-theme-mode="dark"] .emr-card-title {
+        color: #fff !important;
+      }
+      
+      html[data-theme-mode="dark"] .emr-card-line {
+        color: #e0e0e0 !important;
+      }
+      
+      /* Dark Mode Status Badge Colors - Darker shades */
+      html[data-theme-mode="dark"] .status-approved {
+        background: rgb(25, 135, 84) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="dark"] .status-rejected {
+        background: rgb(176, 42, 55) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="dark"] .status-pending {
+        background: rgb(180, 117, 7) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="dark"] .status-skip {
+        background: rgb(10, 88, 202) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="dark"] .status-draft {
+        background: rgb(180, 117, 7) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="dark"] .status-submitted {
+        background: rgb(25, 135, 84) !important;
+        color: #ffffff !important;
+      }
+      
+      html[data-theme-mode="dark"] .status-cancelled {
+        background: rgb(176, 42, 55) !important;
+        color: #ffffff !important;
+      }
+    </style>
+    
+    <div class="emr-quick-guide">
+      <div class="emr-grid-parent">
+        
+        <!-- DIV 1: Employee Details -->
+        <div class="emr-grid-card emr-div1">
+          <div class="emr-card-header">
+            <div class="emr-card-number">1</div>
+            <div class="emr-card-title">Employee Details</div>
+          </div>
+          <div class="emr-card-line">
+            ${data.employee?.employee_number || 'N/A'} -
+            ${data.employee?.employee_name || 'N/A'} -
+            ${data.employee?.cell_number || 'N/A'}
+          </div>
+          <div class="emr-card-line">
+            ${frm.doc.target_warehouse || 'N/A'} - 
+            ${data.branch?.branch || 'N/A'}, 
+            ${data.branch?.district || 'N/A'}, 
+            ${data.branch?.state_code || 'N/A'}
+          </div>
+        </div>
+        
+        <!-- DIV 2: Request Details -->
+        <div class="emr-grid-card emr-div2">
+          <div class="emr-card-header">
+            <div class="emr-card-number">2</div>
+            <div class="emr-card-title">Request Details</div>
+          </div>
+          <div class="emr-card-line">
+            ${data.requested_by?.employee_number || 'N/A'} -
+            ${data.requested_by?.employee_name || 'N/A'} -
+            ${data.requested_by?.cell_number || 'N/A'}
+          </div>
+          <div class="emr-card-line">
+            <span class="emr-status-badge ${
+              data.doc_status === 1 ? 'status-submitted' : 
+              data.doc_status === 0 ? 'status-draft' : 
+              'status-cancelled'
+            }">
+              ${data.doc_status === 1 ? 'Submitted' : data.doc_status === 0 ? 'Draft' : 'Cancelled'}
+            </span>
+          </div>
+        </div>
+        
+        <!-- DIV 3: Reporting Person -->
+        <div class="emr-grid-card emr-div3">
+          <div class="emr-card-header">
+            <div class="emr-card-number">3</div>
+            <div class="emr-card-title">Reporting Person</div>
+          </div>
+          <div class="emr-card-line">
+            ${data.reporting_person?.employee_number || 'N/A'} -
+            ${data.reporting_person?.employee_name || 'N/A'} -
+            ${data.reporting_person?.cell_number || 'N/A'}
+          </div>
+          <div class="emr-card-line">
+            <span class="emr-status-badge ${
+              data.reporting_person_status === 'Approved' ? 'status-approved' : 
+              data.reporting_person_status === 'Rejected' ? 'status-rejected' : 
+              data.reporting_person_status === 'Skip' ? 'status-skip' : 
+              'status-pending'
+            }">
+              ${data.reporting_person_status || 'Pending'}
+            </span>
+          </div>
+        </div>
+        
+        <!-- DIV 4: HO Officer -->
+        <div class="emr-grid-card emr-div4">
+          <div class="emr-card-header">
+            <div class="emr-card-number">4</div>
+            <div class="emr-card-title">HO Officer</div>
+          </div>
+          <div class="emr-card-line">
+            ${data.ho_officer?.employee_number || 'N/A'} - 
+            ${data.ho_officer?.employee_name || 'N/A'}
+          </div>
+          <div class="emr-card-line">
+            <span class="emr-status-badge ${
+              data.ho_officer_status === 'Approved' ? 'status-approved' : 
+              data.ho_officer_status === 'Rejected' ? 'status-rejected' : 
+              'status-pending'
+            }">
+              ${data.ho_officer_status || 'Pending'}
+            </span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  `;
+  
+  frm.set_intro(html);
+}
+
+// ------------------------------------------------------------------
+// RENDER INTRO FALLBACK
+// Shows basic intro when data fetch fails
+// ------------------------------------------------------------------
+function render_intro_fallback(frm) {
+  frm.set_intro(__("Unable to load detailed information. Please refresh the page."), "orange");
+}
+
+
+
+
 
 
 

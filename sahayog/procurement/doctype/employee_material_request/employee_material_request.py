@@ -465,3 +465,175 @@ def validate_required_date(required_by_date, request_date=None):
             "valid": False,
             "message": str(e)
         }
+
+
+# ==================================================================
+# WHITELISTED API METHOD FOR INTRO DATA
+# ==================================================================
+
+
+@frappe.whitelist()
+def get_material_request_intro_data(doc_name):
+    """
+    Fetch all intro data for Employee Material Request in a single server call
+    This prevents frontend manipulation and improves security
+    
+    Args:
+        doc_name (str): Name of Employee Material Request document
+        
+    Returns:
+        dict: Dictionary containing all required data for intro display
+    """
+    try:
+        # Get the main document
+        doc = frappe.get_doc("Employee Material Request", doc_name)
+        
+        # Validate permissions - user must have read access
+        if not frappe.has_permission("Employee Material Request", "read", doc_name):
+            frappe.throw(_("You don't have permission to access this document"))
+        
+        # Get creator's employee record (who created this document)
+        creator_employee = get_creator_employee(doc.owner)
+        
+        result = {
+            "success": True,
+            "data": {
+                "employee": get_employee_data(doc.employee),
+                "branch": get_branch_data(doc.target_warehouse),
+                "requested_by": creator_employee,  # Creator's employee record
+                "reporting_person": get_employee_by_user(doc.reporting_person),
+                "ho_officer": get_employee_by_user(doc.head_office_officer),
+                "doc_status": doc.docstatus,
+                "reporting_person_status": doc.reporting_person_status,
+                "ho_officer_status": doc.ho_officer_status
+            }
+        }
+        
+        return result
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Material Request Intro Data Error")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+def get_employee_data(employee_number):
+    """
+    Fetch employee details by employee number
+    
+    Args:
+        employee_number (str): Employee number
+        
+    Returns:
+        dict: Employee data or empty dict
+    """
+    if not employee_number:
+        return {}
+    
+    try:
+        employee = frappe.db.get_value(
+            "Employee",
+            {"employee_number": employee_number},
+            ["employee_number", "employee_name", "cell_number"],
+            as_dict=True
+        )
+        return employee or {}
+    except Exception:
+        return {}
+
+
+def get_branch_data(sol_id):
+    """
+    Fetch branch details by SOL ID
+    
+    Args:
+        sol_id (str): SOL ID from target warehouse
+        
+    Returns:
+        dict: Branch data or empty dict
+    """
+    if not sol_id:
+        return {}
+    
+    try:
+        branch = frappe.db.get_value(
+            "Sahayog Branch",
+            {"sol_id": sol_id},
+            ["branch", "district", "state_code"],
+            as_dict=True
+        )
+        return branch or {}
+    except Exception:
+        return {}
+
+
+def get_employee_by_user(user_id):
+    """
+    Fetch employee details by user ID (email)
+    
+    Args:
+        user_id (str): User email/ID
+        
+    Returns:
+        dict: Employee data or empty dict
+    """
+    if not user_id:
+        return {}
+    
+    try:
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": user_id},
+            ["employee_number", "employee_name", "cell_number"],
+            as_dict=True
+        )
+        return employee or {}
+    except Exception:
+        return {}
+
+
+def get_creator_employee(user_id):
+    """
+    Fetch employee details of document creator by user ID
+    Falls back to user's full name if employee record not found
+    
+    Args:
+        user_id (str): User email/ID of document creator
+        
+    Returns:
+        dict: Employee data or user info if employee not found
+    """
+    if not user_id:
+        return {
+            "employee_number": "N/A",
+            "employee_name": "N/A",
+            "cell_number": "N/A"
+        }
+    
+    try:
+        # First try to get employee by user_id
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": user_id},
+            ["employee_number", "employee_name", "cell_number"],
+            as_dict=True
+        )
+        
+        if employee:
+            return employee
+        
+        # If no employee found, return user's full name
+        user_name = frappe.db.get_value("User", user_id, "full_name")
+        return {
+            "employee_number": "N/A",
+            "employee_name": user_name or user_id,
+            "cell_number": "N/A"
+        }
+    except Exception:
+        return {
+            "employee_number": "N/A",
+            "employee_name": user_id,
+            "cell_number": "N/A"
+        }
