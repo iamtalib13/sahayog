@@ -327,8 +327,11 @@ doc_events = {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
             "sahayog.scrm.controller.lead.lead.set_is_operation_lead"
+        ],
+        "validate": [
+            "sahayog.scrm.controller.lead.lead.validate_required_employee_fields"
         ]
-    },   
+    },
     "Shareholder": {
       
         "before_insert": [

@@ -3299,10 +3299,77 @@
         return valid;
       }
 
+      // Validate that current user has SOL ID in Employee profile
+      async function validateEmployeeSOLID() {
+        try {
+          // Use the REST API to get current user info
+          const userResponse = await fetch(
+            "/api/method/frappe.auth.get_logged_user",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              credentials: "include",
+            }
+          );
+
+          const userResult = await userResponse.json();
+
+          if (!userResult.message) {
+            alert("⚠️ Unable to verify user authentication.");
+            return false;
+          }
+
+          const currentUser = userResult.message;
+
+          // Get employee data for current user
+          const employeeResponse = await fetch(
+            `/api/resource/Employee?filters=[["user_id","=","${currentUser}"]]&fields=["sol_id","employee_number","branch","custom_region","custom_zone"]`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              credentials: "include",
+            }
+          );
+
+          const employeeResult = await employeeResponse.json();
+
+          if (!employeeResult.data || employeeResult.data.length === 0) {
+            alert("⚠️ No employee record found for your user account.");
+            return false;
+          }
+
+          const employee = employeeResult.data[0];
+
+          if (!employee.sol_id) {
+            alert(
+              "⚠️ SOL ID is required in your employee profile. Please contact apptech@sahayogmultistate.com to set your SOL ID."
+            );
+            return false;
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Error validating employee SOL ID:", error);
+          alert("⚠️ Error validating employee details. Please try again.");
+          return false;
+        }
+      }
+
       let isCreatingLead = false;
       async function handleCreateLead() {
         if (isCreatingLead) return;
         if (!validateCreateLeadForm()) return;
+
+        // Add SOL ID validation
+        if (!(await validateEmployeeSOLID())) {
+          return;
+        }
 
         isCreatingLead = true;
         document
