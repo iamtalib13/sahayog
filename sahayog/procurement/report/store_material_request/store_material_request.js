@@ -1,20 +1,36 @@
 frappe.query_reports["Store material request"] = {
+  // -------------------- FILTERS --------------------
+  filters: [
+    {
+      fieldname: "employee",
+      label: __("Employee"),
+      fieldtype: "Link",
+      options: "Employee",
+    },
+    {
+      fieldname: "branch",
+      label: __("Branch"),
+      fieldtype: "Link",
+      options: "Sahayog Branch",
+    },
+  ],
+
+  // -------------------- INTRO SUMMARY LOAD --------------------
   onload: function (report) {
     frappe.call({
       method: "frappe.desk.query_report.run",
       args: { report_name: "Store material request", filters: {} },
       callback: function (r) {
         const summary = (r && r.message && r.message.chart) || {};
-        // replace previous intro and insert new one
         $(report.page.wrapper).find(".report-custom-intro").remove();
         $(report.page.wrapper).find(".page-form").before(renderIntro(summary));
       },
     });
   },
-  //
+
+  // -------------------- FORMATTER --------------------
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
-
     const field = column.fieldname;
 
     if (field === "request_id" && data.request_id) {
@@ -44,8 +60,29 @@ frappe.query_reports["Store material request"] = {
   },
 };
 
-// ---------- Constants & Maps ----------
+// -------------------- INTRO RENDER --------------------
+function renderIntro(summary = {}) {
+  const approvedBadge = badge(
+    `✔ Approved: ${summary.approved || 0}`,
+    "#2E7D32",
+    "#E8F5E9"
+  );
+  const pendingBadge = badge(
+    `⏳ Pending: ${summary.pending || 0}`,
+    "#EF6C00",
+    "#FFF3E0"
+  );
 
+  return `
+		<div class="report-custom-intro" style="${INTRO_STYLE}">
+			<b>User:</b> ${summary.user || "-"} <br>
+			<b>Warehouse:</b> ${summary.warehouse || "-"} <br><br>
+			${approvedBadge}&nbsp;&nbsp;${pendingBadge}
+		</div>
+	`;
+}
+
+// -------------------- CONSTANTS --------------------
 const INTRO_STYLE =
   [
     "background:#f7f9fc",
@@ -56,6 +93,7 @@ const INTRO_STYLE =
     "font-size:14px",
   ].join(";") + ";";
 
+// -------------------- STATUS MAPS --------------------
 const STATUS_MAP = {
   Draft: { label: "📝 Draft", color: "#546E7A", bg: "#ECEFF1" },
   "Pending Reporting Person": {
@@ -87,39 +125,7 @@ const HO_OFFICER_MAP = {
   Pending: { label: "⏱ Pending", color: "#FF9800", bg: "#FFF3E0" },
 };
 
-// ---------- Helper functions ----------
-
-function renderIntro(summary = {}) {
-  const approvedBadge = badge(
-    `✔ Approved: ${summary.approved || 0}`,
-    "#2E7D32",
-    "#E8F5E9"
-  );
-  const pendingBadge = badge(
-    `⏳ Pending: ${summary.pending || 0}`,
-    "#EF6C00",
-    "#FFF3E0"
-  );
-
-  return `
-		<div class="report-custom-intro" style="${INTRO_STYLE}">
-			<b>User:</b> ${summary.user || "-"} <br>
-			<b>Warehouse:</b> ${summary.warehouse || "-"} <br><br>
-			${approvedBadge}&nbsp;&nbsp;${pendingBadge}
-		</div>
-	`;
-}
-
-function createRequestLink(requestId) {
-  const url = "/app/employee-material-request/" + encodeURIComponent(requestId);
-  const baseStyle =
-    "color: #2196F3; font-weight: 600; padding: 4px 10px; border-radius: 4px; background: #E3F2FD; text-decoration: none; display: inline-block; border: 1px solid #BBDEFB;";
-  // keep same inline hover behavior for compatibility within report cells
-  return `<a href="${url}" style="${baseStyle}" onmouseover="this.style.background='#2196F3'; this.style.color='#fff';" onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';">${escapeHtml(
-    requestId
-  )}</a>`;
-}
-
+// -------------------- BADGE HELPERS --------------------
 function badge(text, color, bg) {
   return `<span style="color: ${color}; font-weight: bold; padding: 4px 10px; border-radius: 6px; background: ${bg}; display: inline-block;">${escapeHtml(
     text
@@ -134,22 +140,27 @@ function getBadgeFromMap(map, key) {
 function badgeForStatus(status) {
   return getBadgeFromMap(STATUS_MAP, status);
 }
-
 function badgeForReportingPerson(status) {
   return getBadgeFromMap(REPORTING_PERSON_MAP, status);
 }
-
 function badgeForHoOfficer(status) {
   return getBadgeFromMap(HO_OFFICER_MAP, status);
 }
-
 function badgeForAge(days) {
   if (days > 7) return badge(`${days} days`, "#C62828", "#FFEBEE");
   if (days > 3) return badge(`${days} days`, "#EF6C00", "#FFF3E0");
   return badge(`${days} days`, "#2E7D32", "#E8F5E9");
 }
 
-// small utility to avoid injecting raw HTML from data fields
+function createRequestLink(requestId) {
+  const url = "/app/employee-material-request/" + encodeURIComponent(requestId);
+  return `<a href="${url}" style="color:#2196F3;font-weight:600;padding:4px 10px;border-radius:4px;background:#E3F2FD;text-decoration:none;border:1px solid #BBDEFB;"
+      onmouseover="this.style.background='#2196F3'; this.style.color='#fff';"
+      onmouseout="this.style.background='#E3F2FD'; this.style.color='#2196F3';">
+      ${escapeHtml(requestId)}
+    </a>`;
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return "";
   return String(str)
@@ -159,3 +170,4 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+//  back to orginal#
