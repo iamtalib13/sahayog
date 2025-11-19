@@ -162,6 +162,16 @@ frappe.ui.form.on("Disciplinary Case", {
       });
     }, 1000);
 
+    if (!frm.is_new()) {
+      const btn = frm.add_custom_button("View Case History", function () {
+        frappe.set_route("query-report", "Case History", {
+          case_id: frm.doc.name,
+        });
+      });
+
+      btn.removeClass("btn-default").addClass("btn-primary");
+    }
+
     frm.trigger("show_print_button");
   },
   // -------------------
