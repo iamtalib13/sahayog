@@ -13,7 +13,7 @@
    "card": "Closed Cases"
   }
  ],
- "charts":[
+ "charts": [
   {
    "chart": "Month-wise Cases",
    "width": "Full"
@@ -29,6 +29,10 @@
   {
    "chart": "Designation Wise Cases",
    "width": "Full"
+  },
+  {
+   "chart": "Status Wise Cases",
+   "width": "Half"
   }
  ],
  "creation": "2025-11-12 11:53:57.979787",
@@ -38,7 +42,7 @@
  "idx": 0,
  "is_default": 0,
  "is_standard": 1,
- "modified": "2025-11-18 15:42:44.966177",
+ "modified": "2025-11-19 16:12:28.322576",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Cases Dashboard",
