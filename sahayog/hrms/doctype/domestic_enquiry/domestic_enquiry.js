@@ -3,6 +3,16 @@
 
 frappe.ui.form.on("Domestic Enquiry", {
   refresh(frm) {
+    if (!frm.is_new()) {
+      const btn = frm.add_custom_button("View Case History", function () {
+        frappe.set_route("query-report", "Case History", {
+          case_id: frm.doc.name,
+        });
+      });
+
+      btn.removeClass("btn-default").addClass("btn-primary");
+    }
+
     console.log("Domestic Enquiry refresh fired");
     // ✅ Call print button function
 
