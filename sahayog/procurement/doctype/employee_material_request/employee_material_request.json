@@ -250,7 +250,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-17 12:08:00.152173",
+ "modified": "2025-11-18 11:09:01.051591",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
@@ -299,7 +299,6 @@
   }
  ],
  "row_format": "Dynamic",
- "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [
@@ -332,6 +331,5 @@
    "title": "Cancelled"
   }
  ],
- "title_field": "employee",
  "track_changes": 1
 }

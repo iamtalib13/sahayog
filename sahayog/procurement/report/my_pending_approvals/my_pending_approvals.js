@@ -14,6 +14,8 @@ frappe.query_reports["My Pending Approvals"] = {
     //         "default": "Pending"
     //     }
     // ],
+
+	
     
     "formatter": function(value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
