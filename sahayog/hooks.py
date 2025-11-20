@@ -365,6 +365,9 @@ scheduler_events = {
         # Run daily at 1:00 AM — Agent auto-creation sync job
         "0 1 * * *": [
             "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
+        ],
+        "*/5 * * * *": [
+            "sahayog.tasks.reset_auto_prepared_reports"  
         ]
     },
 
