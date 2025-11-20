@@ -7,10 +7,9 @@ from frappe.model.document import Document
 import re
 
 class Agent(Document):
-#     def validate(self):
-#            # Skip if requested_by is blank
-#         if not self.requested_by:
-#             return
+    def validate(self):
+        if self.status == "Allocated":
+           self.agent_status = "LIVE"
 
 #         # Proceed only if employee exists
 #         if self.requested_by:
