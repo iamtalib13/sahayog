@@ -125,12 +125,10 @@
    "reqd": 1
   },
   {
-   "default": "now",
    "fieldname": "request_datetime",
    "fieldtype": "Datetime",
    "label": "Request Date & Time",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_approval",
@@ -250,7 +248,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-18 11:09:01.051591",
+ "modified": "2025-11-20 11:05:10.467105",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",

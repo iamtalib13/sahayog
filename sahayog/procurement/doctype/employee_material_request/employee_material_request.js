@@ -17,8 +17,42 @@ frappe.ui.form.on("Employee Material Request", {
   // REFRESH EVENT - Triggered when form loads/refreshes
   // ------------------------------------------------------------------
   refresh: function (frm) {
-    // Set intro message based on document status
-    set_form_intro(frm);
+    // // Set intro message based on document status
+    // set_form_intro(frm);
+
+    // // Instead of relying on cached intro, forcibly fetch fresh data
+    // frappe.call({
+    //   method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
+    //   args: { doc_name: frm.doc.name },
+    //   callback: function(r) {
+    //     if (r.message && r.message.success) {
+    //       render_intro_html(frm, r.message.data);
+    //     } else {
+    //       frm.set_intro("Unable to load intro data", "red");
+    //     }
+    //   }
+    // });
+
+     // Clear or set basic intro for new unsaved docs
+  if (frm.is_new()) {
+    frm.set_intro(__("Fill all required fields and save the document"), "blue");
+    
+    // Skip fetching intro data for new unsaved docs
+    return;
+  }
+  
+  // For saved docs, fetch intro data
+  frappe.call({
+    method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
+    args: { doc_name: frm.doc.name },
+    callback: function(r) {
+      if (r.message && r.message.success) {
+        render_intro_html(frm, r.message.data);
+      } else {
+        frm.set_intro("Unable to load intro data", "red");
+      }
+    }
+  });
      
     
     // Apply date restrictions on required_by_date field
@@ -511,6 +545,8 @@ function clean_old_cache(max_items, key_prefix) {
 // Renders the intro section with fetched/cached data
 // ------------------------------------------------------------------
 function render_intro_html(frm, data) {
+  frm.set_intro("");
+  const current_status = frm.doc.status || data.status;
   let html = `
     <style>
       .emr-quick-guide {
@@ -760,12 +796,12 @@ function render_intro_html(frm, data) {
             ${data.requested_by?.cell_number || 'N/A'}
           </div>
           <div class="emr-card-line">
+            
+
             <span class="emr-status-badge ${
-              data.doc_status === 1 ? 'status-submitted' : 
-              data.doc_status === 0 ? 'status-draft' : 
-              'status-cancelled'
+              current_status === "Pending Reporting Person" ? 'status-submitted' : 'status-draft'
             }">
-              ${data.doc_status === 1 ? 'Submitted' : data.doc_status === 0 ? 'Draft' : 'Cancelled'}
+              ${current_status === "Pending Reporting Person" ? 'Submitted' : 'Draft'}
             </span>
           </div>
         </div>
@@ -817,6 +853,8 @@ function render_intro_html(frm, data) {
       </div>
     </div>
   `;
+  console.log("request datetime",data.request_datetime)
+  console.log("Status from intro data:", data.status);
   
   frm.set_intro(html);
 }

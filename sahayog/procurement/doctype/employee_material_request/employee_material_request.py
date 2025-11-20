@@ -9,7 +9,29 @@ class EmployeeMaterialRequest(Document):
         self.validate_dates()  # Date validation first
         self.validate_items()
         self.set_requested_by()
+        self.set_request_datetime_once()
+
     
+    # def set_request_datetime_once(self):
+    #     # Set request_datetime only if status changed to Pending Reporting Person
+    #     # and request_datetime is not already set (blank)
+    #     if self.status == "Pending Reporting Person" and not self.request_datetime:
+    #         # Only set if doc was new (draft before submit)
+    #         if self.docstatus == 1 or self.is_new():
+    #             self.request_datetime = now()
+
+
+    def set_request_datetime_once(self):
+        # Set request_datetime only when:
+        # 1. Status is Pending Reporting Person
+        # 2. request_datetime not previously set
+        # 3. Document is either new (draft) or just submitted (docstatus 1)
+        
+        if self.status == "Pending Reporting Person" and not self.request_datetime:
+            # Only set for new docs or freshly submitted ones transitioning from draft
+            if self.is_new() or self.docstatus == 0:
+                self.request_datetime = now()
+        
     def before_workflow_action(self):
         """Called before workflow transitions"""
         self.update_approval_fields()
@@ -505,7 +527,9 @@ def get_material_request_intro_data(doc_name):
                 "ho_officer": get_employee_by_user(doc.head_office_officer),
                 "doc_status": doc.docstatus,
                 "reporting_person_status": doc.reporting_person_status,
-                "ho_officer_status": doc.ho_officer_status
+                "ho_officer_status": doc.ho_officer_status,
+                "request_datetime": doc.request_datetime,  # Send this field to frontend
+                "status": doc.status,
             }
         }
         
