@@ -131,6 +131,7 @@
   {
    "fieldname": "date_of_enquiry",
    "fieldtype": "Date",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Date of Enquiry",
    "read_only": 1
@@ -173,7 +174,7 @@
    "fieldname": "date_of_2nd_enquiry",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Date of 2nd Enquiry",
+   "label": "Date of Enquiry",
    "reqd": 1
   },
   {
@@ -225,7 +226,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-19 15:43:48.032375",
+ "modified": "2025-11-20 16:42:25.851571",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
