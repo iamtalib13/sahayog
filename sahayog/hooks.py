@@ -228,6 +228,7 @@ override_doctype_class = {
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
     "Item": "sahayog.override.autoname_item.CustomItem",
+    "Report": "sahayog.override.report.CustomReport"
 
 }
 
@@ -346,9 +347,7 @@ doc_events = {
     "Share Transfer": {
         "autoname": "sahayog.doc_events.share_transfer.share_transfer_autoname"
     },
-    "Report": {
-        "before_save": "sahayog.doc_events.report.prevent_prepared_report"
-    }
+  
 }
 
 # Scheduled Tasks
