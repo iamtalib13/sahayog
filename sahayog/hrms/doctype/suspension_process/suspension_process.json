@@ -9,6 +9,7 @@
   "days_of_suspension",
   "suspension_from_date",
   "suspension_to_date",
+  "previous_record",
   "column_break_utmg",
   "subsistance_allowances",
   "remarks",
@@ -194,6 +195,12 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "previous_record",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Previous Record"
   }
  ],
  "grid_page_length": 50,
@@ -203,10 +210,10 @@
   {
    "group": "Response SCN",
    "link_doctype": "Response to SCN",
-   "link_fieldname": "case_id"
+   "link_fieldname": "previous_record"
   }
  ],
- "modified": "2025-11-14 11:36:33.492558",
+ "modified": "2025-11-19 17:45:26.275846",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

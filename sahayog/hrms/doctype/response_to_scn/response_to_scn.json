@@ -12,6 +12,7 @@
   "column_break_aduu",
   "domestic_enquiry",
   "document_upload",
+  "previous_record",
   "section_break_hbzm",
   "case_id",
   "employee_id",
@@ -181,6 +182,13 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "previous_record",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Previous Record",
+   "options": "Suspension Process"
   }
  ],
  "grid_page_length": 50,
@@ -190,7 +198,7 @@
   {
    "group": "Enquiry Process",
    "link_doctype": "Domestic Enquiry",
-   "link_fieldname": "case_id"
+   "link_fieldname": "previous_record"
   },
   {
    "group": "Case Closed",
@@ -198,7 +206,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-14 11:37:12.628318",
+ "modified": "2025-11-20 10:38:57.598800",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

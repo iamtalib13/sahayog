@@ -10,6 +10,7 @@
   "place_of_enquiry",
   "remarks",
   "linked_enquiry_type",
+  "previous_record",
   "column_break_hoah",
   "status_of_response",
   "date_of_enquiry",
@@ -217,13 +218,19 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "previous_record",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Previous Record"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-14 11:36:50.163372",
+ "modified": "2025-11-19 15:18:42.961582",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

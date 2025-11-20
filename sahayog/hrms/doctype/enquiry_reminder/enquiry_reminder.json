@@ -9,6 +9,7 @@
   "domestic_enquiry",
   "place_of_enquiry",
   "remarks",
+  "previous_record",
   "column_break_yybn",
   "status_of_response",
   "date_of_enquiry",
@@ -205,6 +206,13 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "previous_record",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Previous Record",
+   "options": "Domestic Enquiry"
   }
  ],
  "grid_page_length": 50,
@@ -217,7 +225,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-15 12:58:49.655951",
+ "modified": "2025-11-19 15:43:48.032375",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",
