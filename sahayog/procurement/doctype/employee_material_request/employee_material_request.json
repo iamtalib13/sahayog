@@ -143,11 +143,10 @@
    "reqd": 1
   },
   {
-   "default": "Pending",
    "fieldname": "reporting_person_status",
    "fieldtype": "Select",
    "label": "Reporting Person Status",
-   "options": "Pending\nApproved\nRejected",
+   "options": "\nPending\nApproved\nRejected\nSkip",
    "read_only": 1
   },
   {
@@ -178,11 +177,10 @@
    "reqd": 1
   },
   {
-   "default": "Pending",
    "fieldname": "ho_officer_status",
    "fieldtype": "Select",
    "label": "HO Officer Status",
-   "options": "Pending\nApproved\nRejected",
+   "options": "\nPending\nApproved\nRejected\nSkip",
    "read_only": 1
   },
   {
@@ -248,7 +246,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-20 11:05:10.467105",
+ "modified": "2025-11-20 17:04:03.671974",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
