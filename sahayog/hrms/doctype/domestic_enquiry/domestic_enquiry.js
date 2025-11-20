@@ -6,7 +6,7 @@ frappe.ui.form.on("Domestic Enquiry", {
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
-          case_id: frm.doc.name,
+          case_id: frm.doc.case_id,
         });
       });
 

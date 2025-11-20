@@ -184,9 +184,11 @@ def get_report_data(filters, case_doc):
 
     # ✅ IMPORTANT: Add Disciplinary Case as first doctype
     related_doctypes = [
-        "Disciplinary Case",  # Parent/Main document
+        "Disciplinary Case", # Parent/Main document
+        "Suspension Process", 
         "Response to SCN",
-        "Suspension Process",
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
         "Domestic Enquiry",
         "Enquiry Reminder",
         "Case Closure",
@@ -286,7 +288,7 @@ def get_report_data(filters, case_doc):
                 else:
                    doc["case_age"] = "-"
 
-                                # 🔥 Map docstatus → custom status
+                # 🔥 Map docstatus → custom status
                 docstatus = doc.get("docstatus", 0)
 
                 if docstatus == 0:
