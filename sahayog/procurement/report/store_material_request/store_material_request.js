@@ -15,8 +15,14 @@ frappe.query_reports["Store material request"] = {
     },
   ],
 
-  // -------------------- INTRO SUMMARY LOAD --------------------
   onload: function (report) {
+    // clear filters button
+    report.page.add_inner_button(__("Clear Filters"), function () {
+      report.filters.forEach((f) => f.set_value(""));
+      report.refresh();
+    });
+
+    // -------------------- INTRO LOAD --------------------
     frappe.call({
       method: "frappe.desk.query_report.run",
       args: { report_name: "Store material request", filters: {} },
