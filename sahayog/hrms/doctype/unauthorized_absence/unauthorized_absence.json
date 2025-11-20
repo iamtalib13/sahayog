@@ -13,6 +13,7 @@
   "amount_of_fraud",
   "hr_employee_id",
   "document_upload",
+  "previous_record",
   "case_details_section",
   "case_id",
   "employee_id",
@@ -186,6 +187,12 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "previous_record",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Previous Record"
   }
  ],
  "grid_page_length": 50,
@@ -195,7 +202,7 @@
   {
    "group": "Reminder Unauthorized",
    "link_doctype": "Reminder Of Unauthorized Absence",
-   "link_fieldname": "case_id"
+   "link_fieldname": "previous_record"
   },
   {
    "group": "Case Closed",
@@ -203,7 +210,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-13 11:45:45.640768",
+ "modified": "2025-11-20 10:37:34.976562",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",

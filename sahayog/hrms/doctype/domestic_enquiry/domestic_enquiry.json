@@ -13,6 +13,7 @@
   "status_of_response",
   "date_of_enquiry",
   "enquiry_officer_name",
+  "previous_record",
   "section_break_vvzj",
   "case_id",
   "employee_id",
@@ -191,6 +192,13 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "previous_record",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Previous Record",
+   "options": "Response to SCN"
   }
  ],
  "grid_page_length": 50,
@@ -200,7 +208,7 @@
   {
    "group": "Reminder ",
    "link_doctype": "Enquiry Reminder",
-   "link_fieldname": "case_id"
+   "link_fieldname": "previous_record"
   },
   {
    "group": "Case Closed",
@@ -208,7 +216,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-15 11:54:25.568808",
+ "modified": "2025-11-20 10:38:39.809019",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
