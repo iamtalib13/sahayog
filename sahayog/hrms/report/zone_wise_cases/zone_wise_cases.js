@@ -77,10 +77,24 @@
 frappe.query_reports["Zone Wise Cases"] = {
     // filter definitions
     filters: [
-        { fieldname: "from_date", label: __("From Date"), fieldtype: "Date" },
-        { fieldname: "to_date", label: __("To Date"), fieldtype: "Date" },
-        { fieldname: "case_status", label: __("Case Status"), fieldtype: "Select", options: "\nDraft\nUnder Process\nClosed" },
-        { fieldname: "zone", label: __("Zone (optional)"), fieldtype: "Link", options: "Zone" }
+        { fieldname: "from_date", 
+          label: __("From Date"),
+          fieldtype: "Date"
+        },
+        { fieldname: "to_date", 
+          label: __("To Date"),
+          fieldtype: "Date" 
+        },
+        { fieldname: "case_status",
+          label: __("Case Status"), 
+          fieldtype: "Select", 
+          options: "\nDraft\nUnder Process\nClosed" 
+        },
+        { fieldname: "zone", 
+          label: __("Zone"), 
+          fieldtype: "Link", 
+          options: "Zone" 
+        }
     ],
 
     // clear filters button
