@@ -29,17 +29,17 @@ def create_workflow_states():
         {
             "doctype": "Workflow State",
             "workflow_state_name": "Draft",
-            "style": "Gray"
+            "style": ""
         },
         {
             "doctype": "Workflow State",
             "workflow_state_name": "Pending Reporting Person",
-            "style": "Orange"
+            "style": "Warning"
         },
         {
             "doctype": "Workflow State",
             "workflow_state_name": "Pending HO Approval",
-            "style": "Blue"
+            "style": "Warning"
         },
         {
             "doctype": "Workflow State",
