@@ -122,6 +122,8 @@ frappe.ui.form.on("Case Closure", {
   },
   show_print_button: function (frm) {
     if (frm.is_new()) return;
+    if (frm.print_button_added) return;
+    frm.print_button_added = true;
 
     const allowed_roles = ["System Manager", "Share Admin"];
     if (!frappe.user_roles.some((r) => allowed_roles.includes(r))) return;
