@@ -101,12 +101,15 @@ frappe.ui.form.on("Case Closure", {
   },
 
   after_save(frm) {
-    frappe.msgprint({
-      title: __("Success"),
-      message: __("The case has been closed successfully."),
-      indicator: "green",
-    });
-  },
+        if (frm.doc.docstatus === 1) {
+            frappe.msgprint({
+                title: __("Success"),
+                message: __("The case has been closed successfully."),
+                indicator: "green",
+            });
+        }
+    },
+
   refresh(frm) {
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
