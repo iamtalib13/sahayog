@@ -42,7 +42,7 @@ def get_case_stages(case_id):
         "Suspension Process",
         "Response to SCN",
         "Unauthorized Absence",
-        "Reminder of Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
         "Domestic Enquiry",
         "Enquiry Reminder",
         "Case Closure",
