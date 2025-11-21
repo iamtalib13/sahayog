@@ -17,8 +17,42 @@ frappe.ui.form.on("Employee Material Request", {
   // REFRESH EVENT - Triggered when form loads/refreshes
   // ------------------------------------------------------------------
   refresh: function (frm) {
-    // Set intro message based on document status
-    set_form_intro(frm);
+    // // Set intro message based on document status
+    // set_form_intro(frm);
+
+    // // Instead of relying on cached intro, forcibly fetch fresh data
+    // frappe.call({
+    //   method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
+    //   args: { doc_name: frm.doc.name },
+    //   callback: function(r) {
+    //     if (r.message && r.message.success) {
+    //       render_intro_html(frm, r.message.data);
+    //     } else {
+    //       frm.set_intro("Unable to load intro data", "red");
+    //     }
+    //   }
+    // });
+
+     // Clear or set basic intro for new unsaved docs
+  if (frm.is_new()) {
+    frm.set_intro(__("Fill all required fields and save the document"), "blue");
+    
+    // Skip fetching intro data for new unsaved docs
+    return;
+  }
+  
+  // For saved docs, fetch intro data
+  frappe.call({
+    method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
+    args: { doc_name: frm.doc.name },
+    callback: function(r) {
+      if (r.message && r.message.success) {
+        render_intro_html(frm, r.message.data);
+      } else {
+        frm.set_intro("Unable to load intro data", "red");
+      }
+    }
+  });
      
     
     // Apply date restrictions on required_by_date field
@@ -511,6 +545,80 @@ function clean_old_cache(max_items, key_prefix) {
 // Renders the intro section with fetched/cached data
 // ------------------------------------------------------------------
 function render_intro_html(frm, data) {
+  frm.set_intro("");
+  const current_status = frm.doc.status || data.status;
+
+// Initialize local copies to modify if needed
+let reporting_person_status = data.reporting_person_status || "";
+let ho_officer_status = data.ho_officer_status || "";
+
+// When main status is "Pending Reporting Person"
+if (current_status === "Pending Reporting Person") {
+
+  // If reporting_person_status is blank, set it to "Pending"
+  if (!reporting_person_status) {
+    reporting_person_status = "Pending";
+    // Also update the actual field in form to keep in sync
+    if (frm.doc.reporting_person_status !== "Pending") {
+      frm.set_value("reporting_person_status", "Pending");
+    }
+  }
+
+  // Div 4 status depends on Div 3 status
+  // If reporting_person_status is non-Pending (Approved/Rejected/Skip)
+  if (reporting_person_status !== "Pending") {
+    if (!ho_officer_status || ho_officer_status === "Not Received") {
+      ho_officer_status = "Pending";
+      if (frm.doc.ho_officer_status !== "Pending") {
+        frm.set_value("ho_officer_status", "Pending");
+      }
+    }
+  }
+}
+
+// Compute DIV 3 badge class and text
+const reportingPersonBadgeMap = {
+  "": "status-new-record",
+  "Pending": "status-pending",
+  "Approved": "status-approved",
+  "Rejected": "status-rejected",
+  "Skip": "status-skip",
+};
+
+const reportingPersonBadgeTextMap = {
+  "": "Not Received",
+  "Pending": "Pending",
+  "Approved": "Approved",
+  "Rejected": "Rejected",
+  "Skip": "Skip",
+};
+
+const reportingPersonClass = reportingPersonBadgeMap[reporting_person_status] || "status-pending";
+const reportingPersonText = reportingPersonBadgeTextMap[reporting_person_status] || "Pending";
+
+// Compute DIV 4 badge class and text
+const hoOfficerBadgeMap = {
+  "": "status-new-record",
+  "Pending": "status-pending",
+  "Approved": "status-approved",
+  "Rejected": "status-rejected",
+  "Skip": "status-skip",
+};
+const hoOfficerBadgeTextMap = {
+  "": "Not Received",
+  "Pending": "Pending",
+  "Approved": "Approved",
+  "Rejected": "Rejected",
+  "Skip": "Skip",
+};
+
+const hoOfficerClass = hoOfficerBadgeMap[ho_officer_status] || "status-new-record";
+const hoOfficerText = hoOfficerBadgeTextMap[ho_officer_status] || "Not Received";
+
+// DIV 2 badge logic
+const div2BadgeClass = current_status === "Pending Reporting Person" ? "status-pending" : "status-draft";
+const div2BadgeText = current_status === "Pending Reporting Person" ? "Submitted" : "Draft";
+  
   let html = `
     <style>
       .emr-quick-guide {
@@ -618,6 +726,14 @@ function render_intro_html(frm, data) {
       .close-message {
         display: none;
       }
+
+      .status-new-record {
+        background: rgb(128, 128, 128) !important; /* Gray */
+        color: white !important;
+      }
+
+
+      
 
       /* ========== LIGHT MODE STYLES ========== */
       html[data-theme-mode="light"] .form-message.blue {
@@ -749,74 +865,65 @@ function render_intro_html(frm, data) {
         </div>
         
         <!-- DIV 2: Request Details -->
-        <div class="emr-grid-card emr-div2">
-          <div class="emr-card-header">
-            <div class="emr-card-number">2</div>
-            <div class="emr-card-title">Request Details</div>
-          </div>
-          <div class="emr-card-line">
-            ${data.requested_by?.employee_number || 'N/A'} -
-            ${data.requested_by?.employee_name || 'N/A'} -
-            ${data.requested_by?.cell_number || 'N/A'}
-          </div>
-          <div class="emr-card-line">
-            <span class="emr-status-badge ${
-              data.doc_status === 1 ? 'status-submitted' : 
-              data.doc_status === 0 ? 'status-draft' : 
-              'status-cancelled'
-            }">
-              ${data.doc_status === 1 ? 'Submitted' : data.doc_status === 0 ? 'Draft' : 'Cancelled'}
-            </span>
-          </div>
-        </div>
-        
-        <!-- DIV 3: Reporting Person -->
-        <div class="emr-grid-card emr-div3">
-          <div class="emr-card-header">
-            <div class="emr-card-number">3</div>
-            <div class="emr-card-title">Reporting Person</div>
-          </div>
-          <div class="emr-card-line">
-            ${data.reporting_person?.employee_number || 'N/A'} -
-            ${data.reporting_person?.employee_name || 'N/A'} -
-            ${data.reporting_person?.cell_number || 'N/A'}
-          </div>
-          <div class="emr-card-line">
-            <span class="emr-status-badge ${
-              data.reporting_person_status === 'Approved' ? 'status-approved' : 
-              data.reporting_person_status === 'Rejected' ? 'status-rejected' : 
-              data.reporting_person_status === 'Skip' ? 'status-skip' : 
-              'status-pending'
-            }">
-              ${data.reporting_person_status || 'Pending'}
-            </span>
-          </div>
-        </div>
-        
-        <!-- DIV 4: HO Officer -->
-        <div class="emr-grid-card emr-div4">
-          <div class="emr-card-header">
-            <div class="emr-card-number">4</div>
-            <div class="emr-card-title">HO Officer</div>
-          </div>
-          <div class="emr-card-line">
-            ${data.ho_officer?.employee_number || 'N/A'} - 
-            ${data.ho_officer?.employee_name || 'N/A'}
-          </div>
-          <div class="emr-card-line">
-            <span class="emr-status-badge ${
-              data.ho_officer_status === 'Approved' ? 'status-approved' : 
-              data.ho_officer_status === 'Rejected' ? 'status-rejected' : 
-              'status-pending'
-            }">
-              ${data.ho_officer_status || 'Pending'}
-            </span>
-          </div>
-        </div>
-        
-      </div>
-    </div>
+<div class="emr-grid-card emr-div2">
+  <div class="emr-card-header">
+    <div class="emr-card-number">2</div>
+<div class="emr-card-title">
+  Request Details
+  <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; vertical-align: middle;">
+</div>
+
+  </div>
+  <div class="emr-card-line">
+    ${data.requested_by?.employee_number || 'N/A'} -
+    ${data.requested_by?.employee_name || 'N/A'} -
+    ${data.requested_by?.cell_number || 'N/A'}
+  </div>
+  <div class="emr-card-line">
+    <span class="emr-status-badge ${div2BadgeClass}">
+      ${div2BadgeText}
+    </span>
+  </div>
+</div>
+
+<!-- DIV 3: Reporting Person -->
+<div class="emr-grid-card emr-div3">
+  <div class="emr-card-header">
+    <div class="emr-card-number">3</div>
+    <div class="emr-card-title">Reporting Person</div>
+  </div>
+  <div class="emr-card-line">
+    ${data.reporting_person?.employee_number || 'N/A'} -
+    ${data.reporting_person?.employee_name || 'N/A'} -
+    ${data.reporting_person?.cell_number || 'N/A'}
+  </div>
+  <div class="emr-card-line">
+    <span class="emr-status-badge ${reportingPersonClass}">
+      ${reportingPersonText}
+    </span>
+  </div>
+</div>
+
+<!-- DIV 4: HO Officer -->
+<div class="emr-grid-card emr-div4">
+  <div class="emr-card-header">
+    <div class="emr-card-number">4</div>
+    <div class="emr-card-title">HO Officer</div>
+  </div>
+  <div class="emr-card-line">
+    ${data.ho_officer?.employee_number || 'N/A'} - 
+    ${data.ho_officer?.employee_name || 'N/A'}
+  </div>
+  <div class="emr-card-line">
+    <span class="emr-status-badge ${hoOfficerClass}">
+      ${hoOfficerText}
+    </span>
+  </div>
+</div>
+
   `;
+  console.log("request datetime",data.request_datetime)
+  console.log("Status from intro data:", data.status);
   
   frm.set_intro(html);
 }

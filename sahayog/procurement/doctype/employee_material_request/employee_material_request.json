@@ -125,12 +125,10 @@
    "reqd": 1
   },
   {
-   "default": "now",
    "fieldname": "request_datetime",
    "fieldtype": "Datetime",
    "label": "Request Date & Time",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_approval",
@@ -145,11 +143,10 @@
    "reqd": 1
   },
   {
-   "default": "Pending",
    "fieldname": "reporting_person_status",
    "fieldtype": "Select",
    "label": "Reporting Person Status",
-   "options": "Pending\nApproved\nRejected",
+   "options": "\nPending\nApproved\nRejected\nSkip",
    "read_only": 1
   },
   {
@@ -180,11 +177,10 @@
    "reqd": 1
   },
   {
-   "default": "Pending",
    "fieldname": "ho_officer_status",
    "fieldtype": "Select",
    "label": "HO Officer Status",
-   "options": "Pending\nApproved\nRejected",
+   "options": "\nPending\nApproved\nRejected\nSkip",
    "read_only": 1
   },
   {
@@ -250,7 +246,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-18 11:09:01.051591",
+ "modified": "2025-11-20 17:04:03.671974",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
