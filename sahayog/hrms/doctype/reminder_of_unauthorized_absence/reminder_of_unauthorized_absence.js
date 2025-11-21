@@ -207,6 +207,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
     }
   },
 });
+
 function render_timeline(frm, data) {
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
