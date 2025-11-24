@@ -189,11 +189,11 @@
    "label": "Case Details"
   },
   {
-   "fetch_from": "case_id.status",
    "fieldname": "status",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Case Status",
+   "options": "\nDraft\nUnder Reviewed\nVerified\nClosed",
    "read_only": 1
   },
   {
@@ -235,7 +235,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-24 10:45:54.662138",
+ "modified": "2025-11-24 12:37:59.298241",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

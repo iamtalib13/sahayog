@@ -18,6 +18,8 @@ def close_linked_case(case_id):
         "Disciplinary Case",
         "Suspension Process",
         "Response to SCN",
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
         "Domestic Enquiry",
         "Enquiry Reminder",
     ]
