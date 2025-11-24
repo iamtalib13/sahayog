@@ -135,15 +135,15 @@ frappe.ui.form.on("Case Closure", {
     }
 
             // 1. Add Custom Button
-                if (!frm.is_new()) {
-
-        frm.add_custom_button("Case Review", () => {
-            open_approver_dialog(frm);
-        });
-      }
-      
-
+           if (!frm.is_new()) {
+            const btn = frm.add_custom_button("Case Review", function () {
+                open_approver_dialog(frm);
+            });
+            // Make it look like default primary button (same as your example)
+            btn.removeClass("btn-default").addClass("btn-primary");
+        }
   },
+  
   show_print_button: function (frm) {
     if (frm.is_new()) return;
     if (frm.print_button_added) return;
@@ -434,3 +434,4 @@ function open_approver_dialog(frm) {
 
     d.show();
 }
+
