@@ -324,8 +324,6 @@ function timeline_badge(stage_obj) {
         </div>
     `;
 }
-
-// 2. final version with improved validation
 function open_approver_dialog(frm) {
   let d = new frappe.ui.Dialog({
     title: "Select Approvers",
@@ -349,20 +347,16 @@ function open_approver_dialog(frm) {
             reqd: 1,
 
             get_query() {
-              return {
-                filters: {},
-              };
+              return { filters: {} };
             },
 
             onchange() {
               let row = this.grid_row.doc;
-
               if (!row.employee_id) return;
 
               frappe.db.get_doc("Employee", row.employee_id).then((emp) => {
                 row.employee_name = emp.employee_name;
                 row.company_email = emp.company_email || emp.prefered_email;
-
                 d.fields_dict.approver_table.grid.refresh();
               });
             },
@@ -381,8 +375,8 @@ function open_approver_dialog(frm) {
             fieldname: "company_email",
             label: "Company Email",
             in_list_view: true,
-            read_only: 0, // user editable
-            reqd: 1, // 🚨 now mandatory
+            read_only: 0,
+            reqd: 1,
           },
         ],
       },
@@ -391,7 +385,7 @@ function open_approver_dialog(frm) {
     primary_action_label: "Submit Approvers",
 
     primary_action(values) {
-      // 🔥 VALIDATION: Email must not be empty
+      // 1️⃣ VALIDATION: Email must not be empty
       for (let row of values.approver_table || []) {
         if (!row.company_email) {
           frappe.msgprint({
@@ -399,27 +393,39 @@ function open_approver_dialog(frm) {
             message: __("Please fill Company Email for all approvers."),
             indicator: "red",
           });
-          return; // stop submission
+          return;
         }
       }
 
-      // Call backend API
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
-        args: {
-          approvers: values.approver_table,
-          case_id: frm.doc.name,
-        },
-        freeze: true,
-        freeze_message: __("Sending verification emails..."),
+      // 2️⃣ STORE IN CHILD TABLE "Review Details"
+      frm.clear_table("review_details"); // replace with actual child table fieldname
+      for (let row of values.approver_table || []) {
+        let child = frm.add_child("review_details");
+        child.employee_id = row.employee_id;
+        child.remarks = ""; // initially empty
+        child.status = "Pending"; // default status
+        child.date_and_time = frappe.datetime.now_datetime();
+      }
 
-        callback() {
-          frappe.msgprint("Case Review started.");
-        },
+      // 3️⃣ SAVE PARENT DOC
+      frm.save().then(() => {
+        // 4️⃣ CALL BACKEND TO SEND VERIFICATION EMAILS
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+          args: {
+            approvers: values.approver_table,
+            case_id: frm.doc.name,
+          },
+          freeze: true,
+          freeze_message: __("Sending verification emails..."),
+          callback() {
+            frappe.msgprint("Case Review started and emails sent.");
+          },
+        });
+
+        d.hide();
       });
-
-      d.hide();
     },
   });
 
