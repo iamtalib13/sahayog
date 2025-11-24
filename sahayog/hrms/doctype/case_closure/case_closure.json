@@ -10,7 +10,6 @@
   "place_of_enquiry",
   "remarks",
   "linked_enquiry_type",
-  "previous_record",
   "column_break_hoah",
   "status_of_response",
   "date_of_enquiry",
@@ -18,6 +17,8 @@
   "enquiry_status",
   "enquiry_report_upload",
   "linked_enquiry",
+  "section_break_wfuu",
+  "review_details",
   "section_break_ulcv",
   "case_id",
   "employee_id",
@@ -220,17 +221,21 @@
    "search_index": 1
   },
   {
-   "fieldname": "previous_record",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Previous Record"
+   "fieldname": "section_break_wfuu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "review_details",
+   "fieldtype": "Table",
+   "label": "Review Details",
+   "options": "Review Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-19 15:18:42.961582",
+ "modified": "2025-11-24 10:45:54.662138",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

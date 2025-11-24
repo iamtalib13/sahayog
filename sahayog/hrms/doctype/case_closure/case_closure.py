@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 
+
 class CaseClosure(Document):
     def autoname(self):
         if self.case_id:
@@ -118,3 +119,4 @@ def get_latest_linked_enquiry(case_id):
         "linked_enquiry": latest_doc["name"],
         "data": latest_doc["data"],
     }
+
