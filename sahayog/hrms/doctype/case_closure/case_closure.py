@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 
+
 class CaseClosure(Document):
     def autoname(self):
         if self.case_id:
