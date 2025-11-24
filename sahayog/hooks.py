@@ -492,18 +492,31 @@ fixtures = [
         "filters": [["name", "=", "Employee Material Request"]]
     },
     
-    # Other Workflow Fixtures
+    # Disciplinary case Workflow
     {
         "dt": "Workflow",
         "filters": [["name", "in", ["Disciplinary Case", "Branch Proposal"]]]
     },
     
-    # Workflow State (Global - reusable across workflows)
+    # Workflow State for Disciplinary Case
     {
         "dt": "Workflow State",
         "filters": [["workflow_state_name", "in", ["Draft", "Under Process", "Closed"]]]
     },
     
+    # Case Closure Workflow
+    {
+    "dt": "Workflow",
+    "filters": [["name", "=", "Case Closure"]]
+    },
+
+    # Workflow States for Case Closure
+   {
+    "dt": "Workflow State",
+    "filters": [["workflow_state_name", "in",
+                 ["Draft", "Under Reviewed", "Verified", "Closed"]]]
+   },
+
     # Workflow Action Master
     {
         "dt": "Workflow Action Master",
