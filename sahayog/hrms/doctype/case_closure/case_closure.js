@@ -133,6 +133,16 @@ frappe.ui.form.on("Case Closure", {
         },
       });
     }
+
+            // 1. Add Custom Button
+                if (!frm.is_new()) {
+
+        frm.add_custom_button("Case Review", () => {
+            open_approver_dialog(frm);
+        });
+      }
+      
+
   },
   show_print_button: function (frm) {
     if (frm.is_new()) return;
@@ -321,4 +331,106 @@ function timeline_badge(stage_obj) {
             ${icon} ${stage_obj.stage}
         </div>
     `;
+}
+
+// 2. final version with improved validation
+function open_approver_dialog(frm) {
+
+    let d = new frappe.ui.Dialog({
+        title: "Select Approvers",
+        size: "extra-large",
+
+        fields: [
+            {
+                fieldname: "approver_table",
+                fieldtype: "Table",
+                label: "Approver List",
+                cannot_add_rows: false,
+                in_place_edit: true,
+
+                fields: [
+                    {
+                        fieldtype: "Link",
+                        fieldname: "employee_id",
+                        label: "Employee ID",
+                        options: "Employee",
+                        in_list_view: true,
+                        reqd: 1,
+
+                        get_query() {
+                            return {
+                                filters: {}
+                            };
+                        },
+
+                        onchange() {
+                            let row = this.grid_row.doc;
+
+                            if (!row.employee_id) return;
+
+                            frappe.db.get_doc("Employee", row.employee_id).then(emp => {
+                                row.employee_name = emp.employee_name;
+                                row.company_email = emp.company_email || emp.prefered_email;
+
+                                d.fields_dict.approver_table.grid.refresh();
+                            });
+                        }
+                    },
+
+                    {
+                        fieldtype: "Data",
+                        fieldname: "employee_name",
+                        label: "Employee Name",
+                        in_list_view: true,
+                        read_only: 1
+                    },
+
+                    {
+                        fieldtype: "Data",
+                        fieldname: "company_email",
+                        label: "Company Email",
+                        in_list_view: true,
+                        read_only: 0,     // user editable
+                        reqd: 1           // 🚨 now mandatory
+                    }
+                ]
+            }
+        ],
+
+        primary_action_label: "Submit Approvers",
+
+        primary_action(values) {
+
+            // 🔥 VALIDATION: Email must not be empty
+            for (let row of values.approver_table || []) {
+                if (!row.company_email) {
+                    frappe.msgprint({
+                        title: __("Missing Email"),
+                        message: __("Please fill Company Email for all approvers."),
+                        indicator: "red"
+                    });
+                    return;   // stop submission
+                }
+            }
+
+            // Call backend API
+            frappe.call({
+                method: "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+                args: {
+                    approvers: values.approver_table,
+                    case_id: frm.doc.name
+                },
+                freeze: true,
+                freeze_message: __("Sending verification emails..."),
+
+                callback() {
+                    frappe.msgprint("Case Review started.");
+                }
+            });
+
+            d.hide();
+        }
+    });
+
+    d.show();
 }
