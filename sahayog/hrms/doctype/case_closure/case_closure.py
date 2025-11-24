@@ -120,3 +120,43 @@ def get_latest_linked_enquiry(case_id):
         "data": latest_doc["data"],
     }
 
+
+# improve validation and error on approver email missing
+@frappe.whitelist()
+def start_verification_process(approvers=None, case_id=None):
+    import json
+
+    if not approvers:
+        approvers = frappe.form_dict.get("approvers")
+
+    if isinstance(approvers, str):
+        approvers = json.loads(approvers)
+
+    if not approvers:
+        frappe.throw("Approver list is required.")
+
+    if not case_id:
+        case_id = frappe.form_dict.get("case_id")
+
+    if not case_id:
+        frappe.throw("Case ID missing.")
+
+    # Send emails dynamically
+    for ap in approvers:
+        email = ap.get("company_email")
+        emp_name = ap.get("employee_name")
+
+        if not email:
+            frappe.throw("Email missing for an approver.")
+
+        frappe.sendmail(
+            recipients=[email],
+            subject="Case Closure Approval Required",
+            message=f"""
+                Dear {emp_name or 'Approver'},
+                Please review and approve the case closure for Case ID: {case_id}.
+            """
+        )
+
+    return {"status": "success", "message": "Verification emails sent."}
+
