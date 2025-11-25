@@ -28,6 +28,35 @@ def get_columns():
 
 
 def get_data(filters=None):
+    from frappe.utils import getdate, nowdate
+    import frappe
+    import datetime
+
+    # ------------------------------------------------
+    # STEP 1: Convert filter strings → datetime.date
+    # ------------------------------------------------
+    if filters:
+        if filters.get("from_date") and isinstance(filters["from_date"], str):
+            filters["from_date"] = datetime.datetime.strptime(filters["from_date"], "%Y-%m-%d").date()
+
+        if filters.get("to_date") and isinstance(filters["to_date"], str):
+            filters["to_date"] = datetime.datetime.strptime(filters["to_date"], "%Y-%m-%d").date()
+
+    # ------------------------------------------------
+    # STEP 2: Prevent future date selection
+    # ------------------------------------------------
+    today = getdate(nowdate())
+
+    if filters:
+        if filters.get("from_date") and filters["from_date"] > today:
+            frappe.throw("❌ From Date cannot be in the future.")
+
+        if filters.get("to_date") and filters["to_date"] > today:
+            frappe.throw("❌ To Date cannot be in the future.")
+
+    # ------------------------------------------------
+    # STEP 3: Fetch Leads (rest of your logic continues)
+    # ------------------------------------------------
 
     # ---------------------------
     # Fetch Leads
@@ -37,6 +66,9 @@ def get_data(filters=None):
         fields=["name", "lead_name", "status", "lead_owner"],
         order_by="name"
     )
+
+    # (your remaining code stays unchanged afterwards...)
+
 
     # ---------------------------
     # Fetch Employees
@@ -182,9 +214,16 @@ def get_data(filters=None):
                 show = False
             if filters.get("status") and row.get("status") != filters["status"]:
                 show = False
+
+            # Date of Joining filter application
+            if filters.get("from_date") and row.get("date_of_joining") and row.get("date_of_joining") < filters.get("from_date"):
+                show = False
+            if filters.get("to_date") and row.get("date_of_joining") and row.get("date_of_joining") > filters.get("to_date"):
+                show = False
+
             if show:
                 filtered.append(row)
-        return filtered
+        return filtered  
 
     return report_rows
 
