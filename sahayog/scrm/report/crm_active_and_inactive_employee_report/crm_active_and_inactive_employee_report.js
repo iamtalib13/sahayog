@@ -7,13 +7,13 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
       fieldname: "from_date",
       label: __("From Date"),
       fieldtype: "Date",
-      default: frappe.datetime.month_start(),
+      default: frappe.datetime.get_today(),
     },
     {
       fieldname: "to_date",
       label: __("To Date"),
       fieldtype: "Date",
-      default: frappe.datetime.month_end(),
+      default: frappe.datetime.get_today(),
     },
     {
       fieldname: "sol_id",
