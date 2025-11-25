@@ -16,8 +16,8 @@ class EmployeeMaterialRequest(Document):
         # IT Executive submit: Set reporting_person_status to Pending, always
         if self.status == "Pending Reporting Person":
             self.reporting_person_status = "Pending"
-            # On submit/re-submit, always want to start the cycle fresh
-            self.ho_officer_status = ""  # Optionally clear, so DIV 4 shows Not Received
+        elif self.status == "Pending HO Approval":
+            self.reporting_person_status = "Approved"
         elif self.status == "Rejected" and not self.ho_officer_status:
             self.reporting_person_status = "Rejected"
 
