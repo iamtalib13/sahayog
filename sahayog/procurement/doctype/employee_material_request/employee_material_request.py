@@ -11,15 +11,6 @@ class EmployeeMaterialRequest(Document):
         self.set_requested_by()
         self.set_request_datetime_once()
 
-        # # Set reporting_person_status to Pending when IT Executive submits
-        # if self.status == "Pending Reporting Person" and not self.reporting_person_status:
-        #     self.reporting_person_status = "Pending"
-
-        # # Set ho_officer_status to Pending when moving to HO Approval
-        # if self.status == "Pending HO Approval" and not self.ho_officer_status:
-        #     self.ho_officer_status = "Pending"
-
-
           # Always set fields at correct workflow stages
 
         # IT Executive submit: Set reporting_person_status to Pending, always
@@ -27,40 +18,28 @@ class EmployeeMaterialRequest(Document):
             self.reporting_person_status = "Pending"
             # On submit/re-submit, always want to start the cycle fresh
             self.ho_officer_status = ""  # Optionally clear, so DIV 4 shows Not Received
+        elif self.status == "Rejected" and not self.ho_officer_status:
+            self.reporting_person_status = "Rejected"
+
 
         # Approver Approved/Skip: Set ho_officer_status to Pending, always
         if self.status == "Pending HO Approval":
             self.ho_officer_status = "Pending"
-
+        elif self.status == "Approved":
+            self.ho_officer_status = "Approved"
         # On Approver Reject: optionally clear HO officer status for proper badge
-        if self.status == "Rejected":
-            self.ho_officer_status = ""
-
-    
-    # def set_request_datetime_once(self):
-    #     # Set request_datetime only if status changed to Pending Reporting Person
-    #     # and request_datetime is not already set (blank)
-    #     if self.status == "Pending Reporting Person" and not self.request_datetime:
-    #         # Only set if doc was new (draft before submit)
-    #         if self.docstatus == 1 or self.is_new():
-    #             self.request_datetime = now()
-
+        elif self.status == "Rejected":
+            self.ho_officer_status = "Rejected"
 
     def set_request_datetime_once(self):
-        # Set request_datetime only when:
-        # 1. Status is Pending Reporting Person
-        # 2. request_datetime not previously set
-        # 3. Document is either new (draft) or just submitted (docstatus 1)
+
         
         if self.status == "Pending Reporting Person" and not self.request_datetime:
             # Only set for new docs or freshly submitted ones transitioning from draft
             if self.is_new() or self.docstatus == 0:
                 self.request_datetime = now()
         
-    # def before_workflow_action(self):
-    #     """Called before workflow transitions"""
-    #     self.update_approval_fields()
-    
+
     def before_submit(self):
         """Validate before document submission"""
         self.validate_final_approval()
@@ -231,29 +210,6 @@ class EmployeeMaterialRequest(Document):
             self.request_datetime = now()
     
     def update_approval_fields(self):
-        # """Update approval fields based on workflow action"""
-        # current_user = frappe.session.user
-        # action = frappe.form_dict.get('action')
-        
-        # if self.workflow_state == "Pending Reporting Person Approval":
-        #     if current_user == self.reporting_person and "Approve" in action:
-        #         self.reporting_person_status = "Approved"
-        #         self.reporting_person_approval_date = now()
-        #     elif "Reject" in action:
-        #         self.reporting_person_status = "Rejected"
-        #         self.reporting_person_approval_date = now()
-        
-        # elif self.workflow_state == "Pending HO Approval":
-        #     if "Approve" in action:
-        #         if not self.head_office_officer:
-        #             self.head_office_officer = current_user
-        #         self.ho_officer_status = "Approved"
-        #         self.ho_officer_approval_date = now()
-        #     elif "Reject" in action:
-        #         if not self.head_office_officer:
-        #             self.head_office_officer = current_user
-        #         self.ho_officer_status = "Rejected"
-        #         self.ho_officer_approval_date = now()
         current_user = frappe.session.user
         action = (frappe.form_dict.get('action') or "").lower()
         # Decision block for Reporting Person (Approver)
@@ -409,12 +365,6 @@ class EmployeeMaterialRequest(Document):
         except Exception as e:
             frappe.log_error(frappe.get_traceback(), "Material Request Notification Error")
 
-
-            # def before_workflow_action(self):
-                # """Called before workflow transitions."""
-                # self.enforce_role_based_approval()
-                # self.update_approval_fields()
-
     def before_workflow_action(self):
         frappe.logger().info(f"before_workflow_action triggered for {self.name} ({self.status}) by {frappe.session.user}")
         frappe.logger().info(f"Workflow action for doc {self.name} status {self.status}")
@@ -442,43 +392,9 @@ class EmployeeMaterialRequest(Document):
             self.db_set("ho_officer_status", self.ho_officer_status)
             frappe.db.commit()  # Immediate commit to persist change
             frappe.logger().info(f"Updated ho_officer_status to {self.ho_officer_status}")
-            
-
-                        
-            def enforce_role_based_approval(self):
-                """Allow only assigned users or roles to perform workflow actions."""
-                current_user = frappe.session.user
-                action = (frappe.form_dict.get('action') or "").lower()
-
-                # Approver (Reporting Person) Actions
-                if self.status == "Pending Reporting Person":
-                    # Only the assigned Reporting Person can act
-                    if current_user != self.reporting_person:
-                        frappe.throw(_("Only the assigned Reporting Person ({0}) can take Approve, Reject, or Skip action on this document.").format(self.reporting_person), title=_("Not Permitted"))
-
-                # HO Approver Actions
-                if self.status == "Pending HO Approval":
-                    # Only users with role Head Office Officer can act
-                    if not frappe.has_role("Head Office Officer"):
-                        frappe.throw(_("Only assigned Head Office Officer can take approval actions in this stage."), title=_("Not Permitted"))
-
-
-            def on_update(self):
-                # Automatic fix: If we've moved to HO Approval but reporting_person_status is still "Pending", set it to "Approved"
-                # if self.status == "Pending HO Approval" and self.reporting_person_status == "Pending":
-                #     self.reporting_person_status = "Approved"
-                #     self.db_set("reporting_person_status", "Approved")
-
-                 # Ensure reporting_person_status transitions properly
-                if self.status == "Pending HO Approval" and self.reporting_person_status == "Pending":
-                    self.reporting_person_status = "Approved"
-                    self.db_set("reporting_person_status", "Approved")
+ 
 
 # Whitelisted API Methods
-
-
-
-
 
 @frappe.whitelist()
 def workflow_action_update_status(docname, action):
