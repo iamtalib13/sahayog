@@ -11,8 +11,6 @@
   "column_break_ibov",
   "sol_id",
   "date",
-  "section_break_evle",
-  "remarks",
   "section_break_bpos",
   "dsr_employee_details"
  ],
@@ -46,15 +44,6 @@
    "label": "Date"
   },
   {
-   "fieldname": "section_break_evle",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "remarks",
-   "fieldtype": "Small Text",
-   "label": "Remarks"
-  },
-  {
    "fieldname": "section_break_bpos",
    "fieldtype": "Section Break"
   },
@@ -68,7 +57,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-20 14:43:43.666031",
+ "modified": "2025-11-24 11:17:44.154352",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "DSR Remark",
