@@ -327,121 +327,148 @@ function timeline_badge(stage_obj) {
     `;
 }
 function open_approver_dialog(frm) {
-  let d = new frappe.ui.Dialog({
-    title: "Select Approvers",
-    size: "extra-large",
+  // Get the employee against whom the case is running
+  let case_employee_id = frm.doc.employee_id;
+  if (!case_employee_id) {
+    frappe.msgprint("No employee found for this case.");
+    return;
+  }
 
-    fields: [
-      {
-        fieldname: "approver_table",
-        fieldtype: "Table",
-        label: "Approver List",
-        cannot_add_rows: false,
-        in_place_edit: true,
+  // Fetch case employee to get default zone
+  frappe.db.get_doc("Employee", case_employee_id).then((emp) => {
+    let default_zone = emp.custom_zone;
+    if (!default_zone) {
+      frappe.msgprint("Employee does not have a zone assigned.");
+      return;
+    }
 
-        fields: [
-          {
-            fieldtype: "Link",
-            fieldname: "employee_id",
-            label: "Employee ID",
-            options: "Employee",
-            in_list_view: true,
-            reqd: 1,
+    // Create the dialog
+    let d = new frappe.ui.Dialog({
+      title: "Select Approvers",
+      size: "extra-large",
+      fields: [
+        {
+          fieldtype: "Link",
+          fieldname: "selected_zone",
+          label: "Zone",
+          options: "Zone",
+          default: default_zone, // ✅ Pre-fill with case employee's zone
+          reqd: 1,
+          onchange: function () {
+            // Refresh table when zone changes
+            d.fields_dict.approver_table.grid.refresh();
+          },
+        },
+        {
+          fieldname: "approver_table",
+          fieldtype: "Table",
+          label: "Approver List",
+          cannot_add_rows: false,
+          in_place_edit: true,
+          fields: [
+            {
+              fieldtype: "Link",
+              fieldname: "employee_id",
+              label: "Employee ID",
+              options: "Employee",
+              in_list_view: true,
+              reqd: 1,
+              get_query: function () {
+                let zone = d.get_value("selected_zone"); // get current zone
+                if (!zone) return {};
+                return { filters: { custom_zone: zone } };
+              },
+              onchange: function () {
+                let row = this.grid_row.doc;
+                if (!row.employee_id) return;
 
-            get_query() {
-              return { filters: {} };
+                frappe.db
+                  .get_doc("Employee", row.employee_id)
+                  .then((emp_data) => {
+                    row.employee_name = emp_data.employee_name;
+                    row.company_email =
+                      emp_data.company_email || emp_data.prefered_email;
+                    d.fields_dict.approver_table.grid.refresh();
+                  });
+              },
             },
-
-            onchange() {
-              let row = this.grid_row.doc;
-              if (!row.employee_id) return;
-
-              frappe.db.get_doc("Employee", row.employee_id).then((emp) => {
-                row.employee_name = emp.employee_name;
-                row.company_email = emp.company_email || emp.prefered_email;
-                d.fields_dict.approver_table.grid.refresh();
-              });
+            {
+              fieldtype: "Data",
+              fieldname: "employee_name",
+              label: "Employee Name",
+              in_list_view: true,
+              read_only: 1,
             },
-          },
+            {
+              fieldtype: "Data",
+              fieldname: "company_email",
+              label: "Company Email",
+              in_list_view: true,
+              reqd: 1,
+            },
+          ],
+        },
+      ],
 
-          {
-            fieldtype: "Data",
-            fieldname: "employee_name",
-            label: "Employee Name",
-            in_list_view: true,
-            read_only: 1,
-          },
-
-          {
-            fieldtype: "Data",
-            fieldname: "company_email",
-            label: "Company Email",
-            in_list_view: true,
-            read_only: 0,
-            reqd: 1,
-          },
-        ],
-      },
-    ],
-
-    primary_action_label: "Submit Approvers",
-
-    primary_action(values) {
-      // 1️⃣ VALIDATION: Email must not be empty
-      for (let row of values.approver_table || []) {
-        if (!row.company_email) {
-          frappe.msgprint({
-            title: __("Missing Email"),
-            message: __("Please fill Company Email for all approvers."),
-            indicator: "red",
-          });
-          return;
+      primary_action_label: "Submit Approvers",
+      primary_action(values) {
+        // Validate emails
+        for (let row of values.approver_table || []) {
+          if (!row.company_email) {
+            frappe.msgprint({
+              title: __("Missing Email"),
+              message: __("Please fill Company Email for all approvers."),
+              indicator: "red",
+            });
+            return;
+          }
         }
-      }
 
-      // 2️⃣ STORE IN CHILD TABLE "Review Details"
-      frm.clear_table("review_details"); // replace with actual child table fieldname
-      for (let row of values.approver_table || []) {
-        let child = frm.add_child("review_details");
-        child.employee_id = row.employee_id;
-        child.remarks = ""; // initially empty
-        child.status = "Pending"; // default status
-        child.date_and_time = frappe.datetime.now_datetime();
-      }
-      // Refresh child table to apply custom formatter
-      frm.refresh_field("review_details");
-      // Add custom formatter to show AM/PM
-      // Apply AM/PM formatter using moment.js
-      const grid = frm.fields_dict["review_details"].grid;
-      grid.get_field("date_and_time").formatter = function (value) {
-        if (!value) return "";
-        return moment(value).format("DD-MM-YYYY h:mm A"); // AM/PM format
-      };
-      grid.refresh();
-      // 3️⃣ SAVE PARENT DOC
-      frm.save().then(() => {
-        // 4️⃣ CALL BACKEND TO SEND VERIFICATION EMAILS
-        frappe.call({
-          method:
-            "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
-          args: {
-            approvers: values.approver_table,
-            case_id: frm.doc.name,
-          },
-          freeze: true,
-          freeze_message: __("Sending verification emails..."),
-          callback() {
-            frappe.msgprint("Case Review started and emails sent.");
-          },
+        // Save to child table "review_details"
+        frm.clear_table("review_details");
+        for (let row of values.approver_table || []) {
+          let child = frm.add_child("review_details");
+          child.employee_id = row.employee_id;
+          child.remarks = "";
+          child.status = "Pending";
+          child.date_and_time = frappe.datetime.now_datetime();
+        }
+        frm.refresh_field("review_details");
+
+        // Apply AM/PM formatter for date
+        const grid = frm.fields_dict["review_details"].grid;
+        grid.get_field("date_and_time").formatter = function (value) {
+          if (!value) return "";
+          return moment(value).format("DD-MM-YYYY h:mm A");
+        };
+        grid.refresh();
+
+        // Save parent doc & send verification emails
+        frm.save().then(() => {
+          frappe.call({
+            method:
+              "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+            args: {
+              approvers: values.approver_table,
+              case_id: frm.doc.name,
+            },
+            freeze: true,
+            freeze_message: __("Sending verification emails..."),
+            callback() {
+              frappe.msgprint("Case Review started and emails sent.");
+            },
+          });
+
+          d.hide();
         });
+      },
+    });
 
-        d.hide();
-      });
-    },
+    // Show dialog
+    d.show();
   });
-
-  d.show();
 }
+
 function display_review_details_with_employee_info(frm) {
   let wrapper = frm.fields_dict.review_details_html.$wrapper;
   wrapper.html(`<div>Loading review details...</div>`);
