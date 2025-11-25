@@ -1,122 +1,157 @@
-# Copyright (c) 2025, Developer Team and contributors
-# For license information, please see license.txt
+# Copyright (c) 2025
+# Developer Team and contributors
 
 import frappe
 from frappe.model.document import Document
 
 
 class DSRRemark(Document):
-	pass
+    pass
 
-# Create or update DSR Remark Document
+
 @frappe.whitelist()
-def create_or_update_dsr_remark(date, employee, remark=None):
+def create_or_update_dsr_remark(
+    date,
+    employee,
+    remark=None,
+    employee_name=None,
+    sol_id=None,
+    branch=None,
+    designation=None,
+    total_leads=None,
+    converted_leads=None,
+    followup_leads=None,
+    not_interested_leads=None,
+    dsr_rating=None,
+    dsr_qualification=None
+):
     """
-    Update specific employee's remark in child table only.
-    No common remark - only individual employee remarks in child table.
+    Creates/Updates DSR parent for Branch Manager
+    and saves/updates CHILD ROW for the clicked employee.
     """
-    # Get employee details
-    emp_details = frappe.get_value(
+
+    # -------------------------
+    # 1️⃣ FETCH LOGGED-IN BRANCH MANAGER
+    # -------------------------
+    logged_user = frappe.session.user
+
+    manager = frappe.get_value(
         "Employee",
-        employee,
-        ["name", "employee_name", "sol_id", "user_id"],
+        {"user_id": logged_user},
+        ["name", "employee_name", "sol_id"],
         as_dict=True
     )
-    if not emp_details:
+
+    if not manager:
+        frappe.throw("Branch Manager Employee record not found.")
+
+    # Parent identity
+    parent_emp_id = manager.name
+    parent_emp_name = manager.employee_name
+    parent_sol_id = manager.sol_id
+
+    # -------------------------
+    # 2️⃣ VALIDATE CLICKED EMPLOYEE
+    # -------------------------
+    emp_record = frappe.get_value(
+        "Employee",
+        employee,
+        ["name", "employee_name"],
+        as_dict=True
+    )
+    if not emp_record:
         frappe.throw(f"Employee {employee} not found.")
 
-    sol_id = emp_details.sol_id
-    name = f"DSR-{sol_id}-{date}"
+    # fallback
+    employee_name = employee_name or emp_record.employee_name
 
-    # ✅ Get or create DSR document
-    if frappe.db.exists("DSR Remark", name):
-        dsr_doc = frappe.get_doc("DSR Remark", name)
+    # -------------------------
+    # 3️⃣ GENERATE OR FETCH DSR PARENT
+    # -------------------------
+    dsr_name = f"DSR-{parent_sol_id}-{date}"
+
+    if frappe.db.exists("DSR Remark", dsr_name):
+        dsr_doc = frappe.get_doc("DSR Remark", dsr_name)
     else:
-        # Create new DSR document (without common remarks field)
         dsr_doc = frappe.new_doc("DSR Remark")
-        dsr_doc.name = name
-        dsr_doc.employee_id = emp_details.name
-        dsr_doc.employee_name = emp_details.employee_name
-        dsr_doc.sol_id = sol_id
+        dsr_doc.name = dsr_name
+        dsr_doc.employee_id = parent_emp_id
+        dsr_doc.employee_name = parent_emp_name
+        dsr_doc.sol_id = parent_sol_id
         dsr_doc.date = date
-        # ✅ No common remarks field - only child table
 
-    # ✅ Find and update specific employee's remark in child table
+    # -------------------------
+    # 4️⃣ ADD / UPDATE CHILD ROW FOR THE CLICKED EMPLOYEE
+    # -------------------------
     updated = False
+
     for row in dsr_doc.dsr_employee_details:
         if row.employee_id == employee:
-            row.remark = remark or ""  # ✅ Update only this employee's remark
+            row.employee_name = employee_name
+            row.sol_id = sol_id
+            row.branch = branch
+            row.designation = designation
+            row.total_leads = total_leads
+            row.converted_leads = converted_leads
+            row.followup_leads = followup_leads
+            row.not_interested_leads = not_interested_leads
+            row.dsr_rating = dsr_rating
+            row.dsr_qualification = dsr_qualification
+            row.remark = remark or ""
             updated = True
             break
-    
-    # ✅ If employee row doesn't exist in child table, create it
+
     if not updated:
-        # Get employee performance data
-        leads = frappe.get_all(
-            "Lead",
-            filters={
-                "lead_owner": emp_details.user_id,
-                "creation": ["between", [f"{date} 00:00:00", f"{date} 23:59:59"]]
-            },
-            fields=["status"]
-        )
-
-        total_leads = len(leads)
-        converted_leads = sum(1 for l in leads if l.status == "Converted")
-        followup_leads = sum(1 for l in leads if l.status == "Follow Up")
-        not_interested_leads = sum(1 for l in leads if l.status == "Do Not Contact")
-
-        dsr_rating = "Good" if converted_leads >= 1 else "Average" if followup_leads >= 4 else "Bad"
-        dsr_qualification = "Qualified" if total_leads >= 10 else "Disqualified"
-        branch_name = frappe.db.get_value("Sahayog Branch", {"sol_id": sol_id}, "branch") or "Not Mapped"
-
-        # ✅ Add new row in child table with individual remark
         dsr_doc.append("dsr_employee_details", {
-            "employee_id": emp_details.name,
-            "employee_name": emp_details.employee_name,
-            "sol_id": emp_details.sol_id,
-            "branch": branch_name,
-            "designation": frappe.db.get_value("Employee", employee, "designation"),
+            "employee_id": employee,
+            "employee_name": employee_name,
+            "sol_id": sol_id,
+            "branch": branch,
+            "designation": designation,
             "total_leads": total_leads,
             "converted_leads": converted_leads,
             "followup_leads": followup_leads,
             "not_interested_leads": not_interested_leads,
             "dsr_rating": dsr_rating,
             "dsr_qualification": dsr_qualification,
-            "remark": remark or ""  # ✅ Individual employee remark
+            "remark": remark or ""
         })
 
-    # Save document
+    # -------------------------
+    # 5️⃣ SAVE DOCUMENT
+    # -------------------------
     dsr_doc.save(ignore_permissions=True)
     frappe.db.commit()
 
     return {
-        "status": "success", 
-        "message": f"Remark updated for {emp_details.employee_name}",
-        "employee": emp_details.employee_name
+        "status": "success",
+        "message": f"Remark saved for {employee_name}",
+        "employee": employee_name
     }
 
 
 @frappe.whitelist()
 def get_dsr_remark(date):
     """
-    Fetch existing DSR Remark for current Branch Manager by SOL ID + date.
+    Check if parent DSR exists for logged-in manager.
     """
     user = frappe.session.user
-    employee = frappe.get_value("Employee", {"user_id": user}, ["name", "sol_id"], as_dict=True)
-    if not employee:
-        frappe.throw("No Employee record found for the current user.")
-
-    sol_id = employee.sol_id
-
-    remark_doc = frappe.get_all(
-        "DSR Remark",
-        filters={"sol_id": sol_id, "date": date},
-        fields=["remarks", "name"],
-        limit_page_length=1
+    emp = frappe.get_value(
+        "Employee",
+        {"user_id": user},
+        ["name", "sol_id"],
+        as_dict=True
     )
 
-    if remark_doc:
-        return {"exists": True, "remark": remark_doc[0].remarks}
-    else:
-        return {"exists": False, "remark": ""}
+    if not emp:
+        frappe.throw("Employee record not found for logged-in user.")
+
+    sol_id = emp.sol_id
+
+    exists = frappe.get_value(
+        "DSR Remark",
+        {"sol_id": sol_id, "date": date},
+        "name"
+    )
+
+    return {"exists": True} if exists else {"exists": False}
