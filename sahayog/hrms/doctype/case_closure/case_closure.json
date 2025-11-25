@@ -17,6 +17,8 @@
   "enquiry_status",
   "enquiry_report_upload",
   "linked_enquiry",
+  "section_break_ekou",
+  "review_details_html",
   "section_break_wfuu",
   "review_details",
   "section_break_ulcv",
@@ -229,13 +231,22 @@
    "fieldtype": "Table",
    "label": "Review Details",
    "options": "Review Details"
+  },
+  {
+   "fieldname": "review_details_html",
+   "fieldtype": "HTML",
+   "label": "Review Details HTML"
+  },
+  {
+   "fieldname": "section_break_ekou",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-24 12:37:59.298241",
+ "modified": "2025-11-25 10:22:52.828283",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
