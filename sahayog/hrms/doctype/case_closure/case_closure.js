@@ -106,6 +106,8 @@ frappe.ui.form.on("Case Closure", {
   },
 
   refresh(frm) {
+    display_review_details_with_employee_info(frm);
+
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
@@ -406,7 +408,16 @@ function open_approver_dialog(frm) {
         child.status = "Pending"; // default status
         child.date_and_time = frappe.datetime.now_datetime();
       }
-
+      // Refresh child table to apply custom formatter
+      frm.refresh_field("review_details");
+      // Add custom formatter to show AM/PM
+      // Apply AM/PM formatter using moment.js
+      const grid = frm.fields_dict["review_details"].grid;
+      grid.get_field("date_and_time").formatter = function (value) {
+        if (!value) return "";
+        return moment(value).format("DD-MM-YYYY h:mm A"); // AM/PM format
+      };
+      grid.refresh();
       // 3️⃣ SAVE PARENT DOC
       frm.save().then(() => {
         // 4️⃣ CALL BACKEND TO SEND VERIFICATION EMAILS
@@ -430,4 +441,89 @@ function open_approver_dialog(frm) {
   });
 
   d.show();
+}
+function display_review_details_with_employee_info(frm) {
+  let wrapper = frm.fields_dict.review_details_html.$wrapper;
+  wrapper.html(`<div>Loading review details...</div>`);
+
+  if (!frm.doc.review_details || frm.doc.review_details.length === 0) {
+    wrapper.html(`<div style="color:#888;">No review details available.</div>`);
+    return;
+  }
+
+  let rows = frm.doc.review_details;
+  let employee_ids = rows.map((r) => r.employee_id);
+
+  frappe.call({
+    method: "frappe.client.get_list",
+    args: {
+      doctype: "Employee",
+      filters: { name: ["in", employee_ids] },
+      fields: [
+        "name",
+        "employee_name",
+        "designation",
+        "sol_id",
+        "branch",
+        "custom_zone",
+        "custom_region",
+      ],
+    },
+    callback(r) {
+      let employees = {};
+      (r.message || []).forEach((emp) => {
+        employees[emp.name] = emp;
+      });
+      let html = `
+  <table class="table table-bordered"
+         style="font-size:12px; width:100%; table-layout:fixed;">
+
+      <thead>
+          <tr>
+              <th style="word-wrap:break-word;">Employee ID</th>
+              <th style="word-wrap:break-word;">Name</th>
+              <th style="word-wrap:break-word;">Designation</th>
+              <th style="word-wrap:break-word;">Branch ID</th>
+              <th style="word-wrap:break-word;">Branch Name</th>
+              <th style="word-wrap:break-word;">Zone</th>
+              <th style="word-wrap:break-word;">Region</th>
+              <th style="word-wrap:break-word;">Status</th>
+              <th style="word-wrap:break-word;">Remarks</th>
+              <th style="word-wrap:break-word;">Date & Time</th>
+          </tr>
+      </thead>
+      <tbody>
+`;
+
+      rows.forEach((row) => {
+        let emp = employees[row.employee_id] || {};
+
+        // ✅ Convert date to DD-MM-YYYY hh:mm A
+        // Correct date formatting using moment.js
+        let formatted_date = "-";
+        if (row.date_and_time) {
+          let dt = frappe.datetime.str_to_obj(row.date_and_time);
+          formatted_date = moment(dt).format("DD-MM-YYYY hh:mm A");
+        }
+
+        html += `
+                <tr>
+                    <td>${row.employee_id}</td>
+                    <td>${emp.employee_name || "-"}</td>
+                    <td>${emp.designation || "-"}</td>
+                    <td>${emp.sol_id || "-"}</td>
+                    <td>${emp.branch || "-"}</td>
+                    <td>${emp.custom_zone || "-"}</td>
+                    <td>${emp.custom_region || "-"}</td>
+                    <td>${row.status || "-"}</td>
+                    <td>${row.remarks || "-"}</td>
+                    <td>${formatted_date}</td>
+                </tr>
+            `;
+      });
+
+      html += `</tbody></table>`;
+      wrapper.html(html);
+    },
+  });
 }
