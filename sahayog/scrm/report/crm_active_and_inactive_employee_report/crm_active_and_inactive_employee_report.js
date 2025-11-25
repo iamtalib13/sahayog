@@ -4,6 +4,18 @@
 frappe.query_reports["Crm Active and Inactive Employee Report"] = {
   filters: [
     {
+      fieldname: "from_date",
+      label: __("From Date"),
+      fieldtype: "Date",
+      default: frappe.datetime.month_start(),
+    },
+    {
+      fieldname: "to_date",
+      label: __("To Date"),
+      fieldtype: "Date",
+      default: frappe.datetime.month_end(),
+    },
+    {
       fieldname: "sol_id",
       label: __("Sol ID"),
       fieldtype: "Select",
