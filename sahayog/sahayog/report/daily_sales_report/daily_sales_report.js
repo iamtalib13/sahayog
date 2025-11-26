@@ -22,22 +22,20 @@ frappe.query_reports["Daily Sales Report"] = {
     },
   ],
 
-  // ---------------------------
-  // ONLOAD
-  // ---------------------------
   onload(report) {
-    // Add Submit Button
     report.submit_btn = report.page.add_inner_button("Submit Remarks", () =>
       frappe.query_reports["Daily Sales Report"].submit_all_remarks(report)
     );
 
     frappe.query_reports["Daily Sales Report"].update_dsr_status(report);
 
-    // Attach click event ONCE for all future buttons
-    $(document).off("click", ".add-remark-btn");
-    $(document).on("click", ".add-remark-btn", function () {
-      let emp = $(this).data("emp");
-      let row = frappe.query_report.data.find((r) => r.employee_number == emp);
+    // Global click handler for Add/View/Edit Remark buttons
+    $(document).off("click", ".remark-btn");
+    $(document).on("click", ".remark-btn", function () {
+      let emp_no = $(this).data("emp");
+      let row = frappe.query_report.data.find(
+        (r) => r.employee_number == emp_no
+      );
 
       if (!row) {
         frappe.msgprint("Employee row not found.");
@@ -51,15 +49,15 @@ frappe.query_reports["Daily Sales Report"] = {
     });
   },
 
-  // ---------------------------
-  // BULK SUBMIT REMARKS
-  // ---------------------------
+  // ----------------------------------------------------------
+  // BULK SUBMIT
+  // ----------------------------------------------------------
   submit_all_remarks(report) {
     let selected_date = report.get_values().date;
 
     let remarks_data = report.data.map((row) => ({
       row: row,
-      remark: row.remarks || "",
+      remark: row.existing_remark || "",
     }));
 
     frappe.confirm(
@@ -95,12 +93,12 @@ frappe.query_reports["Daily Sales Report"] = {
     );
   },
 
-  // ---------------------------
-  // DIALOG FOR SINGLE EMPLOYEE
-  // ---------------------------
+  // ----------------------------------------------------------
+  // SINGLE EMPLOYEE REMARK DIALOG
+  // ----------------------------------------------------------
   open_employee_dialog(report, row) {
     let dialog = new frappe.ui.Dialog({
-      title: `Add Remark - ${row.employee_name} (${row.employee_number})`,
+      title: `Remark - ${row.employee_name} (${row.employee_number})`,
       fields: [
         {
           fieldname: "remark",
@@ -142,9 +140,9 @@ frappe.query_reports["Daily Sales Report"] = {
     dialog.show();
   },
 
-  // ---------------------------
-  // DISABLE SUBMIT IF ALREADY DONE
-  // ---------------------------
+  // ----------------------------------------------------------
+  // DISABLE SUBMIT IF EXISTS
+  // ----------------------------------------------------------
   update_dsr_status(report) {
     let selected_date = report.get_values().date;
 
