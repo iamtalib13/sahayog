@@ -643,7 +643,8 @@ function render_intro_html(frm, data) {
 
   // === DIV 4 (HO) Badge ===
   let ho_stat = data.ho_officer_status || "";
-  let show_ho_pending = ["Pending HO Approval", "Approved", "Completed"].includes(status);
+  // let show_ho_pending = ["Pending HO Approval", "Approved", "Completed"].includes(status);
+  let show_ho_pending = ["Pending HO Approval", "Approved", "Completed", "Rejected"].includes(status);
   let div4_badge = { label: "Not Received", class: "status-new-record" };
   if (["Pending", "Approved", "Rejected", "Skip"].includes(ho_stat) && show_ho_pending) {
     const map = {
