@@ -31,9 +31,16 @@ class EmployeeMaterialRequest(Document):
         elif self.status == "Rejected":
             self.ho_officer_status = "Rejected"
 
-    def set_request_datetime_once(self):
+        # On Resubmit after Rejection: Reset statuses
+        if self.status == "Pending Reporting Person":
+            self.reporting_person_status = "Pending"
+            self.ho_officer_status = ""
+            # frappe.logger().info(f"[EMR] Reset HO status on resubmit for {self.name}")
 
-        
+
+
+
+    def set_request_datetime_once(self):        
         if self.status == "Pending Reporting Person" and not self.request_datetime:
             # Only set for new docs or freshly submitted ones transitioning from draft
             if self.is_new() or self.docstatus == 0:
@@ -45,6 +52,10 @@ class EmployeeMaterialRequest(Document):
         self.validate_final_approval()
         self.check_stock_availability()
         self.validate_dates()  # Revalidate dates before submit
+
+            # Detect if this is a resubmission after rejection
+        if self.get_db_value("status") == "Rejected" and self.status == "Pending Reporting Person":
+            self.flags.is_resubmitting = True
 
         # Sync reporting_person_status if status is Pending HO Approval
         if self.status == "Pending HO Approval" and self.reporting_person_status == "Pending":
