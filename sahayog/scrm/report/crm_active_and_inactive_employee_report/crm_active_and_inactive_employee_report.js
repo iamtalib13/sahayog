@@ -18,25 +18,25 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
     {
       fieldname: "sol_id",
       label: __("Sol ID"),
-      fieldtype: "Select",
+      fieldtype: "Autocomplete",
       options: [""],
     },
     {
       fieldname: "zone",
       label: __("Zone"),
-      fieldtype: "Select",
+      fieldtype: "Autocomplete",
       options: [""],
     },
     {
       fieldname: "region",
       label: __("Region"),
-      fieldtype: "Select",
+      fieldtype: "Autocomplete",
       options: [""],
     },
     {
       fieldname: "branch",
       label: __("Branch"),
-      fieldtype: "Select",
+      fieldtype: "Autocomplete",
       options: [""],
     },
     {
@@ -73,56 +73,34 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
         function update_select(fieldname, values) {
           let field = frappe.query_report.get_filter(fieldname);
           if (!field) return;
-
-          field.df.options = ["", ...values];
-
-          const control = field.$input;
-          control.empty();
-          field.df.options.forEach((opt) => {
-            control.append(`<option value="${opt}">${opt}</option>`);
-          });
+          field.set_data(["", ...values]);
         }
 
         update_select("sol_id", Array.from(sol_ids).sort());
         update_select("zone", Array.from(zones).sort());
         update_select("region", Array.from(regions).sort());
         update_select("branch", Array.from(branches).sort());
-        // ===============================
-        // 🔥 READONLY CONTROL LOGIC
-        // ===============================
 
-        // disable region & branch at start
-        frappe.query_report
-          .get_filter("region")
-          .$wrapper.find("select")
-          .prop("disabled", true);
-        frappe.query_report
-          .get_filter("branch")
-          .$wrapper.find("select")
-          .prop("disabled", true);
+        frappe.query_report.get_filter("region").$input.prop("disabled", true);
+        frappe.query_report.get_filter("branch").$input.prop("disabled", true);
 
-        // When ZONE changes → enable REGION
         frappe.query_report.get_filter("zone").$input.on("change", function () {
           let zone_val = frappe.query_report.get_filter_value("zone");
 
           if (zone_val) {
             frappe.query_report
               .get_filter("region")
-              .$wrapper.find("select")
-              .prop("disabled", false);
+              .$input.prop("disabled", false);
           } else {
             frappe.query_report
               .get_filter("region")
-              .$wrapper.find("select")
-              .prop("disabled", true);
+              .$input.prop("disabled", true);
             frappe.query_report
               .get_filter("branch")
-              .$wrapper.find("select")
-              .prop("disabled", true);
+              .$input.prop("disabled", true);
           }
         });
 
-        // When REGION changes → enable BRANCH
         frappe.query_report
           .get_filter("region")
           .$input.on("change", function () {
@@ -131,21 +109,14 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
             if (region_val) {
               frappe.query_report
                 .get_filter("branch")
-                .$wrapper.find("select")
-                .prop("disabled", false);
+                .$input.prop("disabled", false);
             } else {
               frappe.query_report
                 .get_filter("branch")
-                .$wrapper.find("select")
-                .prop("disabled", true);
+                .$input.prop("disabled", true);
             }
           });
 
-        // ==============================
-        // 🔥 Restrict Selection Logic
-        // ==============================
-
-        // Block REGION until ZONE selected
         frappe.query_report
           .get_filter("region")
           .$input.on("click", function (e) {
@@ -157,7 +128,6 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
             }
           });
 
-        // Block BRANCH until REGION selected
         frappe.query_report
           .get_filter("branch")
           .$input.on("click", function (e) {
@@ -170,11 +140,6 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
           });
       },
     });
-
-    // ============================
-    //  EXISTING CARD + CHART CODE
-    //  (Unmodified – Your logic stays intact)
-    // ============================
 
     function render_emp_status_cards(
       active_count,
@@ -312,5 +277,31 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
         $("#region-chart-container").remove();
       }
     };
+    // HIDE region & branch initially
+    frappe.query_report.get_filter("region").toggle(false);
+    frappe.query_report.get_filter("branch").toggle(false);
+
+    // When ZONE changes → show REGION
+    frappe.query_report.get_filter("zone").$input.on("change", function () {
+      let zone_val = frappe.query_report.get_filter_value("zone");
+
+      if (zone_val) {
+        frappe.query_report.get_filter("region").toggle(true);
+      } else {
+        frappe.query_report.get_filter("region").toggle(false);
+        frappe.query_report.get_filter("branch").toggle(false);
+      }
+    });
+
+    // When REGION changes → show BRANCH
+    frappe.query_report.get_filter("region").$input.on("change", function () {
+      let region_val = frappe.query_report.get_filter_value("region");
+
+      if (region_val) {
+        frappe.query_report.get_filter("branch").toggle(true);
+      } else {
+        frappe.query_report.get_filter("branch").toggle(false);
+      }
+    });
   },
 };
