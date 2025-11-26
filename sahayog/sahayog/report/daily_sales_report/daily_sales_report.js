@@ -6,156 +6,90 @@ frappe.query_reports["Daily Sales Report"] = {
       fieldtype: "Date",
       default: frappe.datetime.get_today(),
       reqd: 1,
-      on_change(report) {
-        let selected_date = report.get_values().date;
-        let today = frappe.datetime.get_today();
+    },
+    {
+      fieldname: "sol_id",
+      label: __("SOL ID"),
+      fieldtype: "Link",
+      options: "Sahayog Branch",
+      reqd: 1,
+      on_change: function (report) {
+        let sol_id = report.get_values().sol_id;
 
-        if (frappe.datetime.obj_to_str(selected_date) > today) {
-          frappe.msgprint("You cannot select a future date.");
-          report.set_filter_value("date", today);
-          return;
+        // Fetch branch based on SOL ID
+        if (sol_id) {
+          frappe.db.get_value("Sahayog Branch", sol_id, "branch").then((r) => {
+            if (r.message) {
+              const current_branch = report.get_values().branch;
+              if (current_branch !== r.message.branch) {
+                const prev_sol = report.page.fields_dict.sol_id.df.default;
+                report.set_filter_value("sol_id", prev_sol);
+                return;
+              }
+              report.set_filter_value("branch", r.message.branch);
+            }
+          });
         }
-
-        frappe.query_reports["Daily Sales Report"].update_dsr_status(report);
-        report.refresh();
       },
+    },
+    {
+      fieldname: "branch",
+      label: __("Branch"),
+      fieldtype: "Data",
+      reqd: 1,
+      read_only: 1, // Branch is always read-only, set by SOL ID
     },
   ],
 
-  onload(report) {
-    report.submit_btn = report.page.add_inner_button("Submit Remarks", () =>
-      frappe.query_reports["Daily Sales Report"].submit_all_remarks(report)
-    );
+  onload: async function (report) {
+    // Fetch logged-in user's default branch and SOL ID
+    let user_branch = await frappe.call({
+      method: "sahayog.scrm.doctype.dsr_remark.dsr_remark.get_user_branch_sol",
+    });
 
-    frappe.query_reports["Daily Sales Report"].update_dsr_status(report);
+    if (user_branch.message) {
+      const { sol_id, branch } = user_branch.message;
+      report.set_filter_value("sol_id", sol_id);
+      report.set_filter_value("branch", branch);
 
-    // Global click handler for Add/View/Edit Remark buttons
-    $(document).off("click", ".remark-btn");
-    $(document).on("click", ".remark-btn", function () {
-      let emp_no = $(this).data("emp");
-      let row = frappe.query_report.data.find(
-        (r) => r.employee_number == emp_no
-      );
+      // Lock SOL ID to prevent changes
+      report.page.fields_dict.sol_id.df.read_only = 1;
+      report.page.fields_dict.sol_id.refresh();
 
-      if (!row) {
-        frappe.msgprint("Employee row not found.");
-        return;
-      }
+      // Store default SOL ID for comparison in on_change
+      report.page.fields_dict.sol_id.df.default = sol_id;
+    }
 
-      frappe.query_reports["Daily Sales Report"].open_employee_dialog(
-        frappe.query_report,
-        row
-      );
+    // Add Export CSV button
+    report.page.add_inner_button("Export CSV", () => {
+      frappe.query_reports["Daily Sales Report"].export_csv(report);
     });
   },
 
-  // ----------------------------------------------------------
-  // BULK SUBMIT
-  // ----------------------------------------------------------
-  submit_all_remarks(report) {
-    let selected_date = report.get_values().date;
+  export_csv(report) {
+    if (!report.data || report.data.length === 0) {
+      frappe.msgprint("No data to export.");
+      return;
+    }
 
-    let remarks_data = report.data.map((row) => ({
-      row: row,
-      remark: row.existing_remark || "",
+    const rows = report.data.map((row) => ({
+      "Employee Number": row.employee_number,
+      "Employee Name": row.employee_name,
+      "SOL ID": row.sol_id,
+      Branch: row.branch,
+      Designation: row.designation,
+      "Total Leads": row.total_leads,
+      "Converted Leads": row.converted_leads,
+      "Followup Leads": row.followup_leads,
+      "Not Interested Leads": row.not_interested_leads,
+      Rating: row.dsr_rating,
+      Qualification: row.dsr_qualification,
+      Remark: row.existing_remark || "",
     }));
 
-    frappe.confirm(
-      `Submit remarks for ${remarks_data.length} employees?`,
-      () => {
-        let calls = remarks_data.map((item) =>
-          frappe.call({
-            method:
-              "sahayog.scrm.doctype.dsr_remark.dsr_remark.create_or_update_dsr_remark",
-            args: {
-              date: selected_date,
-              employee: item.row.employee_number,
-              employee_name: item.row.employee_name,
-              sol_id: item.row.sol_id,
-              branch: item.row.branch,
-              designation: item.row.designation,
-              total_leads: item.row.total_leads,
-              converted_leads: item.row.converted_leads,
-              followup_leads: item.row.followup_leads,
-              not_interested_leads: item.row.not_interested_leads,
-              dsr_rating: item.row.dsr_rating,
-              dsr_qualification: item.row.dsr_qualification,
-              remark: item.remark,
-            },
-          })
-        );
+    const date = report.get_values().date || frappe.datetime.nowdate();
+    const sol_id = report.get_values().sol_id || "unknown";
 
-        Promise.all(calls).then(() => {
-          frappe.msgprint("✔ All remarks submitted successfully");
-          report.refresh();
-        });
-      }
-    );
-  },
-
-  // ----------------------------------------------------------
-  // SINGLE EMPLOYEE REMARK DIALOG
-  // ----------------------------------------------------------
-  open_employee_dialog(report, row) {
-    let dialog = new frappe.ui.Dialog({
-      title: `Remark - ${row.employee_name} (${row.employee_number})`,
-      fields: [
-        {
-          fieldname: "remark",
-          label: "Remark",
-          fieldtype: "Small Text",
-          reqd: 1,
-          default: row.existing_remark || "",
-        },
-      ],
-      primary_action_label: "Save",
-      primary_action(values) {
-        frappe.call({
-          method:
-            "sahayog.scrm.doctype.dsr_remark.dsr_remark.create_or_update_dsr_remark",
-          args: {
-            date: report.get_values().date,
-            employee: row.employee_number,
-            employee_name: row.employee_name,
-            sol_id: row.sol_id,
-            branch: row.branch,
-            designation: row.designation,
-            total_leads: row.total_leads,
-            converted_leads: row.converted_leads,
-            followup_leads: row.followup_leads,
-            not_interested_leads: row.not_interested_leads,
-            dsr_rating: row.dsr_rating,
-            dsr_qualification: row.dsr_qualification,
-            remark: values.remark,
-          },
-          callback() {
-            frappe.msgprint("✔ Remark Saved!");
-            dialog.hide();
-            report.refresh();
-          },
-        });
-      },
-    });
-
-    dialog.show();
-  },
-
-  // ----------------------------------------------------------
-  // DISABLE SUBMIT IF EXISTS
-  // ----------------------------------------------------------
-  update_dsr_status(report) {
-    let selected_date = report.get_values().date;
-
-    frappe.call({
-      method: "sahayog.scrm.doctype.dsr_remark.dsr_remark.get_dsr_remark",
-      args: { date: selected_date },
-      callback(r) {
-        if (r.message && r.message.exists) {
-          report.submit_btn.hide();
-        } else {
-          report.submit_btn.show();
-        }
-      },
-    });
+    frappe.tools.downloadify(rows, null, `dsr_${date}_${sol_id}`);
   },
 };

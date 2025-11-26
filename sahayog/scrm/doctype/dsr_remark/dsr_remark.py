@@ -155,3 +155,17 @@ def get_dsr_remark(date):
     )
 
     return {"exists": True} if exists else {"exists": False}
+
+
+
+
+@frappe.whitelist()
+def get_user_branch_sol():
+    user = frappe.session.user
+    emp = frappe.get_value("Employee", {"user_id": user}, ["sol_id"], as_dict=True)
+    if not emp:
+        return {}
+    
+    branch = frappe.get_value("Sahayog Branch", emp.sol_id, "branch")
+    return {"sol_id": emp.sol_id, "branch": branch}
+
