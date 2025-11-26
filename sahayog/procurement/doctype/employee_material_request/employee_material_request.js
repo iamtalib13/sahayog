@@ -643,7 +643,8 @@ function render_intro_html(frm, data) {
 
   // === DIV 4 (HO) Badge ===
   let ho_stat = data.ho_officer_status || "";
-  let show_ho_pending = ["Pending HO Approval", "Approved", "Completed"].includes(status);
+  // let show_ho_pending = ["Pending HO Approval", "Approved", "Completed"].includes(status);
+  let show_ho_pending = ["Pending HO Approval", "Approved", "Completed", "Rejected"].includes(status);
   let div4_badge = { label: "Not Received", class: "status-new-record" };
   if (["Pending", "Approved", "Rejected", "Skip"].includes(ho_stat) && show_ho_pending) {
     const map = {
@@ -902,7 +903,10 @@ function render_intro_html(frm, data) {
       <div class="emr-grid-card emr-div2">
         <div class="emr-card-header">
           <div class="emr-card-number">2</div>
-          <div class="emr-card-title">Request Details</div>
+          <div class="emr-card-title">
+          Request Details
+           <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          </div>
         </div>
         <div class="emr-card-line">
           ${data.requested_by?.employee_number || 'N/A'} -
@@ -918,7 +922,10 @@ function render_intro_html(frm, data) {
       <div class="emr-grid-card emr-div3">
         <div class="emr-card-header">
           <div class="emr-card-number">3</div>
-          <div class="emr-card-title">Reporting Person</div>
+          <div class="emr-card-title">
+          Reporting Person
+          <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          </div>
         </div>
         <div class="emr-card-line">
           ${data.reporting_person?.employee_number || 'N/A'} -
@@ -934,7 +941,10 @@ function render_intro_html(frm, data) {
       <div class="emr-grid-card emr-div4">
         <div class="emr-card-header">
           <div class="emr-card-number">4</div>
-          <div class="emr-card-title">HO Officer</div>
+          <div class="emr-card-title">
+          HO Officer
+          <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          </div>
         </div>
         <div class="emr-card-line">
           ${data.ho_officer?.employee_number || 'N/A'} -
