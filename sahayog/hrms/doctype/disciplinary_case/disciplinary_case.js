@@ -362,6 +362,7 @@ function render_timeline(frm, data) {
   if (wrap.length) wrap.remove();
 
   const insertion_point = $(".form-dashboard");
+
   let html = `
         <div class="case-timeline-box" style="
             background:#ffffff;
@@ -375,9 +376,12 @@ function render_timeline(frm, data) {
             <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
                 Case Progress Timeline
             </h4>
+
+            <!-- TIMELINE BADGES -->
             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:6px;">
     `;
 
+  // Timeline badges
   data.timeline.forEach((stage_obj, index) => {
     html += timeline_badge(stage_obj);
     if (index < data.timeline.length - 1) {
@@ -385,7 +389,34 @@ function render_timeline(frm, data) {
     }
   });
 
-  html += `</div></div>`;
+  html += `
+            </div>
+
+            <!-- LEGEND OUTSIDE / BELOW -->
+            <div style="
+                margin-top:10px;
+                padding-top:6px;
+                border-top:1px solid #e0e0e0;
+                font-size:11px;
+                color:#777;
+                display:flex;
+                gap:14px;
+                 justify-content:right;
+            ">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span style="font-size:12px;">🟢</span><span>Completed</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span style="font-size:12px;">🟠</span><span>In Progress</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span style="font-size:12px;">⚪</span><span>Not Created</span>
+                </div>
+            </div>
+
+        </div>
+    `;
+
   insertion_point.before(html);
 }
 
@@ -396,12 +427,13 @@ function timeline_badge(stage_obj) {
 
   switch (stage_obj.status) {
     case "submitted":
-      bg = "#e8f5e9"; // Green
+      bg = "#e8f5e9";
       color = "#1b5e20";
       icon = "🟢";
       break;
+
     case "saved":
-      bg = "#f9f8f5ff"; // Orange
+      bg = "#fff4e5";
       color = "#e65100";
       icon = "🟠";
       break;
@@ -414,15 +446,15 @@ function timeline_badge(stage_obj) {
 
   return `
         <div style="
-            padding:4px 8px;
+            padding:3px 6px;
             background:${bg};
             color:${color};
-            border-radius:20px;
+            border-radius:14px;
             font-weight:600;
             display:flex;
             align-items:center;
             gap:4px;
-            font-size:12px;
+            font-size:11px;
         ">
             ${icon} ${stage_obj.stage}
         </div>
