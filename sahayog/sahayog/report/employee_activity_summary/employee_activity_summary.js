@@ -15,14 +15,6 @@ frappe.query_reports["Employee Activity Summary"] = {
       fieldtype: "Date",
       default: frappe.datetime.get_today(),
     },
-
-    // SEARCHABLE AUTOCOMPLETE FIELDS
-    {
-      fieldname: "sol_id",
-      label: __("Sol ID"),
-      fieldtype: "Autocomplete",
-      options: [""],
-    },
     {
       fieldname: "zone",
       label: __("Zone"),
@@ -32,6 +24,13 @@ frappe.query_reports["Employee Activity Summary"] = {
     {
       fieldname: "region",
       label: __("Region"),
+      fieldtype: "Autocomplete",
+      options: [""],
+    },
+    // SEARCHABLE AUTOCOMPLETE FIELDS
+    {
+      fieldname: "sol_id",
+      label: __("Sol ID"),
       fieldtype: "Autocomplete",
       options: [""],
     },
