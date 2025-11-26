@@ -106,8 +106,6 @@ frappe.ui.form.on("Case Closure", {
   },
 
   refresh(frm) {
-    display_review_details_with_employee_info(frm);
-
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
@@ -254,12 +252,12 @@ frappe.ui.form.on("Case Closure", {
     }
   },
 });
-
 function render_timeline(frm, data) {
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
 
   const insertion_point = $(".form-dashboard");
+
   let html = `
         <div class="case-timeline-box" style="
             background:#ffffff;
@@ -273,9 +271,12 @@ function render_timeline(frm, data) {
             <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
                 Case Progress Timeline
             </h4>
+
+            <!-- TIMELINE BADGES -->
             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:6px;">
     `;
 
+  // Timeline badges
   data.timeline.forEach((stage_obj, index) => {
     html += timeline_badge(stage_obj);
     if (index < data.timeline.length - 1) {
@@ -283,7 +284,34 @@ function render_timeline(frm, data) {
     }
   });
 
-  html += `</div></div>`;
+  html += `
+            </div>
+
+            <!-- LEGEND OUTSIDE / BELOW -->
+            <div style="
+                margin-top:10px;
+                padding-top:6px;
+                border-top:1px solid #e0e0e0;
+                font-size:11px;
+                color:#777;
+                display:flex;
+                gap:14px;
+                 justify-content:right;
+            ">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span style="font-size:12px;">🟢</span><span>Completed</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span style="font-size:12px;">🟠</span><span>In Progress</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span style="font-size:12px;">⚪</span><span>Not Created</span>
+                </div>
+            </div>
+
+        </div>
+    `;
+
   insertion_point.before(html);
 }
 
@@ -294,12 +322,13 @@ function timeline_badge(stage_obj) {
 
   switch (stage_obj.status) {
     case "submitted":
-      bg = "#e8f5e9"; // Green
+      bg = "#e8f5e9";
       color = "#1b5e20";
       icon = "🟢";
       break;
+
     case "saved":
-      bg = "#f9f8f5ff"; // Orange
+      bg = "#fff4e5";
       color = "#e65100";
       icon = "🟠";
       break;
@@ -312,23 +341,23 @@ function timeline_badge(stage_obj) {
 
   return `
         <div style="
-            padding:4px 8px;
+            padding:3px 6px;
             background:${bg};
             color:${color};
-            border-radius:20px;
+            border-radius:14px;
             font-weight:600;
             display:flex;
             align-items:center;
             gap:4px;
-            font-size:12px;
+            font-size:11px;
         ">
             ${icon} ${stage_obj.stage}
         </div>
     `;
 }
+
 // FUNCTION TO OPEN REVIEWER SELECTION DIALOG
 function open_approver_dialog(frm) {
-
   // 1️⃣  Get the employee against whom case is created
   let case_employee_id = frm.doc.employee_id;
 
@@ -340,7 +369,6 @@ function open_approver_dialog(frm) {
 
   // 2️⃣ Fetch full Employee Document using employee id
   frappe.db.get_doc("Employee", case_employee_id).then((emp) => {
-
     // Get employee's zone (custom field: custom_zone)
     let default_zone = emp.custom_zone;
 
@@ -356,7 +384,6 @@ function open_approver_dialog(frm) {
       size: "extra-large",
 
       fields: [
-
         // ---------- ZONE FIELD ----------
         {
           fieldtype: "Link",
@@ -406,12 +433,14 @@ function open_approver_dialog(frm) {
               onchange() {
                 let row = this.grid_row.doc;
                 if (!row.employee_id) return;
-                frappe.db.get_doc("Employee", row.employee_id).then((emp_data) => {
-                  row.employee_name = emp_data.employee_name;
-                  row.company_email =
-                    emp_data.company_email || emp_data.prefered_email;
-                  d.fields_dict.approver_table.grid.refresh();
-                });
+                frappe.db
+                  .get_doc("Employee", row.employee_id)
+                  .then((emp_data) => {
+                    row.employee_name = emp_data.employee_name;
+                    row.company_email =
+                      emp_data.company_email || emp_data.prefered_email;
+                    d.fields_dict.approver_table.grid.refresh();
+                  });
               },
             },
             {
@@ -419,7 +448,7 @@ function open_approver_dialog(frm) {
               fieldname: "employee_name",
               label: "Employee Name",
               in_list_view: true,
-              read_only: 1,  
+              read_only: 1,
             },
             {
               fieldtype: "Data",
@@ -436,7 +465,6 @@ function open_approver_dialog(frm) {
 
       // 4️⃣  PRIMARY ACTION (Callback of Submit Button)
       primary_action(values) {
-
         // A. Validate that every row has company email
         for (let row of values.approver_table || []) {
           if (!row.company_email) {
@@ -451,7 +479,9 @@ function open_approver_dialog(frm) {
 
         // B. Show confirmation popup before final submit
         frappe.confirm(
-          __("Please confirm that the reviewer selection is accurate before submitting."),
+          __(
+            "Please confirm that the reviewer selection is accurate before submitting."
+          ),
 
           // If YES pressed
           () => {
@@ -471,7 +501,6 @@ function open_approver_dialog(frm) {
 
 // 5️⃣  SEPARATE FUNCTION → ACTUAL SAVE + EMAIL PROCESS
 function submit_approvers(frm, values, dialog) {
-
   // A. Clear old reviewer rows from parent doc
   frm.clear_table("review_details");
 
@@ -490,7 +519,6 @@ function submit_approvers(frm, values, dialog) {
 
   // C. Save whole parent document
   frm.save().then(() => {
-
     // D. Call backend Python method to send verification mail
     frappe.call({
       method:
@@ -498,7 +526,7 @@ function submit_approvers(frm, values, dialog) {
 
       args: {
         approvers: values.approver_table, // list of reviewers
-        case_id: frm.doc.name,            // case ID
+        case_id: frm.doc.name, // case ID
       },
 
       freeze: true,
@@ -514,90 +542,89 @@ function submit_approvers(frm, values, dialog) {
   });
 }
 
+// // function to display review details with employee info
+// function display_review_details_with_employee_info(frm) {
+//   let wrapper = frm.fields_dict.review_details_html.$wrapper;
+//   wrapper.html(`<div>Loading review details...</div>`);
 
-// function to display review details with employee info
-function display_review_details_with_employee_info(frm) {
-  let wrapper = frm.fields_dict.review_details_html.$wrapper;
-  wrapper.html(`<div>Loading review details...</div>`);
+//   if (!frm.doc.review_details || frm.doc.review_details.length === 0) {
+//     wrapper.html(`<div style="color:#888;">No review details available.</div>`);
+//     return;
+//   }
 
-  if (!frm.doc.review_details || frm.doc.review_details.length === 0) {
-    wrapper.html(`<div style="color:#888;">No review details available.</div>`);
-    return;
-  }
+//   let rows = frm.doc.review_details;
+//   let employee_ids = rows.map((r) => r.employee_id);
 
-  let rows = frm.doc.review_details;
-  let employee_ids = rows.map((r) => r.employee_id);
+//   frappe.call({
+//     method: "frappe.client.get_list",
+//     args: {
+//       doctype: "Employee",
+//       filters: { name: ["in", employee_ids] },
+//       fields: [
+//         "name",
+//         "employee_name",
+//         "designation",
+//         "sol_id",
+//         "branch",
+//         "custom_zone",
+//         "custom_region",
+//       ],
+//     },
+//     callback(r) {
+//       let employees = {};
+//       (r.message || []).forEach((emp) => {
+//         employees[emp.name] = emp;
+//       });
+//       let html = `
+//   <table class="table table-bordered"
+//          style="font-size:12px; width:100%; table-layout:fixed;">
 
-  frappe.call({
-    method: "frappe.client.get_list",
-    args: {
-      doctype: "Employee",
-      filters: { name: ["in", employee_ids] },
-      fields: [
-        "name",
-        "employee_name",
-        "designation",
-        "sol_id",
-        "branch",
-        "custom_zone",
-        "custom_region",
-      ],
-    },
-    callback(r) {
-      let employees = {};
-      (r.message || []).forEach((emp) => {
-        employees[emp.name] = emp;
-      });
-      let html = `
-  <table class="table table-bordered"
-         style="font-size:12px; width:100%; table-layout:fixed;">
+//       <thead>
+//           <tr>
+//               <th style="word-wrap:break-word;">Employee ID</th>
+//               <th style="word-wrap:break-word;">Name</th>
+//               <th style="word-wrap:break-word;">Designation</th>
+//               <th style="word-wrap:break-word;">Branch ID</th>
+//               <th style="word-wrap:break-word;">Branch Name</th>
+//               <th style="word-wrap:break-word;">Zone</th>
+//               <th style="word-wrap:break-word;">Region</th>
+//               <th style="word-wrap:break-word;">Status</th>
+//               <th style="word-wrap:break-word;">Remarks</th>
+//               <th style="word-wrap:break-word;">Date & Time</th>
+//           </tr>
+//       </thead>
+//       <tbody>
+// `;
 
-      <thead>
-          <tr>
-              <th style="word-wrap:break-word;">Employee ID</th>
-              <th style="word-wrap:break-word;">Name</th>
-              <th style="word-wrap:break-word;">Designation</th>
-              <th style="word-wrap:break-word;">Branch ID</th>
-              <th style="word-wrap:break-word;">Branch Name</th>
-              <th style="word-wrap:break-word;">Zone</th>
-              <th style="word-wrap:break-word;">Region</th>
-              <th style="word-wrap:break-word;">Status</th>
-              <th style="word-wrap:break-word;">Remarks</th>
-              <th style="word-wrap:break-word;">Date & Time</th>
-          </tr>
-      </thead>
-      <tbody>
-`;
+//       rows.forEach((row) => {
+//         let emp = employees[row.employee_id] || {};
 
-      rows.forEach((row) => {
-        let emp = employees[row.employee_id] || {};
+//         // ✅ Convert date to DD-MM-YYYY hh:mm A
+//         // Correct date formatting using moment.js
+//         let formatted_date = "-";
+//         if (row.date_and_time) {
+//           let dt = frappe.datetime.str_to_obj(row.date_and_time);
+//           formatted_date = moment(dt).format("DD-MM-YYYY hh:mm A");
+//         }
 
-        // ✅ Convert date to DD-MM-YYYY hh:mm A
-        // Correct date formatting using moment.js
-        let formatted_date = "-";
-        if (row.date_and_time) {
-          let dt = frappe.datetime.str_to_obj(row.date_and_time);
-          formatted_date = moment(dt).format("DD-MM-YYYY hh:mm A");
-        }
+//         html += `
+//                 <tr>
+//                     <td>${row.employee_id}</td>
+//                     <td>${emp.employee_name || "-"}</td>
+//                     <td>${emp.designation || "-"}</td>
+//                     <td>${emp.sol_id || "-"}</td>
+//                     <td>${emp.branch || "-"}</td>
+//                     <td>${emp.custom_zone || "-"}</td>
+//                     <td>${emp.custom_region || "-"}</td>
+//                     <td>${row.status || "-"}</td>
+//                     <td>${row.remarks || "-"}</td>
+//                     <td>${formatted_date}</td>
+//                 </tr>
+//             `;
+//       });
 
-        html += `
-                <tr>
-                    <td>${row.employee_id}</td>
-                    <td>${emp.employee_name || "-"}</td>
-                    <td>${emp.designation || "-"}</td>
-                    <td>${emp.sol_id || "-"}</td>
-                    <td>${emp.branch || "-"}</td>
-                    <td>${emp.custom_zone || "-"}</td>
-                    <td>${emp.custom_region || "-"}</td>
-                    <td>${row.status || "-"}</td>
-                    <td>${row.remarks || "-"}</td>
-                    <td>${formatted_date}</td>
-                </tr>
-            `;
-      });
-
-      html += `</tbody></table>`;
-      wrapper.html(html);
-    },
-  });
-}
+//       html += `</tbody></table>`;
+//       wrapper.html(html);
+//     },
+//   });
+// }
