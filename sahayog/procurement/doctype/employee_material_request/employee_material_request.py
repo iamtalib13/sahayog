@@ -28,7 +28,7 @@ class EmployeeMaterialRequest(Document):
         elif self.status == "Approved":
             self.ho_officer_status = "Approved"
         # On Approver Reject: optionally clear HO officer status for proper badge
-        elif self.status == "Rejected":
+        elif self.status == "Rejected" and self.reporting_person_status == "Approved" or self.reporting_person_status == "Skip":
             self.ho_officer_status = "Rejected"
 
         # On Resubmit after Rejection: Reset statuses
@@ -376,6 +376,7 @@ class EmployeeMaterialRequest(Document):
         except Exception as e:
             frappe.log_error(frappe.get_traceback(), "Material Request Notification Error")
 
+
     def before_workflow_action(self):
         frappe.logger().info(f"before_workflow_action triggered for {self.name} ({self.status}) by {frappe.session.user}")
         frappe.logger().info(f"Workflow action for doc {self.name} status {self.status}")
@@ -383,6 +384,7 @@ class EmployeeMaterialRequest(Document):
         current_user = frappe.session.user
         action = (frappe.form_dict.get("action") or "").lower()
         frappe.logger().info(f"User: {current_user}, Action: {action}")
+
 
         if self.status == "Pending Reporting Person" and current_user == self.reporting_person:
             if action == "approve":
@@ -404,6 +406,7 @@ class EmployeeMaterialRequest(Document):
             frappe.db.commit()  # Immediate commit to persist change
             frappe.logger().info(f"Updated ho_officer_status to {self.ho_officer_status}")
  
+
 
 # Whitelisted API Methods
 
@@ -547,6 +550,7 @@ def create_stock_entry_from_request(material_request):
     return se.name
 
 
+
 @frappe.whitelist()
 def validate_required_date(required_by_date, request_date=None):
     """
@@ -596,9 +600,11 @@ def validate_required_date(required_by_date, request_date=None):
         }
 
 
+
 # ==================================================================
 # WHITELISTED API METHOD FOR INTRO DATA
 # ==================================================================
+
 
 
 @frappe.whitelist()
@@ -650,6 +656,7 @@ def get_material_request_intro_data(doc_name):
         }
 
 
+
 def get_employee_data(employee_number):
     """
     Fetch employee details by employee number
@@ -673,6 +680,7 @@ def get_employee_data(employee_number):
         return employee or {}
     except Exception:
         return {}
+
 
 
 def get_branch_data(sol_id):
@@ -700,6 +708,7 @@ def get_branch_data(sol_id):
         return {}
 
 
+
 def get_employee_by_user(user_id):
     """
     Fetch employee details by user ID (email)
@@ -723,6 +732,7 @@ def get_employee_by_user(user_id):
         return employee or {}
     except Exception:
         return {}
+
 
 
 def get_creator_employee(user_id):
