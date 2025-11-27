@@ -100,29 +100,69 @@ class SahayogBranch(Document):
 # MOVE THIS FUNCTION OUTSIDE THE CLASS:
 def auto_create_sahayog_branches_from_finacle():
     """
-    Whitelisted for scheduler/API: Bulk create/update branches from Finacle.
-    Updates zone and region if existing record found; else creates new record.
-    Also creates Warehouse and Location records per sol_id if not existing,
-    setting warehouse_name=sol_id, custom_warehouse_category='Branch',
-    and location_name=sol_id respectively.
-    Returns stats summary.
+    Bulk create/update Sahayog Branches from Finacle.
+    Normalizes Zone and Region to:
+        ZONE-<number>
+        REGION-<number>
+    Creates Warehouse and Location if missing.
+    Returns summary stats.
     """
+    import re
+
+    # --- NORMALIZATION FUNCTIONS ---
+    def normalize_zone(value):
+        """Normalize zone into ZONE-<number> format."""
+        if not value:
+            return ""
+
+        v = value.upper().strip()
+
+        match = re.search(r'(\d+)', v)
+        number = match.group(1) if match else ""
+
+        if number:
+            return f"ZONE-{int(number)}"
+
+        return v.replace("  ", " ").strip()
+
+    def normalize_region(value):
+        """Normalize region into REGION-<number> format."""
+        if not value:
+            return ""
+
+        v = value.upper().strip()
+
+        match = re.search(r'(\d+)', v)
+        number = match.group(1) if match else ""
+
+        if number:
+            return f"REGION-{int(number)}"
+
+        return v.replace("  ", " ").strip()
+
+    # --- FETCH FROM FINACLE ---
     conn = db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
+
     sql = """
-    SELECT sol_id, sol_desc, division_name, region_name, circle_office_name, state_code 
+    SELECT sol_id, sol_desc, division_name, region_name, circle_office_name, state_code
     FROM tbaadm.sol
     """
     cursor.execute(sql)
     data = cursor.fetchall()
-    created, skipped, existed, updated, warehouses_created, locations_created = 0, 0, 0, 0, 0, 0
+
+    created = skipped = existed = updated = 0
+    warehouses_created = locations_created = 0
 
     for row in data:
         sol_id = str(row.get("sol_id") or "").strip()
         branch = (row.get("sol_desc") or "").strip().upper()
         district = (row.get("division_name") or "").strip().upper()
-        region = SahayogBranch._normalize_field(row.get("region_name") or "")
-        zone = SahayogBranch._normalize_field(row.get("circle_office_name") or "")
+
+        # --- APPLY NEW NORMALIZATION ---
+        region = normalize_region(row.get("region_name") or "")
+        zone = normalize_zone(row.get("circle_office_name") or "")
+
         state_code = (row.get("state_code") or "").strip().upper()
         state = STATE_MAP.get(state_code, "")
 
@@ -136,66 +176,80 @@ def auto_create_sahayog_branches_from_finacle():
             "state": state
         }
 
-        if all(doc_data.get(f) for f in ["sol_id", "branch", "district", "region", "zone", "state_code"]):
-            existing_branch = frappe.get_all("Sahayog Branch", filters={"sol_id": sol_id}, limit=1)
-            if existing_branch:
-                doc = frappe.get_doc("Sahayog Branch", existing_branch[0].name)
-                updated_flag = False
-                if doc.zone != zone:
-                    doc.zone = zone
-                    updated_flag = True
-                if doc.region != region:
-                    doc.region = region
-                    updated_flag = True
-                if updated_flag:
-                    try:
-                        doc.save(ignore_permissions=True)
-                        frappe.db.commit()
-                        updated += 1
-                    except Exception:
-                        frappe.log_error(frappe.get_traceback(), "Auto Update Sahayog Branch Failed")
-                        skipped += 1
-                else:
-                    existed += 1
+        # Skip if missing required fields
+        if not all(doc_data.get(f) for f in ["sol_id", "branch", "district", "region", "zone", "state_code"]):
+            skipped += 1
+            continue
+
+        # -------------------------------------
+        #   CREATE OR UPDATE SAHAYOG BRANCH
+        # -------------------------------------
+        existing_branch = frappe.get_all(
+            "Sahayog Branch",
+            filters={"sol_id": sol_id},
+            limit=1
+        )
+
+        if existing_branch:
+            doc = frappe.get_doc("Sahayog Branch", existing_branch[0].name)
+            updated_flag = False
+
+            if doc.zone != zone:
+                doc.zone = zone
+                updated_flag = True
+            if doc.region != region:
+                doc.region = region
+                updated_flag = True
+
+            if updated_flag:
+                try:
+                    doc.save(ignore_permissions=True)
+                    frappe.db.commit()
+                    updated += 1
+                except Exception:
+                    skipped += 1
+                    frappe.log_error(frappe.get_traceback(), "Auto Update Sahayog Branch Failed")
             else:
-                try:
-                    frappe.get_doc({"doctype": "Sahayog Branch", **doc_data}).insert(ignore_permissions=True)
-                    created += 1
-                except Exception:
-                    frappe.log_error(frappe.get_traceback(), "Auto Create Sahayog Branch Failed")
-                    skipped += 1
-
-            # Create Warehouse if not exists
-            if not frappe.db.exists("Warehouse", sol_id):
-                try:
-                    warehouse_doc = frappe.get_doc({
-                        "doctype": "Warehouse",
-                        "warehouse_name": sol_id,
-                        "custom_warehouse_category": "Branch"
-                    })
-                    warehouse_doc.insert(ignore_permissions=True)
-                    frappe.db.commit()
-                    warehouses_created += 1
-                except Exception:
-                    frappe.log_error(frappe.get_traceback(), f"Warehouse creation failed for {sol_id}")
-                    skipped += 1
-
-            # Create Location if not exists
-            if not frappe.db.exists("Location", sol_id):
-                try:
-                    location_doc = frappe.get_doc({
-                        "doctype": "Location",
-                        "location_name": sol_id
-                    })
-                    location_doc.insert(ignore_permissions=True)
-                    frappe.db.commit()
-                    locations_created += 1
-                except Exception:
-                    frappe.log_error(frappe.get_traceback(), f"Location creation failed for {sol_id}")
-                    skipped += 1
+                existed += 1
 
         else:
-            skipped += 1
+            try:
+                frappe.get_doc({"doctype": "Sahayog Branch", **doc_data}).insert(ignore_permissions=True)
+                created += 1
+            except Exception:
+                skipped += 1
+                frappe.log_error(frappe.get_traceback(), "Auto Create Sahayog Branch Failed")
+
+        # -------------------------
+        #   WAREHOUSE CREATION
+        # -------------------------
+        if not frappe.db.exists("Warehouse", sol_id):
+            try:
+                frappe.get_doc({
+                    "doctype": "Warehouse",
+                    "warehouse_name": sol_id,
+                    "custom_warehouse_category": "Branch"
+                }).insert(ignore_permissions=True)
+                frappe.db.commit()
+                warehouses_created += 1
+            except Exception:
+                skipped += 1
+                frappe.log_error(frappe.get_traceback(), f"Warehouse creation failed for {sol_id}")
+
+        # -------------------------
+        #   LOCATION CREATION
+        # -------------------------
+        if not frappe.db.exists("Location", sol_id):
+            try:
+                frappe.get_doc({
+                    "doctype": "Location",
+                    "location_name": sol_id
+                }).insert(ignore_permissions=True)
+                frappe.db.commit()
+                locations_created += 1
+            except Exception:
+                skipped += 1
+                frappe.log_error(frappe.get_traceback(), f"Location creation failed for {sol_id}")
 
     conn.close()
     frappe.db.commit()
