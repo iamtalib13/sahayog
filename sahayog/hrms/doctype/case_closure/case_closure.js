@@ -487,6 +487,31 @@ function open_approver_dialog(frm) {
               onchange() {
                 let row = this.grid_row.doc;
                 if (!row.employee_id) return;
+
+                // 🔍 Check duplicate reviewer from parent child table
+                let already_selected = (frm.doc.review_details || []).some(
+                  (r) => r.employee_id === row.employee_id
+                );
+
+                if (already_selected) {
+                  frappe.msgprint({
+                    title: __("Duplicate Reviewer"),
+                    message: __(
+                      "This reviewer is already selected in the list."
+                    ),
+                    indicator: "red",
+                  });
+
+                  // ❌ Reset row fields
+                  row.employee_id = "";
+                  row.employee_name = "";
+                  row.company_email = "";
+
+                  d.fields_dict.approver_table.grid.refresh();
+                  return;
+                }
+
+                // Fetch details if not duplicate
                 frappe.db
                   .get_doc("Employee", row.employee_id)
                   .then((emp_data) => {
