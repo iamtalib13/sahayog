@@ -28,10 +28,7 @@ def get_columns():
         # NEW: EMPLOYEE NAME
         {"fieldname": "employee_name", "label": "Employee Name", "fieldtype": "Data", "width": 180},
 
-        {"fieldname": "purchase_date", "label": "Purchase Date", "fieldtype": "Date", "width": 120},
-        {"fieldname": "available_for_use_date", "label": "Available For Use", "fieldtype": "Date", "width": 140},
 
-        {"fieldname": "status", "label": "Status", "fieldtype": "Data", "width": 120},
     ]
 
 
@@ -165,37 +162,61 @@ def get_employees_by_branch():
         })
 
     return result
+import frappe
+
 @frappe.whitelist()
 def get_active_nonactive_users():
+    # ----------------------------------
+    # FETCH LEADS
+    # ----------------------------------
     leads = frappe.db.get_all(
         "Lead",
-        fields=["custom_zone","custom_region","custom_branch","name",
-                "lead_name","status","lead_owner"],
+        fields=[
+            "custom_zone",
+            "custom_region",
+            "custom_branch",
+            "name",
+            "lead_name",
+            "status",
+            "lead_owner",
+        ],
         order_by="custom_zone, custom_region, custom_branch"
     )
 
+    # ----------------------------------
+    # FETCH EMPLOYEES with date_of_joining
+    # ----------------------------------
     employees = frappe.db.get_all(
         "Employee",
         fields=["name as emp_id", "employee_name", "branch", "date_of_joining"],
         order_by="branch asc"
     )
 
-    # Map employees by ID
-    emp_map = {emp.emp_id: emp for emp in employees}
+    # Group employees by branch
+    employee_map = {}
+    for emp in employees:
+        branch = emp.branch or "Unknown Branch"
+        employee_map.setdefault(branch, [])
+        employee_map[branch].append(emp)
 
-    # ACTIVE employee unique list
-    active_emp_unique = set()
+    # ----------------------------------
+    active = {}        # employees who have leads
+    nonactive = {}     # employees with no leads
+    active_emp_ids = set()
 
-    # Build active lead tree
-    active = {}
+    # ----------------------------------
+    # BUILD ACTIVE USER TREE
+    # ----------------------------------
     for row in leads:
         zone = row.custom_zone or "Unknown Zone"
         region = row.custom_region or "Unknown Region"
         branch = row.custom_branch or "Unknown Branch"
 
+        # mark employee as active
         if row.lead_owner:
-            active_emp_unique.add(row.lead_owner)
+            active_emp_ids.add(row.lead_owner)
 
+        # build active tree
         active.setdefault(zone, {})
         active[zone].setdefault(region, {})
         active[zone][region].setdefault(branch, [])
@@ -205,14 +226,17 @@ def get_active_nonactive_users():
             "lead_name": row.lead_name,
             "status": row.status,
             "lead_owner": row.lead_owner,
-            "employee_joining_date": emp_map.get(row.lead_owner, {}).date_of_joining
-            if row.lead_owner in emp_map else None
+            # 🔥 You wanted joining date here too
+            "employee_joining_date": frappe.db.get_value(
+                "Employee", row.lead_owner, "date_of_joining"
+            )
         })
 
-    # NON-ACTIVE (employees NOT in active_emp_unique)
-    nonactive = {}
+    # ----------------------------------
+    # BUILD NON-ACTIVE USER TREE
+    # ----------------------------------
     for emp in employees:
-        if emp.emp_id not in active_emp_unique:
+        if emp.emp_id not in active_emp_ids:
             zone = "Unknown Zone"
             region = "Unknown Region"
             branch = emp.branch or "Unknown Branch"
@@ -224,11 +248,12 @@ def get_active_nonactive_users():
             nonactive[zone][region][branch].append({
                 "emp_id": emp.emp_id,
                 "employee_name": emp.employee_name,
+                # 🔥 Include date_of_joining here too
                 "date_of_joining": emp.date_of_joining
             })
 
+    # ----------------------------------
     return {
         "active_users": active,
-        "non_active_users": nonactive,
-        "unique_active_employees": list(active_emp_unique)
+        "non_active_users": nonactive
     }
