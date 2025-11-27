@@ -99,7 +99,7 @@ frappe.ui.form.on("Enquiry Reminder", {
         frappe.msgprint({
           title: __("Invalid Date"),
           message: __(
-            "Date of 2nd Enquiry must be after the Date of Enquiry of the related Domestic Enquiry."
+            "2nd Enquiry Date must be after the 1st Enquiry Date of the related Domestic Enquiry."
           ),
           indicator: "red",
         });
@@ -248,105 +248,155 @@ frappe.ui.form.on("Enquiry Reminder", {
 });
 
 function render_timeline(frm, data) {
+  // debug: show incoming timeline payload in console
+  console.debug(
+    "render_timeline payload:",
+    data && data.timeline ? data.timeline : data
+  );
+
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
 
   const insertion_point = $(".form-dashboard");
 
   let html = `
-        <div class="case-timeline-box" style="
-            background:#ffffff;
-            border:1px solid #e0e0e0;
-            padding:10px;
-            margin-bottom:10px;
-            border-radius:8px;
-            box-shadow:0 1px 2px rgba(0,0,0,0.05);
-            font-size:13px;
-        ">
-            <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
-                Case Progress Timeline
-            </h4>
+    <div class="case-timeline-box" style="
+        background:#ffffff;
+        border:1px solid #e0e0e0;
+        padding:10px;
+        margin-bottom:10px;
+        border-radius:8px;
+        box-shadow:0 1px 2px rgba(0,0,0,0.05);
+        font-size:13px;
+    ">
+        <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
+            Case Progress Timeline
+        </h4>
 
-            <!-- TIMELINE BADGES -->
-            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:6px;">
-    `;
+        <!-- TIMELINE BADGES -->
+        <div style="display:flex; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-top:6px;">
+  `;
 
-  // Timeline badges
-  data.timeline.forEach((stage_obj, index) => {
-    html += timeline_badge(stage_obj);
-    if (index < data.timeline.length - 1) {
-      html += `<div style="font-size:16px; color:#9e9e9e;">→</div>`;
-    }
-  });
+  // guard: if no timeline array, do nothing
+  const timeline_arr =
+    data && data.timeline ? data.timeline : Array.isArray(data) ? data : [];
+  if (!timeline_arr.length) {
+    html += `<div style="color:#777; font-size:14px;">No timeline data available.</div>`;
+  } else {
+    timeline_arr.forEach((stage_obj, index) => {
+      html += timeline_badge(stage_obj);
+      if (index < timeline_arr.length - 1) {
+        html += `<div style="font-size:20px; color:#9e9e9e; margin-top:15px;">→</div>`;
+      }
+    });
+  }
 
   html += `
-            </div>
-
-            <!-- LEGEND OUTSIDE / BELOW -->
-            <div style="
-                margin-top:10px;
-                padding-top:6px;
-                border-top:1px solid #e0e0e0;
-                font-size:11px;
-                color:#777;
-                display:flex;
-                gap:14px;
-                 justify-content:right;
-            ">
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:12px;">🟢</span><span>Completed</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:12px;">🟠</span><span>In Progress</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:12px;">⚪</span><span>Not Created</span>
-                </div>
-            </div>
-
         </div>
-    `;
+
+        <!-- LEGEND OUTSIDE / BELOW -->
+        <div style="
+            margin-top:10px;
+            padding-top:6px;
+            border-top:1px solid #e0e0e0;
+            font-size:11px;
+            color:#777;
+            display:flex;
+            gap:14px;
+            justify-content:right;
+        ">
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">🟢</span><span>Completed</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">🟠</span><span>In Progress</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">⚪</span><span>Not Created</span>
+            </div>
+        </div>
+
+    </div>
+  `;
 
   insertion_point.before(html);
 }
-
 function timeline_badge(stage_obj) {
   let bg = "#eeeeee",
     color = "#555",
     icon = "⚪";
 
-  switch (stage_obj.status) {
+  switch ((stage_obj.status || "").toLowerCase()) {
     case "submitted":
       bg = "#e8f5e9";
       color = "#1b5e20";
       icon = "🟢";
       break;
-
     case "saved":
+    case "in progress":
+    case "in_progress":
       bg = "#fff4e5";
       color = "#e65100";
       icon = "🟠";
       break;
-
     default:
       bg = "#eeeeee";
       color = "#555";
       icon = "⚪";
   }
 
+  // Get modified timestamp
+  let ts =
+    stage_obj.modified ||
+    stage_obj.modified_on ||
+    stage_obj.modified_at ||
+    stage_obj.modified_date ||
+    stage_obj.timestamp ||
+    null;
+
+  // Format timestamp in hh:mm AM/PM, dd MMM yyyy
+  let formatted = "-";
+  if (ts) {
+    try {
+      let d = new Date(ts);
+      if (!isNaN(d.getTime())) {
+        const optsTime = { hour: "2-digit", minute: "2-digit", hour12: true };
+        const optsDate = { day: "2-digit", month: "short", year: "numeric" };
+        formatted = `${d.toLocaleTimeString(
+          [],
+          optsTime
+        )}, ${d.toLocaleDateString([], optsDate)}`;
+      }
+    } catch (e) {
+      console.warn("Failed to format timestamp", e);
+      formatted = String(ts);
+    }
+  }
+
+  const stage_label =
+    stage_obj.stage || stage_obj.doctype || stage_obj.title || "";
+
   return `
-        <div style="
-            padding:3px 6px;
-            background:${bg};
-            color:${color};
-            border-radius:14px;
-            font-weight:600;
-            display:flex;
-            align-items:center;
-            gap:4px;
-            font-size:11px;
-        ">
-            ${icon} ${stage_obj.stage}
-        </div>
-    `;
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+      <!-- TIMESTAMP (small, above badge) -->
+      <div style="font-size:10px; color:#777; margin-bottom:3px;">
+        ${formatted}
+      </div>
+
+      <!-- EXISTING BADGE -->
+      <div style="
+          padding:3px 6px;
+          background:${bg};
+          color:${color};
+          border-radius:14px;
+          font-weight:600;
+          display:flex;
+          align-items:center;
+          gap:4px;
+          font-size:11px;
+      ">
+        ${icon} ${stage_label}
+      </div>
+    </div>
+  `;
 }

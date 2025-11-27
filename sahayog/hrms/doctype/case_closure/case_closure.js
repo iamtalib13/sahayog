@@ -252,379 +252,160 @@ frappe.ui.form.on("Case Closure", {
     }
   },
 });
+
 function render_timeline(frm, data) {
+  // debug: show incoming timeline payload in console
+  console.debug(
+    "render_timeline payload:",
+    data && data.timeline ? data.timeline : data
+  );
+
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
 
   const insertion_point = $(".form-dashboard");
 
   let html = `
-        <div class="case-timeline-box" style="
-            background:#ffffff;
-            border:1px solid #e0e0e0;
-            padding:10px;
-            margin-bottom:10px;
-            border-radius:8px;
-            box-shadow:0 1px 2px rgba(0,0,0,0.05);
-            font-size:13px;
-        ">
-            <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
-                Case Progress Timeline
-            </h4>
+    <div class="case-timeline-box" style="
+        background:#ffffff;
+        border:1px solid #e0e0e0;
+        padding:10px;
+        margin-bottom:10px;
+        border-radius:8px;
+        box-shadow:0 1px 2px rgba(0,0,0,0.05);
+        font-size:13px;
+    ">
+        <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
+            Case Progress Timeline
+        </h4>
 
-            <!-- TIMELINE BADGES -->
-            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:6px;">
-    `;
+        <!-- TIMELINE BADGES -->
+        <div style="display:flex; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-top:6px;">
+  `;
 
-  // Timeline badges
-  data.timeline.forEach((stage_obj, index) => {
-    html += timeline_badge(stage_obj);
-    if (index < data.timeline.length - 1) {
-      html += `<div style="font-size:16px; color:#9e9e9e;">→</div>`;
-    }
-  });
+  // guard: if no timeline array, do nothing
+  const timeline_arr =
+    data && data.timeline ? data.timeline : Array.isArray(data) ? data : [];
+  if (!timeline_arr.length) {
+    html += `<div style="color:#777; font-size:14px;">No timeline data available.</div>`;
+  } else {
+    timeline_arr.forEach((stage_obj, index) => {
+      html += timeline_badge(stage_obj);
+      if (index < timeline_arr.length - 1) {
+        html += `<div style="font-size:20px; color:#9e9e9e; margin-top:15px;">→</div>`;
+      }
+    });
+  }
 
   html += `
-            </div>
-
-            <!-- LEGEND OUTSIDE / BELOW -->
-            <div style="
-                margin-top:10px;
-                padding-top:6px;
-                border-top:1px solid #e0e0e0;
-                font-size:11px;
-                color:#777;
-                display:flex;
-                gap:14px;
-                 justify-content:right;
-            ">
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:12px;">🟢</span><span>Completed</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:12px;">🟠</span><span>In Progress</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:12px;">⚪</span><span>Not Created</span>
-                </div>
-            </div>
-
         </div>
-    `;
+
+        <!-- LEGEND OUTSIDE / BELOW -->
+        <div style="
+            margin-top:10px;
+            padding-top:6px;
+            border-top:1px solid #e0e0e0;
+            font-size:11px;
+            color:#777;
+            display:flex;
+            gap:14px;
+            justify-content:right;
+        ">
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">🟢</span><span>Completed</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">🟠</span><span>In Progress</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">⚪</span><span>Not Created</span>
+            </div>
+        </div>
+
+    </div>
+  `;
 
   insertion_point.before(html);
 }
-
 function timeline_badge(stage_obj) {
   let bg = "#eeeeee",
     color = "#555",
     icon = "⚪";
 
-  switch (stage_obj.status) {
+  switch ((stage_obj.status || "").toLowerCase()) {
     case "submitted":
       bg = "#e8f5e9";
       color = "#1b5e20";
       icon = "🟢";
       break;
-
     case "saved":
       bg = "#fff4e5";
       color = "#e65100";
       icon = "🟠";
       break;
-
+    case "cancelled":
+      bg = "#f0f0f0"; // light gray
+      color = "#999";
+      icon = "⚪";
+      break;
     default:
       bg = "#eeeeee";
       color = "#555";
       icon = "⚪";
   }
 
-  return `
-        <div style="
-            padding:3px 6px;
-            background:${bg};
-            color:${color};
-            border-radius:14px;
-            font-weight:600;
-            display:flex;
-            align-items:center;
-            gap:4px;
-            font-size:11px;
-        ">
-            ${icon} ${stage_obj.stage}
-        </div>
-    `;
-}
+  // Get modified timestamp
+  let ts =
+    stage_obj.modified ||
+    stage_obj.modified_on ||
+    stage_obj.modified_at ||
+    stage_obj.modified_date ||
+    stage_obj.timestamp ||
+    null;
 
-// FUNCTION TO OPEN REVIEWER SELECTION DIALOG
-function open_approver_dialog(frm) {
-  // 1️⃣  Get the employee against whom case is created
-  let case_employee_id = frm.doc.employee_id;
-
-  // If employee id not found → stop execution
-  if (!case_employee_id) {
-    frappe.msgprint("No employee found for this case.");
-    return;
-  }
-
-  // 2️⃣ Fetch full Employee Document using employee id
-  frappe.db.get_doc("Employee", case_employee_id).then((emp) => {
-    // Get employee's zone (custom field: custom_zone)
-    let default_zone = emp.custom_zone;
-
-    // If employee does not have zone → stop
-    if (!default_zone) {
-      frappe.msgprint("Employee does not have a zone assigned.");
-      return;
+  // Format timestamp in hh:mm AM/PM, dd MMM yyyy
+  let formatted = "-";
+  if (ts) {
+    try {
+      let d = new Date(ts);
+      if (!isNaN(d.getTime())) {
+        const optsTime = { hour: "2-digit", minute: "2-digit", hour12: true };
+        const optsDate = { day: "2-digit", month: "short", year: "numeric" };
+        formatted = `${d.toLocaleTimeString(
+          [],
+          optsTime
+        )}, ${d.toLocaleDateString([], optsDate)}`;
+      }
+    } catch (e) {
+      console.warn("Failed to format timestamp", e);
+      formatted = String(ts);
     }
-
-    // 3️⃣ Create Approver Dialog Box
-    let d = new frappe.ui.Dialog({
-      title: "Select Reviewers",
-      size: "extra-large",
-
-      fields: [
-        // ---------- ZONE FIELD ----------
-        {
-          fieldtype: "Link",
-          fieldname: "selected_zone",
-          label: "Zone",
-          options: "Zone",
-
-          // Pre-fill zone = selected employee zone
-          default: default_zone,
-          reqd: 1,
-
-          // When zone changes → refresh approver table filter
-          onchange() {
-            d.fields_dict.approver_table.grid.refresh();
-          },
-        },
-
-        // ---------- APPROVER TABLE ----------
-        {
-          fieldname: "approver_table",
-          fieldtype: "Table",
-          label: "Reviewer List",
-
-          // Allow user to add rows manually
-          cannot_add_rows: false,
-          in_place_edit: true,
-
-          fields: [
-            {
-              fieldtype: "Link",
-              fieldname: "employee_id",
-              label: "Employee ID",
-              options: "Employee",
-              in_list_view: true,
-              reqd: 1,
-
-              // Apply filter: show only employees in same zone
-              get_query() {
-                let zone = d.get_value("selected_zone");
-                if (!zone) return {};
-                return {
-                  filters: { custom_zone: zone },
-                };
-              },
-
-              // When user selects employee id fetch selected employee details and refresh row
-              onchange() {
-                let row = this.grid_row.doc;
-                if (!row.employee_id) return;
-                frappe.db
-                  .get_doc("Employee", row.employee_id)
-                  .then((emp_data) => {
-                    row.employee_name = emp_data.employee_name;
-                    row.company_email =
-                      emp_data.company_email || emp_data.prefered_email;
-                    d.fields_dict.approver_table.grid.refresh();
-                  });
-              },
-            },
-            {
-              fieldtype: "Data",
-              fieldname: "employee_name",
-              label: "Employee Name",
-              in_list_view: true,
-              read_only: 1,
-            },
-            {
-              fieldtype: "Data",
-              fieldname: "company_email",
-              label: "Company Email",
-              in_list_view: true,
-              reqd: 1, // must be filled
-            },
-          ],
-        },
-      ],
-
-      primary_action_label: "Submit",
-
-      // 4️⃣  PRIMARY ACTION (Callback of Submit Button)
-      primary_action(values) {
-        // A. Validate that every row has company email
-        for (let row of values.approver_table || []) {
-          if (!row.company_email) {
-            frappe.msgprint({
-              title: __("Missing Email"),
-              message: __("Please fill Company Email for all approvers."),
-              indicator: "red",
-            });
-            return;
-          }
-        }
-
-        // B. Show confirmation popup before final submit
-        frappe.confirm(
-          __(
-            "Please confirm that the reviewer selection is accurate before submitting."
-          ),
-
-          // If YES pressed
-          () => {
-            submit_approvers(frm, values, d);
-          },
-
-          // If NO pressed → do nothing
-          () => {}
-        );
-      },
-    });
-
-    // Show dialog box on screen
-    d.show();
-  });
-}
-
-// 5️⃣  SEPARATE FUNCTION → ACTUAL SAVE + EMAIL PROCESS
-function submit_approvers(frm, values, dialog) {
-  // A. Clear old reviewer rows from parent doc
-  frm.clear_table("review_details");
-
-  // B. Add new reviewer values from dialog table
-  for (let row of values.approver_table || []) {
-    let child = frm.add_child("review_details");
-
-    child.employee_id = row.employee_id;
-    child.remarks = "";
-    child.status = "Pending";
-    child.date_and_time = frappe.datetime.now_datetime(); // current timestamp
   }
 
-  // Refresh table on screen
-  frm.refresh_field("review_details");
+  const stage_label =
+    stage_obj.stage || stage_obj.doctype || stage_obj.title || "";
 
-  // C. Save whole parent document
-  frm.save().then(() => {
-    // D. Call backend Python method to send verification mail
-    frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+  return `
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+      <!-- TIMESTAMP (small, above badge) -->
+      <div style="font-size:10px; color:#777; margin-bottom:3px;">
+        ${formatted}
+      </div>
 
-      args: {
-        approvers: values.approver_table, // list of reviewers
-        case_id: frm.doc.name, // case ID
-      },
-
-      freeze: true,
-      freeze_message: __("Sending verification emails..."),
-
-      callback() {
-        frappe.msgprint("Case Review started and emails sent.");
-      },
-    });
-
-    // Close the dialog
-    dialog.hide();
-  });
+      <!-- EXISTING BADGE -->
+      <div style="
+          padding:3px 6px;
+          background:${bg};
+          color:${color};
+          border-radius:14px;
+          font-weight:600;
+          display:flex;
+          align-items:center;
+          gap:4px;
+          font-size:11px;
+      ">
+        ${icon} ${stage_label}
+      </div>
+    </div>
+  `;
 }
-
-// // function to display review details with employee info
-// function display_review_details_with_employee_info(frm) {
-//   let wrapper = frm.fields_dict.review_details_html.$wrapper;
-//   wrapper.html(`<div>Loading review details...</div>`);
-
-//   if (!frm.doc.review_details || frm.doc.review_details.length === 0) {
-//     wrapper.html(`<div style="color:#888;">No review details available.</div>`);
-//     return;
-//   }
-
-//   let rows = frm.doc.review_details;
-//   let employee_ids = rows.map((r) => r.employee_id);
-
-//   frappe.call({
-//     method: "frappe.client.get_list",
-//     args: {
-//       doctype: "Employee",
-//       filters: { name: ["in", employee_ids] },
-//       fields: [
-//         "name",
-//         "employee_name",
-//         "designation",
-//         "sol_id",
-//         "branch",
-//         "custom_zone",
-//         "custom_region",
-//       ],
-//     },
-//     callback(r) {
-//       let employees = {};
-//       (r.message || []).forEach((emp) => {
-//         employees[emp.name] = emp;
-//       });
-//       let html = `
-//   <table class="table table-bordered"
-//          style="font-size:12px; width:100%; table-layout:fixed;">
-
-//       <thead>
-//           <tr>
-//               <th style="word-wrap:break-word;">Employee ID</th>
-//               <th style="word-wrap:break-word;">Name</th>
-//               <th style="word-wrap:break-word;">Designation</th>
-//               <th style="word-wrap:break-word;">Branch ID</th>
-//               <th style="word-wrap:break-word;">Branch Name</th>
-//               <th style="word-wrap:break-word;">Zone</th>
-//               <th style="word-wrap:break-word;">Region</th>
-//               <th style="word-wrap:break-word;">Status</th>
-//               <th style="word-wrap:break-word;">Remarks</th>
-//               <th style="word-wrap:break-word;">Date & Time</th>
-//           </tr>
-//       </thead>
-//       <tbody>
-// `;
-
-//       rows.forEach((row) => {
-//         let emp = employees[row.employee_id] || {};
-
-//         // ✅ Convert date to DD-MM-YYYY hh:mm A
-//         // Correct date formatting using moment.js
-//         let formatted_date = "-";
-//         if (row.date_and_time) {
-//           let dt = frappe.datetime.str_to_obj(row.date_and_time);
-//           formatted_date = moment(dt).format("DD-MM-YYYY hh:mm A");
-//         }
-
-//         html += `
-//                 <tr>
-//                     <td>${row.employee_id}</td>
-//                     <td>${emp.employee_name || "-"}</td>
-//                     <td>${emp.designation || "-"}</td>
-//                     <td>${emp.sol_id || "-"}</td>
-//                     <td>${emp.branch || "-"}</td>
-//                     <td>${emp.custom_zone || "-"}</td>
-//                     <td>${emp.custom_region || "-"}</td>
-//                     <td>${row.status || "-"}</td>
-//                     <td>${row.remarks || "-"}</td>
-//                     <td>${formatted_date}</td>
-//                 </tr>
-//             `;
-//       });
-
-//       html += `</tbody></table>`;
-//       wrapper.html(html);
-//     },
-//   });
-// }
