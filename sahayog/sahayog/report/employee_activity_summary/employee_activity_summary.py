@@ -57,7 +57,6 @@ def get_data(filters=None):
     if filters:
         if filters.get("from_date") and filters["from_date"] > today:
             frappe.throw("❌ From Date cannot be in the future.")
-
         if filters.get("to_date") and filters["to_date"] > today:
             frappe.throw("❌ To Date cannot be in the future.")
 
@@ -71,7 +70,7 @@ def get_data(filters=None):
     )
 
     # ------------------------------------------------
-    # Fetch Employees (WITH DEPT FILTER APPLIED)
+    # Fetch ALL Employees (NO department filter here)
     # ------------------------------------------------
     employees = frappe.db.get_all(
         "Employee",
@@ -79,8 +78,11 @@ def get_data(filters=None):
         order_by="sol_id asc"
     )
 
-    # Only keep Sales or Operations employees
-    employees = [emp for emp in employees if emp.get("department") in ("Sales", "Operations")]
+    # Keep full list
+    all_employees = employees[:]  
+
+    # Keep only Sales/Operations for NON-ACTIVE filter stage
+    sales_ops_employees = [emp for emp in employees if emp.get("department") in ("Sales", "Operations")]
 
     # ------------------------------------------------
     # Fetch Branch Mapping
@@ -93,7 +95,7 @@ def get_data(filters=None):
     branch_map = {str(b["sol_id"]).strip(): b for b in sahayog_branches if b.get("sol_id")}
 
     # EMPLOYEE MAP USING NORMALIZED ID
-    emp_map = {normalize_emp_id(emp["emp_id"]): emp for emp in employees}
+    emp_map = {normalize_emp_id(emp["emp_id"]): emp for emp in all_employees}
 
     # ------------------------------------------------
     # Group Leads by Employee
@@ -113,19 +115,20 @@ def get_data(filters=None):
     report_rows = []
     active_emp_ids = set()
 
-    # Prepare NON ACTIVE EMPLOYEE set
+    # Find non-active from full list
     non_active_emp_info = {}
-    for emp in employees:
+    for emp in all_employees:
         nid = normalize_emp_id(emp["emp_id"])
         if nid not in emp_leads:
             non_active_emp_info[nid] = {
                 "employee_name": emp["employee_name"],
                 "date_of_joining": emp["date_of_joining"],
-                "sol_id": str(emp.get("sol_id")).strip()
+                "sol_id": str(emp.get("sol_id")).strip(),
+                "department": emp.get("department")
             }
 
     # ------------------------------------------------
-    # ACTIVE EMPLOYEES
+    # ACTIVE EMPLOYEES — ALWAYS SHOW
     # ------------------------------------------------
     for emp_id, info in emp_leads.items():
 
@@ -137,10 +140,12 @@ def get_data(filters=None):
             employee_name = non_active_info["employee_name"]
             date_of_joining = non_active_info["date_of_joining"]
             sol_id = non_active_info["sol_id"]
+
         elif emp_ref:
             employee_name = emp_ref["employee_name"]
             date_of_joining = emp_ref["date_of_joining"]
             sol_id = str(emp_ref.get("sol_id")).strip()
+
         else:
             employee_name = "Unknown"
             date_of_joining = None
@@ -165,9 +170,9 @@ def get_data(filters=None):
         active_emp_ids.add(numeric_id)
 
     # ------------------------------------------------
-    # NON ACTIVE EMPLOYEES
+    # NON ACTIVE EMPLOYEES — ONLY SHOW Sales/Operations
     # ------------------------------------------------
-    for emp in employees:
+    for emp in sales_ops_employees:
         nid = normalize_emp_id(emp["emp_id"])
         sol_id = str(emp.get("sol_id")).strip()
 
@@ -206,7 +211,6 @@ def get_data(filters=None):
             if filters.get("status") and row.get("status") != filters["status"]:
                 show = False
 
-            # Date of Joining filter
             if filters.get("from_date") and row.get("date_of_joining") and row.get("date_of_joining") < filters.get("from_date"):
                 show = False
             if filters.get("to_date") and row.get("date_of_joining") and row.get("date_of_joining") > filters.get("to_date"):
@@ -268,4 +272,3 @@ def get_chart_based_on_filters(data, filters=None):
             return grouped_chart("branch", "Branch")
 
     return grouped_chart("zone", "Zone")
-# ---------------------------------------------------------;
