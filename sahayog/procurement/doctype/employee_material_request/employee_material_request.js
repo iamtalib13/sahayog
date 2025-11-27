@@ -14,6 +14,9 @@
 frappe.ui.form.on("Employee Material Request", {
 
 
+  // ------------------------------------------------------------------
+  // WORKFLOW ACTIONS - Confirmations
+  // ------------------------------------------------------------------
 
     before_workflow_action: function(frm) {
         let action = frm.selected_workflow_action.toLowerCase();
@@ -92,9 +95,6 @@ frappe.ui.form.on("Employee Material Request", {
       });
     }
   },
-
-  
-
 
 
   // ------------------------------------------------------------------
@@ -373,6 +373,7 @@ frappe.ui.form.on("Material Request Items", {
     }
   },
 
+
   // ------------------------------------------------------------------
   // WAREHOUSE FIELD - Fetch available stock when warehouse changes
   // ------------------------------------------------------------------
@@ -382,6 +383,7 @@ frappe.ui.form.on("Material Request Items", {
       get_available_stock(frm, cdt, cdn);
     }
   },
+
 
   // ------------------------------------------------------------------
   // QUANTITY FIELD - Warn if quantity exceeds available stock
