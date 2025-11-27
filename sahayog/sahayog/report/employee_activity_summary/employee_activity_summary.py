@@ -3,6 +3,15 @@
 
 import frappe
 
+
+# ---------------------------------------------------------
+# NORMALIZE EMPLOYEE ID  (NT7177 → 7177)
+# ---------------------------------------------------------
+def normalize_emp_id(emp_id):
+    """Return only numeric part from employee ID (e.g., NT7177 → 7177)."""
+    return "".join(filter(str.isdigit, emp_id or ""))
+
+
 def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
@@ -29,11 +38,10 @@ def get_columns():
 
 def get_data(filters=None):
     from frappe.utils import getdate, nowdate
-    import frappe
     import datetime
 
     # ------------------------------------------------
-    # STEP 1: Convert filter strings → datetime.date
+    # STEP 1: Convert filter strings to date
     # ------------------------------------------------
     if filters:
         if filters.get("from_date") and isinstance(filters["from_date"], str):
@@ -43,10 +51,9 @@ def get_data(filters=None):
             filters["to_date"] = datetime.datetime.strptime(filters["to_date"], "%Y-%m-%d").date()
 
     # ------------------------------------------------
-    # STEP 2: Prevent future date selection
+    # STEP 2: Prevent future dates
     # ------------------------------------------------
     today = getdate(nowdate())
-
     if filters:
         if filters.get("from_date") and filters["from_date"] > today:
             frappe.throw("❌ From Date cannot be in the future.")
@@ -55,78 +62,74 @@ def get_data(filters=None):
             frappe.throw("❌ To Date cannot be in the future.")
 
     # ------------------------------------------------
-    # STEP 3: Fetch Leads (rest of your logic continues)
-    # ------------------------------------------------
-
-    # ---------------------------
     # Fetch Leads
-    # ---------------------------
+    # ------------------------------------------------
     leads = frappe.db.get_all(
         "Lead",
         fields=["name", "lead_name", "status", "lead_owner"],
         order_by="name"
     )
 
-    # (your remaining code stays unchanged afterwards...)
-
-
-    # ---------------------------
-    # Fetch Employees
-    # ---------------------------
+    # ------------------------------------------------
+    # Fetch Employees (WITH DEPT FILTER APPLIED)
+    # ------------------------------------------------
     employees = frappe.db.get_all(
         "Employee",
-        fields=["name as emp_id", "employee_name", "sol_id", "date_of_joining"],
+        fields=["name as emp_id", "employee_name", "sol_id", "date_of_joining", "department"],
         order_by="sol_id asc"
     )
-    # frappe.msgprint(f"<b>Employee Data</b><br><pre>{frappe.as_json(employees)}</pre>")
-    # ---------------------------
+
+    # Only keep Sales or Operations employees
+    employees = [emp for emp in employees if emp.get("department") in ("Sales", "Operations")]
+
+    # ------------------------------------------------
     # Fetch Branch Mapping
-    # ---------------------------
+    # ------------------------------------------------
     sahayog_branches = frappe.db.get_all(
         "Sahayog Branch",
         fields=["sol_id", "zone", "region", "state", "district", "branch"]
     )
 
     branch_map = {str(b["sol_id"]).strip(): b for b in sahayog_branches if b.get("sol_id")}
-    emp_map = {emp["emp_id"]: emp for emp in employees}
 
-    # ---------------------------
+    # EMPLOYEE MAP USING NORMALIZED ID
+    emp_map = {normalize_emp_id(emp["emp_id"]): emp for emp in employees}
+
+    # ------------------------------------------------
     # Group Leads by Employee
-    # ---------------------------
+    # ------------------------------------------------
     emp_leads = {}
     for row in leads:
-        emp_id = row["lead_owner"]
-        if not emp_id:
+        normalized_id = normalize_emp_id(row["lead_owner"])
+        if not normalized_id:
             continue
-        if emp_id not in emp_leads:
-            emp_leads[emp_id] = {"leads": []}
-        emp_leads[emp_id]["leads"].append(row)
+        if normalized_id not in emp_leads:
+            emp_leads[normalized_id] = {"leads": []}
+        emp_leads[normalized_id]["leads"].append(row)
 
-    # ---------------------------
+    # ------------------------------------------------
     # Prepare Report Rows
-    # ---------------------------
+    # ------------------------------------------------
     report_rows = []
     active_emp_ids = set()
-    non_active_emp_info = {}
 
-    # Employees who have no leads = Non-active
+    # Prepare NON ACTIVE EMPLOYEE set
+    non_active_emp_info = {}
     for emp in employees:
-        emp_key = emp["emp_id"]
-        if emp_key not in emp_leads:
-            non_active_emp_info[emp_key] = {
+        nid = normalize_emp_id(emp["emp_id"])
+        if nid not in emp_leads:
+            non_active_emp_info[nid] = {
                 "employee_name": emp["employee_name"],
                 "date_of_joining": emp["date_of_joining"],
                 "sol_id": str(emp.get("sol_id")).strip()
             }
 
-    # ======================================================
-    #   ACTIVE EMPLOYEES — FIX: Clean emp_id to numeric only
-    # ======================================================
+    # ------------------------------------------------
+    # ACTIVE EMPLOYEES
+    # ------------------------------------------------
     for emp_id, info in emp_leads.items():
 
-        raw_id = emp_id
-        numeric_id = raw_id.split("@")[0] if "@" in raw_id else raw_id
-
+        numeric_id = normalize_emp_id(emp_id)
         emp_ref = emp_map.get(numeric_id)
         non_active_info = non_active_emp_info.get(numeric_id)
 
@@ -144,21 +147,15 @@ def get_data(filters=None):
             sol_id = None
 
         branch_data = branch_map.get(sol_id, {})
-        zone = branch_data.get("zone", "Unknown Zone")
-        region = branch_data.get("region", "Unknown Region")
-        state = branch_data.get("state", "Unknown State")
-        district = branch_data.get("district", "Unknown District")
-        branch = branch_data.get("branch", "Unknown Branch")
-
         report_rows.append({
-            "emp_id": numeric_id,  # FIX APPLIED
+            "emp_id": numeric_id,
             "employee_name": employee_name,
             "sol_id": sol_id,
-            "zone": zone,
-            "region": region,
-            "state": state,
-            "district": district,
-            "branch": branch,
+            "zone": branch_data.get("zone", "Unknown Zone"),
+            "region": branch_data.get("region", "Unknown Region"),
+            "state": branch_data.get("state", "Unknown State"),
+            "district": branch_data.get("district", "Unknown District"),
+            "branch": branch_data.get("branch", "Unknown Branch"),
             "date_of_joining": date_of_joining,
             "lead_count": len(info["leads"]),
             "lead_names": ", ".join([l["lead_name"] for l in info["leads"]]),
@@ -167,39 +164,33 @@ def get_data(filters=None):
 
         active_emp_ids.add(numeric_id)
 
-    # ======================================================
-    # NON ACTIVE EMPLOYEES — FIX: Clean emp_id
-    # ======================================================
+    # ------------------------------------------------
+    # NON ACTIVE EMPLOYEES
+    # ------------------------------------------------
     for emp in employees:
-        emp_key = emp["emp_id"]
+        nid = normalize_emp_id(emp["emp_id"])
         sol_id = str(emp.get("sol_id")).strip()
 
-        branch_data = branch_map.get(sol_id, {})
-        zone = branch_data.get("zone", "Unknown Zone")
-        region = branch_data.get("region", "Unknown Region")
-        state = branch_data.get("state", "Unknown State")
-        district = branch_data.get("district", "Unknown District")
-        branch = branch_data.get("branch", "Unknown Branch")
-
-        if emp_key not in active_emp_ids:
+        if nid not in active_emp_ids:
+            branch_data = branch_map.get(sol_id, {})
             report_rows.append({
-                "emp_id": emp["emp_id"].split("@")[0],  # FIX APPLIED
+                "emp_id": nid,
                 "employee_name": emp["employee_name"],
                 "sol_id": sol_id,
-                "zone": zone,
-                "region": region,
-                "state": state,
-                "district": district,
-                "branch": branch,
+                "zone": branch_data.get("zone", "Unknown Zone"),
+                "region": branch_data.get("region", "Unknown Region"),
+                "state": branch_data.get("state", "Unknown State"),
+                "district": branch_data.get("district", "Unknown District"),
+                "branch": branch_data.get("branch", "Unknown Branch"),
                 "date_of_joining": emp["date_of_joining"],
                 "lead_count": 0,
                 "lead_names": "",
                 "status": "Non-Active",
             })
 
-    # ---------------------------
+    # ------------------------------------------------
     # FILTERING (unchanged)
-    # ---------------------------
+    # ------------------------------------------------
     if filters:
         filtered = []
         for row in report_rows:
@@ -215,7 +206,7 @@ def get_data(filters=None):
             if filters.get("status") and row.get("status") != filters["status"]:
                 show = False
 
-            # Date of Joining filter application
+            # Date of Joining filter
             if filters.get("from_date") and row.get("date_of_joining") and row.get("date_of_joining") < filters.get("from_date"):
                 show = False
             if filters.get("to_date") and row.get("date_of_joining") and row.get("date_of_joining") > filters.get("to_date"):
@@ -223,13 +214,13 @@ def get_data(filters=None):
 
             if show:
                 filtered.append(row)
-        return filtered  
+        return filtered
 
     return report_rows
 
 
 # ---------------------------------------------------------
-#   CHART LOGIC — SAME AS YOUR ORIGINAL CODE
+# CHART LOGIC (Unchanged)
 # ---------------------------------------------------------
 def get_chart_based_on_filters(data, filters=None):
 
@@ -277,3 +268,4 @@ def get_chart_based_on_filters(data, filters=None):
             return grouped_chart("branch", "Branch")
 
     return grouped_chart("zone", "Zone")
+# ---------------------------------------------------------;
