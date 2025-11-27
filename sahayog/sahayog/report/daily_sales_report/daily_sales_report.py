@@ -12,7 +12,8 @@ def execute(filters=None):
     # =====================================================
     # ROLE FILTERING
     # =====================================================
-    if "Administrator" in user_roles:
+    if "Administrator" in user_roles or "Sales Manager" in user_roles:
+        # Admin & Sales Manager see all employees
         employees = frappe.get_all(
             "Employee",
             fields=["name", "employee_name", "employee_number", "designation", "sol_id", "user_id"]
@@ -120,7 +121,7 @@ def execute(filters=None):
             "remarks": remark_cell,
         })
 
-    # sort by leads
+    # SORTING
     data.sort(key=lambda x: x["total_leads"], reverse=True)
 
     # =====================================================
