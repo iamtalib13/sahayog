@@ -92,9 +92,21 @@ frappe.query_reports["Daily Sales Report"] = {
     };
 
     // Export CSV button
-    report.page.add_inner_button("Export CSV", () =>
+    // Export CSV button
+    // Export CSV button with color
+    let export_btn = report.page.add_inner_button("Export CSV", () =>
       frappe.query_reports["Daily Sales Report"].export_csv(report)
     );
+
+    // style the button directly
+    export_btn
+      .removeClass("btn-default btn-secondary")
+      .addClass("btn-primary")
+      .css({
+        background: "rgb(22, 163, 74)",
+        color: "#ffffff",
+        border: "none",
+      });
 
     // Remark button click binding
     $(document).off("click", ".remark-btn");
