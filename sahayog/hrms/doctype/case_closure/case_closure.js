@@ -488,6 +488,29 @@ function open_approver_dialog(frm) {
                 let row = this.grid_row.doc;
                 if (!row.employee_id) return;
 
+                // 🔍 Check duplicate in the dialog table itself
+                let all_rows = d.fields_dict.approver_table.grid.get_data();
+                let duplicate_in_dialog = all_rows.some(
+                  (r) => r.employee_id === row.employee_id && r !== row
+                );
+
+                if (duplicate_in_dialog) {
+                  frappe.msgprint({
+                    title: __("Duplicate Reviewer"),
+                    message: __(
+                      "This reviewer is already selected in the dialog."
+                    ),
+                    indicator: "red",
+                  });
+
+                  // ❌ Reset row fields
+                  row.employee_id = "";
+                  row.employee_name = "";
+                  row.company_email = "";
+                  d.fields_dict.approver_table.grid.refresh();
+                  return;
+                }
+
                 // 🔍 Check duplicate reviewer from parent child table
                 let already_selected = (frm.doc.review_details || []).some(
                   (r) => r.employee_id === row.employee_id
