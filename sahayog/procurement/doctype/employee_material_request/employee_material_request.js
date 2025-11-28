@@ -63,7 +63,7 @@ frappe.ui.form.on("Employee Material Request", {
 
     // // Instead of relying on cached intro, forcibly fetch fresh data
     // frappe.call({
-    //   method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
+    // //   method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
     //   args: { doc_name: frm.doc.name },
     //   callback: function(r) {
     //     if (r.message && r.message.success) {
@@ -228,15 +228,14 @@ function openManageApprovalsDialog(frm) {
 function get_status_badge(status) {
     const s = status || "Not Received";
     const map = {
-        "Pending":       { label: __("Pending"),       class: "yellow" },
-        "Approved":      { label: __("Approved"),      class: "green" },
-        "Rejected":      { label: __("Rejected"),      class: "red" },
-        "Skip":          { label: __("Skip"),          class: "blue" },
-        "Not Received":  { label: __("Not Received"),  class: "grey" }
+        "Pending":      { label: __("Pending"),      class: "status-pending" },
+        "Approved":     { label: __("Approved"),     class: "status-approved" },
+        "Rejected":     { label: __("Rejected"),     class: "status-rejected" },
+        "Skip":         { label: __("Skip"),         class: "status-skip" },
+        "Not Received": { label: __("Not Received"), class: "status-new-record" }
     };
     return map[s] || map["Not Received"];
 }
-
 const rp_badge = get_status_badge(frm.doc.reporting_person_status);
 const ho_badge = get_status_badge(frm.doc.ho_officer_status);
 
@@ -246,7 +245,7 @@ const rp_html = `
         <div style="font-weight:600;">${__("Reporting Person")}</div>
         <div style="margin-top:4px;margin-bottom:6px;">
             ${frappe.utils.escape_html(frm.doc.reporting_person || __("Not Set"))}
-            <span class="indicator ${rp_badge.class}" style="margin-left:8px;padding:2px 8px;border-radius:12px;font-size:11px;">
+            <span class="emr-status-badge ${rp_badge.class}" style="margin-left:8px;padding:2px 8px;border-radius:12px;font-size:11px;">
                 ${rp_badge.label}
             </span>
         </div>
@@ -274,7 +273,7 @@ const ho_html = `
         <div style="font-weight:600;">${__("HO Officer")}</div>
         <div style="margin-top:4px;margin-bottom:6px;">
             ${frappe.utils.escape_html(frm.doc.head_office_officer || __("Not Set"))}
-            <span class="indicator ${ho_badge.class}" style="margin-left:8px;padding:2px 8px;border-radius:12px;font-size:11px;">
+            <span class="emr-status-badge ${ho_badge.class}" style="margin-left:8px;padding:2px 8px;border-radius:12px;font-size:11px; height:28px">
                 ${ho_badge.label}
             </span>
         </div>

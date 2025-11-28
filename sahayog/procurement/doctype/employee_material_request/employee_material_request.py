@@ -38,6 +38,10 @@ class EmployeeMaterialRequest(Document):
             self.reporting_person_status = "Pending"
             self.ho_officer_status = ""
 
+        # If HO is skipped, treat as final approval
+        if self.ho_officer_status == "Skip" and self.status == "Pending HO Approval":
+            self.status = "Approved"
+
 
 
 
@@ -261,6 +265,14 @@ class EmployeeMaterialRequest(Document):
                 _("Head Office Officer approval is required before submission"),
                 title=_("Approval Required")
             )
+
+        if self.reporting_person_status not in ["Approved", "Skip"]:
+            frappe.throw(_("Reporting Person approval is required before submission"),
+                        title=_("Approval Required"))
+
+        if self.ho_officer_status not in ["Approved", "Skip"]:
+            frappe.throw(_("Head Office Officer approval is required before submission"),
+                        title=_("Approval Required"))
     
     def check_stock_availability(self):
         """Check stock availability for stock items"""
@@ -926,26 +938,50 @@ def admin_manage_approvers(docname, rp_skip=0, ho_skip=0,
     messages = []
 
     # === Reporting Person skip ===
+    # if rp_skip:
+    #     if not rp_remark:
+    #         frappe.throw(_("Remark is mandatory when skipping Reporting Person."))
+    #     doc.reporting_person_status = "Skip"
+    #     doc.reporting_person_remarks = rp_remark
+    #     # Move to next workflow stage if currently at RP
+    #     if doc.status == "Pending Reporting Person":
+    #         doc.status = "Pending HO Approval"
+    #     messages.append(_("Reporting Person skipped."))
+
+
     if rp_skip:
         if not rp_remark:
             frappe.throw(_("Remark is mandatory when skipping Reporting Person."))
         doc.reporting_person_status = "Skip"
         doc.reporting_person_remarks = rp_remark
-        # Move to next workflow stage if currently at RP
+
+        # move workflow to HO stage
         if doc.status == "Pending Reporting Person":
             doc.status = "Pending HO Approval"
-        messages.append(_("Reporting Person skipped."))
+            # ensure HO badge shows correctly
+            if not doc.ho_officer_status or doc.ho_officer_status in ("", "Not Received", "Pending"):
+                doc.ho_officer_status = "Pending"
 
     # === HO Officer skip ===
+    # if ho_skip:
+    #     if not ho_remark:
+    #         frappe.throw(_("Remark is mandatory when skipping HO Officer."))
+    #     doc.ho_officer_status = "Skip"
+    #     doc.ho_officer_remarks = ho_remark
+    #     # If at HO stage, move to Approved
+    #     if doc.status == "Pending HO Approval":
+    #         doc.status = "Approved"
+    #     messages.append(_("HO Officer skipped."))
+
     if ho_skip:
         if not ho_remark:
             frappe.throw(_("Remark is mandatory when skipping HO Officer."))
         doc.ho_officer_status = "Skip"
         doc.ho_officer_remarks = ho_remark
-        # If at HO stage, move to Approved
+
+        # if at HO stage, skip directly to Approved
         if doc.status == "Pending HO Approval":
             doc.status = "Approved"
-        messages.append(_("HO Officer skipped."))
 
     # === Change Reporting Person ===
     if new_reporting_person and new_reporting_person != doc.reporting_person:
