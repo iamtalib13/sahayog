@@ -45,17 +45,31 @@ frappe.ui.form.on("Employee Material Request", {
   // ------------------------------------------------------------------
   refresh: function (frm) {
 
-
-     // Add Manage Approvals button - ONLY for saved docs, Admin/Store Manager
-        if (!frm.is_new() && (frappe.user.has_role("Administrator") || frappe.user.has_role("Store Manager"))) {
+      const blocked_status = ["Draft", "Approved", "Rejected"];
+     // Add Manage Approver button - ONLY for saved docs, Admin/Store Manager
+        if (!frm.is_new()
+            && !blocked_status.includes(frm.doc.status) 
+            && (frappe.user.has_role("Administrator") || frappe.user.has_role("Store Manager"))) {
             // Avoid duplicate buttons
-            if (!frm.custom_buttons || !frm.custom_buttons['Manage Approvals']) {
-                frm.add_custom_button(__('Manage Approvals'), () => {
+            if (!frm.custom_buttons || !frm.custom_buttons['Manage Approver']) {
+                frm.add_custom_button(__('Manage Approver'), () => {
                     openManageApprovalsDialog(frm);
                 },); // Add to Actions group
             }
         }
 
+        // const blocked_status = ["Draft", "Approved", "Rejected"];
+        // if (
+        //     !frm.is_new() &&
+        //     !blocked_status.includes(frm.doc.status) &&
+        //     (frappe.user.has_role("Administrator") || frappe.user.has_role("Store Manager"))
+        // ) {
+        //     frm.add_custom_button(
+        //         __("Manage Approver"),
+        //         () => openManageApprovalsDialog(frm),
+        //         __("Actions")
+        //     );
+        // }
 
 
     // // Set intro message based on document status
@@ -359,6 +373,38 @@ d.$wrapper.find("#ho_skip_cb").on("change", function () {
 //         width: "100%",
 //         height: "60%"
 //     });
+
+   
+// after you build and inject ho_html
+const rp_state = frm.doc.reporting_person_status || "Not Received";
+const ho_cb = d.$wrapper.find("#ho_skip_cb");
+
+// RP must be Approved or Skip to allow HO skip
+const rp_allows_skip_ho = ["Approved", "Skip"].includes(rp_state);
+
+if (!rp_allows_skip_ho) {
+    // disable checkbox visually + functionally
+    ho_cb.prop("disabled", true);
+    ho_cb.closest("div").css("opacity", 0.5);
+    d.set_value("ho_skip", 0);
+} else {
+    ho_cb.prop("disabled", false);
+    ho_cb.closest("div").css("opacity", 1);
+}
+
+// keep existing change handler, but respect disabled state
+ho_cb.on("change", function () {
+    if (ho_cb.is(":disabled")) {
+        d.set_value("ho_skip", 0);
+        return;
+    }
+    const checked = this.checked ? 1 : 0;
+    d.set_value("ho_skip", checked);
+    d.get_field("ho_card").$wrapper
+        .find(".ho-remark-wrapper")
+        .css("display", checked ? "block" : "none");
+});
+
 
     d.show();
 }
