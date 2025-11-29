@@ -92,18 +92,32 @@ def execute(filters=None):
         # =========================================
         # BUTTON RENDERING
         # =========================================
-        if existing_remark:
-            btn_label = "View Remark"
-        else:
+        # For "Add Remark" button - Green (new/action)
+        if not existing_remark:
             btn_label = "Add Remark"
+            remark_cell = (
+                f"<div style='text-align:center; display:flex; align-items:center; justify-content:center;'>"
+                f"<button class='remark-btn' "
+                f"data-emp='{emp.employee_number}' "
+                f"style='background:rgb(59 130 246); color:#ffffff; border:none; "
+                f"border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;'>"
+                f"{btn_label}</button>"
+                f"</div>"
+            )
+        # For "View Remark" button - Blue (view/edit)
+        else:
+            btn_label = "View Remark"
+            remark_cell = (
+                f"<div style='text-align:center; display:flex; align-items:center; justify-content:center;'>"
+                f"<button class='remark-btn' "
+                f"data-emp='{emp.employee_number}' "
+                f"style='background:rgb(22 163 74); color:#ffffff; border:none; "
+                f"border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;'>"
+                f"{btn_label}</button>"
+                f"</div>"
+            )
 
-        remark_cell = (
-            f"<button class='remark-btn' "
-            f"data-emp='{emp.employee_number}' "
-            f"style='background:#e6f3ff; color:#1f5faa; border:1px solid #c6dcf8; "
-            f"border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;'>"
-            f"{btn_label}</button>"
-        )
+
 
         data.append({
             "sol_id": emp.sol_id,
@@ -129,7 +143,7 @@ def execute(filters=None):
     # =====================================================
     columns = [
         {"label": "SOL ID", "fieldname": "sol_id", "fieldtype": "Data", "width": 90},
-        {"label": "Remarks", "fieldname": "remarks", "fieldtype": "HTML", "width": 160},
+        {"label": "Remarks", "fieldname": "remarks", "fieldtype": "HTML", "width": 160,"height": 100},
         {"label": "Branch", "fieldname": "branch", "fieldtype": "Data", "width": 120},
         {"label": "Emp ID", "fieldname": "employee_number", "fieldtype": "Data", "width": 100},
         {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 150},

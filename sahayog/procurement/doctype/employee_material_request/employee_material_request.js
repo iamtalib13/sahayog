@@ -12,6 +12,10 @@
 // ==================================================================
 
 frappe.ui.form.on("Employee Material Request", {
+  // ------------------------------------------------------------------
+  // WORKFLOW ACTIONS - Confirmations
+  // ------------------------------------------------------------------
+
   before_workflow_action: function (frm) {
     let action = frm.selected_workflow_action.toLowerCase();
 
@@ -38,12 +42,41 @@ frappe.ui.form.on("Employee Material Request", {
   // REFRESH EVENT - Triggered when form loads/refreshes
   // ------------------------------------------------------------------
   refresh: function (frm) {
+    const blocked_status = ["Draft", "Approved", "Rejected"];
+    // Add Manage Approver button - ONLY for saved docs, Admin/Store Manager
+    if (
+      !frm.is_new() &&
+      !blocked_status.includes(frm.doc.status) &&
+      (frappe.user.has_role("Administrator") ||
+        frappe.user.has_role("Store Manager"))
+    ) {
+      // Avoid duplicate buttons
+      if (!frm.custom_buttons || !frm.custom_buttons["Manage Approver"]) {
+        frm.add_custom_button(__("Manage Approver"), () => {
+          openManageApprovalsDialog(frm);
+        }); // Add to Actions group
+      }
+    }
+
+    // const blocked_status = ["Draft", "Approved", "Rejected"];
+    // if (
+    //     !frm.is_new() &&
+    //     !blocked_status.includes(frm.doc.status) &&
+    //     (frappe.user.has_role("Administrator") || frappe.user.has_role("Store Manager"))
+    // ) {
+    //     frm.add_custom_button(
+    //         __("Manage Approver"),
+    //         () => openManageApprovalsDialog(frm),
+    //         __("Actions")
+    //     );
+    // }
+
     // // Set intro message based on document status
     // set_form_intro(frm);
 
     // // Instead of relying on cached intro, forcibly fetch fresh data
     // frappe.call({
-    //   method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
+    // //   method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
     //   args: { doc_name: frm.doc.name },
     //   callback: function(r) {
     //     if (r.message && r.message.success) {
@@ -78,6 +111,376 @@ frappe.ui.form.on("Employee Material Request", {
         }
       },
     });
+
+    function openManageApprovalsDialog(frm) {
+      const d = new frappe.ui.Dialog({
+        title: __("Manage Approvers"),
+        size: "large",
+        fields: [
+          // ========= CARD 1: Reporting Person (HTML shell) =========
+          {
+            fieldtype: "HTML",
+            fieldname: "rp_card",
+            label: __("Reporting Person"),
+          },
+
+          // Logical fields backing the RP controls
+          {
+            fieldtype: "Check",
+            fieldname: "rp_skip",
+            label: __("Skip Reporting Person"),
+            hidden: 1,
+          },
+          // ========= Change Reporting Person (logical field only) =========
+          {
+            fieldtype: "Link",
+            fieldname: "new_reporting_person",
+            label: __("Change Reporting Person"),
+            options: "User",
+            default: frm.doc.reporting_person || "",
+            description: __(
+              "Select new Reporting Person (resets their status to Pending)"
+            ),
+          },
+          {
+            fieldtype: "HTML",
+            fieldname: "new_rp_preview",
+          },
+          {
+            fieldtype: "Small Text",
+            fieldname: "rp_remark",
+            label: __("Reporting Person Remark"),
+            depends_on: "eval:doc.rp_skip==1",
+            mandatory_depends_on: "eval:doc.rp_skip==1",
+          },
+
+          { fieldtype: "Column Break" },
+
+          // ========= CARD 2: HO Officer (HTML shell) =========
+          {
+            fieldtype: "HTML",
+            fieldname: "ho_card",
+            label: __("HO Officer"),
+          },
+
+          {
+            fieldtype: "Check",
+            fieldname: "ho_skip",
+            label: __("Skip HO Officer"),
+            hidden: 1,
+          },
+          {
+            fieldtype: "Small Text",
+            fieldname: "ho_remark",
+            label: __("HO Officer Remark"),
+            depends_on: "eval:doc.ho_skip==1",
+            mandatory_depends_on: "eval:doc.ho_skip==1",
+          },
+
+          // { fieldtype: "Section Break" },
+
+          // // ========= Change Reporting Person (logical field only) =========
+          // {
+          //     fieldtype: "Link",
+          //     fieldname: "new_reporting_person",
+          //     label: __("Change Reporting Person"),
+          //     options: "User",
+          //     default: frm.doc.reporting_person || "",
+          //     description: __("Select new Reporting Person (resets their status to Pending)"),
+          // },
+          // {
+          //     fieldtype: "HTML",
+          //     fieldname: "new_rp_preview"
+          // }
+        ],
+        primary_action_label: __("Submit"),
+        primary_action(values) {
+          const rp_allowed = ["Not Received", "Pending", "", null];
+          const ho_allowed = ["Not Received", "Pending", "", null];
+
+          // Server-like validation on allowed statuses for skip
+          if (
+            values.rp_skip &&
+            !rp_allowed.includes(frm.doc.reporting_person_status)
+          ) {
+            frappe.msgprint(
+              __("Reporting Person already decided. Cannot skip.")
+            );
+            return;
+          }
+          if (
+            values.ho_skip &&
+            !ho_allowed.includes(frm.doc.ho_officer_status)
+          ) {
+            frappe.msgprint(__("HO Officer already decided. Cannot skip."));
+            return;
+          }
+
+          // At least one action
+          const rp_changed =
+            values.new_reporting_person &&
+            values.new_reporting_person !== frm.doc.reporting_person;
+
+          if (!values.rp_skip && !values.ho_skip && !rp_changed) {
+            frappe.msgprint(
+              __("Select at least one action: Skip or Change Reporting Person.")
+            );
+            return;
+          }
+
+          d.hide();
+
+          frappe.call({
+            method:
+              "sahayog.procurement.doctype.employee_material_request.employee_material_request.admin_manage_approvers",
+            args: {
+              docname: frm.doc.name,
+              rp_skip: values.rp_skip ? 1 : 0,
+              ho_skip: values.ho_skip ? 1 : 0,
+              rp_remark: values.rp_remark || "",
+              ho_remark: values.ho_remark || "",
+              new_reporting_person: values.new_reporting_person || "",
+            },
+            freeze: true,
+            freeze_message: __("Updating approvers..."),
+            callback: (r) => {
+              if (r.message && r.message.success) {
+                frappe.show_alert({
+                  message: r.message.message,
+                  indicator: "green",
+                });
+                frm.reload_doc();
+              }
+            },
+          });
+        },
+      });
+
+      // ===== Helper for status badge =====
+      // ===== Helper for status badge (keep as before) =====
+      function get_status_badge(status) {
+        const s = status || "Not Received";
+        const map = {
+          Pending: { label: __("Pending"), class: "status-pending" },
+          Approved: { label: __("Approved"), class: "status-approved" },
+          Rejected: { label: __("Rejected"), class: "status-rejected" },
+          Skip: { label: __("Skip"), class: "status-skip" },
+          "Not Received": {
+            label: __("Not Received"),
+            class: "status-new-record",
+          },
+        };
+        return map[s] || map["Not Received"];
+      }
+      const rp_badge = get_status_badge(frm.doc.reporting_person_status);
+      const ho_badge = get_status_badge(frm.doc.ho_officer_status);
+
+      // ========= Reporting Person card HTML =========
+      const rp_html = `
+    <div style="border:1px solid #d1d8dd;border-radius:6px;padding:10px;margin-bottom:6px;">
+        <div style="font-weight:600;">${__("Reporting Person")}</div>
+        <div style="margin-top:4px;margin-bottom:6px;">
+            ${frappe.utils.escape_html(
+              frm.doc.reporting_person || __("Not Set")
+            )}
+            <span class="emr-status-badge ${
+              rp_badge.class
+            }" style="margin-left:8px;padding:2px 8px;border-radius:12px;font-size:11px;">
+                ${rp_badge.label}
+            </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <input type="checkbox" id="rp_skip_cb" style="margin:0;">
+            <label for="rp_skip_cb" style="margin:0;font-size:12px;">${__(
+              "Skip Reporting Person"
+            )}</label>
+        </div>
+        <div class="rp-remark-wrapper" style="margin-bottom:6px; display:none;">
+            <!-- RP remark field will be moved here -->
+        </div>
+        <div style="margin-top:4px;">
+            <label style="display:block;font-size:12px;margin-bottom:2px;">
+                ${__("")}
+            </label>
+            <div class="rp-change-wrapper" style="max-width:100%;">
+                <!-- Link field will be moved here -->
+            </div>
+        </div>
+    </div>
+`;
+
+      // ========= HO Officer card HTML =========
+      const ho_html = `
+    <div style="border:1px solid #d1d8dd;border-radius:6px;padding:10px;margin-bottom:6px;">
+        <div style="font-weight:600;">${__("HO Officer")}</div>
+        <div style="margin-top:4px;margin-bottom:6px;">
+            ${frappe.utils.escape_html(
+              frm.doc.head_office_officer || __("Not Set")
+            )}
+            <span class="emr-status-badge ${
+              ho_badge.class
+            }" style="margin-left:8px;padding:2px 8px;border-radius:12px;font-size:11px; height:28px">
+                ${ho_badge.label}
+            </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <input type="checkbox" id="ho_skip_cb" style="margin:0;">
+            <label for="ho_skip_cb" style="margin:0;font-size:12px;">${__(
+              "Skip HO Officer"
+            )}</label>
+        </div>
+        <div class="ho-remark-wrapper" style="margin-bottom:6px; display:none;">
+            <!-- HO remark field will be moved here -->
+        </div>
+    </div>
+`;
+
+      // Inject HTML
+      d.get_field("rp_card").$wrapper.html(rp_html);
+      d.get_field("ho_card").$wrapper.html(ho_html);
+
+      // Move existing dialog fields into the card wrappers
+      const rpRemarkField = d.fields_dict.rp_remark.$wrapper;
+      const hoRemarkField = d.fields_dict.ho_remark.$wrapper;
+      const newRpFieldWrapper = d.fields_dict.new_reporting_person.$wrapper;
+      // rp_remark.style.height = "60%";
+      // re_remark.style.width = "60%";
+
+      d.get_field("rp_card")
+        .$wrapper.find(".rp-remark-wrapper")
+        .append(rpRemarkField);
+      d.get_field("rp_card")
+        .$wrapper.find(".rp-change-wrapper")
+        .append(newRpFieldWrapper);
+      d.get_field("ho_card")
+        .$wrapper.find(".ho-remark-wrapper")
+        .append(hoRemarkField);
+
+      // Wire checkboxes to dialog fields + show/hide remark divs
+      d.$wrapper.find("#rp_skip_cb").on("change", function () {
+        const checked = this.checked ? 1 : 0;
+        d.set_value("rp_skip", checked);
+        d.get_field("rp_card")
+          .$wrapper.find(".rp-remark-wrapper")
+          .css("display", checked ? "block" : "none");
+      });
+
+      d.$wrapper.find("#ho_skip_cb").on("change", function () {
+        const checked = this.checked ? 1 : 0;
+        d.set_value("ho_skip", checked);
+        d.get_field("ho_card")
+          .$wrapper.find(".ho-remark-wrapper")
+          .css("display", checked ? "block" : "none");
+      });
+
+      // Move the Frappe Link input (new_reporting_person) inside RP card, 60% width
+      // const newRpFieldWrapper = d.fields_dict.new_reporting_person.$wrapper;
+      d.get_field("rp_card")
+        .$wrapper.find(".rp-change-wrapper")
+        .append(newRpFieldWrapper);
+
+      // Preview selected new Reporting Person name under the field
+      d.fields_dict.new_reporting_person.df.onchange = function () {
+        const val = d.get_value("new_reporting_person");
+        if (!val) {
+          d.get_field("new_rp_preview").$wrapper.empty();
+          return;
+        }
+        frappe.db.get_value("User", val, "full_name").then((r) => {
+          const name =
+            r.message && r.message.full_name ? r.message.full_name : val;
+          d.get_field("new_rp_preview").$wrapper.html(
+            `<div style="margin-top:4px;font-size:11px;color:#6c757d;">
+                    ${__("New Reporting Person")}: ${frappe.utils.escape_html(
+              name
+            )} (${frappe.utils.escape_html(val)})
+                 </div>`
+          );
+        });
+      };
+
+      // After dialog is created
+      // d.fields_dict.rp_remark.$wrapper
+      //     .css("width", "60%")
+      //     .find("textarea")
+      //     .css({
+      //         width: "100%",
+      //         height: "60%"
+      //     });
+
+      // d.fields_dict.ho_remark.$wrapper
+      //     .css("width", "60%")
+      //     .find("textarea")
+      //     .css({
+      //         width: "100%",
+      //         height: "60%"
+      //     });
+
+      // after you build and inject ho_html
+      const rp_state = frm.doc.reporting_person_status || "Not Received";
+      const ho_cb = d.$wrapper.find("#ho_skip_cb");
+
+      // RP must be Approved or Skip to allow HO skip
+      const rp_allows_skip_ho = ["Approved", "Skip"].includes(rp_state);
+
+      if (!rp_allows_skip_ho) {
+        // disable checkbox visually + functionally
+        ho_cb.prop("disabled", true);
+        ho_cb.closest("div").css("opacity", 0.5);
+        d.set_value("ho_skip", 0);
+      } else {
+        ho_cb.prop("disabled", false);
+        ho_cb.closest("div").css("opacity", 1);
+      }
+
+      // keep existing change handler, but respect disabled state
+      ho_cb.on("change", function () {
+        if (ho_cb.is(":disabled")) {
+          d.set_value("ho_skip", 0);
+          return;
+        }
+        const checked = this.checked ? 1 : 0;
+        d.set_value("ho_skip", checked);
+        d.get_field("ho_card")
+          .$wrapper.find(".ho-remark-wrapper")
+          .css("display", checked ? "block" : "none");
+      });
+
+      d.show();
+    }
+
+    function applyApprovalChanges(frm, values) {
+      frappe.call({
+        method:
+          "sahayog.procurement.doctype.employee_material_request.employee_material_request.admin_skip_approver",
+        args: {
+          docname: frm.doc.name,
+          skip_current: values.skip_current || 0,
+          skip_ho: values.skip_ho || 0,
+          new_reporting_person: values.new_reporting_person || "",
+          admin_remarks: values.admin_remarks || "",
+        },
+        freeze: true,
+        freeze_message: __("Updating approvals..."),
+        callback: (r) => {
+          if (!r.exc) {
+            frappe.show_alert(
+              {
+                message: __("✅ Approval changes applied successfully"),
+                indicator: "green",
+              },
+              5
+            );
+            frm.reload_doc();
+          } else {
+            frappe.msgprint({
+              message: __("Failed to apply changes: {0}", [r.exc]),
+              indicator: "red",
+            });
+          }
+        },
+      });
+    }
 
     // Apply date restrictions on required_by_date field
     set_date_restrictions(frm);
@@ -1169,6 +1572,7 @@ function hide_toolbar_buttons_for_non_admin() {
     }, 150); // Slight delay ensures buttons are rendered
   }
 }
+
 function toggle_dashboard_by_status(frm) {
   // safety check
   if (!frm.dashboard) return;

@@ -156,7 +156,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.reporting_person==frappe.session.user",
    "fieldname": "reporting_person_remarks",
    "fieldtype": "Small Text",
    "label": "Reporting Person Remarks"
@@ -246,7 +245,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-20 17:04:03.671974",
+ "modified": "2025-11-28 16:01:42.300543",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
