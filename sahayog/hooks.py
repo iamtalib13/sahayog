@@ -546,7 +546,7 @@ fixtures = [
                     "Stock Entry-section_break_jwgn-collapsible",
                 ],
             ]
-        ]
+        ]]
     },
 
     # email templates fixtures
