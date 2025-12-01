@@ -1,6 +1,9 @@
 import frappe
+import json
 from frappe.model.document import Document
-
+from sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting import (
+    email_notification_enabled
+)
 
 class CaseClosure(Document):
     def autoname(self):
@@ -123,7 +126,9 @@ def get_latest_linked_enquiry(case_id):
     }
 
 
-# improve validation and error on approver email missing
+# -------------------------------------------------------------------------
+# START VERIFICATION PROCESS - SIMPLE EMAILS
+# -------------------------------------------------------------------------
 @frappe.whitelist()
 def start_verification_process(approvers=None, case_id=None):
     import json
@@ -135,21 +140,21 @@ def start_verification_process(approvers=None, case_id=None):
         approvers = json.loads(approvers)
 
     if not approvers:
-        frappe.throw("Approver list is required.")
+        return {"status": "error", "msg": "Approver list is required."}
 
     if not case_id:
         case_id = frappe.form_dict.get("case_id")
 
     if not case_id:
-        frappe.throw("Case ID missing.")
+        return {"status": "error", "msg": "Case ID missing."}
 
-    # Send emails dynamically
+    # Send simple system-generated verification mails
     for ap in approvers:
         email = ap.get("company_email")
         emp_name = ap.get("employee_name")
 
         if not email:
-            frappe.throw("Email missing for an approver.")
+            return {"status": "error", "msg": "Email missing for an approver."}
 
         frappe.sendmail(
             recipients=[email],
@@ -157,8 +162,116 @@ def start_verification_process(approvers=None, case_id=None):
             message=f"""
                 Dear {emp_name or 'Approver'},
                 Please review and approve the case closure for Case ID: {case_id}.
-            """
+            """,
         )
 
-    return {"status": "success", "message": "Verification emails sent."}
+    return {"status": "ok", "msg": "Verification emails sent."}
+
+
+# -------------------------------------------------------------------------
+# EMAIL TEMPLATE–BASED REVIEW MAIL
+# -------------------------------------------------------------------------
+
+def get_common_template(context):
+    try:
+        template = frappe.get_doc("Email Template", "Disciplinary Case Update")
+        return frappe.render_template(template.response, context or {})
+    except Exception:
+        return "Disciplinary Case Update"
+
+# -------------------------------------------------------------------------
+# SEND EMAIL TO APPROVERS FOR CASE REVIEW
+# -------------------------------------------------------------------------
+@frappe.whitelist()
+@email_notification_enabled
+def send_email_for_review(case_id=None, approvers=None):
+    import json
+    from frappe.utils import get_url
+
+    # Validate Case ID
+    if not case_id:
+        return {"message": {"status": "error", "msg": "Missing Case ID"}}
+
+    # Load Case Closure
+    closure_doc = frappe.get_doc("Case Closure", case_id)
+
+    # Load linked Disciplinary Case
+    disc_case = frappe.get_doc("Disciplinary Case", closure_doc.case_id)
+
+    # -----------------------------
+    # Parse Approvers
+    # -----------------------------
+    if isinstance(approvers, str):
+        approvers = json.loads(approvers)
+
+    if not approvers:
+        return {"message": {"status": "error", "msg": "No approvers selected"}}
+
+    email_list = [a.get("company_email") for a in approvers if a.get("company_email")]
+
+    if not email_list:
+        return {"message": {"status": "error", "msg": "No valid approver email found"}}
+
+    # -----------------------------
+    # Load Email Template
+    # -----------------------------
+    try:
+        template = frappe.get_doc("Email Template", "Disciplinary Case Update")
+    except:
+        return {"message": {"status": "error", "msg": "Email Template Not Found"}}
+
+    template_html = template.response_html or template.response or ""
+    template_subject = template.subject or "Case Review Started"
+
+    # -----------------------------
+    # CONTEXT for template
+    # -----------------------------
+    context = {
+        # From Disciplinary Case
+        "case_id": disc_case.name,
+        "employee_name": disc_case.employee_name,
+        "employee_id": disc_case.employee_id,
+        "region": disc_case.region,
+        "zone": disc_case.zone,
+        "case_type": disc_case.case_type,
+        "stage": disc_case.workflow_state,
+        "hr_name": disc_case.hr_name,
+        "hr_employee_id": disc_case.hr_employee_id,
+
+        # From Case Closure (REQUIRED AS PER YOUR REQUEST)
+        "remarks": closure_doc.remarks,
+        "attachment": closure_doc.enquiry_report_upload or "No attachment found",
+
+        # CASE HISTORY REPORT LINK (CORRECT)
+        "case_history_link": f"{get_url()}/app/query-report/Case History?case_id={disc_case.name}"
+    }
+
+    # -----------------------------
+    # Render Template
+    # -----------------------------
+    rendered_subject = frappe.render_template(template_subject, context)
+    rendered_message = frappe.render_template(template_html, context)
+
+    # -----------------------------
+    # SEND EMAIL
+    # -----------------------------
+    try:
+        frappe.sendmail(
+            recipients=email_list,
+            subject=rendered_subject,
+            message=rendered_message,
+            now=True,
+        )
+    except Exception as e:
+        return {
+            "message": {
+                "status": "error",
+                "msg": "Email sending failed: " + frappe.get_traceback(),
+            }
+        }
+# success message
+    return {
+    "status": "ok",
+    "msg": "Verification email sent successfully."
+}
 

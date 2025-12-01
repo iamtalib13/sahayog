@@ -589,7 +589,13 @@ fixtures = [
                 "Stock Entry-section_break_jwgn-collapsible"
             ]
         ]]
-    }
+    },
+
+    # email templates fixtures
+    {
+        "dt": "Email Template",
+        "filters": [["name", "in", ["Disciplinary Case Update"]]]
+    },  
 ]
 
     

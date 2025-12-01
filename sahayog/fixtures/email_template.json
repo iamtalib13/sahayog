@@ -1,0 +1,14 @@
+[
+
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-01 12:04:51.652517",
+  "name": "Disciplinary Case Update",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n\n<p>A new case review request has been initiated.</p>\n\n<h3>Case Details</h3>\n\n<table width=\"100%\" border=\"1\" cellspacing=\"0\" cellpadding=\"6\">\n    <tr>\n        <td><b>Case ID</b></td>\n        <td>{{ case_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Employee Name</b></td>\n        <td>{{ employee_name }}</td>\n    </tr>\n    <tr>\n        <td><b>Employee ID</b></td>\n        <td>{{ employee_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Region</b></td>\n        <td>{{ region }}</td>\n    </tr>\n    <tr>\n        <td><b>Zone</b></td>\n        <td>{{ zone }}</td>\n    </tr>\n    <tr>\n        <td><b>Case Type</b></td>\n        <td>{{ case_type }}</td>\n    </tr>\n    <tr>\n        <td><b>Stage</b></td>\n        <td>{{ stage }}</td>\n    </tr>\n    <tr>\n        <td><b>Remarks</b></td>\n        <td>{{ remarks }}</td>\n    </tr>\n    <tr>\n        <td><b>HR Name (Triggered By)</b></td>\n        <td>{{ hr_name }}</td>\n    </tr>\n    <tr>\n        <td><b>HR Employee ID</b></td>\n        <td>{{ hr_employee_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Attachment</b></td>\n        <td>{{ attachment }}</td>\n    </tr>\n</table>\n\n<br>\n\n<p>\n    To view the complete Case History, click below:<br>\n    <a href=\"{{ case_history_link }}\" target=\"_blank\">\n        <b>View Case History Report</b>\n    </a>\n</p>\n\n<br>\n<p>Regards,<br>HR Team</p>\n",
+  "subject": "“Disciplinary Case Update – {{ case_id }}”",
+  "use_html": 1
+ }
+ 
+]

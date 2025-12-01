@@ -131,7 +131,7 @@ frappe.ui.form.on("Case Closure", {
       });
     }
 
-    // 1. Add Custom Button
+    //Add Custom Button for Case Review
     if (!frm.is_new()) {
       frm.add_custom_button("Case Review", () => {
         open_approver_dialog(frm);
@@ -326,7 +326,7 @@ function timeline_badge(stage_obj) {
         </div>
     `;
 }
-// FUNCTION TO OPEN REVIEWER SELECTION DIALOG
+// FUNCTION TO OPEN REVIEWER SELECTION DIALOG BOX
 function open_approver_dialog(frm) {
 
   // 1️⃣  Get the employee against whom case is created
@@ -469,51 +469,101 @@ function open_approver_dialog(frm) {
   });
 }
 
-// 5️⃣  SEPARATE FUNCTION → ACTUAL SAVE + EMAIL PROCESS
+// third code of submit_approvers function
 function submit_approvers(frm, values, dialog) {
 
-  // A. Clear old reviewer rows from parent doc
+  // A. Clear old reviewer rows
   frm.clear_table("review_details");
 
-  // B. Add new reviewer values from dialog table
-  for (let row of values.approver_table || []) {
+  // B. Append new reviewer rows
+  (values.approver_table || []).forEach(row => {
     let child = frm.add_child("review_details");
 
     child.employee_id = row.employee_id;
     child.remarks = "";
     child.status = "Pending";
-    child.date_and_time = frappe.datetime.now_datetime(); // current timestamp
-  }
+    child.date_and_time = frappe.datetime.now_datetime();
+  });
 
-  // Refresh table on screen
   frm.refresh_field("review_details");
 
-  // C. Save whole parent document
+  // C. Save parent document
   frm.save().then(() => {
 
-    // D. Call backend Python method to send verification mail
+    // -----------------------------------------------------
+    // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
+    // -----------------------------------------------------
     frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
-
+      method: "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
       args: {
-        approvers: values.approver_table, // list of reviewers
-        case_id: frm.doc.name,            // case ID
+        approvers: values.approver_table,
+        case_id: frm.doc.name
       },
-
       freeze: true,
       freeze_message: __("Sending verification emails..."),
+      callback(r) {
+        console.log("START VERIFICATION RESPONSE:", r);
 
-      callback() {
-        frappe.msgprint("Case Review started and emails sent.");
-      },
+        if (r.message?.status !== "ok") {
+          frappe.msgprint({
+            title: __("Verification Failed"),
+            message: r.message?.msg,
+            indicator: "red",
+          });
+          return;
+        }
+
+        frappe.msgprint({
+          title: __("Verification Started"),
+          message: __("Case Review process started successfully."),
+          indicator: "green",
+        });
+      }
     });
 
-    // Close the dialog
+    // -----------------------------------------------------
+    // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
+    // -----------------------------------------------------
+    frappe.call({
+      method: "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+      args: {
+        case_id: frm.doc.name,
+        approvers: JSON.stringify(values.approver_table)
+      },
+      freeze: true,
+      freeze_message: __("Sending review notification email..."),
+      callback(r) {
+        console.log("TEMPLATE EMAIL RESPONSE:", r);
+
+        if (r.message?.status === "disabled") {
+          frappe.msgprint({
+            title: __("Email Disabled"),
+            message: __("Email notifications are disabled."),
+            indicator: "orange",
+          });
+          return;
+        }
+
+        if (r.message?.status === "ok") {
+          frappe.msgprint({
+            title: __("Success"),
+            message: __("Review notification email has been sent."),
+            indicator: "green",
+          });
+          return;
+        }
+
+        frappe.msgprint({
+          title: __("Email Failed"),
+          message: r.message?.msg || __("Could not send review notification email."),
+          indicator: "red",
+        });
+      }
+    });
+
     dialog.hide();
   });
 }
-
 
 // function to display review details with employee info
 function display_review_details_with_employee_info(frm) {
