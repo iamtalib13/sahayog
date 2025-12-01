@@ -36,18 +36,43 @@ def get_columns():
             "fieldtype": "Data",
             "width": 200,
         },
-        # 🔥 HTML STATUS COLUMN
+        # Status column (HTML)
         {
             "label": "Status",
             "fieldname": "status_html",
             "fieldtype": "HTML",
             "width": 120,
         },
-        {"label": "Sol ID", "fieldname": "sol_id", "fieldtype": "Data", "width": 100},
-        {"label": "Branch", "fieldname": "branch", "fieldtype": "Data", "width": 120},
-        {"label": "Zone", "fieldname": "zone", "fieldtype": "Data", "width": 120},
-        {"label": "Region", "fieldname": "region", "fieldtype": "Data", "width": 120},
-        {"label": "State", "fieldname": "state", "fieldtype": "Data", "width": 120},
+        {
+            "label": "Sol ID",
+            "fieldname": "sol_id",
+            "fieldtype": "Data",
+            "width": 100,
+        },
+        {
+            "label": "Branch",
+            "fieldname": "branch",
+            "fieldtype": "Data",
+            "width": 120,
+        },
+        {
+            "label": "Zone",
+            "fieldname": "zone",
+            "fieldtype": "Data",
+            "width": 120,
+        },
+        {
+            "label": "Region",
+            "fieldname": "region",
+            "fieldtype": "Data",
+            "width": 120,
+        },
+        {
+            "label": "State",
+            "fieldname": "state",
+            "fieldtype": "Data",
+            "width": 120,
+        },
         {
             "label": "District",
             "fieldname": "district",
