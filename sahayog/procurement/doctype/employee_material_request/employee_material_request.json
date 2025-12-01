@@ -38,6 +38,7 @@
  ],
  "fields": [
   {
+   "collapsible": 1,
    "fieldname": "basic_information_section",
    "fieldtype": "Section Break",
    "label": "Basic Information"
@@ -245,7 +246,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-28 16:01:42.300543",
+ "modified": "2025-12-01 15:37:29.205084",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
