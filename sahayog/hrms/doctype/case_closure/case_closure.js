@@ -106,8 +106,6 @@ frappe.ui.form.on("Case Closure", {
   },
 
   refresh(frm) {
-    display_review_details_with_employee_info(frm);
-
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
@@ -256,79 +254,163 @@ frappe.ui.form.on("Case Closure", {
 });
 
 function render_timeline(frm, data) {
+  // debug: show incoming timeline payload in console
+  console.debug(
+    "render_timeline payload:",
+    data && data.timeline ? data.timeline : data
+  );
+
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
 
   const insertion_point = $(".form-dashboard");
+
   let html = `
-        <div class="case-timeline-box" style="
-            background:#ffffff;
-            border:1px solid #e0e0e0;
-            padding:10px;
-            margin-bottom:10px;
-            border-radius:8px;
-            box-shadow:0 1px 2px rgba(0,0,0,0.05);
-            font-size:13px;
+    <div class="case-timeline-box" style="
+        background:#ffffff;
+        border:1px solid #e0e0e0;
+        padding:10px;
+        margin-bottom:10px;
+        border-radius:8px;
+        box-shadow:0 1px 2px rgba(0,0,0,0.05);
+        font-size:13px;
+    ">
+        <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
+            Case Progress Timeline
+        </h4>
+
+        <!-- TIMELINE BADGES -->
+        <div style="display:flex; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-top:6px;">
+  `;
+
+  // guard: if no timeline array, do nothing
+  const timeline_arr =
+    data && data.timeline ? data.timeline : Array.isArray(data) ? data : [];
+  if (!timeline_arr.length) {
+    html += `<div style="color:#777; font-size:14px;">No timeline data available.</div>`;
+  } else {
+    timeline_arr.forEach((stage_obj, index) => {
+      html += timeline_badge(stage_obj);
+      if (index < timeline_arr.length - 1) {
+        html += `<div style="font-size:20px; color:#9e9e9e; margin-top:15px;">→</div>`;
+      }
+    });
+  }
+
+  html += `
+        </div>
+
+        <!-- LEGEND OUTSIDE / BELOW -->
+        <div style="
+            margin-top:10px;
+            padding-top:6px;
+            border-top:1px solid #e0e0e0;
+            font-size:11px;
+            color:#777;
+            display:flex;
+            gap:14px;
+            justify-content:right;
         ">
-            <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
-                Case Progress Timeline
-            </h4>
-            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:6px;">
-    `;
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">🟢</span><span>Completed</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">🟠</span><span>In Progress</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px;">⚪</span><span>Not Created</span>
+            </div>
+        </div>
 
-  data.timeline.forEach((stage_obj, index) => {
-    html += timeline_badge(stage_obj);
-    if (index < data.timeline.length - 1) {
-      html += `<div style="font-size:16px; color:#9e9e9e;">→</div>`;
-    }
-  });
+    </div>
+  `;
 
-  html += `</div></div>`;
   insertion_point.before(html);
 }
-
 function timeline_badge(stage_obj) {
   let bg = "#eeeeee",
     color = "#555",
     icon = "⚪";
 
-  switch (stage_obj.status) {
+  switch ((stage_obj.status || "").toLowerCase()) {
     case "submitted":
-      bg = "#e8f5e9"; // Green
+      bg = "#e8f5e9";
       color = "#1b5e20";
       icon = "🟢";
       break;
     case "saved":
-      bg = "#f9f8f5ff"; // Orange
+      bg = "#fff4e5";
       color = "#e65100";
       icon = "🟠";
       break;
-
+    case "cancelled":
+      bg = "#f0f0f0"; // light gray
+      color = "#999";
+      icon = "⚪";
+      break;
     default:
       bg = "#eeeeee";
       color = "#555";
       icon = "⚪";
   }
 
+  // Get modified timestamp
+  let ts =
+    stage_obj.modified ||
+    stage_obj.modified_on ||
+    stage_obj.modified_at ||
+    stage_obj.modified_date ||
+    stage_obj.timestamp ||
+    null;
+
+  // Format timestamp in hh:mm AM/PM, dd MMM yyyy
+  let formatted = "-";
+  if (ts) {
+    try {
+      let d = new Date(ts);
+      if (!isNaN(d.getTime())) {
+        const optsTime = { hour: "2-digit", minute: "2-digit", hour12: true };
+        const optsDate = { day: "2-digit", month: "short", year: "numeric" };
+        formatted = `${d.toLocaleTimeString(
+          [],
+          optsTime
+        )}, ${d.toLocaleDateString([], optsDate)}`;
+      }
+    } catch (e) {
+      console.warn("Failed to format timestamp", e);
+      formatted = String(ts);
+    }
+  }
+
+  const stage_label =
+    stage_obj.stage || stage_obj.doctype || stage_obj.title || "";
+
   return `
-        <div style="
-            padding:4px 8px;
-            background:${bg};
-            color:${color};
-            border-radius:20px;
-            font-weight:600;
-            display:flex;
-            align-items:center;
-            gap:4px;
-            font-size:12px;
-        ">
-            ${icon} ${stage_obj.stage}
-        </div>
-    `;
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+      <!-- TIMESTAMP (small, above badge) -->
+      <div style="font-size:10px; color:#777; margin-bottom:3px;">
+        ${formatted}
+      </div>
+
+      <!-- EXISTING BADGE -->
+      <div style="
+          padding:3px 6px;
+          background:${bg};
+          color:${color};
+          border-radius:14px;
+          font-weight:600;
+          display:flex;
+          align-items:center;
+          gap:4px;
+          font-size:11px;
+      ">
+        ${icon} ${stage_label}
+      </div>
+    </div>
+  `;
 }
 // FUNCTION TO OPEN REVIEWER SELECTION DIALOG BOX
 function open_approver_dialog(frm) {
-
   // 1️⃣  Get the employee against whom case is created
   let case_employee_id = frm.doc.employee_id;
 
@@ -340,7 +422,6 @@ function open_approver_dialog(frm) {
 
   // 2️⃣ Fetch full Employee Document using employee id
   frappe.db.get_doc("Employee", case_employee_id).then((emp) => {
-
     // Get employee's zone (custom field: custom_zone)
     let default_zone = emp.custom_zone;
 
@@ -356,7 +437,6 @@ function open_approver_dialog(frm) {
       size: "extra-large",
 
       fields: [
-
         // ---------- ZONE FIELD ----------
         {
           fieldtype: "Link",
@@ -406,12 +486,62 @@ function open_approver_dialog(frm) {
               onchange() {
                 let row = this.grid_row.doc;
                 if (!row.employee_id) return;
-                frappe.db.get_doc("Employee", row.employee_id).then((emp_data) => {
-                  row.employee_name = emp_data.employee_name;
-                  row.company_email =
-                    emp_data.company_email || emp_data.prefered_email;
+
+                // 🔍 Check duplicate in the dialog table itself
+                let all_rows = d.fields_dict.approver_table.grid.get_data();
+                let duplicate_in_dialog = all_rows.some(
+                  (r) => r.employee_id === row.employee_id && r !== row
+                );
+
+                if (duplicate_in_dialog) {
+                  frappe.msgprint({
+                    title: __("Duplicate Reviewer"),
+                    message: __(
+                      "This reviewer is already selected in the dialog."
+                    ),
+                    indicator: "red",
+                  });
+
+                  // ❌ Reset row fields
+                  row.employee_id = "";
+                  row.employee_name = "";
+                  row.company_email = "";
                   d.fields_dict.approver_table.grid.refresh();
-                });
+                  return;
+                }
+
+                // 🔍 Check duplicate reviewer from parent child table
+                let already_selected = (frm.doc.review_details || []).some(
+                  (r) => r.employee_id === row.employee_id
+                );
+
+                if (already_selected) {
+                  frappe.msgprint({
+                    title: __("Duplicate Reviewer"),
+                    message: __(
+                      "This reviewer is already selected in the list."
+                    ),
+                    indicator: "red",
+                  });
+
+                  // ❌ Reset row fields
+                  row.employee_id = "";
+                  row.employee_name = "";
+                  row.company_email = "";
+
+                  d.fields_dict.approver_table.grid.refresh();
+                  return;
+                }
+
+                // Fetch details if not duplicate
+                frappe.db
+                  .get_doc("Employee", row.employee_id)
+                  .then((emp_data) => {
+                    row.employee_name = emp_data.employee_name;
+                    row.company_email =
+                      emp_data.company_email || emp_data.prefered_email;
+                    d.fields_dict.approver_table.grid.refresh();
+                  });
               },
             },
             {
@@ -419,7 +549,7 @@ function open_approver_dialog(frm) {
               fieldname: "employee_name",
               label: "Employee Name",
               in_list_view: true,
-              read_only: 1,  
+              read_only: 1,
             },
             {
               fieldtype: "Data",
@@ -436,7 +566,6 @@ function open_approver_dialog(frm) {
 
       // 4️⃣  PRIMARY ACTION (Callback of Submit Button)
       primary_action(values) {
-
         // A. Validate that every row has company email
         for (let row of values.approver_table || []) {
           if (!row.company_email) {
@@ -451,7 +580,9 @@ function open_approver_dialog(frm) {
 
         // B. Show confirmation popup before final submit
         frappe.confirm(
-          __("Please confirm that the reviewer selection is accurate before submitting."),
+          __(
+            "Please confirm that the reviewer selection is accurate before submitting."
+          ),
 
           // If YES pressed
           () => {

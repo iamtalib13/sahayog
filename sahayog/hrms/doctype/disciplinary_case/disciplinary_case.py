@@ -32,10 +32,7 @@ class DisciplinaryCase(Document):
 @frappe.whitelist()
 def get_case_stages(case_id):
     """
-    Return stages with their status for timeline:
-    - unsaved → current (yellow)
-    - saved but not submitted → completed (orange)
-    - submitted → completed (green)
+    Return stages with their status + modified timestamp
     """
     all_stages = [
         "Disciplinary Case",
@@ -50,17 +47,30 @@ def get_case_stages(case_id):
 
     timeline = []
 
-    # Check each stage
     for stage in all_stages:
         docname = frappe.db.exists(stage, {"case_id": case_id})
+
         if docname:
-            docstatus = frappe.db.get_value(stage, docname, "docstatus") or 0
+            doc = frappe.get_doc(stage, docname)
+            docstatus = doc.docstatus or 0
+
             if docstatus == 1:
-                timeline.append({"stage": stage, "status": "submitted"})  # green
+                timeline.append({
+                    "stage": stage,
+                    "status": "submitted",   # green
+                    "modified": doc.modified
+                })
             else:
-                timeline.append({"stage": stage, "status": "saved"})  # orange
-                break  # first unsubmitted stage = current
+                timeline.append({
+                    "stage": stage,
+                    "status": "saved",       # orange
+                    "modified": doc.modified
+                })
         else:
-            timeline.append({"stage": stage, "status": "current"})  # yellow
+            timeline.append({
+                "stage": stage,
+                "status": "current",       # yellow
+                "modified": None
+            })
 
     return {"timeline": timeline}

@@ -1,7 +1,7 @@
 // Copyright (c) 2025, Developer Team and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Crm Active and Inactive Employee Report"] = {
+frappe.query_reports["Employee Activity Summary"] = {
   filters: [
     {
       fieldname: "from_date",
@@ -16,12 +16,6 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
       default: frappe.datetime.get_today(),
     },
     {
-      fieldname: "sol_id",
-      label: __("Sol ID"),
-      fieldtype: "Autocomplete",
-      options: [""],
-    },
-    {
       fieldname: "zone",
       label: __("Zone"),
       fieldtype: "Autocomplete",
@@ -33,12 +27,20 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
       fieldtype: "Autocomplete",
       options: [""],
     },
+    // SEARCHABLE AUTOCOMPLETE FIELDS
+    {
+      fieldname: "sol_id",
+      label: __("Sol ID"),
+      fieldtype: "Autocomplete",
+      options: [""],
+    },
     {
       fieldname: "branch",
       label: __("Branch"),
       fieldtype: "Autocomplete",
       options: [""],
     },
+
     {
       fieldname: "status",
       label: __("Status"),
@@ -48,6 +50,10 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
   ],
 
   onload(report) {
+    // HIDE REGION & BRANCH INITIALLY
+    frappe.query_report.get_filter("region").toggle(false);
+    frappe.query_report.get_filter("branch").toggle(false);
+
     frappe.call({
       method: "frappe.client.get_list",
       args: {
@@ -55,6 +61,7 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
         fields: ["sol_id", "zone", "region", "branch"],
         limit_page_length: 2000,
       },
+
       callback(r) {
         if (!r.message) return;
 
@@ -63,16 +70,40 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
         let regions = new Set();
         let branches = new Set();
 
+        let zone_region_map = {};
+        let region_branch_map = {};
+        let sol_map = {};
+
         r.message.forEach((row) => {
           if (row.sol_id) sol_ids.add(row.sol_id);
           if (row.zone) zones.add(row.zone);
           if (row.region) regions.add(row.region);
           if (row.branch) branches.add(row.branch);
+
+          if (row.zone && row.region) {
+            if (!zone_region_map[row.zone])
+              zone_region_map[row.zone] = new Set();
+            zone_region_map[row.zone].add(row.region);
+          }
+
+          if (row.region && row.branch) {
+            if (!region_branch_map[row.region])
+              region_branch_map[row.region] = new Set();
+            region_branch_map[row.region].add(row.branch);
+          }
+
+          sol_map[row.sol_id] = {
+            zone: row.zone,
+            region: row.region,
+            branch: row.branch,
+          };
         });
 
+        // Works with Autocomplete
         function update_select(fieldname, values) {
           let field = frappe.query_report.get_filter(fieldname);
           if (!field) return;
+
           field.set_data(["", ...values]);
         }
 
@@ -84,13 +115,32 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
         frappe.query_report.get_filter("region").$input.prop("disabled", true);
         frappe.query_report.get_filter("branch").$input.prop("disabled", true);
 
+        // ====================================================
+        // ZONE → FILTER REGIONS & SHOW REGION
+        // ====================================================
         frappe.query_report.get_filter("zone").$input.on("change", function () {
           let zone_val = frappe.query_report.get_filter_value("zone");
 
+          frappe.query_report.set_filter_value("region", "");
+          frappe.query_report.set_filter_value("branch", "");
+
           if (zone_val) {
+            let filtered_regions = Array.from(
+              zone_region_map[zone_val] || []
+            ).sort();
+
+            update_select("region", filtered_regions);
+
             frappe.query_report
               .get_filter("region")
               .$input.prop("disabled", false);
+            frappe.query_report
+              .get_filter("branch")
+              .$input.prop("disabled", true);
+
+            // SHOW region
+            frappe.query_report.get_filter("region").toggle(true);
+            frappe.query_report.get_filter("branch").toggle(false);
           } else {
             frappe.query_report
               .get_filter("region")
@@ -98,48 +148,95 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
             frappe.query_report
               .get_filter("branch")
               .$input.prop("disabled", true);
+
+            // HIDE region & branch
+            frappe.query_report.get_filter("region").toggle(false);
+            frappe.query_report.get_filter("branch").toggle(false);
           }
         });
 
+        // ====================================================
+        // REGION → FILTER BRANCHES & SHOW BRANCH
+        // ====================================================
         frappe.query_report
           .get_filter("region")
           .$input.on("change", function () {
             let region_val = frappe.query_report.get_filter_value("region");
 
+            frappe.query_report.set_filter_value("branch", "");
+
             if (region_val) {
+              let filtered_branches = Array.from(
+                region_branch_map[region_val] || []
+              ).sort();
+
+              update_select("branch", filtered_branches);
               frappe.query_report
                 .get_filter("branch")
                 .$input.prop("disabled", false);
+
+              // SHOW branch
+              frappe.query_report.get_filter("branch").toggle(true);
             } else {
               frappe.query_report
                 .get_filter("branch")
                 .$input.prop("disabled", true);
+
+              // HIDE branch
+              frappe.query_report.get_filter("branch").toggle(false);
             }
           });
 
+        // ====================================================
+        // SOL → AUTO-FILL
+        // ====================================================
         frappe.query_report
-          .get_filter("region")
-          .$input.on("click", function (e) {
-            let zone_val = frappe.query_report.get_filter_value("zone");
-            if (!zone_val) {
-              frappe.msgprint("Please select <b>Zone</b> first.");
-              e.preventDefault();
-              return false;
-            }
-          });
+          .get_filter("sol_id")
+          .$input.on("change", function () {
+            let sol_val = frappe.query_report.get_filter_value("sol_id");
 
-        frappe.query_report
-          .get_filter("branch")
-          .$input.on("click", function (e) {
-            let region_val = frappe.query_report.get_filter_value("region");
-            if (!region_val) {
-              frappe.msgprint("Please select <b>Region</b> first.");
-              e.preventDefault();
-              return false;
+            if (!sol_val || !sol_map[sol_val]) {
+              frappe.query_report.set_filter_value("zone", "");
+              frappe.query_report.set_filter_value("region", "");
+              frappe.query_report.set_filter_value("branch", "");
+
+              frappe.query_report.get_filter("region").toggle(false);
+              frappe.query_report.get_filter("branch").toggle(false);
+              return;
             }
+
+            let { zone, region, branch } = sol_map[sol_val];
+
+            frappe.query_report.set_filter_value("zone", zone);
+
+            let filtered_regions = Array.from(
+              zone_region_map[zone] || []
+            ).sort();
+            update_select("region", filtered_regions);
+            frappe.query_report
+              .get_filter("region")
+              .$input.prop("disabled", false);
+            frappe.query_report.set_filter_value("region", region);
+
+            let filtered_branches = Array.from(
+              region_branch_map[region] || []
+            ).sort();
+            update_select("branch", filtered_branches);
+            frappe.query_report
+              .get_filter("branch")
+              .$input.prop("disabled", false);
+            frappe.query_report.set_filter_value("branch", branch);
+
+            // SHOW both
+            frappe.query_report.get_filter("region").toggle(true);
+            frappe.query_report.get_filter("branch").toggle(true);
           });
       },
     });
+
+    // ===================================================================
+    // CARD & CHART LOGIC (UNCHANGED)
+    // ===================================================================
 
     function render_emp_status_cards(
       active_count,
@@ -252,6 +349,7 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
     }
 
     let original_refresh = report.refresh;
+
     report.refresh = function () {
       original_refresh.call(report);
 
@@ -271,37 +369,12 @@ frappe.query_reports["Crm Active and Inactive Employee Report"] = {
           let data = report.data || [];
           render_region_chart(data, zone);
         }, 400);
+
         $("#emp-status-card-container").remove();
       } else {
         $("#emp-status-card-container").remove();
         $("#region-chart-container").remove();
       }
     };
-    // HIDE region & branch initially
-    frappe.query_report.get_filter("region").toggle(false);
-    frappe.query_report.get_filter("branch").toggle(false);
-
-    // When ZONE changes → show REGION
-    frappe.query_report.get_filter("zone").$input.on("change", function () {
-      let zone_val = frappe.query_report.get_filter_value("zone");
-
-      if (zone_val) {
-        frappe.query_report.get_filter("region").toggle(true);
-      } else {
-        frappe.query_report.get_filter("region").toggle(false);
-        frappe.query_report.get_filter("branch").toggle(false);
-      }
-    });
-
-    // When REGION changes → show BRANCH
-    frappe.query_report.get_filter("region").$input.on("change", function () {
-      let region_val = frappe.query_report.get_filter_value("region");
-
-      if (region_val) {
-        frappe.query_report.get_filter("branch").toggle(true);
-      } else {
-        frappe.query_report.get_filter("branch").toggle(false);
-      }
-    });
   },
 };

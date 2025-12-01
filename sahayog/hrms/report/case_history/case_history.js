@@ -5,20 +5,8 @@ frappe.query_reports["Case History"] = {
       label: __("Case ID"),
       fieldtype: "Link",
       options: "Disciplinary Case",
-      reqd: 1,
     },
 
-    {
-      fieldname: "from_date",
-      label: __("From Date"),
-      fieldtype: "Date",
-    },
-    {
-      fieldname: "to_date",
-      label: __("To Date"),
-      fieldtype: "Date",
-      default: frappe.datetime.get_today(),
-    },
     {
       fieldname: "doctype_filter",
       label: __("Document Type"),
@@ -43,18 +31,21 @@ frappe.query_reports["Case History"] = {
   ],
 
   onload: function (report) {
+    // Hide Case Details Message
+    function hide_case_details() {
+      $(".report-message").hide(); // hides the HTML message box
+    }
     // Clear Filter button (WORKING)
     report.page
       .add_inner_button(__("Clear Filter"), function () {
         // Reset all filter fields manually
         report.set_filter_value({
           case_id: "",
-          from_date: "",
-          to_date: frappe.datetime.get_today(),
           doctype_filter: "All",
           sort_by: "Creation Date",
           show_versions: 1,
         });
+        hide_case_details(); // ⬅️ hide message on clear filter
         // Refresh report after resetting
         report.refresh();
       })
@@ -71,6 +62,16 @@ frappe.query_reports["Case History"] = {
     report.page.set_secondary_action(__("Refresh"), function () {
       report.refresh();
     });
+    // --- Hide Case Details When case_id becomes empty ---
+    report.on_filter_change = function () {
+      let case_id = report.get_filter_value("case_id");
+
+      if (!case_id) {
+        $(".report-message").hide(); // Hide when empty
+      } else {
+        $(".report-message").show(); // Show when selected
+      }
+    };
   },
 
   formatter: function (value, row, column, data, default_formatter) {
