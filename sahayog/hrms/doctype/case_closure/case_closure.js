@@ -129,7 +129,7 @@ frappe.ui.form.on("Case Closure", {
       });
     }
 
-    // 1. Add Custom Button
+    //Add Custom Button for Case Review
     if (!frm.is_new()) {
       frm.add_custom_button("Case Review", () => {
         open_approver_dialog(frm);
@@ -409,8 +409,7 @@ function timeline_badge(stage_obj) {
     </div>
   `;
 }
-
-// FUNCTION TO OPEN REVIEWER SELECTION DIALOG
+// FUNCTION TO OPEN REVIEWER SELECTION DIALOG BOX
 function open_approver_dialog(frm) {
   // 1️⃣  Get the employee against whom case is created
   let case_employee_id = frm.doc.employee_id;
@@ -601,132 +600,185 @@ function open_approver_dialog(frm) {
   });
 }
 
-// 5️⃣  SEPARATE FUNCTION → ACTUAL SAVE + EMAIL PROCESS
+// third code of submit_approvers function
 function submit_approvers(frm, values, dialog) {
-  // A. Clear old reviewer rows from parent doc
+
+  // A. Clear old reviewer rows
   frm.clear_table("review_details");
 
-  // B. Add new reviewer values from dialog table
-  for (let row of values.approver_table || []) {
+  // B. Append new reviewer rows
+  (values.approver_table || []).forEach(row => {
     let child = frm.add_child("review_details");
 
     child.employee_id = row.employee_id;
     child.remarks = "";
     child.status = "Pending";
-    child.date_and_time = frappe.datetime.now_datetime(); // current timestamp
-  }
+    child.date_and_time = frappe.datetime.now_datetime();
+  });
 
-  // Refresh table on screen
   frm.refresh_field("review_details");
 
-  // C. Save whole parent document
+  // C. Save parent document
   frm.save().then(() => {
-    // D. Call backend Python method to send verification mail
+
+    // -----------------------------------------------------
+    // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
+    // -----------------------------------------------------
     frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
-
+      method: "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
       args: {
-        approvers: values.approver_table, // list of reviewers
-        case_id: frm.doc.name, // case ID
+        approvers: values.approver_table,
+        case_id: frm.doc.name
       },
-
       freeze: true,
       freeze_message: __("Sending verification emails..."),
+      callback(r) {
+        console.log("START VERIFICATION RESPONSE:", r);
 
-      callback() {
-        frappe.msgprint("Case Review started and emails sent.");
-      },
+        if (r.message?.status !== "ok") {
+          frappe.msgprint({
+            title: __("Verification Failed"),
+            message: r.message?.msg,
+            indicator: "red",
+          });
+          return;
+        }
+
+        frappe.msgprint({
+          title: __("Verification Started"),
+          message: __("Case Review process started successfully."),
+          indicator: "green",
+        });
+      }
     });
 
-    // Close the dialog
+    // -----------------------------------------------------
+    // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
+    // -----------------------------------------------------
+    frappe.call({
+      method: "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+      args: {
+        case_id: frm.doc.name,
+        approvers: JSON.stringify(values.approver_table)
+      },
+      freeze: true,
+      freeze_message: __("Sending review notification email..."),
+      callback(r) {
+        console.log("TEMPLATE EMAIL RESPONSE:", r);
+
+        if (r.message?.status === "disabled") {
+          frappe.msgprint({
+            title: __("Email Disabled"),
+            message: __("Email notifications are disabled."),
+            indicator: "orange",
+          });
+          return;
+        }
+
+        if (r.message?.status === "ok") {
+          frappe.msgprint({
+            title: __("Success"),
+            message: __("Review notification email has been sent."),
+            indicator: "green",
+          });
+          return;
+        }
+
+        frappe.msgprint({
+          title: __("Email Failed"),
+          message: r.message?.msg || __("Could not send review notification email."),
+          indicator: "red",
+        });
+      }
+    });
+
     dialog.hide();
   });
 }
 
-// // function to display review details with employee info
-// function display_review_details_with_employee_info(frm) {
-//   let wrapper = frm.fields_dict.review_details_html.$wrapper;
-//   wrapper.html(`<div>Loading review details...</div>`);
+// function to display review details with employee info
+function display_review_details_with_employee_info(frm) {
+  let wrapper = frm.fields_dict.review_details_html.$wrapper;
+  wrapper.html(`<div>Loading review details...</div>`);
 
-//   if (!frm.doc.review_details || frm.doc.review_details.length === 0) {
-//     wrapper.html(`<div style="color:#888;">No review details available.</div>`);
-//     return;
-//   }
+  if (!frm.doc.review_details || frm.doc.review_details.length === 0) {
+    wrapper.html(`<div style="color:#888;">No review details available.</div>`);
+    return;
+  }
 
-//   let rows = frm.doc.review_details;
-//   let employee_ids = rows.map((r) => r.employee_id);
+  let rows = frm.doc.review_details;
+  let employee_ids = rows.map((r) => r.employee_id);
 
-//   frappe.call({
-//     method: "frappe.client.get_list",
-//     args: {
-//       doctype: "Employee",
-//       filters: { name: ["in", employee_ids] },
-//       fields: [
-//         "name",
-//         "employee_name",
-//         "designation",
-//         "sol_id",
-//         "branch",
-//         "custom_zone",
-//         "custom_region",
-//       ],
-//     },
-//     callback(r) {
-//       let employees = {};
-//       (r.message || []).forEach((emp) => {
-//         employees[emp.name] = emp;
-//       });
-//       let html = `
-//   <table class="table table-bordered"
-//          style="font-size:12px; width:100%; table-layout:fixed;">
+  frappe.call({
+    method: "frappe.client.get_list",
+    args: {
+      doctype: "Employee",
+      filters: { name: ["in", employee_ids] },
+      fields: [
+        "name",
+        "employee_name",
+        "designation",
+        "sol_id",
+        "branch",
+        "custom_zone",
+        "custom_region",
+      ],
+    },
+    callback(r) {
+      let employees = {};
+      (r.message || []).forEach((emp) => {
+        employees[emp.name] = emp;
+      });
+      let html = `
+  <table class="table table-bordered"
+         style="font-size:12px; width:100%; table-layout:fixed;">
 
-//       <thead>
-//           <tr>
-//               <th style="word-wrap:break-word;">Employee ID</th>
-//               <th style="word-wrap:break-word;">Name</th>
-//               <th style="word-wrap:break-word;">Designation</th>
-//               <th style="word-wrap:break-word;">Branch ID</th>
-//               <th style="word-wrap:break-word;">Branch Name</th>
-//               <th style="word-wrap:break-word;">Zone</th>
-//               <th style="word-wrap:break-word;">Region</th>
-//               <th style="word-wrap:break-word;">Status</th>
-//               <th style="word-wrap:break-word;">Remarks</th>
-//               <th style="word-wrap:break-word;">Date & Time</th>
-//           </tr>
-//       </thead>
-//       <tbody>
-// `;
+      <thead>
+          <tr>
+              <th style="word-wrap:break-word;">Employee ID</th>
+              <th style="word-wrap:break-word;">Name</th>
+              <th style="word-wrap:break-word;">Designation</th>
+              <th style="word-wrap:break-word;">Branch ID</th>
+              <th style="word-wrap:break-word;">Branch Name</th>
+              <th style="word-wrap:break-word;">Zone</th>
+              <th style="word-wrap:break-word;">Region</th>
+              <th style="word-wrap:break-word;">Status</th>
+              <th style="word-wrap:break-word;">Remarks</th>
+              <th style="word-wrap:break-word;">Date & Time</th>
+          </tr>
+      </thead>
+      <tbody>
+`;
 
-//       rows.forEach((row) => {
-//         let emp = employees[row.employee_id] || {};
+      rows.forEach((row) => {
+        let emp = employees[row.employee_id] || {};
 
-//         // ✅ Convert date to DD-MM-YYYY hh:mm A
-//         // Correct date formatting using moment.js
-//         let formatted_date = "-";
-//         if (row.date_and_time) {
-//           let dt = frappe.datetime.str_to_obj(row.date_and_time);
-//           formatted_date = moment(dt).format("DD-MM-YYYY hh:mm A");
-//         }
+        // ✅ Convert date to DD-MM-YYYY hh:mm A
+        // Correct date formatting using moment.js
+        let formatted_date = "-";
+        if (row.date_and_time) {
+          let dt = frappe.datetime.str_to_obj(row.date_and_time);
+          formatted_date = moment(dt).format("DD-MM-YYYY hh:mm A");
+        }
 
-//         html += `
-//                 <tr>
-//                     <td>${row.employee_id}</td>
-//                     <td>${emp.employee_name || "-"}</td>
-//                     <td>${emp.designation || "-"}</td>
-//                     <td>${emp.sol_id || "-"}</td>
-//                     <td>${emp.branch || "-"}</td>
-//                     <td>${emp.custom_zone || "-"}</td>
-//                     <td>${emp.custom_region || "-"}</td>
-//                     <td>${row.status || "-"}</td>
-//                     <td>${row.remarks || "-"}</td>
-//                     <td>${formatted_date}</td>
-//                 </tr>
-//             `;
-//       });
+        html += `
+                <tr>
+                    <td>${row.employee_id}</td>
+                    <td>${emp.employee_name || "-"}</td>
+                    <td>${emp.designation || "-"}</td>
+                    <td>${emp.sol_id || "-"}</td>
+                    <td>${emp.branch || "-"}</td>
+                    <td>${emp.custom_zone || "-"}</td>
+                    <td>${emp.custom_region || "-"}</td>
+                    <td>${row.status || "-"}</td>
+                    <td>${row.remarks || "-"}</td>
+                    <td>${formatted_date}</td>
+                </tr>
+            `;
+      });
 
-//       html += `</tbody></table>`;
-//       wrapper.html(html);
-//     },
-//   });
-// }
+      html += `</tbody></table>`;
+      wrapper.html(html);
+    },
+  });
+}

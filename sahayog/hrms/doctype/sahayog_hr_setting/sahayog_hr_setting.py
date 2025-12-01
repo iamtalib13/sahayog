@@ -2,24 +2,27 @@ import frappe
 from frappe.model.document import Document
 from functools import wraps
 
+class SahayogHRSetting(Document):
+    pass
 
+
+# -----------------------------
+# Email Notification Decorator
+# -----------------------------
 def email_notification_enabled(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # Get the single doc value
         setting = frappe.db.get_single_value(
             "Sahayog HR Setting",
             "enable_email_notifications"
         )
 
         if not setting:
-            frappe.logger().info("Email Notification Disabled — Skipping method")
-            return None   # Or custom return message
+            return {
+                "status": "disabled",
+                "msg": "Email notifications are disabled in settings."
+            }
 
         return func(*args, **kwargs)
 
     return wrapper
-
-
-class SahayogHRSetting(Document):
-    pass
