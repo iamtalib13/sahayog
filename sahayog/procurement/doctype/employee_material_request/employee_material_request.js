@@ -498,8 +498,11 @@ frappe.ui.form.on("Employee Material Request", {
       });
     }
     toggle_dashboard_by_status(frm);
+    toggle_collapsible_sections(frm);
   },
-
+  validate(frm) {
+    toggle_collapsible_section(frm);
+  },
   // ------------------------------------------------------------------
   // ONLOAD EVENT - Triggered once when form is first created
   // ------------------------------------------------------------------
@@ -552,6 +555,7 @@ frappe.ui.form.on("Employee Material Request", {
                       },
                       5
                     );
+                    frm.trigger("toggle_collapsible_section");
                   }
                 },
               });
@@ -1583,4 +1587,20 @@ function toggle_dashboard_by_status(frm) {
   } else {
     frm.dashboard.hide();
   }
+}
+function toggle_collapsible_section(frm) {
+  // 🔥 STRICT CHECK - both fields MUST have actual values
+  const employee_has_value =
+    frm.doc.employee && frm.doc.employee.toString().length > 0;
+  const warehouse_has_value =
+    frm.doc.source_warehouse && frm.doc.source_warehouse.toString().length > 0;
+
+  // 🔥 Collapse ONLY when BOTH have values
+  const both_have_values = employee_has_value && warehouse_has_value;
+
+  frm.set_df_property(
+    "assigned_section",
+    "collapsed",
+    both_have_values ? 1 : 0
+  );
 }
