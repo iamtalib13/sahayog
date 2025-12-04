@@ -4,7 +4,7 @@
   "doctype": "Workflow",
   "document_type": "Case Closure",
   "is_active": 1,
-  "modified": "2025-11-24 11:21:01.923986",
+  "modified": "2025-12-04 15:40:05.199318",
   "name": "Case Closure",
   "override_status": 0,
   "send_email_alert": 0,
@@ -36,9 +36,9 @@
     "parentfield": "states",
     "parenttype": "Workflow",
     "send_email": 1,
-    "state": "Under Reviewed",
+    "state": "Under Review",
     "update_field": "status",
-    "update_value": "Under Reviewed",
+    "update_value": "Under Review",
     "workflow_builder_id": null
    },
    {
@@ -80,7 +80,7 @@
     "allow_self_approval": 1,
     "allowed": "HR Support Executive",
     "condition": null,
-    "next_state": "Under Reviewed",
+    "next_state": "Under Review",
     "parent": "Case Closure",
     "parentfield": "transitions",
     "parenttype": "Workflow",
@@ -98,7 +98,7 @@
     "parentfield": "transitions",
     "parenttype": "Workflow",
     "send_email_to_creator": 0,
-    "state": "Under Reviewed",
+    "state": "Under Review",
     "workflow_builder_id": null
    },
    {
