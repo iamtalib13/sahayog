@@ -130,11 +130,15 @@ frappe.ui.form.on("Case Closure", {
     }
 
     //Add Custom Button for Case Review
-    if (!frm.is_new()) {
+    // 1️⃣ Always add "Case Review" button once
+    if (!frm.case_review_button_added) {
+      frm.case_review_button_added = true;
       frm.add_custom_button("Case Review", () => {
         open_approver_dialog(frm);
       });
     }
+    // 2️⃣ Show/Hide and toggle editability of child table
+    toggle_review_details(frm);
   },
   show_print_button: function (frm) {
     if (frm.is_new()) return;
@@ -624,82 +628,92 @@ function submit_approvers(frm, values, dialog) {
 
   // C. Save parent document
   frm.save().then(() => {
-    // -----------------------------------------------------
-    // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
-    // -----------------------------------------------------
-    frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
-      args: {
-        approvers: values.approver_table,
-        case_id: frm.doc.name,
-      },
-      freeze: true,
-      freeze_message: __("Sending verification emails..."),
-      callback(r) {
-        console.log("START VERIFICATION RESPONSE:", r);
+    frm.set_value("status", "Under Review");
 
-        if (r.message?.status !== "ok") {
+    frm.save().then(() => {
+      frappe.show_alert({
+        message: __("Status changed to Under Review"),
+        indicator: "green",
+      });
+      // -----------------------------------------------------
+      // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
+      // -----------------------------------------------------
+      frappe.call({
+        method:
+          "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+        args: {
+          approvers: values.approver_table,
+          case_id: frm.doc.name,
+        },
+        freeze: true,
+        freeze_message: __("Sending verification emails..."),
+        callback(r) {
+          console.log("START VERIFICATION RESPONSE:", r);
+
+          if (r.message?.status !== "ok") {
+            frappe.msgprint({
+              title: __("Verification Failed"),
+              message: r.message?.msg,
+              indicator: "red",
+            });
+            return;
+          }
+
           frappe.msgprint({
-            title: __("Verification Failed"),
-            message: r.message?.msg,
-            indicator: "red",
-          });
-          return;
-        }
-
-        frappe.msgprint({
-          title: __("Verification Started"),
-          message: __("Case Review process started successfully."),
-          indicator: "green",
-        });
-      },
-    });
-
-    // -----------------------------------------------------
-    // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
-    // -----------------------------------------------------
-    frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
-      args: {
-        case_id: frm.doc.name,
-        approvers: JSON.stringify(values.approver_table),
-      },
-      freeze: true,
-      freeze_message: __("Sending review notification email..."),
-      callback(r) {
-        console.log("TEMPLATE EMAIL RESPONSE:", r);
-
-        if (r.message?.status === "disabled") {
-          frappe.msgprint({
-            title: __("Email Disabled"),
-            message: __("Email notifications are disabled."),
-            indicator: "orange",
-          });
-          return;
-        }
-
-        if (r.message?.status === "ok") {
-          frappe.msgprint({
-            title: __("Success"),
-            message: __("Review notification email has been sent."),
+            title: __("Verification Started"),
+            message: __("Case Review process started successfully."),
             indicator: "green",
           });
-          return;
-        }
+        },
+      });
 
-        frappe.msgprint({
-          title: __("Email Failed"),
-          message:
-            r.message?.msg || __("Could not send review notification email."),
-          indicator: "red",
-        });
-      },
-    });
+      // -----------------------------------------------------
+      // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
+      // -----------------------------------------------------
+      frappe.call({
+        method:
+          "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+        args: {
+          case_id: frm.doc.name,
+          approvers: JSON.stringify(values.approver_table),
+        },
+        freeze: true,
+        freeze_message: __("Sending review notification email..."),
+        callback(r) {
+          console.log("TEMPLATE EMAIL RESPONSE:", r);
 
-    dialog.hide();
-  });
+          if (r.message?.status === "disabled") {
+            frappe.msgprint({
+              title: __("Email Disabled"),
+              message: __("Email notifications are disabled."),
+              indicator: "orange",
+            });
+            return;
+          }
+
+          if (r.message?.status === "ok") {
+            frappe.msgprint({
+              title: __("Success"),
+              message: __("Review notification email has been sent."),
+              indicator: "green",
+            });
+            return;
+          }
+
+          frappe.msgprint({
+            title: __("Email Failed"),
+            message:
+              r.message?.msg || __("Could not send review notification email."),
+            indicator: "red",
+          });
+        },
+      });
+
+      // Close the dialog after saving
+      dialog.hide();
+      frm.refresh();
+    }); // <-- closes 2nd save()
+  }); // <-- closes 1st save()
 }
 
 // function to display review details with employee info
@@ -787,4 +801,20 @@ function display_review_details_with_employee_info(frm) {
       wrapper.html(html);
     },
   });
+}
+
+// Function to toggle child table
+function toggle_review_details(frm) {
+  const status = frm.doc.status || "Draft";
+
+  // Only show child table for these statuses
+  const show_table = ["Under Review", "Verified", "Closed"].includes(status);
+  frm.set_df_property("review_details", "hidden", !show_table);
+
+  // Only editable in "Under Review"
+  const editable = status === "Under Review";
+  const field = frm.get_field("review_details");
+  if (field && field.grid) {
+    field.grid.toggle_enable(editable);
+  }
 }
