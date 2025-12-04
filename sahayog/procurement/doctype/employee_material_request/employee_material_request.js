@@ -1245,6 +1245,29 @@ function render_intro_html(frm, data) {
     div4_badge = map[ho_stat];
   }
 
+
+      // Example for Reporting Person card
+
+      const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+
+// ✅ Check remark existence
+    const requestRemark = data.remark && data.remark.trim().length > 0;
+    const rpHasRemark = data.reporting_person_remarks && data.reporting_person_remarks.trim().length > 0;
+    const hoHasRemark = data.ho_officer_remarks && data.ho_officer_remarks.trim().length > 0;
+    
+    console.log('📝 Request Remark:', data.remark ? 'YES' : 'NO');
+    console.log('📝 RP Remark:', data.reporting_person_remarks ? 'YES' : 'NO');
+    console.log('📝 HO Remark:', data.ho_officer_remarks ? 'YES' : 'NO');
+    
+    const requestEnvelope = requestRemark ? 
+        `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">` : '';
+    // ✅ Conditional envelope HTML
+    const rpEnvelope = rpHasRemark ? 
+        `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">` : '';
+    
+    const hoEnvelope = hoHasRemark ? 
+        `<img src=${envelopeImgUrl} title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">` : '';
+
   let html = `
     <style>
       .emr-quick-guide {
@@ -1493,7 +1516,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">2</div>
           <div class="emr-card-title">
           Request Details
-           <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          ${requestEnvelope}
           </div>
         </div>
         <div class="emr-card-line">
@@ -1514,7 +1537,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">3</div>
           <div class="emr-card-title">
           Reporting Person
-          <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          ${rpEnvelope}
           </div>
         </div>
         <div class="emr-card-line">
@@ -1535,7 +1558,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">4</div>
           <div class="emr-card-title">
           HO Officer
-          <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          ${hoEnvelope}
           </div>
         </div>
         <div class="emr-card-line">
