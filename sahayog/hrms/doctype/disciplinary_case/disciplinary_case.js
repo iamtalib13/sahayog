@@ -250,7 +250,11 @@ frappe.ui.form.on("Disciplinary Case", {
   },
   show_print_button: function (frm) {
     if (!frm.is_new()) {
-      const allowed_roles = ["System Manager", "Share Admin"];
+      const allowed_roles = [
+        "System Manager",
+        "HR Support Executive",
+        "HR Support Manager",
+      ];
       if (!frappe.user_roles.some((role) => allowed_roles.includes(role)))
         return;
 
