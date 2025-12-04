@@ -794,59 +794,72 @@ frappe.ui.form.on("Employee Material Request", {
 // ✅ FIXED: Remarks SAVED via whitelisted API before workflow
 function showApprovalRemarkDialog(frm, action) {
     return new Promise((resolve, reject) => {
-        const actionLabels = { 'approve': 'Approve', 'reject': 'Reject', 'skip': 'Skip' };
-        const isReportingPersonStage = frm.doc.status === 'Pending Reporting Person';
-        const remarkField = isReportingPersonStage ? 'reporting_person_remarks' : 'ho_officer_remarks';
-        const approverLabel = isReportingPersonStage ? 'Reporting Person' : 'HO Officer';
-        
-        console.log('🔍 Status:', frm.doc.status, '📝 Field:', remarkField);
-        
+        const actionLabels = { approve: "Approve", reject: "Reject", skip: "Skip" };
+        const isReportingPersonStage = frm.doc.status === "Pending Reporting Person";
+        const remarkField = isReportingPersonStage ? "reporting_person_remarks" : "ho_officer_remarks";
+        const approverLabel = isReportingPersonStage ? "Reporting Person" : "HO Officer";
+
+        console.log("🔍 Status:", frm.doc.status, "📝 Field:", remarkField);
+
         const d = new frappe.ui.Dialog({
             title: `${actionLabels[action]} - ${approverLabel}`,
-            size: 'small',
-            fields: [{
-                fieldtype: 'Small Text',
-                fieldname: 'decision_remark',
-                label: `${approverLabel} Remark`,
-                reqd: 0,
-                description: `Reason for ${actionLabels[action].toLowerCase()}ing`,
-                default: frm.doc[remarkField] || ''
-            }],
-            primary_action_label: 'Submit Decision',
+            size: "small",
+            fields: [
+                {
+                    fieldtype: "Small Text",
+                    fieldname: "decision_remark",
+                    label: `${approverLabel} Remark`,
+                    reqd: 1,  // ✅ MANDATORY NOW
+                    description: `Reason for ${actionLabels[action].toLowerCase()}ing`,
+                    default: frm.doc[remarkField] || ""
+                }
+            ],
+            primary_action_label: "Submit Decision",
             primary_action: (values) => {
-                const remark = values.decision_remark || '';
-                
-                // 🚀 CRITICAL FIX: Save remark via SERVER API before workflow
+                if (!values.decision_remark || !values.decision_remark.trim()) {
+                    frappe.msgprint({
+                        title: "Remark Required",
+                        message: "Please enter a remark before submitting your decision.",
+                        indicator: "red"
+                    });
+                    return;
+                }
+
+                const remark = values.decision_remark.trim();
+
                 frappe.call({
-                    method: 'sahayog.procurement.doctype.employee_material_request.employee_material_request.update_material_request_approval_status',
+                    method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_material_request_approval_status",
                     args: {
                         docname: frm.doc.name,
                         action: action,
                         remark: remark
                     },
                     freeze: true,
-                    freeze_message: 'Saving remark and processing...',
+                    freeze_message: "Saving remark and processing...",
                     callback: (r) => {
                         if (!r.exc) {
-                            console.log('✅ Remark SAVED to server:', remark);
+                            console.log("✅ Remark SAVED to server:", remark);
                             d.hide();
                             resolve();
                         } else {
-                            frappe.msgprint('Failed to save remark', 'Error');
+                            frappe.msgprint("Failed to save remark", "Error");
                             reject();
                         }
                     }
                 });
             },
-            secondary_action_label: 'Cancel',
+            secondary_action_label: "Cancel",
             secondary_action: () => {
                 d.hide();
                 frappe.validated = false;
-                reject('Cancelled');
+                reject("Cancelled");
             }
         });
-        
-        setTimeout(() => d.fields_dict.decision_remark.$wrapper.find('textarea').focus(), 200);
+
+        setTimeout(() => {
+            d.fields_dict.decision_remark.$wrapper.find("textarea").focus();
+        }, 200);
+
         d.show();
     });
 }
