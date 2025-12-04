@@ -141,7 +141,12 @@ frappe.ui.form.on("Case Closure", {
     if (frm.print_button_added) return;
     frm.print_button_added = true;
 
-    const allowed_roles = ["System Manager", "Share Admin"];
+    const allowed_roles = [
+      "System Manager",
+      "HR Support Executive",
+      "HR Support Manager",
+    ];
+
     if (!frappe.user_roles.some((r) => allowed_roles.includes(r))) return;
 
     // Remove old versions if exist
@@ -602,12 +607,11 @@ function open_approver_dialog(frm) {
 
 // third code of submit_approvers function
 function submit_approvers(frm, values, dialog) {
-
   // A. Clear old reviewer rows
   frm.clear_table("review_details");
 
   // B. Append new reviewer rows
-  (values.approver_table || []).forEach(row => {
+  (values.approver_table || []).forEach((row) => {
     let child = frm.add_child("review_details");
 
     child.employee_id = row.employee_id;
@@ -620,15 +624,15 @@ function submit_approvers(frm, values, dialog) {
 
   // C. Save parent document
   frm.save().then(() => {
-
     // -----------------------------------------------------
     // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
     // -----------------------------------------------------
     frappe.call({
-      method: "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+      method:
+        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
       args: {
         approvers: values.approver_table,
-        case_id: frm.doc.name
+        case_id: frm.doc.name,
       },
       freeze: true,
       freeze_message: __("Sending verification emails..."),
@@ -649,17 +653,18 @@ function submit_approvers(frm, values, dialog) {
           message: __("Case Review process started successfully."),
           indicator: "green",
         });
-      }
+      },
     });
 
     // -----------------------------------------------------
     // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
     // -----------------------------------------------------
     frappe.call({
-      method: "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+      method:
+        "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
       args: {
         case_id: frm.doc.name,
-        approvers: JSON.stringify(values.approver_table)
+        approvers: JSON.stringify(values.approver_table),
       },
       freeze: true,
       freeze_message: __("Sending review notification email..."),
@@ -686,10 +691,11 @@ function submit_approvers(frm, values, dialog) {
 
         frappe.msgprint({
           title: __("Email Failed"),
-          message: r.message?.msg || __("Could not send review notification email."),
+          message:
+            r.message?.msg || __("Could not send review notification email."),
           indicator: "red",
         });
-      }
+      },
     });
 
     dialog.hide();
