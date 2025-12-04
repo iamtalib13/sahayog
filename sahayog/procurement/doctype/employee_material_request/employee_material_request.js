@@ -34,6 +34,7 @@ frappe.ui.form.on("Employee Material Request", {
     }
   },
 
+
   after_workflow_action: function (frm) {
     frm.reload_doc();
   },
@@ -687,45 +688,184 @@ frappe.ui.form.on("Employee Material Request", {
   //   }
   // },
 
-  before_workflow_action: function (frm) {
-    console.log(
-      `Before workflow action triggered: Selected action = ${frm.selected_workflow_action}`
-    );
-    console.log(`Current status: ${frm.doc.status}`);
-    console.log(`reporting_person_status: ${frm.doc.reporting_person_status}`);
-    console.log(`ho_officer_status: ${frm.doc.ho_officer_status}`);
+  // before_workflow_action: function (frm) {
+  //   console.log(
+  //     `Before workflow action triggered: Selected action = ${frm.selected_workflow_action}`
+  //   );
+  //   console.log(`Current status: ${frm.doc.status}`);
+  //   console.log(`reporting_person_status: ${frm.doc.reporting_person_status}`);
+  //   console.log(`ho_officer_status: ${frm.doc.ho_officer_status}`);
 
-    let action = frm.selected_workflow_action.toLowerCase();
+  //   let action = frm.selected_workflow_action.toLowerCase();
 
-    if (["approve", "reject", "skip"].includes(action)) {
-      frappe.dom.unfreeze();
+  //   if (["approve", "reject", "skip"].includes(action)) {
+  //     frappe.dom.unfreeze();
 
-      return new Promise((resolve, reject) => {
-        frappe.confirm(
-          `Are you sure you want to ${action} this request?`,
-          () => {
-            console.log(`User confirmed action: ${action}`);
-            resolve();
-          },
-          () => {
-            frappe.validated = false;
-            console.log(`User cancelled action: ${action}`);
-            reject();
-          }
-        );
-      });
-    }
-  },
+  //     return new Promise((resolve, reject) => {
+  //       frappe.confirm(
+  //         `Are you sure you want to ${action} this request?`,
+  //         () => {
+  //           console.log(`User confirmed action: ${action}`);
+  //           resolve();
+  //         },
+  //         () => {
+  //           frappe.validated = false;
+  //           console.log(`User cancelled action: ${action}`);
+  //           reject();
+  //         }
+  //       );
+  //     });
+  //   }
+  // },
+
+
+
+ // Updated before_workflow_action with proper remark handling
+  // FIXED before_workflow_action - removed timeline error
+    before_workflow_action: function(frm) {
+        let action = frm.selected_workflow_action.toLowerCase();
+        
+        if (action === 'submit') {
+            frappe.dom.unfreeze();
+            if (!frm.doc.reporting_person) {
+                frappe.throw('Please set Reporting Person');
+                return false;
+            }
+            if (!frm.doc.items || frm.doc.items.length === 0) {
+                frappe.throw('Please add at least one item');
+                return false;
+            }
+            if (typeof validate_required_by_date === 'function' && !validate_required_by_date(frm)) {
+                return false;
+            }
+            
+            return new Promise((resolve, reject) => {
+                frappe.confirm('<b>Are all fields correctly entered?</b>', 
+                    () => resolve(), 
+                    () => {
+                        frappe.validated = false;
+                        reject('Submission cancelled.');
+                    }
+                );
+            });
+        }
+        
+        if (['approve', 'reject', 'skip'].includes(action)) {
+            frappe.dom.unfreeze();
+            return showApprovalRemarkDialog(frm, action);
+        }
+        
+        return true;
+    },
+    
+    // refresh: function(frm) {
+    //     const blocked_status = ["Draft", "Approved", "Rejected"];
+        
+    //     // Add Manage Approver button - ONLY for saved docs, Admin/Store Manager
+    //     if (!frm.is_new() && !blocked_status.includes(frm.doc.status) &&
+    //         (frappe.user.has_role('Administrator') || frappe.user.has_role('Store Manager'))) {
+    //         if (!frm.custom_buttons || !frm.custom_buttons['Manage Approver']) {
+    //             frm.add_custom_button('Manage Approver', () => openManageApprovalsDialog(frm), 'Actions');
+    //         }
+    //     }
+        
+    //     // ✅ FIXED: Safe collapsible toggle with existence check
+    //     // if (typeof toggle_collapsible_sections === 'function') {
+    //     //     toggle_collapsible_sections(frm);
+    //     // }
+        
+    //     setformintro(frm);
+    // },
+
   after_workflow_action: function (frm) {
-    console.log("After workflow action triggered");
-    console.log("Updated status:", frm.doc.status);
-    console.log(
-      "Updated reporting_person_status:",
-      frm.doc.reporting_person_status
-    );
-    console.log("Updated ho_officer_status:", frm.doc.ho_officer_status);
+    // console.log("After workflow action triggered");
+    // console.log("Updated status:", frm.doc.status);
+    // console.log(
+    //   "Updated reporting_person_status:",
+    //   frm.doc.reporting_person_status
+    // );
+    // console.log("Updated ho_officer_status:", frm.doc.ho_officer_status);
   },
 });
+
+
+
+// New function to show remark dialog for all approval actions
+// ✅ FIXED: Remarks SAVED via whitelisted API before workflow
+function showApprovalRemarkDialog(frm, action) {
+    return new Promise((resolve, reject) => {
+        const actionLabels = { approve: "Approve", reject: "Reject", skip: "Skip" };
+        const isReportingPersonStage = frm.doc.status === "Pending Reporting Person";
+        const remarkField = isReportingPersonStage ? "reporting_person_remarks" : "ho_officer_remarks";
+        const approverLabel = isReportingPersonStage ? "Reporting Person" : "HO Officer";
+
+        console.log("🔍 Status:", frm.doc.status, "📝 Field:", remarkField);
+
+        const d = new frappe.ui.Dialog({
+            title: `${actionLabels[action]} - ${approverLabel}`,
+            size: "small",
+            fields: [
+                {
+                    fieldtype: "Small Text",
+                    fieldname: "decision_remark",
+                    label: `${approverLabel} Remark`,
+                    reqd: 1,  // ✅ MANDATORY NOW
+                    description: `Reason for ${actionLabels[action].toLowerCase()}ing`,
+                    default: frm.doc[remarkField] || ""
+                }
+            ],
+            primary_action_label: "Submit Decision",
+            primary_action: (values) => {
+                if (!values.decision_remark || !values.decision_remark.trim()) {
+                    frappe.msgprint({
+                        title: "Remark Required",
+                        message: "Please enter a remark before submitting your decision.",
+                        indicator: "red"
+                    });
+                    return;
+                }
+
+                const remark = values.decision_remark.trim();
+
+                frappe.call({
+                    method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_material_request_approval_status",
+                    args: {
+                        docname: frm.doc.name,
+                        action: action,
+                        remark: remark
+                    },
+                    freeze: true,
+                    freeze_message: "Saving remark and processing...",
+                    callback: (r) => {
+                        if (!r.exc) {
+                            console.log("✅ Remark SAVED to server:", remark);
+                            d.hide();
+                            resolve();
+                        } else {
+                            frappe.msgprint("Failed to save remark", "Error");
+                            reject();
+                        }
+                    }
+                });
+            },
+            secondary_action_label: "Cancel",
+            secondary_action: () => {
+                d.hide();
+                frappe.validated = false;
+                reject("Cancelled");
+            }
+        });
+
+        setTimeout(() => {
+            d.fields_dict.decision_remark.$wrapper.find("textarea").focus();
+        }, 200);
+
+        d.show();
+    });
+}
+
+
+
 
 // ==================================================================
 // CHILD TABLE EVENTS - Material Request Items
@@ -860,7 +1000,7 @@ frappe.ui.form.on("Material Request Items", {
 // ==================================================================
 
 function set_form_intro(frm) {
-  console.log("hello from intro");
+  // console.log("hello from intro");
   // Clear any existing intro
   frm.set_intro("");
 
@@ -890,13 +1030,13 @@ function fetch_intro_data_with_cache(frm) {
 
   if (cached_data) {
     // Cache hit - render immediately
-    console.log("Loading intro from cache:", frm.doc.name);
+    // console.log("Loading intro from cache:", frm.doc.name);
     render_intro_html(frm, cached_data);
     return;
   }
 
   // Cache miss - fetch from server
-  console.log("Fetching intro from server:", frm.doc.name);
+  // console.log("Fetching intro from server:", frm.doc.name);
 
   frappe.call({
     method:
@@ -926,7 +1066,7 @@ function fetch_intro_data_with_cache(frm) {
       }
     },
     error: function (err) {
-      console.error("Error fetching intro data:", err);
+      // console.error("Error fetching intro data:", err);
       render_intro_fallback(frm);
     },
   });
@@ -952,7 +1092,7 @@ function get_from_cache(key, duration) {
 
     return parsed.data;
   } catch (e) {
-    console.error("Cache read error:", e);
+    // console.error("Cache read error:", e);
     return null;
   }
 }
@@ -977,17 +1117,17 @@ function save_to_cache(key, data, max_items, key_prefix) {
   } catch (e) {
     // localStorage full - clean and retry
     if (e.name === "QuotaExceededError") {
-      console.warn("localStorage full, cleaning old entries...");
+      // console.warn("localStorage full, cleaning old entries...");
       clean_old_cache(Math.floor(max_items / 2), key_prefix);
 
       // Retry save
       try {
         localStorage.setItem(key, JSON.stringify(cache_entry));
       } catch (e2) {
-        console.error("Failed to save to cache after cleanup:", e2);
+        // console.error("Failed to save to cache after cleanup:", e2);
       }
     } else {
-      console.error("Cache write error:", e);
+      // console.error("Cache write error:", e);
     }
   }
 }
@@ -1028,10 +1168,10 @@ function clean_old_cache(max_items, key_prefix) {
         localStorage.removeItem(cache_entries[i].key);
       }
 
-      console.log(`Cleaned ${to_remove} old cache entries`);
+      // console.log(`Cleaned ${to_remove} old cache entries`);
     }
   } catch (e) {
-    console.error("Cache cleanup error:", e);
+    // console.error("Cache cleanup error:", e);
   }
 }
 
@@ -1104,6 +1244,29 @@ function render_intro_html(frm, data) {
     };
     div4_badge = map[ho_stat];
   }
+
+
+      // Example for Reporting Person card
+
+      const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+
+// ✅ Check remark existence
+    const requestRemark = data.remark && data.remark.trim().length > 0;
+    const rpHasRemark = data.reporting_person_remarks && data.reporting_person_remarks.trim().length > 0;
+    const hoHasRemark = data.ho_officer_remarks && data.ho_officer_remarks.trim().length > 0;
+    
+    console.log('📝 Request Remark:', data.remark ? 'YES' : 'NO');
+    console.log('📝 RP Remark:', data.reporting_person_remarks ? 'YES' : 'NO');
+    console.log('📝 HO Remark:', data.ho_officer_remarks ? 'YES' : 'NO');
+    
+    const requestEnvelope = requestRemark ? 
+        `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">` : '';
+    // ✅ Conditional envelope HTML
+    const rpEnvelope = rpHasRemark ? 
+        `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">` : '';
+    
+    const hoEnvelope = hoHasRemark ? 
+        `<img src=${envelopeImgUrl} title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">` : '';
 
   let html = `
     <style>
@@ -1353,7 +1516,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">2</div>
           <div class="emr-card-title">
           Request Details
-           <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          ${requestEnvelope}
           </div>
         </div>
         <div class="emr-card-line">
@@ -1374,7 +1537,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">3</div>
           <div class="emr-card-title">
           Reporting Person
-          <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          ${rpEnvelope}
           </div>
         </div>
         <div class="emr-card-line">
@@ -1395,7 +1558,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">4</div>
           <div class="emr-card-title">
           HO Officer
-          <img src="/assets/sahayog/images/envelope.png" title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">
+          ${hoEnvelope}
           </div>
         </div>
         <div class="emr-card-line">
@@ -1413,8 +1576,8 @@ function render_intro_html(frm, data) {
   </div>
 
   `;
-  console.log("request datetime", data.request_datetime);
-  console.log("Status from intro data:", data.status);
+  // console.log("request datetime", data.request_datetime);
+  // console.log("Status from intro data:", data.status);
 
   frm.set_intro(html);
 }
