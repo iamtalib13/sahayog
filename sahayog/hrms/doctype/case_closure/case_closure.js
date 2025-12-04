@@ -611,17 +611,19 @@ function open_approver_dialog(frm) {
 
 // third code of submit_approvers function
 function submit_approvers(frm, values, dialog) {
-  // A. Clear old reviewer rows
-  frm.clear_table("review_details");
-
-  // B. Append new reviewer rows
+  const existing_reviewers = (frm.doc.review_details || []).map(
+    (r) => r.employee_id
+  );
+  // B. Append new reviewers to child table
+  // Append only new reviewers
   (values.approver_table || []).forEach((row) => {
-    let child = frm.add_child("review_details");
-
-    child.employee_id = row.employee_id;
-    child.remarks = "";
-    child.status = "Pending";
-    child.date_and_time = frappe.datetime.now_datetime();
+    if (!existing_reviewers.includes(row.employee_id)) {
+      let child = frm.add_child("review_details");
+      child.employee_id = row.employee_id;
+      child.remarks = "";
+      child.status = "Pending";
+      child.date_and_time = frappe.datetime.now_datetime();
+    }
   });
 
   frm.refresh_field("review_details");
