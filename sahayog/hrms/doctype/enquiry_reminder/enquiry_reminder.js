@@ -143,7 +143,11 @@ frappe.ui.form.on("Enquiry Reminder", {
     // Check if button already exists (safer than boolean flag)
     if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
-    const allowed_roles = ["System Manager", "Share Admin"];
+    const allowed_roles = [
+      "System Manager",
+      "HR Support Executive",
+      "HR Support Manager",
+    ];
     if (!frappe.user_roles.some((r) => allowed_roles.includes(r))) return;
 
     // Remove old versions if exist
