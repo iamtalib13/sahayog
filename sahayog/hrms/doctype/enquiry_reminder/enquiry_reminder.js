@@ -119,7 +119,10 @@ frappe.ui.form.on("Enquiry Reminder", {
       btn.removeClass("btn-default").addClass("btn-primary");
     }
 
-    frm.trigger("show_print_button");
+    // Load print button AFTER UI is fully rendered
+    frappe.after_ajax(() => {
+      frm.trigger("show_print_button");
+    });
 
     if (!frm.is_new() && frm.doc.case_id) {
       frappe.call({
@@ -132,10 +135,13 @@ frappe.ui.form.on("Enquiry Reminder", {
       });
     }
   },
+
   show_print_button: function (frm) {
     if (frm.is_new()) return;
     if (frm.print_button_added) return;
     frm.print_button_added = true;
+    // Check if button already exists (safer than boolean flag)
+    if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
     const allowed_roles = ["System Manager", "Share Admin"];
     if (!frappe.user_roles.some((r) => allowed_roles.includes(r))) return;
