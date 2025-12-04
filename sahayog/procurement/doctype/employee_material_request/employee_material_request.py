@@ -1012,3 +1012,23 @@ def admin_manage_approvers(docname, rp_skip=0, ho_skip=0,
         "reporting_person_status": doc.reporting_person_status,
         "ho_officer_status": doc.ho_officer_status
     }
+
+
+
+@frappe.whitelist()
+def update_material_request_approval_status(docname, action, remark=""):
+    """Save approval remark before workflow action"""
+    doc = frappe.get_doc("Employee Material Request", docname)
+    
+    # Set remark based on current stage
+    if doc.status == "Pending Reporting Person":
+        doc.reporting_person_remarks = remark
+    elif doc.status == "Pending HO Approval":
+        doc.ho_officer_remarks = remark
+    
+    # Save remark to database
+    doc.save()
+    frappe.db.commit()
+    
+    frappe.logger().info(f"Remark saved for {docname}: {remark} by {action}")
+    return {"success": True, "remark": remark}
