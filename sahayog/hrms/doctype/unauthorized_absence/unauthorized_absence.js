@@ -3,6 +3,16 @@
 
 frappe.ui.form.on("Unauthorized Absence", {
   refresh(frm) {
+  if (!frm.is_new()) {
+      const btn = frm.add_custom_button("View Case History", function () {
+        frappe.set_route("query-report", "Case History", {
+          case_id: frm.doc.case_id,
+        });
+      });
+
+      btn.removeClass("btn-default").addClass("btn-primary");
+    }
+
     // ✅ Call print button function
 
     frm.trigger("show_print_button");
