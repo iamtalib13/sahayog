@@ -1,7 +1,6 @@
 frappe.ui.form.on("Stock Entry", {
   refresh: function (frm) {
-
-    if(frappe.session.user !== "Administrator") {
+    if (frappe.session.user !== "Administrator") {
       frm.trigger("hide_rejected_quantity");
     }
 
@@ -10,13 +9,17 @@ frappe.ui.form.on("Stock Entry", {
     frm.trigger("set_page_title");
     frm.trigger("set_child_table_read_only");
     frm.trigger("set_warehouse");
-
+    if (frm.doc.custom_material_request) {
+      frm.set_value(
+        "custom_material_request_doctype",
+        "Employee Material Request"
+      );
+    }
   },
 
   onload: function (frm) {
     frm.trigger("set_page_title");
     frm.trigger("set_metrial_transfer_default");
-
   },
 
   set_page_title: function (frm) {
@@ -32,20 +35,20 @@ frappe.ui.form.on("Stock Entry", {
     }
   },
 
-  set_metrial_transfer_default: function(frm) {
+  set_metrial_transfer_default: function (frm) {
     // Allowed values (same as in Stock Entry Type DocType)
-    
+
     const allowed_types = [
       { label: "Material Transfer", value: "Material Transfer" },
-      { label: "Material Issue", value: "Material Issue" }
+      { label: "Material Issue", value: "Material Issue" },
     ];
 
     // Restrict the Link field to only these values
-    frm.fields_dict["stock_entry_type"].get_query = function() {
+    frm.fields_dict["stock_entry_type"].get_query = function () {
       return {
         filters: {
-          name: ["in", allowed_types.map(opt => opt.value)]
-        }
+          name: ["in", allowed_types.map((opt) => opt.value)],
+        },
       };
     };
 
@@ -53,15 +56,14 @@ frappe.ui.form.on("Stock Entry", {
     if (frm.is_new()) {
       frm.set_value("stock_entry_type", "Material Transfer");
     }
-
   },
-  set_child_table_read_only: function(frm) {
+  set_child_table_read_only: function (frm) {
     const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
     if (!grid) return;
 
     // disable editing for these child-table fields (works for existing & new rows)
-    grid.toggle_enable('s_warehouse', false);
-    grid.toggle_enable('t_warehouse', false);    
+    grid.toggle_enable("s_warehouse", false);
+    grid.toggle_enable("t_warehouse", false);
   },
 
   customize_ui: function (frm) {
@@ -96,7 +98,7 @@ frappe.ui.form.on("Stock Entry", {
       "supplier_info_tab",
       "accounting_dimensions_section",
       "other_info_tab",
-      "tab_connections"
+      "tab_connections",
       // replicate or customize based on Stock Entry fields similar to Purchase Receipt
     ];
 
@@ -106,27 +108,26 @@ frappe.ui.form.on("Stock Entry", {
       $(`#stock-entry-${fieldname}-tab`).hide();
 
       console.log("Hidden field/tab:", fieldname);
-      });
-      
-      //hide submit button when user is not in allowed roles
-      let allowed_roles = ["Administrator", "Owner", "Branch Manager"];
-      let has_role = allowed_roles.some(role => frappe.user.has_role(role));
+    });
 
-      if (frm.doc.__islocal) {
-        // New document - show Save button for all
-        frm.page.btn_primary.show();
+    //hide submit button when user is not in allowed roles
+    let allowed_roles = ["Administrator", "Owner", "Branch Manager"];
+    let has_role = allowed_roles.some((role) => frappe.user.has_role(role));
+
+    if (frm.doc.__islocal) {
+      // New document - show Save button for all
+      frm.page.btn_primary.show();
+    } else {
+      // Existing document - toggle Submit button visibility based on role
+      if (!has_role) {
+        frm.page.btn_primary.hide(); // hide Submit button if no role
       } else {
-        // Existing document - toggle Submit button visibility based on role
-        if (!has_role) {
-          frm.page.btn_primary.hide();  // hide Submit button if no role
-        } else {
-          frm.page.btn_primary.show();  // show Submit button for allowed roles
-        }
+        frm.page.btn_primary.show(); // show Submit button for allowed roles
       }
+    }
   },
-    hide_rejected_quantity: function(frm) {
+  hide_rejected_quantity: function (frm) {
     setTimeout(() => {
-
       // Hide "Get Items From" button by its data-label/text
       $('button[data-label*="Get Items From"]').hide();
 
@@ -142,31 +143,30 @@ frappe.ui.form.on("Stock Entry", {
       $('button:contains("Preview")').hide();
       frm.set_df_property("from_warehouse", "read_only", 1);
     }, 200);
-    
   },
-set_warehouse: function(frm) {
-  if(frappe.session.user !== "Administrator") {
-  if (frm.is_new()) {
-    frappe.call({
-      method: "sahayog.procurement.api.stock_entry_report.get_user_warehouse",
-      callback: function(r) {
-        if (r.message) {
-          let warehouse = r.message.warehouse;
-          console.log("Warehouse:", warehouse);
+  set_warehouse: function (frm) {
+    if (frappe.session.user !== "Administrator") {
+      if (frm.is_new()) {
+        frappe.call({
+          method:
+            "sahayog.procurement.api.stock_entry_report.get_user_warehouse",
+          callback: function (r) {
+            if (r.message) {
+              let warehouse = r.message.warehouse;
+              console.log("Warehouse:", warehouse);
 
-          // set value first
-          frm.set_value("from_warehouse", warehouse);
-        }
+              // set value first
+              frm.set_value("from_warehouse", warehouse);
+            }
+          },
+        });
       }
-    });
-  }
-}}
-,
-
+    }
+  },
 });
 
 frappe.ui.form.on("Stock Entry", {
-  refresh: function(frm) {
+  refresh: function (frm) {
     // Add a custom button
     frm.add_custom_button("Show Stock Balance", () => {
       if (!frm.doc.to_warehouse) {
@@ -180,24 +180,23 @@ frappe.ui.form.on("Stock Entry", {
       }
 
       // Collect all item codes from child table
-      const item_codes = frm.doc.items.map(row => row.item_code);
+      const item_codes = frm.doc.items.map((row) => row.item_code);
 
       frappe.call({
-        method: "sahayog.procurement.api.stock_entry_report.get_available_qty"
-,
+        method: "sahayog.procurement.api.stock_entry_report.get_available_qty",
         args: {
           warehouse: frm.doc.to_warehouse,
           item_codes: item_codes,
-            // pass array of item codes
+          // pass array of item codes
         },
-        callback: function(r) {
+        callback: function (r) {
           if (r.message) {
             show_stock_balance_dialog(r.message);
           }
-        }
+        },
       });
     });
-  }
+  },
 });
 
 function show_stock_balance_dialog(bins) {
@@ -211,24 +210,22 @@ function show_stock_balance_dialog(bins) {
       </tr>
     </thead>
     <tbody>`;
-  
-  bins.forEach(bin => {
+
+  bins.forEach((bin) => {
     html += `<tr>
       <td>${bin.item_code}</td>
-      <td>${bin.item_name || ''}</td>
+      <td>${bin.item_name || ""}</td>
       <td>${bin.warehouse}</td>
       <td>${bin.actual_qty}</td>
     </tr>`;
   });
-  
+
   html += `</tbody></table>`;
 
   let d = new frappe.ui.Dialog({
-    title: 'Stock Balance Report',
-    size: 'large',
-    fields: [
-      {fieldtype: 'HTML', fieldname: 'stock_balance_html'},
-    ]
+    title: "Stock Balance Report",
+    size: "large",
+    fields: [{ fieldtype: "HTML", fieldname: "stock_balance_html" }],
   });
 
   d.fields_dict.stock_balance_html.$wrapper.html(html);
