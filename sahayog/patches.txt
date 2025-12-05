@@ -15,6 +15,4 @@ sahayog.patches.add_role_in_workspace
 sahayog.patches.set_employee_create_user_permission_default
 sahayog.patches.set_ignore_user_permission_in_lead
 sahayog.patches.update_operation_lead_owner
-sahayog.patches.custom_fields.create_connection_custom_fields_emmr
-sahayog.patches.custom_fields.create_connection_custom_fields_emmr_asset
 sahayog.patches.fixtures.create_asset_state_workflow

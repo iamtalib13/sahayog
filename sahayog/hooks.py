@@ -162,7 +162,9 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_Material_Request_Item-custom_custom_metrial_transfre_purches_status.execute",
     "sahayog.patches.fixtures.create_employee_material_request_workflow.execute",
     "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
-    # "sahayog.patches.fixtures.create_asset_state_workflow.execute",
+    "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
+    "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
+
 ]
 # Uninstallation
 # ------------
