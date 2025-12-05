@@ -117,8 +117,8 @@ frappe.ui.form.on("Case Closure", {
     }
 
     frappe.after_ajax(() => {
-    frm.trigger("show_print_button");
-  });
+      frm.trigger("show_print_button");
+    });
     if (!frm.is_new() && frm.doc.case_id) {
       frappe.call({
         method:
@@ -132,20 +132,18 @@ frappe.ui.form.on("Case Closure", {
 
     //Add Custom Button for Case Review
     // 1️⃣ Always add "Case Review" button once
-    if (!frm.case_review_button_added) {
-      frm.case_review_button_added = true;
-      frm.add_custom_button("Case Review", () => {
-        open_approver_dialog(frm);
-      });
-    }
+    // --- FIXED CASE REVIEW BUTTON ----
+    frappe.after_ajax(() => {
+      add_case_review_button(frm);
+    });
     // 2️⃣ Show/Hide and toggle editability of child table
     toggle_review_details(frm);
   },
-  
+
   show_print_button: function (frm) {
     if (frm.is_new()) return;
 
- if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
+    if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
     const allowed_roles = [
       "System Manager",
@@ -820,4 +818,17 @@ function toggle_review_details(frm) {
   if (field && field.grid) {
     field.grid.toggle_enable(editable);
   }
+}
+
+function add_case_review_button(frm) {
+  // Prevent duplicates by checking DOM already has button
+  if ($(frm.page.wrapper).find(".case-review-btn").length) return;
+
+  // Add button
+  const btn = frm.page.add_button("Case Review", () => {
+    open_approver_dialog(frm);
+  });
+
+  // Styling + unique class
+  btn.addClass("btn-primary case-review-btn");
 }
