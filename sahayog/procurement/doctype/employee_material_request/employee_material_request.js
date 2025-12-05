@@ -1249,32 +1249,99 @@ function render_intro_html(frm, data) {
 
   // Example for Reporting Person card
 
-  const envelopeImgUrl =
-    frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+  // const envelopeImgUrl =
+  //   frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+  
+        // ✅ CLICKABLE ENVELOPE with remark popup
+    // const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
 
-  // ✅ Check remark existence
-  const requestRemark = data.remark && data.remark.trim().length > 0;
-  const rpHasRemark =
-    data.reporting_person_remarks &&
-    data.reporting_person_remarks.trim().length > 0;
-  const hoHasRemark =
-    data.ho_officer_remarks && data.ho_officer_remarks.trim().length > 0;
+  // // ✅ Check remark existence
+  // const requestRemark = data.remark && data.remark.trim().length > 0;
+  // const rpHasRemark =
+  //   data.reporting_person_remarks &&
+  //   data.reporting_person_remarks.trim().length > 0;
+  // const hoHasRemark =
+  //   data.ho_officer_remarks && data.ho_officer_remarks.trim().length > 0;
 
-  console.log("📝 Request Remark:", data.remark ? "YES" : "NO");
-  console.log("📝 RP Remark:", data.reporting_person_remarks ? "YES" : "NO");
-  console.log("📝 HO Remark:", data.ho_officer_remarks ? "YES" : "NO");
+  // console.log("📝 Request Remark:", data.remark ? "YES" : "NO");
+  // console.log("📝 RP Remark:", data.reporting_person_remarks ? "YES" : "NO");
+  // console.log("📝 HO Remark:", data.ho_officer_remarks ? "YES" : "NO");
 
-  const requestEnvelope = requestRemark
-    ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">`
-    : "";
-  // ✅ Conditional envelope HTML
-  const rpEnvelope = rpHasRemark
-    ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">`
-    : "";
+  // const requestEnvelope = requestRemark
+  //   ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">`
+  //   : "";
+  // // ✅ Conditional envelope HTML
+  // const rpEnvelope = rpHasRemark
+  //   ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">`
+  //   : "";
 
-  const hoEnvelope = hoHasRemark
-    ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">`
-    : "";
+  // const hoEnvelope = hoHasRemark
+  //   ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">`
+  //   : "";
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //   // Remark existence checks
+    // const rpHasRemark = data.reporting_person_remarks && data.reporting_person_remarks.trim().length > 0;
+    // const hoHasRemark = data.ho_officer_remarks && data.ho_officer_remarks.trim().length > 0;
+    // const div2HasRemark = data.remark && data.remark.trim().length > 0;
+    
+    // // ✅ CLICKABLE ENVELOPE with remark popup
+    // const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+    
+    // // DIV 2 Envelope - Request remark
+    // const div2Envelope = div2HasRemark ? 
+    //     `<img src="${envelopeImgUrl}" title="Click to view remark" 
+    //           class="remark-envelope" 
+    //           data-remark="${frappe.utils.escape_html(data.remark || '')}"
+    //           style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle; cursor: pointer; opacity: 0.8;"
+    //           onmouseover="this.style.opacity='1'" 
+    //           onmouseout="this.style.opacity='0.8'">` : '';
+    
+    // // DIV 3 Envelope - Reporting Person remark  
+    // const rpEnvelope = rpHasRemark ? 
+    //     `<img src="${envelopeImgUrl}" title="Click to view remark" 
+    //           class="remark-envelope" 
+    //           data-remark="${frappe.utils.escape_html(data.reporting_person_remarks || '')}"
+    //           style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle; cursor: pointer; opacity: 0.8;"
+    //           onmouseover="this.style.opacity='1'" 
+    //           onmouseout="this.style.opacity='0.8'">` : '';
+    
+    // // DIV 4 Envelope - HO Officer remark
+    // const hoEnvelope = hoHasRemark ? 
+    //     `<img src="${envelopeImgUrl}" title="Click to view remark" 
+    //           class="remark-envelope" 
+    //           data-remark="${frappe.utils.escape_html(data.ho_officer_remarks || '')}"
+    //           style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle; cursor: pointer; opacity: 0.8;"
+    //           onmouseover="this.style.opacity='1'" 
+    //           onmouseout="this.style.opacity='0.8'">` : '';
+
+
+  // ✅ Store remarks in JS variables
+  const requestRemark = data.remark || '';
+  const rpRemark = data.reporting_person_remarks || '';
+  const hoRemark = data.ho_officer_remarks || '';
+  
+  console.log('📝 Remarks loaded:', { requestRemark, rpRemark, hoRemark }); // DEBUG
+  
+  const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+  
+  const div2Envelope = requestRemark.trim() ? 
+      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="request" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
+  
+  const rpEnvelope = rpRemark.trim() ? 
+      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="reporting" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
+  
+  const hoEnvelope = hoRemark.trim() ? 
+      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="ho" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
+
+
 
   let html = `
     <style>
@@ -1388,6 +1455,36 @@ function render_intro_html(frm, data) {
         background: rgb(128, 128, 128) !important; /* Gray */
         color: white !important;
       }
+
+
+      /* Add hover effect for envelope */
+        .remark-envelope:hover {
+            transform: scale(1.1) !important;
+            opacity: 1 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .remark-popup {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .remark-popup .remark-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #2c3e50;
+        }
+
+
+
+        .remark-envelope:hover { transform: scale(1.1) !important; opacity: 1 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .remark-popup { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .remark-popup .remark-title { font-weight: 600; margin-bottom: 6px; color: #2c3e50; }
+        .remark-content { white-space: pre-wrap; word-break: break-word; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 4px solid #007bff; margin-top: 8px; font-family: monospace; }
 
       /* ========== LIGHT MODE STYLES ========== */
       html[data-theme-mode="light"] .form-message.blue {
@@ -1524,7 +1621,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">2</div>
           <div class="emr-card-title">
           Request Details
-          ${requestEnvelope}
+          ${div2Envelope}
           </div>
         </div>
         <div class="emr-card-line">
@@ -1583,12 +1680,67 @@ function render_intro_html(frm, data) {
     </div>
   </div>
 
+
+     <!-- ✅ FIXED SCRIPT - PROPERLY CLOSED -->
+    <script>
+      console.log('📝 Setting window.emr_remarks');
+      window.emr_remarks = {
+        request: ${JSON.stringify(requestRemark)},
+        reporting: ${JSON.stringify(rpRemark)},
+        ho: ${JSON.stringify(hoRemark)}
+      };
+      console.log('📝 window.emr_remarks set:', window.emr_remarks);
+    </script>
+
+
+
+
   `;
   // console.log("request datetime", data.request_datetime);
   // console.log("Status from intro data:", data.status);
 
   frm.set_intro(html);
 }
+
+// ✅ ENVELOPE CLICK HANDLER - Shows remark popup
+$(document).on('click', '.remark-envelope', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const type = $(this).data('type');
+    const remark = window.emr_remarks && window.emr_remarks[type];
+    const titles = { 
+        request: 'Request Details', 
+        reporting: 'Reporting Person', 
+        ho: 'HO Officer' 
+    };
+    const title = titles[type] || 'Remark';
+    
+    console.log('🔍 CLICK:', type, 'Remark:', remark ? `"${remark}"` : 'EMPTY');
+
+    if (remark && remark.trim()) {
+        frappe.msgprint({
+            title: `${title} Remark`,
+            message: `
+<div style="padding: 12px;">
+  <div style="font-weight: 600; margin-bottom: 6px;">${title}</div>
+  <div style="background:#f8f9fa; padding:10px; border-radius:6px; border-left:4px solid #3b82f6; white-space:pre-wrap;">
+    ${remark}
+  </div>
+</div>`,
+            indicator: 'blue',
+            wide: true
+        });
+    } else {
+        frappe.msgprint({
+            title: `${title} Remark`,
+            message: 'No remark entered.',
+            indicator: 'orange'
+        });
+    }
+});
+
+
 
 // ------------------------------------------------------------------
 // RENDER INTRO FALLBACK
