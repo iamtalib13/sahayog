@@ -116,8 +116,9 @@ frappe.ui.form.on("Case Closure", {
       btn.removeClass("btn-default").addClass("btn-primary");
     }
 
+    frappe.after_ajax(() => {
     frm.trigger("show_print_button");
-
+  });
     if (!frm.is_new() && frm.doc.case_id) {
       frappe.call({
         method:
@@ -136,10 +137,11 @@ frappe.ui.form.on("Case Closure", {
       });
     }
   },
+  
   show_print_button: function (frm) {
     if (frm.is_new()) return;
-    if (frm.print_button_added) return;
-    frm.print_button_added = true;
+
+ if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
     const allowed_roles = [
       "System Manager",
@@ -257,7 +259,6 @@ frappe.ui.form.on("Case Closure", {
     }
   },
 });
-
 function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
