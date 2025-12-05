@@ -1322,7 +1322,7 @@ function render_intro_html(frm, data) {
   const rpRemark = data.reporting_person_remarks || '';
   const hoRemark = data.ho_officer_remarks || '';
   
-  console.log('📝 Remarks loaded:', { requestRemark, rpRemark, hoRemark }); // DEBUG
+  // console.log('📝 Remarks loaded:', { requestRemark, rpRemark, hoRemark }); // DEBUG
   
   const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
   
@@ -1683,13 +1683,13 @@ function render_intro_html(frm, data) {
 
      <!-- ✅ FIXED SCRIPT - PROPERLY CLOSED -->
     <script>
-      console.log('📝 Setting window.emr_remarks');
+      // console.log('📝 Setting window.emr_remarks');
       window.emr_remarks = {
         request: ${JSON.stringify(requestRemark)},
         reporting: ${JSON.stringify(rpRemark)},
         ho: ${JSON.stringify(hoRemark)}
       };
-      console.log('📝 window.emr_remarks set:', window.emr_remarks);
+      // console.log('📝 window.emr_remarks set:', window.emr_remarks);
     </script>
 
 
@@ -1716,7 +1716,7 @@ $(document).on('click', '.remark-envelope', function(e) {
     };
     const title = titles[type] || 'Remark';
     
-    console.log('🔍 CLICK:', type, 'Remark:', remark ? `"${remark}"` : 'EMPTY');
+    // console.log('🔍 CLICK:', type, 'Remark:', remark ? `"${remark}"` : 'EMPTY');
 
     if (remark && remark.trim()) {
         frappe.msgprint({
