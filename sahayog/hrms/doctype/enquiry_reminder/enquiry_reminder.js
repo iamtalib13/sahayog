@@ -138,8 +138,7 @@ frappe.ui.form.on("Enquiry Reminder", {
 
   show_print_button: function (frm) {
     if (frm.is_new()) return;
-    if (frm.print_button_added) return;
-    frm.print_button_added = true;
+
     // Check if button already exists (safer than boolean flag)
     if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
