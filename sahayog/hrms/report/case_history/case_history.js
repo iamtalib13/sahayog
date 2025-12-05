@@ -12,7 +12,7 @@ frappe.query_reports["Case History"] = {
       label: __("Document Type"),
       fieldtype: "Select",
       options:
-        "\nAll\nDisciplinary Case\nResponse to SCN\nSuspension Process\nDomestic Enquiry\nEnquiry Reminder\nCase Closure",
+        "\nAll\nDisciplinary Case\nResponse to SCN\nSuspension Process\nUnauthorized Absence\nReminder Of Unauthorized Absence\nDomestic Enquiry\nEnquiry Reminder\nCase Closure",
       default: "All",
     },
     {
