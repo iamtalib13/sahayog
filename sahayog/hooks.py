@@ -462,25 +462,29 @@ fixtures = [
         "filters": [["name", "in", ["Disciplinary Case", "Branch Proposal"]]],
     },
     # Workflow State for Disciplinary Case
-    {
-        "dt": "Workflow State",
-        "filters": [
-            ["workflow_state_name", "in", ["Draft", "Under Process", "Closed"]]
-        ],
-    },
+        {
+            "dt": "Workflow State",
+            "filters": [
+                [
+                    "workflow_state_name",
+                    "in",
+                    [
+                        "Draft",
+                        "Under Process",
+                        "Closed",
+                        "Under Reviewed",
+                        "Verified",
+                        "Assign",
+                        "Self Approve",
+                        "Self Approved"
+                    ]
+                ]
+            ]
+        },
     # Case Closure Workflow
     {"dt": "Workflow", "filters": [["name", "=", "Case Closure"]]},
     # Workflow States for Case Closure
-    {
-        "dt": "Workflow State",
-        "filters": [
-            [
-                "workflow_state_name",
-                "in",
-                ["Draft", "Under Review", "Verified", "Closed"],
-            ]
-        ],
-    },
+
     # Workflow Action Master
     {
         "dt": "Workflow Action Master",
