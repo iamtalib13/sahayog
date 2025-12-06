@@ -1,60 +1,6 @@
 frappe.ui.form.on("Reminder Of Unauthorized Absence", {
   onload: function (frm) {
-    // if (frm.doc.__islocal && frm.doc.case_id) {
-    //   frappe.db
-    //     .get_list("Unauthorized Absence", {
-    //       filters: { case_id: frm.doc.case_id },
-    //       order_by: "creation desc",
-    //       limit_page_length: 1,
-    //       fields: ["date_of_1st_letter"],
-    //     })
-    //     .then((list) => {
-    //       if (list.length) {
-    //         const firstLetterDate = list[0].date_of_1st_letter; // YYYY-MM-DD
-    //         const formattedDate = frappe.datetime.str_to_user(firstLetterDate); // DD-MM-YYYY
-
-    //         // Show formatted date in field
-    //         frm.set_value("date_of_1st_letter", formattedDate);
-
-    //         // Convert to JS Date object
-    //         const firstDateObj = frappe.datetime.str_to_obj(firstLetterDate);
-
-    //         // Restrict date picker (only dates after this)
-    //         setTimeout(() => {
-    //           const picker =
-    //             frm.fields_dict["date_of_reminder_letter"].datepicker;
-    //           if (picker) {
-    //             // Add +1 day to allow only after the first letter date
-    //             const minAllowed = frappe.datetime.add_days(firstLetterDate, 1);
-    //             picker.update({
-    //               minDate: frappe.datetime.str_to_obj(minAllowed),
-    //             });
-    //           }
-    //         }, 500);
-
-    //         // Validation backup — ensures user can’t type invalid date manually
-    //         frm.fields_dict.date_of_reminder_letter.df.onchange = function () {
-    //           if (frm.doc.date_of_reminder_letter) {
-    //             const reminderDateObj = frappe.datetime.str_to_obj(
-    //               frm.doc.date_of_reminder_letter
-    //             );
-    //             if (reminderDateObj <= firstDateObj) {
-    //               frappe.msgprint({
-    //                 title: __("Invalid Date"),
-    //                 message: __(
-    //                   "Date of Reminder Unauthorized Absence must be **after** the Date of 1st Unauthorized Absence."
-    //                 ),
-    //                 indicator: "red",
-    //               });
-    //               frm.set_value("date_of_reminder_letter", null);
-    //             }
-    //           }
-    //         };
-    //       }
-    //     });
-    // }
-
-
+    // Set minimum date for Date of Reminder Letter based on Date of 1st Letter
     if (frm.doc.__islocal && frm.doc.case_id) {
     frappe.db.get_list("Unauthorized Absence", {
         filters: { case_id: frm.doc.case_id },
@@ -65,13 +11,11 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
         if (list.length) {
             const firstLetterDate = list[0].date_of_1st_letter; // YYYY-MM-DD format
 
-            // Optional: Agar aapko display ke liye format karna hai
+            // Optional: if you want to set the date_of_1st_letter field in the current form
             const formattedDate = frappe.datetime.str_to_user(firstLetterDate);
             frm.set_value("date_of_1st_letter", formattedDate); 
 
-            // Logic: Selected Date + 3 din ka gap. 
-            // Yani agar 1st Jan hai, to 1, 2, 3, 4 Jan disable. 5th Jan allowed.
-            // Isliye hum +4 days add karenge.
+            // Logic: selected reminder date must be at least 4 days after first letter date
             const minAllowedDateStr = frappe.datetime.add_days(firstLetterDate, 4);
             const minAllowedDateObj = frappe.datetime.str_to_obj(minAllowedDateStr);
 
@@ -90,7 +34,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
                 if (frm.doc.date_of_reminder_letter) {
                     const reminderDateObj = frappe.datetime.str_to_obj(frm.doc.date_of_reminder_letter);
                     
-                    // Agar reminder date "minAllowedDate" se pehle hai, to error dikhayein
+                    // if reminder date is before min allowed date, show error and clear field
                     if (reminderDateObj < minAllowedDateObj) {
                         frappe.msgprint({
                             title: __("Invalid Date"),
@@ -106,6 +50,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
         }
     });
 }
+// Hide Amount of Fraud field if no data
     if (frm.doc.case_id) {
       frappe.db
         .get_list("Unauthorized Absence", {
