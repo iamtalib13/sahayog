@@ -62,6 +62,7 @@ doctype_js = {
     "Stock Entry": "public/js/stock_entry.js",
     "Shareholder": "public/js/shareholder.js",
     "Share Transfer": "public/js/share_transfer.js",
+    "Asset Movement": "public/js/asset_movement.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
@@ -161,6 +162,9 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_Material_Request_Item-custom_custom_metrial_transfre_purches_status.execute",
     "sahayog.patches.fixtures.create_employee_material_request_workflow.execute",
     "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
+    "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
+    "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
+
 ]
 # Uninstallation
 # ------------
@@ -546,12 +550,8 @@ fixtures = [
                     "Stock Entry-section_break_jwgn-collapsible",
                 ],
             ]
-        ]
+        ],
     },
-
     # email templates fixtures
-    {
-        "dt": "Email Template",
-        "filters": [["name", "in", ["Disciplinary Case Update"]]]
-    },  
+    {"dt": "Email Template", "filters": [["name", "in", ["Disciplinary Case Update"]]]},
 ]
