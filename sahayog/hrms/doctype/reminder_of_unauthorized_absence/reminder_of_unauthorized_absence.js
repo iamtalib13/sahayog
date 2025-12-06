@@ -1,58 +1,44 @@
 frappe.ui.form.on("Reminder Of Unauthorized Absence", {
-  onload: function (frm) {
-    if (frm.doc.__islocal && frm.doc.case_id) {
-      frappe.db
-        .get_list("Unauthorized Absence", {
-          filters: { case_id: frm.doc.case_id },
-          order_by: "creation desc",
-          limit_page_length: 1,
-          fields: ["date_of_1st_letter"],
-        })
-        .then((list) => {
-          if (list.length) {
-            const firstLetterDate = list[0].date_of_1st_letter; // YYYY-MM-DD
-            const formattedDate = frappe.datetime.str_to_user(firstLetterDate); // DD-MM-YYYY
+  date_of_reminder_letter: function (frm) {
+    if (!frm.doc.date_of_reminder_letter || !frm.doc.date_of_1st_letter) return;
 
-            // Show formatted date in field
-            frm.set_value("date_of_1st_letter", formattedDate);
+    const selectedDate = frm.doc.date_of_reminder_letter;
+    const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3); // 3 days after first letter
+    const today = frappe.datetime.get_today();
 
-            // Convert to JS Date object
-            const firstDateObj = frappe.datetime.str_to_obj(firstLetterDate);
+    // Take whichever is later: minDate or today
+    const minAllowedDate = minDate > today ? minDate : today;
 
-            // Restrict date picker (only dates after this)
-            setTimeout(() => {
-              const picker =
-                frm.fields_dict["date_of_reminder_letter"].datepicker;
-              if (picker) {
-                // Add +1 day to allow only after the first letter date
-                const minAllowed = frappe.datetime.add_days(firstLetterDate, 1);
-                picker.update({
-                  minDate: frappe.datetime.str_to_obj(minAllowed),
-                });
-              }
-            }, 500);
-
-            // Validation backup — ensures user can’t type invalid date manually
-            frm.fields_dict.date_of_reminder_letter.df.onchange = function () {
-              if (frm.doc.date_of_reminder_letter) {
-                const reminderDateObj = frappe.datetime.str_to_obj(
-                  frm.doc.date_of_reminder_letter
-                );
-                if (reminderDateObj <= firstDateObj) {
-                  frappe.msgprint({
-                    title: __("Invalid Date"),
-                    message: __(
-                      "Date of Reminder Unauthorized Absence must be **after** the Date of 1st Unauthorized Absence."
-                    ),
-                    indicator: "red",
-                  });
-                  frm.set_value("date_of_reminder_letter", null);
-                }
-              }
-            };
-          }
-        });
+    if (selectedDate < minAllowedDate) {
+      frappe.msgprint({
+        title: __("Invalid Date"),
+        message: __(
+          `Date of Reminder must be at least 3 days after Date of 1st Unauthorized Absence and cannot be a past date. Earliest allowed date is: ${minAllowedDate}`
+        ),
+        indicator: "red",
+      });
+      frm.set_value("date_of_reminder_letter", null);
     }
+  },
+
+  onload: function (frm) {
+    if (frm.doc.date_of_1st_letter) {
+      const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3);
+      const today = frappe.datetime.get_today();
+      const minAllowedDate = minDate > today ? minDate : today;
+
+      // Set minDate on datepicker so past dates are blocked in UI
+      setTimeout(() => {
+        const field = frm.fields_dict["date_of_reminder_letter"];
+        if (field && field.datepicker) {
+          field.datepicker.set(
+            "minDate",
+            frappe.datetime.str_to_obj(minAllowedDate)
+          );
+        }
+      }, 500);
+    }
+
     if (frm.doc.case_id) {
       frappe.db
         .get_list("Unauthorized Absence", {
@@ -74,6 +60,8 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
       frm.set_df_property("amount_of_fraud", "hidden", 1);
     }
   },
+  // Trigger validation when user selects or types a date
+
   refresh(frm) {
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
