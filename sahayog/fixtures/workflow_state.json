@@ -3,6 +3,42 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
+  "modified": "2025-11-10 11:10:26.111581",
+  "name": "Under Process",
+  "style": "Info",
+  "workflow_state_name": "Under Process"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2025-12-04 12:24:46.452386",
+  "name": "Assign",
+  "style": "",
+  "workflow_state_name": "Assign"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2025-12-04 15:27:56.161089",
+  "name": "Self Approve",
+  "style": "",
+  "workflow_state_name": "Self Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2025-12-04 15:31:02.267370",
+  "name": "Self Approved",
+  "style": "Success",
+  "workflow_state_name": "Self Approved"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
   "modified": "2025-11-10 11:10:16.651689",
   "name": "Closed",
   "style": "Success",
