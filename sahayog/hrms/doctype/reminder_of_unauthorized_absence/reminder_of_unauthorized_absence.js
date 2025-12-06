@@ -1,58 +1,111 @@
 frappe.ui.form.on("Reminder Of Unauthorized Absence", {
   onload: function (frm) {
+    // if (frm.doc.__islocal && frm.doc.case_id) {
+    //   frappe.db
+    //     .get_list("Unauthorized Absence", {
+    //       filters: { case_id: frm.doc.case_id },
+    //       order_by: "creation desc",
+    //       limit_page_length: 1,
+    //       fields: ["date_of_1st_letter"],
+    //     })
+    //     .then((list) => {
+    //       if (list.length) {
+    //         const firstLetterDate = list[0].date_of_1st_letter; // YYYY-MM-DD
+    //         const formattedDate = frappe.datetime.str_to_user(firstLetterDate); // DD-MM-YYYY
+
+    //         // Show formatted date in field
+    //         frm.set_value("date_of_1st_letter", formattedDate);
+
+    //         // Convert to JS Date object
+    //         const firstDateObj = frappe.datetime.str_to_obj(firstLetterDate);
+
+    //         // Restrict date picker (only dates after this)
+    //         setTimeout(() => {
+    //           const picker =
+    //             frm.fields_dict["date_of_reminder_letter"].datepicker;
+    //           if (picker) {
+    //             // Add +1 day to allow only after the first letter date
+    //             const minAllowed = frappe.datetime.add_days(firstLetterDate, 1);
+    //             picker.update({
+    //               minDate: frappe.datetime.str_to_obj(minAllowed),
+    //             });
+    //           }
+    //         }, 500);
+
+    //         // Validation backup — ensures user can’t type invalid date manually
+    //         frm.fields_dict.date_of_reminder_letter.df.onchange = function () {
+    //           if (frm.doc.date_of_reminder_letter) {
+    //             const reminderDateObj = frappe.datetime.str_to_obj(
+    //               frm.doc.date_of_reminder_letter
+    //             );
+    //             if (reminderDateObj <= firstDateObj) {
+    //               frappe.msgprint({
+    //                 title: __("Invalid Date"),
+    //                 message: __(
+    //                   "Date of Reminder Unauthorized Absence must be **after** the Date of 1st Unauthorized Absence."
+    //                 ),
+    //                 indicator: "red",
+    //               });
+    //               frm.set_value("date_of_reminder_letter", null);
+    //             }
+    //           }
+    //         };
+    //       }
+    //     });
+    // }
+
+
     if (frm.doc.__islocal && frm.doc.case_id) {
-      frappe.db
-        .get_list("Unauthorized Absence", {
-          filters: { case_id: frm.doc.case_id },
-          order_by: "creation desc",
-          limit_page_length: 1,
-          fields: ["date_of_1st_letter"],
-        })
-        .then((list) => {
-          if (list.length) {
-            const firstLetterDate = list[0].date_of_1st_letter; // YYYY-MM-DD
-            const formattedDate = frappe.datetime.str_to_user(firstLetterDate); // DD-MM-YYYY
+    frappe.db.get_list("Unauthorized Absence", {
+        filters: { case_id: frm.doc.case_id },
+        order_by: "creation desc",
+        limit_page_length: 1,
+        fields: ["date_of_1st_letter"],
+    }).then((list) => {
+        if (list.length) {
+            const firstLetterDate = list[0].date_of_1st_letter; // YYYY-MM-DD format
 
-            // Show formatted date in field
-            frm.set_value("date_of_1st_letter", formattedDate);
+            // Optional: Agar aapko display ke liye format karna hai
+            const formattedDate = frappe.datetime.str_to_user(firstLetterDate);
+            frm.set_value("date_of_1st_letter", formattedDate); 
 
-            // Convert to JS Date object
-            const firstDateObj = frappe.datetime.str_to_obj(firstLetterDate);
+            // Logic: Selected Date + 3 din ka gap. 
+            // Yani agar 1st Jan hai, to 1, 2, 3, 4 Jan disable. 5th Jan allowed.
+            // Isliye hum +4 days add karenge.
+            const minAllowedDateStr = frappe.datetime.add_days(firstLetterDate, 4);
+            const minAllowedDateObj = frappe.datetime.str_to_obj(minAllowedDateStr);
 
-            // Restrict date picker (only dates after this)
+            // 1. Date Picker Restriction (UI level)
             setTimeout(() => {
-              const picker =
-                frm.fields_dict["date_of_reminder_letter"].datepicker;
-              if (picker) {
-                // Add +1 day to allow only after the first letter date
-                const minAllowed = frappe.datetime.add_days(firstLetterDate, 1);
-                picker.update({
-                  minDate: frappe.datetime.str_to_obj(minAllowed),
-                });
-              }
+                const picker = frm.fields_dict["date_of_reminder_letter"].datepicker;
+                if (picker) {
+                    picker.update({
+                        minDate: minAllowedDateObj,
+                    });
+                }
             }, 500);
 
-            // Validation backup — ensures user can’t type invalid date manually
+            // 2. Validation Backup (Logic level)
             frm.fields_dict.date_of_reminder_letter.df.onchange = function () {
-              if (frm.doc.date_of_reminder_letter) {
-                const reminderDateObj = frappe.datetime.str_to_obj(
-                  frm.doc.date_of_reminder_letter
-                );
-                if (reminderDateObj <= firstDateObj) {
-                  frappe.msgprint({
-                    title: __("Invalid Date"),
-                    message: __(
-                      "Date of Reminder Unauthorized Absence must be **after** the Date of 1st Unauthorized Absence."
-                    ),
-                    indicator: "red",
-                  });
-                  frm.set_value("date_of_reminder_letter", null);
+                if (frm.doc.date_of_reminder_letter) {
+                    const reminderDateObj = frappe.datetime.str_to_obj(frm.doc.date_of_reminder_letter);
+                    
+                    // Agar reminder date "minAllowedDate" se pehle hai, to error dikhayein
+                    if (reminderDateObj < minAllowedDateObj) {
+                        frappe.msgprint({
+                            title: __("Invalid Date"),
+                            message: __(
+                                "Date of Reminder must be after a **3-day gap** from the 1st letter date. Earliest allowed date is: " + minAllowedDateStr
+                            ),
+                            indicator: "red",
+                        });
+                        frm.set_value("date_of_reminder_letter", null);
+                    }
                 }
-              }
             };
-          }
-        });
-    }
+        }
+    });
+}
     if (frm.doc.case_id) {
       frappe.db
         .get_list("Unauthorized Absence", {
