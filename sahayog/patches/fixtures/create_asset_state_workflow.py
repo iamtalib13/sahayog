@@ -31,13 +31,6 @@ def create_asset_workflow():
                     "update_value": "Draft",
                 },
                 {
-                    "state": "Submitted",
-                    "doc_status": "1",
-                    "allow_edit": "System Manager",
-                    "update_field": "status",
-                    "update_value": "Submitted",
-                },
-                {
                     "state": "Assign",
                     "doc_status": "1",
                     "allow_edit": "System Manager",
