@@ -1719,26 +1719,38 @@ $(document).on('click', '.remark-envelope', function(e) {
     // console.log('🔍 CLICK:', type, 'Remark:', remark ? `"${remark}"` : 'EMPTY');
 
     if (remark && remark.trim()) {
-        frappe.msgprint({
-            title: `${title} Remark`,
-            message: `
+
+    let d = frappe.msgprint({
+        title: `${title} Remark`,
+        message: `
 <div style="padding: 12px;">
   <div style="font-weight: 600; margin-bottom: 6px;">${title}</div>
   <div style="background:#f8f9fa; padding:10px; border-radius:6px; border-left:4px solid #3b82f6; white-space:pre-wrap;">
     ${remark}
   </div>
 </div>`,
-            indicator: 'blue',
-            wide: true
-        });
-    } else {
-        frappe.msgprint({
-            title: `${title} Remark`,
-            message: 'No remark entered.',
-            indicator: 'orange'
-        });
-    }
+        primary_action: {
+            label: 'Close',
+            // client_action: () => d.hide()   // ✅ Works!
+            action(values) {
+            d.hide();
+        }
+        },
+        indicator: 'blue',
+        wide: true
+    });
+
+} else {
+
+    frappe.msgprint({
+        title: `${title} Remark`,
+        message: 'No remark entered.',
+        indicator: 'orange'
+    });
+
+}
 });
+
 
 
 
