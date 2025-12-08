@@ -137,7 +137,6 @@ frappe.ui.form.on("Case Closure", {
       });
     }
 
-    toggle_review_details(frm);
   },
 
   show_print_button: function (frm) {
@@ -879,20 +878,4 @@ function display_review_details_with_employee_info(frm) {
       wrapper.html(html);
     },
   });
-}
-
-// Function to toggle child table
-function toggle_review_details(frm) {
-  const status = frm.doc.status || "Draft";
-
-  // Only show child table for these statuses
-  const show_table = ["Under Review", "Verified", "Closed"].includes(status);
-  frm.set_df_property("review_details", "hidden", !show_table);
-
-  // Only editable in "Under Review"
-  const editable = status === "Under Review";
-  const field = frm.get_field("review_details");
-  if (field && field.grid) {
-    field.grid.toggle_enable(editable);
-  }
 }
