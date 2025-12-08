@@ -20,7 +20,7 @@ def create_asset_workflow():
             "workflow_state_field": "workflow_state",
             "is_active": 1,
             "send_email_alert": 0,
-            "override_status": 1,
+            "override_status": 0,
             # States
             "states": [
                 {
