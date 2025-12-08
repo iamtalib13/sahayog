@@ -667,7 +667,7 @@ def get_material_request_intro_data(doc_name):
                 # ✅ ADD THESE REMARK FIELDS:
                 "reporting_person_remarks": doc.reporting_person_remarks or "",
                 "ho_officer_remarks": doc.ho_officer_remarks or "",
-                  "remark": doc.remark or ""
+                "remark": doc.remark or ""
             }
         }
         
