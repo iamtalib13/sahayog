@@ -20,7 +20,7 @@ def create_asset_workflow():
             "workflow_state_field": "workflow_state",
             "is_active": 1,
             "send_email_alert": 0,
-            "override_status": 1,
+            "override_status": 0,
             # States
             "states": [
                 {
@@ -29,6 +29,13 @@ def create_asset_workflow():
                     "allow_edit": "Sales Manager",
                     "update_field": "status",
                     "update_value": "Draft",
+                },
+                {
+                    "state": "Submitted",
+                    "doc_status": "1",
+                    "allow_edit": "System Manager",
+                    "update_field": "status",
+                    "update_value": "Submitted",
                 },
                 {
                     "state": "Assign",
