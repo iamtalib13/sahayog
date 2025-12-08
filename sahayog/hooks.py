@@ -554,4 +554,10 @@ fixtures = [
         "dt": "Email Template",
         "filters": [["name", "in", ["Disciplinary Case Update"]]]
     },  
+    # Print Format fixture
+{
+    "dt": "Print Format",
+    "filters": [["name", "in", ["Reminder Unauthorized absence"]]]
+},
+
 ]
