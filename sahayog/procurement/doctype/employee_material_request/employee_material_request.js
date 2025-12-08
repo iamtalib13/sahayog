@@ -34,9 +34,25 @@ frappe.ui.form.on("Employee Material Request", {
     }
   },
 
+  // after_workflow_action: function (frm) {
+  //   frm.reload_doc();
+  // },
+
   after_workflow_action: function (frm) {
-    frm.reload_doc();
-  },
+  // Detect resubmission and mark for remark clearing
+  if (frm.doc.status === "Pending Reporting Person") {
+    const prevStatus = localStorage.getItem(`emr-prev-status-${frm.doc.name}`);
+    if (prevStatus === "Rejected") {
+      localStorage.setItem(`emr-resubmit-${frm.doc.name}`, "1");
+    }
+  }
+  
+  // Force hard reload to clear cached remark data
+  frappe.dom.unfreeze();
+  setTimeout(() => {
+    frm.reload_doc({with_feedback: false});
+  }, 500);
+},
 
   // ------------------------------------------------------------------
   // REFRESH EVENT - Triggered when form loads/refreshes
@@ -612,6 +628,11 @@ frappe.ui.form.on("Employee Material Request", {
 // New function to show remark dialog for all approval actions
 // ✅ FIXED: Remarks SAVED via whitelisted API before workflow
 function showApprovalRemarkDialog(frm, action) {
+
+    // Detect resubmission - clear remark default
+  const isResubmission = frm.doc.status === "Pending Reporting Person" && 
+                        localStorage.getItem(`emr-resubmit-${frm.doc.name}`);
+
   return new Promise((resolve, reject) => {
     const actionLabels = { approve: "Approve", reject: "Reject", skip: "Skip" };
     const isReportingPersonStage =
@@ -635,7 +656,8 @@ function showApprovalRemarkDialog(frm, action) {
           label: `${approverLabel} Remark`,
           reqd: 1, // ✅ MANDATORY NOW
           description: `Reason for ${actionLabels[action].toLowerCase()}ing`,
-          default: frm.doc[remarkField] || "",
+          // default: frm.doc[remarkField] || "",
+           default: isResubmission ? "" : (frm.doc[remarkField] || ""), 
         },
       ],
       primary_action_label: "Submit Decision",
