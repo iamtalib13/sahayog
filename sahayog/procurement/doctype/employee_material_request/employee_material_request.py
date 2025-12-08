@@ -11,6 +11,21 @@ class EmployeeMaterialRequest(Document):
         self.set_requested_by()
         self.set_request_datetime_once()
 
+
+        
+
+            # Detect resubmission from Rejected → Pending Reporting Person
+        is_resubmission = (self.get_db_value("status") == "Rejected" and 
+                        self.status == "Pending Reporting Person")
+        
+        # Clear remarks ONLY on resubmission
+        if is_resubmission:
+            self.reporting_person_remarks = ""
+            self.ho_officer_remarks = ""
+            self.db_set("reporting_person_remarks", "")
+            self.db_set("ho_officer_remarks", "")
+            frappe.db.commit()  # Force DB update immediately
+
         # Always set fields at correct workflow stages
         # IT Executive submit: Set reporting_person_status to Pending, always
         if self.status == "Pending Reporting Person":
