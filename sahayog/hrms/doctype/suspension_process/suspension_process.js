@@ -4,6 +4,77 @@
 frappe.ui.form.on("Suspension Process", {
   refresh(frm) {
     if (!frm.is_new()) {
+      frm.add_custom_button("Send Email", function () {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.suspension_process.suspension_process.check_employee_email",
+          args: { employee: frm.doc.employee_id },
+          callback(r) {
+            let email = r.message;
+
+            // CASE 1: Email exists
+            if (email) {
+              frappe.confirm(
+                `This employee already has an email:<br><b>${email}</b><br><br>Do you want to send the Suspension email?`,
+                function () {
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.suspension_process.suspension_process.send_suspension_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending Suspension Email..."),
+                    callback() {
+                      frappe.msgprint(
+                        __("Suspension Email sent successfully!")
+                      );
+                    },
+                  });
+                }
+              );
+            }
+
+            // CASE 2: No email → Ask user to enter manually
+            else {
+              let d = new frappe.ui.Dialog({
+                title: "Enter Employee Email",
+                fields: [
+                  {
+                    label: "Email",
+                    fieldname: "manual_email",
+                    fieldtype: "Data",
+                    reqd: true,
+                  },
+                ],
+                primary_action_label: "Submit",
+                primary_action(values) {
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.suspension_process.suspension_process.save_and_send_email",
+                    args: {
+                      employee: frm.doc.employee_id,
+                      email: values.manual_email,
+                      docname: frm.doc.name,
+                    },
+                    freeze: true,
+                    freeze_message: __("Sending Suspension Email..."),
+                    callback() {
+                      frappe.msgprint(
+                        __(
+                          "Email saved and Suspension Email sent successfully!"
+                        )
+                      );
+                      d.hide();
+                    },
+                  });
+                },
+              });
+              d.show();
+            }
+          },
+        });
+      });
+    }
+    if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
           case_id: frm.doc.case_id,
