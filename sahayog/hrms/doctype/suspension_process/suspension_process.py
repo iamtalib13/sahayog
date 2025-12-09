@@ -1,7 +1,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe import _
-
+from frappe.utils import formatdate
 class SuspensionProcess(Document):
     def autoname(self):
         """Generate structured name based on linked Disciplinary Case"""
@@ -31,3 +31,69 @@ class SuspensionProcess(Document):
                     _("Suspension Required is set to No in the linked Disciplinary Case. You cannot create or save this record."),
                     title=_("Validation Failed")
                 )
+
+@frappe.whitelist()
+def check_employee_email(employee):
+    emp = frappe.get_doc("Employee", employee)
+    return emp.company_email if emp.company_email else None
+
+
+@frappe.whitelist()
+def save_and_send_email(employee, email, docname):
+    emp = frappe.get_doc("Employee", employee)
+    emp.company_email = email
+    emp.save(ignore_permissions=True)
+    send_suspension_email(docname)
+    return "OK"
+
+
+@frappe.whitelist()
+def send_suspension_email(docname):
+    """
+    Send Suspension email directly to employee,
+    with properly formatted dates.
+    """
+    doc = frappe.get_doc("Suspension Process", docname)
+    emp = frappe.get_doc("Employee", doc.employee_id)
+
+    final_email = emp.company_email
+    if not final_email:
+        frappe.throw("No email found for this employee.")
+
+    # Convert to dict for template rendering
+    doc_dict = doc.as_dict()
+
+    # Format all required date fields
+    if doc.suspension_from_date:
+        doc_dict["suspension_from_date"] = formatdate(doc.suspension_from_date)
+
+    if doc.suspension_to_date:
+        doc_dict["suspension_to_date"] = formatdate(doc.suspension_to_date)
+
+    # Some fields may come from the linked disciplinary case
+    if doc.issue_occurrence_date:
+        doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
+
+    if doc.issue_reported_to_hr:
+        doc_dict["issue_reported_to_hr"] = formatdate(doc.issue_reported_to_hr)
+
+    # Load suspension email template
+    template = frappe.get_doc("Email Template", "Suspension Process")
+    message = frappe.render_template(template.response_html, doc_dict)
+    subject = frappe.render_template(template.subject, doc_dict)
+
+    # No attachment support for suspension process
+    attachments = []
+
+    # Send email instantly
+    frappe.sendmail(
+        recipients=[final_email],
+        subject=subject,
+        message=message,
+        attachments=attachments,
+        reference_doctype="Suspension Process",
+        reference_name=docname,
+        now=True
+    )
+
+    return "Email Sent"
