@@ -94,7 +94,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPending Reporting Person\nPending HO Approval\nApproved\nCompleted\nRejected\nCancelled",
+   "options": "Draft\nPending Reporting Person\nPending HO Approval\nSelf Approved\nApproved\nCompleted\nRejected\nCancelled",
    "read_only": 1,
    "reqd": 1
   },
@@ -246,7 +246,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-04 15:54:00.182327",
+ "modified": "2025-12-09 11:24:16.322010",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",

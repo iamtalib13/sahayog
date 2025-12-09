@@ -16,6 +16,11 @@ def execute():
     # Create Workflow States first
     create_workflow_states()
 
+    create_workflow_actions()  # ADD THIS LINE
+        
+    # ADD THIS LINE:
+    frappe.db.commit()
+
     # Create Workflow
     create_workflow()
 
@@ -53,6 +58,11 @@ def create_workflow_states():
             "workflow_state_name": "Rejected",
             "style": "Danger",
         },
+        {
+            "doctype": "Workflow State",
+            "workflow_state_name": "Self Approved",
+            "style": "Success",
+        },
     ]
 
     for state in states:
@@ -64,8 +74,26 @@ def create_workflow_states():
             print(f"  • State exists: {state['workflow_state_name']}")
 
 
+def create_workflow_actions():
+    """Create Self Approved action"""
+    action = {"doctype": "Workflow Action", "action_name": "Self Approved"}
+    
+    if not frappe.db.exists("Workflow Action", "Self Approved"):
+        doc = frappe.get_doc(action)
+        doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+        print("  ✓ Created Workflow Action: Self Approved")
+    else:
+        print("  • Action exists: Self Approved")
+
+
 def create_workflow():
     """Create workflow with states and transitions"""
+
+     # ADD THESE 3 LINES BEFORE workflow.insert():
+    frappe.clear_cache()
+    frappe.local.test_objects = {}
+    frappe.db.commit()
 
     workflow = frappe.get_doc(
         {
@@ -121,11 +149,18 @@ def create_workflow():
                 },
                 {
                     "state": "Self Approved",
-                    "doc_status": 1,
+                    "doc_status": "1",
                     "allow_edit": "System Manager",
                     "update_field": "status",
                     "update_value": "Self Approved",
                 },
+                # {
+                #     "state": "Self Approved",
+                #     "doc_status": 1,
+                #     "allow_edit": "System Manager",
+                #     "update_field": "status",
+                #     "update_value": "Self Approved",
+                # },
             ],
             # Transitions Table - All with System Manager role
             "transitions": [
@@ -150,13 +185,7 @@ def create_workflow():
                     "allowed": "System Manager",
                     "allow_self_approval": 0,
                 },
-                {
-                    "state": "pending Reporting Person",
-                    "action": "Self Approve",
-                    "next_state": "Self Approved",
-                    "allowed": "System Manager",
-                    "allow_self_approval": 1,
-                },
+                
                 {
                     "state": "Pending HO Approval",
                     "action": "Approve",
@@ -178,9 +207,31 @@ def create_workflow():
                     "allowed": "System Manager",
                     "allow_self_approval": 0,
                 },
+                {
+                    "state": "Pending Reporting Person",
+                    "action": "Self Approved",
+                    "next_state": "Self Approved",
+                    "allowed": "System Manager",
+                    "allow_self_approval": 0,
+                },
+                {
+                    "state": "Pending HO Approval",
+                    "action": "Self Approved", 
+                    "next_state": "Self Approved",
+                    "allowed": "System Manager",
+                    "allow_self_approval": 0,
+                },
             ],
         }
     )
+
+        # Skip link validation
+    
+    
+    # Skip link validation
+    workflow.flags.ignore_links = True
+    workflow.flags.ignore_validate = True
+    
 
     workflow.insert(ignore_permissions=True)
     print(f"  ✓ Created Workflow: {workflow.workflow_name}")

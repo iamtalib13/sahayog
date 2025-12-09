@@ -2,18 +2,23 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
   date_of_reminder_letter: function (frm) {
     if (!frm.doc.date_of_reminder_letter || !frm.doc.date_of_1st_letter) return;
 
-    const selectedDate = frm.doc.date_of_reminder_letter;
-    const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3); // 3 days after first letter
+    // Convert strings to Date objects
+    const selectedDate = frappe.datetime.str_to_obj(
+      frm.doc.date_of_reminder_letter
+    );
+    const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3);
     const today = frappe.datetime.get_today();
 
-    // Take whichever is later: minDate or today
-    const minAllowedDate = minDate > today ? minDate : today;
+    // Convert minDate and today to Date objects
+    const minAllowedDateStr = minDate > today ? minDate : today;
+    const minAllowedDate = frappe.datetime.str_to_obj(minAllowedDateStr);
 
+    // Compare Date objects
     if (selectedDate < minAllowedDate) {
       frappe.msgprint({
         title: __("Invalid Date"),
         message: __(
-          `Date of Reminder must be at least 3 days after Date of 1st Unauthorized Absence and cannot be a past date. Earliest allowed date is: ${minAllowedDate}`
+          `Date of Reminder must be at least 3 days after Date of 1st Unauthorized Absence and cannot be a past date. Please select a valid date on or after`
         ),
         indicator: "red",
       });
@@ -25,15 +30,15 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
     if (frm.doc.date_of_1st_letter) {
       const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3);
       const today = frappe.datetime.get_today();
-      const minAllowedDate = minDate > today ? minDate : today;
+      const minAllowedDateStr = minDate > today ? minDate : today;
 
-      // Set minDate on datepicker so past dates are blocked in UI
+      // Set minDate on datepicker
       setTimeout(() => {
         const field = frm.fields_dict["date_of_reminder_letter"];
         if (field && field.datepicker) {
           field.datepicker.set(
             "minDate",
-            frappe.datetime.str_to_obj(minAllowedDate)
+            frappe.datetime.str_to_obj(minAllowedDateStr)
           );
         }
       }, 500);

@@ -4,6 +4,51 @@
 frappe.ui.form.on("Suspension Process", {
   refresh(frm) {
     if (!frm.is_new()) {
+      frm.add_custom_button("Send Email", function () {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.suspension_process.suspension_process.check_employee_email",
+          args: { employee: frm.doc.employee_id },
+          callback(r) {
+            let email = r.message;
+
+            // CASE: Email exists → Ask for confirmation
+            if (email) {
+              frappe.confirm(
+                `This employee already has an email:<br><b>${email}</b><br><br>Do you want to send the Suspension email?`,
+                function () {
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.suspension_process.suspension_process.send_suspension_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending Suspension Email..."),
+                    callback() {
+                      frappe.msgprint(
+                        __("Suspension Email sent successfully!")
+                      );
+                    },
+                  });
+                }
+              );
+            }
+
+            // CASE: Email does NOT exist → Just show error (No manual entry anymore)
+            else {
+              frappe.msgprint({
+                title: __("Email Not Found"),
+                indicator: "red",
+                message: __(
+                  "No email address is stored for this employee.<br>Please update the Employee record before sending the suspension email."
+                ),
+              });
+            }
+          },
+        });
+      });
+    }
+
+    if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
           case_id: frm.doc.case_id,
