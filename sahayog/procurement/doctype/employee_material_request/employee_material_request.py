@@ -57,6 +57,9 @@ class EmployeeMaterialRequest(Document):
         if self.ho_officer_status == "Skip" and self.status == "Pending HO Approval":
             self.status = "Approved"
 
+
+
+
     def set_request_datetime_once(self):        
         if self.status == "Pending Reporting Person" and not self.request_datetime:
             # Only set for new docs or freshly submitted ones transitioning from draft
@@ -264,204 +267,181 @@ class EmployeeMaterialRequest(Document):
             self.db_set("ho_officer_status", self.ho_officer_status)
     
     def validate_final_approval(self):
-        """Validate all approvals before submit - allow Self Approve to bypass"""
-
-        # Bypass checks when Self Approve workflow button is clicked
-        if (frappe.form_dict.get("action") or "").lower() == "self approve":
-            frappe.logger().info("Bypassing approval validation due to Self Approve")
-            return
-
-            """Validate all approvals before submit - FIXED for Skip functionality"""
-            # Fix: Treat "Skip" as equivalent to "Approved" for workflow progression
-            if self.reporting_person_status not in ["Approved", "Skip"]:
-                frappe.throw(
-                    _("Reporting Person approval is required before submission"),
-                    title=_("Approval Required")
-                )
-            
-            if self.ho_officer_status not in ["Approved", "Skip"]:
-                frappe.throw(
-                    _("Head Office Officer approval is required before submission"),
-                    title=_("Approval Required")
-                )
-
-            if self.reporting_person_status not in ["Approved", "Skip"]:
-                frappe.throw(_("Reporting Person approval is required before submission"),
-                            title=_("Approval Required"))
-
-            if self.ho_officer_status not in ["Approved", "Skip"]:
-                frappe.throw(_("Head Office Officer approval is required before submission"),
-                            title=_("Approval Required"))
+        """Validate all approvals before submit - FIXED for Skip functionality"""
+        # Fix: Treat "Skip" as equivalent to "Approved" for workflow progression
+        if self.reporting_person_status not in ["Approved", "Skip"]:
+            frappe.throw(
+                _("Reporting Person approval is required before submission"),
+                title=_("Approval Required")
+            )
         
-        def check_stock_availability(self):
-            """Check stock availability for stock items"""
-            if self.request_type in ["New", "Issue"]:
-                insufficient_items = []
-                
-                for item in self.items:
-                    if item.item_category == "Stock Item" and item.warehouse:
-                        available = frappe.db.get_value("Bin", 
-                            {"item_code": item.item_code, "warehouse": item.warehouse}, 
-                            "actual_qty") or 0
-                        
-                        if item.quantity > available:
-                            insufficient_items.append(
-                                _("Row {0}: {1} - Available: {2}, Requested: {3}").format(
-                                    item.idx, item.item_code, available, item.quantity
-                                )
-                            )
-                
-                # Show all insufficient items in one message
-                if insufficient_items:
-                    frappe.msgprint(
-                        _("<b>Insufficient Stock for following items:</b><br><br>{0}").format(
-                            "<br>".join(insufficient_items)
-                        ),
-                        indicator='orange',
-                        alert=True,
-                        title=_("Stock Warning")
-                    )
-        
-        def cancel_linked_stock_entries(self):
-            """Cancel all linked stock entries"""
-            cancelled_count = 0
+        if self.ho_officer_status not in ["Approved", "Skip"]:
+            frappe.throw(
+                _("Head Office Officer approval is required before submission"),
+                title=_("Approval Required")
+            )
+
+        if self.reporting_person_status not in ["Approved", "Skip"]:
+            frappe.throw(_("Reporting Person approval is required before submission"),
+                        title=_("Approval Required"))
+
+        if self.ho_officer_status not in ["Approved", "Skip"]:
+            frappe.throw(_("Head Office Officer approval is required before submission"),
+                        title=_("Approval Required"))
+    
+    def check_stock_availability(self):
+        """Check stock availability for stock items"""
+        if self.request_type in ["New", "Issue"]:
+            insufficient_items = []
             
             for item in self.items:
-                if item.stock_entry:
-                    try:
-                        se = frappe.get_doc("Stock Entry", item.stock_entry)
-                        if se.docstatus == 1:
-                            se.add_comment("Edit", 
-                                f"Cancelled due to Material Request {self.name} cancellation")
-                            se.cancel()
-                            cancelled_count += 1
-                        item.db_set("stock_entry", None, update_modified=False)
-                    except Exception as e:
-                        frappe.log_error(
-                            frappe.get_traceback(), 
-                            f"Error cancelling Stock Entry: {item.stock_entry}"
+                if item.item_category == "Stock Item" and item.warehouse:
+                    available = frappe.db.get_value("Bin", 
+                        {"item_code": item.item_code, "warehouse": item.warehouse}, 
+                        "actual_qty") or 0
+                    
+                    if item.quantity > available:
+                        insufficient_items.append(
+                            _("Row {0}: {1} - Available: {2}, Requested: {3}").format(
+                                item.idx, item.item_code, available, item.quantity
+                            )
                         )
             
-            if cancelled_count > 0:
+            # Show all insufficient items in one message
+            if insufficient_items:
                 frappe.msgprint(
-                    _("{0} linked Stock Entry(ies) have been cancelled").format(cancelled_count),
+                    _("<b>Insufficient Stock for following items:</b><br><br>{0}").format(
+                        "<br>".join(insufficient_items)
+                    ),
                     indicator='orange',
-                    alert=True
+                    alert=True,
+                    title=_("Stock Warning")
                 )
+    
+    def cancel_linked_stock_entries(self):
+        """Cancel all linked stock entries"""
+        cancelled_count = 0
         
-        def send_approval_notification(self):
-            """Send email notification after approval"""
-            try:
-                # Count items by category
-                asset_count = sum(1 for item in self.items if item.item_category == "Asset")
-                stock_count = sum(1 for item in self.items if item.item_category == "Stock Item")
-                
-                category_info = []
-                if asset_count > 0:
-                    category_info.append(f"{asset_count} Asset item(s)")
-                if stock_count > 0:
-                    category_info.append(f"{stock_count} Stock item(s)")
-                
-                # Send email
-                frappe.sendmail(
-                    recipients=[self.requested_by],
-                    subject=f"Material Request {self.name} Approved",
-                    message=f"""
-                        <div style="font-family: Arial, sans-serif; padding: 20px;">
-                            <h3 style="color: #2ecc71;">Material Request Approved ✓</h3>
-                            <p>Dear User,</p>
-                            <p>Your Material Request <b>{self.name}</b> has been approved.</p>
-                            
-                            <table style="border-collapse: collapse; margin: 20px 0;">
-                                <tr>
-                                    <td style="padding: 8px; font-weight: bold;">Request Type:</td>
-                                    <td style="padding: 8px;">{self.request_type}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px; font-weight: bold;">Items:</td>
-                                    <td style="padding: 8px;">{', '.join(category_info)}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px; font-weight: bold;">Required By:</td>
-                                    <td style="padding: 8px;">{frappe.format(self.required_by_date, {'fieldtype': 'Date'})}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px; font-weight: bold;">Approved By:</td>
-                                    <td style="padding: 8px;">{self.head_office_officer}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px; font-weight: bold;">Approval Date:</td>
-                                    <td style="padding: 8px;">{frappe.format(self.ho_officer_approval_date, {'fieldtype': 'Datetime'})}</td>
-                                </tr>
-                            </table>
-                            
-                            <p>
-                                <a href="{frappe.utils.get_url()}/app/employee-material-request/{self.name}" 
-                                style="background: #2ecc71; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-                                    View Document
-                                </a>
-                            </p>
-                        </div>
-                    """,
-                    reference_doctype=self.doctype,
-                    reference_name=self.name
-                )
-            except Exception as e:
-                frappe.log_error(frappe.get_traceback(), "Material Request Notification Error")
-
-        def before_workflow_action(self):
-            """Fixed workflow action handling for Skip + Reject scenarios"""
-            frappe.logger().info(f"before_workflow_action triggered for {self.name} ({self.status}) by {frappe.session.user}")
+        for item in self.items:
+            if item.stock_entry:
+                try:
+                    se = frappe.get_doc("Stock Entry", item.stock_entry)
+                    if se.docstatus == 1:
+                        se.add_comment("Edit", 
+                            f"Cancelled due to Material Request {self.name} cancellation")
+                        se.cancel()
+                        cancelled_count += 1
+                    item.db_set("stock_entry", None, update_modified=False)
+                except Exception as e:
+                    frappe.log_error(
+                        frappe.get_traceback(), 
+                        f"Error cancelling Stock Entry: {item.stock_entry}"
+                    )
+        
+        if cancelled_count > 0:
+            frappe.msgprint(
+                _("{0} linked Stock Entry(ies) have been cancelled").format(cancelled_count),
+                indicator='orange',
+                alert=True
+            )
+    
+    def send_approval_notification(self):
+        """Send email notification after approval"""
+        try:
+            # Count items by category
+            asset_count = sum(1 for item in self.items if item.item_category == "Asset")
+            stock_count = sum(1 for item in self.items if item.item_category == "Stock Item")
             
-            current_user = frappe.session.user
-            action = (frappe.form_dict.get("action") or "").lower()
-            frappe.logger().info(f"User: {current_user}, Action: {action}")
+            category_info = []
+            if asset_count > 0:
+                category_info.append(f"{asset_count} Asset item(s)")
+            if stock_count > 0:
+                category_info.append(f"{stock_count} Stock item(s)")
+            
+            # Send email
+            frappe.sendmail(
+                recipients=[self.requested_by],
+                subject=f"Material Request {self.name} Approved",
+                message=f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <h3 style="color: #2ecc71;">Material Request Approved ✓</h3>
+                        <p>Dear User,</p>
+                        <p>Your Material Request <b>{self.name}</b> has been approved.</p>
+                        
+                        <table style="border-collapse: collapse; margin: 20px 0;">
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Request Type:</td>
+                                <td style="padding: 8px;">{self.request_type}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Items:</td>
+                                <td style="padding: 8px;">{', '.join(category_info)}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Required By:</td>
+                                <td style="padding: 8px;">{frappe.format(self.required_by_date, {'fieldtype': 'Date'})}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Approved By:</td>
+                                <td style="padding: 8px;">{self.head_office_officer}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Approval Date:</td>
+                                <td style="padding: 8px;">{frappe.format(self.ho_officer_approval_date, {'fieldtype': 'Datetime'})}</td>
+                            </tr>
+                        </table>
+                        
+                        <p>
+                            <a href="{frappe.utils.get_url()}/app/employee-material-request/{self.name}" 
+                               style="background: #2ecc71; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                                View Document
+                            </a>
+                        </p>
+                    </div>
+                """,
+                reference_doctype=self.doctype,
+                reference_name=self.name
+            )
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback(), "Material Request Notification Error")
 
-            # Reporting Person actions (only when in their stage)
-            if self.status == "Pending Reporting Person" and current_user == self.reporting_person:
-                if action in ["approve", "skip"]:
-                    self.reporting_person_status = "Approved" if action == "approve" else "Skip"
-                elif action == "reject":
-                    self.reporting_person_status = "Rejected"
-                
-                self.reporting_person_approval_date = now()
-                self.db_set("reporting_person_status", self.reporting_person_status)
-                frappe.db.commit()
-                frappe.logger().info(f"Updated reporting_person_status to {self.reporting_person_status}")
 
-            # HO Officer actions (only when in their stage)
-            elif self.status == "Pending HO Approval" and frappe.has_role("Head Office Officer"):
-                if action in ["approve", "skip"]:
-                    self.ho_officer_status = "Approved" if action == "approve" else "Skip"
-                elif action == "reject":
-                    # Fix: When Reporting Person is skipped, HO reject goes to ho_officer_status
-                    self.ho_officer_status = "Rejected"
-                    # Keep reporting_person_status as "Skip" - don't override it
-                
-                self.ho_officer_approval_date = now()
-                self.db_set("ho_officer_status", self.ho_officer_status)
-                frappe.db.commit()
-                frappe.logger().info(f"Updated ho_officer_status to {self.ho_officer_status}")
-                # --- SELF APPROVE: Skip both approvers ---
-                if action == "self approve":
-                    if not (frappe.session.user == "Administrator" or frappe.has_role("Store Manager")):
-                        frappe.throw(_("Only Administrator or Store Manager can self-approve."))
+    
+    
+    def before_workflow_action(self):
+        """Fixed workflow action handling for Skip + Reject scenarios"""
+        frappe.logger().info(f"before_workflow_action triggered for {self.name} ({self.status}) by {frappe.session.user}")
+        
+        current_user = frappe.session.user
+        action = (frappe.form_dict.get("action") or "").lower()
+        frappe.logger().info(f"User: {current_user}, Action: {action}")
 
-                    self.reporting_person_status = "Skip"
-                    self.ho_officer_status = "Skip"
+        # Reporting Person actions (only when in their stage)
+        if self.status == "Pending Reporting Person" and current_user == self.reporting_person:
+            if action in ["approve", "skip"]:
+                self.reporting_person_status = "Approved" if action == "approve" else "Skip"
+            elif action == "reject":
+                self.reporting_person_status = "Rejected"
+            
+            self.reporting_person_approval_date = now()
+            self.db_set("reporting_person_status", self.reporting_person_status)
+            frappe.db.commit()
+            frappe.logger().info(f"Updated reporting_person_status to {self.reporting_person_status}")
 
-                    remark = frappe.form_dict.get("remark") or "Self Approved"
-                    self.reporting_person_remarks = remark
-                    self.ho_officer_remarks = remark
-
-                    self.status = "Approved"
-
-                    self.db_set("reporting_person_status", "Skip")
-                    self.db_set("ho_officer_status", "Skip")
-                    self.db_set("status", "Approved")
-                    frappe.db.commit()
-
-                    return
+        # HO Officer actions (only when in their stage)
+        elif self.status == "Pending HO Approval" and frappe.has_role("Head Office Officer"):
+            if action in ["approve", "skip"]:
+                self.ho_officer_status = "Approved" if action == "approve" else "Skip"
+            elif action == "reject":
+                # Fix: When Reporting Person is skipped, HO reject goes to ho_officer_status
+                self.ho_officer_status = "Rejected"
+                # Keep reporting_person_status as "Skip" - don't override it
+            
+            self.ho_officer_approval_date = now()
+            self.db_set("ho_officer_status", self.ho_officer_status)
+            frappe.db.commit()
+            frappe.logger().info(f"Updated ho_officer_status to {self.ho_officer_status}")
+ 
 
 
 # Whitelisted API Methods
@@ -654,6 +634,7 @@ def validate_required_date(required_by_date, request_date=None):
             "valid": False,
             "message": str(e)
         }
+
 
 
 # ==================================================================
@@ -1049,6 +1030,81 @@ def admin_manage_approvers(docname, rp_skip=0, ho_skip=0,
         "status": doc.status,
         "reporting_person_status": doc.reporting_person_status,
         "ho_officer_status": doc.ho_officer_status
+    }
+
+
+
+import frappe
+from frappe.utils import now
+
+@frappe.whitelist()
+def self_approve_request(docname):
+    """
+    Admin / Store Manager shortcut:
+    - Set reporting_person_status = 'Skip'
+    - Set ho_officer_status = 'Skip'
+    - Set status = 'Self Approved'
+    - Apply similar validations as skip logic.
+    """
+    if not (frappe.session.user == "Administrator" or frappe.has_role("Store Manager")):
+        frappe.throw(
+            "Only Administrator or Store Manager can perform Self Approved.",
+            frappe.PermissionError,
+        )
+
+    doc = frappe.get_doc("Employee Material Request", docname)
+
+    # Basic guards: only on submitted / pending-like documents as per your needs
+    if doc.status not in ["Pending Reporting Person", "Pending HO Approval", "Approved"]:
+        frappe.throw(
+            f"Self Approved is not allowed from status: {doc.status}",
+            title="Invalid Status",
+        )
+
+    messages = []
+
+    # Apply same kind of validation idea as your skip functions:
+    # if already rejected, do not allow.
+    if doc.reporting_person_status == "Rejected" or doc.ho_officer_status == "Rejected":
+        frappe.throw(
+            "Cannot Self Approve a request where any approver has already Rejected.",
+            title="Approval Already Rejected",
+        )
+
+    # Set both to Skip
+    if doc.reporting_person_status != "Skip":
+        doc.reporting_person_status = "Skip"
+        doc.reporting_person_approval_date = now()
+        messages.append("Reporting Person marked as Skip.")
+
+    if doc.ho_officer_status != "Skip":
+        doc.ho_officer_status = "Skip"
+        doc.ho_officer_approval_date = now()
+        messages.append("HO Officer marked as Skip.")
+
+    # Final status for document
+    doc.status = "Self Approved"
+
+    # Persist
+    doc.flags.ignore_validate = True
+    doc.flags.ignore_update_after_submit = True
+    doc.save()
+    frappe.db.commit()
+
+    # Optional audit comment
+    doc.add_comment(
+        "Edit",
+        "Request Self Approved by {0}. Both approvers skipped.".format(
+            frappe.session.user
+        ),
+    )
+
+    return {
+        "success": True,
+        "message": "<br>".join(messages) or "Self Approved successfully.",
+        "status": doc.status,
+        "reporting_person_status": doc.reporting_person_status,
+        "ho_officer_status": doc.ho_officer_status,
     }
 
 
