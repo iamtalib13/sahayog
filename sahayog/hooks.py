@@ -548,12 +548,12 @@ fixtures = [
             ]
         ]
     },
-
-    # email templates fixtures
-    {
-        "dt": "Email Template",
-        "filters": [["name", "in", ["Disciplinary Case Update"]]]
-    },  
+# email templates fixtures
+{
+    "dt": "Email Template",
+    "filters": [["name", "in", ["Disciplinary Case Update", "Disciplinary - SCN"]]]
+},
+  
     # Print Format fixture
 {
     "dt": "Print Format",
