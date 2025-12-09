@@ -58,7 +58,7 @@ frappe.ui.form.on("Employee Material Request", {
   // REFRESH EVENT - Triggered when form loads/refreshes
   // ------------------------------------------------------------------
   refresh: function (frm) {
-    const blocked_status = ["Draft", "Approved", "Rejected"];
+    const blocked_status = ["Draft", "Approved", "Rejected", "Self Approved"];
     // Add Manage Approver button - ONLY for saved docs, Admin/Store Manager
     if (
       !frm.is_new() &&
