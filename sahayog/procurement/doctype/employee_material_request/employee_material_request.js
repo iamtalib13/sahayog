@@ -39,20 +39,22 @@ frappe.ui.form.on("Employee Material Request", {
   // },
 
   after_workflow_action: function (frm) {
-  // Detect resubmission and mark for remark clearing
-  if (frm.doc.status === "Pending Reporting Person") {
-    const prevStatus = localStorage.getItem(`emr-prev-status-${frm.doc.name}`);
-    if (prevStatus === "Rejected") {
-      localStorage.setItem(`emr-resubmit-${frm.doc.name}`, "1");
+    // Detect resubmission and mark for remark clearing
+    if (frm.doc.status === "Pending Reporting Person") {
+      const prevStatus = localStorage.getItem(
+        `emr-prev-status-${frm.doc.name}`
+      );
+      if (prevStatus === "Rejected") {
+        localStorage.setItem(`emr-resubmit-${frm.doc.name}`, "1");
+      }
     }
-  }
-  
-  // Force hard reload to clear cached remark data
-  frappe.dom.unfreeze();
-  setTimeout(() => {
-    frm.reload_doc({with_feedback: false});
-  }, 500);
-},
+
+    // Force hard reload to clear cached remark data
+    frappe.dom.unfreeze();
+    setTimeout(() => {
+      frm.reload_doc({ with_feedback: false });
+    }, 500);
+  },
 
   // ------------------------------------------------------------------
   // REFRESH EVENT - Triggered when form loads/refreshes
@@ -73,8 +75,6 @@ frappe.ui.form.on("Employee Material Request", {
         }); // Add to Actions group
       }
     }
-
-    
 
     // Clear or set basic intro for new unsaved docs
     if (frm.is_new()) {
@@ -570,7 +570,6 @@ frappe.ui.form.on("Employee Material Request", {
     }
   },
 
-
   // Updated before_workflow_action with proper remark handling
   // FIXED before_workflow_action - removed timeline error
   before_workflow_action: function (frm) {
@@ -611,79 +610,79 @@ frappe.ui.form.on("Employee Material Request", {
     }
 
     // NEW: handle Self Approved (Self Approved Button click)
-  // --- SELF APPROVED HANDLER ---
-  if (action === "self approved" || action === "self_approved") {
-    frappe.dom.unfreeze();
+    // --- SELF APPROVED HANDLER ---
+    if (action === "self approved" || action === "self_approved") {
+      frappe.dom.unfreeze();
 
-    // Restrict to Admin / Store Manager
-    if (
-      !frappe.user.has_role("Administrator") &&
-      !frappe.user.has_role("Store Manager")
-    ) {
-      frappe.msgprint({
-        title: "Not Allowed",
-        message: "Only Administrator or Store Manager can use Self Approved.",
-        indicator: "red",
+      // Restrict to Admin / Store Manager
+      if (
+        !frappe.user.has_role("Administrator") &&
+        !frappe.user.has_role("Store Manager")
+      ) {
+        frappe.msgprint({
+          title: "Not Allowed",
+          message: "Only Administrator or Store Manager can use Self Approved.",
+          indicator: "red",
+        });
+        frappe.validated = false;
+        return false; // stop workflow apply
+      }
+
+      // Do everything via custom API and then CANCEL workflow apply
+      return new Promise((resolve, reject) => {
+        frappe.confirm(
+          "<b>Are you sure you want to Self Approve this request?</b><br>" +
+            "This will skip both Reporting Person and HO Officer approvals.",
+          () => {
+            frappe.call({
+              method:
+                "sahayog.procurement.doctype.employee_material_request.employee_material_request.self_approve_request",
+              args: {
+                docname: frm.doc.name,
+              },
+              freeze: true,
+              freeze_message: "Processing Self Approval...",
+              callback: function (r) {
+                if (!r.exc && r.message && r.message.success) {
+                  frappe.show_alert(
+                    {
+                      message:
+                        r.message.message || "Self Approved successfully.",
+                      indicator: "green",
+                    },
+                    5
+                  );
+                  // Reload updated doc
+                  frm.reload_doc();
+
+                  // IMPORTANT: stop default workflow engine
+                  frappe.validated = false;
+                  // Reject the Promise so Frappe's workflow handler doesn't proceed
+                  reject("Self Approved handled manually");
+                } else {
+                  frappe.msgprint({
+                    title: "Error",
+                    message:
+                      (r.message && r.message.message) ||
+                      "Failed to Self Approve.",
+                    indicator: "red",
+                  });
+                  frappe.validated = false;
+                  reject("Failed");
+                }
+              },
+            });
+          },
+          () => {
+            frappe.validated = false;
+            reject("Cancelled");
+          }
+        );
       });
-      frappe.validated = false;
-      return false;            // stop workflow apply
     }
-
-    // Do everything via custom API and then CANCEL workflow apply
-    return new Promise((resolve, reject) => {
-      frappe.confirm(
-        "<b>Are you sure you want to Self Approve this request?</b><br>" +
-          "This will skip both Reporting Person and HO Officer approvals.",
-        () => {
-          frappe.call({
-            method:
-              "sahayog.procurement.doctype.employee_material_request.employee_material_request.self_approve_request",
-            args: {
-              docname: frm.doc.name,
-            },
-            freeze: true,
-            freeze_message: "Processing Self Approval...",
-            callback: function (r) {
-              if (!r.exc && r.message && r.message.success) {
-                frappe.show_alert(
-                  {
-                    message: r.message.message || "Self Approved successfully.",
-                    indicator: "green",
-                  },
-                  5
-                );
-                // Reload updated doc
-                frm.reload_doc();
-
-                // IMPORTANT: stop default workflow engine
-                frappe.validated = false;
-                // Reject the Promise so Frappe's workflow handler doesn't proceed
-                reject("Self Approved handled manually");
-              } else {
-                frappe.msgprint({
-                  title: "Error",
-                  message:
-                    (r.message && r.message.message) ||
-                    "Failed to Self Approve.",
-                  indicator: "red",
-                });
-                frappe.validated = false;
-                reject("Failed");
-              }
-            },
-          });
-        },
-        () => {
-          frappe.validated = false;
-          reject("Cancelled");
-        }
-      );
-    });
-  }
 
     return true;
   },
-
 
   after_workflow_action: function (frm) {
     // console.log("After workflow action triggered");
@@ -699,10 +698,10 @@ frappe.ui.form.on("Employee Material Request", {
 // New function to show remark dialog for all approval actions
 // ✅ FIXED: Remarks SAVED via whitelisted API before workflow
 function showApprovalRemarkDialog(frm, action) {
-
-    // Detect resubmission - clear remark default
-  const isResubmission = frm.doc.status === "Pending Reporting Person" && 
-                        localStorage.getItem(`emr-resubmit-${frm.doc.name}`);
+  // Detect resubmission - clear remark default
+  const isResubmission =
+    frm.doc.status === "Pending Reporting Person" &&
+    localStorage.getItem(`emr-resubmit-${frm.doc.name}`);
 
   return new Promise((resolve, reject) => {
     const actionLabels = { approve: "Approve", reject: "Reject", skip: "Skip" };
@@ -728,7 +727,7 @@ function showApprovalRemarkDialog(frm, action) {
           reqd: 1, // ✅ MANDATORY NOW
           description: `Reason for ${actionLabels[action].toLowerCase()}ing`,
           // default: frm.doc[remarkField] || "",
-           default: isResubmission ? "" : (frm.doc[remarkField] || ""), 
+          default: isResubmission ? "" : frm.doc[remarkField] || "",
         },
       ],
       primary_action_label: "Submit Decision",
@@ -1147,32 +1146,33 @@ function render_intro_html(frm, data) {
     div4_badge = map[ho_stat];
   }
 
-
   // ✅ Store remarks in JS variables
-  const requestRemark = data.remark || '';
-  const rpRemark = data.reporting_person_remarks || '';
-  const hoRemark = data.ho_officer_remarks || '';
-  
+  const requestRemark = data.remark || "";
+  const rpRemark = data.reporting_person_remarks || "";
+  const hoRemark = data.ho_officer_remarks || "";
+
   // console.log('📝 Remarks loaded:', { requestRemark, rpRemark, hoRemark }); // DEBUG
-  
-  const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
-  
-  const div2Envelope = requestRemark.trim() ? 
-      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="request" 
-            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
-            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
-  
-  const rpEnvelope = rpRemark.trim() ? 
-      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="reporting" 
-            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
-            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
-  
-  const hoEnvelope = hoRemark.trim() ? 
-      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="ho" 
-            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
-            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
 
+  const envelopeImgUrl =
+    frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
 
+  const div2Envelope = requestRemark.trim()
+    ? `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="request" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">`
+    : "";
+
+  const rpEnvelope = rpRemark.trim()
+    ? `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="reporting" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">`
+    : "";
+
+  const hoEnvelope = hoRemark.trim()
+    ? `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="ho" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">`
+    : "";
 
   let html = `
     <style>
@@ -1534,56 +1534,49 @@ function render_intro_html(frm, data) {
 }
 
 // ✅ ENVELOPE CLICK HANDLER - Shows remark popup
-$(document).on('click', '.remark-envelope', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const type = $(this).data('type');
-    const remark = window.emr_remarks && window.emr_remarks[type];
-    const titles = { 
-        request: 'Request Details', 
-        reporting: 'Reporting Person', 
-        ho: 'HO Officer' 
-    };
-    const title = titles[type] || 'Remark';
-    
-    // console.log('🔍 CLICK:', type, 'Remark:', remark ? `"${remark}"` : 'EMPTY');
+$(document).on("click", ".remark-envelope", function (e) {
+  e.preventDefault();
+  e.stopPropagation();
 
-    if (remark && remark.trim()) {
+  const type = $(this).data("type");
+  const remark = window.emr_remarks && window.emr_remarks[type];
+  const titles = {
+    request: "Request Details",
+    reporting: "Reporting Person",
+    ho: "HO Officer",
+  };
+  const title = titles[type] || "Remark";
 
+  // console.log('🔍 CLICK:', type, 'Remark:', remark ? `"${remark}"` : 'EMPTY');
+
+  if (remark && remark.trim()) {
     let d = frappe.msgprint({
-        title: `${title} Remark`,
-        message: `
+      title: `${title} Remark`,
+      message: `
 <div style="padding: 12px;">
   <div style="font-weight: 600; margin-bottom: 6px;">${title}</div>
   <div style="background:#f8f9fa; padding:10px; border-radius:6px; border-left:4px solid #3b82f6; white-space:pre-wrap;">
     ${remark}
   </div>
 </div>`,
-        primary_action: {
-            label: 'Close',
-            // client_action: () => d.hide()   // ✅ Works!
-            action(values) {
-            d.hide();
-        }
+      primary_action: {
+        label: "Close",
+        // client_action: () => d.hide()   // ✅ Works!
+        action(values) {
+          d.hide();
         },
-        indicator: 'blue',
-        wide: true
+      },
+      indicator: "blue",
+      wide: true,
     });
-
-} else {
-
+  } else {
     frappe.msgprint({
-        title: `${title} Remark`,
-        message: 'No remark entered.',
-        indicator: 'orange'
+      title: `${title} Remark`,
+      message: "No remark entered.",
+      indicator: "orange",
     });
-
-}
+  }
 });
-
-
-
 
 // ------------------------------------------------------------------
 // RENDER INTRO FALLBACK
