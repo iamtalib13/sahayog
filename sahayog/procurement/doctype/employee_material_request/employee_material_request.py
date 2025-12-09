@@ -1034,6 +1034,81 @@ def admin_manage_approvers(docname, rp_skip=0, ho_skip=0,
 
 
 
+import frappe
+from frappe.utils import now
+
+@frappe.whitelist()
+def self_approve_request(docname):
+    """
+    Admin / Store Manager shortcut:
+    - Set reporting_person_status = 'Skip'
+    - Set ho_officer_status = 'Skip'
+    - Set status = 'Self Approved'
+    - Apply similar validations as skip logic.
+    """
+    if not (frappe.session.user == "Administrator" or frappe.has_role("Store Manager")):
+        frappe.throw(
+            "Only Administrator or Store Manager can perform Self Approved.",
+            frappe.PermissionError,
+        )
+
+    doc = frappe.get_doc("Employee Material Request", docname)
+
+    # Basic guards: only on submitted / pending-like documents as per your needs
+    if doc.status not in ["Pending Reporting Person", "Pending HO Approval", "Approved"]:
+        frappe.throw(
+            f"Self Approved is not allowed from status: {doc.status}",
+            title="Invalid Status",
+        )
+
+    messages = []
+
+    # Apply same kind of validation idea as your skip functions:
+    # if already rejected, do not allow.
+    if doc.reporting_person_status == "Rejected" or doc.ho_officer_status == "Rejected":
+        frappe.throw(
+            "Cannot Self Approve a request where any approver has already Rejected.",
+            title="Approval Already Rejected",
+        )
+
+    # Set both to Skip
+    if doc.reporting_person_status != "Skip":
+        doc.reporting_person_status = "Skip"
+        doc.reporting_person_approval_date = now()
+        messages.append("Reporting Person marked as Skip.")
+
+    if doc.ho_officer_status != "Skip":
+        doc.ho_officer_status = "Skip"
+        doc.ho_officer_approval_date = now()
+        messages.append("HO Officer marked as Skip.")
+
+    # Final status for document
+    doc.status = "Self Approved"
+
+    # Persist
+    doc.flags.ignore_validate = True
+    doc.flags.ignore_update_after_submit = True
+    doc.save()
+    frappe.db.commit()
+
+    # Optional audit comment
+    doc.add_comment(
+        "Edit",
+        "Request Self Approved by {0}. Both approvers skipped.".format(
+            frappe.session.user
+        ),
+    )
+
+    return {
+        "success": True,
+        "message": "<br>".join(messages) or "Self Approved successfully.",
+        "status": doc.status,
+        "reporting_person_status": doc.reporting_person_status,
+        "ho_officer_status": doc.ho_officer_status,
+    }
+
+
+
 @frappe.whitelist()
 def update_material_request_approval_status(docname, action, remark=""):
     """Save approval remark before workflow action"""
