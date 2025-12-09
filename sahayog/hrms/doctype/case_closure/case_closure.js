@@ -115,9 +115,9 @@ frappe.ui.form.on("Case Closure", {
 
       btn.removeClass("btn-default").addClass("btn-primary");
     }
-
+    
     frappe.after_ajax(() => {
-      frm.trigger("show_print_button");
+    frm.trigger("show_print_button");
     });
     if (!frm.is_new() && frm.doc.case_id) {
       frappe.call({
@@ -136,12 +136,9 @@ frappe.ui.form.on("Case Closure", {
         open_approver_dialog(frm);
       });
     }
-
   },
-
   show_print_button: function (frm) {
     if (frm.is_new()) return;
-
     if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
     const allowed_roles = [
@@ -259,7 +256,7 @@ frappe.ui.form.on("Case Closure", {
       };
     }
   },
-});
+}); 
 function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
@@ -417,57 +414,254 @@ function timeline_badge(stage_obj) {
   `;
 }
 // FUNCTION TO OPEN REVIEWER SELECTION DIALOG BOX
+// function open_approver_dialog(frm) {
+//   // 1️⃣  Get the employee against whom case is created
+//   let case_employee_id = frm.doc.employee_id;
+
+//   // If employee id not found → stop execution
+//   if (!case_employee_id) {
+//     frappe.msgprint("No employee found for this case.");
+//     return;
+//   }
+
+//   // 2️⃣ Fetch full Employee Document using employee id
+//   frappe.db.get_doc("Employee", case_employee_id).then((emp) => {
+//     // Get employee's zone (custom field: custom_zone)
+//     let default_zone = emp.custom_zone;
+
+//     // If employee does not have zone → stop
+//     if (!default_zone) {
+//       frappe.msgprint("Employee does not have a zone assigned.");
+//       return;
+//     }
+
+//     // 3️⃣ Create Approver Dialog Box
+//     let d = new frappe.ui.Dialog({
+//       title: "Select Reviewers",
+//       size: "extra-large",
+
+//       fields: [
+//         // ---------- ZONE FIELD ----------
+//         {
+//           fieldtype: "Link",
+//           fieldname: "selected_zone",
+//           label: "Zone",
+//           options: "Zone",
+
+//           // Pre-fill zone = selected employee zone
+//           default: default_zone,
+//           reqd: 1,
+
+//           // When zone changes → refresh approver table filter
+//           onchange() {
+//             d.fields_dict.approver_table.grid.refresh();
+//           },
+//         },
+
+//         // ---------- APPROVER TABLE ----------
+//         {
+//           fieldname: "approver_table",
+//           fieldtype: "Table",
+//           label: "Reviewer List",
+
+//           // Allow user to add rows manually
+//           cannot_add_rows: false,
+//           in_place_edit: true,
+
+//           fields: [
+//             {
+//               fieldtype: "Link",
+//               fieldname: "employee_id",
+//               label: "Employee ID",
+//               options: "Employee",
+//               in_list_view: true,
+//               reqd: 1,
+
+//               // Apply filter: show only employees in same zone
+//               get_query() {
+//                 let zone = d.get_value("selected_zone");
+//                 if (!zone) return {};
+//                 return {
+//                   filters: { custom_zone: zone },
+//                 };
+//               },
+
+//               // When user selects employee id fetch selected employee details and refresh row
+//               onchange() {
+//                 let row = this.grid_row.doc;
+//                 if (!row.employee_id) return;
+
+//                 // 🔍 Check duplicate in the dialog table itself
+//                 let all_rows = d.fields_dict.approver_table.grid.get_data();
+//                 let duplicate_in_dialog = all_rows.some(
+//                   (r) => r.employee_id === row.employee_id && r !== row
+//                 );
+
+//                 if (duplicate_in_dialog) {
+//                   frappe.msgprint({
+//                     title: __("Duplicate Reviewer"),
+//                     message: __(
+//                       "This reviewer is already selected in the dialog."
+//                     ),
+//                     indicator: "red",
+//                   });
+
+//                   // ❌ Reset row fields
+//                   row.employee_id = "";
+//                   row.employee_name = "";
+//                   row.company_email = "";
+//                   d.fields_dict.approver_table.grid.refresh();
+//                   return;
+//                 }
+
+//                 // 🔍 Check duplicate reviewer from parent child table
+//                 let already_selected = (frm.doc.review_details || []).some(
+//                   (r) => r.employee_id === row.employee_id
+//                 );
+
+//                 if (already_selected) {
+//                   frappe.msgprint({
+//                     title: __("Duplicate Reviewer"),
+//                     message: __(
+//                       "This reviewer is already selected in the list."
+//                     ),
+//                     indicator: "red",
+//                   });
+
+//                   // ❌ Reset row fields
+//                   row.employee_id = "";
+//                   row.employee_name = "";
+//                   row.company_email = "";
+
+//                   d.fields_dict.approver_table.grid.refresh();
+//                   return;
+//                 }
+
+//                 // Fetch details if not duplicate
+//                 frappe.db
+//                   .get_doc("Employee", row.employee_id)
+//                   .then((emp_data) => {
+//                     row.employee_name = emp_data.employee_name;
+//                     row.company_email =
+//                       emp_data.company_email || emp_data.prefered_email;
+//                     d.fields_dict.approver_table.grid.refresh();
+//                   });
+//               },
+//             },
+//             {
+//               fieldtype: "Data",
+//               fieldname: "employee_name",
+//               label: "Employee Name",
+//               in_list_view: true,
+//               read_only: 1,
+//             },
+//             {
+//               fieldtype: "Data",
+//               fieldname: "company_email",
+//               label: "Company Email",
+//               in_list_view: true,
+//               reqd: 1, // must be filled
+//             },
+//           ],
+//         },
+//       ],
+
+//       primary_action_label: "Submit",
+
+//       // 4️⃣  PRIMARY ACTION (Callback of Submit Button)
+//       primary_action(values) {
+//         // A. Validate that every row has company email
+//         for (let row of values.approver_table || []) {
+//           if (!row.company_email) {
+//             frappe.msgprint({
+//               title: __("Missing Email"),
+//               message: __("Please fill Company Email for all approvers."),
+//               indicator: "red",
+//             });
+//             return;
+//           }
+//         }
+
+//         // B. Show confirmation popup before final submit
+//         frappe.confirm(
+//           __(
+//             "Please confirm that the reviewer selection is accurate before submitting."
+//           ),
+
+//           // If YES pressed
+//           () => {
+//             submit_approvers(frm, values, d);
+//           },
+
+//           // If NO pressed → do nothing
+//           () => {}
+//         );
+//       },
+//     });
+
+//     // Show dialog box on screen
+//     d.show();
+//   });
+// }
+
+
 function open_approver_dialog(frm) {
-  // 1️⃣  Get the employee against whom case is created
   let case_employee_id = frm.doc.employee_id;
 
-  // If employee id not found → stop execution
   if (!case_employee_id) {
     frappe.msgprint("No employee found for this case.");
     return;
   }
 
-  // 2️⃣ Fetch full Employee Document using employee id
   frappe.db.get_doc("Employee", case_employee_id).then((emp) => {
-    // Get employee's zone (custom field: custom_zone)
     let default_zone = emp.custom_zone;
 
-    // If employee does not have zone → stop
     if (!default_zone) {
       frappe.msgprint("Employee does not have a zone assigned.");
       return;
     }
 
-    // 3️⃣ Create Approver Dialog Box
     let d = new frappe.ui.Dialog({
       title: "Select Reviewers",
       size: "extra-large",
 
       fields: [
-        // ---------- ZONE FIELD ----------
+        // ---------------- EXISTING REVIEWERS (READ-ONLY SECTION) ----------------
+        {
+          fieldname: "already_selected_section",
+          fieldtype: "Section Break",
+          label: "Already Selected Reviewers",
+          collapsible: 1
+        },
+        {
+          fieldname: "existing_reviewers_html",
+          fieldtype: "HTML",
+        },
+
+        // ---------------- NEW REVIEWERS (ADD NEW) ----------------
+        {
+          fieldname: "section_new",
+          fieldtype: "Section Break",
+          label: "Add New Reviewers"
+        },
+
         {
           fieldtype: "Link",
           fieldname: "selected_zone",
           label: "Zone",
           options: "Zone",
-
-          // Pre-fill zone = selected employee zone
           default: default_zone,
           reqd: 1,
 
-          // When zone changes → refresh approver table filter
           onchange() {
             d.fields_dict.approver_table.grid.refresh();
           },
         },
 
-        // ---------- APPROVER TABLE ----------
         {
           fieldname: "approver_table",
           fieldtype: "Table",
           label: "Reviewer List",
-
-          // Allow user to add rows manually
           cannot_add_rows: false,
           in_place_edit: true,
 
@@ -480,36 +674,23 @@ function open_approver_dialog(frm) {
               in_list_view: true,
               reqd: 1,
 
-              // Apply filter: show only employees in same zone
               get_query() {
                 let zone = d.get_value("selected_zone");
                 if (!zone) return {};
-                return {
-                  filters: { custom_zone: zone },
-                };
+                return { filters: { custom_zone: zone } };
               },
 
-              // When user selects employee id fetch selected employee details and refresh row
               onchange() {
                 let row = this.grid_row.doc;
                 if (!row.employee_id) return;
 
-                // 🔍 Check duplicate in the dialog table itself
-                let all_rows = d.fields_dict.approver_table.grid.get_data();
-                let duplicate_in_dialog = all_rows.some(
+                let dialog_rows = d.fields_dict.approver_table.grid.get_data();
+                let duplicate_in_dialog = dialog_rows.some(
                   (r) => r.employee_id === row.employee_id && r !== row
                 );
 
                 if (duplicate_in_dialog) {
-                  frappe.msgprint({
-                    title: __("Duplicate Reviewer"),
-                    message: __(
-                      "This reviewer is already selected in the dialog."
-                    ),
-                    indicator: "red",
-                  });
-
-                  // ❌ Reset row fields
+                  frappe.msgprint("This reviewer is already selected in the dialog.");
                   row.employee_id = "";
                   row.employee_name = "";
                   row.company_email = "";
@@ -517,38 +698,24 @@ function open_approver_dialog(frm) {
                   return;
                 }
 
-                // 🔍 Check duplicate reviewer from parent child table
-                let already_selected = (frm.doc.review_details || []).some(
+                let duplicate_in_parent = (frm.doc.review_details || []).some(
                   (r) => r.employee_id === row.employee_id
                 );
 
-                if (already_selected) {
-                  frappe.msgprint({
-                    title: __("Duplicate Reviewer"),
-                    message: __(
-                      "This reviewer is already selected in the list."
-                    ),
-                    indicator: "red",
-                  });
-
-                  // ❌ Reset row fields
+                if (duplicate_in_parent) {
+                  frappe.msgprint("This reviewer is already selected in the list.");
                   row.employee_id = "";
                   row.employee_name = "";
                   row.company_email = "";
-
                   d.fields_dict.approver_table.grid.refresh();
                   return;
                 }
 
-                // Fetch details if not duplicate
-                frappe.db
-                  .get_doc("Employee", row.employee_id)
-                  .then((emp_data) => {
-                    row.employee_name = emp_data.employee_name;
-                    row.company_email =
-                      emp_data.company_email || emp_data.prefered_email;
-                    d.fields_dict.approver_table.grid.refresh();
-                  });
+                frappe.db.get_doc("Employee", row.employee_id).then((emp_data) => {
+                  row.employee_name = emp_data.employee_name;
+                  row.company_email = emp_data.company_email || emp_data.prefered_email;
+                  d.fields_dict.approver_table.grid.refresh();
+                });
               },
             },
             {
@@ -563,7 +730,7 @@ function open_approver_dialog(frm) {
               fieldname: "company_email",
               label: "Company Email",
               in_list_view: true,
-              reqd: 1, // must be filled
+              reqd: 1,
             },
           ],
         },
@@ -571,226 +738,278 @@ function open_approver_dialog(frm) {
 
       primary_action_label: "Submit",
 
-      // 4️⃣  PRIMARY ACTION (Callback of Submit Button)
       primary_action(values) {
-        // A. Validate that every row has company email
         for (let row of values.approver_table || []) {
           if (!row.company_email) {
-            frappe.msgprint({
-              title: __("Missing Email"),
-              message: __("Please fill Company Email for all approvers."),
-              indicator: "red",
-            });
+            frappe.msgprint("Please fill Company Email for all reviewers.");
             return;
           }
         }
 
-        // B. Show confirmation popup before final submit
         frappe.confirm(
-          __(
-            "Please confirm that the reviewer selection is accurate before submitting."
-          ),
-
-          // If YES pressed
-          () => {
-            submit_approvers(frm, values, d);
-          },
-
-          // If NO pressed → do nothing
+          "Please confirm that the reviewer selection is accurate before submitting.",
+          () => submit_approvers(frm, values, d),
           () => {}
         );
       },
     });
 
-    // Show dialog box on screen
+    // ---------- SHOW EXISTING REVIEWERS IN READ-ONLY HTML ----------
+    let existing = frm.doc.review_details || [];
+
+    if (existing.length > 0) {
+      let html = `
+          <table class="table table-bordered" style="margin-top:10px">
+            <thead>
+              <tr>
+                <th>Employee ID</th>
+                <th>Remarks</th>
+                <th>Status</th>
+                <th>Date & Time</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+      existing.forEach((r) => {
+        html += `
+            <tr>
+              <td>${r.employee_id}</td>
+              <td>${r.remarks || ""}</td>
+              <td>${r.status || ""}</td>
+              <td>${r.date_and_time || ""}</td>
+            </tr>
+        `;
+      });
+
+      html += `</tbody></table>`;
+      d.fields_dict.existing_reviewers_html.$wrapper.html(html);
+    } else {
+      d.fields_dict.existing_reviewers_html.$wrapper.html(
+        "<p style='color:#888'>No reviewers selected yet.</p>"
+      );
+    }
+
     d.show();
   });
 }
 
-// REPLACEMENT submit_approvers function
+// third code of submit_approvers function
+// function submit_approvers(frm, values, dialog) {
+//   // A. Clear old reviewer rows
+//   frm.clear_table("review_details");
+
+//   // B. Append new reviewer rows
+//   (values.approver_table || []).forEach((row) => {
+//     let child = frm.add_child("review_details");
+
+//     child.employee_id = row.employee_id;
+//     child.remarks = "";
+//     child.status = "Pending";
+//     child.date_and_time = frappe.datetime.now_datetime();
+//   });
+
+//   frm.refresh_field("review_details");
+
+//   // C. Save parent document
+//   frm.save().then(() => {
+//     // -----------------------------------------------------
+//     // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
+//     // -----------------------------------------------------
+//     frappe.call({
+//       method:
+//         "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+//       args: {
+//         approvers: values.approver_table,
+//         case_id: frm.doc.name,
+//       },
+//       freeze: true,
+//       freeze_message: __("Sending verification emails..."),
+//       callback(r) {
+//         console.log("START VERIFICATION RESPONSE:", r);
+
+//         if (r.message?.status !== "ok") {
+//           frappe.msgprint({
+//             title: __("Verification Failed"),
+//             message: r.message?.msg,
+//             indicator: "red",
+//           });
+//           return;
+//         }
+
+//         frappe.msgprint({
+//           title: __("Verification Started"),
+//           message: __("Case Review process started successfully."),
+//           indicator: "green",
+//         });
+//       },
+//     });
+
+//     // -----------------------------------------------------
+//     // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
+//     // -----------------------------------------------------
+//     frappe.call({
+//       method:
+//         "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+//       args: {
+//         case_id: frm.doc.name,
+//         approvers: JSON.stringify(values.approver_table),
+//       },
+//       freeze: true,
+//       freeze_message: __("Sending review notification email..."),
+//       callback(r) {
+//         console.log("TEMPLATE EMAIL RESPONSE:", r);
+
+//         if (r.message?.status === "disabled") {
+//           frappe.msgprint({
+//             title: __("Email Disabled"),
+//             message: __("Email notifications are disabled."),
+//             indicator: "orange",
+//           });
+//           return;
+//         }
+
+//         if (r.message?.status === "ok") {
+//           frappe.msgprint({
+//             title: __("Success"),
+//             message: __("Review notification email has been sent."),
+//             indicator: "green",
+//           });
+//           return;
+//         }
+
+//         frappe.msgprint({
+//           title: __("Email Failed"),
+//           message:
+//             r.message?.msg || __("Could not send review notification email."),
+//           indicator: "red",
+//         });
+//       },
+//     });
+
+//     dialog.hide();
+//   });
+// }
+
 function submit_approvers(frm, values, dialog) {
-  // 1) determine existing reviewers in parent child table
-  const existing_reviewers = (frm.doc.review_details || []).map(
-    (r) => r.employee_id
-  );
+  // A. OLD LOGIC: frm.clear_table("review_details"); // REMOVED THIS LINE
 
-  // 2) determine newly selected approvers from dialog (only those NOT already in parent)
-  const new_approvers = (values.approver_table || []).filter(
-    (r) => r.employee_id && !existing_reviewers.includes(r.employee_id)
-  );
+  // B. Append ONLY NEW reviewer rows
+  // Note: 'values.approver_table' contains only the *newly selected* reviewers
+  // because the 'open_approver_dialog' primary action was calling:
+  // submit_approvers(frm, { approver_table: new_reviewers }, d)
+  
+  const new_reviewers = values.approver_table || [];
 
-  console.log("Existing reviewers:", existing_reviewers);
-  console.log("Dialog approvers:", values.approver_table);
-  console.log("New approvers to add/send:", new_approvers);
-
-  // If nothing new was selected — don't proceed to send calls
-  if (!new_approvers.length) {
-    frappe.msgprint({
-      title: __("Nothing to do"),
-      message: __(
-        "No new reviewers were selected. Reviewers already exist in the list."
-      ),
-      indicator: "orange",
-    });
-    // Still close dialog and refresh UI so user sees the child table
-    dialog.hide();
-    frm.refresh();
-    return;
+  if (new_reviewers.length === 0) {
+      // यदि कोई नया समीक्षक नहीं चुना गया है, तो बस डायलाग बंद करें
+      frappe.msgprint(__("No new reviewers selected."));
+      dialog.hide();
+      return;
   }
 
-  // 3) Append only new reviewers to child table
-  new_approvers.forEach((row) => {
+  // New reviewers को child table में जोड़ें
+  new_reviewers.forEach((row) => {
     let child = frm.add_child("review_details");
+
+    // सुनिश्चित करें कि आप child table में 'employee_name' और 'company_email' भी स्टोर कर रहे हैं
+    // ताकि Dialog में read-only pre-fill करने में आसानी हो।
     child.employee_id = row.employee_id;
-    child.remarks = row.remarks || "";
+    child.employee_name = row.employee_name; // Add employee name
+    child.company_email = row.company_email; // Add company email
+    
+    // बाकी fields वही रहेंगे
+    child.remarks = "";
     child.status = "Pending";
     child.date_and_time = frappe.datetime.now_datetime();
-    // store company_email on the row only if you have a matching field in child
-    if (row.company_email && child.company_email !== undefined) {
-      child.company_email = row.company_email;
-    }
   });
 
   frm.refresh_field("review_details");
 
-  // 4) Save parent document, then run server-side calls using only new_approvers
-  // Use a single save flow (avoid nested multiple saves if not needed)
-  frm
-    .save()
-    .then(() => {
-      // ensure status is set if not already
-      if (frm.doc.status !== "Under Review") {
-        frm.set_value("status", "Under Review");
-      }
+  // C. Save parent document
+  frm.save().then(() => {
+    // Save successful, proceed with server calls
 
-      // Save again only if we changed status
-      return frm.save();
-    })
-    .then(() => {
-      frappe.show_alert({
-        message: __("Status changed to Under Review"),
-        indicator: "green",
-      });
+    // -----------------------------------------------------
+    // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
+    // -----------------------------------------------------
+    // Ensure you pass only the *new* approvers to the server call if needed, 
+    // or you can pass the entire updated list frm.doc.review_details
+    frappe.call({
+      method:
+        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+      args: {
+        // Pass only the new reviewers, as existing ones might already be processed
+        approvers: new_reviewers, 
+        case_id: frm.doc.name,
+      },
+      freeze: true,
+      freeze_message: __("Sending verification emails..."),
+      callback(r) {
+        console.log("START VERIFICATION RESPONSE:", r);
 
-      // Prepare a compact payload for server (avoid sending DOM objects)
-      const approvers_payload = new_approvers.map((a) => ({
-        employee_id: a.employee_id,
-        company_email: a.company_email,
-      }));
-
-      // ---- START VERIFICATION PROCESS (server) ----
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
-        args: {
-          approvers: approvers_payload,
-          case_id: frm.doc.name,
-        },
-        freeze: true,
-        freeze_message: __("Sending verification emails..."),
-        callback(r) {
-          console.log("START_VERIFICATION_PROCESS response:", r);
-          if (!r || !r.message) {
-            frappe.msgprint({
-              title: __("Verification Failed"),
-              message: __("No response from server."),
-              indicator: "red",
-            });
-            return;
-          }
-          if (r.message.status && r.message.status === "ok") {
-            frappe.msgprint({
-              title: __("Verification Started"),
-              message: __("Verification emails initiated."),
-              indicator: "green",
-            });
-          } else {
-            frappe.msgprint({
-              title: __("Verification Issue"),
-              message: r.message.msg || JSON.stringify(r.message),
-              indicator: "red",
-            });
-          }
-        },
-        error: (err) => {
-          console.error("Verification call error:", err);
+        if (r.message?.status !== "ok") {
           frappe.msgprint({
-            title: __("Verification Error"),
-            message: __("Check server logs. See console for details."),
+            title: __("Verification Failed"),
+            message: r.message?.msg,
             indicator: "red",
           });
-        },
-      });
+          return;
+        }
 
-      // ---- SEND TEMPLATE-BASED EMAIL (server) ----
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
-        args: {
-          case_id: frm.doc.name,
-          approvers: approvers_payload,
-        },
-        freeze: true,
-        freeze_message: __("Sending review notification email..."),
-        callback(r) {
-          console.log("TEMPLATE EMAIL RESPONSE:", r);
-
-          if (!r || !r.message) {
-            frappe.msgprint({
-              title: __("Email Failed"),
-              message: __("No response from server."),
-              indicator: "red",
-            });
-            return;
-          }
-
-          if (r.message.status === "disabled") {
-            frappe.msgprint({
-              title: __("Email Disabled"),
-              message: __("Email notifications are disabled."),
-              indicator: "orange",
-            });
-            return;
-          }
-
-          if (r.message.status === "ok") {
-            frappe.msgprint({
-              title: __("Success"),
-              message: __("Review notification email(s) sent successfully."),
-              indicator: "green",
-            });
-            return;
-          }
-
-          frappe.msgprint({
-            title: __("Email Failed"),
-            message:
-              r.message.msg || __("Could not send review notification email."),
-            indicator: "red",
-          });
-        },
-        error: (err) => {
-          console.error("Send email call error:", err);
-          frappe.msgprint({
-            title: __("Email Error"),
-            message: __("Check server logs. See console for details."),
-            indicator: "red",
-          });
-        },
-      });
-
-      // finally hide the dialog and refresh UI
-      dialog.hide();
-      frm.refresh();
-    })
-    .catch((err) => {
-      console.error("Save error in submit_approvers:", err);
-      frappe.msgprint({
-        title: __("Save Failed"),
-        message: __("Could not save the document. See console for details."),
-        indicator: "red",
-      });
+        frappe.msgprint({
+          title: __("Verification Started"),
+          message: __("Case Review process started successfully."),
+          indicator: "green",
+        });
+      },
     });
+
+    // -----------------------------------------------------
+    // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
+    // -----------------------------------------------------
+    frappe.call({
+      method:
+        "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+      args: {
+        case_id: frm.doc.name,
+        // Pass only the new approvers' details for the email content
+        approvers: JSON.stringify(new_reviewers), 
+      },
+      freeze: true,
+      freeze_message: __("Sending review notification email..."),
+      callback(r) {
+        console.log("TEMPLATE EMAIL RESPONSE:", r);
+        // ... (Callback logic remains the same)
+        if (r.message?.status === "disabled") {
+          frappe.msgprint({
+            title: __("Email Disabled"),
+            message: __("Email notifications are disabled."),
+            indicator: "orange",
+          });
+          return;
+        }
+
+        if (r.message?.status === "ok") {
+          frappe.msgprint({
+            title: __("Success"),
+            message: __("Review notification email has been sent."),
+            indicator: "green",
+          });
+          return;
+        }
+
+        frappe.msgprint({
+          title: __("Email Failed"),
+          message:
+            r.message?.msg || __("Could not send review notification email."),
+          indicator: "red",
+        });
+      },
+    });
+
+    dialog.hide();
+  });
 }
 
 // function to display review details with employee info
