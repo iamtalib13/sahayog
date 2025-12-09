@@ -3,20 +3,77 @@
 
 frappe.ui.form.on("Disciplinary Case", {
   refresh: function (frm) {
-    // -------------------
-    // Hide unwanted ERPNext default icon buttons (commented for now)
-    // -------------------
-    // $(".button.text-muted.btn.btn-default.icon-btn")
-    //   .has("svg.icon.icon-sm")
-    //   .hide();
-    // $("button:has(svg.icon.icon-sm)").hide();
+    if (!frm.is_new()) {
+      frm.add_custom_button("Send SCN Email", function () {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.check_employee_email",
+          args: { employee: frm.doc.employee_id },
+          callback(r) {
+            let email = r.message;
 
-    // -------------------
-    // Add Print Button
-    // -------------------
-    // -------------------
-    // Disable future dates in date fields (set df.max and refresh)
-    // -------------------
+            // CASE 1: Email exists
+            if (email) {
+              frappe.confirm(
+                `This employee already has an email:<br><b>${email}</b><br><br>Do you want to send the SCN email?`,
+                function () {
+                  // Show freeze while sending email
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending SCN email..."),
+                    callback(r) {
+                      frappe.msgprint(__("SCN Email sent successfully!"));
+                    },
+                  });
+                }
+              );
+            }
+            // CASE 2: No email
+            else {
+              let d = new frappe.ui.Dialog({
+                title: "Enter Employee Email",
+                fields: [
+                  {
+                    label: "Email",
+                    fieldname: "manual_email",
+                    fieldtype: "Data",
+                    reqd: true,
+                  },
+                ],
+                primary_action_label: "Submit",
+                primary_action(values) {
+                  // Show freeze while sending email
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending SCN email..."),
+                    callback(r) {
+                      frappe.msgprint(__("SCN Email sent successfully!"));
+                    },
+                  });
+                },
+              });
+              d.show();
+            }
+          },
+        });
+      });
+      function sendEmail(docname) {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
+          args: { docname },
+          callback() {
+            frappe.msgprint("SCN Email Sent Successfully!");
+          },
+        });
+      }
+    }
     let today = frappe.datetime.now_date();
 
     if (frm.fields_dict.issue_occurrence_date) {
