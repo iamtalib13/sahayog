@@ -34,9 +34,25 @@ frappe.ui.form.on("Employee Material Request", {
     }
   },
 
+  // after_workflow_action: function (frm) {
+  //   frm.reload_doc();
+  // },
+
   after_workflow_action: function (frm) {
-    frm.reload_doc();
-  },
+  // Detect resubmission and mark for remark clearing
+  if (frm.doc.status === "Pending Reporting Person") {
+    const prevStatus = localStorage.getItem(`emr-prev-status-${frm.doc.name}`);
+    if (prevStatus === "Rejected") {
+      localStorage.setItem(`emr-resubmit-${frm.doc.name}`, "1");
+    }
+  }
+  
+  // Force hard reload to clear cached remark data
+  frappe.dom.unfreeze();
+  setTimeout(() => {
+    frm.reload_doc({with_feedback: false});
+  }, 500);
+},
 
   // ------------------------------------------------------------------
   // REFRESH EVENT - Triggered when form loads/refreshes
@@ -58,34 +74,7 @@ frappe.ui.form.on("Employee Material Request", {
       }
     }
 
-    // const blocked_status = ["Draft", "Approved", "Rejected"];
-    // if (
-    //     !frm.is_new() &&
-    //     !blocked_status.includes(frm.doc.status) &&
-    //     (frappe.user.has_role("Administrator") || frappe.user.has_role("Store Manager"))
-    // ) {
-    //     frm.add_custom_button(
-    //         __("Manage Approver"),
-    //         () => openManageApprovalsDialog(frm),
-    //         __("Actions")
-    //     );
-    // }
-
-    // // Set intro message based on document status
-    // set_form_intro(frm);
-
-    // // Instead of relying on cached intro, forcibly fetch fresh data
-    // frappe.call({
-    // //   method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.get_material_request_intro_data",
-    //   args: { doc_name: frm.doc.name },
-    //   callback: function(r) {
-    //     if (r.message && r.message.success) {
-    //       render_intro_html(frm, r.message.data);
-    //     } else {
-    //       frm.set_intro("Unable to load intro data", "red");
-    //     }
-    //   }
-    // });
+    
 
     // Clear or set basic intro for new unsaved docs
     if (frm.is_new()) {
@@ -176,22 +165,6 @@ frappe.ui.form.on("Employee Material Request", {
             depends_on: "eval:doc.ho_skip==1",
             mandatory_depends_on: "eval:doc.ho_skip==1",
           },
-
-          // { fieldtype: "Section Break" },
-
-          // // ========= Change Reporting Person (logical field only) =========
-          // {
-          //     fieldtype: "Link",
-          //     fieldname: "new_reporting_person",
-          //     label: __("Change Reporting Person"),
-          //     options: "User",
-          //     default: frm.doc.reporting_person || "",
-          //     description: __("Select new Reporting Person (resets their status to Pending)"),
-          // },
-          // {
-          //     fieldtype: "HTML",
-          //     fieldname: "new_rp_preview"
-          // }
         ],
         primary_action_label: __("Submit"),
         primary_action(values) {
@@ -399,23 +372,6 @@ frappe.ui.form.on("Employee Material Request", {
         });
       };
 
-      // After dialog is created
-      // d.fields_dict.rp_remark.$wrapper
-      //     .css("width", "60%")
-      //     .find("textarea")
-      //     .css({
-      //         width: "100%",
-      //         height: "60%"
-      //     });
-
-      // d.fields_dict.ho_remark.$wrapper
-      //     .css("width", "60%")
-      //     .find("textarea")
-      //     .css({
-      //         width: "100%",
-      //         height: "60%"
-      //     });
-
       // after you build and inject ho_html
       const rp_state = frm.doc.reporting_person_status || "Not Received";
       const ho_cb = d.$wrapper.find("#ho_skip_cb");
@@ -614,108 +570,6 @@ frappe.ui.form.on("Employee Material Request", {
     }
   },
 
-  // ------------------------------------------------------------------
-  // BEFORE WORKFLOW ACTION - Validation and confirmation dialogs
-  // ------------------------------------------------------------------
-  // before_workflow_action: function (frm) {
-  //   let action = frm.selected_workflow_action;
-
-  //   // Unfreeze screen to show dialogs properly
-  //   frappe.dom.unfreeze();
-
-  //   // Validation for Submit action
-  //   if (action === "Submit" || action === "Submit for Approval") {
-  //     // Check reporting person is set
-  //     if (!frm.doc.reporting_person) {
-  //       frappe.throw(__("Please set Reporting Person"));
-  //       return false;
-  //     }
-
-  //     // Check at least one item exists
-  //     if (!frm.doc.items || frm.doc.items.length === 0) {
-  //       frappe.throw(__("Please add at least one item"));
-  //       return false;
-  //     }
-
-  //     // Validate required by date
-  //     if (!validate_required_by_date(frm)) {
-  //       return false;
-  //     }
-
-  //     // Show confirmation dialog
-  //     return new Promise((resolve, reject) => {
-  //       frappe.confirm(
-  //         __("<b>Are all fields correctly entered?</b>"),
-  //         function () {
-  //           resolve();
-  //         },
-  //         function () {
-  //           reject("❌ Submission cancelled by user.");
-  //         }
-  //       );
-  //     });
-  //   }
-
-  //   // Confirmation for Approve action
-  //   else if (action === "Approve") {
-  //     return new Promise((resolve, reject) => {
-  //       frappe.confirm(
-  //         __("Are you sure you want to approve this request?"),
-  //         function () {
-  //           resolve();
-  //         },
-  //         function () {
-  //           reject("❌ Approval cancelled by user.");
-  //         }
-  //       );
-  //     });
-  //   }
-
-  //   // Confirmation for Reject action
-  //   else if (action === "Reject") {
-  //     return new Promise((resolve, reject) => {
-  //       frappe.confirm(
-  //         __("Are you sure you want to reject this request?"),
-  //         function () {
-  //           resolve();
-  //         },
-  //         function () {
-  //           reject("❌ Rejection cancelled by user.");
-  //         }
-  //       );
-  //     });
-  //   }
-  // },
-
-  // before_workflow_action: function (frm) {
-  //   console.log(
-  //     `Before workflow action triggered: Selected action = ${frm.selected_workflow_action}`
-  //   );
-  //   console.log(`Current status: ${frm.doc.status}`);
-  //   console.log(`reporting_person_status: ${frm.doc.reporting_person_status}`);
-  //   console.log(`ho_officer_status: ${frm.doc.ho_officer_status}`);
-
-  //   let action = frm.selected_workflow_action.toLowerCase();
-
-  //   if (["approve", "reject", "skip"].includes(action)) {
-  //     frappe.dom.unfreeze();
-
-  //     return new Promise((resolve, reject) => {
-  //       frappe.confirm(
-  //         `Are you sure you want to ${action} this request?`,
-  //         () => {
-  //           console.log(`User confirmed action: ${action}`);
-  //           resolve();
-  //         },
-  //         () => {
-  //           frappe.validated = false;
-  //           console.log(`User cancelled action: ${action}`);
-  //           reject();
-  //         }
-  //       );
-  //     });
-  //   }
-  // },
 
   // Updated before_workflow_action with proper remark handling
   // FIXED before_workflow_action - removed timeline error
@@ -759,24 +613,6 @@ frappe.ui.form.on("Employee Material Request", {
     return true;
   },
 
-  // refresh: function(frm) {
-  //     const blocked_status = ["Draft", "Approved", "Rejected"];
-
-  //     // Add Manage Approver button - ONLY for saved docs, Admin/Store Manager
-  //     if (!frm.is_new() && !blocked_status.includes(frm.doc.status) &&
-  //         (frappe.user.has_role('Administrator') || frappe.user.has_role('Store Manager'))) {
-  //         if (!frm.custom_buttons || !frm.custom_buttons['Manage Approver']) {
-  //             frm.add_custom_button('Manage Approver', () => openManageApprovalsDialog(frm), 'Actions');
-  //         }
-  //     }
-
-  //     // ✅ FIXED: Safe collapsible toggle with existence check
-  //     // if (typeof toggle_collapsible_sections === 'function') {
-  //     //     toggle_collapsible_sections(frm);
-  //     // }
-
-  //     setformintro(frm);
-  // },
 
   after_workflow_action: function (frm) {
     // console.log("After workflow action triggered");
@@ -792,6 +628,11 @@ frappe.ui.form.on("Employee Material Request", {
 // New function to show remark dialog for all approval actions
 // ✅ FIXED: Remarks SAVED via whitelisted API before workflow
 function showApprovalRemarkDialog(frm, action) {
+
+    // Detect resubmission - clear remark default
+  const isResubmission = frm.doc.status === "Pending Reporting Person" && 
+                        localStorage.getItem(`emr-resubmit-${frm.doc.name}`);
+
   return new Promise((resolve, reject) => {
     const actionLabels = { approve: "Approve", reject: "Reject", skip: "Skip" };
     const isReportingPersonStage =
@@ -815,7 +656,8 @@ function showApprovalRemarkDialog(frm, action) {
           label: `${approverLabel} Remark`,
           reqd: 1, // ✅ MANDATORY NOW
           description: `Reason for ${actionLabels[action].toLowerCase()}ing`,
-          default: frm.doc[remarkField] || "",
+          // default: frm.doc[remarkField] || "",
+           default: isResubmission ? "" : (frm.doc[remarkField] || ""), 
         },
       ],
       primary_action_label: "Submit Decision",
@@ -982,20 +824,6 @@ frappe.ui.form.on("Material Request Items", {
 // ==================================================================
 // HELPER FUNCTIONS
 // ==================================================================
-
-// ==================================================================
-// EMPLOYEE MATERIAL REQUEST - CLIENT SCRIPT
-// ==================================================================
-
-// frappe.ui.form.on("Employee Material Request", {
-//     refresh: function(frm) {
-//         set_form_intro(frm);
-//     },
-
-//     onload: function(frm) {
-//         set_form_intro(frm);
-//     }
-// });
 
 // ==================================================================
 // SET FORM INTRO - Production-level implementation with caching
@@ -1247,34 +1075,32 @@ function render_intro_html(frm, data) {
     div4_badge = map[ho_stat];
   }
 
-  // Example for Reporting Person card
 
-  const envelopeImgUrl =
-    frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+  // ✅ Store remarks in JS variables
+  const requestRemark = data.remark || '';
+  const rpRemark = data.reporting_person_remarks || '';
+  const hoRemark = data.ho_officer_remarks || '';
+  
+  // console.log('📝 Remarks loaded:', { requestRemark, rpRemark, hoRemark }); // DEBUG
+  
+  const envelopeImgUrl = frappe.urllib.get_base_url() + "/assets/sahayog/images/envelope.png";
+  
+  const div2Envelope = requestRemark.trim() ? 
+      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="request" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
+  
+  const rpEnvelope = rpRemark.trim() ? 
+      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="reporting" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
+  
+  const hoEnvelope = hoRemark.trim() ? 
+      `<img src="${envelopeImgUrl}" class="remark-envelope" data-type="ho" 
+            style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle;cursor:pointer;opacity:0.8;"
+            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">` : '';
 
-  // ✅ Check remark existence
-  const requestRemark = data.remark && data.remark.trim().length > 0;
-  const rpHasRemark =
-    data.reporting_person_remarks &&
-    data.reporting_person_remarks.trim().length > 0;
-  const hoHasRemark =
-    data.ho_officer_remarks && data.ho_officer_remarks.trim().length > 0;
 
-  console.log("📝 Request Remark:", data.remark ? "YES" : "NO");
-  console.log("📝 RP Remark:", data.reporting_person_remarks ? "YES" : "NO");
-  console.log("📝 HO Remark:", data.ho_officer_remarks ? "YES" : "NO");
-
-  const requestEnvelope = requestRemark
-    ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">`
-    : "";
-  // ✅ Conditional envelope HTML
-  const rpEnvelope = rpHasRemark
-    ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px;width:auto;margin-left:4px;margin-top:-6px;vertical-align:middle">`
-    : "";
-
-  const hoEnvelope = hoHasRemark
-    ? `<img src=${envelopeImgUrl} title="Remarks" style="height:17px; width:auto; margin-left:4px; margin-top: -6px; vertical-align: middle;">`
-    : "";
 
   let html = `
     <style>
@@ -1388,6 +1214,36 @@ function render_intro_html(frm, data) {
         background: rgb(128, 128, 128) !important; /* Gray */
         color: white !important;
       }
+
+
+      /* Add hover effect for envelope */
+        .remark-envelope:hover {
+            transform: scale(1.1) !important;
+            opacity: 1 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .remark-popup {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .remark-popup .remark-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #2c3e50;
+        }
+
+
+
+        .remark-envelope:hover { transform: scale(1.1) !important; opacity: 1 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .remark-popup { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; max-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .remark-popup .remark-title { font-weight: 600; margin-bottom: 6px; color: #2c3e50; }
+        .remark-content { white-space: pre-wrap; word-break: break-word; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 4px solid #007bff; margin-top: 8px; font-family: monospace; }
 
       /* ========== LIGHT MODE STYLES ========== */
       html[data-theme-mode="light"] .form-message.blue {
@@ -1524,7 +1380,7 @@ function render_intro_html(frm, data) {
           <div class="emr-card-number">2</div>
           <div class="emr-card-title">
           Request Details
-          ${requestEnvelope}
+          ${div2Envelope}
           </div>
         </div>
         <div class="emr-card-line">
@@ -1583,12 +1439,79 @@ function render_intro_html(frm, data) {
     </div>
   </div>
 
+
+     <!-- ✅ FIXED SCRIPT - PROPERLY CLOSED -->
+    <script>
+      // console.log('📝 Setting window.emr_remarks');
+      window.emr_remarks = {
+        request: ${JSON.stringify(requestRemark)},
+        reporting: ${JSON.stringify(rpRemark)},
+        ho: ${JSON.stringify(hoRemark)}
+      };
+      // console.log('📝 window.emr_remarks set:', window.emr_remarks);
+    </script>
+
+
+
+
   `;
   // console.log("request datetime", data.request_datetime);
   // console.log("Status from intro data:", data.status);
 
   frm.set_intro(html);
 }
+
+// ✅ ENVELOPE CLICK HANDLER - Shows remark popup
+$(document).on('click', '.remark-envelope', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const type = $(this).data('type');
+    const remark = window.emr_remarks && window.emr_remarks[type];
+    const titles = { 
+        request: 'Request Details', 
+        reporting: 'Reporting Person', 
+        ho: 'HO Officer' 
+    };
+    const title = titles[type] || 'Remark';
+    
+    // console.log('🔍 CLICK:', type, 'Remark:', remark ? `"${remark}"` : 'EMPTY');
+
+    if (remark && remark.trim()) {
+
+    let d = frappe.msgprint({
+        title: `${title} Remark`,
+        message: `
+<div style="padding: 12px;">
+  <div style="font-weight: 600; margin-bottom: 6px;">${title}</div>
+  <div style="background:#f8f9fa; padding:10px; border-radius:6px; border-left:4px solid #3b82f6; white-space:pre-wrap;">
+    ${remark}
+  </div>
+</div>`,
+        primary_action: {
+            label: 'Close',
+            // client_action: () => d.hide()   // ✅ Works!
+            action(values) {
+            d.hide();
+        }
+        },
+        indicator: 'blue',
+        wide: true
+    });
+
+} else {
+
+    frappe.msgprint({
+        title: `${title} Remark`,
+        message: 'No remark entered.',
+        indicator: 'orange'
+    });
+
+}
+});
+
+
+
 
 // ------------------------------------------------------------------
 // RENDER INTRO FALLBACK

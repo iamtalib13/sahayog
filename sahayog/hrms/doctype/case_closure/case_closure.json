@@ -227,12 +227,14 @@
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "eval: doc.review_details && doc.review_details.length > 0\n",
    "fieldname": "review_details",
    "fieldtype": "Table",
    "label": "Review Details",
    "options": "Review Details"
   },
   {
+   "depends_on": "eval:doc.review_details && doc.review_details.length > 0",
    "fieldname": "review_details_html",
    "fieldtype": "HTML",
    "label": "Review Details HTML"
@@ -246,7 +248,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-25 10:22:52.828283",
+ "modified": "2025-12-08 16:51:36.355996",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
