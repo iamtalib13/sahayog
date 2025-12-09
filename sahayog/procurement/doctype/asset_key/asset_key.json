@@ -53,9 +53,8 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "is_submittable": 1,
  "links": [],
- "modified": "2025-12-09 12:57:33.785393",
+ "modified": "2025-12-09 17:51:00.104088",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Asset Key",
@@ -71,7 +70,6 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
-   "submit": 1,
    "write": 1
   }
  ],
