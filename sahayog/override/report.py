@@ -17,9 +17,9 @@ class CustomReport(Report):
         # Remove condition if you want ALL reports to never use prepared report
         self.prepared_report = 0
     
-    # def before_save(self):
-    #     """
-    #     Additional check before save
-    #     """
-    #     super(CustomReport, self).before_save()
-    #     self.prepared_report = 0
+    def before_save(self):
+        """
+        Additional check before save
+        """
+        super(CustomReport, self).before_save()
+        self.prepared_report = 0
