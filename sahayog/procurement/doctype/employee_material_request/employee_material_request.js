@@ -603,39 +603,6 @@ frappe.ui.form.on("Employee Material Request", {
         );
       });
     }
-    if (action === "self approve") {
-      frappe.dom.unfreeze();
-
-      return new Promise((resolve, reject) => {
-        frappe.prompt(
-          [
-            {
-              fieldtype: "Small Text",
-              fieldname: "remark",
-              label: "Self Approval Remark",
-              reqd: 1,
-            },
-          ],
-          function (values) {
-            frappe.call({
-              method:
-                "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_material_request_approval_status",
-              args: {
-                docname: frm.doc.name,
-                action: "self approve",
-                remark: values.remark,
-              },
-              freeze: true,
-              freeze_message: "Self-approving...",
-              callback: () => resolve(),
-            });
-          },
-          "Self Approve",
-          "Confirm"
-        );
-      });
-    }
-
     if (["approve", "reject", "skip"].includes(action)) {
       frappe.dom.unfreeze();
       return showApprovalRemarkDialog(frm, action);
