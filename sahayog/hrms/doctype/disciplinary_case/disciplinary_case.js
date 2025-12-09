@@ -37,6 +37,19 @@ frappe.ui.form.on("Disciplinary Case", {
                 title: "Enter Employee Email",
                 fields: [
                   {
+                    fieldtype: "HTML",
+                    fieldname: "info_html",
+                    options: `
+          <div style="margin-bottom: 10px; color:#a00; font-weight:bold;">
+            No email address is stored for this employee.
+          </div>
+          <div style="margin-bottom: 10px;">
+            Please enter the employee's email address below. 
+            This will be saved to the Employee master and used for sending future emails.
+          </div>
+        `,
+                  },
+                  {
                     label: "Email",
                     fieldname: "manual_email",
                     fieldtype: "Data",
@@ -44,20 +57,42 @@ frappe.ui.form.on("Disciplinary Case", {
                   },
                 ],
                 primary_action_label: "Submit",
+
                 primary_action(values) {
-                  // Show freeze while sending email
+                  let entered_email = values.manual_email;
+
+                  // STEP 1: Save the entered email
                   frappe.call({
                     method:
-                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
-                    args: { docname: frm.doc.name },
+                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.save_employee_email",
+                    args: {
+                      employee: frm.doc.employee_id,
+                      email: entered_email,
+                    },
                     freeze: true,
-                    freeze_message: __("Sending SCN email..."),
-                    callback(r) {
-                      frappe.msgprint(__("SCN Email sent successfully!"));
+                    freeze_message: __("Saving Email..."),
+
+                    callback() {
+                      // STEP 2: Send SCN email after saving
+                      frappe.call({
+                        method:
+                          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
+                        args: { docname: frm.doc.name },
+                        freeze: true,
+                        freeze_message: __("Sending SCN Email..."),
+
+                        callback() {
+                          frappe.msgprint(
+                            __("Email saved and SCN Email sent successfully!")
+                          );
+                          d.hide();
+                        },
+                      });
                     },
                   });
                 },
               });
+
               d.show();
             }
           },
