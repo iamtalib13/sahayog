@@ -157,3 +157,9 @@ def send_scn_email(docname):
     )
 
     return "Email Sent"
+@frappe.whitelist()
+def save_employee_email(employee, email):
+    emp = frappe.get_doc("Employee", employee)
+    emp.company_email = email
+    emp.db_update()
+    return "OK"
