@@ -60,7 +60,7 @@ frappe.ui.form.on("Employee Material Request", {
   // REFRESH EVENT - Triggered when form loads/refreshes
   // ------------------------------------------------------------------
   refresh: function (frm) {
-    const blocked_status = ["Draft", "Approved", "Rejected"];
+    const blocked_status = ["Draft", "Approved", "Rejected", "Self Approved"];
     // Add Manage Approver button - ONLY for saved docs, Admin/Store Manager
     if (
       !frm.is_new() &&
@@ -603,9 +603,82 @@ frappe.ui.form.on("Employee Material Request", {
         );
       });
     }
+
     if (["approve", "reject", "skip"].includes(action)) {
       frappe.dom.unfreeze();
       return showApprovalRemarkDialog(frm, action);
+    }
+
+    // NEW: handle Self Approved (Self Approved Button click)
+    // --- SELF APPROVED HANDLER ---
+    if (action === "self approved" || action === "self_approved") {
+      frappe.dom.unfreeze();
+
+      // Restrict to Admin / Store Manager
+      if (
+        !frappe.user.has_role("Administrator") &&
+        !frappe.user.has_role("Store Manager")
+      ) {
+        frappe.msgprint({
+          title: "Not Allowed",
+          message: "Only Administrator or Store Manager can use Self Approved.",
+          indicator: "red",
+        });
+        frappe.validated = false;
+        return false; // stop workflow apply
+      }
+
+      // Do everything via custom API and then CANCEL workflow apply
+      return new Promise((resolve, reject) => {
+        frappe.confirm(
+          "<b>Are you sure you want to Self Approve this request?</b><br>" +
+            "This will skip both Reporting Person and HO Officer approvals.",
+          () => {
+            frappe.call({
+              method:
+                "sahayog.procurement.doctype.employee_material_request.employee_material_request.self_approve_request",
+              args: {
+                docname: frm.doc.name,
+              },
+              freeze: true,
+              freeze_message: "Processing Self Approval...",
+              callback: function (r) {
+                if (!r.exc && r.message && r.message.success) {
+                  frappe.show_alert(
+                    {
+                      message:
+                        r.message.message || "Self Approved successfully.",
+                      indicator: "green",
+                    },
+                    5
+                  );
+                  // Reload updated doc
+                  frm.reload_doc();
+
+                  // IMPORTANT: stop default workflow engine
+                  frappe.validated = false;
+                  // Reject the Promise so Frappe's workflow handler doesn't proceed
+                  reject("Self Approved handled manually");
+                } else {
+                  frappe.msgprint({
+                    title: "Error",
+                    message:
+                      (r.message && r.message.message) ||
+                      "Failed to Self Approve.",
+                    indicator: "red",
+                  });
+                  frappe.validated = false;
+                  reject("Failed");
+                }
+              },
+            });
+          },
+          () => {
+            frappe.validated = false;
+            reject("Cancelled");
+          }
+        );
+      });
     }
 
     return true;
@@ -1057,6 +1130,7 @@ function render_intro_html(frm, data) {
     "Approved",
     "Completed",
     "Rejected",
+    "Self Approved",
   ].includes(status);
   let div4_badge = { label: "Not Received", class: "status-new-record" };
   if (
