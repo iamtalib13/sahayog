@@ -12,7 +12,7 @@ frappe.ui.form.on("Suspension Process", {
           callback(r) {
             let email = r.message;
 
-            // CASE 1: Email exists
+            // CASE: Email exists → Ask for confirmation
             if (email) {
               frappe.confirm(
                 `This employee already has an email:<br><b>${email}</b><br><br>Do you want to send the Suspension email?`,
@@ -33,47 +33,21 @@ frappe.ui.form.on("Suspension Process", {
               );
             }
 
-            // CASE 2: No email → Ask user to enter manually
+            // CASE: Email does NOT exist → Just show error (No manual entry anymore)
             else {
-              let d = new frappe.ui.Dialog({
-                title: "Enter Employee Email",
-                fields: [
-                  {
-                    label: "Email",
-                    fieldname: "manual_email",
-                    fieldtype: "Data",
-                    reqd: true,
-                  },
-                ],
-                primary_action_label: "Submit",
-                primary_action(values) {
-                  frappe.call({
-                    method:
-                      "sahayog.hrms.doctype.suspension_process.suspension_process.save_and_send_email",
-                    args: {
-                      employee: frm.doc.employee_id,
-                      email: values.manual_email,
-                      docname: frm.doc.name,
-                    },
-                    freeze: true,
-                    freeze_message: __("Sending Suspension Email..."),
-                    callback() {
-                      frappe.msgprint(
-                        __(
-                          "Email saved and Suspension Email sent successfully!"
-                        )
-                      );
-                      d.hide();
-                    },
-                  });
-                },
+              frappe.msgprint({
+                title: __("Email Not Found"),
+                indicator: "red",
+                message: __(
+                  "No email address is stored for this employee.<br>Please update the Employee record before sending the suspension email."
+                ),
               });
-              d.show();
             }
           },
         });
       });
     }
+
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
