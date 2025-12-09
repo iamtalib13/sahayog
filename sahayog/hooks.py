@@ -393,6 +393,8 @@ override_whitelisted_methods = {
 override_doctype_dashboards = {
     # "Task": "sahayog.task.get_dashboard_data",
     "Project": "sahayog.dashboard.project_dashboard.get_data",
+    "Asset": "sahayog.procurement.Asset.asset_dashboard.get_data",
+
 }
 
 # exempt linked doctypes from being automatically cancelled
