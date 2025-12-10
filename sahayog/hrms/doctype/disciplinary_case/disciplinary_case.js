@@ -3,20 +3,112 @@
 
 frappe.ui.form.on("Disciplinary Case", {
   refresh: function (frm) {
-    // -------------------
-    // Hide unwanted ERPNext default icon buttons (commented for now)
-    // -------------------
-    // $(".button.text-muted.btn.btn-default.icon-btn")
-    //   .has("svg.icon.icon-sm")
-    //   .hide();
-    // $("button:has(svg.icon.icon-sm)").hide();
+    if (!frm.is_new()) {
+      frm.add_custom_button("Send Email", function () {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.check_employee_email",
+          args: { employee: frm.doc.employee_id },
+          callback(r) {
+            let email = r.message;
 
-    // -------------------
-    // Add Print Button
-    // -------------------
-    // -------------------
-    // Disable future dates in date fields (set df.max and refresh)
-    // -------------------
+            // CASE 1: Email exists
+            if (email) {
+              frappe.confirm(
+                `This employee already has an email:<br><b>${email}</b><br><br>Do you want to send the SCN email?`,
+                function () {
+                  // Show freeze while sending email
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending SCN email..."),
+                    callback(r) {
+                      frappe.msgprint(__("SCN Email sent successfully!"));
+                    },
+                  });
+                }
+              );
+            }
+            // CASE 2: No email
+            else {
+              let d = new frappe.ui.Dialog({
+                title: "Enter Employee Email",
+                fields: [
+                  {
+                    fieldtype: "HTML",
+                    fieldname: "info_html",
+                    options: `
+          <div style="margin-bottom: 10px; color:#a00; font-weight:bold;">
+            No email address is stored for this employee.
+          </div>
+          <div style="margin-bottom: 10px;">
+            Please enter the employee's email address below. 
+            This will be saved to the Employee master and used for sending future emails.
+          </div>
+        `,
+                  },
+                  {
+                    label: "Email",
+                    fieldname: "manual_email",
+                    fieldtype: "Data",
+                    reqd: true,
+                  },
+                ],
+                primary_action_label: "Submit",
+
+                primary_action(values) {
+                  let entered_email = values.manual_email;
+
+                  // STEP 1: Save the entered email
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.save_employee_email",
+                    args: {
+                      employee: frm.doc.employee_id,
+                      email: entered_email,
+                    },
+                    freeze: true,
+                    freeze_message: __("Saving Email..."),
+
+                    callback() {
+                      // STEP 2: Send SCN email after saving
+                      frappe.call({
+                        method:
+                          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
+                        args: { docname: frm.doc.name },
+                        freeze: true,
+                        freeze_message: __("Sending SCN Email..."),
+
+                        callback() {
+                          frappe.msgprint(
+                            __("Email saved and SCN Email sent successfully!")
+                          );
+                          d.hide();
+                        },
+                      });
+                    },
+                  });
+                },
+              });
+
+              d.show();
+            }
+          },
+        });
+      });
+      function sendEmail(docname) {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
+          args: { docname },
+          callback() {
+            frappe.msgprint("SCN Email Sent Successfully!");
+          },
+        });
+      }
+    }
     let today = frappe.datetime.now_date();
 
     if (frm.fields_dict.issue_occurrence_date) {
@@ -250,7 +342,11 @@ frappe.ui.form.on("Disciplinary Case", {
   },
   show_print_button: function (frm) {
     if (!frm.is_new()) {
-      const allowed_roles = ["System Manager", "Share Admin"];
+      const allowed_roles = [
+        "System Manager",
+        "HR Support Executive",
+        "HR Support Manager",
+      ];
       if (!frappe.user_roles.some((role) => allowed_roles.includes(role)))
         return;
 

@@ -54,14 +54,15 @@ doctype_js = {
     "Workspace": "public/js/workspace.js",
     "Task": "public/js/task.js",
     "Project": "public/js/project.js",
-    "Lead":"scrm/controller/lead/lead.js",
-    "Appointment" : "scrm/controller/appointment/appointment.js",
+    "Lead": "scrm/controller/lead/lead.js",
+    "Appointment": "scrm/controller/appointment/appointment.js",
     "Product Bundle": "public/js/product_bundle.js",
     "BOM": "public/js/bom.js",
     "Purchase Receipt": "public/js/purchase_receipt.js",
     "Stock Entry": "public/js/stock_entry.js",
     "Shareholder": "public/js/shareholder.js",
-    "Share Transfer":"public/js/share_transfer.js",
+    "Share Transfer": "public/js/share_transfer.js",
+    "Asset Movement": "public/js/asset_movement.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
@@ -69,14 +70,9 @@ doctype_list_js = {
     "Material Request": "public/js/material_request_list.js",
     "Shareholder": "public/js/shareholder_list.js",
     "Share Transfer": "public/js/share_transfer_list.js",
-    
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
-app_include_js = [
-    "/assets/sahayog/js/assignmate.js"
-]
-
-
+app_include_js = ["/assets/sahayog/js/assignmate.js"]
 
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -133,13 +129,13 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_task.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_request_for_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation_item.execute",
-    "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",    
-    "sahayog.patches.custom_fields.add_custom_field_for_stock_entry.execute",  
-    "sahayog.patches.custom_fields.add_custom_field_for_material_request.execute",  
-    "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",  
+    "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_stock_entry.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_material_request.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
-    #"sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
+    # "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_project_template_task.execute",
     # "sahayog.patches.fixtures.add_region.execute",
@@ -151,12 +147,9 @@ after_migrate = [
     # "sahayog.patches.fixtures.set_view_setting_of_project.execute",
     # "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
-
-#    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
+    #    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
     "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
-
-     "sahayog.patches.add_roles.execute",
-
+    "sahayog.patches.add_roles.execute",
     # "sahayog.patches.fixtures.add_item_group.execute",
     # "sahayog.patches.fixtures.add_warehouses.execute",
     # "sahayog.patches.fixtures.add_read_role_permission.execute",
@@ -164,11 +157,13 @@ after_migrate = [
     # "sahayog.patches.fixtures.set_project_template_mandatory.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_state.execute",
     # "sahayog.patches.fixtures.add_custom_workflow_for_purchase_order.execute",
-   
     "sahayog.scrm.custom_html_block.l_zone_and_region_wise_data.execute",
     "sahayog.scrm.custom_html_block.employee_crm.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_Material_Request_Item-custom_custom_metrial_transfre_purches_status.execute",
-    "sahayog.patches.fixtures.create_employee_material_request_workflow.execute"
+    "sahayog.patches.fixtures.create_employee_material_request_workflow.execute",
+    "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
+    "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
+    "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
 
 ]
 # Uninstallation
@@ -204,13 +199,13 @@ after_migrate = [
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-	#"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+    # "Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
     "Lead": "sahayog.permissions.get_lead_permission",
     "Appointment": "sahayog.permissions.get_appointment_permission",
     "Task": "sahayog.permissions.get_task_permission",
     "Agent": "sahayog.agent_and_bdo.doctype.agent.permissions.get_agents_sol_wise",
     "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission_for_warehouse",
-    "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",  
+    "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",
     "Shareholder": "sahayog.permissions.get_shareholder_permission",
     "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
 }
@@ -230,6 +225,7 @@ override_doctype_class = {
     "Item": "sahayog.override.autoname_item.CustomItem",
     # "Report": "sahayog.override.report.CustomReport"
 
+    "Report": "sahayog.override.report.CustomReport",
 }
 
 # Document Events
@@ -241,33 +237,26 @@ doc_events = {
             "sahayog.doc_events.create_user_from_employee.create_user",
             # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
         ],
-      
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
-            
         ],
         # "before_save": [
         #      "sahayog.doc_events.employee.emp_enable_disable",
-            
         # ],
     },
     "Project": {
-
         "on_update": [
             "sahayog.doc_events.project.update_branch_status",
         ],
     },
     "User": {
-       
         "before_save": [
             "sahayog.doc_events.user.user_enable_disable",
-            "sahayog.doc_events.user.capital_user_name",   
+            "sahayog.doc_events.user.capital_user_name",
         ],
     },
-   "Task": {
-        "autoname": [
-            "sahayog.doc_events.task.task_custom_autoname"
-        ],
+    "Task": {
+        "autoname": ["sahayog.doc_events.task.task_custom_autoname"],
         "validate": [
             "sahayog.doc_events.task.validate_location_status",
             "sahayog.doc_events.task.validate_agreement_status",
@@ -280,11 +269,11 @@ doc_events = {
         "on_update": [
             "sahayog.doc_events.task.update_branch_status_trigger",
             "sahayog.doc_events.task.sync_task_to_loi_on_update",
-            "sahayog.doc_events.task.update_lto_training_table"
+            "sahayog.doc_events.task.update_lto_training_table",
         ],
         "after_insert": [
             "sahayog.doc_events.task.create_letter_of_intent",
-            "sahayog.doc_events.task.after_insert_task"
+            "sahayog.doc_events.task.after_insert_task",
         ],
         "before_save": [
             "sahayog.doc_events.task.fetch_manpower_settings",
@@ -292,26 +281,20 @@ doc_events = {
             "sahayog.doc_events.task.fetch_it_checklist_settings",
         ],
     },
-    
     "Sahayog Settings": {
         "on_update": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template",
-        "after_save": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template"
+        "after_save": "sahayog.doc_events.task_template_settings.create_tasks_and_project_template",
     },
-
-    "Branch": {
-        "before_save":"sahayog.doc_events.branch.update_employee_sol_id"
-    },
-
+    "Branch": {"before_save": "sahayog.doc_events.branch.update_employee_sol_id"},
     "Supplier Quotation": {
         "on_submit": "sahayog.doc_events.supplier_quotation.supplier_quotation_on_submit",
-        "before_save": "sahayog.doc_events.supplier_quotation.sync_project_field"
+        "before_save": "sahayog.doc_events.supplier_quotation.sync_project_field",
     },
-      
     "Project": {
         "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
     },
     "Purchase Order": {
-        #"on_update": "sahayog.doc_events.purchase_order.show_status_messages",
+        # "on_update": "sahayog.doc_events.purchase_order.show_status_messages",
         "autoname": "sahayog.doc_events.purchase_order.purchase_order_autoname",
         "before_save": "sahayog.doc_events.purchase_order.fetch_terms_conditions",
         "validate": "sahayog.doc_events.purchase_order.validate_store_incharge_po",
@@ -321,35 +304,32 @@ doc_events = {
         # "before_save": "sahayog.doc_events.purchase_order.sync_project_field",
         # "validate": "sahayog.doc_events.purchase_receipt.validate_store_incharge",
     },
-    "Department":{
-        "autoname": "sahayog.doc_events.department.department_name"
-    },
+    "Department": {"autoname": "sahayog.doc_events.department.department_name"},
     "Lead": {
         "before_insert": [
             "sahayog.scrm.controller.lead.lead.update_employee_details",
-            "sahayog.scrm.controller.lead.lead.set_is_operation_lead"
+            "sahayog.scrm.controller.lead.lead.set_is_operation_lead",
         ],
         "validate": [
             "sahayog.scrm.controller.lead.lead.validate_required_employee_fields"
-        ]
+        ],
     },
     "Shareholder": {
-      
         "before_insert": [
             "sahayog.doc_events.shareholder.before_save",
-           
         ],
         "autoname": [
             "sahayog.doc_events.shareholder.autoname",
-           
         ],
-    }, 
+    },
     "Share Transfer": {
         "autoname": "sahayog.doc_events.share_transfer.share_transfer_autoname"
     },
-  
+    "User": {
+        "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+        "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+    }
 }
-
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
@@ -373,14 +353,13 @@ scheduler_events = {
         # Run daily at midnight — Sync District and State from Sahayog Branch
         "0 0 * * *": [
             "sahayog.tasks.sync_district_state"
-        ]
+        ],
+        "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
     },
-
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
-        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle" 
+        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
     ],
-
     # --- Example blocks below: Uncomment if/when needed ---
     # "all": [
     #     # These tasks would be triggered every scheduler tick (default: every 60s)
@@ -418,16 +397,16 @@ override_whitelisted_methods = {
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
     "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
     "erpnext.selling.doctype.customer.customer": "sahayog.override.override_make_contact.custom_make_contact",
-    #"frappe.core.doctype.communication.email.make": "sahayog.override.email_sender_override.make"
-
+    # "frappe.core.doctype.communication.email.make": "sahayog.override.email_sender_override.make"
 }
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 override_doctype_dashboards = {
-	#"Task": "sahayog.task.get_dashboard_data",
+    # "Task": "sahayog.task.get_dashboard_data",
     "Project": "sahayog.dashboard.project_dashboard.get_data",
+    "Asset": "sahayog.procurement.Asset.asset_dashboard.get_data",
 
 }
 
@@ -489,112 +468,119 @@ override_doctype_dashboards = {
 # }
 
 
-    
 fixtures = [
     # Workflow Fixtures - Employee Material Request
-    {
-        "dt": "Workflow",
-        "filters": [["name", "=", "Employee Material Request"]]
-    },
-    
+    {"dt": "Workflow", "filters": [["name", "=", "Employee Material Request"]]},
     # Disciplinary case Workflow
     {
         "dt": "Workflow",
-        "filters": [["name", "in", ["Disciplinary Case", "Branch Proposal"]]]
+        "filters": [["name", "in", ["Disciplinary Case", "Branch Proposal"]]],
     },
-    
     # Workflow State for Disciplinary Case
-    {
-        "dt": "Workflow State",
-        "filters": [["workflow_state_name", "in", ["Draft", "Under Process", "Closed"]]]
-    },
-    
+        {
+            "dt": "Workflow State",
+            "filters": [
+                [
+                    "workflow_state_name",
+                    "in",
+                    [
+                        "Draft",
+                        "Under Process",
+                        "Under Review",
+                        "Verified",
+                        "Closed",
+                        "Assign",
+                        "Self Approve",
+                        "Self Approved"
+                    ]
+                ]
+            ]
+        },
     # Case Closure Workflow
-    {
-    "dt": "Workflow",
-    "filters": [["name", "=", "Case Closure"]]
-    },
-
+    {"dt": "Workflow", "filters": [["name", "=", "Case Closure"]]},
     # Workflow States for Case Closure
-   {
-    "dt": "Workflow State",
-    "filters": [["workflow_state_name", "in",
-                 ["Draft", "Under Reviewed", "Verified", "Closed"]]]
-   },
 
     # Workflow Action Master
     {
         "dt": "Workflow Action Master",
-        "filters": [["workflow_action_name", "in", ["Submit"]]]
+        "filters": [["workflow_action_name", "in", ["Submit"]]],
     },
-    
     # Master Data
-    {
-        "dt": "Prodtech"
-    },
-    {
-        "dt": "Item Department"
-    },
-    {
-        "dt": "Module"
-    },
-    {
-        "dt": "Letter Head"
-    },
-    {
-        "dt": "Project Template"
-    },
-    
+    {"dt": "Prodtech"},
+    {"dt": "Item Department"},
+    {"dt": "Module"},
+    {"dt": "Letter Head"},
+    {"dt": "Project Template"},
     # Permissions
     {
         "dt": "Custom DocPerm",
-        "filters": [["parent", "in", ["Issue Register", "Branch Proposal", "Project", "Project Template", "Task"]]]
+        "filters": [
+            [
+                "parent",
+                "in",
+                [
+                    "Issue Register",
+                    "Branch Proposal",
+                    "Project",
+                    "Project Template",
+                    "Task",
+                ],
+            ]
+        ],
     },
-    
     # Task Templates
-    {
-        "dt": "Task",
-        "filters": [["is_template", "=", "1"]]
-    },
-    
+    {"dt": "Task", "filters": [["is_template", "=", "1"]]},
     # Workspaces
-    {
-        "doctype": "Workspace",
-        "filters": [["name", "in", ["Inventory Management"]]]
-    },
-    
+    {"doctype": "Workspace", "filters": [["name", "in", ["Inventory Management"]]]},
     # Custom HTML Blocks
     {
         "dt": "Custom HTML Block",
-        "filters": [[
-            "name", "in", [
-                "Sahayog Projects",
-                "Sahayog Home",
-                "BDO Performance",
-                "MIS Report List",
-                "Disciplinary Management",
-                "Inventory",
-                "Product Type Chart",
-                "DAMS dashboard",
-                "Audit Management",
-                "Tickets Dashboard",
-                "Finacle Dashboard",
-                "IT Dashboard"
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "Sahayog Projects",
+                    "Sahayog Home",
+                    "BDO Performance",
+                    "MIS Report List",
+                    "Disciplinary Management",
+                    "Inventory",
+                    "Product Type Chart",
+                    "DAMS dashboard",
+                    "Audit Management",
+                    "Tickets Dashboard",
+                    "Finacle Dashboard",
+                    "IT Dashboard",
+                ],
             ]
-        ]]
+        ],
     },
-    
     # Property Setters
     {
         "doctype": "Property Setter",
-        "filters": [[
-            "name", "in", [
-                "Material Request-schedule_date-reqd",
-                "Purchase Receipt-main-field_order",
-                "Stock Entry-section_break_jwgn-collapsible"
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "Material Request-schedule_date-reqd",
+                    "Purchase Receipt-main-field_order",
+                    "Stock Entry-section_break_jwgn-collapsible",
+                ],
             ]
-        ]]
-    }
-]
+        ],
+    },
+# email templates fixtures
+{
+    "dt": "Email Template",
+    "filters": [["name", "in", ["Disciplinary Case Update", "Disciplinary - SCN","Suspension Process", "Reminder Notice of Enquiry"]]]
+},
+  
+    # Print Format fixture
+{
+    "dt": "Print Format",
+    "filters": [["name", "in", ["Reminder Unauthorized absence"]]]
+},
 
-    
+]

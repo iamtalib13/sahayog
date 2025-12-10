@@ -11,31 +11,51 @@ class EmployeeMaterialRequest(Document):
         self.set_requested_by()
         self.set_request_datetime_once()
 
-          # Always set fields at correct workflow stages
 
+        
+
+            # Detect resubmission from Rejected → Pending Reporting Person
+        is_resubmission = (self.get_db_value("status") == "Rejected" and 
+                        self.status == "Pending Reporting Person")
+        
+        # Clear remarks ONLY on resubmission
+        if is_resubmission:
+            self.reporting_person_remarks = ""
+            self.ho_officer_remarks = ""
+            self.db_set("reporting_person_remarks", "")
+            self.db_set("ho_officer_remarks", "")
+            frappe.db.commit()  # Force DB update immediately
+
+        # Always set fields at correct workflow stages
         # IT Executive submit: Set reporting_person_status to Pending, always
         if self.status == "Pending Reporting Person":
             self.reporting_person_status = "Pending"
         elif self.status == "Pending HO Approval":
-            self.reporting_person_status = "Approved"
+            # Fix: Handle Skip as equivalent to Approved
+            if self.reporting_person_status not in ["Approved", "Skip"]:
+                self.reporting_person_status = "Approved"
         elif self.status == "Rejected" and not self.ho_officer_status:
             self.reporting_person_status = "Rejected"
 
-
         # Approver Approved/Skip: Set ho_officer_status to Pending, always
         if self.status == "Pending HO Approval":
-            self.ho_officer_status = "Pending"
+            # Fix: Handle Skip as equivalent to Approved  
+            if self.ho_officer_status not in ["Approved", "Skip"]:
+                self.ho_officer_status = "Pending"
         elif self.status == "Approved":
             self.ho_officer_status = "Approved"
         # On Approver Reject: optionally clear HO officer status for proper badge
-        elif self.status == "Rejected":
+        elif self.status == "Rejected" and self.reporting_person_status == "Approved" or self.reporting_person_status == "Skip":
             self.ho_officer_status = "Rejected"
 
         # On Resubmit after Rejection: Reset statuses
         if self.status == "Pending Reporting Person":
             self.reporting_person_status = "Pending"
             self.ho_officer_status = ""
-            # frappe.logger().info(f"[EMR] Reset HO status on resubmit for {self.name}")
+
+        # If HO is skipped, treat as final approval
+        if self.ho_officer_status == "Skip" and self.status == "Pending HO Approval":
+            self.status = "Approved"
 
 
 
@@ -247,18 +267,27 @@ class EmployeeMaterialRequest(Document):
             self.db_set("ho_officer_status", self.ho_officer_status)
     
     def validate_final_approval(self):
-        """Validate all approvals before submit"""
-        if self.reporting_person_status != "Approved":
+        """Validate all approvals before submit - FIXED for Skip functionality"""
+        # Fix: Treat "Skip" as equivalent to "Approved" for workflow progression
+        if self.reporting_person_status not in ["Approved", "Skip"]:
             frappe.throw(
                 _("Reporting Person approval is required before submission"),
                 title=_("Approval Required")
             )
         
-        if self.ho_officer_status != "Approved":
+        if self.ho_officer_status not in ["Approved", "Skip"]:
             frappe.throw(
                 _("Head Office Officer approval is required before submission"),
                 title=_("Approval Required")
             )
+
+        if self.reporting_person_status not in ["Approved", "Skip"]:
+            frappe.throw(_("Reporting Person approval is required before submission"),
+                        title=_("Approval Required"))
+
+        if self.ho_officer_status not in ["Approved", "Skip"]:
+            frappe.throw(_("Head Office Officer approval is required before submission"),
+                        title=_("Approval Required"))
     
     def check_stock_availability(self):
         """Check stock availability for stock items"""
@@ -376,34 +405,44 @@ class EmployeeMaterialRequest(Document):
         except Exception as e:
             frappe.log_error(frappe.get_traceback(), "Material Request Notification Error")
 
+
+    
+    
     def before_workflow_action(self):
+        """Fixed workflow action handling for Skip + Reject scenarios"""
         frappe.logger().info(f"before_workflow_action triggered for {self.name} ({self.status}) by {frappe.session.user}")
-        frappe.logger().info(f"Workflow action for doc {self.name} status {self.status}")
         
         current_user = frappe.session.user
         action = (frappe.form_dict.get("action") or "").lower()
         frappe.logger().info(f"User: {current_user}, Action: {action}")
 
+        # Reporting Person actions (only when in their stage)
         if self.status == "Pending Reporting Person" and current_user == self.reporting_person:
-            if action == "approve":
-                self.reporting_person_status = "Approved"
+            if action in ["approve", "skip"]:
+                self.reporting_person_status = "Approved" if action == "approve" else "Skip"
             elif action == "reject":
                 self.reporting_person_status = "Rejected"
-
+            
+            self.reporting_person_approval_date = now()
             self.db_set("reporting_person_status", self.reporting_person_status)
-            frappe.db.commit()  # Immediate commit to persist change
+            frappe.db.commit()
             frappe.logger().info(f"Updated reporting_person_status to {self.reporting_person_status}")
 
-        if self.status == "Pending HO Approval" and frappe.has_role("Head Office Officer"):
-            if action == "approve":
-                self.ho_officer_status = "Approved"
+        # HO Officer actions (only when in their stage)
+        elif self.status == "Pending HO Approval" and frappe.has_role("Head Office Officer"):
+            if action in ["approve", "skip"]:
+                self.ho_officer_status = "Approved" if action == "approve" else "Skip"
             elif action == "reject":
+                # Fix: When Reporting Person is skipped, HO reject goes to ho_officer_status
                 self.ho_officer_status = "Rejected"
-
+                # Keep reporting_person_status as "Skip" - don't override it
+            
+            self.ho_officer_approval_date = now()
             self.db_set("ho_officer_status", self.ho_officer_status)
-            frappe.db.commit()  # Immediate commit to persist change
+            frappe.db.commit()
             frappe.logger().info(f"Updated ho_officer_status to {self.ho_officer_status}")
  
+
 
 # Whitelisted API Methods
 
@@ -547,6 +586,7 @@ def create_stock_entry_from_request(material_request):
     return se.name
 
 
+
 @frappe.whitelist()
 def validate_required_date(required_by_date, request_date=None):
     """
@@ -596,9 +636,11 @@ def validate_required_date(required_by_date, request_date=None):
         }
 
 
+
 # ==================================================================
 # WHITELISTED API METHOD FOR INTRO DATA
 # ==================================================================
+
 
 
 @frappe.whitelist()
@@ -637,6 +679,10 @@ def get_material_request_intro_data(doc_name):
                 "ho_officer_status": doc.ho_officer_status,
                 "request_datetime": doc.request_datetime,  # Send this field to frontend
                 "status": doc.status,
+                # ✅ ADD THESE REMARK FIELDS:
+                "reporting_person_remarks": doc.reporting_person_remarks or "",
+                "ho_officer_remarks": doc.ho_officer_remarks or "",
+                "remark": doc.remark or ""
             }
         }
         
@@ -648,6 +694,7 @@ def get_material_request_intro_data(doc_name):
             "success": False,
             "error": str(e)
         }
+
 
 
 def get_employee_data(employee_number):
@@ -675,6 +722,7 @@ def get_employee_data(employee_number):
         return {}
 
 
+
 def get_branch_data(sol_id):
     """
     Fetch branch details by SOL ID
@@ -700,6 +748,7 @@ def get_branch_data(sol_id):
         return {}
 
 
+
 def get_employee_by_user(user_id):
     """
     Fetch employee details by user ID (email)
@@ -723,6 +772,7 @@ def get_employee_by_user(user_id):
         return employee or {}
     except Exception:
         return {}
+
 
 
 def get_creator_employee(user_id):
@@ -768,3 +818,311 @@ def get_creator_employee(user_id):
             "employee_name": user_id,
             "cell_number": "N/A"
         }
+    
+
+@frappe.whitelist()
+def admin_skip_approver(docname, skip_current=0, skip_ho=0, new_reporting_person="", admin_remarks=""):
+    """
+    Admin/Store Manager method to skip approvers and change reporting person
+    """
+    # Permission check - only Admin or Store Manager
+    if not (frappe.session.user == "Administrator" or frappe.has_role("Store Manager", frappe.session.user)):
+        frappe.throw(_("Insufficient permissions. Only Administrator/Store Manager allowed."))
+    
+    doc = frappe.get_doc("Employee Material Request", docname)
+    
+    update_fields = {}
+    messages = []
+    
+    # Handle Skip Current Approver
+    if skip_current:
+        if doc.status == "Pending Reporting Person":
+            doc.reporting_person_status = "Skip"
+            doc.status = "Pending HO Approval"
+            messages.append("✅ Reporting Person skipped → Moved to HO Approval")
+        elif doc.status == "Pending HO Approval":
+            doc.ho_officer_status = "Skip"
+            doc.status = "Approved"
+            messages.append("✅ HO Officer skipped → Document Approved")
+    
+    # Handle Skip HO Officer (only from Reporting Person stage)
+    if skip_ho and doc.status == "Pending Reporting Person":
+        doc.ho_officer_status = "Skip"
+        # If reporting person already approved/skipped, go directly to Approved
+        if doc.reporting_person_status in ["Approved", "Skip"]:
+            doc.status = "Approved"
+            messages.append("✅ HO Officer skipped → Document Approved (Reporting Person already approved)")
+        else:
+            # Reporting person still pending, but HO skipped - stays at Reporting Person stage
+            messages.append("✅ HO Officer skipped (Reporting Person still pending)")
+    
+    # Handle Change Reporting Person
+    if new_reporting_person and new_reporting_person != doc.reporting_person:
+        old_rp = doc.reporting_person
+        doc.reporting_person = new_reporting_person
+        doc.reporting_person_status = "Pending"  # Reset status
+        doc.reporting_person_approval_date = None
+        messages.append(f"🔄 Reporting Person changed: {old_rp} → {new_reporting_person}")
+    
+    # Add admin remarks
+    if admin_remarks:
+        doc.add_comment("Edit", f"Admin Action: {admin_remarks}")
+    
+    # Save changes
+    doc.flags.ignore_validate = True  # Skip regular validations
+    doc.save()
+    
+    frappe.db.commit()
+    
+    return {
+        "success": True,
+        "message": "<br>".join(messages),
+        "new_status": doc.status,
+        "reporting_person_status": doc.reporting_person_status,
+        "ho_officer_status": doc.ho_officer_status
+    }
+
+@frappe.whitelist()
+def admin_skip_approver(docname, skip_current=0, skip_ho=0, new_reporting_person="", admin_remarks=""):
+    """
+    Admin/Store Manager method to skip approvers - FIXED for workflow compatibility
+    """
+    # Permission check
+    if not (frappe.session.user == "Administrator" or frappe.has_role("Store Manager")):
+        frappe.throw(_("Insufficient permissions. Only Administrator/Store Manager allowed."))
+    
+    doc = frappe.get_doc("Employee Material Request", docname)
+    update_fields = {}
+    messages = []
+    
+    # Skip Current Approver
+    if skip_current:
+        if doc.status == "Pending Reporting Person":
+            doc.reporting_person_status = "Skip"
+            doc.status = "Pending HO Approval"
+            messages.append("✅ Reporting Person skipped → Moved to HO Approval")
+        elif doc.status == "Pending HO Approval":
+            doc.ho_officer_status = "Skip"
+            doc.status = "Approved"
+            messages.append("✅ HO Officer skipped → Document Approved")
+    
+    # Skip HO Officer (only from Reporting Person stage)
+    if skip_ho and doc.status == "Pending Reporting Person":
+        doc.ho_officer_status = "Skip"
+        if doc.reporting_person_status in ["Approved", "Skip"]:
+            doc.status = "Approved"
+            messages.append("✅ HO Officer skipped → Document Approved")
+        else:
+            messages.append("✅ HO Officer skipped (Reporting Person still pending)")
+    
+    # Change Reporting Person
+    if new_reporting_person and new_reporting_person != doc.reporting_person:
+        old_rp = doc.reporting_person
+        doc.reporting_person = new_reporting_person
+        doc.reporting_person_status = "Pending"
+        doc.reporting_person_approval_date = None
+        messages.append(f"🔄 Reporting Person: {old_rp} → {new_reporting_person}")
+    
+    # Admin remarks
+    if admin_remarks:
+        doc.add_comment("Edit", f"Admin: {admin_remarks}")
+    
+    # Save with validation bypass only for admin actions
+    doc.flags.ignore_validate_update_after_submit = True
+    doc.save()
+    frappe.db.commit()
+    
+    return {"success": True, "message": "<br>".join(messages)}
+
+
+@frappe.whitelist()
+def admin_manage_approvers(docname, rp_skip=0, ho_skip=0,
+                           rp_remark="", ho_remark="", new_reporting_person=""):
+    """Admin/Store Manager: skip approvers + change reporting person."""
+    if not (frappe.session.user == "Administrator" or frappe.has_role("Store Manager")):
+        frappe.throw(_("Only Administrator or Store Manager can perform this action."))
+
+    doc = frappe.get_doc("Employee Material Request", docname)
+
+    rp_skip = int(rp_skip or 0)
+    ho_skip = int(ho_skip or 0)
+
+    # Server-side guard: Skip only if Not Received or Pending
+    allowed_status = ("", None, "Not Received", "Pending")
+    if rp_skip and doc.reporting_person_status not in allowed_status:
+        frappe.throw(_("Reporting Person already decided. Cannot skip."))
+    if ho_skip and doc.ho_officer_status not in allowed_status:
+        frappe.throw(_("HO Officer already decided. Cannot skip."))
+
+    messages = []
+
+    # === Reporting Person skip ===
+    # if rp_skip:
+    #     if not rp_remark:
+    #         frappe.throw(_("Remark is mandatory when skipping Reporting Person."))
+    #     doc.reporting_person_status = "Skip"
+    #     doc.reporting_person_remarks = rp_remark
+    #     # Move to next workflow stage if currently at RP
+    #     if doc.status == "Pending Reporting Person":
+    #         doc.status = "Pending HO Approval"
+    #     messages.append(_("Reporting Person skipped."))
+
+
+    if rp_skip:
+        if not rp_remark:
+            frappe.throw(_("Remark is mandatory when skipping Reporting Person."))
+        doc.reporting_person_status = "Skip"
+        doc.reporting_person_remarks = rp_remark
+
+        # move workflow to HO stage
+        if doc.status == "Pending Reporting Person":
+            doc.status = "Pending HO Approval"
+            # ensure HO badge shows correctly
+            if not doc.ho_officer_status or doc.ho_officer_status in ("", "Not Received", "Pending"):
+                doc.ho_officer_status = "Pending"
+
+    # === HO Officer skip ===
+    # if ho_skip:
+    #     if not ho_remark:
+    #         frappe.throw(_("Remark is mandatory when skipping HO Officer."))
+    #     doc.ho_officer_status = "Skip"
+    #     doc.ho_officer_remarks = ho_remark
+    #     # If at HO stage, move to Approved
+    #     if doc.status == "Pending HO Approval":
+    #         doc.status = "Approved"
+    #     messages.append(_("HO Officer skipped."))
+
+    if ho_skip:
+        if not ho_remark:
+            frappe.throw(_("Remark is mandatory when skipping HO Officer."))
+        doc.ho_officer_status = "Skip"
+        doc.ho_officer_remarks = ho_remark
+
+        # if at HO stage, skip directly to Approved
+        if doc.status == "Pending HO Approval":
+            doc.status = "Approved"
+
+    # === Change Reporting Person ===
+    if new_reporting_person and new_reporting_person != doc.reporting_person:
+        old = doc.reporting_person
+        doc.reporting_person = new_reporting_person
+        doc.reporting_person_status = "Pending"
+        doc.reporting_person_approval_date = None
+        # do not touch remarks here
+        messages.append(_("Reporting Person changed from {0} to {1}.").format(old or "-", new_reporting_person))
+
+    # Remarks as audit comment
+    if rp_remark or ho_remark:
+        remark_text = []
+        if rp_remark:
+            remark_text.append("RP Skip Remark: " + rp_remark)
+        if ho_remark:
+            remark_text.append("HO Skip Remark: " + ho_remark)
+        doc.add_comment("Edit", " / ".join(remark_text))
+
+    doc.flags.ignore_validate = True
+    doc.save()
+    frappe.db.commit()
+
+    return {
+        "success": True,
+        "message": "<br>".join(messages) if messages else _("No changes applied."),
+        "status": doc.status,
+        "reporting_person_status": doc.reporting_person_status,
+        "ho_officer_status": doc.ho_officer_status
+    }
+
+
+
+import frappe
+from frappe.utils import now
+
+@frappe.whitelist()
+def self_approve_request(docname):
+    """
+    Admin / Store Manager shortcut:
+    - Set reporting_person_status = 'Skip'
+    - Set ho_officer_status = 'Skip'
+    - Set status = 'Self Approved'
+    - Apply similar validations as skip logic.
+    """
+    if not (frappe.session.user == "Administrator" or frappe.has_role("Store Manager")):
+        frappe.throw(
+            "Only Administrator or Store Manager can perform Self Approved.",
+            frappe.PermissionError,
+        )
+
+    doc = frappe.get_doc("Employee Material Request", docname)
+
+    # Basic guards: only on submitted / pending-like documents as per your needs
+    if doc.status not in ["Pending Reporting Person", "Pending HO Approval", "Approved"]:
+        frappe.throw(
+            f"Self Approved is not allowed from status: {doc.status}",
+            title="Invalid Status",
+        )
+
+    messages = []
+
+    # Apply same kind of validation idea as your skip functions:
+    # if already rejected, do not allow.
+    if doc.reporting_person_status == "Rejected" or doc.ho_officer_status == "Rejected":
+        frappe.throw(
+            "Cannot Self Approve a request where any approver has already Rejected.",
+            title="Approval Already Rejected",
+        )
+
+    # Set both to Skip
+    if doc.reporting_person_status != "Skip":
+        doc.reporting_person_status = "Skip"
+        doc.reporting_person_approval_date = now()
+        messages.append("Reporting Person marked as Skip.")
+
+    if doc.ho_officer_status != "Skip":
+        doc.ho_officer_status = "Skip"
+        doc.ho_officer_approval_date = now()
+        messages.append("HO Officer marked as Skip.")
+
+    # Final status for document
+    doc.status = "Self Approved"
+
+    # Persist
+    doc.flags.ignore_validate = True
+    doc.flags.ignore_update_after_submit = True
+    doc.save()
+    frappe.db.commit()
+
+    # Optional audit comment
+    doc.add_comment(
+        "Edit",
+        "Request Self Approved by {0}. Both approvers skipped.".format(
+            frappe.session.user
+        ),
+    )
+
+    return {
+        "success": True,
+        "message": "<br>".join(messages) or "Self Approved successfully.",
+        "status": doc.status,
+        "reporting_person_status": doc.reporting_person_status,
+        "ho_officer_status": doc.ho_officer_status,
+    }
+
+
+
+@frappe.whitelist()
+def update_material_request_approval_status(docname, action, remark=""):
+    """Save approval remark before workflow action"""
+    doc = frappe.get_doc("Employee Material Request", docname)
+    
+    # Set remark based on current stage
+    if doc.status == "Pending Reporting Person":
+        doc.reporting_person_remarks = remark
+    elif doc.status == "Pending HO Approval":
+        doc.ho_officer_remarks = remark
+    
+    # Save remark to database
+    doc.save()
+    frappe.db.commit()
+    
+    frappe.logger().info(f"Remark saved for {docname}: {remark} by {action}")
+    return {"success": True, "remark": remark}

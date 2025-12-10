@@ -38,6 +38,7 @@
  ],
  "fields": [
   {
+   "collapsible": 1,
    "fieldname": "basic_information_section",
    "fieldtype": "Section Break",
    "label": "Basic Information"
@@ -93,7 +94,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPending Reporting Person\nPending HO Approval\nApproved\nCompleted\nRejected\nCancelled",
+   "options": "Draft\nPending Reporting Person\nPending HO Approval\nSelf Approved\nApproved\nCompleted\nRejected\nCancelled",
    "read_only": 1,
    "reqd": 1
   },
@@ -156,7 +157,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.reporting_person==frappe.session.user",
    "fieldname": "reporting_person_remarks",
    "fieldtype": "Small Text",
    "label": "Reporting Person Remarks"
@@ -246,7 +246,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-20 17:04:03.671974",
+ "modified": "2025-12-09 11:24:16.322010",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",

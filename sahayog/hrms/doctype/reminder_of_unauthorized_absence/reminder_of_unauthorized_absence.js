@@ -1,58 +1,49 @@
 frappe.ui.form.on("Reminder Of Unauthorized Absence", {
-  onload: function (frm) {
-    if (frm.doc.__islocal && frm.doc.case_id) {
-      frappe.db
-        .get_list("Unauthorized Absence", {
-          filters: { case_id: frm.doc.case_id },
-          order_by: "creation desc",
-          limit_page_length: 1,
-          fields: ["date_of_1st_letter"],
-        })
-        .then((list) => {
-          if (list.length) {
-            const firstLetterDate = list[0].date_of_1st_letter; // YYYY-MM-DD
-            const formattedDate = frappe.datetime.str_to_user(firstLetterDate); // DD-MM-YYYY
+  date_of_reminder_letter: function (frm) {
+    if (!frm.doc.date_of_reminder_letter || !frm.doc.date_of_1st_letter) return;
 
-            // Show formatted date in field
-            frm.set_value("date_of_1st_letter", formattedDate);
+    // Convert strings to Date objects
+    const selectedDate = frappe.datetime.str_to_obj(
+      frm.doc.date_of_reminder_letter
+    );
+    const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3);
+    const today = frappe.datetime.get_today();
 
-            // Convert to JS Date object
-            const firstDateObj = frappe.datetime.str_to_obj(firstLetterDate);
+    // Convert minDate and today to Date objects
+    const minAllowedDateStr = minDate > today ? minDate : today;
+    const minAllowedDate = frappe.datetime.str_to_obj(minAllowedDateStr);
 
-            // Restrict date picker (only dates after this)
-            setTimeout(() => {
-              const picker =
-                frm.fields_dict["date_of_reminder_letter"].datepicker;
-              if (picker) {
-                // Add +1 day to allow only after the first letter date
-                const minAllowed = frappe.datetime.add_days(firstLetterDate, 1);
-                picker.update({
-                  minDate: frappe.datetime.str_to_obj(minAllowed),
-                });
-              }
-            }, 500);
-
-            // Validation backup — ensures user can’t type invalid date manually
-            frm.fields_dict.date_of_reminder_letter.df.onchange = function () {
-              if (frm.doc.date_of_reminder_letter) {
-                const reminderDateObj = frappe.datetime.str_to_obj(
-                  frm.doc.date_of_reminder_letter
-                );
-                if (reminderDateObj <= firstDateObj) {
-                  frappe.msgprint({
-                    title: __("Invalid Date"),
-                    message: __(
-                      "Date of Reminder Unauthorized Absence must be **after** the Date of 1st Unauthorized Absence."
-                    ),
-                    indicator: "red",
-                  });
-                  frm.set_value("date_of_reminder_letter", null);
-                }
-              }
-            };
-          }
-        });
+    // Compare Date objects
+    if (selectedDate < minAllowedDate) {
+      frappe.msgprint({
+        title: __("Invalid Date"),
+        message: __(
+          `Date of Reminder must be at least 3 days after Date of 1st Unauthorized Absence and cannot be a past date. Please select a valid date on or after`
+        ),
+        indicator: "red",
+      });
+      frm.set_value("date_of_reminder_letter", null);
     }
+  },
+
+  onload: function (frm) {
+    if (frm.doc.date_of_1st_letter) {
+      const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3);
+      const today = frappe.datetime.get_today();
+      const minAllowedDateStr = minDate > today ? minDate : today;
+
+      // Set minDate on datepicker
+      setTimeout(() => {
+        const field = frm.fields_dict["date_of_reminder_letter"];
+        if (field && field.datepicker) {
+          field.datepicker.set(
+            "minDate",
+            frappe.datetime.str_to_obj(minAllowedDateStr)
+          );
+        }
+      }, 500);
+    }
+
     if (frm.doc.case_id) {
       frappe.db
         .get_list("Unauthorized Absence", {
@@ -74,7 +65,19 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
       frm.set_df_property("amount_of_fraud", "hidden", 1);
     }
   },
+  // Trigger validation when user selects or types a date
+
   refresh(frm) {
+    if (!frm.is_new()) {
+      const btn = frm.add_custom_button("View Case History", function () {
+        frappe.set_route("query-report", "Case History", {
+          case_id: frm.doc.case_id,
+        });
+      });
+
+      btn.removeClass("btn-default").addClass("btn-primary");
+    }
+
     // ✅ Call print button function
 
     frm.trigger("show_print_button");
@@ -93,16 +96,18 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
   show_print_button: function (frm) {
     // ✅ Only allow for saved documents
     if (!frm.is_new()) {
-      // Temporary: Remove role check to ensure button appears
-      // const allowed_roles = ["System Manager", "Share Admin", "Administrator"];
-      // if (!frappe.user_roles.some((role) => allowed_roles.includes(role))) return;
-
-      frm
-        .add_custom_button(__("Print"), function () {
-          // Create overlay
-          const overlay = document.createElement("div");
-          overlay.id = "print-overlay";
-          overlay.style.cssText = `
+      const allowed_roles = [
+        "System Manager",
+        "HR Support Executive",
+        "HR Support Manager",
+      ];
+      if (frappe.user_roles.some((role) => allowed_roles.includes(role))) {
+        frm
+          .add_custom_button(__("Print"), function () {
+            // Create overlay
+            const overlay = document.createElement("div");
+            overlay.id = "print-overlay";
+            overlay.style.cssText = `
           position: fixed;
           top: 0;
           left: 0;
@@ -116,27 +121,27 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
           font-size: 18px;
           color: #333;
       `;
-          overlay.innerHTML = "Preparing print preview...";
-          document.body.appendChild(overlay);
+            overlay.innerHTML = "Preparing print preview...";
+            document.body.appendChild(overlay);
 
-          // Create hidden iframe for print preview
-          const iframe = document.createElement("iframe");
-          iframe.style.display = "none";
-          iframe.src = frappe.urllib.get_full_url(
-            `/printview?doctype=${encodeURIComponent(
-              frm.doc.doctype
-            )}&name=${encodeURIComponent(
-              frm.doc.name
-            )}&format=${encodeURIComponent("Reminder Unauthorized absence")}`
-          );
-          document.body.appendChild(iframe);
+            // Create hidden iframe for print preview
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.src = frappe.urllib.get_full_url(
+              `/printview?doctype=${encodeURIComponent(
+                frm.doc.doctype
+              )}&name=${encodeURIComponent(
+                frm.doc.name
+              )}&format=${encodeURIComponent("Reminder Unauthorized absence")}`
+            );
+            document.body.appendChild(iframe);
 
-          iframe.onload = () => {
-            const doc = iframe.contentWindow.document;
+            iframe.onload = () => {
+              const doc = iframe.contentWindow.document;
 
-            // Inject CSS with background image for print
-            const style = doc.createElement("style");
-            style.innerHTML = `
+              // Inject CSS with background image for print
+              const style = doc.createElement("style");
+              style.innerHTML = `
                 @page {
                     size: A4;
                     margin: 0 !important;
@@ -165,45 +170,46 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
                     page-break-inside: avoid;
                 }
           `;
-            doc.head.appendChild(style);
+              doc.head.appendChild(style);
 
-            // Wrap body content
-            const bodyHTML = doc.body.innerHTML;
-            doc.body.innerHTML = `<div class="print-content">${bodyHTML}</div>`;
+              // Wrap body content
+              const bodyHTML = doc.body.innerHTML;
+              doc.body.innerHTML = `<div class="print-content">${bodyHTML}</div>`;
 
-            // Preload background image
-            const bgImg = new Image();
-            bgImg.src = "/assets/sahayog/images/letter_head_and_footer_.png";
-            bgImg.onload = function () {
-              iframe.contentWindow.focus();
-              iframe.contentWindow.print();
+              // Preload background image
+              const bgImg = new Image();
+              bgImg.src = "/assets/sahayog/images/letter_head_and_footer_.png";
+              bgImg.onload = function () {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+              };
+
+              // Fallback
+              setTimeout(() => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+              }, 3000);
+
+              let done = false;
+              const cleanup = () => {
+                if (done) return;
+                done = true;
+                overlay.remove();
+                iframe.remove();
+              };
+
+              iframe.contentWindow.addEventListener("afterprint", cleanup);
+              setTimeout(cleanup, 6000);
             };
 
-            // Fallback
-            setTimeout(() => {
-              iframe.contentWindow.focus();
-              iframe.contentWindow.print();
-            }, 3000);
-
-            let done = false;
-            const cleanup = () => {
-              if (done) return;
-              done = true;
+            iframe.onerror = () => {
+              frappe.msgprint(__("Error loading print preview"));
               overlay.remove();
               iframe.remove();
             };
-
-            iframe.contentWindow.addEventListener("afterprint", cleanup);
-            setTimeout(cleanup, 6000);
-          };
-
-          iframe.onerror = () => {
-            frappe.msgprint(__("Error loading print preview"));
-            overlay.remove();
-            iframe.remove();
-          };
-        })
-        .addClass("btn-primary");
+          })
+          .addClass("btn-primary");
+      }
     }
   },
 });

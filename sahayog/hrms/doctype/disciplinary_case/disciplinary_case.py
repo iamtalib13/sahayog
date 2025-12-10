@@ -3,6 +3,11 @@
 
 import frappe
 from frappe.model.document import Document
+import frappe
+from frappe.core.doctype.communication.email import make
+from frappe.utils import formatdate
+
+
 
 
 class DisciplinaryCase(Document):
@@ -74,3 +79,87 @@ def get_case_stages(case_id):
             })
 
     return {"timeline": timeline}
+
+
+# check if employee has company email
+@frappe.whitelist()
+def check_employee_email(employee):
+    if not employee:
+        return None
+    emp = frappe.get_doc("Employee", employee)
+    return emp.company_email if emp.company_email else None
+
+# save manual email and send SCN email
+@frappe.whitelist()
+def save_and_send_email(employee, email, docname):
+    """
+    Save manually entered employee email, then send SCN email immediately.
+    """
+    # Save email into Employee Doctype
+    emp = frappe.get_doc("Employee", employee)
+    emp.company_email = email
+    emp.save(ignore_permissions=True)
+
+    # Send SCN email directly
+    send_scn_email(docname)
+
+    return "OK"
+
+
+
+@frappe.whitelist()
+def send_scn_email(docname):
+    """
+    Send SCN email directly to employee with attachment (if any),
+    with nicely formatted dates in the email.
+    """
+    doc = frappe.get_doc("Disciplinary Case", docname)
+    
+    emp = frappe.get_doc("Employee", doc.employee_id)
+    final_email = emp.company_email
+
+    if not final_email:
+        frappe.throw("No email found for this employee.")
+
+    # Convert doc to dict and format dates
+    doc_dict = doc.as_dict()
+    if doc.issue_occurrence_date:
+        doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
+    if doc.issue_report_to_hr:
+        doc_dict["issue_report_to_hr"] = formatdate(doc.issue_report_to_hr)
+
+    # Load email template
+    template = frappe.get_doc("Email Template", "Disciplinary - SCN")
+    message = frappe.render_template(template.response_html, doc_dict)
+    subject = frappe.render_template(template.subject, doc_dict)
+
+    # Prepare attachments
+    attachments = []
+    if doc.document_upload:
+        try:
+            file_doc = frappe.get_doc("File", {"file_url": doc.document_upload})
+            attachments.append({
+                "fname": file_doc.file_name,
+                "fcontent": file_doc.get_content()
+            })
+        except Exception as e:
+            frappe.log_error(f"Failed to attach file: {str(e)}", "Send SCN Email")
+
+    # Send email immediately
+    frappe.sendmail(
+        recipients=[final_email],
+        subject=subject,
+        message=message,
+        attachments=attachments,
+        reference_doctype="Disciplinary Case",
+        reference_name=docname,
+        now=True  # Send instantly
+    )
+
+    return "Email Sent"
+@frappe.whitelist()
+def save_employee_email(employee, email):
+    emp = frappe.get_doc("Employee", employee)
+    emp.company_email = email
+    emp.db_update()
+    return "OK"

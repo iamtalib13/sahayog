@@ -15,6 +15,48 @@ frappe.ui.form.on("Response to SCN", {
     }
   },
   refresh(frm) {
+    // --- SHOW SEND EMAIL BUTTON ---
+    if (!frm.is_new()) {
+      frm.add_custom_button("Send Email", function () {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.response_to_scn.response_to_scn.check_employee_email",
+          args: { employee: frm.doc.employee_id },
+          callback(r) {
+            let email = r.message;
+
+            if (email) {
+              frappe.confirm(
+                `Are you sure you want to send the SCN Response Email to:<br><b>${email}</b>?`,
+                function () {
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.response_to_scn.response_to_scn.send_response_scn_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending Email..."),
+                    callback() {
+                      frappe.msgprint(
+                        __("Response to SCN Email sent successfully!")
+                      );
+                    },
+                  });
+                }
+              );
+            } else {
+              frappe.msgprint({
+                title: __("Email Not Found"),
+                indicator: "red",
+                message: __(
+                  "No email address is stored for this employee.<br>Please update the Employee record before sending this email."
+                ),
+              });
+            }
+          },
+        });
+      });
+    }
+    // ➡️ View Case History Button
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {

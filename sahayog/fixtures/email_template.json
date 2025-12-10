@@ -1,0 +1,42 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-01 12:04:51.652517",
+  "name": "Disciplinary Case Update",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n\n<p>A new case review request has been initiated.</p>\n\n<h3>Case Details</h3>\n\n<table width=\"100%\" border=\"1\" cellspacing=\"0\" cellpadding=\"6\">\n    <tr>\n        <td><b>Case ID</b></td>\n        <td>{{ case_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Employee Name</b></td>\n        <td>{{ employee_name }}</td>\n    </tr>\n    <tr>\n        <td><b>Employee ID</b></td>\n        <td>{{ employee_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Region</b></td>\n        <td>{{ region }}</td>\n    </tr>\n    <tr>\n        <td><b>Zone</b></td>\n        <td>{{ zone }}</td>\n    </tr>\n    <tr>\n        <td><b>Case Type</b></td>\n        <td>{{ case_type }}</td>\n    </tr>\n    <tr>\n        <td><b>Stage</b></td>\n        <td>{{ stage }}</td>\n    </tr>\n    <tr>\n        <td><b>Remarks</b></td>\n        <td>{{ remarks }}</td>\n    </tr>\n    <tr>\n        <td><b>HR Name (Triggered By)</b></td>\n        <td>{{ hr_name }}</td>\n    </tr>\n    <tr>\n        <td><b>HR Employee ID</b></td>\n        <td>{{ hr_employee_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Attachment</b></td>\n        <td>{{ attachment }}</td>\n    </tr>\n</table>\n\n<br>\n\n<p>\n    To view the complete Case History, click below:<br>\n    <a href=\"{{ case_history_link }}\" target=\"_blank\">\n        <b>View Case History Report</b>\n    </a>\n</p>\n\n<br>\n<p>Regards,<br>HR Team</p>\n",
+  "subject": "“Disciplinary Case Update – {{ case_id }}”",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-09 10:49:05.725900",
+  "name": "Disciplinary - SCN",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n\n<p>\n    This is to inform you that a disciplinary case of type \n    <strong>\"{{ case_type }}\"</strong> has been initiated by HR for the employee \n    <strong>{{ employee_name }}</strong> (Employee ID: {{ employee_id }}).\n</p>\n\n<h4>Case Details:</h4>\n<ul>\n    <li><strong>Case ID:</strong> {{ case_id }}</li>\n    <li><strong>Branch:</strong> {{ branch_name }}</li>\n    <li><strong>Issue Date:</strong> {{ issue_occurrence_date }}</li>\n    <li><strong>Initiated By:</strong> {{ hr_name }}</li>\n</ul>\n\n<p>\n    The Show Cause Notice has been generated and forwarded to the respective branch for further action.\n</p>\n\n<p>\n    Please find the relevant document(s) attached:<br>\n    <strong>{{ document_upload }}</strong>\n</p>\n\n<p>\n    <strong>Remarks:</strong><br>\n    {{ remarks }}\n</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
+  "subject": "Show Cause Notice Issued for {{ employee_name }} – Case Type: {{ case_type }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-09 16:03:56.400745",
+  "name": "Suspension Process",
+  "response": null,
+  "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>This is to inform you that a <strong>suspension process</strong> has been initiated under the case type <strong>{{ case_type }}</strong>.</p>\n\n<p>Details:</p>\n<ul>\n    <li>Case ID: {{ case_id }}</li>\n    <li>Suspension From: {{ suspension_from_date }}</li>\n    <li>Suspension To: {{ suspension_to_date }}</li>\n    <li>Number of Days: {{ days_of_suspension }}</li>\n</ul>\n\n<p>The suspension notice has been forwarded to the respective branch for further action.\n</p>\n\n<p>\n    Please find the relevant document(s) attached:<br>\n   \n</p>\n\n<p>Remarks: {{ remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>",
+  "subject": "Suspension Notice for {{ employee_name }} – Case Type: {{ case_type }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-10 12:46:32.305261",
+  "name": "Reminder Notice of Enquiry",
+  "response": null,
+  "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>\nRevised Notice of Enquiry has been generated and issued to the employee \n<strong>{{ employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ date_of_2nd_enquiry }}</strong> at <strong>{{ place_of_enquiry }}</strong>.\n</p>\n\n<p>Details:</p>\n<ul>\n    <li>Case ID: {{ case_id }}</li>\n    <li>Case Type: {{ case_type }}</li>\n    <li><strong>Enquiry Officer Name:</strong> {{ enquiry_officer_name }}</li>\n\n</ul>\n\n<p>\nYou are requested to attend the domestic enquiry as per the above schedule.\n</p>\n\n<p>\nPlease find the revised notice attached for your reference.\n</p>\n\n<p>Remarks: {{ remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
+  "subject": "Revised Notice of Enquiry for {{ employee_name }} – Case ID: {{ case_id }}",
+  "use_html": 1
+ }
+]

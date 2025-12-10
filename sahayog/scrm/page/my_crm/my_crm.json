@@ -1,0 +1,28 @@
+{
+ "content": null,
+ "creation": "2025-12-03 12:27:29.010743",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-12-03 12:41:08.277828",
+ "modified_by": "Administrator",
+ "module": "SCRM",
+ "name": "my-crm",
+ "owner": "Administrator",
+ "page_name": "my-crm",
+ "roles": [
+  {
+   "role": "Employee"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Sales User"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0
+}

@@ -7,7 +7,11 @@ def get_agents_sol_wise(user=None):
     user_roles = frappe.get_roles(user)
 
     # ✅ Step 1: Admins (Administrator / MIS Admin) can see all records
-    if "Administrator" in user_roles or "MIS Admin" in user_roles:
+    if (
+        "Administrator" in user_roles 
+        or "MIS Admin" in user_roles
+        or "Trainer" in user_roles  
+    ):
         return ""
 
     # ✅ Step 2: Get employee info linked with the user
