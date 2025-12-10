@@ -3,7 +3,51 @@
 
 frappe.ui.form.on("Unauthorized Absence", {
   refresh(frm) {
-  if (!frm.is_new()) {
+    if (!frm.is_new()) {
+      frm.add_custom_button("Send Email", function () {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.unauthorized_absence.unauthorized_absence.check_employee_email",
+          args: { employee: frm.doc.employee_id },
+          callback(r) {
+            let email = r.message;
+
+            // CASE 1: Email Exists → Ask for confirmation
+            if (email) {
+              frappe.confirm(
+                `Are you sure you want to send the Unauthorized Absence Email to:<br><b>${email}</b>?`,
+                function () {
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.unauthorized_absence.unauthorized_absence.send_unauthorized_absence_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending Unauthorized Absence Email..."),
+                    callback() {
+                      frappe.msgprint(
+                        __("Unauthorized Absence Email sent successfully!")
+                      );
+                    },
+                  });
+                }
+              );
+            }
+
+            // CASE 2: Email Missing → Show error
+            else {
+              frappe.msgprint({
+                title: __("Email Not Found"),
+                indicator: "red",
+                message: __(
+                  "No email address is stored for this employee.<br>Please update the Employee record before sending this Unauthorized Absence Email."
+                ),
+              });
+            }
+          },
+        });
+      });
+    }
+    if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
           case_id: frm.doc.case_id,
