@@ -564,8 +564,7 @@ fixtures = [
 # email templates fixtures
 {
     "dt": "Email Template",
-    "filters": [["name", "in", ["Disciplinary Case Update", "Disciplinary - SCN","Response to SCN","Suspension Process"]]]
-    "filters": [["name", "in", ["Disciplinary Case Update", "Disciplinary - SCN","Suspension Process", "Reminder Notice of Enquiry"]]]
+    "filters": [["name", "in", ["Disciplinary Case Update", "Disciplinary - SCN","Response to SCN","Suspension Process",]]]
 },
   
     # Print Format fixture
