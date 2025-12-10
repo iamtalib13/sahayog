@@ -323,8 +323,11 @@ doc_events = {
     "Share Transfer": {
         "autoname": "sahayog.doc_events.share_transfer.share_transfer_autoname"
     },
+    "User": {
+        "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+        "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+    }
 }
-
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
