@@ -12,10 +12,10 @@ frappe.ui.form.on("Suspension Process", {
           callback(r) {
             let email = r.message;
 
-            // CASE: Email exists → Ask for confirmation
+            // CASE: Email exists → Only ask for confirmation
             if (email) {
               frappe.confirm(
-                `This employee already has an email:<br><b>${email}</b><br><br>Do you want to send the Suspension email?`,
+                `Are you sure you want to send the Suspension Email to:<br><b>${email}</b>?`,
                 function () {
                   frappe.call({
                     method:
@@ -33,13 +33,13 @@ frappe.ui.form.on("Suspension Process", {
               );
             }
 
-            // CASE: Email does NOT exist → Just show error (No manual entry anymore)
+            // CASE: Email does NOT exist → Show error
             else {
               frappe.msgprint({
                 title: __("Email Not Found"),
                 indicator: "red",
                 message: __(
-                  "No email address is stored for this employee.<br>Please update the Employee record before sending the suspension email."
+                  "No email address is stored for this employee.<br>Please update the Employee record before sending this Suspension Email."
                 ),
               });
             }

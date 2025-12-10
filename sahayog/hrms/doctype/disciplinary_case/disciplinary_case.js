@@ -4,7 +4,7 @@
 frappe.ui.form.on("Disciplinary Case", {
   refresh: function (frm) {
     if (!frm.is_new()) {
-      frm.add_custom_button("Send SCN Email", function () {
+      frm.add_custom_button("Send Email", function () {
         frappe.call({
           method:
             "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.check_employee_email",
