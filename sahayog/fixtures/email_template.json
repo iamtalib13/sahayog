@@ -2,6 +2,16 @@
  {
   "docstatus": 0,
   "doctype": "Email Template",
+  "modified": "2025-12-10 12:46:32.305261",
+  "name": "Reminder Notice of Enquiry",
+  "response": null,
+  "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>\nRevised Notice of Enquiry has been generated and issued to the employee \n<strong>{{ employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ date_of_2nd_enquiry }}</strong> at <strong>{{ place_of_enquiry }}</strong>.\n</p>\n\n<p>Details:</p>\n<ul>\n    <li>Case ID: {{ case_id }}</li>\n    <li>Case Type: {{ case_type }}</li>\n    <li><strong>Enquiry Officer Name:</strong> {{ enquiry_officer_name }}</li>\n\n</ul>\n\n<p>\nYou are requested to attend the domestic enquiry as per the above schedule.\n</p>\n\n<p>\nPlease find the revised notice attached for your reference.\n</p>\n\n<p>Remarks: {{ remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
+  "subject": "Revised Notice of Enquiry for {{ employee_name }} – Case ID: {{ case_id }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
   "modified": "2025-12-01 12:04:51.652517",
   "name": "Disciplinary Case Update",
   "response": null,
