@@ -14,6 +14,137 @@ frappe.ui.form.on("Stock Entry", {
         "custom_material_request_doctype",
         "Employee Material Request"
       );
+      frm.add_custom_button("View EMR Items", async () => {
+        // Fetch EMMR document
+        const emmr_doc = await frappe.db.get_doc(
+          "Employee Material Request",
+          frm.doc.custom_material_request
+        );
+
+        if (!emmr_doc.items || emmr_doc.items.length === 0) {
+          frappe.msgprint("No items found in this EMMR.");
+          return;
+        }
+
+        // Build HTML table
+        let html = `
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Select</th>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Item Category</th>
+                    <th>Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+        // Serial number counter
+        let sr_no = 1;
+
+        emmr_doc.items.forEach((row) => {
+          // Only show items where category = Stock Item
+          if (row.item_category !== "Stock Item") {
+            return; // skip
+          }
+
+          html += `
+            <tr>
+                <td>${sr_no}</td>
+                <td>
+                    <input type="checkbox" class="emmr-check"
+                        data-item="${row.item_code}"
+                        data-description="${row.description || ""}"
+                        data-qty="${row.quantity}">
+                </td>
+                <td>${row.item_code}</td>
+                <td>${row.description || ""}</td>
+                <td>${row.item_category || ""}</td>
+                <td>${row.quantity}</td>
+            </tr>
+        `;
+
+          sr_no++; // increment serial number
+        });
+
+        html += "</tbody></table>";
+
+        // Create dialog popup
+        let d = new frappe.ui.Dialog({
+          title: "EMR Items",
+          size: "large",
+          fields: [
+            {
+              fieldname: "items_html",
+              fieldtype: "HTML",
+            },
+          ],
+          primary_action_label: "Add Selected Items",
+          primary_action() {
+            let selected = [];
+
+            // Read checkboxes inside THIS dialog
+            d.$wrapper.find(".emmr-check:checked").each(function () {
+              selected.push({
+                item_code: $(this).data("item"),
+                description: $(this).data("description"),
+                qty: $(this).data("qty"),
+              });
+            });
+
+            if (selected.length === 0) {
+              frappe.msgprint("Please select at least one item.");
+              return;
+            }
+
+            // Remove default empty first row
+            if (
+              frm.doc.items &&
+              frm.doc.items.length === 1 &&
+              !frm.doc.items[0].item_code
+            ) {
+              frm.doc.items = [];
+            }
+
+            // Already added item codes
+            let existing_items = (frm.doc.items || []).map((i) => i.item_code);
+            let duplicate_items = [];
+
+            // Insert items into Stock Entry child table
+            selected.forEach((row) => {
+              if (existing_items.includes(row.item_code)) {
+                duplicate_items.push(row.item_code);
+                return; // skip duplicate
+              }
+
+              let child = frm.add_child("items");
+              child.item_code = row.item_code;
+              child.qty = row.qty;
+
+              existing_items.push(row.item_code);
+            });
+
+            frm.refresh_field("items");
+            d.hide();
+
+            // Notify user
+            if (duplicate_items.length > 0) {
+              frappe.msgprint(`
+                    The following items were NOT added because they already exist:<br><br>
+                    <b>${duplicate_items.join(", ")}</b>
+                `);
+            } else {
+              frappe.show_alert("Selected items added successfully.");
+            }
+          },
+        });
+
+        d.fields_dict.items_html.$wrapper.html(html);
+        d.show();
+      });
     }
   },
 
