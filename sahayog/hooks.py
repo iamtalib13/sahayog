@@ -471,9 +471,9 @@ fixtures = [
                     [
                         "Draft",
                         "Under Process",
-                        "Closed",
-                        "Under Reviewed",
+                        "Under Review",
                         "Verified",
+                        "Closed",
                         "Assign",
                         "Self Approve",
                         "Self Approved"
