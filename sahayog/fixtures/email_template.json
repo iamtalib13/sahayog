@@ -48,5 +48,15 @@
   "response_html": "<p>Dear Team,</p>\n\n<p>\n    {% if doc.get(\"response_to_scn\") == \"Yes\" %}\n        The alleged staff has <strong>responded</strong> to the Show Cause Notice,\n    {% else %}\n        The alleged staff has <strong>not responded</strong> to the Show Cause Notice,\n    {% endif %}\n    \n    and the status of the response is \n    <strong>{{ doc.get(\"status_of_response\") | lower }}</strong>.\n</p>\n\n<p>\n    Kindly proceed with the necessary action as per the disciplinary process.\n</p>\n\n{% if doc.get(\"document_upload\") %}\n<p>\n    Please find the relevant document(s) attached: {{ doc.get(\"document_upload\") }}\n</p>\n{% endif %}\n\n{% if doc.get(\"remarks\") %}\n<p>\n    Remarks: {{ doc.get(\"remarks\") }}\n</p>\n{% endif %}\n\n<p>Regards,<br>\nHR Department</p>\n",
   "subject": "Response to Show Cause Notice for {{ employee_name }} – Case Type: {{ case_type }}",
   "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-10 16:17:38.824533",
+  "name": "Unauthorized Absence",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n\n<p>\n    This is to inform you that <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    from <strong>{{ doc.branch_name }}</strong> has been marked as \n    <strong>Unauthorized Absent</strong> on \n    <strong>{{ doc.issue_occurrence_date }}</strong>.\n</p>\n\n<p>\n    <strong>Case Details:</strong><br>\n    Case Type: {{ doc.case_type }}<br>\n    Category: {{ doc.category }}<br>\n    Issue Reported to HR On: {{ doc.issue_reported_to_hr }}<br>\n    Remarks: {{ doc.remarks or \"No remarks provided.\" }}\n</p>\n\n{% if doc.document_upload %}\n<p>\n    Relevant document(s) attached: {{ doc.document_upload }}\n</p>\n{% endif %}\n\n<p>\nKindly take the required action as per the Unauthorized Absence process.\n</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
+  "subject": "Unauthorized Absence Notice –{{ employee_name }} – Case Type: {{ case_type }}",
+  "use_html": 1
  }
 ]
