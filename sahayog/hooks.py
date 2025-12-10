@@ -323,8 +323,11 @@ doc_events = {
     "Share Transfer": {
         "autoname": "sahayog.doc_events.share_transfer.share_transfer_autoname"
     },
+    "User": {
+        "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+        "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+    }
 }
-
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
@@ -562,6 +565,7 @@ fixtures = [
 {
     "dt": "Email Template",
     "filters": [["name", "in", ["Disciplinary Case Update", "Disciplinary - SCN","Response to SCN","Suspension Process"]]]
+    "filters": [["name", "in", ["Disciplinary Case Update", "Disciplinary - SCN","Suspension Process", "Reminder Notice of Enquiry"]]]
 },
   
     # Print Format fixture

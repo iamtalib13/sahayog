@@ -109,6 +109,48 @@ frappe.ui.form.on("Enquiry Reminder", {
   },
 
   refresh(frm) {
+    // Send Email Button
+    if (!frm.is_new()) {
+            frm.add_custom_button("Send Email", function () {
+                frappe.call({
+                    method:"sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.check_employee_email",
+                    args: { employee: frm.doc.employee_id },
+                    callback(r) {
+                        let email = r.message;
+
+                        // CASE: Email exists
+                        if (email) {
+                            frappe.confirm(
+                                `Employee email found:<br><b>${email}</b><br><br>Do you want to send the Reminder Notice of Enquiry email?`,
+                                function () {
+                                    frappe.call({
+                                        method: "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.send_reminder_enquiry_email",
+                                        args: { docname: frm.doc.name },
+                                        freeze: true,
+                                        freeze_message: __("Sending Reminder Notice of Enquiry Email..."),
+                                        callback() {
+                                            frappe.msgprint(__("Reminder Notice of Enquiry Email sent successfully!"));
+                                        },
+                                    });
+                                }
+                            );
+                        }
+
+                        // CASE: No email found
+                        else {
+                            frappe.msgprint({
+                                title: __("Email Not Found"),
+                                indicator: "red",
+                                message: __(
+                                    "No email is stored for this employee.<br>Please update the Employee record before sending the email."
+                                ),
+                            });
+                        }
+                    },
+                });
+            });
+        }
+    // View Case History Button
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
