@@ -3,6 +3,48 @@
 
 frappe.ui.form.on("Domestic Enquiry", {
   refresh(frm) {
+    // send email button
+     if (!frm.is_new()) {
+            frm.add_custom_button("Send Email", function () {
+                frappe.call({
+                    method: "sahayog.hrms.doctype.domestic_enquiry.domestic_enquiry.check_employee_email",
+                    args: { employee: frm.doc.employee_id },
+                    callback(r) {
+                        let email = r.message;
+
+                        // CASE: Email exists
+                        if (email) {
+                            frappe.confirm(
+                                `Employee email found:<br><b>${email}</b><br><br>Do you want to send the Domestic Enquiry Notice email?`,
+                                function () {
+                                    frappe.call({
+                                        method: "sahayog.hrms.doctype.domestic_enquiry.domestic_enquiry.send_domestic_enquiry_email",
+                                        args: { docname: frm.doc.name },
+                                        freeze: true,
+                                        freeze_message: __("Sending Domestic Enquiry Notice Email..."),
+                                        callback() {
+                                            frappe.msgprint(__("Domestic Enquiry Notice Email sent successfully!"));
+                                        }
+                                    });
+                                }
+                            );
+                        }
+
+                        // CASE: No email found
+                        else {
+                            frappe.msgprint({
+                                title: __("Email Not Found"),
+                                indicator: "red",
+                                message: __(
+                                    "No email is stored for this employee.<br>Please update the Employee record before sending the email."
+                                )
+                            });
+                        }
+                    }
+                });
+            });
+        }
+    // view case history button
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
@@ -13,9 +55,10 @@ frappe.ui.form.on("Domestic Enquiry", {
       btn.removeClass("btn-default").addClass("btn-primary");
     }
 
+    // debug: log refresh event
     console.log("Domestic Enquiry refresh fired");
+    
     // ✅ Call print button function
-
     frm.trigger("show_print_button");
 
     // Skip logic for unsaved (new) records
