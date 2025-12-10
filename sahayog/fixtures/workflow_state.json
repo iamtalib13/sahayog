@@ -3,10 +3,10 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2025-11-10 11:10:26.111581",
-  "name": "Under Process",
-  "style": "Info",
-  "workflow_state_name": "Under Process"
+  "modified": "2025-12-04 17:05:12.031672",
+  "name": "Under Review",
+  "style": "Warning",
+  "workflow_state_name": "Under Review"
  },
  {
   "docstatus": 0,
@@ -48,15 +48,6 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2025-11-24 10:54:47.070076",
-  "name": "Under Reviewed",
-  "style": "",
-  "workflow_state_name": "Under Reviewed"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
   "modified": "2025-11-24 11:06:57.444005",
   "name": "Verified",
   "style": "",
@@ -70,5 +61,14 @@
   "name": "Draft",
   "style": "",
   "workflow_state_name": "Draft"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2025-11-10 11:10:26.111581",
+  "name": "Under Process",
+  "style": "Info",
+  "workflow_state_name": "Under Process"
  }
 ]
