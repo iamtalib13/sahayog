@@ -228,7 +228,7 @@ override_doctype_class = {
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
     "Item": "sahayog.override.autoname_item.CustomItem",
-    "Report": "sahayog.override.report.CustomReport"
+    # "Report": "sahayog.override.report.CustomReport"
 
 }
 
@@ -366,8 +366,13 @@ scheduler_events = {
         "0 1 * * *": [
             "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
         ],
-        "*/5 * * * *": [
-            "sahayog.tasks.reset_auto_prepared_reports"  
+        # "*/5 * * * *": [
+        #     "sahayog.tasks.reset_auto_prepared_reports"  
+        # ],
+
+        # Run daily at midnight — Sync District and State from Sahayog Branch
+        "0 0 * * *": [
+            "sahayog.tasks.sync_district_state"
         ]
     },
 
