@@ -2,16 +2,6 @@
  {
   "docstatus": 0,
   "doctype": "Email Template",
-  "modified": "2025-12-10 12:46:32.305261",
-  "name": "Reminder Notice of Enquiry",
-  "response": null,
-  "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>\nRevised Notice of Enquiry has been generated and issued to the employee \n<strong>{{ employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ date_of_2nd_enquiry }}</strong> at <strong>{{ place_of_enquiry }}</strong>.\n</p>\n\n<p>Details:</p>\n<ul>\n    <li>Case ID: {{ case_id }}</li>\n    <li>Case Type: {{ case_type }}</li>\n    <li><strong>Enquiry Officer Name:</strong> {{ enquiry_officer_name }}</li>\n\n</ul>\n\n<p>\nYou are requested to attend the domestic enquiry as per the above schedule.\n</p>\n\n<p>\nPlease find the revised notice attached for your reference.\n</p>\n\n<p>Remarks: {{ remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
-  "subject": "Revised Notice of Enquiry for {{ employee_name }} – Case ID: {{ case_id }}",
-  "use_html": 1
- },
- {
-  "docstatus": 0,
-  "doctype": "Email Template",
   "modified": "2025-12-01 12:04:51.652517",
   "name": "Disciplinary Case Update",
   "response": null,
@@ -49,6 +39,16 @@
   "subject": "Response to Show Cause Notice for {{ employee_name }} – Case Type: {{ case_type }}",
   "use_html": 1
  },
+  {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-10 12:46:32.305261",
+  "name": "Reminder Notice of Enquiry",
+  "response": null,
+  "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>\nRevised Notice of Enquiry has been generated and issued to the employee \n<strong>{{ employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ date_of_2nd_enquiry }}</strong> at <strong>{{ place_of_enquiry }}</strong>.\n</p>\n\n<p>Details:</p>\n<ul>\n    <li>Case ID: {{ case_id }}</li>\n    <li>Case Type: {{ case_type }}</li>\n    <li><strong>Enquiry Officer Name:</strong> {{ enquiry_officer_name }}</li>\n\n</ul>\n\n<p>\nYou are requested to attend the domestic enquiry as per the above schedule.\n</p>\n\n<p>\nPlease find the revised notice attached for your reference.\n</p>\n\n<p>Remarks: {{ remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
+  "subject": "Revised Notice of Enquiry for {{ employee_name }} – Case ID: {{ case_id }}",
+  "use_html": 1
+ },
  {
   "docstatus": 0,
   "doctype": "Email Template",
@@ -57,6 +57,16 @@
   "response": null,
   "response_html": "<p>Dear Team,</p>\n\n<p>\n    This is to inform you that <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    from <strong>{{ doc.branch_name }}</strong> has been marked as \n    <strong>Unauthorized Absent</strong> on \n    <strong>{{ doc.issue_occurrence_date }}</strong>.\n</p>\n\n<p>\n    <strong>Case Details:</strong><br>\n    Case Type: {{ doc.case_type }}<br>\n    Category: {{ doc.category }}<br>\n    Issue Reported to HR On: {{ doc.issue_reported_to_hr }}<br>\n    Remarks: {{ doc.remarks or \"No remarks provided.\" }}\n</p>\n\n{% if doc.document_upload %}\n<p>\n    Relevant document(s) attached: {{ doc.document_upload }}\n</p>\n{% endif %}\n\n<p>\nKindly take the required action as per the Unauthorized Absence process.\n</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
   "subject": "Unauthorized Absence Notice –{{ employee_name }} – Case Type: {{ case_type }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2025-12-10 16:21:16.797479",
+  "name": "Domestic Enquiry Notice",
+  "response": null,
+  "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>\nNotice of Enquiry has been generated and issued to the employee \n<strong>{{ employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ date_of_enquiry }}</strong> at \n<strong>{{ place_of_enquiry }}</strong>.\n</p>\n\n<p><strong>Details:</strong></p>\n\n<ul>\n    <li><strong>Case ID:</strong> {{ case_id }}</li>\n    <li><strong>Case Type:</strong> {{ case_type }}</li>\n    <li><strong>Enquiry Officer Name:</strong> {{ enquiry_officer_name }}</li>\n</ul>\n\n<p>\nYou are requested to attend the domestic enquiry as per the above schedule.\n</p>\n\n<p>\nPlease find the notice of enquiry attached for your reference.\n</p>\n\n<p><strong>Remarks:</strong> {{ remarks }}</p>\n\n<p>\nRegards,<br>\nHR Department\n</p>\n",
+  "subject": "Domestic Enquiry Notice for {{ employee_name }} – Case Type: {{ case_type }}",
   "use_html": 1
  }
 ]
