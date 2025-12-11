@@ -581,7 +581,8 @@ fixtures = [
                                 "Domestic Enquiry Notice",
                                 "Reminder Notice of Enquiry",
                                 "Unauthorized Absence",
-                                "Reminder Of Unauthorized Absence"]]]
+                                "Reminder Of Unauthorized Absence",
+                                "Case Closure Update"]]]
 },
   
     # Print Format fixture
