@@ -176,6 +176,30 @@ frappe.ui.form.on("Stock Entry", {
         console.log("EMMR Doc:", emmr_doc);
 
         const from_warehouse = "from_warehouse";
+        // ------------------------------------------
+        // FETCH STOCK BALANCE FOR EACH ITEM
+        // ------------------------------------------
+        let stock_balance_map = {};
+
+        try {
+          const stock_res = await frappe.call({
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_stock_balance_data",
+            args: {
+              item_code: null, // return all
+              warehouse: emmr_doc.source_warehouse, // check qty only in FROM warehouse
+            },
+          });
+
+          if (stock_res.message && stock_res.message.data) {
+            stock_res.message.data.forEach((row) => {
+              stock_balance_map[row.item_code] = row.bal_qty;
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch stock balance:", e);
+        }
+
         const to_warehouse = "to_warehouse";
 
         if (!emmr_doc.items || emmr_doc.items.length === 0) {
@@ -194,6 +218,8 @@ frappe.ui.form.on("Stock Entry", {
                     <th>Description</th>
                     <th>Item Category</th>
                     <th>Qty</th>
+                    <th>Actual Qty</th>
+
                 </tr>
             </thead>
             <tbody>
@@ -221,6 +247,8 @@ frappe.ui.form.on("Stock Entry", {
                 <td>${row.description || ""}</td>
                 <td>${row.item_category || ""}</td>
                 <td>${row.quantity}</td>
+                <td>${stock_balance_map[row.item_code] || 0}</td>
+
             </tr>
         `;
 
