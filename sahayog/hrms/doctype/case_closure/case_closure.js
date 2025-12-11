@@ -115,9 +115,9 @@ frappe.ui.form.on("Case Closure", {
 
       btn.removeClass("btn-default").addClass("btn-primary");
     }
-    
+
     frappe.after_ajax(() => {
-    frm.trigger("show_print_button");
+      frm.trigger("show_print_button");
     });
     if (!frm.is_new() && frm.doc.case_id) {
       frappe.call({
@@ -227,8 +227,20 @@ frappe.ui.form.on("Case Closure", {
         try {
           const win = iframe.contentWindow;
 
+          // FIX: Disable internal auto-print for submitted docs
+          // close the print preview in one attempt
+          if (win.print) {
+            win.print = function () {};
+          }
+          if (win.frappe && win.frappe.utils && win.frappe.utils.print) {
+            win.frappe.utils.print = function () {};
+          }
+
           setTimeout(() => {
             win.focus();
+
+            // Restore manual print
+            win.print = window.print.bind(win);
             win.print();
           }, 700);
 
@@ -256,7 +268,7 @@ frappe.ui.form.on("Case Closure", {
       };
     }
   },
-}); 
+});
 function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
@@ -440,7 +452,7 @@ function open_approver_dialog(frm) {
           fieldname: "already_selected_section",
           fieldtype: "Section Break",
           label: "Already Selected Reviewers",
-          collapsible: 1
+          collapsible: 1,
         },
         {
           fieldname: "existing_reviewers_html",
@@ -451,7 +463,7 @@ function open_approver_dialog(frm) {
         {
           fieldname: "section_new",
           fieldtype: "Section Break",
-          label: "Add New Reviewers"
+          label: "Add New Reviewers",
         },
 
         {
@@ -499,7 +511,9 @@ function open_approver_dialog(frm) {
                 );
 
                 if (duplicate_in_dialog) {
-                  frappe.msgprint("This reviewer is already selected in the dialog.");
+                  frappe.msgprint(
+                    "This reviewer is already selected in the dialog."
+                  );
                   row.employee_id = "";
                   row.employee_name = "";
                   row.company_email = "";
@@ -512,7 +526,9 @@ function open_approver_dialog(frm) {
                 );
 
                 if (duplicate_in_parent) {
-                  frappe.msgprint("This reviewer is already selected in the list.");
+                  frappe.msgprint(
+                    "This reviewer is already selected in the list."
+                  );
                   row.employee_id = "";
                   row.employee_name = "";
                   row.company_email = "";
@@ -520,11 +536,14 @@ function open_approver_dialog(frm) {
                   return;
                 }
 
-                frappe.db.get_doc("Employee", row.employee_id).then((emp_data) => {
-                  row.employee_name = emp_data.employee_name;
-                  row.company_email = emp_data.company_email || emp_data.prefered_email;
-                  d.fields_dict.approver_table.grid.refresh();
-                });
+                frappe.db
+                  .get_doc("Employee", row.employee_id)
+                  .then((emp_data) => {
+                    row.employee_name = emp_data.employee_name;
+                    row.company_email =
+                      emp_data.company_email || emp_data.prefered_email;
+                    d.fields_dict.approver_table.grid.refresh();
+                  });
               },
             },
             {
@@ -611,14 +630,14 @@ function submit_approvers(frm, values, dialog) {
   // Note: 'values.approver_table' contains only the *newly selected* reviewers
   // because the 'open_approver_dialog' primary action was calling:
   // submit_approvers(frm, { approver_table: new_reviewers }, d)
-  
+
   const new_reviewers = values.approver_table || [];
 
   if (new_reviewers.length === 0) {
-      // यदि कोई नया समीक्षक नहीं चुना गया है, तो बस डायलाग बंद करें
-      frappe.msgprint(__("No new reviewers selected."));
-      dialog.hide();
-      return;
+    // यदि कोई नया समीक्षक नहीं चुना गया है, तो बस डायलाग बंद करें
+    frappe.msgprint(__("No new reviewers selected."));
+    dialog.hide();
+    return;
   }
 
   // New reviewers को child table में जोड़ें
@@ -630,7 +649,7 @@ function submit_approvers(frm, values, dialog) {
     child.employee_id = row.employee_id;
     child.employee_name = row.employee_name; // Add employee name
     child.company_email = row.company_email; // Add company email
-    
+
     // बाकी fields वही रहेंगे
     child.remarks = "";
     child.status = "Pending";
@@ -646,14 +665,14 @@ function submit_approvers(frm, values, dialog) {
     // -----------------------------------------------------
     // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
     // -----------------------------------------------------
-    // Ensure you pass only the *new* approvers to the server call if needed, 
+    // Ensure you pass only the *new* approvers to the server call if needed,
     // or you can pass the entire updated list frm.doc.review_details
     frappe.call({
       method:
         "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
       args: {
         // Pass only the new reviewers, as existing ones might already be processed
-        approvers: new_reviewers, 
+        approvers: new_reviewers,
         case_id: frm.doc.name,
       },
       freeze: true,
@@ -687,7 +706,7 @@ function submit_approvers(frm, values, dialog) {
       args: {
         case_id: frm.doc.name,
         // Pass only the new approvers' details for the email content
-        approvers: JSON.stringify(new_reviewers), 
+        approvers: JSON.stringify(new_reviewers),
       },
       freeze: true,
       freeze_message: __("Sending review notification email..."),
