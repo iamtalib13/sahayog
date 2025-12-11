@@ -283,6 +283,13 @@ frappe.ui.form.on("Stock Entry", {
               child.item_code = row.item_code;
               child.qty = row.qty;
 
+              // Add your required defaults
+              child.transfer_qty = 1;
+              child.conversion_factor = 1.0;
+
+              // If qty_as_per_stock_uom exists, set it too:
+              child.qty_as_per_stock_uom = child.qty * child.conversion_factor;
+
               existing_items.push(row.item_code);
             });
 
