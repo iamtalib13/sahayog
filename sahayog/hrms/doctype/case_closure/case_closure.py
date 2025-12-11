@@ -275,3 +275,71 @@ def send_email_for_review(case_id=None, approvers=None):
     "msg": "Verification email sent successfully."
 }
 
+
+from frappe.utils import formatdate
+
+# ---------------------------------------------------------
+# Get Employee Email
+# ---------------------------------------------------------
+@frappe.whitelist()
+def check_employee_email(employee):
+    emp = frappe.get_doc("Employee", employee)
+    return emp.company_email if emp.company_email else None
+
+
+# ---------------------------------------------------------
+# Send Case Closure Email
+# ---------------------------------------------------------
+@frappe.whitelist()
+def send_case_closure_email(docname):
+
+    # Load Case Closure Document
+    doc = frappe.get_doc("Case Closure", docname)
+    emp = frappe.get_doc("Employee", doc.employee_id)
+
+    # Check Email
+    final_email = emp.company_email
+    if not final_email:
+        frappe.throw("No email found for this employee.")
+
+    # Convert document to dictionary for templating
+    doc_dict = doc.as_dict()
+
+    # Add employee details
+    doc_dict["employee_name"] = emp.employee_name
+    doc_dict["employee_id"] = emp.name
+
+    # Optional closure reason field
+    doc_dict["closure_reason"] = doc.closure_reason if hasattr(doc, "closure_reason") else None
+
+    # Format all known date fields if present
+    date_fields = [
+        "date_of_enquiry",
+        "date_of_2nd_enquiry",
+        "notice_issue_date",
+        "issue_occurrence_date"
+    ]
+
+    for field in date_fields:
+        if getattr(doc, field, None):
+            doc_dict[field] = formatdate(getattr(doc, field))
+
+    # Load Email Template
+    template = frappe.get_doc("Email Template", "Case Closure Update")
+
+    # Render Email Components
+    subject = frappe.render_template(template.subject, doc_dict)
+    message = frappe.render_template(template.response_html, doc_dict)
+
+    # Send the Email
+    frappe.sendmail(
+        recipients=[final_email],
+        subject=subject,
+        message=message,
+        attachments=[],
+        reference_doctype="Case Closure",
+        reference_name=docname,
+        now=True
+    )
+
+    return "Email Sent Successfully"
