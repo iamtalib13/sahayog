@@ -580,7 +580,8 @@ fixtures = [
                                 "Suspension Process",
                                 "Domestic Enquiry Notice",
                                 "Reminder Notice of Enquiry",
-                                "Unauthorized Absence"]]]
+                                "Unauthorized Absence",
+                                "Reminder Of Unauthorized Absence"]]]
 },
   
     # Print Format fixture
