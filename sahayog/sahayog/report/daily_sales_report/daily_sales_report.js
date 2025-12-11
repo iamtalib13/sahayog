@@ -66,7 +66,38 @@ frappe.query_reports["Daily Sales Report"] = {
       report.page.fields_dict.sol_id.refresh();
     }
 
-    // SOL ID change handler - auto fetch branch
+    // ---------- FILTER UI ENHANCEMENT ----------
+
+    // Add a light background + border around filter area
+    const $form_area = report.page.wrapper.find(".page-form");
+    $form_area.css({
+      padding: "8px 10px",
+      borderRadius: "6px",
+      background: "#f9fafb",
+      border: "1px solid #e5e7eb",
+      marginBottom: "6px",
+    });
+
+    // Date field highlight on change
+    const date_field = report.page.fields_dict.date;
+    if (date_field && !date_field.__dsr_bound) {
+      date_field.df.onchange = function () {
+        let date_val = report.get_values().date;
+        if (date_val) {
+          frappe.show_alert(
+            {
+              message: __("Date changed to {0}", [date_val]),
+              indicator: "blue",
+            },
+            3
+          );
+        }
+        report.refresh();
+      };
+      date_field.__dsr_bound = true;
+    }
+
+    // SOL ID change handler - auto fetch branch + small alert
     report.page.fields_dict.sol_id.df.onchange = function () {
       let sol_id = report.get_values().sol_id;
       if (!sol_id) {
@@ -84,29 +115,22 @@ frappe.query_reports["Daily Sales Report"] = {
         callback: function (r) {
           if (r.message && r.message.branch) {
             report.set_filter_value("branch", r.message.branch);
+            frappe.show_alert(
+              {
+                message: __("Branch set to {0} for SOL {1}", [
+                  r.message.branch,
+                  sol_id,
+                ]),
+                indicator: "green",
+              },
+              3
+            );
           } else {
             report.set_filter_value("branch", "");
           }
         },
       });
     };
-
-    // Export CSV button
-    // Export CSV button
-    // Export CSV button with color
-    let export_btn = report.page.add_inner_button("Export CSV", () =>
-      frappe.query_reports["Daily Sales Report"].export_csv(report)
-    );
-
-    // style the button directly
-    export_btn
-      .removeClass("btn-default btn-secondary")
-      .addClass("btn-primary")
-      .css({
-        background: "rgb(22, 163, 74)",
-        color: "#ffffff",
-        border: "none",
-      });
 
     // Remark button click binding
     $(document).off("click", ".remark-btn");
@@ -126,6 +150,33 @@ frappe.query_reports["Daily Sales Report"] = {
         row
       );
     });
+
+    // Hover style for remark button (add only once)
+    if (!window.__dsr_hover_style__) {
+      const style = document.createElement("style");
+      style.innerHTML = `
+        .remark-btn:hover {
+          filter: brightness(1.08);
+          transform: translateY(-1px);
+        }
+      `;
+      document.head.appendChild(style);
+      window.__dsr_hover_style__ = true;
+    }
+
+    // Export CSV button
+    let export_btn = report.page.add_inner_button("Export CSV", () =>
+      frappe.query_reports["Daily Sales Report"].export_csv(report)
+    );
+
+    export_btn
+      .removeClass("btn-default btn-secondary")
+      .addClass("btn-primary")
+      .css({
+        background: "rgb(22, 163, 74)",
+        color: "#ffffff",
+        border: "none",
+      });
   },
 
   // Export CSV
@@ -231,5 +282,28 @@ frappe.query_reports["Daily Sales Report"] = {
     });
 
     dialog.show();
+  },
+
+  // Column formatter for badges
+  formatter: function (value, row, column, data, default_formatter) {
+    value = default_formatter(value, row, column, data);
+    if (!data) return value;
+
+    if (column.fieldname === "dsr_rating") {
+      let color = data.dsr_rating_color || "gray";
+      return `<span class="indicator ${color}">${frappe.utils.escape_html(
+        data.dsr_rating || ""
+      )}</span>`;
+    }
+
+    if (column.fieldname === "dsr_qualification") {
+      let color = data.dsr_qualification_color || "gray";
+      let cls = color === "green" ? "success" : "danger";
+      return `<span class="badge badge-${cls}">${frappe.utils.escape_html(
+        data.dsr_qualification || ""
+      )}</span>`;
+    }
+
+    return value;
   },
 };
