@@ -201,6 +201,12 @@ frappe.ui.form.on("Stock Entry", {
         }
 
         const to_warehouse = "to_warehouse";
+        // frappe.msgprint(
+        //   `Source Warehouse: <b>${emmr_doc.source_warehouse}</b><br>
+        //     Target Warehouse: <b>${emmr_doc.target_warehouse}</b>`
+        // );
+        frm.set_value(from_warehouse, emmr_doc.source_warehouse);
+        frm.set_value(to_warehouse, emmr_doc.target_warehouse);
 
         if (!emmr_doc.items || emmr_doc.items.length === 0) {
           frappe.msgprint("No items found in this EMMR.");
@@ -218,7 +224,7 @@ frappe.ui.form.on("Stock Entry", {
                     <th>Description</th>
                     <th>Item Category</th>
                     <th>Qty</th>
-                    <th>Actual Qty</th>
+                    <th>Actual Warehouse Qty(${emmr_doc.source_warehouse})</th>
 
                 </tr>
             </thead>
@@ -284,8 +290,6 @@ frappe.ui.form.on("Stock Entry", {
               frappe.msgprint("Please select at least one item.");
               return;
             }
-            frm.set_value(from_warehouse, emmr_doc.source_warehouse);
-            frm.set_value(to_warehouse, emmr_doc.target_warehouse);
 
             // Remove default empty first row
             if (
