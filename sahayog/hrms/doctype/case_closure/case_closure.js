@@ -45,7 +45,6 @@ frappe.ui.form.on("Case Closure", {
             "domestic_enquiry",
             "place_of_enquiry",
             "date_of_enquiry",
-            "date_of_2nd_enquiry",
             "enquiry_officer_name",
             "enquiry_status",
           ],
@@ -61,6 +60,16 @@ frappe.ui.form.on("Case Closure", {
         console.log("Fields requested:", fields_to_show);
         console.log("Fetched data:", data);
         console.groupEnd();
+
+        // Special override: For Enquiry Reminder, use date_of_2nd_enquiry
+        if (linked_enquiry_type === "Enquiry Reminder") {
+          if (data.date_of_2nd_enquiry) {
+            // Convert YYYY-MM-DD → DD-MM-YYYY for display
+            data.date_of_enquiry = frappe.datetime.str_to_user(
+              data.date_of_2nd_enquiry
+            );
+          }
+        }
 
         // Unhide & populate relevant fields
         fields_to_show.forEach((f) => {
@@ -107,50 +116,46 @@ frappe.ui.form.on("Case Closure", {
 
   refresh(frm) {
     // sent email button
-     if (!frm.is_new() && frm.doc.status === "Closed") {
+    if (!frm.is_new() && frm.doc.status === "Closed") {
+      frm.add_custom_button("Send Email", function () {
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.case_closure.case_closure.check_employee_email",
+          args: { employee: frm.doc.employee_id },
+          callback(r) {
+            let email = r.message;
 
-            frm.add_custom_button("Send Email", function () {
-
-                frappe.call({
-                    method: "sahayog.hrms.doctype.case_closure.case_closure.check_employee_email",
-                    args: { employee: frm.doc.employee_id },
-                    callback(r) {
-
-                        let email = r.message;
-
-                        if (email) {
-
-                            frappe.confirm(
-                                `Employee email found:<br><b>${email}</b><br><br>Do you want to send the Case Closure Update email?`,
-                                function () {
-
-                                    frappe.call({
-                                        method: "sahayog.hrms.doctype.case_closure.case_closure.send_case_closure_email",
-                                        args: { docname: frm.doc.name },
-                                        freeze: true,
-                                        freeze_message: __("Sending Case Closure Email..."),
-                                        callback() {
-                                            frappe.msgprint(__("Case Closure Email sent successfully!"));
-                                        }
-                                    });
-
-                                }
-                            );
-                        }
-
-                        else {
-                            frappe.msgprint({
-                                title: __("Email Not Found"),
-                                indicator: "red",
-                                message: __("No email is stored for this employee.<br>Please update the Employee record before sending the email.")
-                            });
-                        }
-                    }
-                });
-
-            });
-
-        }
+            if (email) {
+              frappe.confirm(
+                `Employee email found:<br><b>${email}</b><br><br>Do you want to send the Case Closure Update email?`,
+                function () {
+                  frappe.call({
+                    method:
+                      "sahayog.hrms.doctype.case_closure.case_closure.send_case_closure_email",
+                    args: { docname: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __("Sending Case Closure Email..."),
+                    callback() {
+                      frappe.msgprint(
+                        __("Case Closure Email sent successfully!")
+                      );
+                    },
+                  });
+                }
+              );
+            } else {
+              frappe.msgprint({
+                title: __("Email Not Found"),
+                indicator: "red",
+                message: __(
+                  "No email is stored for this employee.<br>Please update the Employee record before sending the email."
+                ),
+              });
+            }
+          },
+        });
+      });
+    }
 
     // View Case History Button
     if (!frm.is_new()) {

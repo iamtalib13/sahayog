@@ -97,7 +97,7 @@ def get_latest_linked_enquiry(case_id):
             "status_of_response",
             "domestic_enquiry",
             "place_of_enquiry",
-            "date_of_enquiry",
+            "date_of_2nd_enquiry",
             "enquiry_officer_name",
             "enquiry_status",
         ],
