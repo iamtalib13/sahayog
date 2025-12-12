@@ -123,18 +123,10 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "status_of_response",
    "fieldtype": "Data",
-   "label": "Status of Response",
-   "read_only": 1
-  },
-  {
-   "fieldname": "date_of_enquiry",
-   "fieldtype": "Date",
-   "hidden": 1,
-   "in_list_view": 1,
-   "label": "Date of Enquiry",
-   "read_only": 1
+   "label": "Status of Response"
   },
   {
    "fieldname": "enquiry_officer_name",
@@ -214,6 +206,13 @@
    "hidden": 1,
    "label": "Previous Record",
    "options": "Domestic Enquiry"
+  },
+  {
+   "fetch_from": "previous_record.date_of_enquiry",
+   "fieldname": "date_of_enquiry",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Date of Enquiry"
   }
  ],
  "grid_page_length": 50,
@@ -226,7 +225,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-11-20 16:42:25.851571",
+ "modified": "2025-12-12 12:16:42.052550",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",

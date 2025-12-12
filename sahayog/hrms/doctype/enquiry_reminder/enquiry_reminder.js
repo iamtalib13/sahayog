@@ -85,24 +85,27 @@ frappe.ui.form.on("Enquiry Reminder", {
       });
     });
   },
-
   // Validation for date_of_2nd_enquiry
   date_of_2nd_enquiry: function (frm) {
-    if (frm.doc.date_of_2nd_enquiry && frm._date_of_enquiry) {
-      const firstDate = frappe.datetime.str_to_obj(frm._date_of_enquiry);
+    if (frm.doc.date_of_2nd_enquiry && frm.doc.date_of_enquiry) {
+      const firstDate = frappe.datetime.str_to_obj(frm.doc.date_of_enquiry);
       const secondDate = frappe.datetime.str_to_obj(
         frm.doc.date_of_2nd_enquiry
       );
 
-      // Check if selected date is same or before date_of_enquiry
+      // Format 1st enquiry date for user display
+      const formattedFirstDate = frappe.datetime.obj_to_user(firstDate);
+
       if (secondDate <= firstDate) {
         frappe.msgprint({
           title: __("Invalid Date"),
-          message: __(
-            "2nd Enquiry Date must be after the 1st Enquiry Date of the related Domestic Enquiry."
-          ),
+          message:
+            "2nd Enquiry Date must be after the 1st Enquiry Date (" +
+            formattedFirstDate +
+            ") of the related Domestic Enquiry.",
           indicator: "red",
         });
+
         frm.set_value("date_of_2nd_enquiry", null);
       }
     }
