@@ -67,12 +67,21 @@ def send_reminder_enquiry_email(docname):
     message = frappe.render_template(template.response_html, doc_dict)
     subject = frappe.render_template(template.subject, doc_dict)
 
+ # Attach Print Format → **Enquiry Reminder Notice**
+    attachments = [
+        frappe.attach_print(
+            doctype="Enquiry Reminder",
+            name=docname,
+            print_format="Reminder Notice Of Enquiry",
+            file_name=f"{docname}.pdf"
+        )
+    ]
     # Send email
     frappe.sendmail(
         recipients=[final_email],
         subject=subject,
         message=message,
-        attachments=[],  
+        attachments=attachments,  
         reference_doctype="Enquiry Reminder",
         reference_name=docname,
         now=True
