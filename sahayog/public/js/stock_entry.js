@@ -249,7 +249,7 @@ frappe.ui.form.on("Stock Entry", {
 
     <div style="display: flex; align-items: center; justify-content: center; gap: 40px;">
       
-      <div style="text-align: center; width: 160px;">
+      <div style="text-align: center; width: 200px;">
         <div style="background: #dc3545; color: white; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px;">
           From (${emmr_doc.source_warehouse})
         </div>
@@ -257,9 +257,9 @@ frappe.ui.form.on("Stock Entry", {
 
       <div><i class="fa fa-arrow-right fa-lg text-muted"></i></div>
 
-      <div style="text-align: center; width: 160px;">
+      <div style="text-align: center; width: 200px;">
         <div style="background: #28a745; color: white; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px;">
-          To(${emmr_doc.target_warehouse})
+          To (${emmr_doc.target_warehouse})
         </div>
       </div>
 
