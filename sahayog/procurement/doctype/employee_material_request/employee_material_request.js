@@ -478,81 +478,180 @@ frappe.ui.form.on("Employee Material Request", {
   // ------------------------------------------------------------------
   // EMPLOYEE FIELD - Auto-populate reporting person and target location
   // ------------------------------------------------------------------
-  employee: function (frm) {
-    if (frm.doc.employee) {
-      // Fetch employee details from server
-      frappe.call({
-        method: "frappe.client.get",
-        args: {
-          doctype: "Employee",
-          name: frm.doc.employee,
-        },
-        callback: function (res) {
-          if (res.message) {
-            // Auto-set Reporting Person from employee's "reports_to" field
-            if (!frm.doc.reporting_person && res.message.reports_to) {
-              frappe.call({
-                method: "frappe.client.get_value",
-                args: {
-                  doctype: "Employee",
-                  filters: { name: res.message.reports_to },
-                  fieldname: ["user_id", "employee_name"],
-                },
-                callback: function (resp) {
-                  if (resp.message && resp.message.user_id) {
-                    frm.set_value("reporting_person", resp.message.user_id);
+  // employee: function (frm) {
+  //   if (frm.doc.employee) {
+  //     // Fetch employee details from server
+  //     frappe.call({
+  //       method: "frappe.client.get",
+  //       args: {
+  //         doctype: "Employee",
+  //         name: frm.doc.employee,
+  //       },
+  //       callback: function (res) {
+  //         if (res.message) {
+  //           // Auto-set Reporting Person from employee's "reports_to" field
+  //           if (!frm.doc.reporting_person && res.message.reports_to) {
+  //             frappe.call({
+  //               method: "frappe.client.get_value",
+  //               args: {
+  //                 doctype: "Employee",
+  //                 filters: { name: res.message.reports_to },
+  //                 fieldname: ["user_id", "employee_name"],
+  //               },
+  //               callback: function (resp) {
+  //                 if (resp.message && resp.message.user_id) {
+  //                   frm.set_value("reporting_person", resp.message.user_id);
 
-                    frappe.show_alert(
-                      {
-                        message: __("Reporting Person: {0}", [
-                          resp.message.employee_name,
-                        ]),
-                        indicator: "green",
-                      },
-                      5
-                    );
-                    frm.trigger("toggle_collapsible_section");
-                  }
-                },
-              });
-            } else {
-              frappe.show_alert(
-                "Reporting Person not set for selected Employee"
-              );
-            }
+  //                   frappe.show_alert(
+  //                     {
+  //                       message: __("Reporting Person: {0}", [
+  //                         resp.message.employee_name,
+  //                       ]),
+  //                       indicator: "green",
+  //                     },
+  //                     5
+  //                   );
+  //                   frm.trigger("toggle_collapsible_section");
+  //                 }
+  //               },
+  //             });
+  //           } else {
+  //             frappe.show_alert(
+  //               "Reporting Person not set for selected Employee"
+  //             );
+  //           }
 
-            // Auto-set Target Warehouse with Branch and State info
-            if (frm.doc.target_location) {
-              frm.set_value("target_warehouse", frm.doc.target_location);
+  //           // Auto-set Target Warehouse with Branch and State info
+  //           if (frm.doc.target_location) {
+  //             frm.set_value("target_warehouse", frm.doc.target_location);
 
-              frappe.db
-                .get_value("Sahayog Branch", frm.doc.target_location, [
-                  "branch",
-                  "state",
-                ])
-                .then((r) => {
-                  let b = r?.message?.branch || "Not Found";
-                  let s = r?.message?.state || "N/A";
+  //             frappe.db
+  //               .get_value("Sahayog Branch", frm.doc.target_location, [
+  //                 "branch",
+  //                 "state",
+  //               ])
+  //               .then((r) => {
+  //                 let b = r?.message?.branch || "Not Found";
+  //                 let s = r?.message?.state || "N/A";
 
-                  frm.set_df_property(
-                    "target_warehouse",
-                    "description",
-                    `Branch: <b>${frappe.utils.escape_html(
-                      b
-                    )}</b> | State: <b>${frappe.utils.escape_html(s)}</b>`
-                  );
-                });
-            } else {
-              frappe.show_alert(
-                "Target location not set for selected Employee"
-              );
-              frm.set_df_property("target_warehouse", "description", "");
-            }
+  //                 frm.set_df_property(
+  //                   "target_warehouse",
+  //                   "description",
+  //                   `Branch: <b>${frappe.utils.escape_html(
+  //                     b
+  //                   )}</b> | State: <b>${frappe.utils.escape_html(s)}</b>`
+  //                 );
+  //               });
+  //           } else {
+  //             frappe.show_alert(
+  //               "Target location not set for selected Employee"
+  //             );
+  //             frm.set_df_property("target_warehouse", "description", "");
+  //           }
+  //         }
+  //       },
+  //     });
+  //   }
+  // },
+
+employee: function (frm) {
+  if (frm.doc.employee) {
+    // Fetch employee details from server
+    frappe.call({
+      method: "frappe.client.get",
+      args: {
+        doctype: "Employee",
+        name: frm.doc.employee,
+      },
+      callback: function (res) {
+        if (res.message) {
+          // Fetch the user_id of the employee
+          const user_id = res.message.user_id;
+          
+          // If user_id exists, check if the user is enabled
+          if (user_id) {
+            frappe.call({
+              method: "frappe.client.get_value",
+              args: {
+                doctype: "User",
+                filters: { name: user_id },  // Use user_id instead of employee
+                fieldname: ["enabled"], // Fetch the "enabled" field
+              },
+              callback: function (user_res) {
+                if (user_res.message && user_res.message.enabled === 0) {
+                  // If the employee is not enabled, clear the employee field and show error
+                  frm.set_value("employee", "");
+                  frappe.msgprint(__("The selected employee is not active."));
+                  return; // Stop further execution if the employee is inactive
+                }
+
+                // Continue with the original functionality
+                // Auto-set Reporting Person from employee's "reports_to" field
+                if (!frm.doc.reporting_person && res.message.reports_to) {
+                  frappe.call({
+                    method: "frappe.client.get_value",
+                    args: {
+                      doctype: "Employee",
+                      filters: { name: res.message.reports_to },
+                      fieldname: ["user_id", "employee_name"],
+                    },
+                    callback: function (resp) {
+                      if (resp.message && resp.message.user_id) {
+                        frm.set_value("reporting_person", resp.message.user_id);
+
+                        frappe.show_alert({
+                          message: __("Reporting Person: {0}", [
+                            resp.message.employee_name,
+                          ]),
+                          indicator: "green",
+                        });
+
+                        frm.trigger("toggle_collapsible_section");
+                      }
+                    },
+                  });
+                } else {
+                  frappe.show_alert("Reporting Person not set for selected Employee");
+                }
+
+                // Auto-set Target Warehouse with Branch and State info
+                if (frm.doc.target_location) {
+                  frm.set_value("target_warehouse", frm.doc.target_location);
+
+                  frappe.db
+                    .get_value("Sahayog Branch", frm.doc.target_location, [
+                      "branch",
+                      "state",
+                    ])
+                    .then((r) => {
+                      let b = r?.message?.branch || "Not Found";
+                      let s = r?.message?.state || "N/A";
+
+                      frm.set_df_property(
+                        "target_warehouse",
+                        "description",
+                        `Branch: <b>${frappe.utils.escape_html(b)}</b> | State: <b>${frappe.utils.escape_html(s)}</b>`
+                      );
+                    });
+                } else {
+                  frappe.show_alert("Target location not set for selected Employee");
+                  frm.set_df_property("target_warehouse", "description", "");
+                }
+              },
+            });
+          } else {
+            // If no user_id found, show an error
+            frappe.msgprint(__("The selected employee does not have an associated user."));
+            frm.set_value("employee", "");
           }
-        },
-      });
-    }
-  },
+        }
+      },
+    });
+  }
+},
+
+
+
 
   // ------------------------------------------------------------------
   // DATE VALIDATION - Triggered when required_by_date changes
