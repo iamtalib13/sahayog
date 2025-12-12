@@ -167,6 +167,7 @@ frappe.ui.form.on("Stock Entry", {
         "custom_material_request_doctype",
         "Employee Material Request"
       );
+
       frm.add_custom_button("View EMR Items", async () => {
         // Fetch EMMR document
         const emmr_doc = await frappe.db.get_doc(
@@ -176,44 +177,67 @@ frappe.ui.form.on("Stock Entry", {
         console.log("EMMR Doc:", emmr_doc);
 
         const from_warehouse = "from_warehouse";
-        // ------------------------------------------
-        // FETCH STOCK BALANCE FOR EACH ITEM
-        // ------------------------------------------
-        let stock_balance_map = {};
+        const to_warehouse = "to_warehouse";
 
+        // -------------------------------
+        // FETCH SOURCE WAREHOUSE STOCK
+        // -------------------------------
+        let source_stock_map = {};
         try {
           const stock_res = await frappe.call({
             method:
               "sahayog.procurement.api.stock_balance_ledger.get_stock_balance_data",
             args: {
-              item_code: null, // return all
-              warehouse: emmr_doc.source_warehouse, // check qty only in FROM warehouse
+              item_code: null,
+              warehouse: emmr_doc.source_warehouse,
             },
           });
 
           if (stock_res.message && stock_res.message.data) {
             stock_res.message.data.forEach((row) => {
-              stock_balance_map[row.item_code] = row.bal_qty;
+              source_stock_map[row.item_code] = row.bal_qty;
             });
           }
         } catch (e) {
-          console.error("Failed to fetch stock balance:", e);
+          console.error("Failed to fetch SOURCE stock balance:", e);
         }
 
-        const to_warehouse = "to_warehouse";
-        // frappe.msgprint(
-        //   `Source Warehouse: <b>${emmr_doc.source_warehouse}</b><br>
-        //     Target Warehouse: <b>${emmr_doc.target_warehouse}</b>`
-        // );
+        // -------------------------------
+        // FETCH TARGET WAREHOUSE STOCK
+        // -------------------------------
+        let target_stock_map = {};
+        try {
+          const target_res = await frappe.call({
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_stock_balance_data",
+            args: {
+              item_code: null,
+              warehouse: emmr_doc.target_warehouse,
+            },
+          });
+
+          if (target_res.message && target_res.message.data) {
+            target_res.message.data.forEach((row) => {
+              target_stock_map[row.item_code] = row.bal_qty;
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch TARGET stock balance:", e);
+        }
+
+        // Set warehouses in form
         frm.set_value(from_warehouse, emmr_doc.source_warehouse);
         frm.set_value(to_warehouse, emmr_doc.target_warehouse);
 
+        // No EMR items
         if (!emmr_doc.items || emmr_doc.items.length === 0) {
           frappe.msgprint("No items found in this EMMR.");
           return;
         }
 
-        // Build HTML table
+        // -------------------------------
+        // BUILD POPUP TABLE HTML
+        // -------------------------------
         let html = `
         <table class="table table-bordered table-striped">
             <thead>
@@ -223,61 +247,59 @@ frappe.ui.form.on("Stock Entry", {
                     <th>Item</th>
                     <th>Description</th>
                     <th>Item Category</th>
+                    <th>Target Warehouse Qty (${emmr_doc.target_warehouse})</th>
                     <th>Qty</th>
-                    <th>Actual Warehouse Qty(${emmr_doc.source_warehouse})</th>
-
+                    <th>Actual Warehouse Qty (${emmr_doc.source_warehouse})</th>
                 </tr>
             </thead>
             <tbody>
-    `;
+        `;
 
-        // Serial number counter
         let sr_no = 1;
 
         emmr_doc.items.forEach((row) => {
-          // Only show items where category = Stock Item
-          if (row.item_category !== "Stock Item") {
-            return; // skip
-          }
+          if (row.item_category !== "Stock Item") return;
 
           html += `
-            <tr>
-                <td>${sr_no}</td>
-                <td>
-                    <input type="checkbox" class="emmr-check"
-                        data-item="${row.item_code}"
-                        data-description="${row.description || ""}"
-                        data-qty="${row.quantity}">
-                </td>
-                <td>${row.item_code}</td>
-                <td>${row.description || ""}</td>
-                <td>${row.item_category || ""}</td>
-                <td>${row.quantity}</td>
-                <td>${stock_balance_map[row.item_code] || 0}</td>
-
-            </tr>
-        `;
-
-          sr_no++; // increment serial number
+                <tr>
+                    <td>${sr_no}</td>
+                    <td>
+                        <input type="checkbox" class="emmr-check"
+                            data-item="${row.item_code}"
+                            data-description="${row.description || ""}"
+                            data-qty="${row.quantity}"
+                            data-sourceqty="${
+                              source_stock_map[row.item_code] || 0
+                            }"
+                            data-targetqty="${
+                              target_stock_map[row.item_code] || 0
+                            }"
+                        >
+                    </td>
+                    <td>${row.item_code}</td>
+                    <td>${row.description || ""}</td>
+                    <td>${row.item_category || ""}</td>
+                    <td>${target_stock_map[row.item_code] || 0}</td>
+                    <td>${row.quantity}</td>
+                    <td>${source_stock_map[row.item_code] || 0}</td>
+                </tr>
+            `;
+          sr_no++;
         });
 
         html += "</tbody></table>";
 
-        // Create dialog popup
+        // -------------------------------
+        // SHOW POPUP DIALOG
+        // -------------------------------
         let d = new frappe.ui.Dialog({
           title: "EMR Items",
           size: "large",
-          fields: [
-            {
-              fieldname: "items_html",
-              fieldtype: "HTML",
-            },
-          ],
+          fields: [{ fieldname: "items_html", fieldtype: "HTML" }],
           primary_action_label: "Add Selected Items",
           primary_action() {
             let selected = [];
 
-            // Read checkboxes inside THIS dialog
             d.$wrapper.find(".emmr-check:checked").each(function () {
               selected.push({
                 item_code: $(this).data("item"),
@@ -291,7 +313,6 @@ frappe.ui.form.on("Stock Entry", {
               return;
             }
 
-            // Remove default empty first row
             if (
               frm.doc.items &&
               frm.doc.items.length === 1 &&
@@ -300,26 +321,21 @@ frappe.ui.form.on("Stock Entry", {
               frm.doc.items = [];
             }
 
-            // Already added item codes
             let existing_items = (frm.doc.items || []).map((i) => i.item_code);
             let duplicate_items = [];
 
-            // Insert items into Stock Entry child table
+            // Insert selected items
             selected.forEach((row) => {
               if (existing_items.includes(row.item_code)) {
                 duplicate_items.push(row.item_code);
-                return; // skip duplicate
+                return;
               }
 
               let child = frm.add_child("items");
               child.item_code = row.item_code;
               child.qty = row.qty;
-
-              // Add your required defaults
               child.transfer_qty = 1;
               child.conversion_factor = 1.0;
-
-              // If qty_as_per_stock_uom exists, set it too:
               child.qty_as_per_stock_uom = child.qty * child.conversion_factor;
 
               existing_items.push(row.item_code);
@@ -328,12 +344,11 @@ frappe.ui.form.on("Stock Entry", {
             frm.refresh_field("items");
             d.hide();
 
-            // Notify user
             if (duplicate_items.length > 0) {
               frappe.msgprint(`
-                    The following items were NOT added because they already exist:<br><br>
-                    <b>${duplicate_items.join(", ")}</b>
-                `);
+                        The following items were NOT added because they already exist:<br><br>
+                        <b>${duplicate_items.join(", ")}</b>
+                    `);
             } else {
               frappe.show_alert("Selected items added successfully.");
             }
