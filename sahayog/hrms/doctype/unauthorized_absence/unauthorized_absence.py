@@ -51,17 +51,15 @@ def send_unauthorized_absence_email(docname):
     if not final_email:
         frappe.throw("No email found for this employee.")
 
-    # Prepare attachments
-    attachments = []
-    if doc_dict.get("document_upload"):
-        try:
-            file_doc = frappe.get_doc("File", {"file_url": doc_dict["document_upload"]})
-            attachments.append({
-                "fname": file_doc.file_name,
-                "fcontent": file_doc.get_content()
-            })
-        except Exception as e:
-            frappe.log_error(f"Attachment Error: {str(e)}", "Unauthorized Absence Email")
+  # Attach Print Format → **Unauthorized Absence Notice**
+    attachments = [
+        frappe.attach_print(
+            doctype="Unauthorized Absence",
+            name=docname,
+            print_format="Unauthorized Absence",
+            file_name=f"{docname}.pdf"
+        )
+    ]
 
     # Send Email
     frappe.sendmail(
