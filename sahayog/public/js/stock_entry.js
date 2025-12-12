@@ -178,7 +178,9 @@ frappe.ui.form.on("Stock Entry", {
         const from_warehouse = "from_warehouse";
         const to_warehouse = "to_warehouse";
 
-        // Fetch source warehouse stock
+        // -------------------------------
+        // FETCH SOURCE WAREHOUSE STOCK
+        // -------------------------------
         let source_stock_map = {};
         try {
           const stock_res = await frappe.call({
@@ -199,7 +201,9 @@ frappe.ui.form.on("Stock Entry", {
           console.error("Failed to fetch source stock:", e);
         }
 
-        // Fetch target warehouse stock
+        // -------------------------------
+        // FETCH TARGET WAREHOUSE STOCK
+        // -------------------------------
         let target_stock_map = {};
         try {
           const target_res = await frappe.call({
@@ -229,56 +233,37 @@ frappe.ui.form.on("Stock Entry", {
           return;
         }
 
-        // Build HTML
+        // -------------------------------
+        // BUILD POPUP HTML
+        // -------------------------------
         let html = `
-    <!-- Transfer Direction Header -->
+<!-- Transfer Direction Section -->
 <div style="margin-bottom: 20px;">
   <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
     
-    <!-- Title -->
     <div style="text-align: center; margin-bottom: 12px;">
       <h4 style="margin: 0; color: #495057; font-size: 0.90rem;">
-        <i class="fa fa-exchange-alt text-primary"></i> Transfer Direction
+        Transfer Direction
       </h4>
     </div>
 
-    <!-- Warehouse Direction Row -->
     <div style="display: flex; align-items: center; justify-content: center; gap: 40px;">
-
-      <!-- FROM BOX -->
+      
       <div style="text-align: center; width: 160px;">
-        <div style="
-          background: #dc3545;
-          color: white;
-          padding: 6px 10px;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 12px;
-        ">
+        <div style="background: #dc3545; color: white; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px;">
           From
-          <div style="font-size: 11px; color: #ffffff; margin-top: 3px;">
+          <div style="font-size: 11px; margin-top: 3px;">
             ${emmr_doc.source_warehouse}
           </div>
         </div>
       </div>
 
-      <!-- Arrow -->
-      <div>
-        <i class="fa fa-arrow-right fa-lg text-muted"></i>
-      </div>
+      <div><i class="fa fa-arrow-right fa-lg text-muted"></i></div>
 
-      <!-- TO BOX -->
       <div style="text-align: center; width: 160px;">
-        <div style="
-          background: #28a745;
-          color: white;
-          padding: 6px 10px;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 12px;
-        ">
+        <div style="background: #28a745; color: white; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px;">
           To
-          <div style="font-size: 11px; color: #ffffff; margin-top: 3px;">
+          <div style="font-size: 11px; margin-top: 3px;">
             ${emmr_doc.target_warehouse}
           </div>
         </div>
@@ -289,25 +274,23 @@ frappe.ui.form.on("Stock Entry", {
   </div>
 </div>
 
-    </div>
-
-    <!-- Items Table -->
-    <table class="table table-hover table-sm" style="font-size: 13px;">
-      <thead style="background: #4a6fa5; color: white;">
-        <tr>
-          <th style="width: 40px;">#</th>
-          <th style="width: 50px; text-align: center;">
-            <i class="fa fa-check"></i>
-          </th>
-          <th>Item</th>
-          <th style="width: 100px;">Stock Type</th>
-          <th style="width: 120px;">Source Stock</th>
-          <th style="width: 100px;">Transfer Qty</th>
-          <th style="width: 120px;">Target Stock</th>
-        </tr>
-      </thead>
-      <tbody>
-    `;
+<!-- ITEMS TABLE -->
+<table class="table table-hover table-sm" style="font-size: 13px;">
+  <thead style="background: #4a6fa5; color: white;">
+    <tr>
+      <th style="width: 40px;">#</th>
+      <th style="width: 50px; text-align: center;">
+        <i class="fa fa-check"></i>
+      </th>
+      <th>Item</th>
+      <th style="width: 100px;">Stock Type</th>
+      <th style="width: 120px;">Source Stock</th>
+      <th style="width: 100px;">Transfer Qty</th>
+      <th style="width: 120px;">Target Stock</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
 
         let sr_no = 1;
         let stockItemCount = 0;
@@ -321,87 +304,95 @@ frappe.ui.form.on("Stock Entry", {
           const hasStock = sourceQty >= row.quantity;
 
           html += `
-        <tr>
-          <td style="font-weight: 500; color: #6c757d;">${sr_no}</td>
-          <td style="text-align: center;">
-            <input type="checkbox" class="emmr-check"
-              data-item="${row.item_code}"
-              data-description="${row.description || ""}"
-              data-qty="${row.quantity}"
-              style="cursor: pointer;"
-            >
-          </td>
-          <td>
-            <div style="font-weight: 500; color: #2c3e50;">${
-              row.item_code
-            }</div>
-            ${
-              row.description
-                ? `<div style="font-size: 12px; color: #7f8c8d;">${row.description}</div>`
-                : ""
-            }
-          </td>
-          <td>
-            <span style="display: inline-block; padding: 3px 8px; background: #e3f2fd; 
-                   color: #1565c0; border-radius: 12px; font-size: 12px; font-weight: 500;">
-              ${row.item_category || "Stock Item"}
-            </span>
-          </td>
-          <td>
-            <div style="display: flex; align-items: center;">
-              <div style="width: 8px; height: 8px; background: ${
-                hasStock ? "#28a745" : "#dc3545"
-              }; 
-                   border-radius: 50%; margin-right: 8px;"></div>
-              <div>
-                <div style="font-weight: 600; color: ${
-                  hasStock ? "#28a745" : "#dc3545"
-                };">${sourceQty}</div>
-                <div style="font-size: 11px; color: #6c757d;">Available</div>
-              </div>
-            </div>
-          </td>
-          <td style="text-align: center;">
-            <div style="font-weight: 700; color: #e17055;">${row.quantity}</div>
-            ${
-              !hasStock
-                ? '<div style="font-size: 11px; color: #dc3545;">Insufficient</div>'
-                : ""
-            }
-          </td>
-          <td>
-            <div style="font-weight: 600; color: #28a745;">${targetQty}</div>
-            <div style="font-size: 11px; color: #6c757d;">Current stock</div>
-          </td>
-        </tr>
-      `;
+<tr>
+  <td>${sr_no}</td>
+  <td style="text-align: center;">
+    <input type="checkbox" class="emmr-check"
+      data-item="${row.item_code}"
+      data-description="${row.description || ""}"
+      style="cursor: pointer;"
+    >
+  </td>
+
+  <td>
+    <div style="font-weight: 500;">${row.item_code}</div>
+    ${
+      row.description
+        ? `<div style="font-size: 12px; color: #7f8c8d;">${row.description}</div>`
+        : ""
+    }
+  </td>
+
+  <td>
+    <span style="padding: 3px 8px; background: #e3f2fd; 
+      color: #1565c0; border-radius: 12px; font-size: 12px;">
+      ${row.item_category}
+    </span>
+  </td>
+
+  <!-- SOURCE STOCK -->
+  <td>
+    <div style="display: flex; align-items: center;">
+      <div style="width: 8px; height: 8px; background: ${
+        hasStock ? "#28a745" : "#dc3545"
+      }; border-radius: 50%; margin-right: 8px;"></div>
+      <div>
+        <div style="font-weight: 600; color: ${
+          hasStock ? "#28a745" : "#dc3545"
+        };">${sourceQty}</div>
+        <div style="font-size: 11px; color: #6c757d;">Available</div>
+      </div>
+    </div>
+  </td>
+
+  <!-- EDITABLE TRANSFER QTY -->
+  <td style="text-align: center;">
+    <input 
+      type="number"
+      class="transfer-qty-input"
+      data-item="${row.item_code}"
+      value="${row.quantity}"
+      min="1"
+      style="
+        width: 70px;
+        padding: 3px 5px;
+        text-align: center;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 12px;
+      "
+    >
+    ${
+      !hasStock
+        ? '<div style="font-size: 11px; color: #dc3545;">Insufficient</div>'
+        : ""
+    }
+  </td>
+
+  <!-- TARGET STOCK -->
+  <td>
+    <div style="font-weight: 600; color: #28a745;">${targetQty}</div>
+    <div style="font-size: 11px; color: #6c757d;">Current stock</div>
+  </td>
+
+</tr>
+`;
           sr_no++;
         });
 
         html += `
-      </tbody>
-    </table>
-    
-    ${
-      stockItemCount === 0
-        ? `
-      <div style="text-align: center; padding: 40px; color: #6c757d;">
-        <i class="fa fa-box-open fa-2x" style="margin-bottom: 15px;"></i>
-        <div>No stock items found in this request</div>
-      </div>
-    `
-        : ""
-    }
-    
-    <div style="margin-top: 15px; font-size: 12px; color: #6c757d;">
-      <i class="fa fa-info-circle"></i>
-      Select items to transfer from ${emmr_doc.source_warehouse} to ${
-          emmr_doc.target_warehouse
-        }
-    </div>
-    `;
+</tbody>
+</table>
 
-        // Show dialog
+<div style="margin-top: 15px; font-size: 12px; color: #6c757d;">
+  <i class="fa fa-info-circle"></i>
+  Select items to transfer.
+</div>
+`;
+
+        // -------------------------------
+        // SHOW DIALOG
+        // -------------------------------
         let d = new frappe.ui.Dialog({
           title: `EMR Items`,
           size: "large",
@@ -414,7 +405,13 @@ frappe.ui.form.on("Stock Entry", {
               selected.push({
                 item_code: $(this).data("item"),
                 description: $(this).data("description"),
-                qty: $(this).data("qty"),
+
+                // NEW: GET EDITED TRANSFER QTY
+                qty: d.$wrapper
+                  .find(
+                    `.transfer-qty-input[data-item="${$(this).data("item")}"]`
+                  )
+                  .val(),
               });
             });
 
@@ -423,7 +420,7 @@ frappe.ui.form.on("Stock Entry", {
               return;
             }
 
-            // Clear empty row if exists
+            // Remove empty first row if exists
             if (
               frm.doc.items &&
               frm.doc.items.length === 1 &&
@@ -435,8 +432,14 @@ frappe.ui.form.on("Stock Entry", {
             let existing_items = (frm.doc.items || []).map((i) => i.item_code);
             let duplicate_items = [];
 
-            // Add selected items
             selected.forEach((row) => {
+              row.qty = Number(row.qty);
+
+              if (!row.qty || row.qty <= 0) {
+                frappe.msgprint("Transfer Qty must be greater than 0.");
+                return;
+              }
+
               if (existing_items.includes(row.item_code)) {
                 duplicate_items.push(row.item_code);
                 return;
@@ -445,9 +448,9 @@ frappe.ui.form.on("Stock Entry", {
               let child = frm.add_child("items");
               child.item_code = row.item_code;
               child.qty = row.qty;
-              child.transfer_qty = 1;
+              child.transfer_qty = row.qty;
               child.conversion_factor = 1.0;
-              child.qty_as_per_stock_uom = child.qty * child.conversion_factor;
+              child.qty_as_per_stock_uom = row.qty;
 
               existing_items.push(row.item_code);
             });
@@ -455,12 +458,10 @@ frappe.ui.form.on("Stock Entry", {
             frm.refresh_field("items");
             d.hide();
 
-            if (duplicate_items.length > 0) {
-              frappe.msgprint(`
-            <div>
-              <strong>Already Added:</strong> ${duplicate_items.join(", ")}
-            </div>
-          `);
+            if (duplicate_items.length) {
+              frappe.msgprint(
+                `<b>Already Added:</b> ${duplicate_items.join(", ")}`
+              );
             }
 
             frappe.show_alert(`Added ${selected.length} item(s)`);
@@ -468,17 +469,6 @@ frappe.ui.form.on("Stock Entry", {
         });
 
         d.fields_dict.items_html.$wrapper.html(html);
-
-        // Clean dialog styling
-        d.$wrapper.find(".modal-content").css({
-          "border-radius": "8px",
-        });
-
-        d.$wrapper.find(".modal-header").css({
-          background: "#f8f9fa",
-          "border-bottom": "1px solid #dee2e6",
-        });
-
         d.show();
       });
     }
