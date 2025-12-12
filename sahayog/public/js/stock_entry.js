@@ -174,14 +174,11 @@ frappe.ui.form.on("Stock Entry", {
           "Employee Material Request",
           frm.doc.custom_material_request
         );
-        console.log("EMMR Doc:", emmr_doc);
 
         const from_warehouse = "from_warehouse";
         const to_warehouse = "to_warehouse";
 
-        // -------------------------------
-        // FETCH SOURCE WAREHOUSE STOCK
-        // -------------------------------
+        // Fetch source warehouse stock
         let source_stock_map = {};
         try {
           const stock_res = await frappe.call({
@@ -193,18 +190,16 @@ frappe.ui.form.on("Stock Entry", {
             },
           });
 
-          if (stock_res.message && stock_res.message.data) {
+          if (stock_res.message?.data) {
             stock_res.message.data.forEach((row) => {
               source_stock_map[row.item_code] = row.bal_qty;
             });
           }
         } catch (e) {
-          console.error("Failed to fetch SOURCE stock balance:", e);
+          console.error("Failed to fetch source stock:", e);
         }
 
-        // -------------------------------
-        // FETCH TARGET WAREHOUSE STOCK
-        // -------------------------------
+        // Fetch target warehouse stock
         let target_stock_map = {};
         try {
           const target_res = await frappe.call({
@@ -216,84 +211,199 @@ frappe.ui.form.on("Stock Entry", {
             },
           });
 
-          if (target_res.message && target_res.message.data) {
+          if (target_res.message?.data) {
             target_res.message.data.forEach((row) => {
               target_stock_map[row.item_code] = row.bal_qty;
             });
           }
         } catch (e) {
-          console.error("Failed to fetch TARGET stock balance:", e);
+          console.error("Failed to fetch target stock:", e);
         }
 
         // Set warehouses in form
         frm.set_value(from_warehouse, emmr_doc.source_warehouse);
         frm.set_value(to_warehouse, emmr_doc.target_warehouse);
 
-        // No EMR items
-        if (!emmr_doc.items || emmr_doc.items.length === 0) {
+        if (!emmr_doc.items?.length) {
           frappe.msgprint("No items found in this EMMR.");
           return;
         }
 
-        // -------------------------------
-        // BUILD POPUP TABLE HTML
-        // -------------------------------
+        // Build HTML
         let html = `
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Select</th>
-                    <th>Item</th>
-                    <th>Description</th>
-                    <th>Item Category</th>
-                    <th>Target Warehouse Qty (${emmr_doc.target_warehouse})</th>
-                    <th>Qty</th>
-                    <th>Actual Warehouse Qty (${emmr_doc.source_warehouse})</th>
-                </tr>
-            </thead>
-            <tbody>
-        `;
+    <!-- Transfer Direction Header -->
+<div style="margin-bottom: 20px;">
+  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
+    
+    <!-- Title -->
+    <div style="text-align: center; margin-bottom: 12px;">
+      <h4 style="margin: 0; color: #495057; font-size: 0.90rem;">
+        <i class="fa fa-exchange-alt text-primary"></i> Transfer Direction
+      </h4>
+    </div>
+
+    <!-- Warehouse Direction Row -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 40px;">
+
+      <!-- FROM BOX -->
+      <div style="text-align: center; width: 160px;">
+        <div style="
+          background: #dc3545;
+          color: white;
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 12px;
+        ">
+          From
+          <div style="font-size: 11px; color: #ffffff; margin-top: 3px;">
+            ${emmr_doc.source_warehouse}
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div>
+        <i class="fa fa-arrow-right fa-lg text-muted"></i>
+      </div>
+
+      <!-- TO BOX -->
+      <div style="text-align: center; width: 160px;">
+        <div style="
+          background: #28a745;
+          color: white;
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 12px;
+        ">
+          To
+          <div style="font-size: 11px; color: #ffffff; margin-top: 3px;">
+            ${emmr_doc.target_warehouse}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+    </div>
+
+    <!-- Items Table -->
+    <table class="table table-hover table-sm" style="font-size: 13px;">
+      <thead style="background: #4a6fa5; color: white;">
+        <tr>
+          <th style="width: 40px;">#</th>
+          <th style="width: 50px; text-align: center;">
+            <i class="fa fa-check"></i>
+          </th>
+          <th>Item</th>
+          <th style="width: 100px;">Stock Type</th>
+          <th style="width: 120px;">Source Stock</th>
+          <th style="width: 100px;">Transfer Qty</th>
+          <th style="width: 120px;">Target Stock</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
 
         let sr_no = 1;
+        let stockItemCount = 0;
 
         emmr_doc.items.forEach((row) => {
           if (row.item_category !== "Stock Item") return;
+          stockItemCount++;
+
+          const sourceQty = source_stock_map[row.item_code] || 0;
+          const targetQty = target_stock_map[row.item_code] || 0;
+          const hasStock = sourceQty >= row.quantity;
 
           html += `
-                <tr>
-                    <td>${sr_no}</td>
-                    <td>
-                        <input type="checkbox" class="emmr-check"
-                            data-item="${row.item_code}"
-                            data-description="${row.description || ""}"
-                            data-qty="${row.quantity}"
-                            data-sourceqty="${
-                              source_stock_map[row.item_code] || 0
-                            }"
-                            data-targetqty="${
-                              target_stock_map[row.item_code] || 0
-                            }"
-                        >
-                    </td>
-                    <td>${row.item_code}</td>
-                    <td>${row.description || ""}</td>
-                    <td>${row.item_category || ""}</td>
-                    <td>${target_stock_map[row.item_code] || 0}</td>
-                    <td>${row.quantity}</td>
-                    <td>${source_stock_map[row.item_code] || 0}</td>
-                </tr>
-            `;
+        <tr>
+          <td style="font-weight: 500; color: #6c757d;">${sr_no}</td>
+          <td style="text-align: center;">
+            <input type="checkbox" class="emmr-check"
+              data-item="${row.item_code}"
+              data-description="${row.description || ""}"
+              data-qty="${row.quantity}"
+              style="cursor: pointer;"
+            >
+          </td>
+          <td>
+            <div style="font-weight: 500; color: #2c3e50;">${
+              row.item_code
+            }</div>
+            ${
+              row.description
+                ? `<div style="font-size: 12px; color: #7f8c8d;">${row.description}</div>`
+                : ""
+            }
+          </td>
+          <td>
+            <span style="display: inline-block; padding: 3px 8px; background: #e3f2fd; 
+                   color: #1565c0; border-radius: 12px; font-size: 12px; font-weight: 500;">
+              ${row.item_category || "Stock Item"}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center;">
+              <div style="width: 8px; height: 8px; background: ${
+                hasStock ? "#28a745" : "#dc3545"
+              }; 
+                   border-radius: 50%; margin-right: 8px;"></div>
+              <div>
+                <div style="font-weight: 600; color: ${
+                  hasStock ? "#28a745" : "#dc3545"
+                };">${sourceQty}</div>
+                <div style="font-size: 11px; color: #6c757d;">Available</div>
+              </div>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <div style="font-weight: 700; color: #e17055;">${row.quantity}</div>
+            ${
+              !hasStock
+                ? '<div style="font-size: 11px; color: #dc3545;">Insufficient</div>'
+                : ""
+            }
+          </td>
+          <td>
+            <div style="font-weight: 600; color: #28a745;">${targetQty}</div>
+            <div style="font-size: 11px; color: #6c757d;">Current stock</div>
+          </td>
+        </tr>
+      `;
           sr_no++;
         });
 
-        html += "</tbody></table>";
+        html += `
+      </tbody>
+    </table>
+    
+    ${
+      stockItemCount === 0
+        ? `
+      <div style="text-align: center; padding: 40px; color: #6c757d;">
+        <i class="fa fa-box-open fa-2x" style="margin-bottom: 15px;"></i>
+        <div>No stock items found in this request</div>
+      </div>
+    `
+        : ""
+    }
+    
+    <div style="margin-top: 15px; font-size: 12px; color: #6c757d;">
+      <i class="fa fa-info-circle"></i>
+      Select items to transfer from ${emmr_doc.source_warehouse} to ${
+          emmr_doc.target_warehouse
+        }
+    </div>
+    `;
 
-        // -------------------------------
-        // SHOW POPUP DIALOG
-        // -------------------------------
+        // Show dialog
         let d = new frappe.ui.Dialog({
-          title: "EMR Items",
+          title: `EMR Items`,
           size: "large",
           fields: [{ fieldname: "items_html", fieldtype: "HTML" }],
           primary_action_label: "Add Selected Items",
@@ -313,6 +423,7 @@ frappe.ui.form.on("Stock Entry", {
               return;
             }
 
+            // Clear empty row if exists
             if (
               frm.doc.items &&
               frm.doc.items.length === 1 &&
@@ -324,7 +435,7 @@ frappe.ui.form.on("Stock Entry", {
             let existing_items = (frm.doc.items || []).map((i) => i.item_code);
             let duplicate_items = [];
 
-            // Insert selected items
+            // Add selected items
             selected.forEach((row) => {
               if (existing_items.includes(row.item_code)) {
                 duplicate_items.push(row.item_code);
@@ -346,16 +457,28 @@ frappe.ui.form.on("Stock Entry", {
 
             if (duplicate_items.length > 0) {
               frappe.msgprint(`
-                        The following items were NOT added because they already exist:<br><br>
-                        <b>${duplicate_items.join(", ")}</b>
-                    `);
-            } else {
-              frappe.show_alert("Selected items added successfully.");
+            <div>
+              <strong>Already Added:</strong> ${duplicate_items.join(", ")}
+            </div>
+          `);
             }
+
+            frappe.show_alert(`Added ${selected.length} item(s)`);
           },
         });
 
         d.fields_dict.items_html.$wrapper.html(html);
+
+        // Clean dialog styling
+        d.$wrapper.find(".modal-content").css({
+          "border-radius": "8px",
+        });
+
+        d.$wrapper.find(".modal-header").css({
+          background: "#f8f9fa",
+          "border-bottom": "1px solid #dee2e6",
+        });
+
         d.show();
       });
     }
