@@ -31,11 +31,105 @@ frappe.query_reports["Case History"] = {
   ],
 
   onload: function (report) {
-    // Hide Case Details Message
+    // ------------------------------
+    // HIDE CASE DETAILS
+    // ------------------------------
     function hide_case_details() {
-      $(".report-message").hide(); // hides the HTML message box
+      $(".report-message").hide();
     }
-    // Clear Filter button (WORKING)
+
+    // =====================================================
+    // ✅ ADD REVIEW BUTTON (MOVED TO TOP)
+    // =====================================================
+    report.page
+      .add_inner_button(__("Add Review"), function () {
+        const case_id = report.get_filter_value("case_id");
+        if (!case_id) {
+          frappe.msgprint(__("Please select a Case ID."));
+          return;
+        }
+
+        frappe.call({
+          method:
+            "sahayog.hrms.doctype.case_closure.case_closure.get_employee_from_user",
+          callback: function (r) {
+            const employee_id = r.message;
+            if (!employee_id) {
+              frappe.msgprint("No Employee linked with your user.");
+              return;
+            }
+
+            frappe.call({
+              method:
+                "sahayog.hrms.doctype.case_closure.case_closure.case_history_can_review",
+              args: { case_id, reviewer: employee_id },
+              callback: function (res) {
+                if (!res.message) {
+                  frappe.msgprint(
+                    __("You are not assigned as a reviewer for this case.")
+                  );
+                  return;
+                }
+
+                let d = new frappe.ui.Dialog({
+                  title: __("Add Review"),
+                  fields: [
+                    {
+                      fieldname: "remarks",
+                      fieldtype: "Small Text",
+                      label: __("Remarks"),
+                      reqd: 1,
+                    },
+                  ],
+                  primary_action_label: __("Submit"),
+                  primary_action(values) {
+                    const remarks = values.remarks;
+                    if (!remarks) {
+                      frappe.msgprint(__("Please enter remarks"));
+                      return;
+                    }
+
+                    frappe.call({
+                      method:
+                        "sahayog.hrms.doctype.case_closure.case_closure.case_history_submit_review",
+                      args: {
+                        case_id: case_id,
+                        reviewer: employee_id,
+                        remarks: remarks,
+                      },
+                      freeze: true,
+                      freeze_message: __("Submitting review..."),
+                      callback: function (r) {
+                        if (r.message === true) {
+                          frappe.msgprint(__("Review submitted successfully"));
+                          d.hide();
+
+                          // ✅ HIDE ADD REVIEW BUTTON AFTER SUBMISSION
+                          report.page.wrapper
+                            .find('.btn-primary:contains("Add Review")')
+                            .hide();
+
+                          // ✅ REMOVE BLINKING ACTION REQUIRED MESSAGE
+                          $(".review-hint").remove();
+
+                          report.refresh();
+                        }
+                      },
+                    });
+                  },
+                });
+
+                d.show();
+              },
+            });
+          },
+        });
+      })
+      .addClass("btn-primary");
+
+    // =====================================================
+    // CLEAR FILTER
+    // =====================================================
     report.page
       .add_inner_button(__("Clear Filter"), function () {
         // Reset all filter fields manually
@@ -45,35 +139,93 @@ frappe.query_reports["Case History"] = {
           sort_by: "Creation Date",
           show_versions: 1,
         });
-        hide_case_details(); // ⬅️ hide message on clear filter
-        // Refresh report after resetting
+        hide_case_details();
         report.refresh();
       })
       .addClass("btn-secondary");
 
-    // Export button
+    // EXPORT
     report.page
       .add_inner_button(__("Export to Excel"), function () {
         report.export_report();
       })
       .addClass("btn-primary");
 
-    // Refresh button
+    // REFRESH
     report.page.set_secondary_action(__("Refresh"), function () {
       report.refresh();
     });
-    // --- Hide Case Details When case_id becomes empty ---
+
+    // Hide message if no case
     report.on_filter_change = function () {
       let case_id = report.get_filter_value("case_id");
-
-      if (!case_id) {
-        $(".report-message").hide(); // Hide when empty
-      } else {
-        $(".report-message").show(); // Show when selected
-      }
+      if (!case_id) $(".report-message").hide();
+      else $(".report-message").show();
     };
+
+    // ------------------------------
+    // AUTO REVIEW HINT
+    // ------------------------------
+    frappe.after_ajax(() => {
+      const case_id = report.get_filter_value("case_id");
+      if (!case_id) return;
+
+      frappe.call({
+        method:
+          "sahayog.hrms.doctype.case_closure.case_closure.get_employee_from_user",
+        callback: function (r) {
+          const employee_id = r.message;
+          if (!employee_id) return;
+
+          frappe.call({
+            method:
+              "sahayog.hrms.doctype.case_closure.case_closure.reviewer_pending_review",
+            args: { case_id, reviewer: employee_id },
+            callback: function (res) {
+              if (res.message) {
+                show_review_hint(report);
+              }
+            },
+          });
+        },
+      });
+    });
+
+    // ------------------------------
+    // CSS (ONCE)
+    // ------------------------------
+    if (!$("#review-hint-style").length) {
+      $("<style id='review-hint-style'>")
+        .html(
+          `
+          @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+          }
+          .review-hint {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            animation: blink 1.5s infinite;
+          }
+          .pulse-btn {
+            animation: pulse 1.5s infinite;
+          }
+          @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255,0,0,0.6); }
+            70% { box-shadow: 0 0 0 10px rgba(255,0,0,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,0,0,0); }
+          }
+        `
+        )
+        .appendTo("head");
+    }
   },
 
+  // ------------------------------
+  // FORMATTER & DATATABLE (UNCHANGED)
+  // ------------------------------
   formatter: function (value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
 
@@ -82,25 +234,14 @@ frappe.query_reports["Case History"] = {
       data.doctype_name === "Disciplinary Case" &&
       column.fieldname === "doctype_name"
     ) {
-      value = `<span style="color: #2196f3; font-weight: bold;">🔷 ${value}</span>`;
+      value = `<b style="color:#2196f3;">🔷 ${value}</b>`;
     }
+
     if (column.fieldname === "status") {
       if (data.status === "Pending") {
-        value = `<span style="
-      color: #ff9800; 
-      font-weight: bold;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: #fff3e0;
-    ">${value}</span>`;
+        value = `<span style="color:#ff9800;font-weight:bold;">${value}</span>`;
       } else if (data.status === "Completed") {
-        value = `<span style="
-      color: #4caf50; 
-      font-weight: bold;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: #e8f5e9;
-    ">${value}</span>`;
+        value = `<span style="color:#4caf50;font-weight:bold;">${value}</span>`;
       }
     }
 
@@ -143,27 +284,38 @@ frappe.query_reports["Case History"] = {
 
   get_datatable_options(options) {
     return Object.assign(options, {
+      escape: false,
       checkboxColumn: false,
       escape: false, // ✅ Allow HTML rendering
       events: {
-        onClick: function (cell, rowIndex, colIndex, e) {
-          if (!cell || !cell.row || !cell.row.doc) return;
-          const data = cell.row.doc;
-          const column = cell.column && cell.column.fieldname;
-
-          // 🚫 Block clicks on Not Created rows
-          if (data.name === "Not Created") {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-          }
-
-          // ✅ Open valid records when clicked
-          if (column === "name" && data.name && data.name !== "Not Created") {
-            frappe.set_route("Form", data.doctype_name, data.name);
+        onClick(cell) {
+          if (!cell?.row?.doc) return;
+          const d = cell.row.doc;
+          if (cell.column.fieldname === "name" && d.name !== "Not Created") {
+            frappe.set_route("Form", d.doctype_name, d.name);
           }
         },
       },
     });
   },
 };
+
+// ------------------------------
+// REVIEW HINT FUNCTION
+// ------------------------------
+function show_review_hint(report) {
+  if ($(".review-hint").length) return;
+
+  report.page.wrapper.prepend(`
+    <div class="alert alert-warning review-hint">
+      🔔 <b>Action Required:</b> You are assigned as a reviewer.
+      Please click <b>Add Review</b> to submit remarks.
+    </div>
+  `);
+
+  setTimeout(() => {
+    report.page.wrapper
+      .find('.btn-primary:contains("Add Review")')
+      .addClass("pulse-btn");
+  }, 500);
+}
