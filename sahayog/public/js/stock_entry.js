@@ -238,7 +238,7 @@ frappe.ui.form.on("Stock Entry", {
         margin: 10px 0;
       ">
         <div style="text-align:center; font-weight:600; margin-bottom:6px; color:#495057;">
-          Transfer DirectionN
+          Transfer Direction
         </div>
 
         <div style="display:flex; justify-content:center; gap:40px;">
