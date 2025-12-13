@@ -7,7 +7,7 @@ def get_lead_permission(user, doctype=None):
     user_roles = frappe.get_roles(user)
     
     # Allow full access for these roles
-    if "Administrator" in user_roles or "Sales Manager" in user_roles:
+    if "Administrator" in user_roles or "Sales Manager" in user_roles or "Operations Support Manager" in user_roles:
         return ""
 
     conditions = []
