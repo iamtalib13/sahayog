@@ -1,6 +1,7 @@
 import frappe
 import json
 from frappe.model.document import Document
+from frappe.utils import now_datetime
 from sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting import (
     email_notification_enabled
 )
@@ -343,3 +344,67 @@ def send_case_closure_email(docname):
     )
 
     return "Email Sent Successfully"
+
+
+
+@frappe.whitelist()
+def get_employee_from_user():
+    """Return Employee ID linked to logged-in user"""
+    emp = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    )
+    return emp
+
+
+@frappe.whitelist()
+def case_history_can_review(case_id, reviewer):
+    """Check if logged-in employee is assigned as reviewer"""
+    cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+    for r in cc_doc.get("review_details"):
+        if r.employee_id == reviewer:
+            return True
+    return False
+
+
+@frappe.whitelist()
+def reviewer_pending_review(case_id, reviewer):
+    """Check if reviewer exists AND remarks not yet submitted"""
+    cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+    for r in cc_doc.get("review_details"):
+        if r.employee_id == reviewer:
+            return not bool(r.remarks)
+    return False
+@frappe.whitelist()
+def case_history_submit_review(case_id, reviewer, remarks):
+    try:
+        if not case_id or not reviewer or not remarks:
+            frappe.throw("Missing required values")
+
+        cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+
+        reviewer_row = None
+        for row in cc_doc.review_details:
+            if row.employee_id == reviewer:
+                reviewer_row = row
+                break
+
+        if not reviewer_row:
+            frappe.throw("You are not assigned as reviewer for this case")
+
+        reviewer_row.remarks = remarks
+        reviewer_row.status = "Submitted"   # ✅ VALID VALUE
+        reviewer_row.date_and_time = frappe.utils.now()
+
+        cc_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return True
+
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(),
+            "Case History Review Submit Error"
+        )
+        frappe.throw("Unable to submit review")
