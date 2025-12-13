@@ -227,6 +227,61 @@ frappe.ui.form.on("Stock Entry", {
         // Set warehouses in form
         frm.set_value(from_warehouse, emmr_doc.source_warehouse);
         frm.set_value(to_warehouse, emmr_doc.target_warehouse);
+        frm.dashboard.clear_headline();
+
+        frm.dashboard.set_headline(`
+      <div style="
+        background: #f8f9fa; 
+        padding: 12px; 
+        border-radius: 8px; 
+        border: 1px solid #dee2e6;
+        margin: 10px 0;
+      ">
+        <div style="text-align:center; font-weight:600; margin-bottom:6px; color:#495057;">
+          Transfer Direction
+        </div>
+
+        <div style="display:flex; justify-content:center; gap:40px;">
+
+          <div style="text-align:center;">
+            <div style="
+              background:#dc3545;
+              color:white;
+              padding:6px 12px;
+              border-radius:6px;
+              font-size:12px;
+              font-weight:600;
+              min-width:140px;
+            ">
+              From
+              <div style="font-size:11px; margin-top:3px;">
+                ${emmr_doc.source_warehouse}
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:18px; color:#6c757d;">➜</div>
+
+          <div style="text-align:center;">
+            <div style="
+              background:#28a745;
+              color:white;
+              padding:6px 12px;
+              border-radius:6px;
+              font-size:12px;
+              font-weight:600;
+              min-width:140px;
+            ">
+              To
+              <div style="font-size:11px; margin-top:3px;">
+                ${emmr_doc.target_warehouse}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `);
 
         if (!emmr_doc.items?.length) {
           frappe.msgprint("No items found in this EMMR.");
