@@ -3,15 +3,21 @@
 
 frappe.query_reports["Employee Activity Summary"] = {
   filters: [
+    // {
+    //   fieldname: "from_date",
+    //   label: __("From Date"),
+    //   fieldtype: "Date",
+    //   default: frappe.datetime.get_today(),
+    // },
+    // {
+    //   fieldname: "to_date",
+    //   label: __("To Date"),
+    //   fieldtype: "Date",
+    //   default: frappe.datetime.get_today(),
+    // },
     {
-      fieldname: "from_date",
-      label: __("From Date"),
-      fieldtype: "Date",
-      default: frappe.datetime.get_today(),
-    },
-    {
-      fieldname: "to_date",
-      label: __("To Date"),
+      fieldname: "selected_date", // ← CHANGED from "from_date"
+      label: __("Select Date"), // ← CHANGED label
       fieldtype: "Date",
       default: frappe.datetime.get_today(),
     },
