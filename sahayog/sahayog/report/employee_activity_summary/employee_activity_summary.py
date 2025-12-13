@@ -5,7 +5,7 @@ from frappe.utils import getdate, nowdate
 
 
 # ---------------------------------------------------------
-# NORMALIZE EMPLOYEE ID  (NT7177 → 7177)
+# NORMALIZE EMPLOYEE ID (NT7177 → 7177)
 # ---------------------------------------------------------
 def normalize_emp_id(emp_id):
     """Return only numeric part from employee ID (e.g., NT7177 → 7177)."""
@@ -36,7 +36,6 @@ def get_columns():
             "fieldtype": "Data",
             "width": 200,
         },
-        # Status column (HTML)
         {
             "label": "Status",
             "fieldname": "status_html",
@@ -79,18 +78,24 @@ def get_columns():
             "fieldtype": "Data",
             "width": 120,
         },
-        {
-            "label": "Joining Date",
-            "fieldname": "date_of_joining",
-            "fieldtype": "Date",
-            "width": 120,
-        },
-        {
-            "label": "Days Since Joining",
-            "fieldname": "days_since_joining",
-            "fieldtype": "Int",
-            "width": 130,
-        },
+        # {
+        #     "label": "Joining Date",
+        #     "fieldname": "date_of_joining",
+        #     "fieldtype": "Date",
+        #     "width": 120,
+        # },
+        # {
+        #     "label": "Employee Creation Date",
+        #     "fieldname": "creation_date",
+        #     "fieldtype": "Date",
+        #     "width": 140,
+        # },
+        # {
+        #     "label": "Days Since Joining",
+        #     "fieldname": "days_since_joining",
+        #     "fieldtype": "Int",
+        #     "width": 130,
+        # },
         {
             "label": "Total Leads",
             "fieldname": "lead_count",
@@ -104,31 +109,26 @@ def get_columns():
 # DATA LOGIC
 # ---------------------------------------------------------
 def get_data(filters=None):
-    # Convert date strings
+    # Convert date filter to proper date object
     if filters:
-        if filters.get("from_date") and isinstance(filters["from_date"], str):
-            filters["from_date"] = datetime.datetime.strptime(
-                filters["from_date"], "%Y-%m-%d"
-            ).date()
-        if filters.get("to_date") and isinstance(filters["to_date"], str):
-            filters["to_date"] = datetime.datetime.strptime(
-                filters["to_date"], "%Y-%m-%d"
+        if filters.get("selected_date") and isinstance(filters["selected_date"], str):
+            filters["selected_date"] = datetime.datetime.strptime(
+                filters["selected_date"], "%Y-%m-%d"
             ).date()
 
-    # Prevent future dates
     today = getdate(nowdate())
+
+    # Prevent future dates
     if filters:
-        if filters.get("from_date") and filters["from_date"] > today:
-            frappe.throw("❌ From Date cannot be in the future.")
-        if filters.get("to_date") and filters["to_date"] > today:
-            frappe.throw("❌ To Date cannot be in the future.")
+        if filters.get("selected_date") and filters["selected_date"] > today:
+            frappe.throw("Selected Date cannot be in the future.")
 
     # Fetch leads
     leads = frappe.db.get_all(
         "Lead", fields=["name", "lead_name", "status", "lead_owner"], order_by="name"
     )
 
-    # Fetch employees
+    # Fetch employees including creation date
     employees = frappe.db.get_all(
         "Employee",
         fields=[
@@ -136,6 +136,7 @@ def get_data(filters=None):
             "employee_name",
             "sol_id",
             "date_of_joining",
+            "creation as creation_date",
             "department",
         ],
         order_by="sol_id asc",
@@ -143,72 +144,57 @@ def get_data(filters=None):
 
     all_employees = employees[:]
 
-    # Only Sales + Operations employees for non-active section
+    # Only Sales + Operations employees for non-active
     sales_ops_employees = [
         emp for emp in employees if emp.get("department") in ("Sales", "Operations")
     ]
 
-    # Branch mappings
     sahayog_branches = frappe.db.get_all(
         "Sahayog Branch",
         fields=["sol_id", "zone", "region", "state", "district", "branch"],
     )
-    branch_map = {
-        str(b["sol_id"]).strip(): b for b in sahayog_branches if b.get("sol_id")
-    }
 
-    # Map employees by normalized ID
+    branch_map = {str(b["sol_id"]).strip(): b for b in sahayog_branches}
     emp_map = {normalize_emp_id(emp["emp_id"]): emp for emp in all_employees}
 
     # Group leads by employee
     emp_leads = {}
     for row in leads:
-        normalized_id = normalize_emp_id(row["lead_owner"])
-        if not normalized_id:
+        nid = normalize_emp_id(row["lead_owner"])
+        if not nid:
             continue
-        emp_leads.setdefault(normalized_id, {"leads": []})["leads"].append(row)
+        emp_leads.setdefault(nid, {"leads": []})["leads"].append(row)
 
-    # Prepare rows
     report_rows = []
     active_emp_ids = set()
 
-    # Prepare non-active lookup
+    # Non active lookup
     non_active_emp_info = {}
     for emp in all_employees:
         nid = normalize_emp_id(emp["emp_id"])
         if nid not in emp_leads:
-            non_active_emp_info[nid] = {
-                "employee_name": emp["employee_name"],
-                "date_of_joining": emp["date_of_joining"],
-                "sol_id": str(emp.get("sol_id")).strip(),
-                "department": emp.get("department"),
-            }
+            non_active_emp_info[nid] = emp
 
     # ------------------------------
     # ACTIVE EMPLOYEES
     # ------------------------------
-    for emp_id, info in emp_leads.items():
+    for emp_id in emp_leads:
         numeric_id = normalize_emp_id(emp_id)
         emp_ref = emp_map.get(numeric_id)
-        non_active_info = non_active_emp_info.get(numeric_id)
 
-        if non_active_info:
-            employee_name = non_active_info["employee_name"]
-            date_of_joining = non_active_info["date_of_joining"]
-            sol_id = non_active_info["sol_id"]
-        elif emp_ref:
+        if emp_ref:
             employee_name = emp_ref["employee_name"]
             date_of_joining = emp_ref["date_of_joining"]
             sol_id = str(emp_ref.get("sol_id")).strip()
+            creation_date = emp_ref.get("creation_date")
         else:
             employee_name = "Unknown"
             date_of_joining = None
             sol_id = None
+            creation_date = None
 
         branch_data = branch_map.get(sol_id, {})
-        days_since_joining = 0
-        if date_of_joining:
-            days_since_joining = (today - date_of_joining).days
+        days_since_joining = (today - date_of_joining).days if date_of_joining else 0
 
         report_rows.append(
             {
@@ -221,15 +207,14 @@ def get_data(filters=None):
                 "district": branch_data.get("district", ""),
                 "branch": branch_data.get("branch", ""),
                 "date_of_joining": date_of_joining,
+                "creation_date": creation_date,
                 "days_since_joining": days_since_joining,
-                "lead_count": len(info["leads"]),
-                # 🔥 IMPORTANT — KEEP BOTH FIELDS
+                "lead_count": len(emp_leads[numeric_id]["leads"]),
                 "status": "Active",
                 "status_html": (
-                    "<div style='"
-                    "display:inline-flex; align-items:center; gap:6px; padding:0px 14px;"
-                    "background:#4caf50; border:2px solid #4caf50; color:#ffffff;"
-                    "font-weight:400; border-radius:10px;'>ACTIVE</div>"
+                    "<div style='display:inline-flex; align-items:center; gap:6px; "
+                    "padding:0px 14px; background:#4caf50; border:2px solid #4caf50; "
+                    "color:#ffffff; font-weight:400; border-radius:10px;'>ACTIVE</div>"
                 ),
             }
         )
@@ -241,14 +226,14 @@ def get_data(filters=None):
     # ------------------------------
     for emp in sales_ops_employees:
         nid = normalize_emp_id(emp["emp_id"])
-        sol_id = str(emp.get("sol_id")).strip()
 
         if nid not in active_emp_ids:
+            sol_id = str(emp.get("sol_id")).strip()
+            days_since_joining = (
+                (today - emp["date_of_joining"]).days if emp["date_of_joining"] else 0
+            )
             branch_data = branch_map.get(sol_id, {})
-            # 🔥 Calculate days (use shared 'today')
-            days_since_joining = 0
-            if emp["date_of_joining"]:
-                days_since_joining = (today - emp["date_of_joining"]).days
+
             report_rows.append(
                 {
                     "emp_id": nid,
@@ -260,52 +245,43 @@ def get_data(filters=None):
                     "district": branch_data.get("district", ""),
                     "branch": branch_data.get("branch", ""),
                     "date_of_joining": emp["date_of_joining"],
+                    "creation_date": emp.get("creation_date"),
                     "days_since_joining": days_since_joining,
                     "lead_count": 0,
-                    # 🔥 KEEP BOTH FIELDS
                     "status": "Non-Active",
                     "status_html": (
-                        '<div style="display:inline-flex; align-items:center; gap:6px; '
+                        "<div style='display:inline-flex; align-items:center; gap:6px; "
                         "padding:0px 14px; background:#F18F01; border:2px solid #F18F01; "
-                        'color:#ffffff; font-weight:400; border-radius:10px;">INACTIVE</div>'
+                        "color:#ffffff; font-weight:400; border-radius:10px;'>INACTIVE</div>"
                     ),
                 }
             )
 
-    # ------------------------------
     # FILTERING
-    # ------------------------------
     if filters:
         filtered = []
         for row in report_rows:
             show = True
 
-            if filters.get("sol_id") and str(row.get("sol_id")) != str(
-                filters["sol_id"]
-            ):
+            if filters.get("sol_id") and str(row.get("sol_id")) != str(filters["sol_id"]):
                 show = False
+
             if filters.get("zone") and row.get("zone") != filters["zone"]:
                 show = False
+
             if filters.get("region") and row.get("region") != filters["region"]:
                 show = False
+
             if filters.get("branch") and row.get("branch") != filters["branch"]:
                 show = False
+
             if filters.get("status") and row.get("status") != filters["status"]:
                 show = False
 
-            if (
-                filters.get("from_date")
-                and row.get("date_of_joining")
-                and row.get("date_of_joining") < filters.get("from_date")
-            ):
-                show = False
-
-            if (
-                filters.get("to_date")
-                and row.get("date_of_joining")
-                and row.get("date_of_joining") > filters.get("to_date")
-            ):
-                show = False
+            # SINGLE DATE FILTER - Show only records created on the selected date
+            if filters.get("selected_date") and row.get("creation_date"):
+                if row.get("creation_date").date() != filters.get("selected_date"):
+                    show = False
 
             if show:
                 filtered.append(row)
@@ -316,7 +292,7 @@ def get_data(filters=None):
 
 
 # ---------------------------------------------------------
-# CHART LOGIC (With Unknown removed)
+# CHART LOGIC
 # ---------------------------------------------------------
 def get_chart_based_on_filters(data, filters=None):
     def grouped_chart(group_field, label_name):
@@ -334,15 +310,10 @@ def get_chart_based_on_filters(data, filters=None):
                 group_val, {"Active": set(), "Non-Active": set()}
             )
 
-            if status == "Active":
-                group_status_users[group_val]["Active"].add(emp_id)
-            elif status == "Non-Active":
-                group_status_users[group_val]["Non-Active"].add(emp_id)
+            group_status_users[group_val][status].add(emp_id)
 
-        # 🔥 Filter out both Unknown AND empty string groups
         valid_groups = [
-            g
-            for g in group_status_users.keys()
+            g for g in group_status_users.keys()
             if str(g).strip() and not str(g).lower().startswith("unknown")
         ]
 
