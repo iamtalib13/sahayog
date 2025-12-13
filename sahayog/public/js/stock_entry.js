@@ -229,59 +229,171 @@ frappe.ui.form.on("Stock Entry", {
         frm.set_value(to_warehouse, emmr_doc.target_warehouse);
         frm.dashboard.clear_headline();
 
-        frm.dashboard.set_headline(`
+
+
+    (function () {
+    const style_id = 'stock-entry-intro-override';
+    if (document.getElementById(style_id)) return;
+
+    const style = document.createElement('style');
+    style.id = style_id;
+    style.innerHTML = `
+        body[data-route^="Form/Stock Entry"] .form-message-container .form-message.blue {
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        body[data-route^="Form/Stock Entry"] .form-message-container {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
+// Set dashboard headline form EMR
+frm.dashboard.set_headline(`
+  <div style="
+    background: transparent;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(222, 226, 230, 0.9);
+    margin: 10px 0;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    position: relative;
+    overflow: hidden;
+  ">
+    <div style="
+      position:absolute;
+      inset:0;
+      background:transparent;
+      pointer-events:none;
+      opacity:0.9;
+    "></div>
+
+    <div style="
+      position: relative;
+      text-align:center; 
+      font-weight:600; 
+      margin-bottom:8px; 
+      color:#343a40;
+      letter-spacing:0.03em;
+      text-transform:uppercase;
+      font-size:11px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    ">
+      <span style="
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:20px;
+        height:20px;
+        border-radius:999px;
+        background:linear-gradient(135deg,#f97316,#facc15);
+        color:white;
+        font-size:11px;
+        box-shadow:0 4px 10px rgba(249,115,22,0.35);
+      ">⇄</span>
+      <span>Transfer Direction</span>
+    </div>
+
+    <div style="
+      position: relative;
+      display:flex; 
+      justify-content:center; 
+      gap:46px;
+      align-items:center;
+      padding: 4px 4px 2px;
+    ">
+
       <div style="
-        background: #f8f9fa; 
-        padding: 12px; 
-        border-radius: 8px; 
-        border: 1px solid #dee2e6;
-        margin: 10px 0;
+        text-align:center;
       ">
-        <div style="text-align:center; font-weight:600; margin-bottom:6px; color:#495057;">
-          Transfer Direction
-        </div>
-
-        <div style="display:flex; justify-content:center; gap:40px;">
-
-          <div style="text-align:center;">
-            <div style="
-              background:#dc3545;
-              color:white;
-              padding:6px 12px;
-              border-radius:6px;
-              font-size:12px;
-              font-weight:600;
-              min-width:140px;
-            ">
-              From
-              <div style="font-size:11px; margin-top:3px;">
-                ${emmr_doc.source_warehouse}
-              </div>
-            </div>
+        <div style="
+          background: linear-gradient(135deg,#dc3545,#ff6b6b);
+          color:white;
+          padding:7px 14px;
+          border-radius:999px;
+          font-size:11px;
+          font-weight:600;
+          min-width:150px;
+          box-shadow: 0 4px 12px rgba(220,53,69,0.35);
+          border:1px solid rgba(255,255,255,0.28);
+          display:flex;
+          flex-direction:column;
+          gap:2px;
+        ">
+          <span style="letter-spacing:0.04em; text-transform:uppercase;">From</span>
+          <div style="
+            font-size:11px; 
+            margin-top:2px;
+            white-space:nowrap;
+            text-overflow:ellipsis;
+            overflow:hidden;
+            opacity:0.95;
+          ">
+            ${emmr_doc.source_warehouse}
           </div>
-
-          <div style="font-size:18px; color:#6c757d;">➜</div>
-
-          <div style="text-align:center;">
-            <div style="
-              background:#28a745;
-              color:white;
-              padding:6px 12px;
-              border-radius:6px;
-              font-size:12px;
-              font-weight:600;
-              min-width:140px;
-            ">
-              To
-              <div style="font-size:11px; margin-top:3px;">
-                ${emmr_doc.target_warehouse}
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
-    `);
+
+      <div style="
+        font-size:22px; 
+        color:#6c757d;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        position:relative;
+      ">
+        <span style="
+          display:inline-block;
+        ">
+          ➜
+        </span>
+      </div>
+
+      <div style="
+        text-align:center;
+      ">
+        <div style="
+          background: linear-gradient(135deg,#198754,#4ade80);
+          color:white;
+          padding:7px 14px;
+          border-radius:999px;
+          font-size:11px;
+          font-weight:600;
+          min-width:150px;
+          box-shadow: 0 4px 12px rgba(25,135,84,0.32);
+          border:1px solid rgba(255,255,255,0.28);
+          display:flex;
+          flex-direction:column;
+          gap:2px;
+        ">
+          <span style="letter-spacing:0.04em; text-transform:uppercase;">To</span>
+          <div style="
+            font-size:11px; 
+            margin-top:2px;
+            white-space:nowrap;
+            text-overflow:ellipsis;
+            overflow:hidden;
+            opacity:0.95;
+          ">
+            ${emmr_doc.target_warehouse}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+`);
+
+
+
 
         if (!emmr_doc.items?.length) {
           frappe.msgprint("No items found in this EMMR.");
@@ -294,26 +406,105 @@ frappe.ui.form.on("Stock Entry", {
         let html = `
 <!-- Transfer Direction Section -->
 <div style="margin-bottom: 20px;">
-  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
-    
-    <div style="text-align: center; margin-bottom: 12px;">
-      <h4 style="margin: 0; color: #495057; font-size: 0.90rem;">
-        Transfer Direction
-      </h4>
+  <div style="
+    background: transparent;
+    padding: 06px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(222, 226, 230, 0.9);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    position: relative;
+    overflow: hidden;
+  ">
+
+    <div style="
+      position:absolute;
+      inset:0;
+      background:transparent;
+      pointer-events:none;
+      opacity:0.9;
+    "></div>
+
+    <div style="
+      position: relative;
+      text-align:center; 
+      font-weight:600; 
+      margin-bottom:8px; 
+      color:#343a40;
+      letter-spacing:0.03em;
+      text-transform:uppercase;
+      font-size:11px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    ">
+      <span style="
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:20px;
+        height:20px;
+        border-radius:999px;
+        background:linear-gradient(135deg,#f97316,#facc15);
+        color:white;
+        font-size:11px;
+        box-shadow:0 4px 10px rgba(249,115,22,0.35);
+      ">⇄</span>
+      <span>Transfer Direction</span>
     </div>
 
-    <div style="display: flex; align-items: center; justify-content: center; gap: 40px;">
-      
-      <div style="text-align: center; width: 200px;">
-        <div style="background: #dc3545; color: white; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px;">
+    <div style="
+      position: relative;
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      gap:40px;
+      padding: 4px 4px 10px;
+    ">
+
+      <div style="text-align:center; width: 200px;">
+        <div style="
+          background: linear-gradient(135deg,#dc3545,#ff6b6b);
+          color: white;
+          padding: 7px 14px;
+          border-radius: 999px;
+          font-weight: 600;
+          font-size: 12px;
+          box-shadow: 0 4px 12px rgba(220,53,69,0.35);
+          border: 1px solid rgba(255,255,255,0.28);
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        ">
           From (${emmr_doc.source_warehouse})
         </div>
       </div>
 
-      <div><i class="fa fa-arrow-right fa-lg text-muted"></i></div>
+      <div style="
+        font-size:22px; 
+        color:#6c757d;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        position:relative;
+      ">
+        <span style="display:inline-block;">➜</span>
+      </div>
 
-      <div style="text-align: center; width: 200px;">
-        <div style="background: #28a745; color: white; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px;">
+      <div style="text-align:center; width: 200px;">
+        <div style="
+          background: linear-gradient(135deg,#198754,#4ade80);
+          color: white;
+          padding: 7px 14px;
+          border-radius: 999px;
+          font-weight: 600;
+          font-size: 12px;
+          box-shadow: 0 4px 12px rgba(25,135,84,0.32);
+          border: 1px solid rgba(255,255,255,0.28);
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        ">
           To (${emmr_doc.target_warehouse})
         </div>
       </div>
