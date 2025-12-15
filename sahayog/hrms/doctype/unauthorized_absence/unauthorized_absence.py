@@ -15,13 +15,11 @@ class UnauthorizedAbsence(Document):
             # fallback naming if no case linked
             self.name = frappe.model.naming.make_autoname("UA-.#####")
 
-
 @frappe.whitelist()
 def check_employee_email(employee):
     """Return employee's email if exists, otherwise None."""
     emp = frappe.get_doc("Employee", employee)
     return emp.company_email if emp.company_email else None
-
 
 @frappe.whitelist()
 def send_unauthorized_absence_email(docname):
@@ -71,5 +69,4 @@ def send_unauthorized_absence_email(docname):
         reference_name=docname,
         now=True
     )
-
     return "Email Sent Successfully"
