@@ -12,10 +12,10 @@
  {
   "docstatus": 0,
   "doctype": "Email Template",
-  "modified": "2025-12-09 10:49:05.725900",
+  "modified": "2025-12-15 17:15:09.619193",
   "name": "Disciplinary - SCN",
   "response": null,
-  "response_html": "<p>Dear Team,</p>\n\n<p>\n    This is to inform you that a disciplinary case of type \n    <strong>\"{{ case_type }}\"</strong> has been initiated by HR for the employee \n    <strong>{{ employee_name }}</strong> (Employee ID: {{ employee_id }}).\n</p>\n\n<h4>Case Details:</h4>\n<ul>\n    <li><strong>Case ID:</strong> {{ case_id }}</li>\n    <li><strong>Branch:</strong> {{ branch_name }}</li>\n    <li><strong>Issue Date:</strong> {{ issue_occurrence_date }}</li>\n    <li><strong>Initiated By:</strong> {{ hr_name }}</li>\n</ul>\n\n<p>\n    The Show Cause Notice has been generated and forwarded to the respective branch for further action.\n</p>\n\n<p>\n    Please find the relevant document(s) attached:<br>\n    <strong>{{ document_upload }}</strong>\n</p>\n\n<p>\n    <strong>Remarks:</strong><br>\n    {{ remarks }}\n</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
+  "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>\n    This is to inform you that a disciplinary case of type \n    <strong>\"{{ case_type }}\"</strong> has been initiated by HR for the employee \n    <strong>{{ employee_name }}</strong> (Employee ID: {{ employee_id }}).\n</p>\n\n<h4>Case Details:</h4>\n<ul>\n    <li><strong>Case ID:</strong> {{ case_id }}</li>\n    <li><strong>Branch:</strong> {{ branch_name }}</li>\n    <li><strong>Issue Date:</strong> {{ issue_occurrence_date }}</li>\n    <li><strong>Initiated By:</strong> {{ hr_name }}</li>\n</ul>\n\n<p>\n    The Show Cause Notice has been generated and forwarded to the respective branch for further action.\n</p>\n\n<p>\n    Please find the relevant document(s) attached:<br>\n    <strong>{{ document_upload }}</strong>\n</p>\n\n<p>\n    <strong>Remarks:</strong><br>\n    {{ remarks }}\n</p>\n\n<p>Regards,<br>\nHR Department</p>\n",
   "subject": "Show Cause Notice Issued for {{ employee_name }} – Case Type: {{ case_type }}",
   "use_html": 1
  },
@@ -79,7 +79,7 @@
   "subject": "Reminder of Unauthorized Absence – {{ employee_name }} – Case Type: {{ case_type }}",
   "use_html": 1
  },
-  {
+ {
   "docstatus": 0,
   "doctype": "Email Template",
   "modified": "2025-12-11 16:26:14.781435",
