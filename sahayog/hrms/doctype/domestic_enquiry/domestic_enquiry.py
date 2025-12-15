@@ -23,13 +23,11 @@ class DomesticEnquiry(Document):
                     title=("Action Restricted")
                 )
 
-
 # Check employee email
 @frappe.whitelist()
 def check_employee_email(employee):
     emp = frappe.get_doc("Employee", employee)
     return emp.company_email if emp.company_email else None
-
 
 # Send Domestic Enquiry Notice Email
 @frappe.whitelist()
@@ -79,5 +77,4 @@ def send_domestic_enquiry_email(docname):
         reference_name=docname,
         now=True
     )
-
     return "Email Sent"
