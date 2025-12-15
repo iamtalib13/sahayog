@@ -37,7 +37,6 @@ def check_employee_email(employee):
     emp = frappe.get_doc("Employee", employee)
     return emp.company_email if emp.company_email else None
 
-
 @frappe.whitelist()
 def save_and_send_email(employee, email, docname):
     emp = frappe.get_doc("Employee", employee)
@@ -45,7 +44,6 @@ def save_and_send_email(employee, email, docname):
     emp.save(ignore_permissions=True)
     send_suspension_email(docname)
     return "OK"
-
 
 @frappe.whitelist()
 def send_suspension_email(docname):
@@ -101,5 +99,4 @@ def send_suspension_email(docname):
         reference_name=docname,
         now=True
     )
-
     return "Email Sent"
