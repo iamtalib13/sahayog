@@ -1,4 +1,5 @@
 frappe.ui.form.on("Reminder Of Unauthorized Absence", {
+  // Validate Date of Reminder Letter
   date_of_reminder_letter: function (frm) {
     if (!frm.doc.date_of_reminder_letter || !frm.doc.date_of_1st_letter) return;
 
@@ -27,6 +28,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
   },
 
   onload: function (frm) {
+    // Trigger validation when user selects or types a date
     if (frm.doc.date_of_1st_letter) {
       const minDate = frappe.datetime.add_days(frm.doc.date_of_1st_letter, 3);
       const today = frappe.datetime.get_today();
@@ -65,8 +67,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
       frm.set_df_property("amount_of_fraud", "hidden", 1);
     }
   },
-  // Trigger validation when user selects or types a date
-
+  
   refresh(frm) {
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
@@ -141,6 +142,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
       });
     }
   },
+  
   show_print_button: function (frm) {
     // ✅ Only allow for saved documents
     if (!frm.is_new()) {
