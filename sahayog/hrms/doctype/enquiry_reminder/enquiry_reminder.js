@@ -112,51 +112,178 @@ frappe.ui.form.on("Enquiry Reminder", {
   },
 
   refresh(frm) {
-    // Send Email Button
-    if (!frm.is_new()) {
+    // // remove duplicate
+    // frm.remove_custom_button("Send Email", "Actions");
+
+    // if (!frm.is_new() && frm.doc.status === "Under Process") {
+
+    //   frm.add_custom_button(
+    //     "Send Email",
+    //     function () {
+
+    //       frappe.call({
+    //         method:
+    //           "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.check_employee_email",
+    //         args: { employee: frm.doc.employee_id },
+    //         callback(r) {
+
+    //           let email = r.message;
+
+    //           if (!email) {
+    //             frappe.msgprint({
+    //               title: __("Email Not Found"),
+    //               indicator: "red",
+    //               message: __(
+    //                 "No email is stored for this employee.<br>Please update the Employee record."
+    //               ),
+    //             });
+    //             return;
+    //           }
+
+    //           // 🔹 Select Print Format Dialog
+    //           let d = new frappe.ui.Dialog({
+    //             title: "Send Enquiry Reminder Email",
+    //             fields: [
+    //               {
+    //                 fieldtype: "Select",
+    //                 fieldname: "print_format",
+    //                 label: "Select Print Format",
+    //                 options: [
+    //                   "Reminder Notice Of Enquiry",
+    //                   "Ex Parte Enquiry",
+    //                 ],
+    //                 reqd: 1,
+    //               },
+    //             ],
+    //             primary_action_label: "Send Email",
+    //             primary_action(values) {
+
+    //               frappe.call({
+    //                 method:
+    //                   "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.send_reminder_enquiry_email",
+    //                 args: {
+    //                   docname: frm.doc.name,
+    //                   print_format: values.print_format,
+    //                 },
+    //                 freeze: true,
+    //                 freeze_message: __("Sending Email..."),
+    //                 callback() {
+    //                   frappe.msgprint(__("Email sent successfully!"));
+    //                   d.hide();
+    //                 },
+    //               });
+    //             },
+    //           });
+
+    //           d.show();
+    //         },
+    //       });
+    //     },
+    //     __("Actions")
+    //   );
+    // }
+
+     frm.remove_custom_button("Send Email");
+
+    if (!frm.is_new() && frm.doc.status === "Under Process") {
+
       frm.add_custom_button("Send Email", function () {
+
+        // Step 1: Check employee email
         frappe.call({
           method:
             "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.check_employee_email",
           args: { employee: frm.doc.employee_id },
           callback(r) {
-            let email = r.message;
 
-            // CASE: Email exists
-            if (email) {
-              frappe.confirm(
-                `Employee email found:<br><b>${email}</b><br><br>Do you want to send the Reminder Notice of Enquiry email?`,
-                function () {
-                  frappe.call({
-                    method:
-                      "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.send_reminder_enquiry_email",
-                    args: { docname: frm.doc.name },
-                    freeze: true,
-                    freeze_message: __(
-                      "Sending Reminder Notice of Enquiry Email..."
-                    ),
-                    callback() {
-                      frappe.msgprint(
-                        __(
-                          "Reminder Notice of Enquiry Email sent successfully!"
-                        )
-                      );
-                    },
-                  });
-                }
-              );
-            }
-
-            // CASE: No email found
-            else {
+            if (!r.message) {
               frappe.msgprint({
                 title: __("Email Not Found"),
                 indicator: "red",
-                message: __(
-                  "No email is stored for this employee.<br>Please update the Employee record before sending the email."
-                ),
+                message: __("No email is stored for this employee."),
               });
+              return;
             }
+
+            // Step 2: Fetch Print Formats
+            frappe.call({
+              method: "frappe.client.get_list",
+              args: {
+                doctype: "Print Format",
+                filters: {
+                  doc_type: "Enquiry Reminder",
+                  disabled: 0,
+                },
+                fields: ["name"],
+              },
+              callback(res) {
+
+                if (!res.message || !res.message.length) {
+                  frappe.msgprint("No Print Formats found.");
+                  return;
+                }
+
+                // 🔥 REQUIRED ORDER
+                const preferred_order = [
+                  "Reminder Notice Of Enquiry",
+                  "Ex Parte Enquiry",
+                ];
+
+                let fetched_formats = res.message.map(p => p.name);
+
+                // Arrange formats in preferred order
+                let ordered_formats = [];
+
+                preferred_order.forEach(name => {
+                  if (fetched_formats.includes(name)) {
+                    ordered_formats.push(name);
+                  }
+                });
+
+                // Add remaining formats (if any)
+                fetched_formats.forEach(name => {
+                  if (!ordered_formats.includes(name)) {
+                    ordered_formats.push(name);
+                  }
+                });
+
+                let options = ordered_formats.join("\n");
+
+                // Step 3: Dialog
+                let d = new frappe.ui.Dialog({
+                  title: "Send Enquiry Reminder Email",
+                  fields: [
+                    {
+                      fieldtype: "Select",
+                      fieldname: "print_format",
+                      label: "Select Print Format",
+                      options: options,
+                      reqd: 1,
+                    },
+                  ],
+                  primary_action_label: "Send Email",
+                  primary_action(values) {
+
+                    frappe.call({
+                      method:
+                        "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.send_reminder_enquiry_email",
+                      args: {
+                        docname: frm.doc.name,
+                        print_format: values.print_format,
+                      },
+                      freeze: true,
+                      freeze_message: __("Sending Email..."),
+                      callback() {
+                        frappe.msgprint(__("Email sent successfully!"));
+                        d.hide();
+                      },
+                    });
+                  },
+                });
+
+                d.show();
+              },
+            });
           },
         });
       });

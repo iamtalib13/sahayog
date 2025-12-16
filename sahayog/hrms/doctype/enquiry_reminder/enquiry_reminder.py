@@ -38,21 +38,17 @@ def check_employee_email(employee):
     emp = frappe.get_doc("Employee", employee)
     return emp.company_email if emp.company_email else None
 
-# send reminder mail notification for enquiry
 @frappe.whitelist()
-def send_reminder_enquiry_email(docname):
+def send_reminder_enquiry_email(docname, print_format):
 
     doc = frappe.get_doc("Enquiry Reminder", docname)
     emp = frappe.get_doc("Employee", doc.employee_id)
 
-    final_email = emp.company_email
-    if not final_email:
+    if not emp.company_email:
         frappe.throw("No email found for this employee.")
 
-    # Prepare dictionary for template rendering
     doc_dict = doc.as_dict()
 
-    # Format dates used in the template
     from frappe.utils import formatdate
 
     if doc.date_of_2nd_enquiry:
@@ -61,27 +57,24 @@ def send_reminder_enquiry_email(docname):
     if doc.issue_occurrence_date:
         doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
 
-    # Load Email Template
     template = frappe.get_doc("Email Template", "Reminder Notice of Enquiry")
-
     message = frappe.render_template(template.response_html, doc_dict)
     subject = frappe.render_template(template.subject, doc_dict)
 
- # Attach Print Format → **Enquiry Reminder Notice**
     attachments = [
         frappe.attach_print(
             doctype="Enquiry Reminder",
             name=docname,
-            print_format="Reminder Notice Of Enquiry",
-            file_name=f"{docname}.pdf"
+            print_format=print_format,
+            file_name=f"{docname}_{print_format.replace(' ', '_')}.pdf"
         )
     ]
-    # Send email
+
     frappe.sendmail(
-        recipients=[final_email],
+        recipients=[emp.company_email],
         subject=subject,
         message=message,
-        attachments=attachments,  
+        attachments=attachments,
         reference_doctype="Enquiry Reminder",
         reference_name=docname,
         now=True
