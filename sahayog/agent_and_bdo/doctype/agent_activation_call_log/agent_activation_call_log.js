@@ -15,10 +15,30 @@ frappe.ui.form.on("Agent Activation Call Log", {
     // Hide date_of_exit on form load
     frm.toggle_display("date_of_exit", 0);
   },
-  validate: function (frm) {
-    if (!frm.doc.amount) {
-      frappe.msgprint("Please enter Amount before saving.");
-      frappe.validated = false; // stop save
+  before_save: function (frm) {
+    let amt = frm.doc.amount;
+
+    // Empty or invalid number input
+    if (amt === undefined || amt === null || amt === "" || isNaN(amt)) {
+      frappe.msgprint("Amount must be a valid integer.");
+      frappe.validated = false;
+      return;
+    }
+
+    amt = Number(amt);
+
+    // Integer check
+    if (!Number.isInteger(amt)) {
+      frappe.msgprint("Amount must be an integer value only.");
+      frappe.validated = false;
+      return;
+    }
+
+    // Zero or negative check
+    if (amt <= 0) {
+      frappe.msgprint("Amount must be greater than zero.");
+      frappe.validated = false;
+      return;
     }
   },
   hide_sidebar_options(frm) {
