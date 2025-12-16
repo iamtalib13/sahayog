@@ -44,7 +44,7 @@ frappe.ui.form.on("Case Closure", {
             "status_of_response",
             "domestic_enquiry",
             "place_of_enquiry",
-            "date_of_enquiry",
+            "date_of_2nd_enquiry",
             "enquiry_officer_name",
             "enquiry_status",
           ],
@@ -60,14 +60,10 @@ frappe.ui.form.on("Case Closure", {
         console.log("Fields requested:", fields_to_show);
         console.log("Fetched data:", data);
         console.groupEnd();
-
-        // Special override: For Enquiry Reminder, use date_of_2nd_enquiry
+        // Override date_of_enquiry with date_of_2nd_enquiry when source is Enquiry Reminder
         if (linked_enquiry_type === "Enquiry Reminder") {
           if (data.date_of_2nd_enquiry) {
-            // Convert YYYY-MM-DD → DD-MM-YYYY for display
-            data.date_of_enquiry = frappe.datetime.str_to_user(
-              data.date_of_2nd_enquiry
-            );
+            data.date_of_enquiry = data.date_of_2nd_enquiry;
           }
         }
 
@@ -239,7 +235,7 @@ frappe.ui.form.on("Case Closure", {
     $wrapper.append($menu);
 
     // Handle click on dropdown option
-    $wrapper.on("click", ".print-opt", function (e) {
+    $wrapper.off("click.print").on("click.print", ".print-opt", function (e) {
       e.preventDefault();
       let format = $(this).data("format");
 
