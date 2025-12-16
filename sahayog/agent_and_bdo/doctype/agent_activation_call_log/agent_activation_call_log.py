@@ -17,3 +17,15 @@ class AgentActivationCallLog(Document):
             frappe.throw(
                 "Please select at least one option — Wants to Stay, Want to Exit, or Exited."
             )
+
+
+def before_submit(self):
+    """Validate that at least one status checkbox is selected before submit."""
+    if not (self.wants_to_stay or self.want_to_exit or self.exited):
+        frappe.throw(
+            "Please select at least one option — Wants to Stay, Want to Exit, or Exited."
+        )
+    
+    # Validate date_of_exit when exited is checked
+    if self.exited and not self.date_of_exit:
+        frappe.throw("Please select Date of Exit when 'Exited' is checked.")

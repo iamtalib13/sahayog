@@ -11,6 +11,9 @@ frappe.ui.form.on("Agent Activation Call Log", {
     if (frm.doc.trainer) {
       frm.trigger("show_trainer_name");
     }
+    
+    // Hide date_of_exit on form load
+    frm.toggle_display("date_of_exit", 0);
   },
   hide_sidebar_options(frm) {
     $(".layout-side-section").hide();
@@ -40,8 +43,45 @@ frappe.ui.form.on("Agent Activation Call Log", {
       // dusre do checkboxes ko uncheck karo
       frm.set_value("wants_to_stay", 0);
       frm.set_value("want_to_exit", 0);
+      
+      // Check if agent is selected
+      if (frm.doc.agent) {
+        // Show date of exit popup
+        frappe.prompt([
+          {
+            fieldname: "exit_date",
+            fieldtype: "Date",
+            label: "Date of Exit",
+            reqd: 1,
+            default: frappe.datetime.nowdate()
+          }
+        ], function(values) {
+          // Set the date when user submits popup
+          frm.set_value("date_of_exit", values.exit_date);
+          frm.toggle_display("date_of_exit", 1);
+          frm.refresh_field("date_of_exit");
+        }, "Enter Date of Exit", "Submit");
+      } else {
+        // If no agent selected, just clear date_of_exit
+        frm.set_value("date_of_exit", "");
+        frm.toggle_display("date_of_exit", 0);
+      }
+    } else {
+      // Clear date_of_exit when exited is unchecked
+      frm.set_value("date_of_exit", "");
+      frm.toggle_display("date_of_exit", 0);
     }
   },
+  
+  // NEW: Handle date_of_exit visibility
+  date_of_exit: function(frm) {
+    if (frm.doc.date_of_exit) {
+      frm.toggle_display("date_of_exit", 1);
+    } else {
+      frm.toggle_display("date_of_exit", 0);
+    }
+  },
+
   agent: function (frm) {
     if (frm.doc.agent) {
       frappe.db.get_doc("Agent", frm.doc.agent).then((agent) => {
@@ -102,6 +142,10 @@ frappe.ui.form.on("Agent Activation Call Log", {
       );
       frm.fields_dict.branch_details_html.$wrapper.html("");
     }
+    
+    // NEW: Hide date_of_exit when agent changes
+    frm.set_value("date_of_exit", "");
+    frm.toggle_display("date_of_exit", 0);
   },
   show_trainer_name: function (frm) {
     // 👇 Add this block for showing trainer's full name in description
