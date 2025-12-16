@@ -30,7 +30,8 @@
   "exited",
   "date_of_exit",
   "remarks",
-  "amended_from"
+  "amended_from",
+  "amount"
  ],
  "fields": [
   {
@@ -179,13 +180,18 @@
    "hidden": 1,
    "label": "Date of Exit",
    "no_copy": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Data",
+   "label": "Amount"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-16 16:53:26.967390",
+ "modified": "2025-12-16 17:04:54.522745",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Activation Call Log",
