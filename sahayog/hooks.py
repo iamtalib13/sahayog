@@ -225,7 +225,7 @@ override_doctype_class = {
     "Item": "sahayog.override.autoname_item.CustomItem",
     # "Report": "sahayog.override.report.CustomReport"
 
-    "Report": "sahayog.override.report.CustomReport",
+   
 }
 
 # Document Events
@@ -354,7 +354,7 @@ scheduler_events = {
         "0 0 * * *": [
             "sahayog.tasks.sync_district_state"
         ],
-        "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
+        # "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
