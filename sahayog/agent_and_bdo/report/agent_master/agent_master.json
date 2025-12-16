@@ -11,7 +11,7 @@
  "is_standard": "Yes",
  "letter_head": "Sahayog Letter Head",
  "letterhead": null,
- "modified": "2025-12-16 13:59:46.513880",
+ "modified": "2025-12-16 15:50:55.466179",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Master",
@@ -29,6 +29,9 @@
   },
   {
    "role": "Trainer Head"
+  },
+  {
+   "role": "MIS Admin"
   }
  ],
  "timeout": 0
