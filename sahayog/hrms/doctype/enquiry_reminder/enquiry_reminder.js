@@ -237,7 +237,7 @@ frappe.ui.form.on("Enquiry Reminder", {
     $wrapper.append($menu);
 
     // Handle click on dropdown option
-    $wrapper.on("click", ".print-opt", function (e) {
+    $wrapper.off("click.print").on("click.print", ".print-opt", function (e) {
       e.preventDefault();
       let format = $(this).data("format");
 
