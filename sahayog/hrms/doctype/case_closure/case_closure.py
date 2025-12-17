@@ -345,6 +345,7 @@ def get_employee_from_user():
 def case_history_can_review(case_id, reviewer):
     """Check if logged-in employee is assigned as reviewer"""
     cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+    ignore_permissions=True   # 🔥 REQUIRED
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
             return True
@@ -355,6 +356,7 @@ def case_history_can_review(case_id, reviewer):
 def reviewer_pending_review(case_id, reviewer):
     """Check if reviewer exists AND remarks not yet submitted"""
     cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+    ignore_permissions=True   # 🔥 REQUIRED
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
             return not bool(r.remarks)
@@ -366,6 +368,7 @@ def case_history_submit_review(case_id, reviewer, remarks):
             frappe.throw("Missing required values")
 
         cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+        ignore_permissions=True   # 🔥 REQUIRED
 
         reviewer_row = None
         for row in cc_doc.review_details:
