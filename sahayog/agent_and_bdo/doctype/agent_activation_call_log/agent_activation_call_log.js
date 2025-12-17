@@ -116,6 +116,17 @@ frappe.ui.form.on("Agent Activation Call Log", {
   agent: function (frm) {
     if (frm.doc.agent) {
       frappe.db.get_doc("Agent", frm.doc.agent).then((agent) => {
+        if (agent.phone_number) {
+          // Overwrite only if value came from Agent
+          frm.set_value("agent_phone_number", agent.phone_number);
+          frm.set_df_property("agent_phone_number", "read_only", 1);
+        } else {
+          // Only clear and make editable if field is currently empty
+          if (!frm.doc.agent_phone_number) {
+            frm.set_value("agent_phone_number", "");
+          }
+          frm.set_df_property("agent_phone_number", "read_only", 0);
+        }
         // Get district + branch from Sahayog Branch using sol_id (branch_code)
         frappe.db
           .get_value("Sahayog Branch", { sol_id: agent.branch_code }, [
@@ -172,6 +183,8 @@ frappe.ui.form.on("Agent Activation Call Log", {
         `<div style="color: #888; font-size: 13px;">No agent selected.</div>`
       );
       frm.fields_dict.branch_details_html.$wrapper.html("");
+      // frm.set_value("agent_phone_number", "");
+      frm.set_df_property("agent_phone_number", "read_only", 0);
     }
 
     // NEW: Hide date_of_exit when agent changes
@@ -196,4 +209,28 @@ frappe.ui.form.on("Agent Activation Call Log", {
       frm.refresh_field("trainer");
     }
   },
+
+  agent_phone_number: function (frm) {
+  // Validate only when field is editable (not fetched from Agent)
+  const df = frm.get_docfield("agent_phone_number");
+  if (df && !df.read_only) {
+    const phone = (frm.doc.agent_phone_number || "").trim();
+
+    if (!phone) {
+      frappe.msgprint("Please enter Agent Phone Number.");
+      frappe.validated = false;
+      return;
+    }
+
+    // Only digits and exactly 10 characters
+    const phone_regex = /^\d{10}$/;
+    if (!phone_regex.test(phone)) {
+      frappe.msgprint(
+        "Agent Phone Number must be exactly 10 digits and contain only numbers."
+      );
+      frappe.validated = false;
+      return;
+    }
+  }
+},
 });
