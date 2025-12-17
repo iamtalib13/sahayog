@@ -552,6 +552,7 @@ fixtures = [
                     "Tickets Dashboard",
                     "Finacle Dashboard",
                     "IT Dashboard",
+                    "Trainer Dashboard",
                 ],
             ]
         ],
