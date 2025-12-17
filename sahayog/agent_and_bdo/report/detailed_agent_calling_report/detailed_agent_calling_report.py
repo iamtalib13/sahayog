@@ -39,32 +39,68 @@ def execute(filters=None):
     if filters.get("reply_type"):
         conditions += " AND acl.reply_type = %(reply_type)s"
 
+    # data = frappe.db.sql(f"""
+    #     SELECT
+    #         acl.report_date,
+    #         acl.calling_date,
+    #         acl.trainer,
+    #         e.employee_name AS trainer_name,
+    #         acl.agent,
+    #         acl.agent_name,
+    #         acl.agent_phone_number,
+    #         acl.branch,
+    #         acl.district,
+    #         acl.date_of_joining,
+    #         acl.connected_status,
+    #         acl.reply_type,
+    #         acl.wants_to_stay,
+    #         acl.want_to_exit,
+    #         acl.exited,
+    #         acl.remarks
+    #     FROM
+    #         `tabAgent Activation Call Log` acl
+    #     LEFT JOIN
+    #         `tabEmployee` e ON e.name = acl.trainer
+    #     WHERE
+    #         acl.docstatus < 2 {conditions}
+    #     ORDER BY
+    #         acl.calling_date DESC
+    # """, filters, as_dict=1)
+
+
     data = frappe.db.sql(f"""
-        SELECT
-            acl.report_date,
-            acl.calling_date,
-            acl.trainer,
-            e.employee_name AS trainer_name,
-            acl.agent,
-            acl.agent_name,
-            acl.agent_phone_number,
-            acl.branch,
-            acl.district,
-            acl.date_of_joining,
-            acl.connected_status,
-            acl.reply_type,
-            acl.wants_to_stay,
-            acl.want_to_exit,
-            acl.exited,
-            acl.remarks
-        FROM
-            `tabAgent Activation Call Log` acl
-        LEFT JOIN
-            `tabEmployee` e ON e.name = acl.trainer
-        WHERE
-            acl.docstatus < 2 {conditions}
-        ORDER BY
-            acl.calling_date DESC
-    """, filters, as_dict=1)
+    SELECT
+        acl.report_date,
+        acl.calling_date,
+        acl.trainer,
+        u.full_name AS trainer_name,
+        acl.agent,                             -- Agent Id column (contains agent code)
+        ag.agent_name,                         -- from Agent
+        acl.agent_phone_number,
+        sb.branch,                             -- from Sahayog Branch
+        sb.district,                           -- from Sahayog Branch
+        ag.creation_date AS date_of_joining,   -- from Agent
+        acl.connected_status,
+        acl.reply_type,
+        acl.wants_to_stay,
+        acl.want_to_exit,
+        acl.exited,
+        acl.remarks
+    FROM
+        `tabAgent Activation Call Log` acl
+    LEFT JOIN
+        `tabUser` u
+        ON u.username = SUBSTRING_INDEX(acl.trainer, '@', 1)
+    LEFT JOIN
+        `tabAgent` ag
+        ON ag.agent_code = acl.agent             -- match Agent Id with agent_code
+    LEFT JOIN
+        `tabSahayog Branch` sb
+        ON sb.sol_id = ag.branch_code           -- match branch_code with sol_id
+    WHERE
+        acl.docstatus < 2 {conditions}
+    ORDER BY
+        acl.calling_date DESC
+""", filters, as_dict=1)
 
     return columns, data
