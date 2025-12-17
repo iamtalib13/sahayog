@@ -81,7 +81,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "+91-",
    "fieldname": "agent_phone_number",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -191,7 +190,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-16 17:04:54.522745",
+ "modified": "2025-12-17 13:20:49.849707",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Activation Call Log",
