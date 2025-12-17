@@ -100,7 +100,7 @@ def get_latest_linked_enquiry(case_id):
             "place_of_enquiry",
             "date_of_2nd_enquiry",
             "enquiry_officer_name",
-            "enquiry_status",
+           
         ],
         order_by="modified desc",
         limit=1,

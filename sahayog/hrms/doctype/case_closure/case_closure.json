@@ -142,7 +142,7 @@
   },
   {
    "fieldname": "date_of_enquiry",
-   "fieldtype": "Data",
+   "fieldtype": "Date",
    "label": "Date of Enquiry",
    "read_only": 1
   },
@@ -153,6 +153,7 @@
    "read_only": 1
   },
   {
+   "default": "Completed Enquiry",
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -248,7 +249,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-08 16:51:36.355996",
+ "modified": "2025-12-17 16:20:49.228723",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
