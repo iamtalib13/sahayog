@@ -9,11 +9,14 @@ frappe.ui.form.on("Case Closure", {
       "date_of_enquiry",
       "date_of_2nd_enquiry",
       "enquiry_officer_name",
-      "enquiry_status",
     ];
 
     // Hide all workflow fields initially
-    workflow_fields.forEach((f) => frm.set_df_property(f, "hidden", 1));
+    workflow_fields.forEach((f) => {
+      if (frm.fields_dict[f]) {
+        frm.set_df_property(f, "hidden", 1);
+      }
+    });
 
     // Fetch the latest linked enquiry for this case
     frappe.call({
@@ -44,9 +47,8 @@ frappe.ui.form.on("Case Closure", {
             "status_of_response",
             "domestic_enquiry",
             "place_of_enquiry",
-            "date_of_2nd_enquiry",
+            "date_of_enquiry",
             "enquiry_officer_name",
-            "enquiry_status",
           ],
         };
 
@@ -69,20 +71,15 @@ frappe.ui.form.on("Case Closure", {
 
         // Unhide & populate relevant fields
         fields_to_show.forEach((f) => {
-          frm.set_df_property(f, "hidden", 0);
-
-          // Make fields read-only, except enquiry_status if source is Enquiry Reminder
-          if (
-            !(
-              linked_enquiry_type === "Enquiry Reminder" &&
-              f === "enquiry_status"
-            )
-          ) {
-            frm.set_df_property(f, "read_only", 1);
+          if (!frm.fields_dict[f]) {
+            console.warn("Skipping missing Case Closure field:", f);
+            return;
           }
 
-          // Populate value from fetched data
-          if (data && data[f] !== undefined && data[f] !== null) {
+          frm.set_df_property(f, "hidden", 0);
+          frm.set_df_property(f, "read_only", 1);
+
+          if (data && data[f] != null) {
             frm.set_value(f, data[f]);
           }
         });
@@ -114,16 +111,13 @@ frappe.ui.form.on("Case Closure", {
     frm.remove_custom_button("Send Email");
 
     if (!frm.is_new() && frm.doc.status === "Closed") {
-
       frm.add_custom_button("Send Email", function () {
-
         // Step 1: Check employee email
         frappe.call({
           method:
             "sahayog.hrms.doctype.case_closure.case_closure.check_employee_email",
           args: { employee: frm.doc.employee_id },
           callback(r) {
-
             if (!r.message) {
               frappe.msgprint({
                 title: __("Email Not Found"),
@@ -145,7 +139,6 @@ frappe.ui.form.on("Case Closure", {
                 fields: ["name"],
               },
               callback(res) {
-
                 if (!res.message || !res.message.length) {
                   frappe.msgprint("No Print Formats found.");
                   return;
@@ -159,19 +152,19 @@ frappe.ui.form.on("Case Closure", {
                   "Office Order Termination of Services",
                 ];
 
-                let fetched_formats = res.message.map(p => p.name);
+                let fetched_formats = res.message.map((p) => p.name);
 
                 // Arrange formats in preferred order
                 let ordered_formats = [];
 
-                preferred_order.forEach(name => {
+                preferred_order.forEach((name) => {
                   if (fetched_formats.includes(name)) {
                     ordered_formats.push(name);
                   }
                 });
 
                 // Add remaining formats (if any)
-                fetched_formats.forEach(name => {
+                fetched_formats.forEach((name) => {
                   if (!ordered_formats.includes(name)) {
                     ordered_formats.push(name);
                   }
@@ -193,7 +186,6 @@ frappe.ui.form.on("Case Closure", {
                   ],
                   primary_action_label: "Send Email",
                   primary_action(values) {
-
                     frappe.call({
                       method:
                         "sahayog.hrms.doctype.case_closure.case_closure.send_case_closure_email",
