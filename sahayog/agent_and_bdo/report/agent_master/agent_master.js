@@ -21,17 +21,22 @@ frappe.query_reports["Agent Master"] = {
       fieldtype: "Data",
       read_only: 1,
     },
-
     {
       fieldname: "employee",
       label: __("Employee"),
       fieldtype: "Link",
       options: "Employee",
     },
+    {
+      fieldname: "auth_id",
+      label: __("Auth ID"),
+      fieldtype: "Data",
+      placeholder: "SAH00001",
+    },
   ],
 
   onload: function (report) {
-    // when Sol ID (branch) changes, fetch Branch Name
+    // When Sol ID (branch) changes, fetch Branch Name
     report.page.fields_dict.branch.df.onchange = () => {
       const sol_id = report.get_values().branch;
 
