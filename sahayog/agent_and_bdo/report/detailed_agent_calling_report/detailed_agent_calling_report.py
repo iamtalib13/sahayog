@@ -19,9 +19,10 @@ def execute(filters=None):
         {"label": "Date of Joining", "fieldname": "date_of_joining", "fieldtype": "Date", "width": 120},
         {"label": "Connected?", "fieldname": "connected_status", "fieldtype": "Data", "width": 100},
         {"label": "Reply Type", "fieldname": "reply_type", "fieldtype": "Data", "width": 100},
-        {"label": "Wants to Stay", "fieldname": "wants_to_stay", "fieldtype": "Check", "width": 100},
-        {"label": "Want to Exit", "fieldname": "want_to_exit", "fieldtype": "Check", "width": 100},
-        {"label": "Exited", "fieldname": "exited", "fieldtype": "Check", "width": 100},
+        # {"label": "Wants to Stay", "fieldname": "wants_to_stay", "fieldtype": "Check", "width": 100},
+        # {"label": "Want to Exit", "fieldname": "want_to_exit", "fieldtype": "Check", "width": 100},
+        # {"label": "Exited", "fieldname": "exited", "fieldtype": "Check", "width": 100},
+        {"label": "Status", "fieldname": "agent_status", "fieldtype": "Data", "width": 120},
         {"label": "Remarks", "fieldname": "remarks", "fieldtype": "Data", "width": 200},
     ]
 
@@ -74,29 +75,38 @@ def execute(filters=None):
         acl.calling_date,
         acl.trainer,
         u.full_name AS trainer_name,
-        acl.agent,                             -- Agent Id column (contains agent code)
-        ag.agent_name,                         -- from Agent
+        acl.agent,
+        ag.agent_name,
         acl.agent_phone_number,
-        sb.branch,                             -- from Sahayog Branch
-        sb.district,                           -- from Sahayog Branch
-        ag.creation_date AS date_of_joining,   -- from Agent
+        sb.branch,
+        sb.district,
+        ag.creation_date AS date_of_joining,
         acl.connected_status,
         acl.reply_type,
-        acl.wants_to_stay,
-        acl.want_to_exit,
-        acl.exited,
+        CASE
+            WHEN IFNULL(acl.amount, 0) = 0
+                THEN ''
+            WHEN IFNULL(acl.exited, 0) = 1
+                THEN 'Exited'
+            WHEN IFNULL(acl.want_to_exit, 0) = 1
+                THEN 'Want to Exit'
+            WHEN IFNULL(acl.wants_to_stay, 0) = 1
+                THEN 'Activated'
+            WHEN IFNULL(acl.wants_to_stay, 0) = 0
+                 AND IFNULL(acl.want_to_exit, 0) = 0
+                 AND IFNULL(acl.exited, 0) = 0
+                THEN 'Pending'
+            ELSE ''
+        END AS agent_status,
         acl.remarks
     FROM
         `tabAgent Activation Call Log` acl
-    LEFT JOIN
-        `tabUser` u
+    LEFT JOIN `tabUser` u
         ON u.username = SUBSTRING_INDEX(acl.trainer, '@', 1)
-    LEFT JOIN
-        `tabAgent` ag
-        ON ag.agent_code = acl.agent             -- match Agent Id with agent_code
-    LEFT JOIN
-        `tabSahayog Branch` sb
-        ON sb.sol_id = ag.branch_code           -- match branch_code with sol_id
+    LEFT JOIN `tabAgent` ag
+        ON ag.agent_code = acl.agent
+    LEFT JOIN `tabSahayog Branch` sb
+        ON sb.sol_id = ag.branch_code
     WHERE
         acl.docstatus < 2 {conditions}
     ORDER BY
