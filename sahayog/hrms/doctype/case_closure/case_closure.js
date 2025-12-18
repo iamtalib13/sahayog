@@ -87,14 +87,14 @@ frappe.ui.form.on("Case Closure", {
     });
   },
 
-  before_save(frm) {
-    if (frm.doc.case_id) {
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.case_closure.case_closure.close_linked_case",
-        args: { case_id: frm.doc.case_id },
-      });
-    }
+  on_submit(frm) {
+    if (!frm.doc.case_id) return;
+
+    frappe.call({
+      method:
+        "sahayog.hrms.doctype.case_closure.case_closure.close_linked_case",
+      args: { case_id: frm.doc.case_id },
+    });
   },
 
   after_save(frm) {
