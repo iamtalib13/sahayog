@@ -116,14 +116,14 @@
   {
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
-   "fieldtype": "Data",
-   "label": "Issue Date Reported To HR",
+   "fieldtype": "Date",
+   "label": "Date of issue Reported to hr",
    "read_only": 1
   },
   {
    "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
-   "fieldtype": "Data",
+   "fieldtype": "Date",
    "label": "Issue Occurrence Date",
    "read_only": 1
   },
@@ -249,7 +249,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-17 16:20:49.228723",
+ "modified": "2025-12-18 12:51:18.810426",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
