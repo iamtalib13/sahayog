@@ -166,7 +166,7 @@ def execute(filters=None):
             # OWNER DETAILS
             "owner_name": owner_emp.employee_name if owner_emp else lead.owner or "-",
             "owner_emp_id": owner_emp.employee_number if owner_emp else "-",
-            "owner_designation": owner_emp.designation if owner_emp else "-",
+            "owner_designation": owner_emp.designation if owner_emp and owner_emp.designation else "-",
             "owner_sol_id": owner_sol,
             "owner_branch": owner_branch,
             "owner_zone": owner_zone,
@@ -176,7 +176,7 @@ def execute(filters=None):
             # ASSIGNED DETAILS
             "assigned_name": assigned_emp.employee_name if assigned_emp else lead.lead_owner or "-",
             "assigned_emp_id": assigned_emp.employee_number if assigned_emp else "-",
-            "assigned_designation": assigned_emp.designation if assigned_emp else "-",
+            "assigned_designation": assigned_emp.designation if assigned_emp and assigned_emp.designation else "-",
             "assigned_sol_id": assigned_sol,
             "assigned_branch": assigned_branch,
             "assigned_zone": assigned_zone,
