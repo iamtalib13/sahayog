@@ -14,45 +14,37 @@ frappe.ui.form.on("Agent Activation Call Log", {
 
     // Hide date_of_exit on form load
     frm.toggle_display("date_of_exit", 0);
+    // NEW: Show or hide amount field based on wants_to_stay
+frm.toggle_display("amount", frm.doc.wants_to_stay === 1);
   },
   before_save: function (frm) {
-    let amt = frm.doc.amount;
 
-    // Empty or invalid number input
-    if (amt === undefined || amt === null || amt === "" || isNaN(amt)) {
-      frappe.msgprint("Amount must be a valid integer.");
-      frappe.validated = false;
-      return;
-    }
-
-    amt = Number(amt);
-
-    // Integer check
-    if (!Number.isInteger(amt)) {
-      frappe.msgprint("Amount must be an integer value only.");
-      frappe.validated = false;
-      return;
-    }
-
-    // Zero or negative check
-    if (amt <= 0) {
-      frappe.msgprint("Amount must be greater than zero.");
-      frappe.validated = false;
-      return;
-    }
   },
   hide_sidebar_options(frm) {
     $(".layout-side-section").hide();
     $(".sidebar-toggle-btn").hide();
   },
   // wants_to_stay checkbox par click karne par
-  wants_to_stay: function (frm) {
-    if (frm.doc.wants_to_stay === 1) {
-      // dusre do checkboxes ko uncheck karo
-      frm.set_value("want_to_exit", 0);
-      frm.set_value("exited", 0);
-    }
-  },
+  // wants_to_stay checkbox par click karne par
+wants_to_stay: function (frm) {
+  if (frm.doc.wants_to_stay === 1) {
+    // Show amount field if wants_to_stay is checked
+    frm.toggle_display("amount", true);
+    // Clear the amount field if wants_to_stay is checked
+    frm.set_value("amount", "");
+  } else {
+    // Hide amount field if wants_to_stay is unchecked
+    frm.toggle_display("amount", false);
+    // Reset the amount value when hidden
+    frm.set_value("amount", "");
+  }
+
+  // Clear other checkboxes when wants_to_stay is checked
+  if (frm.doc.wants_to_stay === 1) {
+    frm.set_value("want_to_exit", 0);
+    frm.set_value("exited", 0);
+  }
+},
 
   // want_to_exit checkbox par click karne par
   want_to_exit: function (frm) {
@@ -64,52 +56,105 @@ frappe.ui.form.on("Agent Activation Call Log", {
   },
 
   // exited checkbox par click karne par
-  exited: function (frm) {
+  // exited: function (frm) {
+  //   if (frm.doc.exited === 1) {
+  //     // dusre do checkboxes ko uncheck karo
+  //     frm.set_value("wants_to_stay", 0);
+  //     frm.set_value("want_to_exit", 0);
+
+  //     // Check if agent is selected
+  //     if (frm.doc.agent) {
+  //       // Show date of exit popup
+  //       frappe.prompt(
+  //         [
+  //           {
+  //             fieldname: "exit_date",
+  //             fieldtype: "Date",
+  //             label: "Date of Exit",
+  //             reqd: 1,
+  //             default: frappe.datetime.nowdate(),
+  //           },
+  //         ],
+  //         function (values) {
+  //           // Set the date when user submits popup
+  //           frm.set_value("date_of_exit", values.exit_date);
+  //           frm.toggle_display("date_of_exit", 1);
+  //           frm.refresh_field("date_of_exit");
+  //         },
+  //         "Enter Date of Exit",
+  //         "Submit"
+  //       );
+  //     } else {
+  //       // If no agent selected, just clear date_of_exit
+  //       frm.set_value("date_of_exit", "");
+  //       frm.toggle_display("date_of_exit", 0);
+  //     }
+  //   } else {
+  //     // Clear date_of_exit when exited is unchecked
+  //     frm.set_value("date_of_exit", "");
+  //     frm.toggle_display("date_of_exit", 0);
+  //   }
+  // },
+
+  // // NEW: Handle date_of_exit visibility
+  // date_of_exit: function (frm) {
+  //   if (frm.doc.date_of_exit) {
+  //     frm.toggle_display("date_of_exit", 1);
+  //   } else {
+  //     frm.toggle_display("date_of_exit", 0);
+  //   }
+  // },
+
+
+   // exited checkbox par click karne par
+    exited: function (frm) {
     if (frm.doc.exited === 1) {
-      // dusre do checkboxes ko uncheck karo
+      // Uncheck other two checkboxes if exited is checked
       frm.set_value("wants_to_stay", 0);
       frm.set_value("want_to_exit", 0);
 
       // Check if agent is selected
       if (frm.doc.agent) {
-        // Show date of exit popup
-        frappe.prompt(
-          [
-            {
-              fieldname: "exit_date",
-              fieldtype: "Date",
-              label: "Date of Exit",
-              reqd: 1,
-              default: frappe.datetime.nowdate(),
+        // Before showing the popup, check if date_of_exit is already set
+        if (!frm.doc.date_of_exit) {
+          // Show the date of exit popup only if the date_of_exit is not set
+          frappe.prompt(
+            [
+              {
+                fieldname: "exit_date",
+                fieldtype: "Date",
+                label: "Date of Exit",
+                reqd: 1,
+                default: frappe.datetime.nowdate(),
+              },
+            ],
+            function (values) {
+              // Set the date when user submits the popup
+              frm.set_value("date_of_exit", values.exit_date);
+              frm.toggle_display("date_of_exit", 1);
+              frm.refresh_field("date_of_exit");
+
+              // Check if the date is selected after popup submission
+              if (!frm.doc.date_of_exit) {
+                // If no date was selected, uncheck the exited checkbox
+                frm.set_value("exited", 0);
+                frappe.msgprint("Please select Date of Exit.");
+              }
             },
-          ],
-          function (values) {
-            // Set the date when user submits popup
-            frm.set_value("date_of_exit", values.exit_date);
-            frm.toggle_display("date_of_exit", 1);
-            frm.refresh_field("date_of_exit");
-          },
-          "Enter Date of Exit",
-          "Submit"
-        );
+            "Enter Date of Exit",
+            "Submit"
+          );
+        }
       } else {
         // If no agent selected, just clear date_of_exit
         frm.set_value("date_of_exit", "");
-        frm.toggle_display("date_of_exit", 0);
+        frm.toggle_display("date_of_exit", 1);  // Keep date_of_exit visible when exited is checked
+        frm.refresh_field("date_of_exit");
       }
     } else {
       // Clear date_of_exit when exited is unchecked
       frm.set_value("date_of_exit", "");
-      frm.toggle_display("date_of_exit", 0);
-    }
-  },
-
-  // NEW: Handle date_of_exit visibility
-  date_of_exit: function (frm) {
-    if (frm.doc.date_of_exit) {
-      frm.toggle_display("date_of_exit", 1);
-    } else {
-      frm.toggle_display("date_of_exit", 0);
+      frm.toggle_display("date_of_exit", 0);  // Hide date_of_exit when exited is unchecked
     }
   },
 
