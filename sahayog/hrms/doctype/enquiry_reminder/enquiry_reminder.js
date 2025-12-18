@@ -183,19 +183,16 @@ frappe.ui.form.on("Enquiry Reminder", {
     //   );
     // }
 
-     frm.remove_custom_button("Send Email");
+    frm.remove_custom_button("Send Email");
 
     if (!frm.is_new() && frm.doc.status === "Under Process") {
-
       frm.add_custom_button("Send Email", function () {
-
         // Step 1: Check employee email
         frappe.call({
           method:
             "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.check_employee_email",
           args: { employee: frm.doc.employee_id },
           callback(r) {
-
             if (!r.message) {
               frappe.msgprint({
                 title: __("Email Not Found"),
@@ -217,7 +214,6 @@ frappe.ui.form.on("Enquiry Reminder", {
                 fields: ["name"],
               },
               callback(res) {
-
                 if (!res.message || !res.message.length) {
                   frappe.msgprint("No Print Formats found.");
                   return;
@@ -229,19 +225,19 @@ frappe.ui.form.on("Enquiry Reminder", {
                   "Ex Parte Enquiry",
                 ];
 
-                let fetched_formats = res.message.map(p => p.name);
+                let fetched_formats = res.message.map((p) => p.name);
 
                 // Arrange formats in preferred order
                 let ordered_formats = [];
 
-                preferred_order.forEach(name => {
+                preferred_order.forEach((name) => {
                   if (fetched_formats.includes(name)) {
                     ordered_formats.push(name);
                   }
                 });
 
                 // Add remaining formats (if any)
-                fetched_formats.forEach(name => {
+                fetched_formats.forEach((name) => {
                   if (!ordered_formats.includes(name)) {
                     ordered_formats.push(name);
                   }
@@ -263,7 +259,6 @@ frappe.ui.form.on("Enquiry Reminder", {
                   ],
                   primary_action_label: "Send Email",
                   primary_action(values) {
-
                     frappe.call({
                       method:
                         "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.send_reminder_enquiry_email",
@@ -319,7 +314,7 @@ frappe.ui.form.on("Enquiry Reminder", {
   show_print_button: function (frm) {
     if (frm.is_new()) return;
 
-    // Check if button already exists (safer than boolean flag)
+    // Avoid duplicate button
     if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
     const allowed_roles = [
@@ -329,120 +324,82 @@ frappe.ui.form.on("Enquiry Reminder", {
     ];
     if (!frappe.user_roles.some((r) => allowed_roles.includes(r))) return;
 
-    // Remove old versions if exist
+    // ✅ FIXED API
     try {
-      frm.page.remove_custom_button("Print");
+      frm.remove_custom_button("Print");
     } catch (e) {}
+
     try {
       frm.page.remove_menu_item("Print");
     } catch (e) {}
 
-    // Create a dropdown-style primary button
-    const $btn = $(
-      frm.page.add_button("Select Print Format", null, "btn-primary")
-    );
-    $btn
-      .removeClass("btn-default")
-      .addClass("btn-primary print-format-highlight");
+    frm
+      .add_custom_button(__("Print"), function () {
+        const overlay = document.createElement("div");
+        overlay.style.cssText = `
+        position: fixed; top:0; left:0;
+        width:100%; height:100%;
+        background: rgba(255,255,255,0.65);
+        display:flex; align-items:center; justify-content:center;
+        font-size:18px; z-index:99999;
+      `;
+        overlay.innerHTML = "Preparing print...";
+        document.body.appendChild(overlay);
 
-    // Convert button to dropdown
-    $btn.addClass("dropdown-toggle");
-    $btn.attr("data-toggle", "dropdown");
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = frappe.urllib.get_full_url(
+          `/printview?doctype=${encodeURIComponent(frm.doc.doctype)}` +
+            `&name=${encodeURIComponent(frm.doc.name)}` +
+            `&format=${encodeURIComponent("Reminder Notice Of Enquiry")}`
+        );
+        document.body.appendChild(iframe);
 
-    // Dropdown container
-    let $wrapper = $btn.parent();
-    $wrapper.addClass("dropdown");
+        iframe.onload = () => {
+          const doc = iframe.contentWindow.document;
 
-    // Add dropdown menu
-    let $menu = $(`
-    <ul class="dropdown-menu">
-      <li><a class="print-opt" data-format="Reminder Notice Of Enquiry" href="#">Reminder Notice Of Enquiry</a></li>
-      <li><a class="print-opt" data-format="Ex Parte Enquiry" href="#">Ex Parte Enquiry</a></li>
-    </ul>
-  `);
+          const style = doc.createElement("style");
+          style.innerHTML = `
+          @page { size: A4; margin: 0 !important; }
 
-    $wrapper.append($menu);
-
-    // Handle click on dropdown option
-    $wrapper.off("click.print").on("click.print", ".print-opt", function (e) {
-      e.preventDefault();
-      let format = $(this).data("format");
-
-      open_print_for_format(format);
-    });
-
-    // PRINT LOGIC
-    function open_print_for_format(format) {
-      console.log("Selected print format:", format);
-
-      const overlay = document.createElement("div");
-      overlay.id = "print-overlay";
-      overlay.style.cssText = `
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(255,255,255,0.6);
-      z-index: 9999; display: flex;
-      align-items: center; justify-content: center;
-      font-size: 18px; color: #333;
-    `;
-      overlay.innerHTML = "Preparing print preview...";
-      document.body.appendChild(overlay);
-
-      const url = frappe.urllib.get_full_url(
-        `/printview?doctype=${encodeURIComponent(
-          frm.doc.doctype
-        )}&name=${encodeURIComponent(frm.doc.name)}&format=${encodeURIComponent(
-          format
-        )}&no_letterhead=1`
-      );
-
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = url;
-      document.body.appendChild(iframe);
-
-      iframe.onload = () => {
-        try {
-          const win = iframe.contentWindow;
-
-          // FIX: Disable internal auto-print for submitted docs
-          if (win.print) {
-            win.print = function () {};
-          }
-          if (win.frappe && win.frappe.utils && win.frappe.utils.print) {
-            win.frappe.utils.print = function () {};
+          html, body {
+            margin:0 !important;
+            padding:0 !important;
+            width:210mm !important;
+            height:297mm !important;
+            overflow:hidden !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
-          setTimeout(() => {
-            win.focus();
-
-            // Restore manual print
-            win.print = window.print.bind(win);
-            win.print();
-          }, 700);
-          win.addEventListener("afterprint", () => {
-            overlay.remove();
-            iframe.remove();
-          });
+          .print-body {
+            padding: 145px 30px 40px 30px;
+            box-sizing:border-box;
+          }
+        `;
+          doc.head.appendChild(style);
 
           setTimeout(() => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          }, 500);
+
+          const cleanup = () => {
             overlay.remove();
             iframe.remove();
-          }, 5000);
-        } catch (err) {
-          console.error(err);
-          frappe.msgprint("Printing Error. Check console.");
+          };
+
+          iframe.contentWindow.addEventListener("afterprint", cleanup);
+          setTimeout(cleanup, 5000);
+        };
+
+        iframe.onerror = () => {
+          frappe.msgprint("Error loading print preview");
           overlay.remove();
           iframe.remove();
-        }
-      };
-
-      iframe.onerror = () => {
-        frappe.msgprint("Failed to load print preview");
-        overlay.remove();
-        iframe.remove();
-      };
-    }
+        };
+      })
+      .addClass("btn-primary print-format-highlight");
   },
 });
 
