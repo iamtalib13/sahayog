@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_mpip",
-  "amended_from",
   "asset",
   "key_type",
   "key",
@@ -17,16 +16,6 @@
    "fieldname": "section_break_mpip",
    "fieldtype": "Section Break",
    "label": "Asset Key"
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Asset Key Master",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
   },
   {
    "fieldname": "asset",
@@ -54,7 +43,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-09 17:51:00.104088",
+ "modified": "2025-12-18 11:24:49.151952",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Asset Key",
