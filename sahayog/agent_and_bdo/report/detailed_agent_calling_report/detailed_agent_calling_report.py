@@ -83,9 +83,7 @@ def execute(filters=None):
         ag.creation_date AS date_of_joining,
         acl.connected_status,
         acl.reply_type,
-        CASE
-            WHEN IFNULL(acl.amount, 0) = 0
-                THEN ''
+         CASE
             WHEN IFNULL(acl.exited, 0) = 1
                 THEN 'Exited'
             WHEN IFNULL(acl.want_to_exit, 0) = 1
