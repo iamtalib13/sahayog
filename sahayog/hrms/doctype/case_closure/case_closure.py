@@ -14,10 +14,31 @@ class CaseClosure(Document):
         else:
             self.name = frappe.model.naming.make_autoname("CLS-.#####")
 
-
 @frappe.whitelist()
 def close_linked_case(case_id):
-    """Marks all linked docs for a case_id as Closed (if they have a status field)."""
+    """
+    Close all linked documents ONLY when Case Closure is submitted.
+    """
+
+    # 1️⃣ Fetch Case Closure safely
+    case_closure = frappe.get_all(
+        "Case Closure",
+        filters={"case_id": case_id},
+        fields=["name", "docstatus"],
+        limit=1
+    )
+
+    if not case_closure:
+        frappe.throw("Case Closure not found for this Case ID")
+
+    case_closure = case_closure[0]
+
+    # 2️⃣ HARD GUARD: only allow on submit
+    if case_closure.docstatus != 1:
+        frappe.throw(
+            "Case Closure must be submitted before closing linked cases"
+        )
+
     linked_doctypes = [
         "Disciplinary Case",
         "Suspension Process",
@@ -32,9 +53,28 @@ def close_linked_case(case_id):
         if not frappe.db.exists("DocType", doctype):
             continue
 
-        for d in frappe.get_all(doctype, filters={"case_id": case_id}, fields=["name"]):
-            if frappe.db.has_column(doctype, "status"):
-                frappe.db.set_value(doctype, d.name, "status", "Closed", update_modified=True)
+        docs = frappe.get_all(
+            doctype,
+            filters={
+                "case_id": case_id,
+                "status": ["!=", "Closed"]
+            },
+            fields=["name", "docstatus"]
+        )
+
+        for d in docs:
+            doc = frappe.get_doc(doctype, d.name)
+
+            # Optional: prevent closing cancelled docs
+            if doc.docstatus == 2:
+                continue
+
+            # Respect document lifecycle
+            if hasattr(doc, "status"):
+                doc.status = "Closed"
+                doc.save(ignore_permissions=True)
+
+    frappe.db.commit()
 
 @frappe.whitelist()
 def get_latest_linked_enquiry(case_id):
