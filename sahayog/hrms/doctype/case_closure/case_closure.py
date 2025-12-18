@@ -2,6 +2,8 @@ import frappe
 import json
 from frappe.model.document import Document
 from frappe.utils import now_datetime
+from frappe.utils import getdate
+
 from sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting import (
     email_notification_enabled
 )
@@ -121,6 +123,11 @@ def get_latest_linked_enquiry(case_id):
     )
     if de:
         d = de[0]
+
+        # ✅ SAFE FIX: normalize date (NO behaviour change)
+        if d.get("date_of_enquiry"):
+            d["date_of_enquiry"] = getdate(d["date_of_enquiry"])
+
         docs.append({
             "doctype": "Domestic Enquiry",
             "name": d.name,
@@ -140,13 +147,17 @@ def get_latest_linked_enquiry(case_id):
             "place_of_enquiry",
             "date_of_2nd_enquiry",
             "enquiry_officer_name",
-           
         ],
         order_by="modified desc",
         limit=1,
     )
     if er:
         e = er[0]
+
+        # ✅ SAFE FIX: normalize date (NO behaviour change)
+        if e.get("date_of_2nd_enquiry"):
+            e["date_of_2nd_enquiry"] = getdate(e["date_of_2nd_enquiry"])
+
         docs.append({
             "doctype": "Enquiry Reminder",
             "name": e.name,
@@ -165,7 +176,6 @@ def get_latest_linked_enquiry(case_id):
         "linked_enquiry": latest_doc["name"],
         "data": latest_doc["data"],
     }
-
 
 # -------------------------------------------------------------------------
 # START VERIFICATION PROCESS - SIMPLE EMAILS
