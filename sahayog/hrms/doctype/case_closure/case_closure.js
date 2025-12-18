@@ -80,7 +80,19 @@ frappe.ui.form.on("Case Closure", {
           frm.set_df_property(f, "read_only", 1);
 
           if (data && data[f] != null) {
-            frm.set_value(f, data[f]);
+            if (f === "date_of_enquiry") {
+              let d = data[f];
+
+              // Convert DD-MM-YYYY → YYYY-MM-DD
+              if (typeof d === "string" && d.match(/^\d{2}-\d{2}-\d{4}$/)) {
+                let parts = d.split("-");
+                d = `${parts[2]}-${parts[1]}-${parts[0]}`;
+              }
+
+              frm.set_value(f, d);
+            } else {
+              frm.set_value(f, data[f]);
+            }
           }
         });
       },
