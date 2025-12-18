@@ -84,10 +84,12 @@ frappe.ui.form.on("Case Closure", {
               let d = data[f];
 
               // Convert DD-MM-YYYY → YYYY-MM-DD
-              if (typeof d === "string" && d.match(/^\d{2}-\d{2}-\d{4}$/)) {
-                let parts = d.split("-");
-                d = `${parts[2]}-${parts[1]}-${parts[0]}`;
-              }
+             if (d) {
+  // Ensure date object
+  d = frappe.datetime.str_to_obj(d);
+  frm.set_value(f, frappe.datetime.obj_to_str(d));
+}
+
 
               frm.set_value(f, d);
             } else {
