@@ -74,8 +74,8 @@
   {
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
-   "fieldtype": "Data",
-   "label": "Issue Date Reported to HR",
+   "fieldtype": "Date",
+   "label": "Date of issue Reported to hr",
    "read_only": 1
   },
   {
@@ -124,7 +124,7 @@
   {
    "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
-   "fieldtype": "Data",
+   "fieldtype": "Date",
    "label": "Issue Occurrence Date",
    "read_only": 1
   },
@@ -213,7 +213,7 @@
    "link_fieldname": "previous_record"
   }
  ],
- "modified": "2025-11-19 17:45:26.275846",
+ "modified": "2025-12-18 12:24:28.696234",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
