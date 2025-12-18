@@ -588,7 +588,7 @@ fixtures = [
     # Print Format fixture
 {
     "dt": "Print Format",
-    "filters": [["name", "in", ["Reminder Unauthorized absence"]]]
+    "filters": [["name", "in", ["Reminder Unauthorized absence", "Domestic Enquiry"]]]
 },
 
 ]
