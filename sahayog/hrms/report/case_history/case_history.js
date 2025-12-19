@@ -162,6 +162,18 @@ frappe.query_reports["Case History"] = {
       if (!case_id) $(".report-message").hide();
       else $(".report-message").show();
     };
+    // ------------------------------
+    report.on_data_load = function () {
+      let all_not_created = true;
+
+      report.data.forEach((d) => {
+        if (d.name !== "Not Created") all_not_created = false;
+      });
+
+      if (all_not_created) {
+        $(".report-message").hide(); // hide the warning for no records
+      }
+    };
 
     // ------------------------------
     // AUTO REVIEW HINT
