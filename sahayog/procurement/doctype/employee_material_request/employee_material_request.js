@@ -455,6 +455,228 @@ frappe.ui.form.on("Employee Material Request", {
     }
     toggle_dashboard_by_status(frm);
     toggle_collapsible_section(frm);
+
+    // if (
+    //   !frm.doc.soc_status ||
+    //   !["Approved", "Self Approved"].includes(frm.doc.soc_status)
+    // ) {
+    //   return; // do not show the button
+    // }
+    if (frm.doc.docstatus !== 1) return;
+
+    frm.add_custom_button("Create Asset Movement", async () => {
+      let asset_list = {};
+      let employees = [];
+
+      // --------------------------------------------------
+      // Fetch Employees (Company specific)
+      // --------------------------------------------------
+      try {
+        employees = await frappe.db.get_list("Employee", {
+          fields: ["name", "employee_name"],
+          filters: {
+            company: "Sahayog Multistate Credit Co-op Society Ltd",
+            status: "Active",
+          },
+          limit: 500,
+        });
+      } catch (e) {
+        frappe.msgprint("Unable to load employees");
+        console.error(e);
+        return;
+      }
+
+      // --------------------------------------------------
+      // Fetch available assets
+      // --------------------------------------------------
+      try {
+        const res = await frappe.call({
+          method: "sahayog.procurement.api.stock_balance_ledger.get_asset_co",
+          args: {},
+        });
+
+        if (res.message?.assets) {
+          res.message.assets.forEach((a) => {
+            if (!asset_list[a.item_code]) asset_list[a.item_code] = [];
+            asset_list[a.item_code].push({
+              asset: a.name,
+              asset_name: a.asset_name,
+              location: a.location,
+              custodian: a.custodian,
+            });
+          });
+        }
+      } catch (e) {
+        frappe.msgprint("Failed to load assets");
+        console.error(e);
+        return;
+      }
+
+      // --------------------------------------------------
+      // Build employee dropdown
+      // --------------------------------------------------
+      let emp_options = `<option value="">Select Employee</option>`;
+      employees.forEach((emp) => {
+        emp_options += `
+      <option value="${emp.name}">
+        ${emp.name} - ${emp.employee_name}
+      </option>`;
+      });
+
+      // --------------------------------------------------
+      // Build popup table (MINIMAL UI)
+      // --------------------------------------------------
+      let html = `
+    <style>
+      .emmr-table {
+        font-size: 13px;
+      }
+      .emmr-table thead th {
+        position: sticky;
+        top: 0;
+        background: #4a6fa5;
+        z-index: 1;
+        border-bottom: 2px solid #dee2e6;
+      }
+      .emmr-table td {
+        vertical-align: middle;
+        padding: 6px 8px;
+      }
+      .emmr-table tbody tr:hover {
+        background: #f9fbff;
+      }
+      .emmr-asset-code {
+        font-weight: 600;
+      }
+      .emmr-muted {
+        font-size: 11px;
+        color: #859baeff;
+      }
+      .select2-container {
+        width: 100% !important;
+      }
+    </style>
+
+    <table class="table table-bordered table-sm emmr-table">
+      <thead>
+        <tr>
+          <th style="width:40px">#</th>
+          <th style="width:60px;text-align:center">Select</th>
+          <th>Item</th>
+          <th>Asset</th>
+          <th style="width:260px">Employee</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+      let sr = 1;
+
+      (frm.doc.items || []).forEach((row) => {
+        if (row.item_category !== "Asset") return;
+
+        let assets = asset_list[row.item_code] || [];
+
+        for (let i = 0; i < row.quantity; i++) {
+          let a = assets[i];
+          if (!a) continue;
+
+          html += `
+        <tr>
+          <td>${sr++}</td>
+          <td style="text-align:center">
+            <input type="checkbox" class="emmr-asset"
+              data-asset="${a.asset}"
+              data-location="${a.location || ""}"
+              data-custodian="${a.custodian || ""}">
+          </td>
+          <td>
+            <div class="emmr-asset-code">${row.item_code}</div>
+            <div class="emmr-muted">${row.description || ""}</div>
+          </td>
+          <td>
+            <div class="emmr-asset-code">${a.asset}</div>
+            <div class="emmr-muted">${a.asset_name}</div>
+          </td>
+          <td>
+            <select class="form-control form-control-sm emmr-employee">
+              ${emp_options}
+            </select>
+          </td>
+        </tr>
+      `;
+        }
+      });
+
+      html += "</tbody></table>";
+
+      // --------------------------------------------------
+      // Dialog
+      // --------------------------------------------------
+      let d = new frappe.ui.Dialog({
+        title: "Select Assets & Employee",
+        size: "large",
+        fields: [{ fieldname: "html", fieldtype: "HTML" }],
+        primary_action_label: "Create Asset Movement",
+        primary_action() {
+          let selected = [];
+
+          d.$wrapper.find("tbody tr").each(function () {
+            let checkbox = $(this).find(".emmr-asset");
+            if (!checkbox.is(":checked")) return;
+
+            let employee = $(this).find(".emmr-employee").val();
+
+            if (!employee) {
+              frappe.msgprint("Employee is mandatory for all selected assets");
+              selected = [];
+              return false;
+            }
+
+            selected.push({
+              asset: checkbox.data("asset"),
+              employee: employee,
+              location: checkbox.data("location"),
+              custodian: checkbox.data("custodian"),
+            });
+          });
+
+          if (!selected.length) return;
+
+          frappe
+            .call({
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
+              args: {
+                emmr: frm.doc.name,
+                assets: selected,
+              },
+              freeze: true,
+              freeze_message: "Creating Asset Movement...",
+            })
+            .then((r) => {
+              if (r.message) {
+                frappe.set_route("Form", "Asset Movement", r.message);
+                d.hide();
+              }
+            });
+        },
+      });
+
+      d.fields_dict.html.$wrapper.html(html);
+      d.show();
+
+      // --------------------------------------------------
+      // Make Employee dropdown searchable (Select2)
+      // --------------------------------------------------
+      setTimeout(() => {
+        d.$wrapper.find(".emmr-employee").select2({
+          placeholder: "Search Employee",
+          allowClear: true,
+          width: "resolve",
+        });
+      }, 100);
+    });
   },
   validate(frm) {
     toggle_collapsible_section(frm);
@@ -554,104 +776,112 @@ frappe.ui.form.on("Employee Material Request", {
   //   }
   // },
 
-employee: function (frm) {
-  if (frm.doc.employee) {
-    // Fetch employee details from server
-    frappe.call({
-      method: "frappe.client.get",
-      args: {
-        doctype: "Employee",
-        name: frm.doc.employee,
-      },
-      callback: function (res) {
-        if (res.message) {
-          // Fetch the user_id of the employee
-          const user_id = res.message.user_id;
-          
-          // If user_id exists, check if the user is enabled
-          if (user_id) {
-            frappe.call({
-              method: "frappe.client.get_value",
-              args: {
-                doctype: "User",
-                filters: { name: user_id },  // Use user_id instead of employee
-                fieldname: ["enabled"], // Fetch the "enabled" field
-              },
-              callback: function (user_res) {
-                if (user_res.message && user_res.message.enabled === 0) {
-                  // If the employee is not enabled, clear the employee field and show error
-                  frm.set_value("employee", "");
-                  frappe.msgprint(__("The selected employee is not active."));
-                  return; // Stop further execution if the employee is inactive
-                }
+  employee: function (frm) {
+    if (frm.doc.employee) {
+      // Fetch employee details from server
+      frappe.call({
+        method: "frappe.client.get",
+        args: {
+          doctype: "Employee",
+          name: frm.doc.employee,
+        },
+        callback: function (res) {
+          if (res.message) {
+            // Fetch the user_id of the employee
+            const user_id = res.message.user_id;
 
-                // Continue with the original functionality
-                // Auto-set Reporting Person from employee's "reports_to" field
-                if (!frm.doc.reporting_person && res.message.reports_to) {
-                  frappe.call({
-                    method: "frappe.client.get_value",
-                    args: {
-                      doctype: "Employee",
-                      filters: { name: res.message.reports_to },
-                      fieldname: ["user_id", "employee_name"],
-                    },
-                    callback: function (resp) {
-                      if (resp.message && resp.message.user_id) {
-                        frm.set_value("reporting_person", resp.message.user_id);
+            // If user_id exists, check if the user is enabled
+            if (user_id) {
+              frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "User",
+                  filters: { name: user_id }, // Use user_id instead of employee
+                  fieldname: ["enabled"], // Fetch the "enabled" field
+                },
+                callback: function (user_res) {
+                  if (user_res.message && user_res.message.enabled === 0) {
+                    // If the employee is not enabled, clear the employee field and show error
+                    frm.set_value("employee", "");
+                    frappe.msgprint(__("The selected employee is not active."));
+                    return; // Stop further execution if the employee is inactive
+                  }
 
-                        frappe.show_alert({
-                          message: __("Reporting Person: {0}", [
-                            resp.message.employee_name,
-                          ]),
-                          indicator: "green",
-                        });
+                  // Continue with the original functionality
+                  // Auto-set Reporting Person from employee's "reports_to" field
+                  if (!frm.doc.reporting_person && res.message.reports_to) {
+                    frappe.call({
+                      method: "frappe.client.get_value",
+                      args: {
+                        doctype: "Employee",
+                        filters: { name: res.message.reports_to },
+                        fieldname: ["user_id", "employee_name"],
+                      },
+                      callback: function (resp) {
+                        if (resp.message && resp.message.user_id) {
+                          frm.set_value(
+                            "reporting_person",
+                            resp.message.user_id
+                          );
 
-                        frm.trigger("toggle_collapsible_section");
-                      }
-                    },
-                  });
-                } else {
-                  frappe.show_alert("Reporting Person not set for selected Employee");
-                }
+                          frappe.show_alert({
+                            message: __("Reporting Person: {0}", [
+                              resp.message.employee_name,
+                            ]),
+                            indicator: "green",
+                          });
 
-                // Auto-set Target Warehouse with Branch and State info
-                if (frm.doc.target_location) {
-                  frm.set_value("target_warehouse", frm.doc.target_location);
-
-                  frappe.db
-                    .get_value("Sahayog Branch", frm.doc.target_location, [
-                      "branch",
-                      "state",
-                    ])
-                    .then((r) => {
-                      let b = r?.message?.branch || "Not Found";
-                      let s = r?.message?.state || "N/A";
-
-                      frm.set_df_property(
-                        "target_warehouse",
-                        "description",
-                        `Branch: <b>${frappe.utils.escape_html(b)}</b> | State: <b>${frappe.utils.escape_html(s)}</b>`
-                      );
+                          frm.trigger("toggle_collapsible_section");
+                        }
+                      },
                     });
-                } else {
-                  frappe.show_alert("Target location not set for selected Employee");
-                  frm.set_df_property("target_warehouse", "description", "");
-                }
-              },
-            });
-          } else {
-            // If no user_id found, show an error
-            frappe.msgprint(__("The selected employee does not have an associated user."));
-            frm.set_value("employee", "");
+                  } else {
+                    frappe.show_alert(
+                      "Reporting Person not set for selected Employee"
+                    );
+                  }
+
+                  // Auto-set Target Warehouse with Branch and State info
+                  if (frm.doc.target_location) {
+                    frm.set_value("target_warehouse", frm.doc.target_location);
+
+                    frappe.db
+                      .get_value("Sahayog Branch", frm.doc.target_location, [
+                        "branch",
+                        "state",
+                      ])
+                      .then((r) => {
+                        let b = r?.message?.branch || "Not Found";
+                        let s = r?.message?.state || "N/A";
+
+                        frm.set_df_property(
+                          "target_warehouse",
+                          "description",
+                          `Branch: <b>${frappe.utils.escape_html(
+                            b
+                          )}</b> | State: <b>${frappe.utils.escape_html(s)}</b>`
+                        );
+                      });
+                  } else {
+                    frappe.show_alert(
+                      "Target location not set for selected Employee"
+                    );
+                    frm.set_df_property("target_warehouse", "description", "");
+                  }
+                },
+              });
+            } else {
+              // If no user_id found, show an error
+              frappe.msgprint(
+                __("The selected employee does not have an associated user.")
+              );
+              frm.set_value("employee", "");
+            }
           }
-        }
-      },
-    });
-  }
-},
-
-
-
+        },
+      });
+    }
+  },
 
   // ------------------------------------------------------------------
   // DATE VALIDATION - Triggered when required_by_date changes
