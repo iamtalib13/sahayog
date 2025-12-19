@@ -334,6 +334,10 @@ doc_events = {
 # ---------------
 scheduler_events = {
     "cron": {
+
+        "0 18 * * *": [
+            "sahayog.agent_and_bdo.doctype.agent_activation_call_log.trainer_report.send_daily_trainer_report"
+        ],
         # Run daily at 5:00 AM — Early morning department ticket summary email
         "0 5 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
