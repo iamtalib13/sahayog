@@ -112,77 +112,7 @@ frappe.ui.form.on("Enquiry Reminder", {
   },
 
   refresh(frm) {
-    // // remove duplicate
-    // frm.remove_custom_button("Send Email", "Actions");
-
-    // if (!frm.is_new() && frm.doc.status === "Under Process") {
-
-    //   frm.add_custom_button(
-    //     "Send Email",
-    //     function () {
-
-    //       frappe.call({
-    //         method:
-    //           "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.check_employee_email",
-    //         args: { employee: frm.doc.employee_id },
-    //         callback(r) {
-
-    //           let email = r.message;
-
-    //           if (!email) {
-    //             frappe.msgprint({
-    //               title: __("Email Not Found"),
-    //               indicator: "red",
-    //               message: __(
-    //                 "No email is stored for this employee.<br>Please update the Employee record."
-    //               ),
-    //             });
-    //             return;
-    //           }
-
-    //           // 🔹 Select Print Format Dialog
-    //           let d = new frappe.ui.Dialog({
-    //             title: "Send Enquiry Reminder Email",
-    //             fields: [
-    //               {
-    //                 fieldtype: "Select",
-    //                 fieldname: "print_format",
-    //                 label: "Select Print Format",
-    //                 options: [
-    //                   "Reminder Notice Of Enquiry",
-    //                   "Ex Parte Enquiry",
-    //                 ],
-    //                 reqd: 1,
-    //               },
-    //             ],
-    //             primary_action_label: "Send Email",
-    //             primary_action(values) {
-
-    //               frappe.call({
-    //                 method:
-    //                   "sahayog.hrms.doctype.enquiry_reminder.enquiry_reminder.send_reminder_enquiry_email",
-    //                 args: {
-    //                   docname: frm.doc.name,
-    //                   print_format: values.print_format,
-    //                 },
-    //                 freeze: true,
-    //                 freeze_message: __("Sending Email..."),
-    //                 callback() {
-    //                   frappe.msgprint(__("Email sent successfully!"));
-    //                   d.hide();
-    //                 },
-    //               });
-    //             },
-    //           });
-
-    //           d.show();
-    //         },
-    //       });
-    //     },
-    //     __("Actions")
-    //   );
-    // }
-
+    // Send Email Button
     frm.remove_custom_button("Send Email");
 
     if (!frm.is_new() && frm.doc.status === "Under Process") {
