@@ -83,15 +83,11 @@ frappe.ui.form.on("Case Closure", {
             if (f === "date_of_enquiry") {
               let d = data[f];
 
-              // Convert DD-MM-YYYY → YYYY-MM-DD
-             if (d) {
-  // Ensure date object
-  d = frappe.datetime.str_to_obj(d);
-  frm.set_value(f, frappe.datetime.obj_to_str(d));
-}
-
-
-              frm.set_value(f, d);
+              if (d) {
+                // Normalize datetime → YYYY-MM-DD
+                let date_only = d.split(" ")[0];
+                frm.set_value(f, date_only);
+              }
             } else {
               frm.set_value(f, data[f]);
             }
@@ -241,12 +237,25 @@ frappe.ui.form.on("Case Closure", {
     });
     // Render Timeline
     if (!frm.is_new() && frm.doc.case_id) {
+      // STEP 1: Load timeline counts
       frappe.call({
         method:
-          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts",
         args: { case_id: frm.doc.case_id },
-        callback: function (r) {
-          if (r.message) render_timeline(frm, r.message);
+        callback(r) {
+          frm._timeline_counts = r.message || {};
+
+          // STEP 2: Load timeline stages AFTER counts are ready
+          frappe.call({
+            method:
+              "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+            args: { case_id: frm.doc.case_id },
+            callback(res) {
+              if (res.message) {
+                render_timeline(frm, res.message);
+              }
+            },
+          });
         },
       });
     }
@@ -258,21 +267,21 @@ frappe.ui.form.on("Case Closure", {
       });
     }
 
-// Display review details with employee info for checked reviewers
-  if (frm.__reviewer_mail_synced || frm.is_new()) return;
+    // Display review details with employee info for checked reviewers
+    if (frm.__reviewer_mail_synced || frm.is_new()) return;
 
-  frm.__reviewer_mail_synced = true;
+    frm.__reviewer_mail_synced = true;
 
-  frappe.call({
-    method:
-      "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
-    args: {
-      case_closure_name: frm.doc.name,
-    },
-    callback() {
-      frm.refresh_field("review_details");
-    },
-  });
+    frappe.call({
+      method:
+        "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
+      args: {
+        case_closure_name: frm.doc.name,
+      },
+      callback() {
+        frm.refresh_field("review_details");
+      },
+    });
   },
   show_print_button: function (frm) {
     if (frm.is_new()) return;
@@ -562,6 +571,83 @@ function timeline_badge(stage_obj) {
     </div>
   `;
 }
+// ===============================
+// DAMS Timeline Hover Tooltip
+// ===============================
+(function () {
+  let tooltip = null;
+
+  function show_tooltip(target, html) {
+    hide_tooltip();
+
+    tooltip = $(`
+      <div style="
+        position:absolute;
+        background:#2e2e2e;
+        color:#fff;
+        padding:6px 8px;
+        border-radius:6px;
+        font-size:11px;
+        z-index:99999;
+        box-shadow:0 2px 6px rgba(0,0,0,0.25);
+        max-width:220px;
+      ">
+        ${html}
+      </div>
+    `);
+
+    $("body").append(tooltip);
+
+    const offset = $(target).offset();
+    tooltip.css({
+      top: offset.top - tooltip.outerHeight() - 6,
+      left: offset.left + $(target).outerWidth() / 2 - tooltip.outerWidth() / 2,
+    });
+  }
+
+  function hide_tooltip() {
+    if (tooltip) {
+      tooltip.remove();
+      tooltip = null;
+    }
+  }
+
+  $(document).on(
+    "mouseenter",
+    ".case-timeline-box div[style*='border-radius:14px']",
+    function () {
+      const frm = cur_frm;
+      if (!frm || !frm._timeline_counts) return;
+
+      const label = $(this)
+        .text()
+        .replace(/^[^\w]+/, "")
+        .trim();
+
+      const info = frm._timeline_counts[label];
+
+      let html = `<b>${label}</b>`;
+
+      if (!info || info.count === 0) {
+        html += `<br>No records created yet`;
+      } else {
+        html += `<br>Records created: ${info.count}`;
+        html += `<br><span style="opacity:.8;">${info.names.join(
+          "<br>"
+        )}</span>`;
+      }
+
+      show_tooltip(this, html);
+    }
+  );
+
+  $(document).on(
+    "mouseleave",
+    ".case-timeline-box div[style*='border-radius:14px']",
+    hide_tooltip
+  );
+})();
+
 // FUNCTION TO OPEN REVIEWER SELECTION DIALOG BOX
 function open_approver_dialog(frm) {
   let case_employee_id = frm.doc.employee_id;
