@@ -164,6 +164,8 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
     "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
     "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
+    "sahayog.patches.custom_fields.add_custom_field_asset_serial_no.execute",
+    "sahayog.patches.custom_fields.add_custom_fields_asset_key.execute",
 
 ]
 # Uninstallation
@@ -359,6 +361,9 @@ scheduler_events = {
             "sahayog.tasks.sync_district_state"
         ],
         # "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
+        #             "59 17 * * *": [
+        #     "sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_email_activation.send_daily_trainer_activity_report"
+        # ],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
@@ -381,6 +386,7 @@ scheduler_events = {
     #     # Runs once every month (1st day of month, midnight)
     #     "sahayog.tasks.monthly"
     # ]
+
 }
 
 # Testing

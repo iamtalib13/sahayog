@@ -491,7 +491,8 @@ frappe.ui.form.on("Employee Material Request", {
       // --------------------------------------------------
       try {
         const res = await frappe.call({
-          method: "sahayog.procurement.api.stock_balance_ledger.get_asset_co",
+          method:
+            "sahayog.procurement.api.stock_balance_ledger.get_asset_combine_data",
           args: {},
         });
 
@@ -530,41 +531,72 @@ frappe.ui.form.on("Employee Material Request", {
     <style>
       .emmr-table {
         font-size: 13px;
+        border-collapse: collapse;
       }
       .emmr-table thead th {
         position: sticky;
         top: 0;
         background: #4a6fa5;
-        z-index: 1;
-        border-bottom: 2px solid #dee2e6;
+        border-bottom: 2px solid #e5e7eb;
+        padding: 10px 8px;
+        font-weight: 600;
+        color: #ffffffff;
       }
-      .emmr-table td {
-        vertical-align: middle;
-        padding: 6px 8px;
+      .emmr-table tbody tr {
+        border-bottom: 1px solid #e5e7eb;
       }
       .emmr-table tbody tr:hover {
-        background: #f9fbff;
+        background: #f9fafb;
+      }
+      .emmr-table td {
+        padding: 10px 8px;
+        vertical-align: middle;
       }
       .emmr-asset-code {
-        font-weight: 600;
+        font-weight: 500;
       }
       .emmr-muted {
-        font-size: 11px;
-        color: #859baeff;
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+      .emmr-checkbox {
+        cursor: pointer;
+      }
+      .emmr-employee-select {
+        width: 100%;
+        font-size: 13px;
+        padding: 6px 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        background: white;
+      }
+      .emmr-employee-select:focus {
+        outline: none;
+        border-color: #3b82f6;
       }
       .select2-container {
         width: 100% !important;
       }
+      .select2-container .select2-selection--single {
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        height: 34px;
+      }
+      .select2-container .select2-selection__rendered {
+        line-height: 34px;
+        padding-left: 8px;
+      }
     </style>
 
-    <table class="table table-bordered table-sm emmr-table">
+    <table class="table emmr-table">
       <thead>
         <tr>
-          <th style="width:40px">#</th>
-          <th style="width:60px;text-align:center">Select</th>
+          <th style="width:50px">#</th>
+          <th style="width:60px">Select</th>
           <th>Item</th>
           <th>Asset</th>
-          <th style="width:260px">Employee</th>
+          <th style="width:280px">Employee</th>
         </tr>
       </thead>
       <tbody>
@@ -584,8 +616,8 @@ frappe.ui.form.on("Employee Material Request", {
           html += `
         <tr>
           <td>${sr++}</td>
-          <td style="text-align:center">
-            <input type="checkbox" class="emmr-asset"
+          <td>
+            <input type="checkbox" class="emmr-checkbox emmr-asset"
               data-asset="${a.asset}"
               data-location="${a.location || ""}"
               data-custodian="${a.custodian || ""}">
@@ -599,7 +631,7 @@ frappe.ui.form.on("Employee Material Request", {
             <div class="emmr-muted">${a.asset_name}</div>
           </td>
           <td>
-            <select class="form-control form-control-sm emmr-employee">
+            <select class="emmr-employee-select emmr-employee">
               ${emp_options}
             </select>
           </td>
@@ -673,7 +705,7 @@ frappe.ui.form.on("Employee Material Request", {
         d.$wrapper.find(".emmr-employee").select2({
           placeholder: "Search Employee",
           allowClear: true,
-          width: "resolve",
+          width: "100%",
         });
       }, 100);
     });
