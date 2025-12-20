@@ -257,6 +257,22 @@ frappe.ui.form.on("Case Closure", {
         open_approver_dialog(frm);
       });
     }
+
+// Display review details with employee info for checked reviewers
+  if (frm.__reviewer_mail_synced || frm.is_new()) return;
+
+  frm.__reviewer_mail_synced = true;
+
+  frappe.call({
+    method:
+      "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
+    args: {
+      case_closure_name: frm.doc.name,
+    },
+    callback() {
+      frm.refresh_field("review_details");
+    },
+  });
   },
   show_print_button: function (frm) {
     if (frm.is_new()) return;

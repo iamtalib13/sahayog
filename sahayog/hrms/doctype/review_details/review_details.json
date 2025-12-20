@@ -10,7 +10,8 @@
   "employee_id",
   "remarks",
   "status",
-  "date_and_time"
+  "date_and_time",
+  "mail_sent"
  ],
  "fields": [
   {
@@ -43,13 +44,21 @@
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Date and Time"
+  },
+  {
+   "default": "0",
+   "fieldname": "mail_sent",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Mail Sent",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-11-24 17:36:35.750241",
+ "modified": "2025-12-19 16:44:50.745296",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Review Details",
