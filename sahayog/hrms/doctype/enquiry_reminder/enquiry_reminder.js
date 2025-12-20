@@ -230,12 +230,25 @@ frappe.ui.form.on("Enquiry Reminder", {
     });
 
     if (!frm.is_new() && frm.doc.case_id) {
+      // STEP 1: Load timeline counts
       frappe.call({
         method:
-          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts",
         args: { case_id: frm.doc.case_id },
-        callback: function (r) {
-          if (r.message) render_timeline(frm, r.message);
+        callback(r) {
+          frm._timeline_counts = r.message || {};
+
+          // STEP 2: Load timeline stages AFTER counts are ready
+          frappe.call({
+            method:
+              "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+            args: { case_id: frm.doc.case_id },
+            callback(res) {
+              if (res.message) {
+                render_timeline(frm, res.message);
+              }
+            },
+          });
         },
       });
     }
