@@ -35,7 +35,7 @@
   {
    "fetch_from": "previous_record.date_of_1st_letter",
    "fieldname": "date_of_1st_letter",
-   "fieldtype": "Data",
+   "fieldtype": "Date",
    "label": "Date of Unauthorized Absence letter",
    "read_only": 1
   },
@@ -208,7 +208,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-12-18 13:52:39.638745",
+ "modified": "2025-12-20 12:51:57.412217",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Reminder Of Unauthorized Absence",
