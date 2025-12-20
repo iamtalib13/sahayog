@@ -24,9 +24,12 @@ class AgentActivationCallLog(Document):
         """Ensure the correct behavior when wants_to_stay is checked and amount is validated."""
         
         # If 'wants_to_stay' is checked, validate the amount
-        if self.wants_to_stay == 1:
-            if not self.amount:
-                frappe.throw("Amount is required when 'Wants to Stay' is checked.")
+        # if self.wants_to_stay == 1:
+            # if not self.amount:
+            #     frappe.throw("Amount is required when 'Wants to Stay' is checked.")
+
+        # Validate amount
+        if self.amount:
             
             # Check if the amount is a valid number
             try:
