@@ -69,6 +69,14 @@ frappe.ui.form.on("Suspension Process", {
           if (r.message) render_timeline(frm, r.message);
         },
       });
+      frappe.call({
+        method:
+          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts",
+        args: { case_id: frm.doc.case_id },
+        callback(r) {
+          frm._timeline_counts = r.message || {};
+        },
+      });
     }
   },
 
