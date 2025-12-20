@@ -89,13 +89,18 @@ def execute(filters=None):
             WHEN IFNULL(acl.want_to_exit, 0) = 1
                 THEN 'Want to Exit'
             WHEN IFNULL(acl.wants_to_stay, 0) = 1
+                AND IFNULL(acl.amount, 0) <> 0
                 THEN 'Activated'
+            WHEN IFNULL(acl.wants_to_stay, 0) = 1
+                AND IFNULL(acl.amount, 0) = 0
+                THEN 'Want to Stay'
             WHEN IFNULL(acl.wants_to_stay, 0) = 0
-                 AND IFNULL(acl.want_to_exit, 0) = 0
-                 AND IFNULL(acl.exited, 0) = 0
+                AND IFNULL(acl.want_to_exit, 0) = 0
+                AND IFNULL(acl.exited, 0) = 0
                 THEN 'Pending'
             ELSE ''
         END AS agent_status,
+
         acl.remarks
     FROM
         `tabAgent Activation Call Log` acl
