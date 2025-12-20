@@ -58,24 +58,66 @@ def get_case_stages(case_id):
 
             if docstatus == 1:
                 timeline.append({
-                    "stage": stage,
-                    "status": "submitted",   # green
-                    "modified": doc.modified
-                })
+                "stage": stage,      # used by your JS
+                "doctype": stage,    # future-proof
+                "status": "submitted",
+                "modified": doc.modified
+})
+
             else:
                 timeline.append({
                     "stage": stage,
+                    "doctype": stage,
                     "status": "saved",       # orange
                     "modified": doc.modified
                 })
         else:
             timeline.append({
                 "stage": stage,
+                "doctype": stage,
                 "status": "current",       # yellow
                 "modified": None
             })
 
     return {"timeline": timeline}
+@frappe.whitelist()
+def get_case_stage_counts(case_id):
+    """
+    Return count + record names for each DAMS doctype linked to a case_id.
+    Used for timeline hover tooltip.
+    """
+
+    if not case_id:
+        return {}
+
+    dams_doctypes = [
+        "Disciplinary Case",
+        "Suspension Process",
+        "Response to SCN",
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
+        "Domestic Enquiry",
+        "Enquiry Reminder",
+        "Case Closure",
+    ]
+
+    result = {}
+
+    for dt in dams_doctypes:
+        records = frappe.get_all(
+            dt,
+            filters={"case_id": case_id},
+            fields=["name"],
+            order_by="creation asc"
+        )
+
+        result[dt] = {
+            "count": len(records),
+            "names": [r.name for r in records]
+        }
+
+    return result
+
 
 # check if employee has company email
 @frappe.whitelist()

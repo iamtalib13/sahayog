@@ -277,6 +277,22 @@ frappe.ui.form.on("Disciplinary Case", {
         },
       });
     }
+    // Fetch timeline record counts (ONE TIME)
+    if (!frm.is_new()) {
+      frappe.call({
+        method:
+          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts",
+        args: {
+          case_id: frm.doc.name,
+        },
+        callback(r) {
+          if (r.message) {
+            frm._timeline_counts = r.message;
+            console.debug("Timeline counts loaded:", frm._timeline_counts);
+          }
+        },
+      });
+    }
   },
   // -------------------
   // Case Type Change
@@ -607,3 +623,88 @@ function timeline_badge(stage_obj) {
     </div>
   `;
 }
+// --------------------------------------------------
+// Timeline Hover Tooltip (Records Count)
+// --------------------------------------------------
+(function () {
+  let tooltip = null;
+
+  function show_tooltip(target, html) {
+    hide_tooltip();
+
+    tooltip = $(`
+      <div style="
+        position:absolute;
+        background:#2e2e2e;
+        color:#fff;
+        padding:8px 10px;
+        border-radius:6px;
+        font-size:11px;
+        z-index:99999;
+        box-shadow:0 2px 6px rgba(0,0,0,0.25);
+        max-width:260px;
+      ">
+        ${html}
+      </div>
+    `);
+
+    $("body").append(tooltip);
+
+    const offset = $(target).offset();
+    tooltip.css({
+      top: offset.top - tooltip.outerHeight() - 8,
+      left: offset.left + $(target).outerWidth() / 2 - tooltip.outerWidth() / 2,
+    });
+  }
+
+  function hide_tooltip() {
+    if (tooltip) {
+      tooltip.remove();
+      tooltip = null;
+    }
+  }
+
+  $(document).on(
+    "mouseenter",
+    ".case-timeline-box div[style*='border-radius:14px']",
+    function () {
+      const frm = cur_frm;
+      if (!frm || !frm._timeline_counts) return;
+
+      const label = $(this)
+        .text()
+        .replace(/^[^\w]+/, "")
+        .trim();
+
+      const data = frm._timeline_counts[label];
+
+      let html = `<b>${label}</b>`;
+
+      if (!data) {
+        show_tooltip(this, html);
+        return;
+      }
+
+      if (data.count === 0) {
+        html += `<br>No records created yet`;
+      } else {
+        html += `<br>Records created: ${data.count}`;
+        html += `<div style="margin-top:4px;">`;
+
+        data.names.forEach((name) => {
+          html += `<div style="opacity:0.9;">• ${name}</div>`;
+        });
+
+        html += `</div>`;
+      }
+
+      show_tooltip(this, html);
+    }
+  );
+
+  $(document).on(
+    "mouseleave",
+    ".case-timeline-box div[style*='border-radius:14px']",
+    hide_tooltip
+  );
+})();
