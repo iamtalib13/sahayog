@@ -31,7 +31,8 @@ frappe.ui.form.on("Asset Movement", {
         let asset_list = {};
         try {
           const res = await frappe.call({
-            method: "sahayog.procurement.api.stock_balance_ledger.get_asset_co",
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_asset_combine_data",
             args: {},
           });
 
