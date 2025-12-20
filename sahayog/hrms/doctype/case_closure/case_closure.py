@@ -446,6 +446,55 @@ def case_history_submit_review(case_id, reviewer, remarks):
         frappe.throw("Unable to submit review")
 
 # Sync reviewer mail checkbox for checking email status
+# @frappe.whitelist()
+# def sync_reviewer_mail_checkbox(case_closure_name):
+
+#     if not case_closure_name:
+#         return
+
+#     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
+
+#     updated = False
+
+#     for row in cc_doc.review_details:
+
+#         # already checked → skip
+#         if row.mail_sent:
+#             continue
+
+#         # 🔍 find email queue linked with case closure
+#         queue_names = frappe.db.sql("""
+#             SELECT eq.name
+#             FROM `tabEmail Queue` eq
+#             WHERE eq.message LIKE %(case)s
+#             ORDER BY eq.modified DESC
+#         """, {
+#             "case": f"%{case_closure_name}%"
+#         }, as_dict=True)
+
+#         if not queue_names:
+#             continue
+
+#         queue_names = [q.name for q in queue_names]
+
+#         # 🔍 check if ANY recipient is Sent
+#         sent = frappe.db.exists(
+#             "Email Queue Recipient",
+#             {
+#                 "parent": ["in", queue_names],
+#                 "status": "Sent"
+#             }
+#         )
+
+#         if sent:
+#             row.mail_sent = 1
+#             updated = True
+
+#     if updated:
+#         cc_doc.save(ignore_permissions=True)
+#         frappe.db.commit()
+
+
 @frappe.whitelist()
 def sync_reviewer_mail_checkbox(case_closure_name):
 
@@ -453,7 +502,6 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         return
 
     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
-
     updated = False
 
     for row in cc_doc.review_details:
@@ -462,26 +510,27 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         if row.mail_sent:
             continue
 
-        # 🔍 find email queue linked with case closure
-        queue_names = frappe.db.sql("""
-            SELECT eq.name
-            FROM `tabEmail Queue` eq
-            WHERE eq.message LIKE %(case)s
-            ORDER BY eq.modified DESC
-        """, {
-            "case": f"%{case_closure_name}%"
-        }, as_dict=True)
-
-        if not queue_names:
+        if not row.employee_id:
             continue
 
-        queue_names = [q.name for q in queue_names]
+        # 🔹 Fetch employee email (since child table has no email field)
+        emp_email = frappe.db.get_value(
+            "Employee",
+            row.employee_id,
+            ["company_email", "prefered_email"],
+        )
 
-        # 🔍 check if ANY recipient is Sent
+        if isinstance(emp_email, (list, tuple)):
+            emp_email = emp_email[0] or emp_email[1]
+
+        if not emp_email:
+            continue
+
+        # 🔍 Check Email Queue Recipient
         sent = frappe.db.exists(
             "Email Queue Recipient",
             {
-                "parent": ["in", queue_names],
+                "recipient": emp_email,
                 "status": "Sent"
             }
         )
