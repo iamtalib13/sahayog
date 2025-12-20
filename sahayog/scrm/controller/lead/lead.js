@@ -37,11 +37,22 @@ function addAssignButton(frm) {
           options: "Branch",
           reqd: 1,
           onchange: function () {
-            // Clear user field when branch changes
+            // Clear user & designation when branch changes
             dialog.set_value("user", "");
+            dialog.set_value("designation", "");
 
-            // Update user field options based on selected branch
             let branch = dialog.get_value("branch");
+
+            // Branch selected -> show user & designation, otherwise hide
+            let user_field = dialog.get_field("user");
+            let designation_field = dialog.get_field("designation");
+
+            user_field.df.hidden = !branch;
+            designation_field.df.hidden = !branch;
+
+            user_field.refresh();
+            designation_field.refresh();
+
             if (branch) {
               dialog.fields_dict.user.get_query = function () {
                 return {
@@ -62,6 +73,40 @@ function addAssignButton(frm) {
           label: __("User"),
           options: "User",
           reqd: 1,
+          onchange: function () {
+            const branch = dialog.get_value("branch");
+            if (!branch) {
+              // Guard: prevent selecting user without branch
+              frappe.msgprint(__("Please select Branch first."));
+              dialog.set_value("user", "");
+              dialog.set_value("designation", "");
+              return;
+            }
+
+            const user = dialog.get_value("user");
+            dialog.set_value("designation", "");
+
+            if (user) {
+              // Employee se designation fetch based on user_id
+              frappe.call({
+                method:
+                  "sahayog.scrm.controller.lead.lead.get_employee_designation_by_user",
+                args: { user },
+                callback: function (r) {
+                  if (r.message) {
+                    dialog.set_value("designation", r.message);
+                  }
+                },
+              });
+            }
+          },
+        },
+        {
+          fieldname: "designation",
+          fieldtype: "Link",
+          label: __("Designation"),
+          options: "Designation",
+          read_only: 1,
         },
       ],
       primary_action_label: __("Assign"),
@@ -75,6 +120,18 @@ function addAssignButton(frm) {
           },
           callback: function (r) {
             if (r.message && r.message.status === "success") {
+              // Save designation into Lead custom field (if needed)
+              frappe.call({
+                method:
+                  "sahayog.scrm.controller.lead.lead.get_employee_designation_by_user",
+                args: {
+                  user: values.user,
+                },
+                callback: function (d) {
+                  frm.set_value("custom_designation", d.message || "");
+                },
+              });
+
               // Only if custom API succeeds → then assign
               frappe.call({
                 method: "frappe.desk.form.assign_to.add",
@@ -111,6 +168,16 @@ function addAssignButton(frm) {
       },
     });
 
+    // Initial state: hide User & Designation fields until Branch is selected
+    let user_field = dialog.get_field("user");
+    let designation_field = dialog.get_field("designation");
+
+    user_field.df.hidden = 1;
+    designation_field.df.hidden = 1;
+
+    user_field.refresh();
+    designation_field.refresh();
+
     dialog.show();
   });
 }
@@ -142,7 +209,8 @@ function setIntro(frm) {
                   <strong>Lead Owner</strong><br>
                   Name: ${owner.employee_name || "-"}<br>
                   Employee ID: ${owner.employee_number || "-"}<br>
-                  Branch: ${owner.branch || "-"}
+                  Branch: ${owner.branch || "-"}<br>
+                  Designation: ${owner.designation || "-"}
                 </div>
             `;
 
@@ -152,7 +220,8 @@ function setIntro(frm) {
                   <strong>Assigned To</strong><br>
                   Name: ${assigned.employee_name || "-"}<br>
                   Employee ID: ${assigned.employee_number || "-"}<br>
-                  Branch: ${assigned.branch || "-"}
+                  Branch: ${assigned.branch || "-"}<br>
+                  Designation: ${assigned.designation || "-"}
                 </div>
               `;
             }
