@@ -132,19 +132,18 @@ def get_assigned_employee_info(lead_name):
     emp = frappe.get_all(
         "Employee",
         filters={"user_id": user},
-        fields=["employee_name", "branch", "employee_number"],
+        fields=["employee_name", "branch", "employee_number", "designation"],
         limit_page_length=1
     )
     if not emp:
-        return {"employee_name": user, "branch": "-", "employee_number": "-"}
-
+        return {"employee_name": user, "branch": "-", "employee_number": "-", "designation": "-"}
     return emp[0]
 
 # Get lead owner info
 @frappe.whitelist()
 def get_lead_owner_info(lead_name):
     """
-    Return lead owner details: name, employee_number, branch
+    Return lead owner details: name, employee_number, branch, designation
     """
     lead = frappe.get_doc("Lead", lead_name)
     
@@ -155,7 +154,7 @@ def get_lead_owner_info(lead_name):
     employee = frappe.get_all(
         "Employee",
         filters={"user_id": lead.owner},
-        fields=["employee_name", "employee_number", "branch"],
+        fields=["employee_name", "employee_number", "branch", "designation"],
         limit_page_length=1,
     )
 
@@ -196,3 +195,14 @@ def get_users_by_branch(doctype, txt, searchfield, start, page_len, filters):
     
     return users
 
+
+# Get employee designation by user
+@frappe.whitelist()
+def get_employee_designation_by_user(user):
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": user},
+        ["designation"],
+        as_dict=True,
+    )
+    return employee.designation if employee else None
