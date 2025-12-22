@@ -330,7 +330,11 @@ doc_events = {
     "User": {
         "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
         "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
-    }
+    },
+    "Asset": {
+        "after_insert": "sahayog.doc_events.create_asset_key.create_asset_keys",
+        "on_update": "sahayog.doc_events.create_asset_key.create_asset_keys",
+    },  
 }
 # Scheduled Tasks
 # ---------------
