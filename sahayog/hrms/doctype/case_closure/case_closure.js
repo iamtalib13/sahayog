@@ -718,21 +718,54 @@ function open_approver_dialog(frm) {
               in_list_view: true,
               reqd: 1,
 
+              // get_query() {
+              //   let zone = d.get_value("selected_zone");
+              //   if (!zone) return {};
+              //   return { filters: { custom_zone: zone } };
+              // },
+              // UPDATED get_query to exclude case employee
               get_query() {
                 let zone = d.get_value("selected_zone");
+                let case_employee = frm.doc.employee_id;
+
                 if (!zone) return {};
-                return { filters: { custom_zone: zone } };
+
+                return {
+                  filters: {
+                    custom_zone: zone,
+                    name: ["!=", case_employee] //exclude case employee
+                  }
+                };
               },
+
 
               onchange() {
                 let row = this.grid_row.doc;
                 if (!row.employee_id) return;
 
+                let case_employee = frm.doc.employee_id;
+                //BLOCK: Case employee cannot be reviewer
+                if (row.employee_id === case_employee) {
+                  frappe.msgprint({
+                    title: __("Invalid Reviewer"),
+                    message: __(
+                      "The employee involved in the case cannot act as a reviewer."
+                    ),
+                    indicator: "red",
+                  });
+
+                  row.employee_id = "";
+                  row.employee_name = "";
+                  row.company_email = "";
+                  d.fields_dict.approver_table.grid.refresh();
+                  return;
+                }
+                //BLOCK: Duplicate reviewer in dialog or parent table
                 let dialog_rows = d.fields_dict.approver_table.grid.get_data();
                 let duplicate_in_dialog = dialog_rows.some(
                   (r) => r.employee_id === row.employee_id && r !== row
                 );
-
+                // BLOCK: Duplicate reviewer in dialog
                 if (duplicate_in_dialog) {
                   frappe.msgprint(
                     "This reviewer is already selected in the dialog."
