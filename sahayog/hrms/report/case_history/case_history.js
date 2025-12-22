@@ -105,9 +105,7 @@ frappe.query_reports["Case History"] = {
                           d.hide();
 
                           // ✅ HIDE ADD REVIEW BUTTON AFTER SUBMISSION
-                          report.page.wrapper
-                            .find('.btn-primary:contains("Add Review")')
-                            .hide();
+                          report.page.wrapper.find(".btn-add-review").hide();
 
                           // ✅ REMOVE BLINKING ACTION REQUIRED MESSAGE
                           $(".review-hint").remove();
@@ -125,7 +123,8 @@ frappe.query_reports["Case History"] = {
           },
         });
       })
-      .addClass("btn-primary");
+      .addClass("btn-primary btn-add-review")
+      .hide(); // 🔒 hide by default
 
     // =====================================================
     // CLEAR FILTER
@@ -161,6 +160,7 @@ frappe.query_reports["Case History"] = {
       let case_id = report.get_filter_value("case_id");
       if (!case_id) $(".report-message").hide();
       else $(".report-message").show();
+      toggle_add_review_button(report);
     };
     // ------------------------------
     report.on_data_load = function () {
@@ -173,6 +173,7 @@ frappe.query_reports["Case History"] = {
       if (all_not_created) {
         $(".report-message").hide(); // hide the warning for no records
       }
+      toggle_add_review_button(report);
     };
 
     // ------------------------------
@@ -233,6 +234,7 @@ frappe.query_reports["Case History"] = {
         )
         .appendTo("head");
     }
+    toggle_add_review_button(report);
   },
 
   // ------------------------------
@@ -311,6 +313,45 @@ frappe.query_reports["Case History"] = {
     });
   },
 };
+function toggle_add_review_button(report) {
+  const case_id = report.get_filter_value("case_id");
+  if (!case_id) {
+    report.page.wrapper.find(".btn-add-review").hide();
+    return;
+  }
+
+  // ✅ Admin / System Manager → always visible
+  if (frappe.user.has_role("System Manager")) {
+    report.page.wrapper.find(".btn-add-review").show();
+    return;
+  }
+
+  // 🔒 Check reviewer permission
+  frappe.call({
+    method:
+      "sahayog.hrms.doctype.case_closure.case_closure.get_employee_from_user",
+    callback(r) {
+      const employee_id = r.message;
+      if (!employee_id) {
+        report.page.wrapper.find(".btn-add-review").hide();
+        return;
+      }
+
+      frappe.call({
+        method:
+          "sahayog.hrms.doctype.case_closure.case_closure.case_history_can_review",
+        args: { case_id, reviewer: employee_id },
+        callback(res) {
+          if (res.message === true) {
+            report.page.wrapper.find(".btn-add-review").show();
+          } else {
+            report.page.wrapper.find(".btn-add-review").hide();
+          }
+        },
+      });
+    },
+  });
+}
 
 // ------------------------------
 // REVIEW HINT FUNCTION
@@ -326,8 +367,6 @@ function show_review_hint(report) {
   `);
 
   setTimeout(() => {
-    report.page.wrapper
-      .find('.btn-primary:contains("Add Review")')
-      .addClass("pulse-btn");
+    report.page.wrapper.find(".btn-add-review").addClass("pulse-btn");
   }, 500);
 }
