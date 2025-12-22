@@ -10,6 +10,7 @@ import frappe
 def execute(filters=None):
     columns = [
         {"label": "Agent ID", "fieldname": "agent_id", "fieldtype": "Link", "options": "Agent", "width": 120},
+        {"label": "Agent Code", "fieldname": "agent_code", "fieldtype": "Data", "width": 120},
         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 80},
         {"label": "SOL ID", "fieldname": "sol_id", "fieldtype": "Data", "width": 100},
         {"label": "Agent Name", "fieldname": "agent_name", "fieldtype": "Data", "width": 180},
@@ -57,6 +58,14 @@ def execute(filters=None):
     # ---------------------------------
     for row in data:
         employee = row.get("employee")
+        agent_id = row.get("agent_id")
+
+        if agent_id:
+            # Extract numeric part from agent_id
+            row["agent_code"] = "".join(filter(str.isdigit, agent_id))
+        else:
+            row["agent_code"] = ""
+
 
         if not employee or str(employee).strip() in ("", "0"):
             row["auth_id"] = ""
