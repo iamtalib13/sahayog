@@ -631,10 +631,9 @@ frappe.ui.form.on("Employee Material Request", {
             <div class="emmr-muted">${a.asset_name}</div>
           </td>
           <td>
-            <select class="emmr-employee-select emmr-employee">
-              ${emp_options}
-            </select>
+            <div class="emmr-employee-link"></div>
           </td>
+
         </tr>
       `;
         }
@@ -656,8 +655,7 @@ frappe.ui.form.on("Employee Material Request", {
           d.$wrapper.find("tbody tr").each(function () {
             let checkbox = $(this).find(".emmr-asset");
             if (!checkbox.is(":checked")) return;
-
-            let employee = $(this).find(".emmr-employee").val();
+            let employee = $(this).data("employee");
 
             if (!employee) {
               frappe.msgprint("Employee is mandatory for all selected assets");
@@ -697,6 +695,37 @@ frappe.ui.form.on("Employee Material Request", {
 
       d.fields_dict.html.$wrapper.html(html);
       d.show();
+      d.$wrapper.find("tbody tr").each(function () {
+        const row = this;
+        const wrapper = $(row).find(".emmr-employee-link")[0];
+
+        const control = frappe.ui.form.make_control({
+          parent: wrapper,
+          df: {
+            fieldtype: "Link",
+            fieldname: "employee",
+            options: "Employee",
+            placeholder: "Search Employee",
+            reqd: 1,
+            get_query() {
+              return {
+                filters: {
+                  company: "Sahayog Multistate Credit Co-op Society Ltd",
+                  status: "Active",
+                },
+              };
+            },
+          },
+          render_input: true,
+        });
+
+        control.make();
+
+        // store selected employee on row
+        control.$input.on("change", () => {
+          $(row).data("employee", control.get_value());
+        });
+      });
 
       // --------------------------------------------------
       // Make Employee dropdown searchable (Select2)
