@@ -32,6 +32,37 @@ class SuspensionProcess(Document):
                     title=_("Validation Failed")
                 )
 
+# ✅ ONLY ADDITION — existing logic untouched
+    def on_submit(self):
+        """
+        Auto-send Suspension email on submit.
+        Manual Send Email button remains unchanged.
+        """
+        try:
+            emp = frappe.get_doc("Employee", self.employee_id)
+
+            # Do not block submit if email missing
+            if not emp.company_email:
+                frappe.msgprint(
+                    "Suspension Process submitted successfully, but email was not sent because employee email is missing.",
+                    indicator="orange"
+                )
+                return
+
+            send_suspension_email(self.name)
+
+            frappe.msgprint(
+                "Suspension Process submitted successfully and email sent to employee.",
+                indicator="green"
+            )
+
+        except Exception:
+            # Never block submit
+            frappe.log_error(
+                frappe.get_traceback(),
+                "Auto Suspension Email Failed on Submit"
+            )
+            
 @frappe.whitelist()
 def check_employee_email(employee):
     emp = frappe.get_doc("Employee", employee)
