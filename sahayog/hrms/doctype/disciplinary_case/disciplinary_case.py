@@ -9,6 +9,39 @@ from frappe.utils import formatdate
 
 class DisciplinaryCase(Document):
 
+    # ✅ ONLY ADDITION – existing logic untouched
+    def on_submit(self):
+        """
+        Auto-send SCN email on submit.
+        Manual Send Email button remains unchanged.
+        """
+        try:
+            # Fetch employee
+            emp = frappe.get_doc("Employee", self.employee_id)
+
+            # If employee email missing → do not block submit
+            if not emp.company_email:
+                frappe.msgprint(
+                    "Case submitted successfully, but email was not sent because employee email is missing.",
+                    indicator="orange"
+                )
+                return
+
+            # Send SCN email
+            send_scn_email(self.name)
+
+            frappe.msgprint(
+                "Case submitted successfully and SCN email sent to employee.",
+                indicator="green"
+            )
+
+        except Exception:
+            # Never block submit
+            frappe.log_error(
+                frappe.get_traceback(),
+                "Auto SCN Email Failed on Submit"
+            )
+
     def before_insert(self):
         user = frappe.session.user
 
