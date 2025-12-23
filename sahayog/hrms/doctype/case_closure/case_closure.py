@@ -4,11 +4,16 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 from frappe.utils import getdate
 
+# Decorator to check whether email notifications are enabled from HR settings
 from sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting import (
     email_notification_enabled
 )
 
 class CaseClosure(Document):
+    """
+    Controller for Case Closure DocType.
+    Handles autonaming and server-side business logic.
+    """
     def autoname(self):
         if self.case_id:
             count = frappe.db.count("Case Closure", {"case_id": self.case_id}) + 1
@@ -16,11 +21,17 @@ class CaseClosure(Document):
         else:
             self.name = frappe.model.naming.make_autoname("CLS-.#####")
 
+# ============================================================================
+# CLOSE ALL LINKED DOCUMENTS AFTER CASE CLOSURE SUBMISSION
+# ============================================================================
 @frappe.whitelist()
 def close_linked_case(case_id):
     """
-    Close all linked documents ONLY when Case Closure is submitted.
-    """
+    Close all documents linked to a Case ID.
+
+    🔒 IMPORTANT:
+    - This function is allowed ONLY after Case Closure is submitted.
+    - It marks all related documents' status as 'Closed'."""
 
     # 1️⃣ Fetch Case Closure safely
     case_closure = frappe.get_all(
@@ -29,18 +40,19 @@ def close_linked_case(case_id):
         fields=["name", "docstatus"],
         limit=1
     )
-
+    # Case Closure must exist
     if not case_closure:
         frappe.throw("Case Closure not found for this Case ID")
 
     case_closure = case_closure[0]
 
-    # 2️⃣ HARD GUARD: only allow on submit
+    # Ensure Case Closure is submitted
     if case_closure.docstatus != 1:
         frappe.throw(
             "Case Closure must be submitted before closing linked cases"
         )
-
+    
+    # All DAMS-related doctypes linked via case_id
     linked_doctypes = [
         "Disciplinary Case",
         "Suspension Process",
@@ -50,11 +62,13 @@ def close_linked_case(case_id):
         "Domestic Enquiry",
         "Enquiry Reminder",
     ]
-
+    
+     # Iterate through each linked doctype
     for doctype in linked_doctypes:
+        # Skip if DocType is not installed
         if not frappe.db.exists("DocType", doctype):
             continue
-
+         # Fetch active (non-closed) documents
         docs = frappe.get_all(
             doctype,
             filters={
@@ -67,26 +81,39 @@ def close_linked_case(case_id):
         for d in docs:
             doc = frappe.get_doc(doctype, d.name)
 
-            # Optional: prevent closing cancelled docs
+             # Do not touch cancelled documents
             if doc.docstatus == 2:
                 continue
 
-            # Respect document lifecycle
+             # Update status safely
             if hasattr(doc, "status"):
                 doc.status = "Closed"
                 doc.save(ignore_permissions=True)
 
     frappe.db.commit()
 
+# ============================================================================
+# FETCH LATEST LINKED ENQUIRY DETAILS FOR CASE HISTORY
+# ============================================================================
 @frappe.whitelist()
 def get_latest_linked_enquiry(case_id):
-    """Determine the latest record in the case workflow and return all available field data."""
+    """
+    Returns the most recently modified enquiry-related document
+    linked to a Case ID.
+
+    Used for:
+    - Case History timeline
+    - Dynamic UI rendering in Case Closure
+    """
     if not case_id:
         return {}
 
     docs = []
 
-    # Fetch latest Response to SCN
+   
+    # -----------------------------
+    # Response to SCN (Only if Satisfactory)
+    # -----------------------------
     rscn = frappe.get_all(
         "Response to SCN",
         filters={"case_id": case_id},
@@ -105,7 +132,10 @@ def get_latest_linked_enquiry(case_id):
             },
         })
 
-    # Fetch latest Domestic Enquiry
+   
+    # -----------------------------
+    # Domestic Enquiry
+    # -----------------------------
     de = frappe.get_all(
         "Domestic Enquiry",
         filters={"case_id": case_id},
@@ -124,7 +154,7 @@ def get_latest_linked_enquiry(case_id):
     if de:
         d = de[0]
 
-        # ✅ SAFE FIX: normalize date (NO behaviour change)
+        # Normalize date for UI safety
         if d.get("date_of_enquiry"):
             d["date_of_enquiry"] = getdate(d["date_of_enquiry"])
 
@@ -135,7 +165,10 @@ def get_latest_linked_enquiry(case_id):
             "data": d,
         })
 
-    # Fetch latest Enquiry Reminder
+    
+    # -----------------------------
+    # Enquiry Reminder
+    # -----------------------------
     er = frappe.get_all(
         "Enquiry Reminder",
         filters={"case_id": case_id},
@@ -154,7 +187,7 @@ def get_latest_linked_enquiry(case_id):
     if er:
         e = er[0]
 
-        # ✅ SAFE FIX: normalize date (NO behaviour change)
+        # Normalize date for UI safety
         if e.get("date_of_2nd_enquiry"):
             e["date_of_2nd_enquiry"] = getdate(e["date_of_2nd_enquiry"])
 
@@ -168,7 +201,7 @@ def get_latest_linked_enquiry(case_id):
     if not docs:
         return {}
 
-    # Pick the document with the latest modification
+    # Return the most recently modified document
     latest_doc = max(docs, key=lambda x: x["modified"])
 
     return {
@@ -183,7 +216,10 @@ def get_latest_linked_enquiry(case_id):
 @frappe.whitelist()
 def start_verification_process(approvers=None, case_id=None):
     import json
-
+    """
+    Sends simple system-generated emails to approvers
+    to notify them that Case Closure review is required.
+    """
     if not approvers:
         approvers = frappe.form_dict.get("approvers")
 
@@ -379,10 +415,18 @@ def send_case_closure_email(docname, print_format):
     )
 
     return "Email Sent"
-
+# ============================================================================
+# FETCH EMPLOYEE LINKED TO LOGGED-IN USER
+# ============================================================================
 @frappe.whitelist()
 def get_employee_from_user():
-    """Return Employee ID linked to logged-in user"""
+    """
+    Returns the Employee ID linked to the currently logged-in user.
+
+    Used for:
+    - Identifying reviewer based on session user
+    - Case History review permission checks
+    """
     emp = frappe.db.get_value(
         "Employee",
         {"user_id": frappe.session.user},
@@ -394,12 +438,15 @@ def get_employee_from_user():
 @frappe.whitelist()
 def case_history_can_review(case_id, reviewer):
     """Check if logged-in employee is assigned as reviewer"""
+
+    # Fetch Case Closure name using case_id
     cc_name = frappe.db.get_value("Case Closure", {"case_id": case_id}, "name")
+    # No Case Closure found → cannot review
     if not cc_name:
         return False   # or None (important)
-
+     # Load Case Closure document
     cc_doc = frappe.get_doc("Case Closure", cc_name)
-
+    # Iterate through reviewer child table
     ignore_permissions=True   # 🔥 REQUIRED
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
@@ -407,113 +454,103 @@ def case_history_can_review(case_id, reviewer):
     return False
 
 
+# ============================================================================
+# CHECK IF REVIEW IS STILL PENDING FOR REVIEWER
+# ============================================================================
 @frappe.whitelist()
 def reviewer_pending_review(case_id, reviewer):
-    """Check if reviewer exists AND remarks not yet submitted"""
+    """
+    Checks whether the reviewer has a pending review action."""
+
+   # Fetch Case Closure name using case_id
     cc_name = frappe.db.get_value("Case Closure", {"case_id": case_id}, "name")
+    # Case Closure missing → no pending review
     if not cc_name:
         return False   # or None (important)
-
+    # Load Case Closure document
     cc_doc = frappe.get_doc("Case Closure", cc_name)
     ignore_permissions=True   # 🔥 REQUIRED
+    # Check reviewer row
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
             return not bool(r.remarks)
     return False
+
+# ============================================================================
+# SUBMIT REVIEWER REMARKS FROM CASE HISTORY
+# ============================================================================
 @frappe.whitelist()
 def case_history_submit_review(case_id, reviewer, remarks):
+    """
+    Saves reviewer remarks against Case Closure review_details.
+
+    Validations:
+    - Case ID, reviewer, and remarks must be present
+    - Reviewer must be assigned to the case
+
+    Updates:
+    - Remarks
+    - Review status
+    - Date & time of submission
+    """
     try:
+         # Mandatory value check
         if not case_id or not reviewer or not remarks:
             frappe.throw("Missing required values")
 
+         # Fetch Case Closure name
         cc_name = frappe.db.get_value("Case Closure", {"case_id": case_id}, "name")
         if not cc_name:
            return False   # or None (important)
 
         cc_doc = frappe.get_doc("Case Closure", cc_name)
         ignore_permissions=True   # 🔥 REQUIRED
-
+         # Identify reviewer row
         reviewer_row = None
         for row in cc_doc.review_details:
             if row.employee_id == reviewer:
                 reviewer_row = row
                 break
-
+         # Reviewer not assigned
         if not reviewer_row:
             frappe.throw("You are not assigned as reviewer for this case")
-
+         # Save reviewer inputs
         reviewer_row.remarks = remarks
         reviewer_row.status = "Submitted"   # ✅ VALID VALUE
         reviewer_row.date_and_time = frappe.utils.now()
-
+          # Save Case Closure with permission override
         cc_doc.save(ignore_permissions=True)
         frappe.db.commit()
 
         return True
 
     except Exception:
+         # Log technical error for debugging
         frappe.log_error(
             frappe.get_traceback(),
             "Case History Review Submit Error"
         )
         frappe.throw("Unable to submit review")
 
-# Sync reviewer mail checkbox for checking email status
-# @frappe.whitelist()
-# def sync_reviewer_mail_checkbox(case_closure_name):
-
-#     if not case_closure_name:
-#         return
-
-#     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
-
-#     updated = False
-
-#     for row in cc_doc.review_details:
-
-#         # already checked → skip
-#         if row.mail_sent:
-#             continue
-
-#         # 🔍 find email queue linked with case closure
-#         queue_names = frappe.db.sql("""
-#             SELECT eq.name
-#             FROM `tabEmail Queue` eq
-#             WHERE eq.message LIKE %(case)s
-#             ORDER BY eq.modified DESC
-#         """, {
-#             "case": f"%{case_closure_name}%"
-#         }, as_dict=True)
-
-#         if not queue_names:
-#             continue
-
-#         queue_names = [q.name for q in queue_names]
-
-#         # 🔍 check if ANY recipient is Sent
-#         sent = frappe.db.exists(
-#             "Email Queue Recipient",
-#             {
-#                 "parent": ["in", queue_names],
-#                 "status": "Sent"
-#             }
-#         )
-
-#         if sent:
-#             row.mail_sent = 1
-#             updated = True
-
-#     if updated:
-#         cc_doc.save(ignore_permissions=True)
-#         frappe.db.commit()
 
 
+# ============================================================================
+# SYNC REVIEWER EMAIL SENT STATUS
+# ============================================================================
 @frappe.whitelist()
 def sync_reviewer_mail_checkbox(case_closure_name):
+    """
+    Updates 'mail_sent' flag in review_details child table
+    based on Email Queue status.
+
+    Purpose:
+    - Visually track whether reviewer notification email was delivered
+    - Avoid duplicate notifications
+    """
 
     if not case_closure_name:
         return
-
+    # Load Case Closure document
     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
     updated = False
 
@@ -551,7 +588,7 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         if sent:
             row.mail_sent = 1
             updated = True
-
+     # Save only if changes were made
     if updated:
         cc_doc.save(ignore_permissions=True)
         frappe.db.commit()
