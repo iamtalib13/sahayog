@@ -394,7 +394,12 @@ def get_employee_from_user():
 @frappe.whitelist()
 def case_history_can_review(case_id, reviewer):
     """Check if logged-in employee is assigned as reviewer"""
-    cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+    cc_name = frappe.db.get_value("Case Closure", {"case_id": case_id}, "name")
+    if not cc_name:
+        return False   # or None (important)
+
+    cc_doc = frappe.get_doc("Case Closure", cc_name)
+
     ignore_permissions=True   # 🔥 REQUIRED
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
@@ -405,7 +410,11 @@ def case_history_can_review(case_id, reviewer):
 @frappe.whitelist()
 def reviewer_pending_review(case_id, reviewer):
     """Check if reviewer exists AND remarks not yet submitted"""
-    cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+    cc_name = frappe.db.get_value("Case Closure", {"case_id": case_id}, "name")
+    if not cc_name:
+        return False   # or None (important)
+
+    cc_doc = frappe.get_doc("Case Closure", cc_name)
     ignore_permissions=True   # 🔥 REQUIRED
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
@@ -417,7 +426,11 @@ def case_history_submit_review(case_id, reviewer, remarks):
         if not case_id or not reviewer or not remarks:
             frappe.throw("Missing required values")
 
-        cc_doc = frappe.get_doc("Case Closure", {"case_id": case_id})
+        cc_name = frappe.db.get_value("Case Closure", {"case_id": case_id}, "name")
+        if not cc_name:
+           return False   # or None (important)
+
+        cc_doc = frappe.get_doc("Case Closure", cc_name)
         ignore_permissions=True   # 🔥 REQUIRED
 
         reviewer_row = None
