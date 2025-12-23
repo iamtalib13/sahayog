@@ -2,6 +2,16 @@
  {
   "docstatus": 0,
   "doctype": "Email Template",
+  "modified": "2025-12-23 12:23:42.164589",
+  "name": "Trainer Weekly Activity",
+  "response": null,
+  "response_html": "{{ body }}\n",
+  "subject": "Trainer Weekly Activity - {{ report_date }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
   "modified": "2025-12-19 17:21:46.818748",
   "name": "Trainer Daily Activity",
   "response": "\n<div style=\"font-family: Arial, sans-serif; font-size: 13px; color: #1f2933;\">\n  <h2 style=\"margin-bottom: 4px;\">Trainer Daily Activity</h2>\n  <p style=\"margin-top: 0; color: #6b7280;\">\n    Date: <strong>{{ report_date }}</strong>\n  </p>\n\n  <h3 style=\"margin-top: 20px; margin-bottom: 8px;\">Today Trainer Activity</h3>\n  \n      {% if trainers_with_calls %}\n        {% for row in trainers_with_calls %}\n          \n        {% endfor %}\n      {% else %}\n        \n      {% endif %}\n    <table width=\"100%\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse: collapse; font-size: 13px;\">\n    <thead>\n      <tr style=\"background-color: #f3f4f6;\">\n        <th align=\"left\" style=\"border: 1px solid #e5e7eb;\">Trainer ID</th>\n        <th align=\"left\" style=\"border: 1px solid #e5e7eb;\">Trainer Name</th>\n        <th align=\"right\" style=\"border: 1px solid #e5e7eb;\">Total Calls</th>\n      </tr>\n    </thead>\n    <tbody><tr>\n            <td style=\"border: 1px solid #e5e7eb;\">{{ row.trainer_id }}</td>\n            <td style=\"border: 1px solid #e5e7eb;\">{{ row.trainer_name }}</td>\n            <td align=\"right\" style=\"border: 1px solid #e5e7eb;\">{{ row.total_calls }}</td>\n          </tr><tr>\n          <td colspan=\"3\" align=\"center\" style=\"border: 1px solid #e5e7eb; color:#6b7280;\">\n            No trainer made calls today.\n          </td>\n        </tr></tbody>\n  </table>\n\n  <h3 style=\"margin-top: 24px; margin-bottom: 8px;\">Trainer Not Make Any Calls Today</h3>\n  \n      {% if trainers_no_calls %}\n        {% for row in trainers_no_calls %}\n          \n        {% endfor %}\n      {% else %}\n        \n      {% endif %}\n    <table width=\"100%\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse: collapse; font-size: 13px;\">\n    <thead>\n      <tr style=\"background-color: #f3f4f6;\">\n        <th align=\"left\" style=\"border: 1px solid #e5e7eb;\">Trainer ID</th>\n        <th align=\"left\" style=\"border: 1px solid #e5e7eb;\">Trainer Name</th>\n      </tr>\n    </thead>\n    <tbody><tr>\n            <td style=\"border: 1px solid #e5e7eb;\">{{ row.trainer_id }}</td>\n            <td style=\"border: 1px solid #e5e7eb;\">{{ row.trainer_name }}</td>\n          </tr><tr>\n          <td colspan=\"2\" align=\"center\" style=\"border: 1px solid #e5e7eb; color:#6b7280;\">\n            All trainers made at least one call today.\n          </td>\n        </tr></tbody>\n  </table>\n\n  <p style=\"margin-top: 20px; color:#9ca3af; font-size:12px;\">\n    This email was generated automatically by SS Trainer Dashboard.\n  </p>\n</div>\n",

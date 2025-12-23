@@ -340,10 +340,15 @@ doc_events = {
 # ---------------
 scheduler_events = {
     "cron": {
-
+        # Run daily at 6:00 PM — Evening trainer daily activity email
         "0 18 * * *": [
             "sahayog.agent_and_bdo.doctype.agent_activation_call_log.trainer_report.send_daily_trainer_report"
         ],
+
+        "0 18 * * 3": [
+            "sahayog.agent_and_bdo.doctype.agent_activation_call_log.weekly_trainer_report.send_weekly_trainer_report"
+        ],
+
         # Run daily at 5:00 AM — Early morning department ticket summary email
         "0 5 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
@@ -598,7 +603,9 @@ fixtures = [
                                 "Unauthorized Absence",
                                 "Reminder Of Unauthorized Absence",
                                 "Case Closure Update",
-                                "Trainer Daily Activity",]]]
+                                "Trainer Daily Activity",
+                                "Trainer Weekly Activity",
+                                ]]]
 },
   
     # Print Format fixture
