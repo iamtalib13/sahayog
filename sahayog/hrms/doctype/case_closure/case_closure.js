@@ -1,7 +1,9 @@
 frappe.ui.form.on("Case Closure", {
   onload(frm) {
+    // If case_id is not present, nothing to process
     if (!frm.doc.case_id) return;
 
+    // List of workflow-related fields to control visibility
     const workflow_fields = [
       "status_of_response",
       "domestic_enquiry",
@@ -97,9 +99,12 @@ frappe.ui.form.on("Case Closure", {
     });
   },
 
+  // --------------------------------------------------------------------------
+  // ON SUBMIT: Close linked case stages
+  // --------------------------------------------------------------------------
   on_submit(frm) {
     if (!frm.doc.case_id) return;
-
+    // Fetch latest linked enquiry
     frappe.call({
       method:
         "sahayog.hrms.doctype.case_closure.case_closure.close_linked_case",
@@ -107,6 +112,9 @@ frappe.ui.form.on("Case Closure", {
     });
   },
 
+  // --------------------------------------------------------------------------
+  // AFTER SAVE: Success message after submission
+  // --------------------------------------------------------------------------
   after_save(frm) {
     if (frm.doc.docstatus === 1) {
       frappe.msgprint({
@@ -116,13 +124,16 @@ frappe.ui.form.on("Case Closure", {
       });
     }
   },
-
+  // --------------------------------------------------------------------------
+  // REFRESH: Buttons, Timeline, Reviewer actions
+  // --------------------------------------------------------------------------
   refresh(frm) {
+    // Remove duplicate Send Email button
     frm.remove_custom_button("Send Email");
-
+    // ---------------- SEND EMAIL BUTTON (Only when Closed) ----------------
     if (!frm.is_new() && frm.doc.status === "Closed") {
       frm.add_custom_button("Send Email", function () {
-        // Step 1: Check employee email
+        // Step 1: Validate employee email exists
         frappe.call({
           method:
             "sahayog.hrms.doctype.case_closure.case_closure.check_employee_email",
@@ -137,7 +148,7 @@ frappe.ui.form.on("Case Closure", {
               return;
             }
 
-            // Step 2: Fetch Print Formats
+            // Step 2: Fetch active print formats
             frappe.call({
               method: "frappe.client.get_list",
               args: {
@@ -154,7 +165,7 @@ frappe.ui.form.on("Case Closure", {
                   return;
                 }
 
-                // 🔥 REQUIRED ORDER
+                // Preferred print format ordering
                 const preferred_order = [
                   "Warning Letter",
                   "Caution Letter",
@@ -182,7 +193,7 @@ frappe.ui.form.on("Case Closure", {
 
                 let options = ordered_formats.join("\n");
 
-                // Step 3: Dialog
+                // Print format selection dialog
                 let d = new frappe.ui.Dialog({
                   title: "Send Case Closure Email",
                   fields: [
@@ -221,7 +232,7 @@ frappe.ui.form.on("Case Closure", {
       });
     }
 
-    // View Case History Button
+    // ---------------- VIEW CASE HISTORY BUTTON ----------------
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
@@ -231,7 +242,7 @@ frappe.ui.form.on("Case Closure", {
 
       btn.removeClass("btn-default").addClass("btn-primary");
     }
-    // Show Print Button after ajax
+    // ---------------- CUSTOM PRINT BUTTON ----------------
     frappe.after_ajax(() => {
       frm.trigger("show_print_button");
     });
@@ -260,14 +271,14 @@ frappe.ui.form.on("Case Closure", {
       });
     }
 
-    //Add Custom Button for Case Review
+    // ---------------- CASE REVIEW BUTTON ----------------
     if (!frm.is_new()) {
       frm.add_custom_button("Case Review", () => {
         open_approver_dialog(frm);
       });
     }
 
-    // Display review details with employee info for checked reviewers
+    // ---------------- REVIEWER MAIL SYNC ----------------
     if (frm.__reviewer_mail_synced || frm.is_new()) return;
 
     frm.__reviewer_mail_synced = true;
@@ -283,19 +294,23 @@ frappe.ui.form.on("Case Closure", {
       },
     });
   },
-  show_print_button: function (frm) {
-    if (frm.is_new()) return;
-    if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
 
+  show_print_button: function (frm) {
+    // Do not show print options for new (unsaved) documents
+    if (frm.is_new()) return;
+    // Prevent duplicate print buttons if already rendered
+    if ($(frm.page.wrapper).find(".print-format-highlight").length) return;
+    // Only allowed HR/System roles can see print options
     const allowed_roles = [
       "System Manager",
       "HR Support Executive",
       "HR Support Manager",
     ];
-
+    // Exit if current user does not have any allowed role
     if (!frappe.user_roles.some((r) => allowed_roles.includes(r))) return;
-
-    // Remove old versions if exist
+    // --------------------------------------------------
+    // Cleanup existing default Print buttons (Frappe default)
+    // --------------------------------------------------
     try {
       frm.page.remove_custom_button("Print");
     } catch (e) {}
@@ -372,9 +387,7 @@ frappe.ui.form.on("Case Closure", {
       iframe.onload = () => {
         try {
           const win = iframe.contentWindow;
-
-          // FIX: Disable internal auto-print for submitted docs
-          // close the print preview in one attempt
+          // Disable Frappe's internal auto-print
           if (win.print) {
             win.print = function () {};
           }
@@ -382,6 +395,9 @@ frappe.ui.form.on("Case Closure", {
             win.frappe.utils.print = function () {};
           }
 
+          // --------------------------------------------------
+          // Trigger manual print after preview loads
+          // --------------------------------------------------
           setTimeout(() => {
             win.focus();
 
@@ -389,12 +405,12 @@ frappe.ui.form.on("Case Closure", {
             win.print = window.print.bind(win);
             win.print();
           }, 700);
-
+          // Cleanup after printing
           win.addEventListener("afterprint", () => {
             overlay.remove();
             iframe.remove();
           });
-
+          // Fallback cleanup in case afterprint doesn't fire
           setTimeout(() => {
             overlay.remove();
             iframe.remove();
@@ -415,16 +431,19 @@ frappe.ui.form.on("Case Closure", {
     }
   },
 });
+// ===============================
+// CASE TIMELINE RENDERING
+
 function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
     "render_timeline payload:",
     data && data.timeline ? data.timeline : data
   );
-
+  // Remove existing timeline if any
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
-
+  // Insertion point before dashboard
   const insertion_point = $(".form-dashboard");
 
   let html = `
@@ -489,6 +508,8 @@ function render_timeline(frm, data) {
 
   insertion_point.before(html);
 }
+// ===============================
+// TIMELINE BADGE HTML GENERATOR
 function timeline_badge(stage_obj) {
   let bg = "#eeeeee",
     color = "#555",
@@ -543,7 +564,7 @@ function timeline_badge(stage_obj) {
       formatted = String(ts);
     }
   }
-
+  // Stage label fallbacks
   const stage_label =
     stage_obj.stage || stage_obj.doctype || stage_obj.title || "";
 
@@ -733,11 +754,10 @@ function open_approver_dialog(frm) {
                 return {
                   filters: {
                     custom_zone: zone,
-                    name: ["!=", case_employee] //exclude case employee
-                  }
+                    name: ["!=", case_employee], //exclude case employee
+                  },
                 };
               },
-
 
               onchange() {
                 let row = this.grid_row.doc;
