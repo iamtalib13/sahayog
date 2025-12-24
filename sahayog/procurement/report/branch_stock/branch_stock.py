@@ -7,6 +7,8 @@ def execute(filters=None):
         dict(fieldname='item_name', label='Item Name', fieldtype='Data', width=200),
         dict(fieldname='warehouse', label='Warehouse', fieldtype='Link', options='Warehouse', width=150),
         dict(fieldname='stock_balance', label='Stock Balance', fieldtype='Float', width=100),
+        dict(fieldname="issue",label="Issue",fieldtype="Data",width=80),
+
     ]
 
     conditions = []
