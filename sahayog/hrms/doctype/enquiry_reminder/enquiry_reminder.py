@@ -31,6 +31,40 @@ class EnquiryReminder(Document):
                 self.date_of_enquiry = de.date_of_enquiry
                 self.place_of_enquiry = de.place_of_enquiry
                 self.enquiry_officer_name = de.enquiry_officer_name
+# ✅ AUTO EMAIL ON SUBMIT (NON-BLOCKING)
+    def on_submit(self):
+        """
+        Auto-send Enquiry Reminder email on submit.
+        Manual Send Email button remains unchanged.
+        Does NOT block submit if email fails.
+        """
+        try:
+            emp = frappe.get_doc("Employee", self.employee_id)
+
+            if not emp.company_email:
+                frappe.msgprint(
+                    "Enquiry Reminder submitted successfully, but email was not sent because employee email is missing.",
+                    indicator="orange",
+                )
+                return
+
+            # Default print format for auto email
+            send_reminder_enquiry_email(
+                docname=self.name,
+                print_format="Reminder Notice Of Enquiry",
+            )
+
+            frappe.msgprint(
+                "Enquiry Reminder submitted successfully and email sent to employee.",
+                indicator="green",
+            )
+
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(),
+                "Enquiry Reminder Auto Email Failed on Submit",
+            )
+
 
 # get latest enquiry documents for a case   
 @frappe.whitelist()
