@@ -23,6 +23,38 @@ class DomesticEnquiry(Document):
                     title=("Action Restricted")
                 )
 
+# ✅ ONLY ADDITION
+    def on_submit(self):
+        """
+        Auto-send Domestic Enquiry email on submit.
+        Existing manual send email logic remains unchanged.
+        """
+        try:
+            emp = frappe.get_doc("Employee", self.employee_id)
+
+            # Do not block submit if email missing
+            if not emp.company_email:
+                frappe.msgprint(
+                    "Domestic Enquiry submitted successfully, but email was not sent because employee email is missing.",
+                    indicator="orange"
+                )
+                return
+
+            send_domestic_enquiry_email(self.name)
+
+            frappe.msgprint(
+                "Domestic Enquiry submitted successfully and notice email sent to employee.",
+                indicator="green"
+            )
+
+        except Exception:
+            # Never block submit
+            frappe.log_error(
+                frappe.get_traceback(),
+                "Auto Domestic Enquiry Email Failed on Submit"
+            )
+
+
 # Check employee email
 @frappe.whitelist()
 def check_employee_email(employee):
