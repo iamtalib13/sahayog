@@ -183,6 +183,11 @@ wants_to_stay: function (frm) {
           }
           frm.set_df_property("agent_phone_number", "read_only", 0);
         }
+
+        // ✅ NEW: Fetch creation_date → date_of_joining
+        if (agent.creation) {
+          frm.set_value("date_of_joining", agent.creation_date);
+        }
         // Get district + branch from Sahayog Branch using sol_id (branch_code)
         frappe.db
           .get_value("Sahayog Branch", { sol_id: agent.branch_code }, [
