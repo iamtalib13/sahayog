@@ -29,6 +29,20 @@ class ReminderOfUnauthorizedAbsence(Document):
             # fallback autoname if no case linked
             self.name = frappe.model.naming.make_autoname("RUA-.#####")
 
+    def on_submit(self):
+        """
+        Auto send Reminder Unauthorized Absence email on submit.
+        Existing email logic is reused without modification.
+        """
+        try:
+            send_reminder_unauthorized_absence_email(self.name)
+        except Exception:
+            # Do not block submission if email fails
+            frappe.log_error(
+                frappe.get_traceback(),
+                "Reminder Of Unauthorized Absence Auto Email Failed"
+            )
+
 @frappe.whitelist()
 def check_employee_email(employee):
     """Return employee email if exists, else None."""
