@@ -8,7 +8,7 @@ def execute(filters=None):
         dict(fieldname="item_name", label="Item Name", fieldtype="Data", width=200),
         dict(fieldname="warehouse", label="Warehouse", fieldtype="Link", options="Warehouse", width=150),
         dict(fieldname="stock_balance", label="Stock Balance", fieldtype="Float", width=120),
-        dict(fieldname="select_row", label="Select", fieldtype="Data", width=60),
+        dict(fieldname="select_row", label="Select Items", fieldtype="Data", width=60),
     ]
 
     query = """
