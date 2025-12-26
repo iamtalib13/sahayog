@@ -159,7 +159,18 @@ wants_to_stay: function (frm) {
   },
 
   agent: function (frm) {
+    // ✅ NEW: Clear ALL fields FIRST when agent changes
+    frm.set_value("agent_phone_number", "");
+    frm.fields_dict.agent_details_html.$wrapper.html("");
+    frm.fields_dict.branch_details_html.$wrapper.html("");
+    frm.set_df_property("agent_phone_number", "read_only", 0);
+    frm.set_value("date_of_joining", "");
+    
+    // Hide date_of_exit when agent changes
+    frm.set_value("date_of_exit", "");
+    frm.toggle_display("date_of_exit", 0);
     if (frm.doc.agent) {
+      
       frappe.db.get_doc("Agent", frm.doc.agent).then((agent) => {
         if (agent.phone_number) {
           // Overwrite only if value came from Agent
@@ -171,6 +182,11 @@ wants_to_stay: function (frm) {
             frm.set_value("agent_phone_number", "");
           }
           frm.set_df_property("agent_phone_number", "read_only", 0);
+        }
+
+        // ✅ NEW: Fetch creation_date → date_of_joining
+        if (agent.creation) {
+          frm.set_value("date_of_joining", agent.creation_date);
         }
         // Get district + branch from Sahayog Branch using sol_id (branch_code)
         frappe.db
@@ -255,27 +271,27 @@ wants_to_stay: function (frm) {
     }
   },
 
-  agent_phone_number: function (frm) {
-  // Validate only when field is editable (not fetched from Agent)
-  const df = frm.get_docfield("agent_phone_number");
-  if (df && !df.read_only) {
-    const phone = (frm.doc.agent_phone_number || "").trim();
+//   agent_phone_number: function (frm) {
+//   // Validate only when field is editable (not fetched from Agent)
+//   const df = frm.get_docfield("agent_phone_number");
+//   if (df && !df.read_only) {
+//     const phone = (frm.doc.agent_phone_number || "").trim();
 
-    if (!phone) {
-      frappe.msgprint("Please enter Agent Phone Number.");
-      frappe.validated = false;
-      return;
-    }
+//     if (!phone) {
+//       frappe.msgprint("Please enter Agent Phone Number.");
+//       frappe.validated = false;
+//       return;
+//     }
 
-    // Only digits and exactly 10 characters
-    const phone_regex = /^\d{10}$/;
-    if (!phone_regex.test(phone)) {
-      frappe.msgprint(
-        "Agent Phone Number must be exactly 10 digits and contain only numbers."
-      );
-      frappe.validated = false;
-      return;
-    }
-  }
-},
+//     // Only digits and exactly 10 characters
+//     const phone_regex = /^\d{10}$/;
+//     if (!phone_regex.test(phone)) {
+//       frappe.msgprint(
+//         "Agent Phone Number must be exactly 10 digits and contain only numbers."
+//       );
+//       frappe.validated = false;
+//       return;
+//     }
+//   }
+// },
 });

@@ -9,8 +9,12 @@ class AgentActivationCallLog(Document):
             self.trainer = frappe.session.user
 
     def before_submit(self):
-        """Validate that at least one status checkbox is selected before submit."""
-        # Check if at least one checkbox is selected
+        """Validate that at least one status checkbox is selected before submit - BYPASS if connected_status is 'No'."""
+        # BYPASS checkbox validation when connected_status is 'No'
+        if self.connected_status == "No":
+            return
+        
+        # Original validation for connected_status = 'Yes'
         if not (self.wants_to_stay or self.want_to_exit or self.exited):
             frappe.throw(
                 "Please select at least one option — Wants to Stay, Want to Exit, or Exited."
@@ -22,15 +26,19 @@ class AgentActivationCallLog(Document):
     
     def before_save(self):
         """Ensure the correct behavior when wants_to_stay is checked and amount is validated."""
-        
-        # If 'wants_to_stay' is checked, validate the amount
-        # if self.wants_to_stay == 1:
-            # if not self.amount:
-            #     frappe.throw("Amount is required when 'Wants to Stay' is checked.")
 
+
+            # NEW: Agent Phone Number validation - 10 digits only
+        phone = (self.agent_phone_number or "").strip()
+        if phone:
+            # Only digits and exactly 10 characters
+            if len(phone) != 10 or not phone.isdigit():
+                frappe.throw(
+                    "Agent Phone Number must be exactly 10 digits and contain only numbers."
+                )
+    
         # Validate amount
         if self.amount:
-            
             # Check if the amount is a valid number
             try:
                 amt = float(self.amount)
@@ -43,6 +51,10 @@ class AgentActivationCallLog(Document):
             
             if amt <= 0:
                 frappe.throw("Amount must be greater than zero when 'Wants to Stay' is checked.")
+        
+        # BYPASS checkbox validation when connected_status is 'No'
+        if self.connected_status == "No":
+            return
         
         # Validate that at least one checkbox is selected (wants_to_stay, want_to_exit, exited)
         if not (self.wants_to_stay or self.want_to_exit or self.exited):
