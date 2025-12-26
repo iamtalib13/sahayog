@@ -159,7 +159,9 @@ wants_to_stay: function (frm) {
   },
 
   agent: function (frm) {
+  
     if (frm.doc.agent) {
+      
       frappe.db.get_doc("Agent", frm.doc.agent).then((agent) => {
         if (agent.phone_number) {
           // Overwrite only if value came from Agent
@@ -255,27 +257,27 @@ wants_to_stay: function (frm) {
     }
   },
 
-  agent_phone_number: function (frm) {
-  // Validate only when field is editable (not fetched from Agent)
-  const df = frm.get_docfield("agent_phone_number");
-  if (df && !df.read_only) {
-    const phone = (frm.doc.agent_phone_number || "").trim();
+//   agent_phone_number: function (frm) {
+//   // Validate only when field is editable (not fetched from Agent)
+//   const df = frm.get_docfield("agent_phone_number");
+//   if (df && !df.read_only) {
+//     const phone = (frm.doc.agent_phone_number || "").trim();
 
-    if (!phone) {
-      frappe.msgprint("Please enter Agent Phone Number.");
-      frappe.validated = false;
-      return;
-    }
+//     if (!phone) {
+//       frappe.msgprint("Please enter Agent Phone Number.");
+//       frappe.validated = false;
+//       return;
+//     }
 
-    // Only digits and exactly 10 characters
-    const phone_regex = /^\d{10}$/;
-    if (!phone_regex.test(phone)) {
-      frappe.msgprint(
-        "Agent Phone Number must be exactly 10 digits and contain only numbers."
-      );
-      frappe.validated = false;
-      return;
-    }
-  }
-},
+//     // Only digits and exactly 10 characters
+//     const phone_regex = /^\d{10}$/;
+//     if (!phone_regex.test(phone)) {
+//       frappe.msgprint(
+//         "Agent Phone Number must be exactly 10 digits and contain only numbers."
+//       );
+//       frappe.validated = false;
+//       return;
+//     }
+//   }
+// },
 });
