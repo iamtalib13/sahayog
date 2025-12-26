@@ -159,7 +159,16 @@ wants_to_stay: function (frm) {
   },
 
   agent: function (frm) {
-  
+    // ✅ NEW: Clear ALL fields FIRST when agent changes
+    frm.set_value("agent_phone_number", "");
+    frm.fields_dict.agent_details_html.$wrapper.html("");
+    frm.fields_dict.branch_details_html.$wrapper.html("");
+    frm.set_df_property("agent_phone_number", "read_only", 0);
+    frm.set_value("date_of_joining", "");
+    
+    // Hide date_of_exit when agent changes
+    frm.set_value("date_of_exit", "");
+    frm.toggle_display("date_of_exit", 0);
     if (frm.doc.agent) {
       
       frappe.db.get_doc("Agent", frm.doc.agent).then((agent) => {
