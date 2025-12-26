@@ -1,15 +1,15 @@
 // Complete TTUM Maker - Single JS File for Frappe Page
 // Place this in your ttum_maker.js file
 
-frappe.pages['ttum-maker'].on_page_load = function(wrapper) {
-	let me = this;
-	let page = frappe.ui.make_app_page({
-		parent: wrapper,
-		title: 'TTUM Maker',
-		single_column: true
-	});
+frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
+  let me = this;
+  let page = frappe.ui.make_app_page({
+    parent: wrapper,
+    title: "TTUM Maker",
+    single_column: true,
+  });
 
-	me.page.main.html(`
+  me.page.main.html(`
 		<div class="ttum-maker-app">
 			<div class="hero-header">
 				<div class="hero-content">
@@ -120,21 +120,21 @@ frappe.pages['ttum-maker'].on_page_load = function(wrapper) {
 		</div>
 	`);
 
-	// Premium CSS
-	applyPremiumCSS();
-	me.init_form();
+  // Premium CSS
+  applyPremiumCSS();
+  me.init_form();
 
-	// // Apply styles
-	// me.page.main.find('style').remove();
-	// $('<style>').text(getCSS()).appendTo('head');
+  // // Apply styles
+  // me.page.main.find('style').remove();
+  // $('<style>').text(getCSS()).appendTo('head');
 
-	// // Initialize
-	// me.init_form();
+  // // Initialize
+  // me.init_form();
 };
 
 // Enhanced CSS with Glassmorphism + Modern Design
 function applyPremiumCSS() {
-	const css = `
+  const css = `
 		.ttum-maker-app {
 			min-height: 100vh;
 			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -555,389 +555,395 @@ function applyPremiumCSS() {
 		}
 	`;
 
-	$('head style[data-ttum-maker]').remove();
-	$('<style>').attr('data-ttum-maker', 'true').text(css).appendTo('head');
+  $("head style[data-ttum-maker]").remove();
+  $("<style>").attr("data-ttum-maker", "true").text(css).appendTo("head");
 }
 
-frappe.pages['ttum-maker'].init_form = function() {
-	// const $form = $('#ttum-form');
-	// const $submitBtn = $('#submit-btn');
-	// const $btnText = $('.btn-text');
-	// const $btnLoader = $('.btn-loader');
-	// const $progressContainer = $('#progress-container');
-	// const $progressBar = $('#progress-bar');
-	// const $progressText = $('#progress-text');
-	// const $resultsContainer = $('#results-container');
-	// const $downloadLinks = $('#download-links');
-	// const $errorContainer = $('#error-container');
+frappe.pages["ttum-maker"].init_form = function () {
+  // const $form = $('#ttum-form');
+  // const $submitBtn = $('#submit-btn');
+  // const $btnText = $('.btn-text');
+  // const $btnLoader = $('.btn-loader');
+  // const $progressContainer = $('#progress-container');
+  // const $progressBar = $('#progress-bar');
+  // const $progressText = $('#progress-text');
+  // const $resultsContainer = $('#results-container');
+  // const $downloadLinks = $('#download-links');
+  // const $errorContainer = $('#error-container');
 
-	// // Split mode toggle
-	// $('#split-mode').on('change', function() {
-	// 	const mode = $(this).val();
-	// 	$('.number-split').toggleClass('hidden', mode !== 'split');
-	// 	$('.number-records').toggleClass('hidden', mode !== 'records');
-	// }).trigger('change');
+  // // Split mode toggle
+  // $('#split-mode').on('change', function() {
+  // 	const mode = $(this).val();
+  // 	$('.number-split').toggleClass('hidden', mode !== 'split');
+  // 	$('.number-records').toggleClass('hidden', mode !== 'records');
+  // }).trigger('change');
 
-	// // Reset form
-	// $('#reset-btn').on('click', function() {
-	// 	$form[0].reset();
-	// 	hideAllSections();
-	// 	$('#split-mode').trigger('change');
-	// });
+  // // Reset form
+  // $('#reset-btn').on('click', function() {
+  // 	$form[0].reset();
+  // 	hideAllSections();
+  // 	$('#split-mode').trigger('change');
+  // });
 
-	// // Form submit
-	// $form.on('submit', async function(e) {
-	// 	e.preventDefault();
-	// 	clearErrors();
-		
-	// 	const validation = validateForm();
-	// 	if (!validation.isValid) {
-	// 		showError(validation.errors.join('<br>'));
-	// 		return;
-	// 	}
+  // // Form submit
+  // $form.on('submit', async function(e) {
+  // 	e.preventDefault();
+  // 	clearErrors();
 
-	// 	showLoading(true);
-	// 	hideAllSections();
+  // 	const validation = validateForm();
+  // 	if (!validation.isValid) {
+  // 		showError(validation.errors.join('<br>'));
+  // 		return;
+  // 	}
 
-	// 	try {
-	// 		const result = await processExcelFile();
-	// 		showResults(result.files || result);
-	// 	} catch (error) {
-	// 		handleError(error);
-	// 	} finally {
-	// 		showLoading(false);
-	// 	}
-	// });
+  // 	showLoading(true);
+  // 	hideAllSections();
 
-	// function validateForm() {
-	// 	const errors = [];
-	// 	const ttumType = $('#ttum-type').val().trim();
-	// 	const fileInput = $('#excel-file')[0];
-	// 	const splitMode = $('#split-mode').val();
-	// 	const numberSplit = parseInt($('#number-split').val());
-	// 	const numberRecords = parseInt($('#number-records').val());
+  // 	try {
+  // 		const result = await processExcelFile();
+  // 		showResults(result.files || result);
+  // 	} catch (error) {
+  // 		handleError(error);
+  // 	} finally {
+  // 		showLoading(false);
+  // 	}
+  // });
 
-	// 	if (!ttumType) errors.push('Please select TTUM Type');
-	// 	if (!fileInput.files?.[0]) errors.push('Please select an Excel file');
-	// 	if (isNaN(numberSplit) || numberSplit < 1) errors.push('Number of files must be valid positive number');
-	// 	if (splitMode === 'records' && (isNaN(numberRecords) || numberRecords < 1)) {
-	// 		errors.push('Records per file must be valid positive number');
-	// 	}
+  // function validateForm() {
+  // 	const errors = [];
+  // 	const ttumType = $('#ttum-type').val().trim();
+  // 	const fileInput = $('#excel-file')[0];
+  // 	const splitMode = $('#split-mode').val();
+  // 	const numberSplit = parseInt($('#number-split').val());
+  // 	const numberRecords = parseInt($('#number-records').val());
 
-	// 	return { isValid: errors.length === 0, errors };
-	// }
+  // 	if (!ttumType) errors.push('Please select TTUM Type');
+  // 	if (!fileInput.files?.[0]) errors.push('Please select an Excel file');
+  // 	if (isNaN(numberSplit) || numberSplit < 1) errors.push('Number of files must be valid positive number');
+  // 	if (splitMode === 'records' && (isNaN(numberRecords) || numberRecords < 1)) {
+  // 		errors.push('Records per file must be valid positive number');
+  // 	}
 
-	// async function processExcelFile() {
-	// 	const formData = new FormData();
-	// 	const file = $('#excel-file')[0].files[0];
-	// 	const ttumType = $('#ttum-type').val();
-	// 	const splitMode = $('#split-mode').val();
-	// 	const numberSplit = parseInt($('#number-split').val());
-	// 	const numberRecords = parseInt($('#number-records').val());
+  // 	return { isValid: errors.length === 0, errors };
+  // }
 
-	// 	// Prepare payload
-	// 	const payload = {
-	// 		ttum: {
-	// 			ttumType: ttumType,
-	// 			creationDate: new Date().toISOString().slice(0, 19),
-	// 			// creatorName: frappe.user_fullname() || frappe.session.user.split('@')[0]
-	// 			creatorName: frappe.session.user 
-	// 		}
-	// 	};
+  // async function processExcelFile() {
+  // 	const formData = new FormData();
+  // 	const file = $('#excel-file')[0].files[0];
+  // 	const ttumType = $('#ttum-type').val();
+  // 	const splitMode = $('#split-mode').val();
+  // 	const numberSplit = parseInt($('#number-split').val());
+  // 	const numberRecords = parseInt($('#number-records').val());
 
-	// 	if (splitMode === 'split') {
-	// 		payload.split = numberSplit;
-	// 	} else {
-	// 		payload.numberOfSplitRecords = numberRecords;
-	// 	}
+  // 	// Prepare payload
+  // 	const payload = {
+  // 		ttum: {
+  // 			ttumType: ttumType,
+  // 			creationDate: new Date().toISOString().slice(0, 19),
+  // 			// creatorName: frappe.user_fullname() || frappe.session.user.split('@')[0]
+  // 			creatorName: frappe.session.user
+  // 		}
+  // 	};
 
-	// 	formData.append('file', file);
-	// 	formData.append('data', JSON.stringify(payload));
+  // 	if (splitMode === 'split') {
+  // 		payload.split = numberSplit;
+  // 	} else {
+  // 		payload.numberOfSplitRecords = numberRecords;
+  // 	}
 
-	// 	updateProgress(10, 'Uploading file...');
+  // 	formData.append('file', file);
+  // 	formData.append('data', JSON.stringify(payload));
 
-	// 	// Replace with your actual API endpoint
-	// 	const response = await frappe.call({
-	// 		method: '10.0.115.6:9098/api/ttum/convert', // UPDATE THIS
-	// 		args: payload,
-	// 		files: [file],
-	// 		freeze: true,
-	// 		btn: $submitBtn[0]
-	// 	});
+  // 	updateProgress(10, 'Uploading file...');
 
-	// 	updateProgress(90, 'Files generated successfully!');
-	// 	return response.message;
-	// }
+  // 	// Replace with your actual API endpoint
+  // 	const response = await frappe.call({
+  // 		method: '10.0.115.6:9098/api/ttum/convert', // UPDATE THIS
+  // 		args: payload,
+  // 		files: [file],
+  // 		freeze: true,
+  // 		btn: $submitBtn[0]
+  // 	});
 
+  // 	updateProgress(90, 'Files generated successfully!');
+  // 	return response.message;
+  // }
 
-	const $form = $('#ttum-form');
-    const $submitBtn = $('#submit-btn');
-    const $btnText = $('.btn-text');
-    const $btnLoader = $('.btn-loader');
-    const $progressContainer = $('#progress-container');
-    const $progressBar = $('#progress-bar');
-    const $progressText = $('#progress-text');
-    const $resultsContainer = $('#results-container');
-    const $downloadLinks = $('#download-links');
-    const $errorContainer = $('#error-container');
+  const $form = $("#ttum-form");
+  const $submitBtn = $("#submit-btn");
+  const $btnText = $(".btn-text");
+  const $btnLoader = $(".btn-loader");
+  const $progressContainer = $("#progress-container");
+  const $progressBar = $("#progress-bar");
+  const $progressText = $("#progress-text");
+  const $resultsContainer = $("#results-container");
+  const $downloadLinks = $("#download-links");
+  const $errorContainer = $("#error-container");
 
-    // Split mode toggle
-    $('#split-mode').on('change', function() {
-        const mode = $(this).val();
-        $('.number-split').toggleClass('hidden', mode !== 'split');
-        $('.number-records').toggleClass('hidden', mode !== 'records');
-    }).trigger('change');
+  // Split mode toggle
+  $("#split-mode")
+    .on("change", function () {
+      const mode = $(this).val();
+      $(".number-split").toggleClass("hidden", mode !== "split");
+      $(".number-records").toggleClass("hidden", mode !== "records");
+    })
+    .trigger("change");
 
-    // Reset form
-    $('#reset-btn').on('click', function() {
-        $form[0].reset();
-        hideAllSections();
-        $('#split-mode').trigger('change');
-    });
+  // Reset form
+  $("#reset-btn").on("click", function () {
+    $form[0].reset();
+    hideAllSections();
+    $("#split-mode").trigger("change");
+  });
 
-    // Form submit
-    // $form.on('submit', async function(e) {
-    //     e.preventDefault();
-    //     clearErrors();
-        
-    //     const validation = validateForm();
-    //     if (!validation.isValid) {
-    //         showError(validation.errors.join('<br>'));
-    //         return;
-    //     }
+  // Form submit
+  // $form.on('submit', async function(e) {
+  //     e.preventDefault();
+  //     clearErrors();
 
-    //     showLoading(true);
-    //     hideAllSections();
+  //     const validation = validateForm();
+  //     if (!validation.isValid) {
+  //         showError(validation.errors.join('<br>'));
+  //         return;
+  //     }
 
-    //     try {
-    //         const result = await processExcelFile();
-    //         showResults(result.files || result);
-    //     } catch (error) {
-    //         handleError(error);
-    //     } finally {
-    //         showLoading(false);
-    //     }
-    // });
+  //     showLoading(true);
+  //     hideAllSections();
 
-	// In your form submit handler - WRAP in try-catch
-$form.on('submit', async function(e) {
+  //     try {
+  //         const result = await processExcelFile();
+  //         showResults(result.files || result);
+  //     } catch (error) {
+  //         handleError(error);
+  //     } finally {
+  //         showLoading(false);
+  //     }
+  // });
+
+  // In your form submit handler - WRAP in try-catch
+  $form.on("submit", async function (e) {
     e.preventDefault();
-    
+
     try {
-        clearErrors();
-        const validation = validateForm();
-        if (!validation.isValid) {
-            showError(validation.errors.join('<br>'));
-            return;
-        }
+      clearErrors();
+      const validation = validateForm();
+      if (!validation.isValid) {
+        showError(validation.errors.join("<br>"));
+        return;
+      }
 
-        showLoading(true);
-        hideAllSections();
+      showLoading(true);
+      hideAllSections();
 
-        const result = await processExcelFile();
-        showResults(result.message || result);
+      const result = await processExcelFile();
+      showResults(result.message || result);
     } catch (error) {
-        console.error('TTUM Error:', error);
-        handleError(error);
+      console.error("TTUM Error:", error);
+      handleError(error);
     } finally {
-        showLoading(false);
-        // ✅ FIX: Check files exists before reset
-        if ($('#excel-file')[0]?.files?.length) {
-            $('#excel-file')[0].value = '';
-        }
+      showLoading(false);
+      // ✅ FIX: Check files exists before reset
+      if ($("#excel-file")[0]?.files?.length) {
+        $("#excel-file")[0].value = "";
+      }
     }
-});
+  });
 
+  // ✅ NEW: Direct REST API function
+  // async function processExcelFile() {
+  //     const file = $('#excel-file')[0].files[0];
+  //     const ttumType = $('#ttum-type').val();
+  //     const splitMode = $('#split-mode').val();
+  //     const numberSplit = parseInt($('#number-split').val());
+  //     const numberRecords = parseInt($('#number-records').val());
 
-    // ✅ NEW: Direct REST API function
-    // async function processExcelFile() {
-    //     const file = $('#excel-file')[0].files[0];
-    //     const ttumType = $('#ttum-type').val();
-    //     const splitMode = $('#split-mode').val();
-    //     const numberSplit = parseInt($('#number-split').val());
-    //     const numberRecords = parseInt($('#number-records').val());
+  //     let creatorName = 'Unknown User';
+  //     if (frappe.user?.full_name) creatorName = frappe.user.full_name;
+  //     else if (frappe.user?.name) creatorName = frappe.user.name.split('@')[0];
 
-    //     let creatorName = 'Unknown User';
-    //     if (frappe.user?.full_name) creatorName = frappe.user.full_name;
-    //     else if (frappe.user?.name) creatorName = frappe.user.name.split('@')[0];
+  //     const formData = new FormData();
+  //     formData.append('file', file);
+  //     formData.append('ttumType', ttumType);
+  //     formData.append('creationDate', new Date().toISOString().slice(0, 19));
+  //     formData.append('creatorName', creatorName);
 
-    //     const formData = new FormData();
-    //     formData.append('file', file);
-    //     formData.append('ttumType', ttumType);
-    //     formData.append('creationDate', new Date().toISOString().slice(0, 19));
-    //     formData.append('creatorName', creatorName);
-        
-    //     if (splitMode === 'split') {
-    //         formData.append('split', numberSplit);
-    //     } else {
-    //         formData.append('numberOfSplitRecords', numberRecords);
-    //     }
+  //     if (splitMode === 'split') {
+  //         formData.append('split', numberSplit);
+  //     } else {
+  //         formData.append('numberOfSplitRecords', numberRecords);
+  //     }
 
-    //     updateProgress(10, 'Uploading to API...');
+  //     updateProgress(10, 'Uploading to API...');
 
-    //     // ✅ YOUR ACTUAL ENDPOINT
-    //     const response = await fetch('http://10.0.115.6:9098/api/ttum/convert', {
-    //         method: 'POST',
-    //         body: formData
-    //     });
+  //     // ✅ YOUR ACTUAL ENDPOINT
+  //     const response = await fetch('http://10.0.115.6:9098/api/ttum/convert', {
+  //         method: 'POST',
+  //         body: formData
+  //     });
 
-    //     if (!response.ok) {
-    //         const errorText = await response.text();
-    //         throw new Error(`API failed: ${response.status} - ${errorText}`);
-    //     }
+  //     if (!response.ok) {
+  //         const errorText = await response.text();
+  //         throw new Error(`API failed: ${response.status} - ${errorText}`);
+  //     }
 
-    //     const result = await response.json();
-    //     updateProgress(90, '✅ Success!');
-    //     return result;
-    // }
+  //     const result = await response.json();
+  //     updateProgress(90, '✅ Success!');
+  //     return result;
+  // }
 
-
-async function processExcelFile() {
-    const fileInput = $('#excel-file')[0];
+  async function processExcelFile() {
+    const fileInput = $("#excel-file")[0];
     const file = fileInput?.files?.[0];
     if (!file) {
-        frappe.msgprint('Please select an Excel file');
-        throw new Error('No file');
+      frappe.msgprint("Please select an Excel file");
+      throw new Error("No file");
     }
 
-    const ttumType = $('#ttum-type').val();
-    const splitMode = $('#split-mode').val();
-    const numberSplit = parseInt($('#number-split').val());
-    const numberRecords = parseInt($('#number-records').val());
-    const creatorName = frappe.session.user || 'Unknown User';
+    const ttumType = $("#ttum-type").val();
+    const splitMode = $("#split-mode").val();
+    const numberSplit = parseInt($("#number-split").val());
+    const numberRecords = parseInt($("#number-records").val());
+    const creatorName = frappe.session.user || "Unknown User";
 
-    console.log('Sending:', { ttumType, creatorName, splitMode, numberSplit });
+    console.log("Sending:", {
+      ttumType,
+      creatorName,
+      splitMode,
+      numberSplit,
+      file,
+    });
 
-    updateProgress(10, 'Preparing data...');
+    updateProgress(10, "Preparing data...");
 
     // Build ttum object as your backend expects
     const ttum = {
-        ttumType: ttumType,
-        creationDate: new Date().toISOString().slice(0, 19),
-        creatorName: creatorName
+      ttumType: ttumType,
+      creationDate: new Date().toISOString().slice(0, 19),
+      creatorName: creatorName,
     };
 
     // Build FormData – EXACTLY as Postman
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('split', splitMode === 'split' ? numberSplit : 0);
-    formData.append('numberOfSplitRecords', splitMode === 'records' ? numberRecords : 0);
-    formData.append('ttum', JSON.stringify(ttum));
+    formData.append("file", file);
+    formData.append("split", splitMode === "split" ? numberSplit : 0);
+    formData.append(
+      "numberOfSplitRecords",
+      splitMode === "records" ? numberRecords : 0
+    );
+    formData.append("ttum", JSON.stringify(ttum));
 
-    updateProgress(30, 'Calling TTUM service...');
+    updateProgress(30, "Calling TTUM service...");
 
     // Send to your Frappe proxy (server side will forward to 10.0.115.6)
     const result = await new Promise((resolve, reject) => {
-        $.ajax({
-            url: '/api/method/sahayog.sahayog.api.ttum.convert',
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-Frappe-CSRF-Token': frappe.csrf_token
-            },
-            success: function (data) {
-                console.log('FULL RESPONSE:', data);
-                resolve(data.message || data);
-            },
-            error: function (xhr) {
-                console.error('AJAX error:', xhr.status, xhr.responseText);
-                reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
-            }
-        });
+      $.ajax({
+        url: "/api/method/sahayog.sahayog.api.ttum.convert",
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+          "X-Frappe-CSRF-Token": frappe.csrf_token,
+        },
+        success: function (data) {
+          console.log("FULL RESPONSE:", data);
+          resolve(data.message || data);
+        },
+        error: function (xhr) {
+          console.error("AJAX error:", xhr.status, xhr.responseText);
+          reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
+        },
+      });
     });
 
-    updateProgress(90, 'TTUM generated successfully');
+    updateProgress(90, "TTUM generated successfully");
     // result should look like your desired response
     // { ttumId, ttumType, creationDate, creatorName, ttumFilePath, splitDetails: [...] }
     showResults(result);
     return result;
-}
+  }
 
+  // Keep all other functions (validateForm, showLoading, etc.) exactly the same
+  function validateForm() {
+    const errors = [];
+    const ttumType = $("#ttum-type").val().trim();
+    const fileInput = $("#excel-file")[0];
+    const splitMode = $("#split-mode").val();
+    const numberSplit = parseInt($("#number-split").val());
+    const numberRecords = parseInt($("#number-records").val());
 
-
-
-    // Keep all other functions (validateForm, showLoading, etc.) exactly the same
-    function validateForm() {
-        const errors = [];
-        const ttumType = $('#ttum-type').val().trim();
-        const fileInput = $('#excel-file')[0];
-        const splitMode = $('#split-mode').val();
-        const numberSplit = parseInt($('#number-split').val());
-        const numberRecords = parseInt($('#number-records').val());
-
-        if (!ttumType) errors.push('Please select TTUM Type');
-        if (!fileInput.files?.[0]) errors.push('Please select an Excel file');
-        if (isNaN(numberSplit) || numberSplit < 1) errors.push('Number of files must be valid positive number');
-        if (splitMode === 'records' && (isNaN(numberRecords) || numberRecords < 1)) {
-            errors.push('Records per file must be valid positive number');
-        }
-        return { isValid: errors.length === 0, errors };
+    if (!ttumType) errors.push("Please select TTUM Type");
+    if (!fileInput.files?.[0]) errors.push("Please select an Excel file");
+    if (isNaN(numberSplit) || numberSplit < 1)
+      errors.push("Number of files must be valid positive number");
+    if (
+      splitMode === "records" &&
+      (isNaN(numberRecords) || numberRecords < 1)
+    ) {
+      errors.push("Records per file must be valid positive number");
     }
-	
+    return { isValid: errors.length === 0, errors };
+  }
 
-	function showLoading(show) {
-		$submitBtn.prop('disabled', show);
-		$btnText.toggleClass('hidden', show);
-		$btnLoader.toggleClass('hidden', !show);
-		$progressContainer.toggleClass('hidden', !show);
-	}
+  function showLoading(show) {
+    $submitBtn.prop("disabled", show);
+    $btnText.toggleClass("hidden", show);
+    $btnLoader.toggleClass("hidden", !show);
+    $progressContainer.toggleClass("hidden", !show);
+  }
 
-	function updateProgress(percent, text) {
-		$progressBar.css('width', percent + '%').attr('aria-valuenow', percent);
-		$progressText.text(text);
-	}
+  function updateProgress(percent, text) {
+    $progressBar.css("width", percent + "%").attr("aria-valuenow", percent);
+    $progressText.text(text);
+  }
 
-	// function showResults(files) {
-	// 	$resultsContainer.removeClass('hidden');
-		
-	// 	if (!Array.isArray(files)) files = [files];
+  // function showResults(files) {
+  // 	$resultsContainer.removeClass('hidden');
 
-	// 	files.forEach((file, index) => {
-	// 		const filename = file.filename || file.file_name || `ttum_file_${index + 1}.txt`;
-	// 		const fileUrl = file.file_url || file.message || file;
-			
-	// 		const $link = $(`
-	// 			<a href="${fileUrl}" class="download-link" download="${filename}" target="_blank">
-	// 				<i class="fa fa-download"></i>
-	// 				${filename} 
-	// 				<span class="badge badge-success">${(file.filesize || 0).toLocaleString()} bytes</span>
-	// 			</a>
-	// 		`);
-	// 		$downloadLinks.append($link);
-	// 	});
+  // 	if (!Array.isArray(files)) files = [files];
 
-	// 	frappe.show_alert({
-	// 		message: `${files.length} TXT file(s) generated successfully!`,
-	// 		indicator: 'green'
-	// 	});
-	// }
+  // 	files.forEach((file, index) => {
+  // 		const filename = file.filename || file.file_name || `ttum_file_${index + 1}.txt`;
+  // 		const fileUrl = file.file_url || file.message || file;
 
+  // 		const $link = $(`
+  // 			<a href="${fileUrl}" class="download-link" download="${filename}" target="_blank">
+  // 				<i class="fa fa-download"></i>
+  // 				${filename}
+  // 				<span class="badge badge-success">${(file.filesize || 0).toLocaleString()} bytes</span>
+  // 			</a>
+  // 		`);
+  // 		$downloadLinks.append($link);
+  // 	});
 
+  // 	frappe.show_alert({
+  // 		message: `${files.length} TXT file(s) generated successfully!`,
+  // 		indicator: 'green'
+  // 	});
+  // }
 
-function showResults(data) {
-    console.log('🎯 showResults data:', data);
-    
-    $resultsContainer.removeClass('hidden');
-    
+  function showResults(data) {
+    console.log("🎯 showResults data:", data);
+
+    $resultsContainer.removeClass("hidden");
+
     let splitDetails = [];
-    
+
     // ✅ HANDLE YOUR EXACT FORMAT
     if (data.splitDetails && Array.isArray(data.splitDetails)) {
-        splitDetails = data.splitDetails;
+      splitDetails = data.splitDetails;
     } else if (data.ttumFilePath && Array.isArray(data.splitDetails)) {
-        splitDetails = data.splitDetails;
+      splitDetails = data.splitDetails;
     }
-    
+
     if (splitDetails.length === 0) {
-        $downloadLinks.html('<p class="text-muted">No files generated</p>');
-        return;
+      $downloadLinks.html('<p class="text-muted">No files generated</p>');
+      return;
     }
-    
+
     splitDetails.forEach((fileName, index) => {
-        const cleanName = fileName.split(': ')[1] || fileName;
-        const $link = $(`
+      const cleanName = fileName.split(": ")[1] || fileName;
+      const $link = $(`
             <div class="download-link mb-2 p-3">
                 <i class="fa fa-file-text text-success mr-2"></i>
                 <strong>${fileName}</strong>
@@ -946,43 +952,42 @@ function showResults(data) {
                 </a>
             </div>
         `);
-        $downloadLinks.append($link);
+      $downloadLinks.append($link);
     });
-}
+  }
 
+  function handleError(error) {
+    console.error("TTUM Maker Error:", error);
+    let message =
+      error.message || "An error occurred while processing the file.";
 
-	function handleError(error) {
-		console.error('TTUM Maker Error:', error);
-		let message = error.message || 'An error occurred while processing the file.';
-		
-		if (error._server_messages) {
-			message = error._server_messages[0]?.message || message;
-		}
-		
-		showError(message);
-	}
+    if (error._server_messages) {
+      message = error._server_messages[0]?.message || message;
+    }
 
-	function showError(message) {
-		$errorContainer.html(message).removeClass('hidden');
-		frappe.msgprint({
-			title: __('Error'),
-			message: message,
-			indicator: 'red'
-		});
-	}
+    showError(message);
+  }
 
-	function clearErrors() {
-		$errorContainer.addClass('hidden').empty();
-	}
+  function showError(message) {
+    $errorContainer.html(message).removeClass("hidden");
+    frappe.msgprint({
+      title: __("Error"),
+      message: message,
+      indicator: "red",
+    });
+  }
 
-	function hideAllSections() {
-		$resultsContainer.addClass('hidden');
-		$progressContainer.addClass('hidden');
-		$downloadLinks.empty();
-	}
+  function clearErrors() {
+    $errorContainer.addClass("hidden").empty();
+  }
 
-	console.log("logedin user is ",frappe.session.user);
-	
+  function hideAllSections() {
+    $resultsContainer.addClass("hidden");
+    $progressContainer.addClass("hidden");
+    $downloadLinks.empty();
+  }
+
+  console.log("logedin user is ", frappe.session.user);
 };
 
 // function getCSS() {
@@ -992,7 +997,7 @@ function showResults(data) {
 // 			margin: 20px auto;
 // 			padding: 24px;
 // 		}
-// 		.page-card { 
+// 		.page-card {
 // 			background: var(--bg-color);
 // 			border: 1px solid var(--border-color);
 // 			border-radius: 12px;
@@ -1002,10 +1007,10 @@ function showResults(data) {
 // 		.form-group { margin-bottom: 24px; }
 // 		.form-row { display: flex; gap: 16px; }
 // 		.form-row .form-group { flex: 1; }
-// 		.form-label { 
-// 			display: block; 
-// 			margin-bottom: 8px; 
-// 			font-weight: 600; 
+// 		.form-label {
+// 			display: block;
+// 			margin-bottom: 8px;
+// 			font-weight: 600;
 // 			color: var(--heading-color);
 // 		}
 // 		.form-control {
@@ -1044,7 +1049,7 @@ function showResults(data) {
 // 			color: white;
 // 		}
 // 		.btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
-// 		.btn-default { 
+// 		.btn-default {
 // 			background: var(--gray-100);
 // 			color: var(--gray-700);
 // 			margin-left: 12px;
