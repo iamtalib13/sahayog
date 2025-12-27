@@ -73,21 +73,21 @@ def convert():
 
         file_payload = {}
         if 'file' in files:
-        f = files['file']
+            f = files['file']
 
-        # 🔥 CRITICAL FIX
-        file_bytes = f.stream.read()
+            # 🔥 CRITICAL FIX
+            file_bytes = f.stream.read()
 
-        file_payload['file'] = (
-            f.filename,
-            file_bytes,
-            f.mimetype
-        )
+            file_payload['file'] = (
+                f.filename,
+                file_bytes,
+                f.mimetype
+            )
 
-        # ✅ Safe logging
-        frappe.logger().info(
-            f"TTUM proxy → file name: {f.filename}, size: {len(file_bytes)} bytes"
-        )
+            # ✅ Safe logging
+            frappe.logger().info(
+                f"TTUM proxy → file name: {f.filename}, size: {len(file_bytes)} bytes"
+            )
 
         data_payload = {}
         for key in ('split', 'numberOfSplitRecords', 'ttum'):
