@@ -366,7 +366,7 @@ def send_email_for_review(case_id=None, approvers=None):
 from frappe.utils import formatdate
 
 # ---------------------------------------------------------
-# Get Employee Email
+# Get Employee Email of Case against Employee
 # ---------------------------------------------------------
 @frappe.whitelist()
 def check_employee_email(employee):
@@ -375,7 +375,7 @@ def check_employee_email(employee):
 
 
 # ---------------------------------------------------------
-# Send Case Closure Email
+# Send Case Closure Email to Employee
 # ---------------------------------------------------------
 @frappe.whitelist()
 def send_case_closure_email(docname, print_format):
