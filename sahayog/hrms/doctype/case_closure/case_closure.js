@@ -898,51 +898,37 @@ function open_approver_dialog(frm) {
   });
 }
 
-// third code of submit_approvers function
 function submit_approvers(frm, values, dialog) {
-  // A. OLD LOGIC: frm.clear_table("review_details"); // REMOVED THIS LINE
-
-  // B. Append ONLY NEW reviewer rows
-  // Note: 'values.approver_table' contains only the *newly selected* reviewers
-  // because the 'open_approver_dialog' primary action was calling:
-  // submit_approvers(frm, { approver_table: new_reviewers }, d)
-
+// A. Validate new reviewers
   const new_reviewers = values.approver_table || [];
-
+// B. Add new reviewers to parent document
   if (new_reviewers.length === 0) {
-    // यदि कोई नया समीक्षक नहीं चुना गया है, तो बस डायलाग बंद करें
     frappe.msgprint(__("No new reviewers selected."));
     dialog.hide();
     return;
   }
 
-  // New reviewers को child table में जोड़ें
+  // add each new reviewer to parent doc's review_details child table
   new_reviewers.forEach((row) => {
     let child = frm.add_child("review_details");
 
-    // सुनिश्चित करें कि आप child table में 'employee_name' और 'company_email' भी स्टोर कर रहे हैं
-    // ताकि Dialog में read-only pre-fill करने में आसानी हो।
+    // ensure employee details are copied from dialog to child table
     child.employee_id = row.employee_id;
     child.employee_name = row.employee_name; // Add employee name
     child.company_email = row.company_email; // Add company email
 
-    // बाकी fields वही रहेंगे
+    // other fields with default values
     child.remarks = "";
     child.status = "Pending";
     child.date_and_time = frappe.datetime.now_datetime();
   });
 
   frm.refresh_field("review_details");
-
-  // C. Save parent document
   frm.save().then(() => {
-    // Save successful, proceed with server calls
 
     // -----------------------------------------------------
-    // 1️⃣ FIRST CALL → VERIFICATION PROCESS EMAILS
+    // FIRST CALL → VERIFICATION PROCESS EMAILS
     // -----------------------------------------------------
-    // Ensure you pass only the *new* approvers to the server call if needed,
-    // or you can pass the entire updated list frm.doc.review_details
     frappe.call({
       method:
         "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
@@ -974,7 +960,7 @@ function submit_approvers(frm, values, dialog) {
     });
 
     // -----------------------------------------------------
-    // 2️⃣ SECOND CALL → TEMPLATE-BASED EMAIL
+    // SECOND CALL → TEMPLATE-BASED EMAIL
     // -----------------------------------------------------
     frappe.call({
       method:
@@ -988,7 +974,7 @@ function submit_approvers(frm, values, dialog) {
       freeze_message: __("Sending review notification email..."),
       callback(r) {
         console.log("TEMPLATE EMAIL RESPONSE:", r);
-        // ... (Callback logic remains the same)
+        // (Callback logic remains the same)
         if (r.message?.status === "disabled") {
           frappe.msgprint({
             title: __("Email Disabled"),
