@@ -123,13 +123,6 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
   // Premium CSS
   applyPremiumCSS();
   me.init_form();
-
-  // // Apply styles
-  // me.page.main.find('style').remove();
-  // $('<style>').text(getCSS()).appendTo('head');
-
-  // // Initialize
-  // me.init_form();
 };
 
 // Enhanced CSS with Glassmorphism + Modern Design
@@ -560,114 +553,6 @@ function applyPremiumCSS() {
 }
 
 frappe.pages["ttum-maker"].init_form = function () {
-  // const $form = $('#ttum-form');
-  // const $submitBtn = $('#submit-btn');
-  // const $btnText = $('.btn-text');
-  // const $btnLoader = $('.btn-loader');
-  // const $progressContainer = $('#progress-container');
-  // const $progressBar = $('#progress-bar');
-  // const $progressText = $('#progress-text');
-  // const $resultsContainer = $('#results-container');
-  // const $downloadLinks = $('#download-links');
-  // const $errorContainer = $('#error-container');
-
-  // // Split mode toggle
-  // $('#split-mode').on('change', function() {
-  // 	const mode = $(this).val();
-  // 	$('.number-split').toggleClass('hidden', mode !== 'split');
-  // 	$('.number-records').toggleClass('hidden', mode !== 'records');
-  // }).trigger('change');
-
-  // // Reset form
-  // $('#reset-btn').on('click', function() {
-  // 	$form[0].reset();
-  // 	hideAllSections();
-  // 	$('#split-mode').trigger('change');
-  // });
-
-  // // Form submit
-  // $form.on('submit', async function(e) {
-  // 	e.preventDefault();
-  // 	clearErrors();
-
-  // 	const validation = validateForm();
-  // 	if (!validation.isValid) {
-  // 		showError(validation.errors.join('<br>'));
-  // 		return;
-  // 	}
-
-  // 	showLoading(true);
-  // 	hideAllSections();
-
-  // 	try {
-  // 		const result = await processExcelFile();
-  // 		showResults(result.files || result);
-  // 	} catch (error) {
-  // 		handleError(error);
-  // 	} finally {
-  // 		showLoading(false);
-  // 	}
-  // });
-
-  // function validateForm() {
-  // 	const errors = [];
-  // 	const ttumType = $('#ttum-type').val().trim();
-  // 	const fileInput = $('#excel-file')[0];
-  // 	const splitMode = $('#split-mode').val();
-  // 	const numberSplit = parseInt($('#number-split').val());
-  // 	const numberRecords = parseInt($('#number-records').val());
-
-  // 	if (!ttumType) errors.push('Please select TTUM Type');
-  // 	if (!fileInput.files?.[0]) errors.push('Please select an Excel file');
-  // 	if (isNaN(numberSplit) || numberSplit < 1) errors.push('Number of files must be valid positive number');
-  // 	if (splitMode === 'records' && (isNaN(numberRecords) || numberRecords < 1)) {
-  // 		errors.push('Records per file must be valid positive number');
-  // 	}
-
-  // 	return { isValid: errors.length === 0, errors };
-  // }
-
-  // async function processExcelFile() {
-  // 	const formData = new FormData();
-  // 	const file = $('#excel-file')[0].files[0];
-  // 	const ttumType = $('#ttum-type').val();
-  // 	const splitMode = $('#split-mode').val();
-  // 	const numberSplit = parseInt($('#number-split').val());
-  // 	const numberRecords = parseInt($('#number-records').val());
-
-  // 	// Prepare payload
-  // 	const payload = {
-  // 		ttum: {
-  // 			ttumType: ttumType,
-  // 			creationDate: new Date().toISOString().slice(0, 19),
-  // 			// creatorName: frappe.user_fullname() || frappe.session.user.split('@')[0]
-  // 			creatorName: frappe.session.user
-  // 		}
-  // 	};
-
-  // 	if (splitMode === 'split') {
-  // 		payload.split = numberSplit;
-  // 	} else {
-  // 		payload.numberOfSplitRecords = numberRecords;
-  // 	}
-
-  // 	formData.append('file', file);
-  // 	formData.append('data', JSON.stringify(payload));
-
-  // 	updateProgress(10, 'Uploading file...');
-
-  // 	// Replace with your actual API endpoint
-  // 	const response = await frappe.call({
-  // 		method: '10.0.115.6:9098/api/ttum/convert', // UPDATE THIS
-  // 		args: payload,
-  // 		files: [file],
-  // 		freeze: true,
-  // 		btn: $submitBtn[0]
-  // 	});
-
-  // 	updateProgress(90, 'Files generated successfully!');
-  // 	return response.message;
-  // }
 
   const $form = $("#ttum-form");
   const $submitBtn = $("#submit-btn");
@@ -696,29 +581,7 @@ frappe.pages["ttum-maker"].init_form = function () {
     $("#split-mode").trigger("change");
   });
 
-  // Form submit
-  // $form.on('submit', async function(e) {
-  //     e.preventDefault();
-  //     clearErrors();
-
-  //     const validation = validateForm();
-  //     if (!validation.isValid) {
-  //         showError(validation.errors.join('<br>'));
-  //         return;
-  //     }
-
-  //     showLoading(true);
-  //     hideAllSections();
-
-  //     try {
-  //         const result = await processExcelFile();
-  //         showResults(result.files || result);
-  //     } catch (error) {
-  //         handleError(error);
-  //     } finally {
-  //         showLoading(false);
-  //     }
-  // });
+  
 
   // In your form submit handler - WRAP in try-catch
   $form.on("submit", async function (e) {
@@ -749,47 +612,6 @@ frappe.pages["ttum-maker"].init_form = function () {
     }
   });
 
-  // ✅ NEW: Direct REST API function
-  // async function processExcelFile() {
-  //     const file = $('#excel-file')[0].files[0];
-  //     const ttumType = $('#ttum-type').val();
-  //     const splitMode = $('#split-mode').val();
-  //     const numberSplit = parseInt($('#number-split').val());
-  //     const numberRecords = parseInt($('#number-records').val());
-
-  //     let creatorName = 'Unknown User';
-  //     if (frappe.user?.full_name) creatorName = frappe.user.full_name;
-  //     else if (frappe.user?.name) creatorName = frappe.user.name.split('@')[0];
-
-  //     const formData = new FormData();
-  //     formData.append('file', file);
-  //     formData.append('ttumType', ttumType);
-  //     formData.append('creationDate', new Date().toISOString().slice(0, 19));
-  //     formData.append('creatorName', creatorName);
-
-  //     if (splitMode === 'split') {
-  //         formData.append('split', numberSplit);
-  //     } else {
-  //         formData.append('numberOfSplitRecords', numberRecords);
-  //     }
-
-  //     updateProgress(10, 'Uploading to API...');
-
-  //     // ✅ YOUR ACTUAL ENDPOINT
-  //     const response = await fetch('http://10.0.115.6:9098/api/ttum/convert', {
-  //         method: 'POST',
-  //         body: formData
-  //     });
-
-  //     if (!response.ok) {
-  //         const errorText = await response.text();
-  //         throw new Error(`API failed: ${response.status} - ${errorText}`);
-  //     }
-
-  //     const result = await response.json();
-  //     updateProgress(90, '✅ Success!');
-  //     return result;
-  // }
 
   async function processExcelFile() {
     const fileInput = $("#excel-file")[0];
@@ -897,31 +719,6 @@ frappe.pages["ttum-maker"].init_form = function () {
     $progressText.text(text);
   }
 
-  // function showResults(files) {
-  // 	$resultsContainer.removeClass('hidden');
-
-  // 	if (!Array.isArray(files)) files = [files];
-
-  // 	files.forEach((file, index) => {
-  // 		const filename = file.filename || file.file_name || `ttum_file_${index + 1}.txt`;
-  // 		const fileUrl = file.file_url || file.message || file;
-
-  // 		const $link = $(`
-  // 			<a href="${fileUrl}" class="download-link" download="${filename}" target="_blank">
-  // 				<i class="fa fa-download"></i>
-  // 				${filename}
-  // 				<span class="badge badge-success">${(file.filesize || 0).toLocaleString()} bytes</span>
-  // 			</a>
-  // 		`);
-  // 		$downloadLinks.append($link);
-  // 	});
-
-  // 	frappe.show_alert({
-  // 		message: `${files.length} TXT file(s) generated successfully!`,
-  // 		indicator: 'green'
-  // 	});
-  // }
-
   function showResults(data) {
     console.log("🎯 showResults data:", data);
 
@@ -990,120 +787,3 @@ frappe.pages["ttum-maker"].init_form = function () {
   console.log("logedin user is ", frappe.session.user);
 };
 
-// function getCSS() {
-// 	return `
-// 		.ttum-maker-container {
-// 			max-width: 700px;
-// 			margin: 20px auto;
-// 			padding: 24px;
-// 		}
-// 		.page-card {
-// 			background: var(--bg-color);
-// 			border: 1px solid var(--border-color);
-// 			border-radius: 12px;
-// 			padding: 32px;
-// 			box-shadow: var(--shadow-md);
-// 		}
-// 		.form-group { margin-bottom: 24px; }
-// 		.form-row { display: flex; gap: 16px; }
-// 		.form-row .form-group { flex: 1; }
-// 		.form-label {
-// 			display: block;
-// 			margin-bottom: 8px;
-// 			font-weight: 600;
-// 			color: var(--heading-color);
-// 		}
-// 		.form-control {
-// 			width: 100%;
-// 			padding: 12px 16px;
-// 			border: 2px solid var(--border-color);
-// 			border-radius: 8px;
-// 			background: var(--bg-color);
-// 			color: var(--text-color);
-// 			font-size: 14px;
-// 			transition: all 0.2s;
-// 		}
-// 		.form-control:focus {
-// 			border-color: var(--primary-color);
-// 			box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
-// 			outline: none;
-// 		}
-// 		.form-help { color: var(--gray); font-size: 12px; }
-// 		.hidden { display: none !important; }
-// 		.text-danger { color: var(--danger-color) !important; }
-// 		.text-muted { color: var(--gray) !important; }
-// 		.btn {
-// 			padding: 12px 24px;
-// 			border: none;
-// 			border-radius: 8px;
-// 			font-size: 14px;
-// 			font-weight: 500;
-// 			cursor: pointer;
-// 			transition: all 0.2s;
-// 			display: inline-flex;
-// 			align-items: center;
-// 			gap: 8px;
-// 		}
-// 		.btn-primary {
-// 			background: var(--primary-color);
-// 			color: white;
-// 		}
-// 		.btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
-// 		.btn-default {
-// 			background: var(--gray-100);
-// 			color: var(--gray-700);
-// 			margin-left: 12px;
-// 		}
-// 		.btn:disabled { opacity: 0.6; cursor: not-allowed; }
-// 		.progress {
-// 			height: 10px;
-// 			background: var(--light-bg-color);
-// 			border-radius: 5px;
-// 			overflow: hidden;
-// 		}
-// 		.progress-bar {
-// 			height: 100%;
-// 			background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
-// 			transition: width 0.3s ease;
-// 		}
-// 		.download-link {
-// 			display: block;
-// 			padding: 16px 20px;
-// 			margin: 12px 0;
-// 			background: var(--success-light);
-// 			border: 2px solid var(--success-color);
-// 			border-radius: 8px;
-// 			text-decoration: none;
-// 			color: var(--success-color);
-// 			font-weight: 500;
-// 			transition: all 0.2s;
-// 		}
-// 		.download-link:hover {
-// 			background: var(--success-color);
-// 			color: white;
-// 			transform: translateY(-1px);
-// 			box-shadow: var(--shadow-md);
-// 		}
-// 		.download-list { margin-top: 16px; }
-// 		.badge {
-// 			padding: 4px 8px;
-// 			border-radius: 12px;
-// 			font-size: 12px;
-// 			font-weight: 500;
-// 		}
-// 		.alert {
-// 			padding: 16px;
-// 			border-radius: 8px;
-// 			border: 1px solid;
-// 		}
-// 		.alert-danger {
-// 			background: var(--danger-light);
-// 			border-color: var(--danger-color);
-// 			color: var(--danger-color);
-// 		}
-// 		@media (max-width: 768px) {
-// 			.form-row { flex-direction: column; gap: 0; }
-// 			.ttum-maker-container { margin: 10px; padding: 16px; }
-// 		}
-// 	`;
-// }
