@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -189,93 +190,99 @@
           padding-bottom: 5rem !important;
         }
       }
-      .quick-actions .grid {
+
+      /* Icon-based grid layout - NO CARDS */
+      .quick-actions .icon-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+        gap: 2rem 1.5rem;
+        justify-items: center;
       }
-      .action-card {
-        background-color: var(--card-bg);
-        border-radius: var(--radius);
-        box-shadow: 
-        /* Bottom shadow (existing) */ var(--shadow),
-          /* Upper side shadow - adds depth from top */ 0 -4px 6px -1px
-            rgba(0, 0, 0, 0.05),
-          0 -2px 4px -1px rgba(0, 0, 0, 0.03);
+
+      @media (max-width: 480px) {
+        .quick-actions .icon-grid {
+          grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+          gap: 1.5rem 1rem;
+        }
+      }
+
+      /* Icon item - minimal style */
+      .icon-item {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-          box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
         text-decoration: none;
         color: inherit;
-        aspect-ratio: 1;
-        user-select: none;
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease;
         position: relative;
       }
 
-      .action-card:hover {
-        transform: translateY(-0.3rem);
-        box-shadow: 0 12px 20px -4px rgba(37, 99, 235, 0.3),
-          0 6px 10px -4px rgba(37, 99, 235, 0.2);
+      .icon-item:hover {
+        transform: translateY(-5px);
       }
 
-      .card-icon {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: var(--radius-sm);
+      .icon-item:hover .icon-circle {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Icon circle container */
+      .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 0.75rem;
-        font-size: 1.25rem;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      }
-
-      .card-title {
-        font-size: 0.875rem;
-        font-weight: 700;
-        text-align: center;
-        line-height: 1.15;
-        letter-spacing: 0.02em;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
 
       @media (max-width: 480px) {
-        .quick-actions .grid {
-          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-          gap: 0.75rem;
-        }
-
-        .card-icon {
-          width: 2rem;
-          height: 2rem;
-          font-size: 1rem;
-        }
-
-        .card-title {
-          font-size: 0.5rem;
+        .icon-circle {
+          width: 50px;
+          height: 50px;
+          font-size: 1.25rem;
         }
       }
 
-      #password-modal {
-        transition: opacity 0.3s ease;
+      /* Icon label */
+      .icon-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.2;
+        letter-spacing: 0.01em;
+        color: var(--text);
+        max-width: 85px;
       }
 
-      #password-modal .bg-white {
-        animation: slideDown 0.3s ease-out;
+      @media (max-width: 480px) {
+        .icon-label {
+          font-size: 0.65rem;
+          max-width: 70px;
+        }
       }
 
-      @keyframes slideDown {
-        from {
-          transform: translateY(-50px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
+      /* Count badge for task notification */
+      .count-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background-color: #ef4444;
+        color: white;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        border: 2px solid white;
       }
 
       @keyframes ping {
@@ -291,25 +298,6 @@
       }
       .animate-ping {
         animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-      }
-      .task-card {
-        position: relative;
-      }
-
-      .count-badge {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background-color: #ef4444;
-        color: white;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: bold;
       }
     </style>
   </head>
@@ -358,214 +346,182 @@
         </div>
       </header>
       <main class="app-main">
-        <section class="quick-actions" aria-label="Quick action cards">
-          <div class="grid">
+        <section class="quick-actions" aria-label="Quick action icons">
+          <div class="icon-grid">
+            <!-- Tickets -->
             <a
-              class="action-card ticket"
+              class="icon-item"
               href="/app/my-tickets"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#e5def0] text-[#7e3af2] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#e5def0] text-[#7e3af2]">
                 <i class="fas fa-ticket-alt"></i>
               </div>
-              <h3 class="card-title">Tickets</h3>
+              <span class="icon-label">Tickets</span>
             </a>
+
+            <!-- Assets -->
             <a
-              class="action-card asset"
+              class="icon-item"
               href="/app/asset-requisition"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#d6edd9] text-[#16a34a] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#d6edd9] text-[#16a34a]">
                 <i class="fas fa-laptop"></i>
               </div>
-              <h3 class="card-title">Assets</h3>
+              <span class="icon-label">Assets</span>
             </a>
-            <a
-              class="action-card crm"
-              href="/crm-portal/"
-              role="link"
-              tabindex="0"
-            >
-              <div
-                class="card-icon bg-[#d0e8ff] text-[#2563eb] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+
+            <!-- CRM -->
+            <a class="icon-item" href="/crm-portal/" role="link" tabindex="0">
+              <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
                 <i class="fas fa-users"></i>
               </div>
-              <h3 class="card-title">CRM</h3>
+              <span class="icon-label">CRM</span>
             </a>
+
+            <!-- PMS -->
             <a
-              class="action-card pms"
+              class="icon-item"
               href="http://182.19.71.132:81/pms-login"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#f6f0d8] text-[#d97706] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#f6f0d8] text-[#d97706]">
                 <i class="fas fa-chart-line"></i>
               </div>
-              <h3 class="card-title">PMS</h3>
+              <span class="icon-label">PMS</span>
             </a>
-            <a
-              class="action-card operations"
-              href="/policies"
-              role="link"
-              tabindex="0"
-            >
-              <div
-                class="card-icon bg-[#d2fbf1] text-[#0d9488] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+
+            <!-- Operations -->
+            <a class="icon-item" href="/policies" role="link" tabindex="0">
+              <div class="icon-circle bg-[#d2fbf1] text-[#0d9488]">
                 <i class="fas fa-cog"></i>
               </div>
-              <h3 class="card-title">Operations</h3>
+              <span class="icon-label">Operations</span>
             </a>
+
+            <!-- Audit -->
             <a
-              class="action-card audit"
+              class="icon-item"
               href="/app/audit-management"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#e1e5f2] text-[#4f46e5] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#e1e5f2] text-[#4f46e5]">
                 <i class="fas fa-clipboard-check"></i>
               </div>
-              <h3 class="card-title">Audit</h3>
+              <span class="icon-label">Audit</span>
             </a>
-            <a
-              href="/app/praman"
-              class="action-card mis"
-              role="link"
-              tabindex="0"
-            >
-              <div
-                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+
+            <!-- Praman -->
+            <a class="icon-item" href="/app/praman" role="link" tabindex="0">
+              <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
                 <i class="fas fa-chart-pie"></i>
               </div>
-              <h3 class="card-title">Praman</h3>
+              <span class="icon-label">Praman</span>
             </a>
+
+            <!-- My Agents -->
             <a
+              class="icon-item"
               href="/app/agent-management"
-              class="action-card agents"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#e6f7ff] text-[#0284c7] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
                 <i class="fas fa-user-tie"></i>
               </div>
-              <h3 class="card-title">My Agents</h3>
+              <span class="icon-label">My Agents</span>
             </a>
 
+            <!-- Branch Proposal -->
             <a
+              class="icon-item"
               href="/app/branch-proposal"
-              class="action-card bp-card relative"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#fef3c7] text-[#f59e0b]">
                 <i class="fas fa-building"></i>
               </div>
-              <h3 class="card-title">Branch Proposal</h3>
+              <span class="icon-label">Branch Proposal</span>
             </a>
 
+            <!-- Tasks -->
             <a
+              class="icon-item task-icon"
               href="/app/task"
-              class="action-card task-card relative"
               role="link"
               tabindex="0"
               onclick="handleTaskCardClick(event)"
             >
-              <div
-                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#dbeafe] text-[#1d4ed8]">
                 <i class="fas fa-tasks"></i>
               </div>
-              <h3 class="card-title">Tasks</h3>
-              <!-- Count badge will be added dynamically -->
+              <span class="icon-label">Tasks</span>
             </a>
 
+            <!-- User Unlock -->
             <a
+              class="icon-item"
               href="/app/user-unlock"
-              class="action-card task-card relative"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
                 <i class="fas fa-unlock"></i>
               </div>
-              <h3 class="card-title">Finacle User Unlock ID</h3>
-              <!-- Count badge will be added dynamically -->
+              <span class="icon-label">Finacle User Unlock</span>
             </a>
 
+            <!-- MVCD Tracker -->
             <a
+              class="icon-item"
               href="/app/mvcd-status"
-              class="action-card task-card relative"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#e0e7ff] text-[#4338ca]">
                 <i class="fas fa-university"></i>
               </div>
-              <h3 class="card-title">MVCD Tracker</h3>
-              <!-- Count badge will be added dynamically -->
+              <span class="icon-label">MVCD Tracker</span>
             </a>
 
+            <!-- Finacle CBS Reports -->
             <a
+              class="icon-item"
               href="/app/finacle-report-portal"
-              class="action-card task-card relative"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
+              <div class="icon-circle bg-[#f3e8ff] text-[#7c3aed]">
                 <i class="fas fa-laptop-code"></i>
               </div>
-              <h3 class="card-title">Finacle CBS Reports</h3>
-              <!-- Count badge will be added dynamically -->
+              <span class="icon-label">Finacle CBS Reports</span>
             </a>
+
+            <!-- SS Trainer -->
+            <a class="icon-item" href="/app/trainer" role="link" tabindex="0">
+              <div class="icon-circle bg-[#dcfce7] text-[#15803d]">
+                <i class="fas fa-chalkboard-teacher"></i>
+              </div>
+              <span class="icon-label">SS Trainer</span>
+            </a>
+
+            <!-- Drishti -->
             <a
-              href="/app/trainer"
-              class="action-card task-card relative"
+              class="icon-item"
+              href="/app/sahayog_dashboard/"
               role="link"
               tabindex="0"
             >
-              <div
-                class="card-icon bg-[#f0f4ff] text-[#1e40af] rounded-[var(--radius-sm)]"
-                aria-hidden="true"
-              >
-                <i class="fas fa-user-tie"></i>
+              <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+                <i class="fas fa-eye"></i>
               </div>
-              <h3 class="card-title">SS Trainer</h3>
-              <!-- Count badge will be added dynamically -->
+              <span class="icon-label">Drishti</span>
             </a>
           </div>
         </section>
@@ -591,8 +547,8 @@
 
       // Function to fetch and display assigned task count
       async function fetchAssignedTaskCount() {
-        const taskCard = document.querySelector(".task-card");
-        if (!taskCard) return;
+        const taskIcon = document.querySelector(".task-icon");
+        if (!taskIcon) return;
 
         try {
           const userRes = await fetch(
@@ -603,7 +559,7 @@
 
           if (!userId || userId === "Administrator") return;
 
-          // Use API to get assigned task count (with frappe.throw validation)
+          // Use API to get assigned task count
           const countRes = await fetch(
             `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
           );
@@ -611,56 +567,46 @@
           const taskCount = countData.message || 0;
 
           // Badge update
-          const existingBadge = taskCard.querySelector(".count-badge");
+          const existingBadge = taskIcon.querySelector(".count-badge");
           if (existingBadge) existingBadge.remove();
 
           if (taskCount > 0) {
             const countBadge = document.createElement("div");
             countBadge.className = "count-badge";
             countBadge.textContent = taskCount;
-            taskCard.appendChild(countBadge);
+            taskIcon.appendChild(countBadge);
 
-            // Enable click
-            taskCard.style.pointerEvents = "auto";
-            taskCard.style.opacity = "1";
+            taskIcon.style.pointerEvents = "auto";
+            taskIcon.style.opacity = "1";
           } else {
-            // No tasks → disable card
-            taskCard.classList.add("no-tasks");
-            taskCard.style.pointerEvents = "none";
-            taskCard.style.opacity = "0.6";
+            taskIcon.style.pointerEvents = "none";
+            taskIcon.style.opacity = "0.5";
           }
 
-          // Attach click
-          taskCard.onclick = async function (e) {
+          taskIcon.onclick = async function (e) {
             e.preventDefault();
             try {
-              // Double-check task count via API in case page is open long time
               await fetch(
                 `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
               );
-              // Navigate if no frappe.throw
               window.location.href = "/app/task";
             } catch (err) {
-              // frappe.throw error will be caught here
               frappe.msgprint(err?.message || "No tasks assigned to you");
             }
           };
         } catch (error) {
           console.error("Failed to fetch task count:", error);
-          // Optional: show card disabled
-          taskCard.style.pointerEvents = "none";
-          taskCard.style.opacity = "0.6";
+          taskIcon.style.pointerEvents = "none";
+          taskIcon.style.opacity = "0.5";
         }
       }
 
-      // DOMContentLoaded
       document.addEventListener("DOMContentLoaded", function () {
         fetchAssignedTaskCount();
       });
 
       async function fetchEmployeeDetails() {
         try {
-          // Step 1: Get the current logged-in user
           const userRes = await fetch(
             "/api/method/frappe.auth.get_logged_user"
           );
@@ -669,10 +615,8 @@
 
           if (!userId) return;
 
-          // Greeting based on time
           const greeting = getTimeBasedGreeting();
 
-          // 🛑 Special case: Administrator
           if (userId === "Administrator") {
             document.getElementById("emp_name").textContent = "Administrator";
             document.getElementById("emp_designation").textContent = "-";
@@ -684,7 +628,6 @@
             return;
           }
 
-          // Step 2: Fetch employee details for regular users
           const filters = encodeURIComponent(
             JSON.stringify([["user_id", "=", userId]])
           );
@@ -712,11 +655,9 @@
             const branchSol = `Branch : ${branch} | SOL ID : ${solId}`;
             document.getElementById("emp_branch_sol").innerHTML = branchSol;
 
-            // Set first letter in avatar
             const initial = employeeName.trim().charAt(0).toUpperCase();
             document.getElementById("avatar-initial").textContent = initial;
 
-            // Set greeting
             document.getElementById(
               "greeting-message"
             ).textContent = `${greeting},`;
@@ -733,7 +674,6 @@
         }
       }
 
-      // Helper to get greeting based on time
       function getTimeBasedGreeting() {
         const hour = new Date().getHours();
         if (hour < 12) return "Good Morning";
@@ -744,7 +684,6 @@
 
       fetchEmployeeDetails();
 
-      // Function to handle link clicks
       function handleLinkClick(event) {
         event.preventDefault();
         const url = event.currentTarget.getAttribute("href");
@@ -757,13 +696,12 @@
         }
       }
 
-      // Attach click handlers to all action-card links
       document.addEventListener("DOMContentLoaded", function () {
-        const actionCards = document.querySelectorAll(".action-card");
-        actionCards.forEach((card) => {
-          card.addEventListener("click", handleLinkClick);
+        const iconItems = document.querySelectorAll(".icon-item");
+        iconItems.forEach((item) => {
+          item.addEventListener("click", handleLinkClick);
         });
-        // Register service worker for PWA
+
         if ("serviceWorker" in navigator) {
           window.addEventListener("load", () => {
             navigator.serviceWorker
@@ -781,9 +719,6 @@
       ("use strict");
 
       function launchConfetti() {
-        // Same code as before but moved inside this function
-        // Add this line at the top of the function:
-        // (Avoid multiple triggers)
         if (document.getElementById("confetti-container")) return;
 
         var random = Math.random,
@@ -939,7 +874,6 @@
           };
         }
 
-        // Main logic
         var frame, timer;
         var theme = colorThemes[0];
         (function addConfetto() {
@@ -968,14 +902,12 @@
           document.body.removeChild(container);
         });
 
-        // Stop after 5 seconds
         setTimeout(() => {
           clearTimeout(timer);
           timer = null;
         }, 5000);
       }
 
-      // 👇 Trigger it on gesture click
       document.addEventListener("DOMContentLoaded", function () {
         document
           .getElementById("random-gesture")
@@ -983,8 +915,8 @@
             launchConfetti();
           });
       });
+
       document.addEventListener("DOMContentLoaded", function () {
-        // Show tooltip for 2 seconds
         const tooltip = document.getElementById("gesture-tooltip");
         tooltip.classList.add("opacity-100");
 
