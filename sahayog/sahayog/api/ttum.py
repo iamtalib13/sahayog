@@ -96,17 +96,19 @@ def convert():
 
         frappe.logger().info(f"TTUM proxy → data: {data_payload}")
 
-        headers = {
-            "Accept": "application/json"
-        }
+        # headers = {
+        #     "Accept": "application/json"
+        # }
 
         resp = requests.post(
             target_url,
             files=file_payload if file_payload else None,
             data=data_payload,
-            headers=headers,
+            # headers=headers,
             timeout=300
         )
+
+        frappe.logger().info(f"Outgoing headers: {resp.request.headers}")
 
         frappe.logger().info(
             f"TTUM proxy → response {resp.status_code}: {resp.text[:300]}"
