@@ -355,3 +355,16 @@ def get_employee_info(employee):
         return emp[0]
     else:
         return {}
+
+
+def has_permission(doc, ptype, user):
+    # Allow Administrator everything
+    if user == "Administrator":
+        return True
+
+    # Block create for everyone else
+    if ptype == "create":
+        return False
+
+    # Allow read / write / etc based on role permissions
+    return True
