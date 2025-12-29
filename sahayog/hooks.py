@@ -216,6 +216,10 @@ permission_query_conditions = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
+has_permission = {
+    "Agent": "sahayog.agent_and_bdo.doctype.agent.agent.has_permission"
+}
+
 # DocType Class
 # ---------------
 # Override standard doctype classes
