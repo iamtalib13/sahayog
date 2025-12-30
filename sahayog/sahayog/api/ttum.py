@@ -159,7 +159,31 @@ def convert():
         return {"error": str(e)}
 
 
+@frappe.whitelist()
+def download_all(ttum_id):
+    """
+    Download all TTUM files (ZIP) for a given ttumId
+    """
+    api_url = f"http://10.0.115.6:9098/api/ttum/getallbyid/{ttum_id}/download/all"
 
+    try:
+        # 🔥 MUST use stream=True for binary files
+        resp = requests.get(api_url, timeout=300, stream=True)
 
+        if resp.status_code != 200:
+            frappe.throw(
+                f"TTUM download failed ({resp.status_code})"
+            )
 
+        # ---- Force browser download ----
+        frappe.response["type"] = "binary"
+        frappe.response["filename"] = f"TTUM_{ttum_id}.zip"
+        frappe.response["filecontent"] = resp.content
+        frappe.response["content_type"] = "application/zip"
+
+        return
+
+    except Exception as e:
+        frappe.logger().error(f"TTUM download error: {e}")
+        frappe.throw(str(e))
 

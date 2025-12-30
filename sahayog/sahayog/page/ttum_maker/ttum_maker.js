@@ -910,6 +910,23 @@ frappe.pages["ttum-maker"].init_form = function () {
 
     $resultsContainer.removeClass("hidden");
 
+	    // ===============================
+    // ADDITION: Download ALL ZIP button
+    // ===============================
+    if (data.ttumId) {
+      const $zipBtn = $(`
+        <div class="mb-3 text-right">
+          <button class="btn btn-primary"
+            onclick="downloadAllZip(${data.ttumId})">
+            <i class="fa fa-download"></i> Download All (ZIP)
+          </button>
+        </div>
+      `);
+
+      $downloadLinks.before($zipBtn);
+    }
+
+
     let splitDetails = [];
 
     // ✅ HANDLE YOUR EXACT FORMAT
@@ -971,4 +988,25 @@ frappe.pages["ttum-maker"].init_form = function () {
   }
 
   console.log("logedin user is ", frappe.session.user);
+
+
+  // ===============================
+// ADDITION: DOWNLOAD ALL ZIP
+// ===============================
+// ===============================
+// GLOBAL: Download ALL ZIP
+// ===============================
+window.downloadAllZip = function (ttumId) {
+  if (!ttumId) {
+    frappe.msgprint("TTUM ID not found for download");
+    return;
+  }
+
+  const url =
+    `/api/method/sahayog.sahayog.api.ttum.download_all?ttum_id=${ttumId}`;
+
+  window.location.href = url;
+};
+
+
 };
