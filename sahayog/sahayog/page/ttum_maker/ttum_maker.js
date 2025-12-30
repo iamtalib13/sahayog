@@ -913,18 +913,43 @@ frappe.pages["ttum-maker"].init_form = function () {
 	    // ===============================
     // ADDITION: Download ALL ZIP button
     // ===============================
-    if (data.ttumId) {
-      const $zipBtn = $(`
-        <div class="mb-3 text-right">
-          <button class="btn btn-primary"
-            onclick="downloadAllZip(${data.ttumId})">
-            <i class="fa fa-download"></i> Download All (ZIP)
-          </button>
-        </div>
-      `);
+    // if (data.ttumId) {
+    //   const $zipBtn = $(`
+    //     <div class="mb-3 text-right">
+    //       <button class="btn btn-primary"
+    //         onclick="downloadAllZip(${data.ttumId})">
+    //         <i class="fa fa-download"></i> Download All (ZIP)
+    //       </button>
+    //     </div>
+    //   `);
 
-      $downloadLinks.before($zipBtn);
-    }
+    //   $downloadLinks.before($zipBtn);
+    // }
+
+	// ===============================
+	// PRIMARY CTA: Download ZIP
+	// ===============================
+	if (data.ttumId) {
+	const $zipAction = $(`
+		<div class="d-flex justify-content-between align-items-center mb-4">
+		<div class="text-muted">
+			<small>
+			<i class="fa fa-archive"></i>
+			${data.splitDetails?.length || 0} file(s) generated
+			</small>
+		</div>
+
+		<button class="btn btn-primary btn-lg"
+			onclick="downloadAllZip(${data.ttumId})">
+			<i class="fa fa-download"></i>
+			Download All (ZIP)
+		</button>
+		</div>
+	`);
+
+	$resultsContainer.find(".results-header").after($zipAction);
+	}
+
 
 
     let splitDetails = [];
@@ -944,14 +969,11 @@ frappe.pages["ttum-maker"].init_form = function () {
     splitDetails.forEach((fileName, index) => {
       const cleanName = fileName.split(": ")[1] || fileName;
       const $link = $(`
-            <div class="download-link mb-2 p-3">
-                <i class="fa fa-file-text text-success mr-2"></i>
-                <strong>${fileName}</strong>
-                <a href="#" onclick="downloadFile('${cleanName}')" class="btn btn-primary btn-sm float-right">
-                    <i class="fa fa-download"></i> Download
-                </a>
-            </div>
-        `);
+		<div class="download-link mb-2 p-3 d-flex align-items-center">
+			<i class="fa fa-file-text text-success mr-2"></i>
+			<strong>${fileName}</strong>
+		</div>
+		`);
       $downloadLinks.append($link);
     });
   }
