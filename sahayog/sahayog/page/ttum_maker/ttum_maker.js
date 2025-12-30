@@ -552,8 +552,233 @@ function applyPremiumCSS() {
   $("<style>").attr("data-ttum-maker", "true").text(css).appendTo("head");
 }
 
-frappe.pages["ttum-maker"].init_form = function () {
+// function applyPremiumCSS() {
+//   const css = `
+// /* ================================
+//    SCOPE: TTUM MAKER ONLY
+// ================================ */
+// .ttum-maker-app {
+//   min-height: 100vh;
+//   background: #f4f6f9;
+//   padding: 24px 0;
+//   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+//   color: #1f2937;
+// }
 
+// /* ================================
+//    HEADER
+// ================================ */
+// .ttum-maker-app .hero-header {
+//   text-align: center;
+//   margin-bottom: 32px;
+// }
+
+// .ttum-maker-app .hero-icon {
+//   font-size: 36px;
+//   margin-bottom: 8px;
+// }
+
+// .ttum-maker-app .hero-title {
+//   font-size: 26px;
+//   font-weight: 700;
+//   margin: 0;
+// }
+
+// .ttum-maker-app .hero-subtitle {
+//   font-size: 14px;
+//   color: #6b7280;
+//   margin-top: 6px;
+// }
+
+// /* ================================
+//    CARD
+// ================================ */
+// .ttum-maker-app .upload-form {
+//   background: #ffffff;
+//   border-radius: 14px;
+//   padding: 32px;
+//   box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+//   border: 1px solid #e5e7eb;
+// }
+
+// /* ================================
+//    FORM GRID
+// ================================ */
+// .ttum-maker-app .form-grid {
+//   display: grid;
+//   grid-template-columns: 1fr 1fr;
+//   gap: 20px;
+// }
+
+// .ttum-maker-app .form-field.full-width {
+//   grid-column: 1 / -1;
+// }
+
+// /* ================================
+//    LABELS
+// ================================ */
+// .ttum-maker-app .field-label {
+//   font-size: 12px;
+//   font-weight: 600;
+//   color: #374151;
+//   margin-bottom: 6px;
+//   text-transform: uppercase;
+//   letter-spacing: 0.4px;
+// }
+
+// .ttum-maker-app .required {
+//   color: #dc2626;
+// }
+
+// /* ================================
+//    INPUTS
+// ================================ */
+// .ttum-maker-app .field-input {
+//   width: 100%;
+//   padding: 12px 14px;
+//   border-radius: 8px;
+//   border: 1px solid #d1d5db;
+//   font-size: 14px;
+//   background: #fff;
+// }
+
+// .ttum-maker-app .field-input:focus {
+//   outline: none;
+//   border-color: #2563eb;
+//   box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+// }
+
+// /* ================================
+//    SELECT (CUSTOM LOOK)
+// ================================ */
+// .ttum-maker-app select.field-input {
+//   appearance: none;
+//   background-image:
+//     linear-gradient(45deg, transparent 50%, #6b7280 50%),
+//     linear-gradient(135deg, #6b7280 50%, transparent 50%);
+//   background-position:
+//     calc(100% - 18px) 16px,
+//     calc(100% - 12px) 16px;
+//   background-size: 6px 6px;
+//   background-repeat: no-repeat;
+//   cursor: pointer;
+// }
+
+// /* ================================
+//    FILE UPLOAD
+// ================================ */
+// .ttum-maker-app .file-upload-placeholder {
+//   padding: 16px;
+//   border-radius: 10px;
+//   border: 1px dashed #cbd5e1;
+//   background: #f9fafb;
+//   font-size: 14px;
+//   color: #6b7280;
+// }
+
+// .ttum-maker-app .file-input:hover + .file-upload-placeholder {
+//   border-color: #2563eb;
+//   background: #eff6ff;
+// }
+
+// /* ================================
+//    ACTION BUTTONS
+// ================================ */
+// .ttum-maker-app .form-actions {
+//   display: flex;
+//   justify-content: flex-end;
+//   gap: 12px;
+//   margin-top: 24px;
+//   padding-top: 20px;
+//   border-top: 1px solid #e5e7eb;
+// }
+
+// .ttum-maker-app .btn {
+//   padding: 10px 18px;
+//   border-radius: 8px;
+//   font-size: 14px;
+//   font-weight: 600;
+//   cursor: pointer;
+//   border: none;
+// }
+
+// .ttum-maker-app .btn-primary {
+//   background: #2563eb;
+//   color: #ffffff;
+// }
+
+// .ttum-maker-app .btn-primary:hover {
+//   background: #1d4ed8;
+// }
+
+// .ttum-maker-app .btn-secondary {
+//   background: #e5e7eb;
+//   color: #374151;
+// }
+
+// /* ================================
+//    PROGRESS
+// ================================ */
+// .ttum-maker-app .progress-section {
+//   background: #ffffff;
+//   border-radius: 12px;
+//   padding: 24px;
+//   border: 1px solid #e5e7eb;
+// }
+
+// .ttum-maker-app .progress-track {
+//   height: 8px;
+//   background: #e5e7eb;
+//   border-radius: 999px;
+// }
+
+// .ttum-maker-app .progress-fill {
+//   height: 100%;
+//   background: #22c55e;
+//   border-radius: 999px;
+// }
+
+// /* ================================
+//    RESULTS
+// ================================ */
+// .ttum-maker-app .results-section {
+//   background: #ecfdf5;
+//   border: 1px solid #a7f3d0;
+//   border-radius: 12px;
+//   padding: 24px;
+// }
+
+// .ttum-maker-app .download-link {
+//   padding: 14px 18px;
+//   border-radius: 10px;
+//   border: 1px solid #d1fae5;
+//   background: #ffffff;
+// }
+
+// /* ================================
+//    ERROR
+// ================================ */
+// .ttum-maker-app .alert-error {
+//   background: #fef2f2;
+//   border: 1px solid #fecaca;
+//   color: #991b1b;
+// }
+
+// /* ================================
+//    RESPONSIVE
+// ================================ */
+// @media (max-width: 768px) {
+//   .ttum-maker-app .form-grid {
+//     grid-template-columns: 1fr;
+//   }
+// }
+// `;
+
+//   $("head style[data-ttum-maker]").remove();
+//   $("<style>").attr("data-ttum-maker", "true").text(css).appendTo("head");
+// }
+
+frappe.pages["ttum-maker"].init_form = function () {
   const $form = $("#ttum-form");
   const $submitBtn = $("#submit-btn");
   const $btnText = $(".btn-text");
@@ -580,8 +805,6 @@ frappe.pages["ttum-maker"].init_form = function () {
     hideAllSections();
     $("#split-mode").trigger("change");
   });
-
-  
 
   // In your form submit handler - WRAP in try-catch
   $form.on("submit", async function (e) {
@@ -612,77 +835,40 @@ frappe.pages["ttum-maker"].init_form = function () {
     }
   });
 
-
   async function processExcelFile() {
-    const fileInput = $("#excel-file")[0];
-    const file = fileInput?.files?.[0];
-    if (!file) {
-      frappe.msgprint("Please select an Excel file");
-      throw new Error("No file");
-    }
+    const file = $("#excel-file")[0].files[0];
 
-    const ttumType = $("#ttum-type").val();
+    const ttum = {
+      ttumType: $("#ttum-type").val(),
+      creationDate: new Date().toISOString().slice(0, 19),
+      creatorName: frappe.session.user,
+    };
+
     const splitMode = $("#split-mode").val();
     const numberSplit = parseInt($("#number-split").val());
     const numberRecords = parseInt($("#number-records").val());
-    const creatorName = frappe.session.user || "Unknown User";
 
-    console.log("Sending:", {
-      ttumType,
-      creatorName,
-      splitMode,
-      numberSplit,
-      file,
-    });
-
-    updateProgress(10, "Preparing data...");
-
-    // Build ttum object as your backend expects
-    const ttum = {
-      ttumType: ttumType,
-      creationDate: new Date().toISOString().slice(0, 19),
-      creatorName: creatorName,
-    };
-
-    // Build FormData – EXACTLY as Postman
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("ttum", JSON.stringify(ttum));
     formData.append("split", splitMode === "split" ? numberSplit : 0);
     formData.append(
       "numberOfSplitRecords",
       splitMode === "records" ? numberRecords : 0
     );
-    formData.append("ttum", JSON.stringify(ttum));
 
-    updateProgress(30, "Calling TTUM service...");
-
-    // Send to your Frappe proxy (server side will forward to 10.0.115.6)
-    const result = await new Promise((resolve, reject) => {
-      $.ajax({
-        url: "/api/method/sahayog.sahayog.api.ttum.convert",
-        method: "POST",
-        data: formData,
-        processData: false,
-        contentType: false,
-        headers: {
-          "X-Frappe-CSRF-Token": frappe.csrf_token,
-        },
-        success: function (data) {
-          console.log("FULL RESPONSE:", data);
-          resolve(data.message || data);
-        },
-        error: function (xhr) {
-          console.error("AJAX error:", xhr.status, xhr.responseText);
-          reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
-        },
-      });
+    const result = await $.ajax({
+      url: "/api/method/sahayog.sahayog.api.ttum.convert",
+      method: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+      headers: {
+        "X-Frappe-CSRF-Token": frappe.csrf_token,
+      },
     });
 
-    updateProgress(90, "TTUM generated successfully");
-    // result should look like your desired response
-    // { ttumId, ttumType, creationDate, creatorName, ttumFilePath, splitDetails: [...] }
-    showResults(result);
-    return result;
+    return result.message;
   }
 
   // Keep all other functions (validateForm, showLoading, etc.) exactly the same
@@ -786,4 +972,3 @@ frappe.pages["ttum-maker"].init_form = function () {
 
   console.log("logedin user is ", frappe.session.user);
 };
-
