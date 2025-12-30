@@ -31,6 +31,11 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
 								<option value="">Select TTUM Type</option>
 								<option value="ASSET LOAN">ASSET LOAN</option>
 								<option value="INWARD">INWARD</option>
+								<option value="EHOLO">EHOLO</option>
+								<option value="EMSAAD">EMSAAD</option>
+								<option value="PERSONAL LOAN">PERSONAL LOAN</option>
+								<option value="SCHOOL AND PEON">SCHOOL AND PEON</option>
+								<option value="TDA">TDA</option>
 								<option value="SALARY">SALARY</option>
 							</select>
 						</div>
