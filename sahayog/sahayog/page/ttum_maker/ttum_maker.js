@@ -63,12 +63,12 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
 
 						<div class="form-field split-controls">
 							<div class="split-option number-split">
-								<label class="field-label"># of TXT Files</label>
+								<label class="field-label">Number of TXT Files</label>
 								<input type="number" id="number-split" class="field-input" min="1" value="1" max="50">
 							</div>
 							<div class="split-option number-records hidden">
 								<label class="field-label">Records per File</label>
-								<input type="number" id="number-records" class="field-input" min="1" value="1000" max="10000">
+								<input type="number" id="number-records" class="field-input" min="1" value="12" max="10000">
 							</div>
 						</div>
 					</div>
