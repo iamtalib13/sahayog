@@ -90,8 +90,8 @@ import requests
 
 @frappe.whitelist(allow_guest=False)
 def convert():
-    # target_url = "http://10.0.115.6:9098/api/ttum/convert"
-    target_url = "http://182.19.71.130:9098/api/ttum/convert"
+    target_url = "http://10.0.115.6:9098/api/ttum/convert"
+    # target_url = "http://182.19.71.130:9098/api/ttum/convert"
 
     try:
         files = frappe.request.files or {}
