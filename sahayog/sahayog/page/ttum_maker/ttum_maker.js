@@ -807,57 +807,126 @@ frappe.pages["ttum-maker"].init_form = function () {
   });
 
   // In your form submit handler - WRAP in try-catch
+//   $form.on("submit", async function (e) {
+//     e.preventDefault();
+
+//     try {
+//       clearErrors();
+//       const validation = validateForm();
+//       if (!validation.isValid) {
+//         showError(validation.errors.join("<br>"));
+//         return;
+//       }
+
+//       showLoading(true);
+//       hideAllSections();
+
+//       const result = await processExcelFile();
+//       showResults(result.message || result);
+//     } catch (error) {
+//       console.error("TTUM Error:", error);
+//       handleError(error);
+//     } finally {
+//       showLoading(false);
+//       // ✅ FIX: Check files exists before reset
+//       if ($("#excel-file")[0]?.files?.length) {
+//         $("#excel-file")[0].value = "";
+//       }
+//     }
+//   });
+
+
+//   Working
+//   async function processExcelFile() {
+//     const file = $("#excel-file")[0].files[0];
+
+//     const ttum = {
+//       ttumType: $("#ttum-type").val(),
+//       creationDate: new Date().toISOString().slice(0, 19),
+//       creatorName: frappe.session.user,
+//     };
+
+//     const splitMode = $("#split-mode").val();
+//     const numberSplit = parseInt($("#number-split").val());
+//     const numberRecords = parseInt($("#number-records").val());
+
+//     const formData = new FormData();
+//     formData.append("file", file);
+//     formData.append("ttum", JSON.stringify(ttum));
+//     formData.append("split", splitMode === "split" ? numberSplit : 0);
+//     formData.append(
+//       "numberOfSplitRecords",
+//       splitMode === "records" ? numberRecords : 0
+//     );
+
+//     const result = await $.ajax({
+//       url: "/api/method/sahayog.sahayog.api.ttum.convert",
+//       method: "POST",
+//       data: formData,
+//       processData: false,
+//       contentType: false,
+//       headers: {
+//         "X-Frappe-CSRF-Token": frappe.csrf_token,
+//       },
+//     });
+
+//     return result.message;
+//   }
+
+  // Keep all other functions (validateForm, showLoading, etc.) exactly the same
+  
+
   $form.on("submit", async function (e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      clearErrors();
-      const validation = validateForm();
-      if (!validation.isValid) {
-        showError(validation.errors.join("<br>"));
-        return;
-      }
-
-      showLoading(true);
-      hideAllSections();
-
-      const result = await processExcelFile();
-      showResults(result.message || result);
-    } catch (error) {
-      console.error("TTUM Error:", error);
-      handleError(error);
-    } finally {
-      showLoading(false);
-      // ✅ FIX: Check files exists before reset
-      if ($("#excel-file")[0]?.files?.length) {
-        $("#excel-file")[0].value = "";
-      }
+  try {
+    clearErrors();
+    const validation = validateForm();
+    if (!validation.isValid) {
+      showError(validation.errors.join("<br>"));
+      return;
     }
-  });
+
+    showLoading(true);
+    hideAllSections();
+
+    const result = await processExcelFile();
+    showResults(result); // ✅ ONLY called on success
+  } catch (error) {
+    console.error("TTUM Error:", error);
+    // ❌ DO NOT show results here
+  } finally {
+    showLoading(false);
+  }
+});
+
 
   async function processExcelFile() {
-    const file = $("#excel-file")[0].files[0];
+  const file = $("#excel-file")[0].files[0];
 
-    const ttum = {
-      ttumType: $("#ttum-type").val(),
-      creationDate: new Date().toISOString().slice(0, 19),
-      creatorName: frappe.session.user,
-    };
+  const ttum = {
+    ttumType: $("#ttum-type").val(),
+    creationDate: new Date().toISOString().slice(0, 19),
+    creatorName: frappe.session.user,
+  };
 
-    const splitMode = $("#split-mode").val();
-    const numberSplit = parseInt($("#number-split").val());
-    const numberRecords = parseInt($("#number-records").val());
+  const splitMode = $("#split-mode").val();
+  const numberSplit = parseInt($("#number-split").val());
+  const numberRecords = parseInt($("#number-records").val());
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("ttum", JSON.stringify(ttum));
-    formData.append("split", splitMode === "split" ? numberSplit : 0);
-    formData.append(
-      "numberOfSplitRecords",
-      splitMode === "records" ? numberRecords : 0
-    );
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("ttum", JSON.stringify(ttum));
+  formData.append("split", splitMode === "split" ? numberSplit : 0);
+  formData.append(
+    "numberOfSplitRecords",
+    splitMode === "records" ? numberRecords : 0
+  );
 
-    const result = await $.ajax({
+  let response;
+
+  try {
+    response = await $.ajax({
       url: "/api/method/sahayog.sahayog.api.ttum.convert",
       method: "POST",
       data: formData,
@@ -867,11 +936,36 @@ frappe.pages["ttum-maker"].init_form = function () {
         "X-Frappe-CSRF-Token": frappe.csrf_token,
       },
     });
+  } catch (xhr) {
+    // 🔴 Network / 502 / 504 / server crash
+    let msg = "Unexpected error occurred.";
 
-    return result.message;
+    if (xhr?.responseJSON?.message?.error) {
+      msg = "TTUM service is currently unreachable.";
+    }
+
+    showError(msg);
+    throw new Error(msg); // ⛔ STOP FLOW
   }
 
-  // Keep all other functions (validateForm, showLoading, etc.) exactly the same
+  // 🔴 Business-level failure (status_code != 200)
+  if (response.status_code !== 200) {
+    let msg = "Unable to generate TTUM.";
+
+    if (response.message?.error) {
+      msg = "TTUM service is currently unreachable.";
+    }
+
+    showError(msg);
+    throw new Error(msg); // ⛔ STOP FLOW
+  }
+
+  // ✅ SUCCESS ONLY
+  return response.message;
+}
+
+ 
+ 
   function validateForm() {
     const errors = [];
     const ttumType = $("#ttum-type").val().trim();
@@ -906,7 +1000,7 @@ frappe.pages["ttum-maker"].init_form = function () {
   }
 
   function showResults(data) {
-    console.log("🎯 showResults data:", data);
+    // console.log("🎯 showResults data:", data);
 
     $resultsContainer.removeClass("hidden");
 
