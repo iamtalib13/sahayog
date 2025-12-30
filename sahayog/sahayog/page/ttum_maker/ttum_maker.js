@@ -126,657 +126,657 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
 };
 
 // Enhanced CSS with Glassmorphism + Modern Design
-function applyPremiumCSS() {
-  const css = `
-		.ttum-maker-app {
-			min-height: 100vh;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			padding: 20px 0;
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		}
-
-		.hero-header {
-			text-align: center;
-			margin-bottom: 40px;
-			padding: 0 20px;
-		}
-
-		.hero-content {
-			max-width: 800px;
-			margin: 0 auto;
-		}
-
-		.hero-icon {
-			font-size: 4rem;
-			display: block;
-			margin-bottom: 16px;
-			animation: float 3s ease-in-out infinite;
-		}
-
-		.hero-title {
-			font-size: 2.5rem;
-			font-weight: 800;
-			background: linear-gradient(135deg, #fff 0%, #f0f2ff 100%);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			background-clip: text;
-			margin: 0 0 12px 0;
-			line-height: 1.1;
-		}
-
-		.hero-subtitle {
-			font-size: 1.2rem;
-			color: rgba(255,255,255,0.9);
-			margin: 0;
-			max-width: 600px;
-			margin: 0 auto;
-		}
-
-		.main-content {
-			max-width: 900px;
-			margin: 0 auto;
-			padding: 0 20px;
-		}
-
-		.upload-form {
-			background: rgba(255, 255, 255, 0.95);
-			backdrop-filter: blur(20px);
-			border-radius: 24px;
-			padding: 40px;
-			box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-			border: 1px solid rgba(255,255,255,0.2);
-			margin-bottom: 32px;
-		}
-
-		.form-grid {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 24px;
-			margin-bottom: 32px;
-		}
-
-		.form-field {
-			position: relative;
-		}
-
-		.form-field.full-width {
-			grid-column: 1 / -1;
-		}
-
-		.field-label {
-			display: flex;
-			align-items: center;
-			gap: 8px;
-			font-weight: 600;
-			font-size: 14px;
-			color: #374151;
-			margin-bottom: 12px;
-			text-transform: uppercase;
-			letter-spacing: 0.5px;
-		}
-
-		.field-icon {
-			width: 18px;
-			height: 18px;
-			background: linear-gradient(135deg, #667eea, #764ba2);
-			-webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3C!-- SVG ICONS HERE --%3E%3C/svg%3E") no-repeat center;
-			mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3C!-- SVG ICONS HERE --%3E%3C/svg%3E") no-repeat center;
-			-webkit-mask-size: 16px;
-			mask-size: 16px;
-			flex-shrink: 0;
-		}
-
-		.field-input {
-			width: 100%;
-			padding: 16px 20px;
-			border: 2px solid #e5e7eb;
-			border-radius: 16px;
-			font-size: 16px;
-			background: #fff;
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-			box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-		}
-
-		.field-input:focus {
-			outline: none;
-			border-color: #667eea;
-			box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 10px 25px rgba(102, 126, 234, 0.15);
-			transform: translateY(-1px);
-		}
-
-		.file-upload-wrapper {
-			position: relative;
-			display: block;
-		}
-
-		.file-input {
-			position: absolute;
-			opacity: 0;
-			width: 100%;
-			height: 100%;
-			cursor: pointer;
-		}
-
-		.file-upload-placeholder {
-			padding: 20px;
-			border: 2px dashed #d1d5db;
-			border-radius: 16px;
-			text-align: center;
-			background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-			transition: all 0.3s ease;
-			cursor: pointer;
-		}
-
-		.file-input:hover + .file-upload-placeholder {
-			border-color: #667eea;
-			background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-		}
-
-		.field-help {
-			display: block;
-			margin-top: 8px;
-			font-size: 13px;
-			color: #6b7280;
-			font-style: italic;
-		}
-
-		.split-controls {
-			grid-column: 1 / -1;
-			display: flex;
-			gap: 20px;
-		}
-
-		.split-option {
-			flex: 1;
-		}
-
-		.required { color: #ef4444; }
-
-		.form-actions {
-			display: flex;
-			gap: 16px;
-			justify-content: flex-end;
-			padding-top: 24px;
-			border-top: 1px solid #f3f4f6;
-		}
-
-		.btn {
-			padding: 16px 32px;
-			border: none;
-			border-radius: 16px;
-			font-size: 15px;
-			font-weight: 600;
-			cursor: pointer;
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-			display: flex;
-			align-items: center;
-			gap: 10px;
-			text-decoration: none;
-			position: relative;
-			overflow: hidden;
-		}
-
-		.btn::before {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: -100%;
-			width: 100%;
-			height: 100%;
-			background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-			transition: left 0.5s;
-		}
-
-		.btn:hover::before { left: 100%; }
-
-		.btn-primary {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
-			box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-		}
-
-		.btn-primary:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 20px 40px rgba(102, 126, 234, 0.5);
-		}
-
-		.btn-secondary {
-			background: #f3f4f6;
-			color: #374151;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-		}
-
-		.btn:disabled {
-			opacity: 0.6;
-			transform: none !important;
-			cursor: not-allowed;
-		}
-
-		.btn-loader { gap: 8px; }
-
-		.progress-section {
-			background: rgba(255, 255, 255, 0.95);
-			backdrop-filter: blur(20px);
-			border-radius: 20px;
-			padding: 32px;
-			margin-bottom: 24px;
-			border: 1px solid rgba(255,255,255,0.2);
-			box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
-		}
-
-		.progress-header {
-			display: flex;
-			align-items: center;
-			gap: 12px;
-			font-weight: 700;
-			font-size: 16px;
-			color: #1f2937;
-			margin-bottom: 24px;
-		}
-
-		.progress-container {
-			position: relative;
-		}
-
-		.progress-track {
-			height: 12px;
-			background: #f3f4f6;
-			border-radius: 20px;
-			overflow: hidden;
-			position: relative;
-			box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-		}
-
-		.progress-fill {
-			height: 100%;
-			background: linear-gradient(90deg, #10b981, #059669);
-			border-radius: 20px;
-			transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-			box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-		}
-
-		.progress-indicator {
-			position: absolute;
-			top: -4px;
-			right: -4px;
-			width: 20px;
-			height: 20px;
-			background: #10b981;
-			border-radius: 50%;
-			box-shadow: 0 0 0 4px white;
-			opacity: 0;
-			transition: opacity 0.3s;
-		}
-
-		.progress-fill[style*="100%"] + .progress-indicator {
-			opacity: 1;
-			animation: bounce 0.6s infinite;
-		}
-
-		.progress-info {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-top: 16px;
-			font-weight: 600;
-		}
-
-		.progress-percent {
-			background: linear-gradient(135deg, #667eea, #764ba2);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			background-clip: text;
-			font-size: 18px;
-		}
-
-		.results-section {
-			background: rgba(16, 185, 129, 0.1);
-			backdrop-filter: blur(20px);
-			border: 1px solid rgba(16, 185, 129, 0.3);
-			border-radius: 20px;
-			padding: 40px;
-			animation: slideUp 0.5s ease-out;
-		}
-
-		.results-header {
-			text-align: center;
-			margin-bottom: 32px;
-		}
-
-		.results-header h3 {
-			font-size: 1.5rem;
-			font-weight: 800;
-			color: #059669;
-			margin: 8px 0 0 0;
-		}
-
-		.download-grid {
-			display: grid;
-			gap: 16px;
-		}
-
-		.download-link {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			padding: 20px 24px;
-			background: rgba(255,255,255,0.9);
-			border: 2px solid rgba(16,185,129,0.3);
-			border-radius: 16px;
-			text-decoration: none;
-			color: #1f2937;
-			font-weight: 600;
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-			box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-			position: relative;
-			overflow: hidden;
-		}
-
-		.download-link::before {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			height: 4px;
-			background: linear-gradient(90deg, #10b981, #059669);
-		}
-
-		.download-link:hover {
-			transform: translateY(-4px);
-			border-color: #10b981;
-			box-shadow: 0 20px 40px rgba(16,185,129,0.3);
-			color: #059669;
-		}
-
-		.download-link i { font-size: 20px; color: #10b981; }
-
-		.badge {
-			background: linear-gradient(135deg, #10b981, #059669);
-			color: white;
-			padding: 6px 12px;
-			border-radius: 20px;
-			font-size: 13px;
-			font-weight: 600;
-		}
-
-		.alert {
-			padding: 24px;
-			border-radius: 16px;
-			border: 1px solid;
-			margin-top: 24px;
-			animation: shake 0.5s ease-in-out;
-		}
-
-		.alert-error {
-			background: rgba(239, 68, 68, 0.1);
-			border-color: #ef4444;
-			color: #dc2626;
-		}
-
-		.hidden { display: none !important; }
-
-		@keyframes float {
-			0%, 100% { transform: translateY(0px); }
-			50% { transform: translateY(-10px); }
-		}
-
-		@keyframes slideUp {
-			from { opacity: 0; transform: translateY(20px); }
-			to { opacity: 1; transform: translateY(0); }
-		}
-
-		@keyframes bounce {
-			0%, 100% { transform: translateY(0); }
-			50% { transform: translateY(-5px); }
-		}
-
-		@keyframes shake {
-			0%, 100% { transform: translateX(0); }
-			25% { transform: translateX(-5px); }
-			75% { transform: translateX(5px); }
-		}
-
-		@media (max-width: 768px) {
-			.ttum-maker-app { padding: 10px 0; }
-			.hero-title { font-size: 2rem; }
-			.upload-form { padding: 24px; margin: 0 10px; }
-			.form-grid { grid-template-columns: 1fr; gap: 20px; }
-			.split-controls { flex-direction: column; gap: 16px; }
-			.form-actions { flex-direction: column; }
-			.download-grid { grid-template-columns: 1fr; }
-		}
-	`;
-
-  $("head style[data-ttum-maker]").remove();
-  $("<style>").attr("data-ttum-maker", "true").text(css).appendTo("head");
-}
-
 // function applyPremiumCSS() {
 //   const css = `
-// /* ================================
-//    SCOPE: TTUM MAKER ONLY
-// ================================ */
-// .ttum-maker-app {
-//   min-height: 100vh;
-//   background: #f4f6f9;
-//   padding: 24px 0;
-//   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-//   color: #1f2937;
-// }
+// 		.ttum-maker-app {
+// 			min-height: 100vh;
+// 			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+// 			padding: 20px 0;
+// 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+// 		}
 
-// /* ================================
-//    HEADER
-// ================================ */
-// .ttum-maker-app .hero-header {
-//   text-align: center;
-//   margin-bottom: 32px;
-// }
+// 		.hero-header {
+// 			text-align: center;
+// 			margin-bottom: 40px;
+// 			padding: 0 20px;
+// 		}
 
-// .ttum-maker-app .hero-icon {
-//   font-size: 36px;
-//   margin-bottom: 8px;
-// }
+// 		.hero-content {
+// 			max-width: 800px;
+// 			margin: 0 auto;
+// 		}
 
-// .ttum-maker-app .hero-title {
-//   font-size: 26px;
-//   font-weight: 700;
-//   margin: 0;
-// }
+// 		.hero-icon {
+// 			font-size: 4rem;
+// 			display: block;
+// 			margin-bottom: 16px;
+// 			animation: float 3s ease-in-out infinite;
+// 		}
 
-// .ttum-maker-app .hero-subtitle {
-//   font-size: 14px;
-//   color: #6b7280;
-//   margin-top: 6px;
-// }
+// 		.hero-title {
+// 			font-size: 2.5rem;
+// 			font-weight: 800;
+// 			background: linear-gradient(135deg, #fff 0%, #f0f2ff 100%);
+// 			-webkit-background-clip: text;
+// 			-webkit-text-fill-color: transparent;
+// 			background-clip: text;
+// 			margin: 0 0 12px 0;
+// 			line-height: 1.1;
+// 		}
 
-// /* ================================
-//    CARD
-// ================================ */
-// .ttum-maker-app .upload-form {
-//   background: #ffffff;
-//   border-radius: 14px;
-//   padding: 32px;
-//   box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-//   border: 1px solid #e5e7eb;
-// }
+// 		.hero-subtitle {
+// 			font-size: 1.2rem;
+// 			color: rgba(255,255,255,0.9);
+// 			margin: 0;
+// 			max-width: 600px;
+// 			margin: 0 auto;
+// 		}
 
-// /* ================================
-//    FORM GRID
-// ================================ */
-// .ttum-maker-app .form-grid {
-//   display: grid;
-//   grid-template-columns: 1fr 1fr;
-//   gap: 20px;
-// }
+// 		.main-content {
+// 			max-width: 900px;
+// 			margin: 0 auto;
+// 			padding: 0 20px;
+// 		}
 
-// .ttum-maker-app .form-field.full-width {
-//   grid-column: 1 / -1;
-// }
+// 		.upload-form {
+// 			background: rgba(255, 255, 255, 0.95);
+// 			backdrop-filter: blur(20px);
+// 			border-radius: 24px;
+// 			padding: 40px;
+// 			box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+// 			border: 1px solid rgba(255,255,255,0.2);
+// 			margin-bottom: 32px;
+// 		}
 
-// /* ================================
-//    LABELS
-// ================================ */
-// .ttum-maker-app .field-label {
-//   font-size: 12px;
-//   font-weight: 600;
-//   color: #374151;
-//   margin-bottom: 6px;
-//   text-transform: uppercase;
-//   letter-spacing: 0.4px;
-// }
+// 		.form-grid {
+// 			display: grid;
+// 			grid-template-columns: 1fr 1fr;
+// 			gap: 24px;
+// 			margin-bottom: 32px;
+// 		}
 
-// .ttum-maker-app .required {
-//   color: #dc2626;
-// }
+// 		.form-field {
+// 			position: relative;
+// 		}
 
-// /* ================================
-//    INPUTS
-// ================================ */
-// .ttum-maker-app .field-input {
-//   width: 100%;
-//   padding: 12px 14px;
-//   border-radius: 8px;
-//   border: 1px solid #d1d5db;
-//   font-size: 14px;
-//   background: #fff;
-// }
+// 		.form-field.full-width {
+// 			grid-column: 1 / -1;
+// 		}
 
-// .ttum-maker-app .field-input:focus {
-//   outline: none;
-//   border-color: #2563eb;
-//   box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
-// }
+// 		.field-label {
+// 			display: flex;
+// 			align-items: center;
+// 			gap: 8px;
+// 			font-weight: 600;
+// 			font-size: 14px;
+// 			color: #374151;
+// 			margin-bottom: 12px;
+// 			text-transform: uppercase;
+// 			letter-spacing: 0.5px;
+// 		}
 
-// /* ================================
-//    SELECT (CUSTOM LOOK)
-// ================================ */
-// .ttum-maker-app select.field-input {
-//   appearance: none;
-//   background-image:
-//     linear-gradient(45deg, transparent 50%, #6b7280 50%),
-//     linear-gradient(135deg, #6b7280 50%, transparent 50%);
-//   background-position:
-//     calc(100% - 18px) 16px,
-//     calc(100% - 12px) 16px;
-//   background-size: 6px 6px;
-//   background-repeat: no-repeat;
-//   cursor: pointer;
-// }
+// 		.field-icon {
+// 			width: 18px;
+// 			height: 18px;
+// 			background: linear-gradient(135deg, #667eea, #764ba2);
+// 			-webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3C!-- SVG ICONS HERE --%3E%3C/svg%3E") no-repeat center;
+// 			mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3C!-- SVG ICONS HERE --%3E%3C/svg%3E") no-repeat center;
+// 			-webkit-mask-size: 16px;
+// 			mask-size: 16px;
+// 			flex-shrink: 0;
+// 		}
 
-// /* ================================
-//    FILE UPLOAD
-// ================================ */
-// .ttum-maker-app .file-upload-placeholder {
-//   padding: 16px;
-//   border-radius: 10px;
-//   border: 1px dashed #cbd5e1;
-//   background: #f9fafb;
-//   font-size: 14px;
-//   color: #6b7280;
-// }
+// 		.field-input {
+// 			width: 100%;
+// 			padding: 16px 20px;
+// 			border: 2px solid #e5e7eb;
+// 			border-radius: 16px;
+// 			font-size: 16px;
+// 			background: #fff;
+// 			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+// 			box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+// 		}
 
-// .ttum-maker-app .file-input:hover + .file-upload-placeholder {
-//   border-color: #2563eb;
-//   background: #eff6ff;
-// }
+// 		.field-input:focus {
+// 			outline: none;
+// 			border-color: #667eea;
+// 			box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 10px 25px rgba(102, 126, 234, 0.15);
+// 			transform: translateY(-1px);
+// 		}
 
-// /* ================================
-//    ACTION BUTTONS
-// ================================ */
-// .ttum-maker-app .form-actions {
-//   display: flex;
-//   justify-content: flex-end;
-//   gap: 12px;
-//   margin-top: 24px;
-//   padding-top: 20px;
-//   border-top: 1px solid #e5e7eb;
-// }
+// 		.file-upload-wrapper {
+// 			position: relative;
+// 			display: block;
+// 		}
 
-// .ttum-maker-app .btn {
-//   padding: 10px 18px;
-//   border-radius: 8px;
-//   font-size: 14px;
-//   font-weight: 600;
-//   cursor: pointer;
-//   border: none;
-// }
+// 		.file-input {
+// 			position: absolute;
+// 			opacity: 0;
+// 			width: 100%;
+// 			height: 100%;
+// 			cursor: pointer;
+// 		}
 
-// .ttum-maker-app .btn-primary {
-//   background: #2563eb;
-//   color: #ffffff;
-// }
+// 		.file-upload-placeholder {
+// 			padding: 20px;
+// 			border: 2px dashed #d1d5db;
+// 			border-radius: 16px;
+// 			text-align: center;
+// 			background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+// 			transition: all 0.3s ease;
+// 			cursor: pointer;
+// 		}
 
-// .ttum-maker-app .btn-primary:hover {
-//   background: #1d4ed8;
-// }
+// 		.file-input:hover + .file-upload-placeholder {
+// 			border-color: #667eea;
+// 			background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+// 		}
 
-// .ttum-maker-app .btn-secondary {
-//   background: #e5e7eb;
-//   color: #374151;
-// }
+// 		.field-help {
+// 			display: block;
+// 			margin-top: 8px;
+// 			font-size: 13px;
+// 			color: #6b7280;
+// 			font-style: italic;
+// 		}
 
-// /* ================================
-//    PROGRESS
-// ================================ */
-// .ttum-maker-app .progress-section {
-//   background: #ffffff;
-//   border-radius: 12px;
-//   padding: 24px;
-//   border: 1px solid #e5e7eb;
-// }
+// 		.split-controls {
+// 			grid-column: 1 / -1;
+// 			display: flex;
+// 			gap: 20px;
+// 		}
 
-// .ttum-maker-app .progress-track {
-//   height: 8px;
-//   background: #e5e7eb;
-//   border-radius: 999px;
-// }
+// 		.split-option {
+// 			flex: 1;
+// 		}
 
-// .ttum-maker-app .progress-fill {
-//   height: 100%;
-//   background: #22c55e;
-//   border-radius: 999px;
-// }
+// 		.required { color: #ef4444; }
 
-// /* ================================
-//    RESULTS
-// ================================ */
-// .ttum-maker-app .results-section {
-//   background: #ecfdf5;
-//   border: 1px solid #a7f3d0;
-//   border-radius: 12px;
-//   padding: 24px;
-// }
+// 		.form-actions {
+// 			display: flex;
+// 			gap: 16px;
+// 			justify-content: flex-end;
+// 			padding-top: 24px;
+// 			border-top: 1px solid #f3f4f6;
+// 		}
 
-// .ttum-maker-app .download-link {
-//   padding: 14px 18px;
-//   border-radius: 10px;
-//   border: 1px solid #d1fae5;
-//   background: #ffffff;
-// }
+// 		.btn {
+// 			padding: 16px 32px;
+// 			border: none;
+// 			border-radius: 16px;
+// 			font-size: 15px;
+// 			font-weight: 600;
+// 			cursor: pointer;
+// 			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+// 			display: flex;
+// 			align-items: center;
+// 			gap: 10px;
+// 			text-decoration: none;
+// 			position: relative;
+// 			overflow: hidden;
+// 		}
 
-// /* ================================
-//    ERROR
-// ================================ */
-// .ttum-maker-app .alert-error {
-//   background: #fef2f2;
-//   border: 1px solid #fecaca;
-//   color: #991b1b;
-// }
+// 		.btn::before {
+// 			content: '';
+// 			position: absolute;
+// 			top: 0;
+// 			left: -100%;
+// 			width: 100%;
+// 			height: 100%;
+// 			background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+// 			transition: left 0.5s;
+// 		}
 
-// /* ================================
-//    RESPONSIVE
-// ================================ */
-// @media (max-width: 768px) {
-//   .ttum-maker-app .form-grid {
-//     grid-template-columns: 1fr;
-//   }
-// }
-// `;
+// 		.btn:hover::before { left: 100%; }
+
+// 		.btn-primary {
+// 			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+// 			color: white;
+// 			box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+// 		}
+
+// 		.btn-primary:hover {
+// 			transform: translateY(-2px);
+// 			box-shadow: 0 20px 40px rgba(102, 126, 234, 0.5);
+// 		}
+
+// 		.btn-secondary {
+// 			background: #f3f4f6;
+// 			color: #374151;
+// 			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+// 		}
+
+// 		.btn:disabled {
+// 			opacity: 0.6;
+// 			transform: none !important;
+// 			cursor: not-allowed;
+// 		}
+
+// 		.btn-loader { gap: 8px; }
+
+// 		.progress-section {
+// 			background: rgba(255, 255, 255, 0.95);
+// 			backdrop-filter: blur(20px);
+// 			border-radius: 20px;
+// 			padding: 32px;
+// 			margin-bottom: 24px;
+// 			border: 1px solid rgba(255,255,255,0.2);
+// 			box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
+// 		}
+
+// 		.progress-header {
+// 			display: flex;
+// 			align-items: center;
+// 			gap: 12px;
+// 			font-weight: 700;
+// 			font-size: 16px;
+// 			color: #1f2937;
+// 			margin-bottom: 24px;
+// 		}
+
+// 		.progress-container {
+// 			position: relative;
+// 		}
+
+// 		.progress-track {
+// 			height: 12px;
+// 			background: #f3f4f6;
+// 			border-radius: 20px;
+// 			overflow: hidden;
+// 			position: relative;
+// 			box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+// 		}
+
+// 		.progress-fill {
+// 			height: 100%;
+// 			background: linear-gradient(90deg, #10b981, #059669);
+// 			border-radius: 20px;
+// 			transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+// 			box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+// 		}
+
+// 		.progress-indicator {
+// 			position: absolute;
+// 			top: -4px;
+// 			right: -4px;
+// 			width: 20px;
+// 			height: 20px;
+// 			background: #10b981;
+// 			border-radius: 50%;
+// 			box-shadow: 0 0 0 4px white;
+// 			opacity: 0;
+// 			transition: opacity 0.3s;
+// 		}
+
+// 		.progress-fill[style*="100%"] + .progress-indicator {
+// 			opacity: 1;
+// 			animation: bounce 0.6s infinite;
+// 		}
+
+// 		.progress-info {
+// 			display: flex;
+// 			justify-content: space-between;
+// 			align-items: center;
+// 			margin-top: 16px;
+// 			font-weight: 600;
+// 		}
+
+// 		.progress-percent {
+// 			background: linear-gradient(135deg, #667eea, #764ba2);
+// 			-webkit-background-clip: text;
+// 			-webkit-text-fill-color: transparent;
+// 			background-clip: text;
+// 			font-size: 18px;
+// 		}
+
+// 		.results-section {
+// 			background: rgba(16, 185, 129, 0.1);
+// 			backdrop-filter: blur(20px);
+// 			border: 1px solid rgba(16, 185, 129, 0.3);
+// 			border-radius: 20px;
+// 			padding: 40px;
+// 			animation: slideUp 0.5s ease-out;
+// 		}
+
+// 		.results-header {
+// 			text-align: center;
+// 			margin-bottom: 32px;
+// 		}
+
+// 		.results-header h3 {
+// 			font-size: 1.5rem;
+// 			font-weight: 800;
+// 			color: #059669;
+// 			margin: 8px 0 0 0;
+// 		}
+
+// 		.download-grid {
+// 			display: grid;
+// 			gap: 16px;
+// 		}
+
+// 		.download-link {
+// 			display: flex;
+// 			align-items: center;
+// 			justify-content: space-between;
+// 			padding: 20px 24px;
+// 			background: rgba(255,255,255,0.9);
+// 			border: 2px solid rgba(16,185,129,0.3);
+// 			border-radius: 16px;
+// 			text-decoration: none;
+// 			color: #1f2937;
+// 			font-weight: 600;
+// 			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+// 			box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+// 			position: relative;
+// 			overflow: hidden;
+// 		}
+
+// 		.download-link::before {
+// 			content: '';
+// 			position: absolute;
+// 			top: 0;
+// 			left: 0;
+// 			right: 0;
+// 			height: 4px;
+// 			background: linear-gradient(90deg, #10b981, #059669);
+// 		}
+
+// 		.download-link:hover {
+// 			transform: translateY(-4px);
+// 			border-color: #10b981;
+// 			box-shadow: 0 20px 40px rgba(16,185,129,0.3);
+// 			color: #059669;
+// 		}
+
+// 		.download-link i { font-size: 20px; color: #10b981; }
+
+// 		.badge {
+// 			background: linear-gradient(135deg, #10b981, #059669);
+// 			color: white;
+// 			padding: 6px 12px;
+// 			border-radius: 20px;
+// 			font-size: 13px;
+// 			font-weight: 600;
+// 		}
+
+// 		.alert {
+// 			padding: 24px;
+// 			border-radius: 16px;
+// 			border: 1px solid;
+// 			margin-top: 24px;
+// 			animation: shake 0.5s ease-in-out;
+// 		}
+
+// 		.alert-error {
+// 			background: rgba(239, 68, 68, 0.1);
+// 			border-color: #ef4444;
+// 			color: #dc2626;
+// 		}
+
+// 		.hidden { display: none !important; }
+
+// 		@keyframes float {
+// 			0%, 100% { transform: translateY(0px); }
+// 			50% { transform: translateY(-10px); }
+// 		}
+
+// 		@keyframes slideUp {
+// 			from { opacity: 0; transform: translateY(20px); }
+// 			to { opacity: 1; transform: translateY(0); }
+// 		}
+
+// 		@keyframes bounce {
+// 			0%, 100% { transform: translateY(0); }
+// 			50% { transform: translateY(-5px); }
+// 		}
+
+// 		@keyframes shake {
+// 			0%, 100% { transform: translateX(0); }
+// 			25% { transform: translateX(-5px); }
+// 			75% { transform: translateX(5px); }
+// 		}
+
+// 		@media (max-width: 768px) {
+// 			.ttum-maker-app { padding: 10px 0; }
+// 			.hero-title { font-size: 2rem; }
+// 			.upload-form { padding: 24px; margin: 0 10px; }
+// 			.form-grid { grid-template-columns: 1fr; gap: 20px; }
+// 			.split-controls { flex-direction: column; gap: 16px; }
+// 			.form-actions { flex-direction: column; }
+// 			.download-grid { grid-template-columns: 1fr; }
+// 		}
+// 	`;
 
 //   $("head style[data-ttum-maker]").remove();
 //   $("<style>").attr("data-ttum-maker", "true").text(css).appendTo("head");
 // }
+
+function applyPremiumCSS() {
+  const css = `
+/* ================================
+   SCOPE: TTUM MAKER ONLY
+================================ */
+.ttum-maker-app {
+  min-height: 100vh;
+  background: #f4f6f9;
+  padding: 24px 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1f2937;
+}
+
+/* ================================
+   HEADER
+================================ */
+.ttum-maker-app .hero-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.ttum-maker-app .hero-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.ttum-maker-app .hero-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.ttum-maker-app .hero-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* ================================
+   CARD
+================================ */
+.ttum-maker-app .upload-form {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+}
+
+/* ================================
+   FORM GRID
+================================ */
+.ttum-maker-app .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.ttum-maker-app .form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ================================
+   LABELS
+================================ */
+.ttum-maker-app .field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.ttum-maker-app .required {
+  color: #dc2626;
+}
+
+/* ================================
+   INPUTS
+================================ */
+.ttum-maker-app .field-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  background: #fff;
+}
+
+.ttum-maker-app .field-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+/* ================================
+   SELECT (CUSTOM LOOK)
+================================ */
+.ttum-maker-app select.field-input {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #6b7280 50%),
+    linear-gradient(135deg, #6b7280 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 16px,
+    calc(100% - 12px) 16px;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* ================================
+   FILE UPLOAD
+================================ */
+.ttum-maker-app .file-upload-placeholder {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px dashed #cbd5e1;
+  background: #f9fafb;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.ttum-maker-app .file-input:hover + .file-upload-placeholder {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+/* ================================
+   ACTION BUTTONS
+================================ */
+.ttum-maker-app .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ttum-maker-app .btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.ttum-maker-app .btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.ttum-maker-app .btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.ttum-maker-app .btn-secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* ================================
+   PROGRESS
+================================ */
+.ttum-maker-app .progress-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.ttum-maker-app .progress-track {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+
+.ttum-maker-app .progress-fill {
+  height: 100%;
+  background: #22c55e;
+  border-radius: 999px;
+}
+
+/* ================================
+   RESULTS
+================================ */
+.ttum-maker-app .results-section {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.ttum-maker-app .download-link {
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid #d1fae5;
+  background: #ffffff;
+}
+
+/* ================================
+   ERROR
+================================ */
+.ttum-maker-app .alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+@media (max-width: 768px) {
+  .ttum-maker-app .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+`;
+
+  $("head style[data-ttum-maker]").remove();
+  $("<style>").attr("data-ttum-maker", "true").text(css).appendTo("head");
+}
 
 frappe.pages["ttum-maker"].init_form = function () {
   const $form = $("#ttum-form");
