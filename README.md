@@ -119,3 +119,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Minor style adjustments to the codebase.
 - Improved documentation clarity in code comments.
 - Refactored API endpoint for performance.
+- Added validation to a critical doctype.
