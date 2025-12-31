@@ -21,3 +21,4 @@ The application is composed of several modules:
 
 This module extends the core HR functionalities of Frappe.
 - Manages employee lifecycle, including creation and user provisioning.
+- Custom logic for employee naming and status (Active/Inactive).
