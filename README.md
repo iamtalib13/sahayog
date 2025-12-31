@@ -26,3 +26,4 @@ This module extends the core HR functionalities of Frappe.
 - Overrides for handling employee data updates.
 
 #### Key HRMS DocTypes:
+- `Employee`: Central document for employee information.
