@@ -39,3 +39,4 @@ Focuses on enhancing customer relationship management and sales processes.
 - Automated contact creation from leads.
 
 #### Key SCRM DocTypes:
+- `Lead`: Potential sales interest.
