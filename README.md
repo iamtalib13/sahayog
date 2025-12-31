@@ -60,3 +60,5 @@ Streamlines the purchasing and inventory management processes.
 Provides tools for managing projects and tasks effectively.
 - Defines `Project Templates` for quick project setup.
 - Manages `Tasks` with dependencies and assignments.
+- Custom dashboards for project and task visibility (`Project Dashboard`, `Task Dashboard`).
+
