@@ -140,3 +140,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Updated a web form's client script.
 - Added a new dashboard chart.
 - Improved the user experience of a page.
+- Set a default value for a field.
