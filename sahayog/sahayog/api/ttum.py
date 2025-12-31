@@ -188,3 +188,67 @@ def download_all(ttum_id):
         frappe.logger().error(f"TTUM download error: {e}")
         frappe.throw(str(e))
 
+
+
+
+@frappe.whitelist()
+def get_ttum_by_id(ttum_id):
+    """
+    Fetch an existing TTUM by ttumId
+    """
+    if not ttum_id:
+        frappe.response.status_code = 400
+        return {"error": "TTUM ID is required"}
+
+    api_url = f"http://10.0.115.6:9098/api/ttum/{ttum_id}"
+
+    try:
+        resp = requests.get(api_url, timeout=120)
+
+        # 🔴 INVALID TTUM ID
+        if resp.status_code == 404:
+            frappe.response.status_code = 404
+            return {"error": "Invalid TTUM ID"}
+
+        # 🟡 NO FILES
+        if resp.status_code == 204:
+            frappe.response.status_code = 204
+            return {"error": "No files found for this TTUM ID"}
+
+        # 🔴 BAD REQUEST
+        if resp.status_code == 400:
+            frappe.response.status_code = 400
+            return {"error": "Invalid TTUM request"}
+
+        # 🔴 SERVER ERROR
+        if resp.status_code >= 500:
+            frappe.response.status_code = 503
+            return {"error": "TTUM service is currently unreachable"}
+
+        # ✅ SUCCESS
+        if resp.status_code == 200:
+            try:
+                data = resp.json()
+            except Exception:
+                frappe.response.status_code = 500
+                return {"error": "Invalid response from TTUM service"}
+
+            frappe.response.status_code = 200
+            return data
+
+        # ⚠️ ANY OTHER CASE
+        frappe.response.status_code = resp.status_code
+        return {"error": "Unexpected TTUM response"}
+
+    except requests.exceptions.Timeout:
+        frappe.response.status_code = 504
+        return {"error": "TTUM service timeout"}
+
+    except requests.exceptions.ConnectionError:
+        frappe.response.status_code = 503
+        return {"error": "TTUM service is currently unreachable"}
+
+    except Exception as e:
+        frappe.logger().error(f"GET TTUM error: {e}")
+        frappe.response.status_code = 500
+        return {"error": "Internal server error"}
