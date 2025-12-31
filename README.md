@@ -28,3 +28,5 @@ This module extends the core HR functionalities of Frappe.
 #### Key HRMS DocTypes:
 - `Employee`: Central document for employee information.
 - `Department`: Organizational departments.
+- `Branch`: Different company branches.
+
