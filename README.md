@@ -36,3 +36,5 @@ Focuses on enhancing customer relationship management and sales processes.
 - Manages leads, opportunities, and customers.
 - Custom API for lead owner assignments.
 - Integration with Service Level Agreements (SLAs).
+- Automated contact creation from leads.
+
