@@ -1080,8 +1080,10 @@ frappe.pages["ttum-maker"].init_form = function () {
 
   $form.on("submit", async function (e) {
   e.preventDefault();
+  resetResultsUI();
 
   try {
+    resetResultsUI();
     clearErrors();
     const validation = validateForm();
     if (!validation.isValid) {
@@ -1201,78 +1203,126 @@ frappe.pages["ttum-maker"].init_form = function () {
     $progressText.text(text);
   }
 
+  // function showResults(data) {
+  //   // console.log("🎯 showResults data:", data);
+
+  //   $resultsContainer.removeClass("hidden");
+
+	//     // ===============================
+  //   // ADDITION: Download ALL ZIP button
+  //   // ===============================
+  //   // if (data.ttumId) {
+  //   //   const $zipBtn = $(`
+  //   //     <div class="mb-3 text-right">
+  //   //       <button class="btn btn-primary"
+  //   //         onclick="downloadAllZip(${data.ttumId})">
+  //   //         <i class="fa fa-download"></i> Download All (ZIP)
+  //   //       </button>
+  //   //     </div>
+  //   //   `);
+
+  //   //   $downloadLinks.before($zipBtn);
+  //   // }
+
+	// // ===============================
+	// // PRIMARY CTA: Download ZIP
+	// // ===============================
+	// if (data.ttumId) {
+	// const $zipAction = $(`
+	// 	<div class="d-flex justify-content-between align-items-center mb-4">
+	// 	<div class="text-muted">
+	// 		<small>
+	// 		<i class="fa fa-archive"></i>
+	// 		${data.splitDetails?.length || 0} file(s) generated
+	// 		</small>
+	// 	</div>
+
+	// 	<button class="btn btn-primary btn-lg"
+	// 		onclick="downloadAllZip(${data.ttumId})">
+	// 		<i class="fa fa-download"></i>
+	// 		Download All (ZIP)
+	// 	</button>
+	// 	</div>
+	// `);
+
+	// $resultsContainer.find(".results-header").after($zipAction);
+	// }
+
+
+
+  //   let splitDetails = [];
+
+  //   // ✅ HANDLE YOUR EXACT FORMAT
+  //   if (data.splitDetails && Array.isArray(data.splitDetails)) {
+  //     splitDetails = data.splitDetails;
+  //   } else if (data.ttumFilePath && Array.isArray(data.splitDetails)) {
+  //     splitDetails = data.splitDetails;
+  //   }
+
+  //   if (splitDetails.length === 0) {
+  //     $downloadLinks.html('<p class="text-muted">No files generated</p>');
+  //     return;
+  //   }
+
+  //   splitDetails.forEach((fileName, index) => {
+  //     const cleanName = fileName.split(": ")[1] || fileName;
+  //     const $link = $(`
+	// 	<div class="download-link mb-2 p-3 d-flex align-items-center">
+	// 		<i class="fa fa-file-text text-success mr-2"></i>
+	// 		<strong>${fileName}</strong>
+	// 	</div>
+	// 	`);
+  //     $downloadLinks.append($link);
+  //   });
+  // }
+
   function showResults(data) {
-    // console.log("🎯 showResults data:", data);
 
-    $resultsContainer.removeClass("hidden");
+  // ===============================
+  // 🔥 HARD RESET (MANDATORY)
+  // ===============================
+  const $results = $("#results-container");
+  const $links = $("#download-links");
 
-	    // ===============================
-    // ADDITION: Download ALL ZIP button
-    // ===============================
-    // if (data.ttumId) {
-    //   const $zipBtn = $(`
-    //     <div class="mb-3 text-right">
-    //       <button class="btn btn-primary"
-    //         onclick="downloadAllZip(${data.ttumId})">
-    //         <i class="fa fa-download"></i> Download All (ZIP)
-    //       </button>
-    //     </div>
-    //   `);
+  $results.removeClass("hidden");
+  $links.empty();                  // remove files
+  $results.find(".file-count").remove();
+  $results.find(".zip-download-btn").remove();
+  $results.find(".download-summary").remove();
 
-    //   $downloadLinks.before($zipBtn);
-    // }
+  // ===============================
+  // NOW SAFE TO RENDER
+  // ===============================
 
-	// ===============================
-	// PRIMARY CTA: Download ZIP
-	// ===============================
-	if (data.ttumId) {
-	const $zipAction = $(`
-		<div class="d-flex justify-content-between align-items-center mb-4">
-		<div class="text-muted">
-			<small>
-			<i class="fa fa-archive"></i>
-			${data.splitDetails?.length || 0} file(s) generated
-			</small>
-		</div>
+  const totalFiles = data.splitDetails?.length || 0;
 
-		<button class="btn btn-primary btn-lg"
-			onclick="downloadAllZip(${data.ttumId})">
-			<i class="fa fa-download"></i>
-			Download All (ZIP)
-		</button>
-		</div>
-	`);
+  // ---- summary row ----
+  const summary = $(`
+    <div class="file-count">
+      <i class="fa fa-file-alt"></i>
+      ${totalFiles} file(s) generated
+    </div>
+  `);
 
-	$resultsContainer.find(".results-header").after($zipAction);
-	}
+  const zipBtn = $(`
+    <button class="btn btn-primary zip-download-btn">
+      <i class="fa fa-download"></i> Download All (ZIP)
+    </button>
+  `);
 
+  summary.append(zipBtn);
+  $results.find(".results-header").after(summary);
 
-
-    let splitDetails = [];
-
-    // ✅ HANDLE YOUR EXACT FORMAT
-    if (data.splitDetails && Array.isArray(data.splitDetails)) {
-      splitDetails = data.splitDetails;
-    } else if (data.ttumFilePath && Array.isArray(data.splitDetails)) {
-      splitDetails = data.splitDetails;
-    }
-
-    if (splitDetails.length === 0) {
-      $downloadLinks.html('<p class="text-muted">No files generated</p>');
-      return;
-    }
-
-    splitDetails.forEach((fileName, index) => {
-      const cleanName = fileName.split(": ")[1] || fileName;
-      const $link = $(`
-		<div class="download-link mb-2 p-3 d-flex align-items-center">
-			<i class="fa fa-file-text text-success mr-2"></i>
-			<strong>${fileName}</strong>
-		</div>
-		`);
-      $downloadLinks.append($link);
-    });
-  }
+  // ---- individual files ----
+  data.splitDetails.forEach((file, index) => {
+    $links.append(`
+      <div class="download-item">
+        <i class="fa fa-file-alt text-success"></i>
+        <span>Part ${index + 1}: ${file}</span>
+      </div>
+    `);
+  });
+}
 
   function handleError(error) {
     console.error("TTUM Maker Error:", error);
@@ -1400,7 +1450,7 @@ function toggleFetchTtumLoading(isLoading) {
 
 $("#fetch-ttum-btn").on("click", async function () {
   const ttumId = $("#search-ttum-id").val();
-
+  resetResultsUI(); 
   clearErrors();
   hideAllSections();
   $downloadLinks.empty();
@@ -1445,6 +1495,20 @@ $("#fetch-ttum-btn").on("click", async function () {
     toggleFetchTtumLoading(false); // ✅ restore button
   }
 });
+
+function resetResultsUI() {
+  // Hide whole results section
+  $("#results-container").addClass("hidden");
+
+  // Remove all file cards
+  $("#download-links").empty();
+
+  // Remove any dynamically added summary rows / zip buttons
+  $("#results-container")
+    .find(".download-summary, .zip-download-btn, .file-count")
+    .remove();
+}
+
 
 
 };
