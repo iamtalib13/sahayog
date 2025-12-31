@@ -161,3 +161,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Added a missing index to a database table.
 - Updated a fixture to reflect new data model.
 - Removed a redundant API call.
+- Added a new custom permission rule.
