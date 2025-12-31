@@ -90,3 +90,4 @@ To install Sahayog, you need a Frappe Bench environment.
    ```bash
    cd ~/frappe-bench
    ```
+2. Get the app from its repository (replace with actual repository URL):
