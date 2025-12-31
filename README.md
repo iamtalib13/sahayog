@@ -84,3 +84,5 @@ Sahayog includes a variety of custom scripts and APIs to automate and extend fun
 
 ## Installation
 
+To install Sahayog, you need a Frappe Bench environment.
+
