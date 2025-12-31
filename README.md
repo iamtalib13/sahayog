@@ -12,3 +12,4 @@ The application is composed of several modules:
 
 - **Human Resource Management (HRMS)**
 - **Sales & CRM (SCRM)**
+- **Procurement**
