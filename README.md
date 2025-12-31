@@ -144,3 +144,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Converted a script to use async/await.
 - Fixed a CSS alignment issue.
 - Added a new workflow state.
+- Updated translations.
