@@ -9,123 +9,320 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
     single_column: true,
   });
 
-  me.page.main.html(`
-		<div class="ttum-maker-app">
-			<div class="hero-header">
-				<div class="hero-content">
-					<div class="hero-icon">📊</div>
-					<h1 class="hero-title">TTUM Maker</h1>
-					<p class="hero-subtitle">Transform Excel data into formatted TXT files with precision splitting</p>
-				</div>
-			</div>
+//   me.page.main.html(`
 
-			<div class="main-content">
-				<form id="ttum-form" class="upload-form">
-					<div class="form-grid">
-						<div class="form-field">
-							<label class="field-label">
-								<i class="field-icon icon-type"></i>
-								TTUM Type <span class="required">*</span>
-							</label>
-							<select id="ttum-type" class="field-input" required>
-								<option value="">Select TTUM Type</option>
-								<option value="ASSET LOAN">ASSET LOAN</option>
-								<option value="INWARD">INWARD</option>
-								<option value="EHOLO">EHOLO</option>
-								<option value="EMSAAD">EMSAAD</option>
-								<option value="PERSONAL LOAN">PERSONAL LOAN</option>
-								<option value="SCHOOL AND PEON">SCHOOL AND PEON</option>
-								<option value="TDA">TDA</option>
-								<option value="SALARY">SALARY</option>
-							</select>
-						</div>
+//     <div class="upload-form mb-4">
+//   <div class="form-grid">
+//     <div class="form-field">
+//       <label class="field-label">
+//         TTUM ID <span class="required">*</span>
+//       </label>
+//       <input
+//         type="number"
+//         id="search-ttum-id"
+//         class="field-input"
+//         placeholder="Enter TTUM ID (e.g. 33)"
+//         min="1"
+//       />
+//     </div>
 
-						<div class="form-field full-width">
-							<label class="field-label">
-								<i class="field-icon icon-file"></i>
-								Excel File <span class="required">*</span>
-							</label>
-							<div class="file-upload-wrapper">
-								<input type="file" id="excel-file" class="field-input file-input" accept=".xlsx,.xls" required>
-								<div class="file-upload-placeholder">
-									<i class="fa fa-cloud-upload-alt"></i>
-									<span>Choose Excel file (.xlsx, .xls)</span>
-								</div>
-							</div>
-							<small class="field-help">Maximum 50MB. Supported formats: XLSX, XLS</small>
-						</div>
+//     <div class="form-field d-flex align-items-end">
+//       <button
+//         type="button"
+//         class="btn btn-primary"
+//         id="fetch-ttum-btn"
+//       >
+//         <i class="fa fa-search"></i>
+//         Get TTUM
+//       </button>
+//     </div>
+//   </div>
+// </div>
 
-						<div class="form-field">
-							<label class="field-label">
-								<i class="field-icon icon-split"></i>
-								Split Mode <span class="required">*</span>
-							</label>
-							<select id="split-mode" class="field-input">
-								<option value="split">Number of Files</option>
-								<option value="records">Records per File</option>
-							</select>
-						</div>
+// 		<div class="ttum-maker-app">
+// 			<div class="hero-header">
+// 				<div class="hero-content">
+// 					<div class="hero-icon">📊</div>
+// 					<h1 class="hero-title">TTUM Maker</h1>
+// 					<p class="hero-subtitle">Transform Excel data into formatted TXT files with precision splitting</p>
+// 				</div>
+// 			</div>
 
-						<div class="form-field split-controls">
-							<div class="split-option number-split">
-								<label class="field-label">Number of TXT Files</label>
-								<input type="number" id="number-split" class="field-input" min="1" value="1" max="50">
-							</div>
-							<div class="split-option number-records hidden">
-								<label class="field-label">Records per File</label>
-								<input type="number" id="number-records" class="field-input" min="1" value="12" max="10000">
-							</div>
-						</div>
-					</div>
+// 			<div class="main-content">
+// 				<form id="ttum-form" class="upload-form">
+// 					<div class="form-grid">
+// 						<div class="form-field">
+// 							<label class="field-label">
+// 								<i class="field-icon icon-type"></i>
+// 								TTUM Type <span class="required">*</span>
+// 							</label>
+// 							<select id="ttum-type" class="field-input" required>
+// 								<option value="">Select TTUM Type</option>
+// 								<option value="ASSET LOAN">ASSET LOAN</option>
+// 								<option value="INWARD">INWARD</option>
+// 								<option value="EHOLO">EHOLO</option>
+// 								<option value="EMSAAD">EMSAAD</option>
+// 								<option value="PERSONAL LOAN">PERSONAL LOAN</option>
+// 								<option value="SCHOOL AND PEON">SCHOOL AND PEON</option>
+// 								<option value="TDA">TDA</option>
+// 								<option value="SALARY">SALARY</option>
+// 							</select>
+// 						</div>
 
-					<div class="form-actions">
-						<button type="submit" class="btn btn-primary btn-generate" id="submit-btn">
-							<span class="btn-content">
-								<i class="fa fa-magic"></i>
-								<span class="btn-text">Generate TXT Files</span>
-							</span>
-							<span class="btn-loader hidden">
-								<i class="fa fa-spinner fa-spin"></i>
-								Processing...
-							</span>
-						</button>
-						<button type="button" class="btn btn-secondary" id="reset-btn">
-							<i class="fa fa-refresh"></i> Reset
-						</button>
-					</div>
-				</form>
+// 						<div class="form-field full-width">
+// 							<label class="field-label">
+// 								<i class="field-icon icon-file"></i>
+// 								Excel File <span class="required">*</span>
+// 							</label>
+// 							<div class="file-upload-wrapper">
+// 								<input type="file" id="excel-file" class="field-input file-input" accept=".xlsx,.xls" required>
+// 								<div class="file-upload-placeholder">
+// 									<i class="fa fa-cloud-upload-alt"></i>
+// 									<span>Choose Excel file (.xlsx, .xls)</span>
+// 								</div>
+// 							</div>
+// 							<small class="field-help">Maximum 50MB. Supported formats: XLSX, XLS</small>
+// 						</div>
 
-				<div id="progress-container" class="progress-section hidden">
-					<div class="progress-header">
-						<i class="fa fa-tasks"></i>
-						<span>Processing Files</span>
-					</div>
-					<div class="progress-container">
-						<div class="progress-track">
-							<div id="progress-bar" class="progress-fill"></div>
-							<div class="progress-indicator"></div>
-						</div>
-						<div class="progress-info">
-							<span id="progress-text" class="progress-label">Preparing...</span>
-							<span id="progress-percent" class="progress-percent">0%</span>
-						</div>
-					</div>
-				</div>
+// 						<div class="form-field">
+// 							<label class="field-label">
+// 								<i class="field-icon icon-split"></i>
+// 								Split Mode <span class="required">*</span>
+// 							</label>
+// 							<select id="split-mode" class="field-input">
+// 								<option value="split">Number of Files</option>
+// 								<option value="records">Records per File</option>
+// 							</select>
+// 						</div>
 
-				<div id="results-container" class="results-section hidden">
-					<div class="results-header">
-						<i class="fa fa-check-circle text-success"></i>
-						<h3>Files Ready for Download</h3>
-					</div>
-					<div id="download-links" class="download-grid"></div>
-				</div>
+// 						<div class="form-field split-controls">
+// 							<div class="split-option number-split">
+// 								<label class="field-label">Number of TXT Files</label>
+// 								<input type="number" id="number-split" class="field-input" min="1" value="1" max="50">
+// 							</div>
+// 							<div class="split-option number-records hidden">
+// 								<label class="field-label">Records per File</label>
+// 								<input type="number" id="number-records" class="field-input" min="1" value="12" max="10000">
+// 							</div>
+// 						</div>
+// 					</div>
 
-				<div id="error-container" class="alert alert-error hidden"></div>
-			</div>
-		</div>
-	`);
+// 					<div class="form-actions">
+// 						<button type="submit" class="btn btn-primary btn-generate" id="submit-btn">
+// 							<span class="btn-content">
+// 								<i class="fa fa-magic"></i>
+// 								<span class="btn-text">Generate TXT Files</span>
+// 							</span>
+// 							<span class="btn-loader hidden">
+// 								<i class="fa fa-spinner fa-spin"></i>
+// 								Processing...
+// 							</span>
+// 						</button>
+// 						<button type="button" class="btn btn-secondary" id="reset-btn">
+// 							<i class="fa fa-refresh"></i> Reset
+// 						</button>
+// 					</div>
+// 				</form>
+
+// 				<div id="progress-container" class="progress-section hidden">
+// 					<div class="progress-header">
+// 						<i class="fa fa-tasks"></i>
+// 						<span>Processing Files</span>
+// 					</div>
+// 					<div class="progress-container">
+// 						<div class="progress-track">
+// 							<div id="progress-bar" class="progress-fill"></div>
+// 							<div class="progress-indicator"></div>
+// 						</div>
+// 						<div class="progress-info">
+// 							<span id="progress-text" class="progress-label">Preparing...</span>
+// 							<span id="progress-percent" class="progress-percent">0%</span>
+// 						</div>
+// 					</div>
+// 				</div>
+
+// 				<div id="results-container" class="results-section hidden">
+// 					<div class="results-header">
+// 						<i class="fa fa-check-circle text-success"></i>
+// 						<h3>Files Ready for Download</h3>
+// 					</div>
+// 					<div id="download-links" class="download-grid"></div>
+// 				</div>
+
+// 				<div id="error-container" class="alert alert-error hidden"></div>
+// 			</div>
+// 		</div>
+// 	`);
 
   // Premium CSS
+  
+
+  me.page.main.html(`
+
+<div class="ttum-maker-app">
+
+  <!-- ================= HERO ================= -->
+  <div class="hero-header">
+    <div class="hero-content">
+      <div class="hero-icon">📊</div>
+      <h1 class="hero-title">TTUM Maker</h1>
+      <p class="hero-subtitle">
+        Transform Excel data into formatted TXT files with precision splitting
+      </p>
+    </div>
+  </div>
+
+  <div class="main-content">
+
+    <!-- ============ GET EXISTING TTUM ============ -->
+    <div class="upload-form mb-4">
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="field-label">
+            <i class="fa fa-history"></i>
+            Get Existing TTUM <span class="required">*</span>
+          </label>
+          <input
+            type="number"
+            id="search-ttum-id"
+            class="field-input"
+            placeholder="Enter TTUM ID (e.g. 33)"
+            min="1"
+          />
+        </div>
+
+        <div class="form-field d-flex align-items-end">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="fetch-ttum-btn"
+          >
+            <i class="fa fa-search"></i>
+            Get TTUM
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ DIVIDER FEEL (VISUAL ONLY) ============ -->
+    <div class="text-center mb-4" style="opacity:0.6;font-weight:600;">
+      — OR GENERATE NEW TTUM —
+    </div>
+
+    <!-- ================= GENERATE FORM ================= -->
+    <form id="ttum-form" class="upload-form">
+      <div class="form-grid">
+
+        <div class="form-field">
+          <label class="field-label">
+            <i class="field-icon icon-type"></i>
+            TTUM Type <span class="required">*</span>
+          </label>
+          <select id="ttum-type" class="field-input" required>
+            <option value="">Select TTUM Type</option>
+            <option value="ASSET LOAN">ASSET LOAN</option>
+            <option value="INWARD">INWARD</option>
+            <option value="EHOLO">EHOLO</option>
+            <option value="EMSAAD">EMSAAD</option>
+            <option value="PERSONAL LOAN">PERSONAL LOAN</option>
+            <option value="SCHOOL AND PEON">SCHOOL AND PEON</option>
+            <option value="TDA">TDA</option>
+            <option value="SALARY">SALARY</option>
+          </select>
+        </div>
+
+        <div class="form-field full-width">
+          <label class="field-label">
+            <i class="field-icon icon-file"></i>
+            Excel File <span class="required">*</span>
+          </label>
+          <div class="file-upload-wrapper">
+            <input type="file" id="excel-file" class="field-input file-input" accept=".xlsx,.xls" required>
+            <div class="file-upload-placeholder">
+              <i class="fa fa-cloud-upload-alt"></i>
+              <span>Choose Excel file (.xlsx, .xls)</span>
+            </div>
+          </div>
+          <small class="field-help">
+            Maximum 50MB. Supported formats: XLSX, XLS
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">
+            <i class="field-icon icon-split"></i>
+            Split Mode <span class="required">*</span>
+          </label>
+          <select id="split-mode" class="field-input">
+            <option value="split">Number of Files</option>
+            <option value="records">Records per File</option>
+          </select>
+        </div>
+
+        <div class="form-field split-controls">
+          <div class="split-option number-split">
+            <label class="field-label">Number of TXT Files</label>
+            <input type="number" id="number-split" class="field-input" min="1" value="1" max="50">
+          </div>
+          <div class="split-option number-records hidden">
+            <label class="field-label">Records per File</label>
+            <input type="number" id="number-records" class="field-input" min="1" value="12" max="10000">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-generate" id="submit-btn">
+          <span class="btn-content">
+            <i class="fa fa-magic"></i>
+            <span class="btn-text">Generate TXT Files</span>
+          </span>
+          <span class="btn-loader hidden">
+            <i class="fa fa-spinner fa-spin"></i>
+            Processing...
+          </span>
+        </button>
+
+        <button type="button" class="btn btn-secondary" id="reset-btn">
+          <i class="fa fa-refresh"></i> Reset
+        </button>
+      </div>
+    </form>
+
+    <!-- ================= PROGRESS ================= -->
+    <div id="progress-container" class="progress-section hidden">
+      <div class="progress-header">
+        <i class="fa fa-tasks"></i>
+        <span>Processing Files</span>
+      </div>
+      <div class="progress-container">
+        <div class="progress-track">
+          <div id="progress-bar" class="progress-fill"></div>
+          <div class="progress-indicator"></div>
+        </div>
+        <div class="progress-info">
+          <span id="progress-text" class="progress-label">Preparing...</span>
+          <span id="progress-percent" class="progress-percent">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= RESULTS ================= -->
+    <div id="results-container" class="results-section hidden">
+      <div class="results-header">
+        <i class="fa fa-check-circle text-success"></i>
+        <h3>Files Ready for Download</h3>
+      </div>
+      <div id="download-links" class="download-grid"></div>
+    </div>
+
+    <div id="error-container" class="alert alert-error hidden"></div>
+
+  </div>
+</div>
+`);
+
+  
   applyPremiumCSS();
   me.init_form();
 };
@@ -883,8 +1080,10 @@ frappe.pages["ttum-maker"].init_form = function () {
 
   $form.on("submit", async function (e) {
   e.preventDefault();
+  resetResultsUI();
 
   try {
+    resetResultsUI();
     clearErrors();
     const validation = validateForm();
     if (!validation.isValid) {
@@ -892,7 +1091,7 @@ frappe.pages["ttum-maker"].init_form = function () {
       return;
     }
 
-    showLoading(true);
+    // showLoading(true);
     hideAllSections();
 
     const result = await processExcelFile();
@@ -901,7 +1100,7 @@ frappe.pages["ttum-maker"].init_form = function () {
     console.error("TTUM Error:", error);
     // ❌ DO NOT show results here
   } finally {
-    showLoading(false);
+    // showLoading(false);
   }
 });
 
@@ -1004,78 +1203,127 @@ frappe.pages["ttum-maker"].init_form = function () {
     $progressText.text(text);
   }
 
-  function showResults(data) {
-    // console.log("🎯 showResults data:", data);
+  // function showResults(data) {
+  //   // console.log("🎯 showResults data:", data);
 
-    $resultsContainer.removeClass("hidden");
+  //   $resultsContainer.removeClass("hidden");
 
-	    // ===============================
-    // ADDITION: Download ALL ZIP button
-    // ===============================
-    // if (data.ttumId) {
-    //   const $zipBtn = $(`
-    //     <div class="mb-3 text-right">
-    //       <button class="btn btn-primary"
-    //         onclick="downloadAllZip(${data.ttumId})">
-    //         <i class="fa fa-download"></i> Download All (ZIP)
-    //       </button>
-    //     </div>
-    //   `);
+	//     // ===============================
+  //   // ADDITION: Download ALL ZIP button
+  //   // ===============================
+  //   // if (data.ttumId) {
+  //   //   const $zipBtn = $(`
+  //   //     <div class="mb-3 text-right">
+  //   //       <button class="btn btn-primary"
+  //   //         onclick="downloadAllZip(${data.ttumId})">
+  //   //         <i class="fa fa-download"></i> Download All (ZIP)
+  //   //       </button>
+  //   //     </div>
+  //   //   `);
 
-    //   $downloadLinks.before($zipBtn);
-    // }
+  //   //   $downloadLinks.before($zipBtn);
+  //   // }
 
-	// ===============================
-	// PRIMARY CTA: Download ZIP
-	// ===============================
-	if (data.ttumId) {
-	const $zipAction = $(`
-		<div class="d-flex justify-content-between align-items-center mb-4">
-		<div class="text-muted">
-			<small>
-			<i class="fa fa-archive"></i>
-			${data.splitDetails?.length || 0} file(s) generated
-			</small>
-		</div>
+	// // ===============================
+	// // PRIMARY CTA: Download ZIP
+	// // ===============================
+	// if (data.ttumId) {
+	// const $zipAction = $(`
+	// 	<div class="d-flex justify-content-between align-items-center mb-4">
+	// 	<div class="text-muted">
+	// 		<small>
+	// 		<i class="fa fa-archive"></i>
+	// 		${data.splitDetails?.length || 0} file(s) generated
+	// 		</small>
+	// 	</div>
 
-		<button class="btn btn-primary btn-lg"
-			onclick="downloadAllZip(${data.ttumId})">
-			<i class="fa fa-download"></i>
-			Download All (ZIP)
-		</button>
-		</div>
-	`);
+	// 	<button class="btn btn-primary btn-lg"
+	// 		onclick="downloadAllZip(${data.ttumId})">
+	// 		<i class="fa fa-download"></i>
+	// 		Download All (ZIP)
+	// 	</button>
+	// 	</div>
+	// `);
 
-	$resultsContainer.find(".results-header").after($zipAction);
-	}
+	// $resultsContainer.find(".results-header").after($zipAction);
+	// }
 
 
 
-    let splitDetails = [];
+  //   let splitDetails = [];
 
-    // ✅ HANDLE YOUR EXACT FORMAT
-    if (data.splitDetails && Array.isArray(data.splitDetails)) {
-      splitDetails = data.splitDetails;
-    } else if (data.ttumFilePath && Array.isArray(data.splitDetails)) {
-      splitDetails = data.splitDetails;
-    }
+  //   // ✅ HANDLE YOUR EXACT FORMAT
+  //   if (data.splitDetails && Array.isArray(data.splitDetails)) {
+  //     splitDetails = data.splitDetails;
+  //   } else if (data.ttumFilePath && Array.isArray(data.splitDetails)) {
+  //     splitDetails = data.splitDetails;
+  //   }
 
-    if (splitDetails.length === 0) {
-      $downloadLinks.html('<p class="text-muted">No files generated</p>');
+  //   if (splitDetails.length === 0) {
+  //     $downloadLinks.html('<p class="text-muted">No files generated</p>');
+  //     return;
+  //   }
+
+  //   splitDetails.forEach((fileName, index) => {
+  //     const cleanName = fileName.split(": ")[1] || fileName;
+  //     const $link = $(`
+	// 	<div class="download-link mb-2 p-3 d-flex align-items-center">
+	// 		<i class="fa fa-file-text text-success mr-2"></i>
+	// 		<strong>${fileName}</strong>
+	// 	</div>
+	// 	`);
+  //     $downloadLinks.append($link);
+  //   });
+  // }
+
+
+function showResults(data) {
+
+  const $results = $("#results-container");
+  const $links = $("#download-links");
+
+  // ===== HARD RESET =====
+  $results.removeClass("hidden");
+  $links.empty();
+  $results.find(".file-count, .zip-download-btn").remove();
+
+  const totalFiles = data.splitDetails?.length || 0;
+  const ttumId = data.ttumId; // 🔥 THIS IS REQUIRED
+
+  // ===== SUMMARY + ZIP =====
+  const $summary = $(`
+    <div class="file-count d-flex justify-content-between align-items-center mb-3">
+      <span>
+        <i class="fa fa-file-alt"></i>
+        ${totalFiles} file(s) generated
+      </span>
+      <button class="btn btn-primary zip-download-btn">
+        <i class="fa fa-download"></i> Download All (ZIP)
+      </button>
+    </div>
+  `);
+
+  // ✅ Attach click handler properly
+  $summary.find(".zip-download-btn").on("click", function () {
+    if (!ttumId) {
+      frappe.msgprint("TTUM ID not found for ZIP download");
       return;
     }
+    downloadAllZip(ttumId);
+  });
 
-    splitDetails.forEach((fileName, index) => {
-      const cleanName = fileName.split(": ")[1] || fileName;
-      const $link = $(`
-		<div class="download-link mb-2 p-3 d-flex align-items-center">
-			<i class="fa fa-file-text text-success mr-2"></i>
-			<strong>${fileName}</strong>
-		</div>
-		`);
-      $downloadLinks.append($link);
-    });
-  }
+  $results.find(".results-header").after($summary);
+
+  // ===== FILE LIST =====
+  data.splitDetails.forEach((file, index) => {
+    $links.append(`
+      <div class="download-item">
+        <i class="fa fa-file-alt text-success"></i>
+        <span>Part ${index + 1}: ${file}</span>
+      </div>
+    `);
+  });
+}
 
   function handleError(error) {
     console.error("TTUM Maker Error:", error);
@@ -1128,6 +1376,140 @@ window.downloadAllZip = function (ttumId) {
 
   window.location.href = url;
 };
+
+
+function toggleFetchTtumLoading(isLoading) {
+  const $btn = $("#fetch-ttum-btn");
+
+  if (isLoading) {
+    $btn.prop("disabled", true);
+    $btn.data("original-html", $btn.html());
+    $btn.html(`<i class="fa fa-spinner fa-spin"></i> Fetching...`);
+  } else {
+    $btn.prop("disabled", false);
+    $btn.html($btn.data("original-html"));
+  }
+}
+
+
+
+// ===============================
+// FETCH EXISTING TTUM BY ID
+// ===============================
+
+// $("#fetch-ttum-btn").on("click", async function () {
+//   const ttumId = $("#search-ttum-id").val();
+
+//   clearErrors();
+//   hideAllSections();        // 🔥 clear old UI
+//   $downloadLinks.empty();  // 🔥 clear old files
+
+//   if (!ttumId) {
+//     showError("Please enter a TTUM ID");
+//     return;
+//   }
+
+//   // showLoading(true);
+
+//   try {
+//     const response = await $.ajax({
+//       url: "/api/method/sahayog.sahayog.api.ttum.get_ttum_by_id",
+//       method: "GET",
+//       data: { ttum_id: ttumId },
+//       headers: {
+//         "X-Frappe-CSRF-Token": frappe.csrf_token,
+//       },
+//     });
+
+//     // 🔴 Error from backend
+//     if (response?.message?.error) {
+//       showError(response.message.error);
+//       return;
+//     }
+
+//     // ✅ SUCCESS (🔥 THIS WAS THE MISSING PART)
+//     showResults(response.message);
+
+//   } catch (xhr) {
+//     let msg = "Unable to fetch TTUM.";
+
+//     if (xhr.status === 404) {
+//       msg = "Invalid TTUM ID";
+//     } else if (xhr.status === 204) {
+//       msg = "No files found for this TTUM ID";
+//     } else if (xhr.status >= 500) {
+//       msg = "TTUM service is currently unreachable";
+//     }
+
+//     showError(msg);
+//   } finally {
+//     // showLoading(false);
+//   }
+// });
+
+
+
+$("#fetch-ttum-btn").on("click", async function () {
+  const ttumId = $("#search-ttum-id").val();
+  resetResultsUI(); 
+  clearErrors();
+  hideAllSections();
+  $downloadLinks.empty();
+
+  if (!ttumId) {
+    showError("Please enter a TTUM ID");
+    return;
+  }
+
+  toggleFetchTtumLoading(true); // ✅ correct loader
+
+  try {
+    const response = await $.ajax({
+      url: "/api/method/sahayog.sahayog.api.ttum.get_ttum_by_id",
+      method: "GET",
+      data: { ttum_id: ttumId },
+      headers: {
+        "X-Frappe-CSRF-Token": frappe.csrf_token,
+      },
+    });
+
+    if (response?.message?.error) {
+      showError(response.message.error);
+      return;
+    }
+
+    showResults(response.message);
+
+  } catch (xhr) {
+    let msg = "Unable to fetch TTUM.";
+
+    if (xhr.status === 404) {
+      msg = "Invalid TTUM ID";
+    } else if (xhr.status === 204) {
+      msg = "No files found for this TTUM ID";
+    } else if (xhr.status >= 500) {
+      msg = "TTUM service is currently unreachable";
+    }
+
+    showError(msg);
+  } finally {
+    toggleFetchTtumLoading(false); // ✅ restore button
+  }
+});
+
+function resetResultsUI() {
+  // Hide whole results section
+  $("#results-container").addClass("hidden");
+
+  // Remove all file cards
+  $("#download-links").empty();
+
+  // Remove any dynamically added summary rows / zip buttons
+  $("#results-container")
+    .find(".download-summary, .zip-download-btn, .file-count")
+    .remove();
+}
+
 
 
 };
