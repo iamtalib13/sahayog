@@ -148,3 +148,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Improved accessibility of a component.
 - Patched a minor security vulnerability.
 - Added a unit test for a utility function.
+- Updated the requirements.txt.
