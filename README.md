@@ -136,3 +136,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Updated a print format layout.
 - Fixed a permission issue for a role.
 - Added a new number card to a workspace.
+- Removed a deprecated function.
