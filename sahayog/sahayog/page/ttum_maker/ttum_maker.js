@@ -1276,44 +1276,45 @@ frappe.pages["ttum-maker"].init_form = function () {
   //   });
   // }
 
-  function showResults(data) {
 
-  // ===============================
-  // 🔥 HARD RESET (MANDATORY)
-  // ===============================
+function showResults(data) {
+
   const $results = $("#results-container");
   const $links = $("#download-links");
 
+  // ===== HARD RESET =====
   $results.removeClass("hidden");
-  $links.empty();                  // remove files
-  $results.find(".file-count").remove();
-  $results.find(".zip-download-btn").remove();
-  $results.find(".download-summary").remove();
-
-  // ===============================
-  // NOW SAFE TO RENDER
-  // ===============================
+  $links.empty();
+  $results.find(".file-count, .zip-download-btn").remove();
 
   const totalFiles = data.splitDetails?.length || 0;
+  const ttumId = data.ttumId; // 🔥 THIS IS REQUIRED
 
-  // ---- summary row ----
-  const summary = $(`
-    <div class="file-count">
-      <i class="fa fa-file-alt"></i>
-      ${totalFiles} file(s) generated
+  // ===== SUMMARY + ZIP =====
+  const $summary = $(`
+    <div class="file-count d-flex justify-content-between align-items-center mb-3">
+      <span>
+        <i class="fa fa-file-alt"></i>
+        ${totalFiles} file(s) generated
+      </span>
+      <button class="btn btn-primary zip-download-btn">
+        <i class="fa fa-download"></i> Download All (ZIP)
+      </button>
     </div>
   `);
 
-  const zipBtn = $(`
-    <button class="btn btn-primary zip-download-btn">
-      <i class="fa fa-download"></i> Download All (ZIP)
-    </button>
-  `);
+  // ✅ Attach click handler properly
+  $summary.find(".zip-download-btn").on("click", function () {
+    if (!ttumId) {
+      frappe.msgprint("TTUM ID not found for ZIP download");
+      return;
+    }
+    downloadAllZip(ttumId);
+  });
 
-  summary.append(zipBtn);
-  $results.find(".results-header").after(summary);
+  $results.find(".results-header").after($summary);
 
-  // ---- individual files ----
+  // ===== FILE LIST =====
   data.splitDetails.forEach((file, index) => {
     $links.append(`
       <div class="download-item">
