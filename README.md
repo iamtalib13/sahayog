@@ -75,3 +75,5 @@ A dedicated module for tracking and managing issues.
 
 ## Custom APIs & Logic
 
+Sahayog includes a variety of custom scripts and APIs to automate and extend functionality:
+
