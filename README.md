@@ -125,3 +125,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Formatted Python code with Black.
 - Formatted JS code with Prettier.
 - Added new fixture for testing.
+- Updated CI configuration.
