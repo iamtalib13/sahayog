@@ -210,7 +210,7 @@ def send_scn_email(docname):
             doctype="Disciplinary Case",
             name=docname,
             print_format="Disciplinary Case Notice",
-            file_name=f"{docname}.pdf"
+            file_name=f"{docname}"
         )
     ]
 
