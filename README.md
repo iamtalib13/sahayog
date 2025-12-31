@@ -109,3 +109,5 @@ Contributions are welcome! Please follow the standard Frappe app development gui
 1. Fork the repository.
 2. Create a new branch for your feature.
 3. Add your changes and commit them.
+4. Push to your branch and create a Pull Request.
+
