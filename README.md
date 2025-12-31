@@ -138,3 +138,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Added a new number card to a workspace.
 - Removed a deprecated function.
 - Updated a web form's client script.
+- Added a new dashboard chart.
