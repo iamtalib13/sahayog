@@ -8,3 +8,5 @@ Sahayog is a powerful extension for the Frappe framework, integrating several ke
 
 ## Core Modules
 
+The application is composed of several modules:
+
