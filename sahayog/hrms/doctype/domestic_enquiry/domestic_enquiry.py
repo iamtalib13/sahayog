@@ -96,7 +96,7 @@ def send_domestic_enquiry_email(docname):
             doctype="Domestic Enquiry",
             name=docname,
             print_format="Domestic Enquiry",
-            file_name=f"{docname}.pdf"
+            file_name=f"{docname}"
         )
     ]
     # Send Email
