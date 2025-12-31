@@ -154,3 +154,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Corrected a calculation in a custom report.
 - Moved a hardcoded string to constants.
 - Added a new page for custom reports.
+- Updated an email template.
