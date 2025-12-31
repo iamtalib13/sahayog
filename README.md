@@ -107,3 +107,4 @@ To install Sahayog, you need a Frappe Bench environment.
 
 Contributions are welcome! Please follow the standard Frappe app development guidelines.
 1. Fork the repository.
+2. Create a new branch for your feature.
