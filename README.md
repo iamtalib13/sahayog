@@ -111,3 +111,5 @@ Contributions are welcome! Please follow the standard Frappe app development gui
 3. Add your changes and commit them.
 4. Push to your branch and create a Pull Request.
 
+## License
+
