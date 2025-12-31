@@ -50,3 +50,4 @@ Streamlines the purchasing and inventory management processes.
 - Custom logic for item naming and warehouse management.
 - Asset management integration.
 
+#### Key Procurement DocTypes:
