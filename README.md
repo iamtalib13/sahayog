@@ -47,3 +47,4 @@ Focuses on enhancing customer relationship management and sales processes.
 
 Streamlines the purchasing and inventory management processes.
 - Handles `Supplier Quotation`, `Purchase Order`, and `Purchase Receipt`.
+- Custom logic for item naming and warehouse management.
