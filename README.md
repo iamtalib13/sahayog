@@ -79,3 +79,4 @@ Sahayog includes a variety of custom scripts and APIs to automate and extend fun
 
 - **User Provisioning**: Automatically creates users from Employee documents.
 - **Branch & Warehouse Linking**: Logic to link branches with warehouses.
+- **Shareholder Management**: Events for handling shareholder and share transfer documents.
