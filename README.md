@@ -114,3 +114,5 @@ Contributions are welcome! Please follow the standard Frappe app development gui
 ## License
 
 This project is licensed under the MIT License. See the `license.txt` file for details.
+### Refinements
+
