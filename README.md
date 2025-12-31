@@ -15,3 +15,5 @@ The application is composed of several modules:
 - **Procurement**
 - **Project Management**
 - **Issue Register**
+- **Collections**
+
