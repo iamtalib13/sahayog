@@ -117,7 +117,7 @@ def send_suspension_email(docname):
             doctype="Suspension Process",
             name=docname,
             print_format="Suspension Order",
-            file_name=f"{docname}.pdf"
+            file_name=f"{docname}"
         )
     ]
     # Send email instantly
