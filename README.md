@@ -130,3 +130,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Enhanced logging for a background job.
 - Optimized a database query.
 - Added a new custom field to a doctype.
+- Updated `.gitignore` to exclude log files.
