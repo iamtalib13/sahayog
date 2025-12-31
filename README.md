@@ -129,3 +129,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Corrected a typo in a report.
 - Enhanced logging for a background job.
 - Optimized a database query.
+- Added a new custom field to a doctype.
