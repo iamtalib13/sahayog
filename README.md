@@ -151,3 +151,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Updated the requirements.txt.
 - Reordered fields in a DocType for better flow.
 - Added a client script for dynamic filtering.
+- Corrected a calculation in a custom report.
