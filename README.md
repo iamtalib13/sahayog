@@ -158,3 +158,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Improved responsiveness of the UI.
 - Added a hook for on_submit event.
 - Refined a workflow transition rule.
+- Added a missing index to a database table.
