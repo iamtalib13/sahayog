@@ -43,3 +43,5 @@ Focuses on enhancing customer relationship management and sales processes.
 - `Opportunity`: Qualified sales opportunity.
 - `Customer`: Company's customers.
 
+### Procurement
+
