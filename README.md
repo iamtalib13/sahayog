@@ -19,3 +19,4 @@ The application is composed of several modules:
 
 ### Human Resource Management (HRMS)
 
+This module extends the core HR functionalities of Frappe.
