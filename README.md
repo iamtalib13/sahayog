@@ -94,3 +94,4 @@ To install Sahayog, you need a Frappe Bench environment.
    ```bash
    bench get-app https://github.com/your-org/sahayog
    ```
+3. Install the app on your site:
