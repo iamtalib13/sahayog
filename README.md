@@ -145,3 +145,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Fixed a CSS alignment issue.
 - Added a new workflow state.
 - Updated translations.
+- Improved accessibility of a component.
