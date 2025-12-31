@@ -132,3 +132,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Added a new custom field to a doctype.
 - Updated `.gitignore` to exclude log files.
 - Renamed a variable for better clarity.
+- Added error handling for an API call.
