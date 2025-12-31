@@ -55,3 +55,5 @@ Streamlines the purchasing and inventory management processes.
 - `Purchase Order`: Orders placed with suppliers.
 - `Item`: Products and services.
 
+### Project Management
+
