@@ -71,3 +71,5 @@ Provides tools for managing projects and tasks effectively.
 
 A dedicated module for tracking and managing issues.
 - Allows users to report issues and track their resolution status.
+- Provides reports and dashboards for issue analysis.
+
