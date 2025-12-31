@@ -9,152 +9,320 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
     single_column: true,
   });
 
-  me.page.main.html(`
+//   me.page.main.html(`
 
-    <div class="upload-form mb-4">
-  <div class="form-grid">
-    <div class="form-field">
-      <label class="field-label">
-        TTUM ID <span class="required">*</span>
-      </label>
-      <input
-        type="number"
-        id="search-ttum-id"
-        class="field-input"
-        placeholder="Enter TTUM ID (e.g. 33)"
-        min="1"
-      />
-    </div>
+//     <div class="upload-form mb-4">
+//   <div class="form-grid">
+//     <div class="form-field">
+//       <label class="field-label">
+//         TTUM ID <span class="required">*</span>
+//       </label>
+//       <input
+//         type="number"
+//         id="search-ttum-id"
+//         class="field-input"
+//         placeholder="Enter TTUM ID (e.g. 33)"
+//         min="1"
+//       />
+//     </div>
 
-    <div class="form-field d-flex align-items-end">
-      <button
-        type="button"
-        class="btn btn-primary"
-        id="fetch-ttum-btn"
-      >
-        <i class="fa fa-search"></i>
-        Get TTUM
-      </button>
-    </div>
-  </div>
-</div>
+//     <div class="form-field d-flex align-items-end">
+//       <button
+//         type="button"
+//         class="btn btn-primary"
+//         id="fetch-ttum-btn"
+//       >
+//         <i class="fa fa-search"></i>
+//         Get TTUM
+//       </button>
+//     </div>
+//   </div>
+// </div>
 
-		<div class="ttum-maker-app">
-			<div class="hero-header">
-				<div class="hero-content">
-					<div class="hero-icon">📊</div>
-					<h1 class="hero-title">TTUM Maker</h1>
-					<p class="hero-subtitle">Transform Excel data into formatted TXT files with precision splitting</p>
-				</div>
-			</div>
+// 		<div class="ttum-maker-app">
+// 			<div class="hero-header">
+// 				<div class="hero-content">
+// 					<div class="hero-icon">📊</div>
+// 					<h1 class="hero-title">TTUM Maker</h1>
+// 					<p class="hero-subtitle">Transform Excel data into formatted TXT files with precision splitting</p>
+// 				</div>
+// 			</div>
 
-			<div class="main-content">
-				<form id="ttum-form" class="upload-form">
-					<div class="form-grid">
-						<div class="form-field">
-							<label class="field-label">
-								<i class="field-icon icon-type"></i>
-								TTUM Type <span class="required">*</span>
-							</label>
-							<select id="ttum-type" class="field-input" required>
-								<option value="">Select TTUM Type</option>
-								<option value="ASSET LOAN">ASSET LOAN</option>
-								<option value="INWARD">INWARD</option>
-								<option value="EHOLO">EHOLO</option>
-								<option value="EMSAAD">EMSAAD</option>
-								<option value="PERSONAL LOAN">PERSONAL LOAN</option>
-								<option value="SCHOOL AND PEON">SCHOOL AND PEON</option>
-								<option value="TDA">TDA</option>
-								<option value="SALARY">SALARY</option>
-							</select>
-						</div>
+// 			<div class="main-content">
+// 				<form id="ttum-form" class="upload-form">
+// 					<div class="form-grid">
+// 						<div class="form-field">
+// 							<label class="field-label">
+// 								<i class="field-icon icon-type"></i>
+// 								TTUM Type <span class="required">*</span>
+// 							</label>
+// 							<select id="ttum-type" class="field-input" required>
+// 								<option value="">Select TTUM Type</option>
+// 								<option value="ASSET LOAN">ASSET LOAN</option>
+// 								<option value="INWARD">INWARD</option>
+// 								<option value="EHOLO">EHOLO</option>
+// 								<option value="EMSAAD">EMSAAD</option>
+// 								<option value="PERSONAL LOAN">PERSONAL LOAN</option>
+// 								<option value="SCHOOL AND PEON">SCHOOL AND PEON</option>
+// 								<option value="TDA">TDA</option>
+// 								<option value="SALARY">SALARY</option>
+// 							</select>
+// 						</div>
 
-						<div class="form-field full-width">
-							<label class="field-label">
-								<i class="field-icon icon-file"></i>
-								Excel File <span class="required">*</span>
-							</label>
-							<div class="file-upload-wrapper">
-								<input type="file" id="excel-file" class="field-input file-input" accept=".xlsx,.xls" required>
-								<div class="file-upload-placeholder">
-									<i class="fa fa-cloud-upload-alt"></i>
-									<span>Choose Excel file (.xlsx, .xls)</span>
-								</div>
-							</div>
-							<small class="field-help">Maximum 50MB. Supported formats: XLSX, XLS</small>
-						</div>
+// 						<div class="form-field full-width">
+// 							<label class="field-label">
+// 								<i class="field-icon icon-file"></i>
+// 								Excel File <span class="required">*</span>
+// 							</label>
+// 							<div class="file-upload-wrapper">
+// 								<input type="file" id="excel-file" class="field-input file-input" accept=".xlsx,.xls" required>
+// 								<div class="file-upload-placeholder">
+// 									<i class="fa fa-cloud-upload-alt"></i>
+// 									<span>Choose Excel file (.xlsx, .xls)</span>
+// 								</div>
+// 							</div>
+// 							<small class="field-help">Maximum 50MB. Supported formats: XLSX, XLS</small>
+// 						</div>
 
-						<div class="form-field">
-							<label class="field-label">
-								<i class="field-icon icon-split"></i>
-								Split Mode <span class="required">*</span>
-							</label>
-							<select id="split-mode" class="field-input">
-								<option value="split">Number of Files</option>
-								<option value="records">Records per File</option>
-							</select>
-						</div>
+// 						<div class="form-field">
+// 							<label class="field-label">
+// 								<i class="field-icon icon-split"></i>
+// 								Split Mode <span class="required">*</span>
+// 							</label>
+// 							<select id="split-mode" class="field-input">
+// 								<option value="split">Number of Files</option>
+// 								<option value="records">Records per File</option>
+// 							</select>
+// 						</div>
 
-						<div class="form-field split-controls">
-							<div class="split-option number-split">
-								<label class="field-label">Number of TXT Files</label>
-								<input type="number" id="number-split" class="field-input" min="1" value="1" max="50">
-							</div>
-							<div class="split-option number-records hidden">
-								<label class="field-label">Records per File</label>
-								<input type="number" id="number-records" class="field-input" min="1" value="12" max="10000">
-							</div>
-						</div>
-					</div>
+// 						<div class="form-field split-controls">
+// 							<div class="split-option number-split">
+// 								<label class="field-label">Number of TXT Files</label>
+// 								<input type="number" id="number-split" class="field-input" min="1" value="1" max="50">
+// 							</div>
+// 							<div class="split-option number-records hidden">
+// 								<label class="field-label">Records per File</label>
+// 								<input type="number" id="number-records" class="field-input" min="1" value="12" max="10000">
+// 							</div>
+// 						</div>
+// 					</div>
 
-					<div class="form-actions">
-						<button type="submit" class="btn btn-primary btn-generate" id="submit-btn">
-							<span class="btn-content">
-								<i class="fa fa-magic"></i>
-								<span class="btn-text">Generate TXT Files</span>
-							</span>
-							<span class="btn-loader hidden">
-								<i class="fa fa-spinner fa-spin"></i>
-								Processing...
-							</span>
-						</button>
-						<button type="button" class="btn btn-secondary" id="reset-btn">
-							<i class="fa fa-refresh"></i> Reset
-						</button>
-					</div>
-				</form>
+// 					<div class="form-actions">
+// 						<button type="submit" class="btn btn-primary btn-generate" id="submit-btn">
+// 							<span class="btn-content">
+// 								<i class="fa fa-magic"></i>
+// 								<span class="btn-text">Generate TXT Files</span>
+// 							</span>
+// 							<span class="btn-loader hidden">
+// 								<i class="fa fa-spinner fa-spin"></i>
+// 								Processing...
+// 							</span>
+// 						</button>
+// 						<button type="button" class="btn btn-secondary" id="reset-btn">
+// 							<i class="fa fa-refresh"></i> Reset
+// 						</button>
+// 					</div>
+// 				</form>
 
-				<div id="progress-container" class="progress-section hidden">
-					<div class="progress-header">
-						<i class="fa fa-tasks"></i>
-						<span>Processing Files</span>
-					</div>
-					<div class="progress-container">
-						<div class="progress-track">
-							<div id="progress-bar" class="progress-fill"></div>
-							<div class="progress-indicator"></div>
-						</div>
-						<div class="progress-info">
-							<span id="progress-text" class="progress-label">Preparing...</span>
-							<span id="progress-percent" class="progress-percent">0%</span>
-						</div>
-					</div>
-				</div>
+// 				<div id="progress-container" class="progress-section hidden">
+// 					<div class="progress-header">
+// 						<i class="fa fa-tasks"></i>
+// 						<span>Processing Files</span>
+// 					</div>
+// 					<div class="progress-container">
+// 						<div class="progress-track">
+// 							<div id="progress-bar" class="progress-fill"></div>
+// 							<div class="progress-indicator"></div>
+// 						</div>
+// 						<div class="progress-info">
+// 							<span id="progress-text" class="progress-label">Preparing...</span>
+// 							<span id="progress-percent" class="progress-percent">0%</span>
+// 						</div>
+// 					</div>
+// 				</div>
 
-				<div id="results-container" class="results-section hidden">
-					<div class="results-header">
-						<i class="fa fa-check-circle text-success"></i>
-						<h3>Files Ready for Download</h3>
-					</div>
-					<div id="download-links" class="download-grid"></div>
-				</div>
+// 				<div id="results-container" class="results-section hidden">
+// 					<div class="results-header">
+// 						<i class="fa fa-check-circle text-success"></i>
+// 						<h3>Files Ready for Download</h3>
+// 					</div>
+// 					<div id="download-links" class="download-grid"></div>
+// 				</div>
 
-				<div id="error-container" class="alert alert-error hidden"></div>
-			</div>
-		</div>
-	`);
+// 				<div id="error-container" class="alert alert-error hidden"></div>
+// 			</div>
+// 		</div>
+// 	`);
 
   // Premium CSS
+  
+
+  me.page.main.html(`
+
+<div class="ttum-maker-app">
+
+  <!-- ================= HERO ================= -->
+  <div class="hero-header">
+    <div class="hero-content">
+      <div class="hero-icon">📊</div>
+      <h1 class="hero-title">TTUM Maker</h1>
+      <p class="hero-subtitle">
+        Transform Excel data into formatted TXT files with precision splitting
+      </p>
+    </div>
+  </div>
+
+  <div class="main-content">
+
+    <!-- ============ GET EXISTING TTUM ============ -->
+    <div class="upload-form mb-4">
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="field-label">
+            <i class="fa fa-history"></i>
+            Get Existing TTUM <span class="required">*</span>
+          </label>
+          <input
+            type="number"
+            id="search-ttum-id"
+            class="field-input"
+            placeholder="Enter TTUM ID (e.g. 33)"
+            min="1"
+          />
+        </div>
+
+        <div class="form-field d-flex align-items-end">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="fetch-ttum-btn"
+          >
+            <i class="fa fa-search"></i>
+            Get TTUM
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ DIVIDER FEEL (VISUAL ONLY) ============ -->
+    <div class="text-center mb-4" style="opacity:0.6;font-weight:600;">
+      — OR GENERATE NEW TTUM —
+    </div>
+
+    <!-- ================= GENERATE FORM ================= -->
+    <form id="ttum-form" class="upload-form">
+      <div class="form-grid">
+
+        <div class="form-field">
+          <label class="field-label">
+            <i class="field-icon icon-type"></i>
+            TTUM Type <span class="required">*</span>
+          </label>
+          <select id="ttum-type" class="field-input" required>
+            <option value="">Select TTUM Type</option>
+            <option value="ASSET LOAN">ASSET LOAN</option>
+            <option value="INWARD">INWARD</option>
+            <option value="EHOLO">EHOLO</option>
+            <option value="EMSAAD">EMSAAD</option>
+            <option value="PERSONAL LOAN">PERSONAL LOAN</option>
+            <option value="SCHOOL AND PEON">SCHOOL AND PEON</option>
+            <option value="TDA">TDA</option>
+            <option value="SALARY">SALARY</option>
+          </select>
+        </div>
+
+        <div class="form-field full-width">
+          <label class="field-label">
+            <i class="field-icon icon-file"></i>
+            Excel File <span class="required">*</span>
+          </label>
+          <div class="file-upload-wrapper">
+            <input type="file" id="excel-file" class="field-input file-input" accept=".xlsx,.xls" required>
+            <div class="file-upload-placeholder">
+              <i class="fa fa-cloud-upload-alt"></i>
+              <span>Choose Excel file (.xlsx, .xls)</span>
+            </div>
+          </div>
+          <small class="field-help">
+            Maximum 50MB. Supported formats: XLSX, XLS
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">
+            <i class="field-icon icon-split"></i>
+            Split Mode <span class="required">*</span>
+          </label>
+          <select id="split-mode" class="field-input">
+            <option value="split">Number of Files</option>
+            <option value="records">Records per File</option>
+          </select>
+        </div>
+
+        <div class="form-field split-controls">
+          <div class="split-option number-split">
+            <label class="field-label">Number of TXT Files</label>
+            <input type="number" id="number-split" class="field-input" min="1" value="1" max="50">
+          </div>
+          <div class="split-option number-records hidden">
+            <label class="field-label">Records per File</label>
+            <input type="number" id="number-records" class="field-input" min="1" value="12" max="10000">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-generate" id="submit-btn">
+          <span class="btn-content">
+            <i class="fa fa-magic"></i>
+            <span class="btn-text">Generate TXT Files</span>
+          </span>
+          <span class="btn-loader hidden">
+            <i class="fa fa-spinner fa-spin"></i>
+            Processing...
+          </span>
+        </button>
+
+        <button type="button" class="btn btn-secondary" id="reset-btn">
+          <i class="fa fa-refresh"></i> Reset
+        </button>
+      </div>
+    </form>
+
+    <!-- ================= PROGRESS ================= -->
+    <div id="progress-container" class="progress-section hidden">
+      <div class="progress-header">
+        <i class="fa fa-tasks"></i>
+        <span>Processing Files</span>
+      </div>
+      <div class="progress-container">
+        <div class="progress-track">
+          <div id="progress-bar" class="progress-fill"></div>
+          <div class="progress-indicator"></div>
+        </div>
+        <div class="progress-info">
+          <span id="progress-text" class="progress-label">Preparing...</span>
+          <span id="progress-percent" class="progress-percent">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= RESULTS ================= -->
+    <div id="results-container" class="results-section hidden">
+      <div class="results-header">
+        <i class="fa fa-check-circle text-success"></i>
+        <h3>Files Ready for Download</h3>
+      </div>
+      <div id="download-links" class="download-grid"></div>
+    </div>
+
+    <div id="error-container" class="alert alert-error hidden"></div>
+
+  </div>
+</div>
+`);
+
+  
   applyPremiumCSS();
   me.init_form();
 };
