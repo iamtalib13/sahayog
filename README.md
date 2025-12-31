@@ -30,3 +30,5 @@ This module extends the core HR functionalities of Frappe.
 - `Department`: Organizational departments.
 - `Branch`: Different company branches.
 
+### Sales & CRM (SCRM)
+
