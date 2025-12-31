@@ -38,3 +38,4 @@ Focuses on enhancing customer relationship management and sales processes.
 - Integration with Service Level Agreements (SLAs).
 - Automated contact creation from leads.
 
+#### Key SCRM DocTypes:
