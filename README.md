@@ -64,3 +64,4 @@ Provides tools for managing projects and tasks effectively.
 
 #### Key Project DocTypes:
 - `Project`: The main project document.
+- `Task`: Individual tasks within a project.
