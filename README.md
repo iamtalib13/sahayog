@@ -160,3 +160,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Refined a workflow transition rule.
 - Added a missing index to a database table.
 - Updated a fixture to reflect new data model.
+- Removed a redundant API call.
