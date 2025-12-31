@@ -33,3 +33,4 @@ This module extends the core HR functionalities of Frappe.
 ### Sales & CRM (SCRM)
 
 Focuses on enhancing customer relationship management and sales processes.
+- Manages leads, opportunities, and customers.
