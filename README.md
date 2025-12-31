@@ -157,3 +157,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Updated an email template.
 - Improved responsiveness of the UI.
 - Added a hook for on_submit event.
+- Refined a workflow transition rule.
