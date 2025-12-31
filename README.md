@@ -11,3 +11,4 @@ Sahayog is a powerful extension for the Frappe framework, integrating several ke
 The application is composed of several modules:
 
 - **Human Resource Management (HRMS)**
+- **Sales & CRM (SCRM)**
