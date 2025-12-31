@@ -133,3 +133,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Updated `.gitignore` to exclude log files.
 - Renamed a variable for better clarity.
 - Added error handling for an API call.
+- Updated a print format layout.
