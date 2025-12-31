@@ -63,3 +63,4 @@ Provides tools for managing projects and tasks effectively.
 - Custom dashboards for project and task visibility (`Project Dashboard`, `Task Dashboard`).
 
 #### Key Project DocTypes:
+- `Project`: The main project document.
