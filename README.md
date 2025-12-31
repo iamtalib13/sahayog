@@ -58,3 +58,4 @@ Streamlines the purchasing and inventory management processes.
 ### Project Management
 
 Provides tools for managing projects and tasks effectively.
+- Defines `Project Templates` for quick project setup.
