@@ -10,6 +10,35 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
   });
 
   me.page.main.html(`
+
+    <div class="upload-form mb-4">
+  <div class="form-grid">
+    <div class="form-field">
+      <label class="field-label">
+        TTUM ID <span class="required">*</span>
+      </label>
+      <input
+        type="number"
+        id="search-ttum-id"
+        class="field-input"
+        placeholder="Enter TTUM ID (e.g. 33)"
+        min="1"
+      />
+    </div>
+
+    <div class="form-field d-flex align-items-end">
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="fetch-ttum-btn"
+      >
+        <i class="fa fa-search"></i>
+        Get TTUM
+      </button>
+    </div>
+  </div>
+</div>
+
 		<div class="ttum-maker-app">
 			<div class="hero-header">
 				<div class="hero-content">
@@ -1129,5 +1158,58 @@ window.downloadAllZip = function (ttumId) {
   window.location.href = url;
 };
 
+
+// ===============================
+// FETCH EXISTING TTUM BY ID
+// ===============================
+$("#fetch-ttum-btn").on("click", async function () {
+  const ttumId = $("#search-ttum-id").val();
+
+  clearErrors();
+  hideAllSections();        // 🔥 clear old files
+  $downloadLinks.empty();  // 🔥 extra safety
+
+  if (!ttumId) {
+    showError("Please enter a TTUM ID");
+    return;
+  }
+
+  showLoading(true);
+
+  try {
+    const response = await $.ajax({
+      url: "/api/method/sahayog.sahayog.api.ttum.get_ttum_by_id",
+      method: "GET",
+      data: { ttum_id: ttumId },
+      headers: {
+        "X-Frappe-CSRF-Token": frappe.csrf_token,
+      },
+    });
+
+    // 🔴 Backend returned error object
+    if (response?.error) {
+      showError(response.error);
+      return;
+    }
+
+    // ✅ SUCCESS
+    showResults(response);
+
+  } catch (xhr) {
+    let msg = "Unable to fetch TTUM.";
+
+    if (xhr.status === 404) {
+      msg = "Invalid TTUM ID";
+    } else if (xhr.status === 204) {
+      msg = "No files found for this TTUM ID";
+    } else if (xhr.status >= 500) {
+      msg = "TTUM service is currently unreachable";
+    }
+
+    showError(msg);
+  } finally {
+    showLoading(false);
+  }
+});
 
 };
