@@ -189,8 +189,6 @@ def download_all(ttum_id):
         frappe.throw(str(e))
 
 
-
-
 @frappe.whitelist()
 def get_ttum_by_id(ttum_id):
     """

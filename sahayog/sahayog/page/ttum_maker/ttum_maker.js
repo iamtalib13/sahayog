@@ -175,6 +175,7 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
   <div class="main-content">
 
     <!-- ============ GET EXISTING TTUM ============ -->
+    <!--
     <div class="upload-form mb-4">
       <div class="form-grid">
         <div class="form-field">
@@ -203,11 +204,15 @@ frappe.pages["ttum-maker"].on_page_load = function (wrapper) {
         </div>
       </div>
     </div>
+    --!>
 
+     
     <!-- ============ DIVIDER FEEL (VISUAL ONLY) ============ -->
+    <!--
     <div class="text-center mb-4" style="opacity:0.6;font-weight:600;">
       — OR GENERATE NEW TTUM —
     </div>
+     --!>
 
     <!-- ================= GENERATE FORM ================= -->
     <form id="ttum-form" class="upload-form">
