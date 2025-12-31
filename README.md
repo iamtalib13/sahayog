@@ -78,3 +78,4 @@ A dedicated module for tracking and managing issues.
 Sahayog includes a variety of custom scripts and APIs to automate and extend functionality:
 
 - **User Provisioning**: Automatically creates users from Employee documents.
+- **Branch & Warehouse Linking**: Logic to link branches with warehouses.
