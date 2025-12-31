@@ -141,3 +141,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Added a new dashboard chart.
 - Improved the user experience of a page.
 - Set a default value for a field.
+- Converted a script to use async/await.
