@@ -87,3 +87,6 @@ Sahayog includes a variety of custom scripts and APIs to automate and extend fun
 To install Sahayog, you need a Frappe Bench environment.
 
 1. Go to your bench directory:
+   ```bash
+   cd ~/frappe-bench
+   ```
