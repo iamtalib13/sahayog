@@ -51,3 +51,4 @@ Streamlines the purchasing and inventory management processes.
 - Asset management integration.
 
 #### Key Procurement DocTypes:
+- `Supplier Quotation`: Quotes from suppliers.
