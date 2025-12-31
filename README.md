@@ -35,3 +35,4 @@ This module extends the core HR functionalities of Frappe.
 Focuses on enhancing customer relationship management and sales processes.
 - Manages leads, opportunities, and customers.
 - Custom API for lead owner assignments.
+- Integration with Service Level Agreements (SLAs).
