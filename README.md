@@ -156,3 +156,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Added a new page for custom reports.
 - Updated an email template.
 - Improved responsiveness of the UI.
+- Added a hook for on_submit event.
