@@ -1089,7 +1089,7 @@ frappe.pages["ttum-maker"].init_form = function () {
       return;
     }
 
-    showLoading(true);
+    // showLoading(true);
     hideAllSections();
 
     const result = await processExcelFile();
@@ -1098,7 +1098,7 @@ frappe.pages["ttum-maker"].init_form = function () {
     console.error("TTUM Error:", error);
     // ❌ DO NOT show results here
   } finally {
-    showLoading(false);
+    // showLoading(false);
   }
 });
 
@@ -1327,23 +1327,90 @@ window.downloadAllZip = function (ttumId) {
 };
 
 
+function toggleFetchTtumLoading(isLoading) {
+  const $btn = $("#fetch-ttum-btn");
+
+  if (isLoading) {
+    $btn.prop("disabled", true);
+    $btn.data("original-html", $btn.html());
+    $btn.html(`<i class="fa fa-spinner fa-spin"></i> Fetching...`);
+  } else {
+    $btn.prop("disabled", false);
+    $btn.html($btn.data("original-html"));
+  }
+}
+
+
+
 // ===============================
 // FETCH EXISTING TTUM BY ID
 // ===============================
+
+// $("#fetch-ttum-btn").on("click", async function () {
+//   const ttumId = $("#search-ttum-id").val();
+
+//   clearErrors();
+//   hideAllSections();        // 🔥 clear old UI
+//   $downloadLinks.empty();  // 🔥 clear old files
+
+//   if (!ttumId) {
+//     showError("Please enter a TTUM ID");
+//     return;
+//   }
+
+//   // showLoading(true);
+
+//   try {
+//     const response = await $.ajax({
+//       url: "/api/method/sahayog.sahayog.api.ttum.get_ttum_by_id",
+//       method: "GET",
+//       data: { ttum_id: ttumId },
+//       headers: {
+//         "X-Frappe-CSRF-Token": frappe.csrf_token,
+//       },
+//     });
+
+//     // 🔴 Error from backend
+//     if (response?.message?.error) {
+//       showError(response.message.error);
+//       return;
+//     }
+
+//     // ✅ SUCCESS (🔥 THIS WAS THE MISSING PART)
+//     showResults(response.message);
+
+//   } catch (xhr) {
+//     let msg = "Unable to fetch TTUM.";
+
+//     if (xhr.status === 404) {
+//       msg = "Invalid TTUM ID";
+//     } else if (xhr.status === 204) {
+//       msg = "No files found for this TTUM ID";
+//     } else if (xhr.status >= 500) {
+//       msg = "TTUM service is currently unreachable";
+//     }
+
+//     showError(msg);
+//   } finally {
+//     // showLoading(false);
+//   }
+// });
+
+
 
 $("#fetch-ttum-btn").on("click", async function () {
   const ttumId = $("#search-ttum-id").val();
 
   clearErrors();
-  hideAllSections();        // 🔥 clear old UI
-  $downloadLinks.empty();  // 🔥 clear old files
+  hideAllSections();
+  $downloadLinks.empty();
 
   if (!ttumId) {
     showError("Please enter a TTUM ID");
     return;
   }
 
-  showLoading(true);
+  toggleFetchTtumLoading(true); // ✅ correct loader
 
   try {
     const response = await $.ajax({
@@ -1355,13 +1422,11 @@ $("#fetch-ttum-btn").on("click", async function () {
       },
     });
 
-    // 🔴 Error from backend
     if (response?.message?.error) {
       showError(response.message.error);
       return;
     }
 
-    // ✅ SUCCESS (🔥 THIS WAS THE MISSING PART)
     showResults(response.message);
 
   } catch (xhr) {
@@ -1377,7 +1442,7 @@ $("#fetch-ttum-btn").on("click", async function () {
 
     showError(msg);
   } finally {
-    showLoading(false);
+    toggleFetchTtumLoading(false); // ✅ restore button
   }
 });
 
