@@ -82,3 +82,5 @@ Sahayog includes a variety of custom scripts and APIs to automate and extend fun
 - **Shareholder Management**: Events for handling shareholder and share transfer documents.
 - **Custom Naming**: Several overrides for document naming conventions (e.g., `Employee`, `Item`).
 
+## Installation
+
