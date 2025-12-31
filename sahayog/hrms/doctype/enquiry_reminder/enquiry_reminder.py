@@ -100,7 +100,7 @@ def send_reminder_enquiry_email(docname, print_format):
             doctype="Enquiry Reminder",
             name=docname,
             print_format=print_format,
-            file_name=f"{docname}_{print_format.replace(' ', '_')}.pdf"
+            file_name=f"{docname}"
         )
     ]
 
