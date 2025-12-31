@@ -14,3 +14,4 @@ The application is composed of several modules:
 - **Sales & CRM (SCRM)**
 - **Procurement**
 - **Project Management**
+- **Issue Register**
