@@ -152,3 +152,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Reordered fields in a DocType for better flow.
 - Added a client script for dynamic filtering.
 - Corrected a calculation in a custom report.
+- Moved a hardcoded string to constants.
