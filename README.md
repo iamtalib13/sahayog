@@ -40,3 +40,4 @@ Focuses on enhancing customer relationship management and sales processes.
 
 #### Key SCRM DocTypes:
 - `Lead`: Potential sales interest.
+- `Opportunity`: Qualified sales opportunity.
