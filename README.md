@@ -67,3 +67,5 @@ Provides tools for managing projects and tasks effectively.
 - `Task`: Individual tasks within a project.
 - `Project Template`: Reusable project structures.
 
+### Issue Register
+
