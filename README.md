@@ -155,3 +155,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Moved a hardcoded string to constants.
 - Added a new page for custom reports.
 - Updated an email template.
+- Improved responsiveness of the UI.
