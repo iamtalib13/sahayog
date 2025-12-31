@@ -53,3 +53,5 @@ Streamlines the purchasing and inventory management processes.
 #### Key Procurement DocTypes:
 - `Supplier Quotation`: Quotes from suppliers.
 - `Purchase Order`: Orders placed with suppliers.
+- `Item`: Products and services.
+
