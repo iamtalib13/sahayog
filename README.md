@@ -25,3 +25,4 @@ This module extends the core HR functionalities of Frappe.
 - Handles department and branch-specific data.
 - Overrides for handling employee data updates.
 
+#### Key HRMS DocTypes:
