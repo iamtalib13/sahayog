@@ -17,3 +17,5 @@ The application is composed of several modules:
 - **Issue Register**
 - **Collections**
 
+### Human Resource Management (HRMS)
+
