@@ -1162,12 +1162,13 @@ window.downloadAllZip = function (ttumId) {
 // ===============================
 // FETCH EXISTING TTUM BY ID
 // ===============================
+
 $("#fetch-ttum-btn").on("click", async function () {
   const ttumId = $("#search-ttum-id").val();
 
   clearErrors();
-  hideAllSections();        // 🔥 clear old files
-  $downloadLinks.empty();  // 🔥 extra safety
+  hideAllSections();        // 🔥 clear old UI
+  $downloadLinks.empty();  // 🔥 clear old files
 
   if (!ttumId) {
     showError("Please enter a TTUM ID");
@@ -1186,14 +1187,14 @@ $("#fetch-ttum-btn").on("click", async function () {
       },
     });
 
-    // 🔴 Backend returned error object
-    if (response?.error) {
-      showError(response.error);
+    // 🔴 Error from backend
+    if (response?.message?.error) {
+      showError(response.message.error);
       return;
     }
 
-    // ✅ SUCCESS
-    showResults(response);
+    // ✅ SUCCESS (🔥 THIS WAS THE MISSING PART)
+    showResults(response.message);
 
   } catch (xhr) {
     let msg = "Unable to fetch TTUM.";
@@ -1211,5 +1212,6 @@ $("#fetch-ttum-btn").on("click", async function () {
     showLoading(false);
   }
 });
+
 
 };
