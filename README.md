@@ -62,3 +62,4 @@ Provides tools for managing projects and tasks effectively.
 - Manages `Tasks` with dependencies and assignments.
 - Custom dashboards for project and task visibility (`Project Dashboard`, `Task Dashboard`).
 
+#### Key Project DocTypes:
