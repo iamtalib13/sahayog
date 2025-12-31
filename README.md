@@ -143,3 +143,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Set a default value for a field.
 - Converted a script to use async/await.
 - Fixed a CSS alignment issue.
+- Added a new workflow state.
