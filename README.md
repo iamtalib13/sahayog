@@ -95,3 +95,6 @@ To install Sahayog, you need a Frappe Bench environment.
    bench get-app https://github.com/your-org/sahayog
    ```
 3. Install the app on your site:
+   ```bash
+   bench --site your-site-name.localhost install-app sahayog
+   ```
