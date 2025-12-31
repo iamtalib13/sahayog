@@ -46,3 +46,4 @@ Focuses on enhancing customer relationship management and sales processes.
 ### Procurement
 
 Streamlines the purchasing and inventory management processes.
+- Handles `Supplier Quotation`, `Purchase Order`, and `Purchase Receipt`.
