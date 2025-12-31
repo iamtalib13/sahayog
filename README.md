@@ -70,3 +70,4 @@ Provides tools for managing projects and tasks effectively.
 ### Issue Register
 
 A dedicated module for tracking and managing issues.
+- Allows users to report issues and track their resolution status.
