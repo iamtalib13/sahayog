@@ -98,3 +98,4 @@ To install Sahayog, you need a Frappe Bench environment.
    ```bash
    bench --site your-site-name.localhost install-app sahayog
    ```
+4. Migrate the database:
