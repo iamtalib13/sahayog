@@ -45,3 +45,4 @@ Focuses on enhancing customer relationship management and sales processes.
 
 ### Procurement
 
+Streamlines the purchasing and inventory management processes.
