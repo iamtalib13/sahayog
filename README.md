@@ -122,3 +122,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Added validation to a critical doctype.
 - Cleaned up unused variables.
 - Updated dependencies in `package.json`.
+- Formatted Python code with Black.
