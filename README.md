@@ -120,3 +120,4 @@ This project is licensed under the MIT License. See the `license.txt` file for d
 - Improved documentation clarity in code comments.
 - Refactored API endpoint for performance.
 - Added validation to a critical doctype.
+- Cleaned up unused variables.
