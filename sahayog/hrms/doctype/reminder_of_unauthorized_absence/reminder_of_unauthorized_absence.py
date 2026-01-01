@@ -86,7 +86,7 @@ def send_reminder_unauthorized_absence_email(docname):
             doctype="Reminder Of Unauthorized Absence",
             name=docname,
             print_format="Reminder Unauthorized absence",
-            file_name=f"{docname}.pdf"
+            file_name=f"{docname}"
         )
     ]
 
