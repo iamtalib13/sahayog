@@ -69,7 +69,7 @@ def send_unauthorized_absence_email(docname):
             doctype="Unauthorized Absence",
             name=docname,
             print_format="Unauthorized Absence",
-            file_name=f"{docname}.pdf"
+            file_name=f"{docname}"
         )
     ]
 
