@@ -1,4 +1,4 @@
-frappe.query_reports["Branch Master Report"] = {
+frappe.query_reports["Branch Master"] = {
     "filters": [
         {
             fieldname: "branch_search",
