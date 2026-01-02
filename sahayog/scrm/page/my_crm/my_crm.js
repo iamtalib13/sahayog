@@ -1365,13 +1365,13 @@ class MyCRM {
   renderReports() {
     const reportsBody = $("#mycrm-reports-body");
     reportsBody.html(`
-      <div class="mycrm-report-card" onclick="frappe.set_route('query-report', 'DSR')">
+      <div class="mycrm-report-card" onclick="frappe.set_route('daily-sales-report')">
         <div class="mycrm-report-icon">📊</div>
         <div class="mycrm-report-title">DSR Report</div>
         <div class="mycrm-report-desc">Daily Sales Report - View your daily activities</div>
       </div>
 
-      <div class="mycrm-report-card" onclick="frappe.crm_app.viewMyLeads()">
+      <div class="mycrm-report-card" onclick="frappe.set_route('query-report','My Leads Report')">
         <div class="mycrm-report-icon">👥</div>
         <div class="mycrm-report-title">My Leads</div>
         <div class="mycrm-report-desc">View all your assigned leads</div>
