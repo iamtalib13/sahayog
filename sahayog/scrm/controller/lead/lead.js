@@ -25,114 +25,255 @@ frappe.ui.form.on("Lead", {
 
 /* ---------------- Utility Functions ---------------- */
 // Add "Assign to" button
+// function addAssignButton(frm) {
+//   frm.add_custom_button(__("Assign to"), function () {
+//     let dialog = new frappe.ui.Dialog({
+//       title: __("Assign User"),
+//       fields: [
+//         {
+//           fieldname: "branch",
+//           fieldtype: "Link",
+//           label: __("Branch"),
+//           options: "Branch",
+//           reqd: 1,
+//           onchange: function () {
+//             // Clear user & designation when branch changes
+//             dialog.set_value("user", "");
+//             dialog.set_value("designation", "");
+
+//             let branch = dialog.get_value("branch");
+
+//             // Branch selected -> show user & designation, otherwise hide
+//             let user_field = dialog.get_field("user");
+//             let designation_field = dialog.get_field("designation");
+
+//             user_field.df.hidden = !branch;
+//             designation_field.df.hidden = !branch;
+
+//             user_field.refresh();
+//             designation_field.refresh();
+
+//             if (branch) {
+//               dialog.fields_dict.user.get_query = function () {
+//                 return {
+//                   query:
+//                     "sahayog.scrm.controller.lead.lead.get_users_by_branch",
+//                   filters: {
+//                     branch: branch,
+//                   },
+//                 };
+//               };
+//               dialog.fields_dict.user.refresh();
+//             }
+//           },
+//         },
+//         {
+//           fieldname: "user",
+//           fieldtype: "Link",
+//           label: __("User"),
+//           options: "User",
+//           reqd: 1,
+//           onchange: function () {
+//             const branch = dialog.get_value("branch");
+//             if (!branch) {
+//               // Guard: prevent selecting user without branch
+//               frappe.msgprint(__("Please select Branch first."));
+//               dialog.set_value("user", "");
+//               dialog.set_value("designation", "");
+//               return;
+//             }
+
+//             const user = dialog.get_value("user");
+//             dialog.set_value("designation", "");
+
+//             if (user) {
+//               // Employee se designation fetch based on user_id
+//               frappe.call({
+//                 method:
+//                   "sahayog.scrm.controller.lead.lead.get_employee_designation_by_user",
+//                 args: { user },
+//                 callback: function (r) {
+//                   if (r.message) {
+//                     dialog.set_value("designation", r.message);
+//                   }
+//                 },
+//               });
+//             }
+//           },
+//         },
+//         {
+//           fieldname: "designation",
+//           fieldtype: "Link",
+//           label: __("Designation"),
+//           options: "Designation",
+//           read_only: 1,
+//         },
+//       ],
+//       primary_action_label: __("Assign"),
+//       primary_action: function (values) {
+//         // First call custom API to validate and update Lead fields
+//         frappe.call({
+//           method: "sahayog.scrm.controller.lead.lead.assign_employee_to_lead",
+//           args: {
+//             lead_name: frm.doc.name,
+//             user: values.user,
+//           },
+//           callback: function (r) {
+//             if (r.message && r.message.status === "success") {
+//               // Save designation into Lead custom field (if needed)
+//               frappe.call({
+//                 method:
+//                   "sahayog.scrm.controller.lead.lead.get_employee_designation_by_user",
+//                 args: {
+//                   user: values.user,
+//                 },
+//                 callback: function (d) {
+//                   frm.set_value("custom_designation", d.message || "");
+//                 },
+//               });
+
+//               // Only if custom API succeeds → then assign
+//               frappe.call({
+//                 method: "frappe.desk.form.assign_to.add",
+//                 args: {
+//                   assign_to: [values.user],
+//                   doctype: frm.doc.doctype,
+//                   name: frm.doc.name,
+//                   notify: 1,
+//                   description: __("Assigned via dialog"),
+//                 },
+//                 callback: function () {
+//                   frappe.show_alert({
+//                     message: __(
+//                       "Lead assigned and assigned user details updated successfully"
+//                     ),
+//                     indicator: "green",
+//                   });
+//                   frm.reload_doc();
+//                   dialog.hide();
+//                 },
+//               });
+//             } else {
+//               frappe.throw(
+//                 __("Failed to update employee fields. Assignment cancelled.")
+//               );
+//             }
+//           },
+//           error: function () {
+//             frappe.throw(
+//               __("Error while updating employee fields. Assignment cancelled.")
+//             );
+//           },
+//         });
+//       },
+//     });
+
+//     // Initial state: hide User & Designation fields until Branch is selected
+//     let user_field = dialog.get_field("user");
+//     let designation_field = dialog.get_field("designation");
+
+//     user_field.df.hidden = 1;
+//     designation_field.df.hidden = 1;
+
+//     user_field.refresh();
+//     designation_field.refresh();
+
+//     dialog.show();
+//   });
+// }
+
 function addAssignButton(frm) {
   frm.add_custom_button(__("Assign to"), function () {
     let dialog = new frappe.ui.Dialog({
       title: __("Assign User"),
       fields: [
+        // =====================
+        // 1️⃣ Branch
+        // =====================
         {
           fieldname: "branch",
           fieldtype: "Link",
           label: __("Branch"),
           options: "Branch",
           reqd: 1,
-          onchange: function () {
-            // Clear user & designation when branch changes
-            dialog.set_value("user", "");
+          onchange() {
             dialog.set_value("designation", "");
+            dialog.set_value("user", "");
 
-            let branch = dialog.get_value("branch");
+            const branch = dialog.get_value("branch");
 
-            // Branch selected -> show user & designation, otherwise hide
+            dialog.get_field("designation").df.hidden = !branch;
+            dialog.get_field("user").df.hidden = 1;
+
+            dialog.get_field("designation").refresh();
+            dialog.get_field("user").refresh();
+          },
+        },
+
+        // =====================
+        // 2️⃣ Designation
+        // =====================
+        {
+          fieldname: "designation",
+          fieldtype: "Link",
+          label: __("Designation"),
+          options: "Designation",
+          reqd: 1,
+          onchange() {
+            dialog.set_value("user", "");
+
+            const branch = dialog.get_value("branch");
+            const designation = dialog.get_value("designation");
+
+            if (!branch) {
+              frappe.msgprint(__("Please select Branch first"));
+              dialog.set_value("designation", "");
+              return;
+            }
+
             let user_field = dialog.get_field("user");
-            let designation_field = dialog.get_field("designation");
-
-            user_field.df.hidden = !branch;
-            designation_field.df.hidden = !branch;
-
+            user_field.df.hidden = !(branch && designation);
             user_field.refresh();
-            designation_field.refresh();
 
-            if (branch) {
-              dialog.fields_dict.user.get_query = function () {
-                return {
-                  query:
-                    "sahayog.scrm.controller.lead.lead.get_users_by_branch",
-                  filters: {
-                    branch: branch,
-                  },
-                };
-              };
-              dialog.fields_dict.user.refresh();
+            if (branch && designation) {
+              dialog.fields_dict.user.get_query = () => ({
+                query:
+                  "sahayog.scrm.controller.lead.lead.get_users_by_branch_and_designation",
+                filters: {
+                  branch,
+                  designation,
+                },
+              });
             }
           },
         },
+
+        // =====================
+        // 3️⃣ User
+        // =====================
         {
           fieldname: "user",
           fieldtype: "Link",
           label: __("User"),
           options: "User",
           reqd: 1,
-          onchange: function () {
-            const branch = dialog.get_value("branch");
-            if (!branch) {
-              // Guard: prevent selecting user without branch
-              frappe.msgprint(__("Please select Branch first."));
-              dialog.set_value("user", "");
-              dialog.set_value("designation", "");
-              return;
-            }
-
-            const user = dialog.get_value("user");
-            dialog.set_value("designation", "");
-
-            if (user) {
-              // Employee se designation fetch based on user_id
-              frappe.call({
-                method:
-                  "sahayog.scrm.controller.lead.lead.get_employee_designation_by_user",
-                args: { user },
-                callback: function (r) {
-                  if (r.message) {
-                    dialog.set_value("designation", r.message);
-                  }
-                },
-              });
-            }
-          },
-        },
-        {
-          fieldname: "designation",
-          fieldtype: "Link",
-          label: __("Designation"),
-          options: "Designation",
-          read_only: 1,
         },
       ],
+
+      // =====================
+      // Assign Action
+      // =====================
       primary_action_label: __("Assign"),
-      primary_action: function (values) {
-        // First call custom API to validate and update Lead fields
+      primary_action(values) {
         frappe.call({
-          method: "sahayog.scrm.controller.lead.lead.assign_employee_to_lead",
+          method:
+            "sahayog.scrm.controller.lead.lead.assign_employee_to_lead",
           args: {
             lead_name: frm.doc.name,
             user: values.user,
           },
-          callback: function (r) {
-            if (r.message && r.message.status === "success") {
-              // Save designation into Lead custom field (if needed)
-              frappe.call({
-                method:
-                  "sahayog.scrm.controller.lead.lead.get_employee_designation_by_user",
-                args: {
-                  user: values.user,
-                },
-                callback: function (d) {
-                  frm.set_value("custom_designation", d.message || "");
-                },
-              });
-
-              // Only if custom API succeeds → then assign
+          callback(r) {
+            if (r.message?.status === "success") {
               frappe.call({
                 method: "frappe.desk.form.assign_to.add",
                 args: {
@@ -140,13 +281,10 @@ function addAssignButton(frm) {
                   doctype: frm.doc.doctype,
                   name: frm.doc.name,
                   notify: 1,
-                  description: __("Assigned via dialog"),
                 },
-                callback: function () {
+                callback() {
                   frappe.show_alert({
-                    message: __(
-                      "Lead assigned and assigned user details updated successfully"
-                    ),
+                    message: __("Lead assigned successfully"),
                     indicator: "green",
                   });
                   frm.reload_doc();
@@ -154,33 +292,23 @@ function addAssignButton(frm) {
                 },
               });
             } else {
-              frappe.throw(
-                __("Failed to update employee fields. Assignment cancelled.")
-              );
+              frappe.throw(__("Assignment failed"));
             }
-          },
-          error: function () {
-            frappe.throw(
-              __("Error while updating employee fields. Assignment cancelled.")
-            );
           },
         });
       },
     });
 
-    // Initial state: hide User & Designation fields until Branch is selected
-    let user_field = dialog.get_field("user");
-    let designation_field = dialog.get_field("designation");
-
-    user_field.df.hidden = 1;
-    designation_field.df.hidden = 1;
-
-    user_field.refresh();
-    designation_field.refresh();
+    // Initial hide
+    dialog.get_field("designation").df.hidden = 1;
+    dialog.get_field("user").df.hidden = 1;
+    dialog.get_field("designation").refresh();
+    dialog.get_field("user").refresh();
 
     dialog.show();
   });
 }
+
 
 // Set introductory message showing Lead Owner + Assigned User
 function setIntro(frm) {

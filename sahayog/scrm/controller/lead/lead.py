@@ -206,3 +206,27 @@ def get_employee_designation_by_user(user):
         as_dict=True,
     )
     return employee.designation if employee else None
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_users_by_branch_and_designation(
+    doctype, txt, searchfield, start, page_len, filters
+):
+    return frappe.db.sql("""
+        SELECT u.name, u.full_name
+        FROM `tabUser` u
+        INNER JOIN `tabEmployee` e ON e.user_id = u.name
+        WHERE e.branch = %(branch)s
+          AND e.designation = %(designation)s
+          AND u.enabled = 1
+          AND u.name NOT IN ('Administrator', 'Guest')
+          AND (u.name LIKE %(txt)s OR u.full_name LIKE %(txt)s)
+        ORDER BY u.full_name
+        LIMIT %(start)s, %(page_len)s
+    """, {
+        "branch": filters.get("branch"),
+        "designation": filters.get("designation"),
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len,
+    })
