@@ -17,6 +17,8 @@
   "column_break_iujn",
   "zone",
   "region",
+  "branch_address",
+  "branch_opening_date",
   "email_details_section",
   "email",
   "section_break_zjir",
@@ -117,12 +119,22 @@
    "fieldtype": "Table",
    "label": "Branch Details",
    "options": "Sahayog Branch Items"
+  },
+  {
+   "fieldname": "branch_address",
+   "fieldtype": "Data",
+   "label": "Branch Address"
+  },
+  {
+   "fieldname": "branch_opening_date",
+   "fieldtype": "Date",
+   "label": "Branch Opening Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-26 10:42:33.307493",
+ "modified": "2026-01-02 12:41:05.220591",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
