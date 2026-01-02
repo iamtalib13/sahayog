@@ -7,39 +7,72 @@ def execute(filters=None):
     columns = get_columns()
 
     if not search_text:
-        data = [{"branch_name": "Enter Branch / SOL ID to search", "branch_sol_id": "", "state_code": "", "state": "", "district": "", "zone": "", "region": "", "branch_address": "", "branch_opening_date": "", "email": ""}]
+        # Show friendly empty state
+        data = [{
+            "branch_name": "No branch selected",
+            "branch_sol_id": "",
+            "state_code": "",
+            "state": "",
+            "district": "",
+            "zone": "",
+            "region": "",
+            "branch_address": "",
+            "branch_opening_date": "",
+            "email": ""
+        }]
         return columns, data
 
-    # Parse sol_id from autocomplete format "123 - Branch Name (District)"
-    parts = search_text.split(" - ")
-    sol_id_candidate = parts[0].strip() if parts else ""
-
+    # Expect format "SOLID - Branch Name (...)" from Autocomplete; take first token as sol_id if numeric
+    sol_id_candidate = search_text.split(" - ")[0].strip()
     branch_doc = None
+
     if sol_id_candidate.isdigit():
-        branch_doc = frappe.get_doc("Sahayog Branch", {"sol_id": int(sol_id_candidate)}, ignore_missing=True)
-    
-    if not branch_doc:
-        # Fallback to branch name search
-        branch_docs = frappe.get_all("Sahayog Branch", filters={"branch": ["like", f"%{search_text}%"]}, fields=["name"], limit=1)
-        if branch_docs:
-            branch_doc = frappe.get_doc("Sahayog Branch", branch_docs[0].name)
+        branch_doc = frappe.db.get_value(
+            "Sahayog Branch",
+            {"sol_id": int(sol_id_candidate)},
+            ["name", "sol_id", "branch", "state_code", "state", "district",
+             "zone", "region", "branch_address", "branch_opening_date", "email"],
+            as_dict=True
+        )
 
     if not branch_doc:
-        data = [{"branch_name": "No branch found with this SOL ID or Branch Name. Please check and try again.", "branch_sol_id": "", "state_code": "", "state": "", "state": "", "district": "", "zone": "", "region": "", "branch_address": "", "branch_opening_date": "", "email": ""}]
+        # fallback: search by branch name (case-insensitive, partial)
+        branch_doc = frappe.db.get_value(
+            "Sahayog Branch",
+            {"branch": ["like", f"%{search_text}%"]},
+            ["name", "sol_id", "branch", "state_code", "state", "district",
+             "zone", "region", "branch_address", "branch_opening_date", "email"],
+            as_dict=True
+        )
+
+    if not branch_doc:
+        data = [{
+            "branch_name": "No branch found",
+            "branch_sol_id": "",
+            "state_code": "",
+            "state": "",
+            "district": "",
+            "zone": "",
+            "region": "",
+            "branch_address": "",
+            "branch_opening_date": "",
+            "email": ""
+        }]
         return columns, data
 
     data = [{
         "branch_name": branch_doc.branch,
         "branch_sol_id": branch_doc.sol_id,
-        "state_code": branch_doc.state_code or "",
+        "state_code": branch_doc.state_code,
         "state": branch_doc.state,
         "district": branch_doc.district,
         "zone": branch_doc.zone,
         "region": branch_doc.region,
-        "branch_address": getattr(branch_doc, 'branch_address', '') or "",
+        "branch_address": branch_doc.branch_address,
         "branch_opening_date": branch_doc.branch_opening_date,
-        "email": branch_doc.email or ""
+        "email": branch_doc.email
     }]
+
     return columns, data
 
 
@@ -60,21 +93,19 @@ def get_columns():
 
 @frappe.whitelist()
 def get_branch_suggestions(text):
-    """FIXED: Use dict filters, not list-of-lists"""
-    if not text or len(text) < 2:
+    text = (text or "").strip()
+    if not text:
         return []
 
-    filters = {
-        "or": [
-            {"sol_id": ["like", f"{text}%"]},
-            {"branch": ["like", f"%{text}%"]}
-        ]
-    }
-    
-    return frappe.get_all(
+    # match by sol_id (starts with) OR branch (like)
+    return frappe.db.get_list(
         "Sahayog Branch",
-        filters=filters,
+        filters=[
+            ["Sahayog Branch", "sol_id", "like", f"{text}%"],
+            "or",
+            ["Sahayog Branch", "branch", "like", f"%{text}%"]
+        ],
         fields=["sol_id", "branch", "district"],
-        limit=20,
-        order_by="sol_id asc, branch asc"
+        limit_page_length=20,
+        order_by="branch asc"
     )
