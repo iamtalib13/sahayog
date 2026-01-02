@@ -1,20 +1,23 @@
 frappe.query_reports["Branch Master"] = {
     "filters": [
         {
-            fieldname: "branch_search",
-            label: "Branch / SOL Search",
-            fieldtype: "Autocomplete",
-            reqd: 1,
-            options: [],
-            description: "Type SOL ID or Branch Name to search"
+            "fieldname": "branch_search",
+            "label": "Branch / SOL Search",
+            "fieldtype": "Data",
+            "reqd": 1,
+            "description": "Type SOL ID or Branch Name (min 2 chars)"
         }
     ],
 
     onload: function(report) {
-        const filter = report.get_filter("branch_search");
-        filter.$input.on("input", frappe.utils.debounce(function () {
-            let text = $(this).val();
-            if (!text || text.length < 2) {
+        let $input = report.page.$wrapper.find('.frappe-control[data-fieldname="branch_search"] input');
+        
+        $input.on("input", frappe.utils.debounce(function() {
+            let text = $(this).val().trim();
+            let $wrapper = $(this).closest('.frappe-control');
+            
+            if (text.length < 2) {
+                $wrapper.find('.autocomplete-items').remove();
                 return;
             }
 
@@ -22,17 +25,28 @@ frappe.query_reports["Branch Master"] = {
                 method: "sahayog.sahayog.report.branch_master.branch_master.get_branch_suggestions",
                 args: { text },
                 callback: function(r) {
-                    if (!r.message) return;
+                    if (!r.message || r.message.length === 0) {
+                        $wrapper.find('.autocomplete-items').remove();
+                        return;
+                    }
 
-                    // build options: "SOLID - Branch Name (District)"
-                    let opts = r.message.map(row => {
-                        return `${row.sol_id} - ${row.branch} (${row.district})`;
-                    });
+                    let html = r.message.map(row => 
+                        `<div class="autocomplete-item" data-value="${row.sol_id} - ${row.branch} (${row.district})">${row.sol_id} - ${row.branch} (${row.district})</div>`
+                    ).join('');
 
-                    filter.df.options = opts.join("\n");
-                    filter.refresh();
+                    $wrapper.find('.autocomplete-items').remove();
+                    $wrapper.append(`<div class="autocomplete-items">${html}</div>`);
                 }
             });
         }, 300));
+
+        // Click to select suggestion
+        $(document).on('click', '.autocomplete-item', function() {
+            let value = $(this).data('value');
+            let $input = $('.frappe-control[data-fieldname="branch_search"] input');
+            $input.val(value);
+            $(this).closest('.autocomplete-items').remove();
+            report.refresh();
+        });
     }
 };
