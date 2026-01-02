@@ -14,8 +14,8 @@
   "column_break_hust",
   "trainer",
   "agent_details_section",
-  "agent_phone_number",
   "agent",
+  "agent_phone_number",
   "agent_details_html",
   "column_break_agent",
   "branch_details_html",
@@ -26,16 +26,20 @@
   "column_break_response",
   "reply_type",
   "status_section",
+  "active_details_column",
   "wants_to_stay",
-  "want_to_exit",
+  "amount",
+  "column_break_ekar",
   "exited",
+  "want_to_exit",
   "date_of_exit",
+  "section_break_wdqk",
   "remarks",
-  "amended_from",
-  "amount"
+  "amended_from"
  ],
  "fields": [
   {
+   "depends_on": "eval:doc.agent",
    "fieldname": "trainer_details_section",
    "fieldtype": "Section Break",
    "label": "Trainer Details"
@@ -82,13 +86,15 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.agent",
    "fieldname": "agent_phone_number",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Agent Phone Number",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.agent"
   },
   {
+   "depends_on": "eval:doc.agent",
    "fieldname": "date_of_joining",
    "fieldtype": "Date",
    "label": "Date of Joining"
@@ -98,6 +104,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.agent",
    "fieldname": "call_response_section",
    "fieldtype": "Section Break",
    "label": "Call Response"
@@ -106,19 +113,24 @@
    "fieldname": "connected_status",
    "fieldtype": "Select",
    "label": "Connected Status",
-   "options": "\nYes\nNo"
+   "mandatory_depends_on": "eval:doc.agent",
+   "options": "\nYes\nNo",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_response",
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.connected_status==\"Yes\"",
    "fieldname": "reply_type",
    "fieldtype": "Select",
    "label": "Reply Type",
+   "mandatory_depends_on": "eval:doc.connected_status==\"Yes\"",
    "options": "\nPositive\nNegative"
   },
   {
+   "depends_on": "eval:doc.reply_type",
    "fieldname": "status_section",
    "fieldtype": "Section Break",
    "label": "Agent Status"
@@ -142,6 +154,7 @@
    "label": "Exited"
   },
   {
+   "depends_on": "eval:doc.connected_status",
    "fieldname": "remarks",
    "fieldtype": "Text Editor",
    "label": "Remarks"
@@ -175,23 +188,38 @@
    "search_index": 1
   },
   {
+   "depends_on": "eval:doc.want_to_exit || doc.exited",
    "fieldname": "date_of_exit",
    "fieldtype": "Date",
-   "hidden": 1,
    "label": "Date of Exit",
    "no_copy": 1
   },
   {
+   "depends_on": "eval:doc.wants_to_stay",
    "fieldname": "amount",
    "fieldtype": "Data",
    "label": "Amount"
+  },
+  {
+   "fieldname": "column_break_ekar",
+   "fieldtype": "Column Break",
+   "label": "Inactive Details"
+  },
+  {
+   "fieldname": "active_details_column",
+   "fieldtype": "Column Break",
+   "label": "Active Details"
+  },
+  {
+   "fieldname": "section_break_wdqk",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-18 11:17:16.820652",
+ "modified": "2026-01-02 17:55:13.543256",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Activation Call Log",
