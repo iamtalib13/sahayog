@@ -1901,6 +1901,26 @@ class MyCRM {
           get_query: () => {
             return { filters: { lead_owner: this.currentUser } };
           },
+          onchange: async () => {
+            const lead = dialog.get_value("party");
+            if (!lead) return;
+
+            const r = await frappe.db.get_value("Lead", lead, [
+              "lead_name",
+              "mobile_no",
+              "phone",
+              "email_id",
+            ]);
+
+            if (r.message) {
+              dialog.set_value("customer_name", r.message.lead_name || "");
+              dialog.set_value(
+                "customer_phone_number",
+                r.message.mobile_no || r.message.phone || ""
+              );
+              dialog.set_value("customer_email", r.message.email_id || "");
+            }
+          },
         },
         {
           fieldname: "scheduled_time",
@@ -1913,12 +1933,15 @@ class MyCRM {
           fieldtype: "Data",
           label: "Customer Name",
           reqd: 1,
+          read_only: 1,
         },
         {
           fieldname: "customer_phone_number",
           fieldtype: "Data",
           label: "Phone",
+          read_only: 1,
         },
+
         {
           fieldname: "status",
           fieldtype: "Select",
@@ -1930,12 +1953,32 @@ class MyCRM {
       primary_action_label: "Create",
       primary_action: async (values) => {
         try {
+          // ✅ Always-safe system email
+          const system_email = `${values.party}@lead.local`;
+          if (!values.party) {
+            frappe.throw("Lead is required");
+          }
+
           await frappe.call({
             method: "frappe.client.insert",
             args: {
               doc: {
                 doctype: "Appointment",
-                ...values,
+
+                // Required linking
+                appointment_with: "Lead",
+                party: values.party,
+
+                // Mandatory fields
+                scheduled_time: values.scheduled_time,
+                status: values.status,
+
+                // Display fields
+                customer_name: values.customer_name,
+                contact_number: values.customer_phone_number,
+
+                // 🔴 REQUIRED & GUARANTEED
+                customer_email: system_email,
               },
             },
             freeze: true,
@@ -1945,6 +1988,7 @@ class MyCRM {
             { message: "✅ Appointment created", indicator: "green" },
             3
           );
+
           dialog.hide();
           this.invalidateCache("appointment");
           this.refresh();
