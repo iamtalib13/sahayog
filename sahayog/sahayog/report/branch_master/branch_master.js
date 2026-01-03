@@ -93,7 +93,7 @@ frappe.query_reports["Branch Master"] = {
         
         if (column.fieldname === "branch_sol_id") {
             if (!value || value == 0 || value === "0") return "";
-            return `<span style="background-color: #E8F0FE; color: #1967D2; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 12px;">${value}</span>`;
+            return `<span style="background-color: #E8F0FE; color: #1967D2; border-radius: 12px; font-weight: 600; font-size: 12px;">${value}</span>`;
         }
 
         return value;
