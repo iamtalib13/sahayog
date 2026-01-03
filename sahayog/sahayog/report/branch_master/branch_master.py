@@ -10,14 +10,16 @@ def execute(filters=None):
         data = [{"branch_name": "Enter SOL ID (e.g. 1005) or Branch Name"}]
         return columns, data
 
-    # === 1. FIND BRANCH (your working logic) ===
+    # === 1. FIND BRANCH ===
     sol_id_candidate = search_text.split(" - ")[0].strip()
     branch_doc = None
     
+    # Try finding by SOL ID first
     if sol_id_candidate.isdigit():
         branch_name = frappe.db.get_value("Sahayog Branch", {"sol_id": int(sol_id_candidate)}, "name")
         branch_doc = frappe.get_doc("Sahayog Branch", branch_name) if branch_name else None
     
+    # Try finding by Branch Name if SOL ID failed
     if not branch_doc:
         branch_name = frappe.db.get_value("Sahayog Branch", {"branch": ["like", f"%{search_text}%"]}, "name")
         branch_doc = frappe.get_doc("Sahayog Branch", branch_name) if branch_name else None
@@ -28,26 +30,19 @@ def execute(filters=None):
 
     sol_id = branch_doc.sol_id
 
-    # === 2. FETCH ALL BRANCH EMPLOYEES ===
+    # === 2. FETCH EMPLOYEES (Strict Filter) ===
+    # Only fetching employees where sahayog_branch matches the SOL ID
     employees = frappe.get_all(
         "Employee",
         filters={"sahayog_branch": sol_id},
         fields=["employee_name", "designation", "cell_number"],
         order_by="employee_name asc"
     )
-    
-    # Fallback to sol_id field
-    if not employees:
-        employees = frappe.get_all(
-            "Employee",
-            filters={"sol_id": sol_id},
-            fields=["employee_name", "designation", "cell_number"],
-            order_by="employee_name asc"
-        )
 
     print(f"DEBUG: Branch {branch_doc.branch} (SOL: {sol_id}) - {len(employees)} employees")
 
-    # === 3. ROLE MAPPING ===
+    # === 3. ROLE MAPPING (Precise Checking) ===
+    # Initialize variables
     bm_name, bm_contact = "", ""
     bom_name, bom_contact = "", ""
     com_name, com_contact = "", ""
@@ -57,24 +52,36 @@ def execute(filters=None):
     zm_name, zm_contact = "", ""
 
     for emp in employees:
-        designation = (emp.designation or "").upper()
+        # Normalize designation to uppercase and strip whitespace
+        designation = (emp.designation or "").strip().upper()
         
-        if "BRANCH MANAGER" in designation:
+        # STRICT MATCHING LOGIC
+        # Uses '==' instead of 'in' to avoid partial matches (e.g., JLL bug)
+        
+        if designation == "BRANCH MANAGER":
             bm_name, bm_contact = emp.employee_name, emp.cell_number or ""
-        elif "BRANCH OPERATION MANAGER" in designation:
+            
+        elif designation == "BRANCH OPERATION MANAGER":
             bom_name, bom_contact = emp.employee_name, emp.cell_number or ""
-        elif "CLUSTER OPERATION MANAGER" in designation:
+            
+        elif designation == "CLUSTER OPERATION MANAGER":
             com_name, com_contact = emp.employee_name, emp.cell_number or ""
-        elif "REGIONAL OPERATION MANAGER" in designation or "ASST. ZONAL MANAGER" in designation:
+            
+        # Check against list of exact valid titles for ROM
+        elif designation in ["REGIONAL OPERATION MANAGER", "ASST. ZONAL MANAGER"]:
             rom_name, rom_contact = emp.employee_name, emp.cell_number or ""
-        elif any(x in designation for x in ["ASST. DISTRICT HEAD", "DISTRICT HEAD", "CLUSTER HEAD"]):
+            
+        # Check against list of exact valid titles for ADH
+        elif designation in ["ASST. DISTRICT HEAD", "DISTRICT HEAD", "CLUSTER HEAD"]:
             adh_name, adh_contact = emp.employee_name, emp.cell_number or ""
-        elif "REGIONAL MANAGER" in designation:
+            
+        elif designation == "REGIONAL MANAGER":
             rm_name, rm_contact = emp.employee_name, emp.cell_number or ""
-        elif "ZONAL MANAGER" in designation:
+            
+        elif designation == "ZONAL MANAGER":
             zm_name, zm_contact = emp.employee_name, emp.cell_number or ""
 
-    # === 4. SINGLE ROW WITH MAPPED ROLES ===
+    # === 4. DATA ROW ===
     data = [{
         "branch_name": branch_doc.branch,
         "branch_sol_id": sol_id,
@@ -87,28 +94,26 @@ def execute(filters=None):
         "branch_opening_date": branch_doc.branch_opening_date,
         "email": getattr(branch_doc, 'email', ''),
         
-        # Role-based columns (exactly as requested)
-        "bm_name": bm_name or "",
-        "bm_contact": bm_contact or "",
-        "bom_name": bom_name or "",
-        "bom_contact": bom_contact or "",
-        "com_name": com_name or "",
-        "com_contact": com_contact or "",
-        "rom_name": rom_name or "",
-        "rom_contact": rom_contact or "",
-        "adh_name": adh_name or "",
-        "adh_contact": adh_contact or "",
-        "rm_name": rm_name or "",
-        "rm_contact": rm_contact or "",
-        "zm_name": zm_name or "",
-        "zm_contact": zm_contact or ""
+        "bm_name": bm_name,
+        "bm_contact": bm_contact,
+        "bom_name": bom_name,
+        "bom_contact": bom_contact,
+        "com_name": com_name,
+        "com_contact": com_contact,
+        "rom_name": rom_name,
+        "rom_contact": rom_contact,
+        "adh_name": adh_name,
+        "adh_contact": adh_contact,
+        "rm_name": rm_name,
+        "rm_contact": rm_contact,
+        "zm_name": zm_name,
+        "zm_contact": zm_contact
     }]
 
     return columns, data
 
 def get_columns():
     return [
-        # Branch Details (left)
         {"label": "Branch Name", "fieldname": "branch_name", "fieldtype": "Data", "width": 180},
         {"label": "SOL ID", "fieldname": "branch_sol_id", "fieldtype": "Int", "width": 70},
         {"label": "State Code", "fieldname": "state_code", "fieldtype": "Data", "width": 70},
@@ -120,7 +125,6 @@ def get_columns():
         {"label": "Open Date", "fieldname": "branch_opening_date", "fieldtype": "Date", "width": 90},
         {"label": "Email", "fieldname": "email", "fieldtype": "Data", "width": 140},
         
-        # Role Mapping Columns (right - exactly as screenshot)
         {"label": "BM Name", "fieldname": "bm_name", "fieldtype": "Data", "width": 120},
         {"label": "BM Contact", "fieldname": "bm_contact", "fieldtype": "Data", "width": 110},
         {"label": "BOM Name", "fieldname": "bom_name", "fieldtype": "Data", "width": 120},
