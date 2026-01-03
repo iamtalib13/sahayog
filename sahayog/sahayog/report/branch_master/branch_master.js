@@ -5,7 +5,7 @@ frappe.query_reports["Branch Master"] = {
             label: "Branch / SOL Search",
             fieldtype: "Link",
             options: "Sahayog Branch",
-            reqd: 0, 
+            reqd: 0,
             get_query: function() {
                 return {
                     query: "sahayog.sahayog.report.branch_master.branch_master.search_branch_sol"
@@ -15,25 +15,27 @@ frappe.query_reports["Branch Master"] = {
     ],
 
     onload: function(report) {
-        // 1. Clear filter on load
+        // === 1. SECURITY: HIDE MENU FOR NON-ADMINS ===
+        // We check if "Administrator" is NOT in the user's roles
+        if (!frappe.user.has_role("Administrator")) {
+            // Hide the standard actions div (Reload, Menu, Actions)
+            report.page.wrapper.find('.standard-actions').hide();
+        }
+
+        // === 2. STANDARD LOGIC (Previous Code) ===
         report.set_filter_value("branch_search", "");
 
-        // 2. Auto-refresh on clear
         report.page.fields_dict.branch_search.$input.on('change', () => {
              if(!report.get_filter_value("branch_search")) {
                 report.refresh();
             }
         });
 
-        // 3. UI/UX: Modern Table Styling
         const css = `
-            /* Container Min Height */
             .frappe-report .result {
                 min-height: 600px;
                 background-color: #fff;
             }
-
-            /* Header Styling */
             .dt-header .dt-cell__content {
                 font-size: 11px;
                 text-transform: uppercase;
@@ -43,21 +45,15 @@ frappe.query_reports["Branch Master"] = {
                 background-color: #f8f9fa;
                 border-bottom: 2px solid #e9ecef;
             }
-
-            /* Cell Spacing & Text */
             .dt-cell__content {
                 padding: 12px 14px;
                 font-size: 13px;
                 color: #333;
             }
-
-            /* Row Hover Effect */
             .dt-row:hover .dt-cell {
                 background-color: #f1f8ff !important;
                 transition: background-color 0.2s ease;
             }
-
-            /* Custom Empty State Container */
             .custom-empty-state {
                 display: flex;
                 flex-direction: column;
@@ -78,8 +74,11 @@ frappe.query_reports["Branch Master"] = {
                 color: #333;
                 margin-bottom: 8px;
             }
+
             .datatable .dt-scrollable {
-                min-height: 160px;}
+                min-height: 160px;
+            }
+            
             
             @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(10px); }
@@ -92,10 +91,9 @@ frappe.query_reports["Branch Master"] = {
     formatter: function(value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
         
-        // UX: SOL ID Badge
         if (column.fieldname === "branch_sol_id") {
             if (!value || value == 0 || value === "0") return "";
-            return `<span style="background-color: #E8F0FE; color: #1967D2; border-radius: 12px; font-weight: 600; font-size: 12px;">${value}</span>`;
+            return `<span style="background-color: #E8F0FE; color: #1967D2; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 12px;">${value}</span>`;
         }
 
         return value;
@@ -105,23 +103,16 @@ frappe.query_reports["Branch Master"] = {
         const report = frappe.query_report;
         const search_val = report.get_filter_value("branch_search");
 
-        // UI UX: CLEAR SEARCH FIELD
         if (report.page.fields_dict.branch_search) {
             report.page.fields_dict.branch_search.$input.val("");
         }
 
-        // UI UX: HANDLE EMPTY STATE
-        // If there is no search value, we hide the grid and show our custom message
         const result_wrapper = $(datatable_wrapper).closest('.result');
         
         if (!search_val) {
-            // Hide the actual table grid
             $(datatable_wrapper).hide();
-            
-            // Remove any existing empty state to prevent duplicates
             result_wrapper.find('.custom-empty-state').remove();
 
-            // Inject "Start Searching" Message
             result_wrapper.append(`
                 <div class="custom-empty-state">
                     <div class="icon-box">👋</div>
@@ -130,7 +121,6 @@ frappe.query_reports["Branch Master"] = {
                 </div>
             `);
         } else {
-            // If data exists, show the table and remove the message
             $(datatable_wrapper).show();
             result_wrapper.find('.custom-empty-state').remove();
         }
