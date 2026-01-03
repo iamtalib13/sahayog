@@ -14,12 +14,10 @@ def execute(filters=None):
     sol_id_candidate = search_text.split(" - ")[0].strip()
     branch_doc = None
     
-    # Try finding by SOL ID first
     if sol_id_candidate.isdigit():
         branch_name = frappe.db.get_value("Sahayog Branch", {"sol_id": int(sol_id_candidate)}, "name")
         branch_doc = frappe.get_doc("Sahayog Branch", branch_name) if branch_name else None
     
-    # Try finding by Branch Name if SOL ID failed
     if not branch_doc:
         branch_name = frappe.db.get_value("Sahayog Branch", {"branch": ["like", f"%{search_text}%"]}, "name")
         branch_doc = frappe.get_doc("Sahayog Branch", branch_name) if branch_name else None
@@ -31,7 +29,6 @@ def execute(filters=None):
     sol_id = branch_doc.sol_id
 
     # === 2. FETCH EMPLOYEES (Strict Filter) ===
-    # Only fetching employees where sahayog_branch matches the SOL ID
     employees = frappe.get_all(
         "Employee",
         filters={"sahayog_branch": sol_id},
@@ -41,8 +38,7 @@ def execute(filters=None):
 
     print(f"DEBUG: Branch {branch_doc.branch} (SOL: {sol_id}) - {len(employees)} employees")
 
-    # === 3. ROLE MAPPING (Precise Checking) ===
-    # Initialize variables
+    # === 3. ROLE MAPPING (Case-Insensitive & Precise) ===
     bm_name, bm_contact = "", ""
     bom_name, bom_contact = "", ""
     com_name, com_contact = "", ""
@@ -52,12 +48,12 @@ def execute(filters=None):
     zm_name, zm_contact = "", ""
 
     for emp in employees:
-        # Normalize designation to uppercase and strip whitespace
+        # 1. HANDLE NULLS: (emp.designation or "") handles None/Null values
+        # 2. STRIP WHITESPACE: .strip() removes accidental spaces like "Branch Manager "
+        # 3. CASE INSENSITIVITY: .upper() converts "Branch Manager" -> "BRANCH MANAGER"
         designation = (emp.designation or "").strip().upper()
         
-        # STRICT MATCHING LOGIC
-        # Uses '==' instead of 'in' to avoid partial matches (e.g., JLL bug)
-        
+        # EXACT MATCHING (using == prevents partial match bugs)
         if designation == "BRANCH MANAGER":
             bm_name, bm_contact = emp.employee_name, emp.cell_number or ""
             
@@ -67,11 +63,10 @@ def execute(filters=None):
         elif designation == "CLUSTER OPERATION MANAGER":
             com_name, com_contact = emp.employee_name, emp.cell_number or ""
             
-        # Check against list of exact valid titles for ROM
+        # List checks (All items in list MUST be UPPERCASE for match to work)
         elif designation in ["REGIONAL OPERATION MANAGER", "ASST. ZONAL MANAGER"]:
             rom_name, rom_contact = emp.employee_name, emp.cell_number or ""
             
-        # Check against list of exact valid titles for ADH
         elif designation in ["ASST. DISTRICT HEAD", "DISTRICT HEAD", "CLUSTER HEAD"]:
             adh_name, adh_contact = emp.employee_name, emp.cell_number or ""
             
