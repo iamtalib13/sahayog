@@ -183,7 +183,7 @@ class MyCRM {
     this.page.clear_primary_action();
     this.page.clear_secondary_action();
     this.page.clear_actions();
-    this.page.set_indicator("Live", "green");
+    this.page.set_indicator("Lead", "green");
   }
 
   render() {
@@ -1349,6 +1349,8 @@ class MyCRM {
       $("#mycrm-count").hide();
       $("#mycrm-list-container").hide();
       $("#mycrm-reports-container").show();
+      // ✅ FIX: Set indicator for Reports section
+      this.page.set_indicator("REPORTS", "blue");
       this.renderReports();
     } else {
       $("#mycrm-search-bar").show();
