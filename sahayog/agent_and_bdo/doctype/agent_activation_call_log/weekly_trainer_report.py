@@ -294,10 +294,15 @@ def send_weekly_trainer_report():
 
     frappe.sendmail(
         recipients=[
+            "sstrainingmanager.rongp@sahayogmultistate.com",
+            "Jitendra.pachlongia@sahayogmultistate.com",
+            "samresh.c@sahayogmultistate.com",
             "frappeone59@gmail.com",
-            "iamfaijankq@gmail.com",
-            "rarishab893@gmail.com",
+            # "frappeone59@gmail.com",
+            # "iamfaijankq@gmail.com",
+            # "rarishab893@gmail.com",
         ],
         subject=f"Trainer Weekly Activity (Mon–Sat) - {week_start.strftime('%d-%m-%Y')} to {week_end.strftime('%d-%m-%Y')}",
         message=body_html,
     )
+ 
