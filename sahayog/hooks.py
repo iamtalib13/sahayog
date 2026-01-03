@@ -350,7 +350,7 @@ scheduler_events = {
         ],
 
         # Run daily at 6:00 PM — Evening trainer weekly activity email
-        "0 10 * * *": [
+        "0 16 * * 6": [
             "sahayog.agent_and_bdo.doctype.agent_activation_call_log.weekly_trainer_report.send_weekly_trainer_report"
         ],
 
