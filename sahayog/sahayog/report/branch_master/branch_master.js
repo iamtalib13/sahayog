@@ -14,24 +14,20 @@ frappe.query_reports["Branch Master"] = {
             }
         }
     ],
-    
-     // This runs every time the report finishes loading data
-    // after_datatable_render: function(report) {
-    //     // Clear the text input visually so it is ready for the next search
-    //     if(report.page.fields_dict.branch_search) {
-    //         report.page.fields_dict.branch_search.$input.val("");
-    //     }
-    // },
 
-    // refresh: function(report) {
-    //     // Clear the text input visually so it is ready for the next search
-    //     console.log("Branch is: ", report.page.fields_dict.branch_search);
-    //     if(report.page.fields_dict.branch_search) {
-    //         report.page.fields_dict.branch_search.$input.val("");
-    //     }
-    // },
+    // Runs every time data is fetched (Search or Refresh Button)
+    after_datatable_render: function(datatable_wrapper) {
+        const report = frappe.query_report;
+        
+        if (report && report.page && report.page.fields_dict.branch_search) {
+            // Clear the visual input box so the user can type the next search immediately
+            report.page.fields_dict.branch_search.$input.val("");
+        }
+    },
+
 
     onload: function(report) {
+        report.set_filter_value("branch_search", "");
         // Triggers refresh when user clears the filter
         report.page.fields_dict.branch_search.$input.on('change', () => {
             if(!report.get_filter_value("branch_search")) {
