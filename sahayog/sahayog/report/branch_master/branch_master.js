@@ -134,9 +134,9 @@ frappe.query_reports["Branch Master"] = {
         const report = frappe.query_report;
         const search_val = report.get_filter_value("branch_search");
 
-        if (report.page.fields_dict.branch_search) {
-            report.page.fields_dict.branch_search.$input.val("");
-        }
+        // if (report.page.fields_dict.branch_search) {
+        //     report.page.fields_dict.branch_search.$input.val("");
+        // }
 
         const result_wrapper = $(datatable_wrapper).closest('.result');
         
