@@ -15,14 +15,12 @@ frappe.query_reports["Branch Master"] = {
     ],
 
     onload: function(report) {
-        // === 1. SECURITY: HIDE MENU FOR NON-ADMINS ===
-        // We check if "Administrator" is NOT in the user's roles
+        // === 1. SECURITY ===
         if (!frappe.user.has_role("Administrator")) {
-            // Hide the standard actions div (Reload, Menu, Actions)
             report.page.wrapper.find('.standard-actions').hide();
         }
 
-        // === 2. STANDARD LOGIC (Previous Code) ===
+        // === 2. INIT ===
         report.set_filter_value("branch_search", "");
 
         report.page.fields_dict.branch_search.$input.on('change', () => {
@@ -31,58 +29,63 @@ frappe.query_reports["Branch Master"] = {
             }
         });
 
+        // === 3. MODERN CLEAN CSS ===
         const css = `
             .frappe-report .result {
-                min-height: 600px;
                 background-color: #fff;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                border-radius: 8px;
             }
+            
+            /* --- HEADER STYLING --- */
             .dt-header .dt-cell__content {
-                font-size: 11px;
+                font-size: 14px !important;
+                font-weight: 700 !important;
+                color: #495057 !important;      /* Dark gray, professional */
+                background-color: #fff !important; /* Very light gray */
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                font-weight: 700;
-                color: #6c757d;
-                background-color: #f8f9fa;
-                border-bottom: 2px solid #e9ecef;
+                vertical-align: middle;
             }
+
+            /* --- ROW STYLING --- */
             .dt-cell__content {
-                padding: 12px 14px;
+                padding: 10px 12px;  /* Tighter padding */
                 font-size: 13px;
-                color: #333;
+                color: #212529;
+                border-right: 1px solid #f1f3f5; /* Subtle column dividers */
             }
+
+            /* Hover Effect */
             .dt-row:hover .dt-cell {
-                background-color: #f1f8ff !important;
-                transition: background-color 0.2s ease;
+                background-color: #f8f9fa !important;
             }
+
+            /* Sticky Header Fix (Optional visual tweak) */
+            .dt-header {
+                box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            }
+
+            /* Empty State */
             .custom-empty-state {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 height: 400px;
-                color: #8d99a6;
+                color: #868e96;
                 text-align: center;
-                animation: fadeIn 0.5s ease-in-out;
             }
             .custom-empty-state .icon-box {
-                font-size: 48px;
+                font-size: 42px;
                 margin-bottom: 15px;
-                opacity: 0.7;
+                opacity: 0.8;
+                filter: grayscale(100%);
             }
             .custom-empty-state h3 {
                 font-weight: 600;
-                color: #333;
-                margin-bottom: 8px;
-            }
-
-            .datatable .dt-scrollable {
-                min-height: 160px;
-            }
-            
-            
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
+                color: #343a40;
+                margin-bottom: 5px;
             }
         `;
         $("<style>").prop("type", "text/css").html(css).appendTo("head");
@@ -91,9 +94,17 @@ frappe.query_reports["Branch Master"] = {
     formatter: function(value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
         
+        // Modern Pill Badge for SOL ID
         if (column.fieldname === "branch_sol_id") {
             if (!value || value == 0 || value === "0") return "";
-            return `<span style="background-color: #E8F0FE; color: #1967D2; border-radius: 12px; font-weight: 600; font-size: 12px;">${value}</span>`;
+            return `<span style="
+                background-color: #e7f5ff; 
+                color: #1170e4; 
+                border-radius: 4px; 
+                font-weight: 600; 
+                font-size: 11px;
+                letter-spacing: 0.3px;
+            ">${value}</span>`;
         }
 
         return value;
@@ -112,12 +123,11 @@ frappe.query_reports["Branch Master"] = {
         if (!search_val) {
             $(datatable_wrapper).hide();
             result_wrapper.find('.custom-empty-state').remove();
-
             result_wrapper.append(`
                 <div class="custom-empty-state">
-                    <div class="icon-box">👋</div>
-                    <h3>Welcome to Branch Master</h3>
-                    <p>Select a Branch or SOL ID from the filter above<br>to view employee designation details.</p>
+                    <div class="icon-box">📊</div>
+                    <h3>Branch Master Report</h3>
+                    <p>Please select a Branch or SOL ID to load details.</p>
                 </div>
             `);
         } else {
