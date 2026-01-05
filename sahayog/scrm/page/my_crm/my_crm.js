@@ -59,7 +59,7 @@ class MyCRM {
     this.detectMobile();
     this.setupPage();
     this.render();
-  // ✅ Restore last active tab after render
+    // ✅ Restore last active tab after render
     this.switchSection(this.state.section);
 
     await this.loadUserLeads();
@@ -790,7 +790,7 @@ class MyCRM {
     if (!append) {
       this.state.offset = 0;
 
-      if (!this.state.search) {
+      if (!this.state.search?.trim()) {
         const cached = this.getCachedData(this.state.section);
         if (cached?.length > 0) {
           this.state.data = cached;
@@ -850,12 +850,16 @@ class MyCRM {
 
   async fetchTotalCount() {
     const filters = this.buildServerFilters();
+    const or_filters = this.buildOrFilters();
+
+    const doctype = this.state.section === "lead" ? "Lead" : "Appointment";
 
     const response = await frappe.call({
       method: "frappe.client.get_count",
       args: {
-        doctype: this.state.section === "lead" ? "Lead" : "Appointment",
-        filters: filters,
+        doctype,
+        filters,
+        or_filters,
       },
     });
 
@@ -867,41 +871,36 @@ class MyCRM {
 
     if (this.state.section === "lead") {
       filters.push(["lead_owner", "=", this.currentUser]);
-
-      if (this.state.search) {
-        const s = this.state.search;
-        // Correct filter structure for OR conditions
-        filters.push([
-          ["lead_name", "like", `%${s}%`],
-          "or",
-          ["mobile_no", "like", `%${s}%`],
-          "or",
-          ["first_name", "like", `%${s}%`],
-          "or",
-          ["email_id", "like", `%${s}%`],
-        ]);
-      }
     } else {
       if (this.state.userLeadNames.length > 0) {
         filters.push(["party", "in", this.state.userLeadNames]);
       }
-
-      if (this.state.search) {
-        const s = this.state.search;
-        filters.push([
-          ["customer_name", "like", `%${s}%`],
-          "or",
-          ["customer_phone_number", "like", `%${s}%`],
-        ]);
-      }
     }
 
-    return filters;
+    return filters; // ❗ NO SEARCH HERE
+  }
+  buildOrFilters() {
+    const s = this.state.search?.trim();
+    if (!s) return [];
+
+    if (this.state.section === "lead") {
+      return [
+        ["lead_name", "like", `%${s}%`],
+        ["mobile_no", "like", `%${s}%`],
+        ["first_name", "like", `%${s}%`],
+        ["email_id", "like", `%${s}%`],
+      ];
+    }
+
+    return [
+      ["customer_name", "like", `%${s}%`],
+      ["customer_phone_number", "like", `%${s}%`],
+    ];
   }
 
   async fetchLeads(append = false) {
     const filters = this.buildServerFilters();
-
+    const or_filters = this.buildOrFilters(); // ✅ ADD SEARCH FILTERS
     const response = await frappe.call({
       method: "frappe.client.get_list",
       args: {
@@ -918,6 +917,7 @@ class MyCRM {
           "modified",
         ],
         filters: filters,
+        or_filters, // ✅ ADD SEARCH FILTERS
         order_by: "modified desc",
         limit_start: this.state.offset,
         limit_page_length: this.state.limit,
@@ -954,7 +954,7 @@ class MyCRM {
     } else {
       this.state.data = leadsWithAmount;
 
-      if (!this.state.search) {
+      if (!this.state.search?.trim()) {
         this.setCacheData("lead", this.state.data, this.state.totalCount);
       } else {
         this.setCachedSearch("lead", this.state.search, this.state.data);
@@ -1001,7 +1001,7 @@ class MyCRM {
     } else {
       this.state.data = newData;
 
-      if (!this.state.search) {
+      if (!this.state.search?.trim()) {
         this.setCacheData(
           "appointment",
           this.state.data,
@@ -1323,13 +1323,9 @@ class MyCRM {
   }
 
   switchSection(section) {
-
     sessionStorage.setItem("mycrm_active_tab", section);
 
-    console.log(
-      `%c Switch: ${section}`,
-      "color: #25d366; font-weight: bold;"
-    );
+    console.log(`%c Switch: ${section}`, "color: #25d366; font-weight: bold;");
 
     this.state.section = section;
     this.state.filter = "All";
@@ -1394,6 +1390,7 @@ class MyCRM {
   }
 
   updateTabBadges() {
+    // Leads
     frappe.call({
       method: "frappe.client.get_count",
       args: {
@@ -1405,6 +1402,7 @@ class MyCRM {
       },
     });
 
+    // Appointments
     if (this.state.userLeadNames.length > 0) {
       frappe.call({
         method: "frappe.client.get_count",
