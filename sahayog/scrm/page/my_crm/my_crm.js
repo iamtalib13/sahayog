@@ -35,8 +35,10 @@ class MyCRM {
       userLeadNames: { data: [], timestamp: null, ttl: 10 * 60 * 1000 },
     };
 
+    const savedSection = sessionStorage.getItem("mycrm_active_tab") || "lead";
+
     this.state = {
-      section: "lead",
+      section: savedSection,
       filter: "All",
       search: "",
       data: [],
@@ -57,6 +59,9 @@ class MyCRM {
     this.detectMobile();
     this.setupPage();
     this.render();
+  // ✅ Restore last active tab after render
+    this.switchSection(this.state.section);
+
     await this.loadUserLeads();
     await this.fetchData();
     this.setupRealtime();
@@ -1318,8 +1323,11 @@ class MyCRM {
   }
 
   switchSection(section) {
+
+    sessionStorage.setItem("mycrm_active_tab", section);
+
     console.log(
-      `%c🔀 Switch: ${section}`,
+      `%c Switch: ${section}`,
       "color: #25d366; font-weight: bold;"
     );
 
