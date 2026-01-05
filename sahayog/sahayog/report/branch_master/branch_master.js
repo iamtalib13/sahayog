@@ -110,29 +110,75 @@ frappe.query_reports["Branch Master"] = {
         return value;
     },
 
-    after_datatable_render: function(datatable_wrapper) {
-        const report = frappe.query_report;
-        const search_val = report.get_filter_value("branch_search");
+    // after_datatable_render: function(datatable_wrapper) {
+    //     const report = frappe.query_report;
+    //     const search_val = report.get_filter_value("branch_search");
 
-        if (report.page.fields_dict.branch_search) {
-            report.page.fields_dict.branch_search.$input.val("");
-        }
+    //     if (report.page.fields_dict.branch_search) {
+    //         report.page.fields_dict.branch_search.$input.val("");
+    //     }
 
-        const result_wrapper = $(datatable_wrapper).closest('.result');
+    //     const result_wrapper = $(datatable_wrapper).closest('.result');
         
-        if (!search_val) {
-            $(datatable_wrapper).hide();
-            result_wrapper.find('.custom-empty-state').remove();
-            result_wrapper.append(`
-                <div class="custom-empty-state">
-                    <div class="icon-box">📊</div>
-                    <h3>Branch Master Report</h3>
-                    <p>Please select a Branch or SOL ID to load details.</p>
-                </div>
-            `);
-        } else {
-            $(datatable_wrapper).show();
-            result_wrapper.find('.custom-empty-state').remove();
+    //     if (!search_val) {
+    //         $(datatable_wrapper).hide();
+    //         result_wrapper.find('.custom-empty-state').remove();
+    //         result_wrapper.append(`
+    //             <div class="custom-empty-state">
+    //                 <div class="icon-box">📊</div>
+    //                 <h3>Branch Master Report</h3>
+    //                 <p>Please select a Branch or SOL ID to load details.</p>
+    //             </div>
+    //         `);
+    //     } else {
+    //         $(datatable_wrapper).show();
+    //         result_wrapper.find('.custom-empty-state').remove();
+    //     }
+    // }
+
+
+    // === 3. MODERN CLEAN CSS WITH NO RESIZABLE ===
+    after_datatable_render: function(datatable_wrapper) {
+    const report = frappe.query_report;
+
+    // === MAKE ALL COLUMNS NON‑RESIZABLE / NON‑REORDERABLE ===
+    if (report.datatable) {
+        // Disable resize / drag handles
+        report.datatable.options.disableReorderColumn = true;
+
+        // Also lock each column’s resizable flag for safety
+        if (report.datatable.options.columns) {
+            report.datatable.options.columns.forEach(col => {
+                col.resizable = false;
+            });
         }
+
+        // Rebuild with updated options
+        report.datatable.refresh(report.datatable.options.data);
     }
+
+    const search_val = report.get_filter_value("branch_search");
+
+    if (report.page.fields_dict.branch_search) {
+        report.page.fields_dict.branch_search.$input.val("");
+    }
+
+    const result_wrapper = $(datatable_wrapper).closest('.result');
+    
+    if (!search_val) {
+        $(datatable_wrapper).hide();
+        result_wrapper.find('.custom-empty-state').remove();
+        result_wrapper.append(`
+            <div class="custom-empty-state">
+                <div class="icon-box">📊</div>
+                <h3>Branch Master Report</h3>
+                <p>Please select a Branch or SOL ID to load details.</p>
+            </div>
+        `);
+    } else {
+        $(datatable_wrapper).show();
+        result_wrapper.find('.custom-empty-state').remove();
+    }
+}
+
 };
