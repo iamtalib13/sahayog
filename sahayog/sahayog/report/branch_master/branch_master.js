@@ -26,7 +26,7 @@ frappe.query_reports["Branch Master"] = {
         // Inject CSS immediately
         const css = `
             .frappe-report .result { background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 8px; }
-            .dt-header .dt-cell__content { font-size: 14px; font-weight: 700; color: #495057; text-align: center; background-color: #fff; text-transform: uppercase; }
+            .dt-header .dt-cell__content { font-size: 14px; font-weight: 700 !important; color: #495057; text-align: center; background-color: #fff; text-transform: uppercase; }
             .dt-cell__content { padding: 10px 12px; font-size: 13px; color: #212529; border-right: 1px solid #f1f3f5; }
             .dt-row:hover .dt-cell { background-color: #f8f9fa !important; }
             .datatable .dt-cell--resize-handle, .datatable .dt-cell__resize-handle { display: none !important; }
