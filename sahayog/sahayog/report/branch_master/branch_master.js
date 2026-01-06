@@ -244,7 +244,7 @@ function show_branch_modal(clicked_row_data) {
             }
         ]
     });
-
+    
     // Styles for Modal Header and Close Button
     d.$wrapper.find('.modal-header').css({
         'background': 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
@@ -263,4 +263,20 @@ function show_branch_modal(clicked_row_data) {
     });
 
     d.show();
+
+d.$wrapper.on('shown.bs.modal', function () {
+    const $btn = d.$wrapper.find('.btn-modal-close');
+
+    // Force white color
+    $btn.css('color', '#ffffff');
+    $btn.html('<i class="fa fa-times" style="color:#fff"></i>');
+
+
+    // OVERRIDE internal SVG opacity (THIS IS THE MISSING PIECE)
+    $btn.find('svg, svg *').css({
+        opacity: 1,
+        fill: 'currentColor',
+        stroke: 'currentColor'
+    });
+});
 }
