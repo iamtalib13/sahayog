@@ -39,19 +39,20 @@ frappe.query_reports["Branch Master"] = {
             .custom-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; background-color: #f8f9fa; border: 2px dashed #e9ecef; border-radius: 12px; margin: 20px; text-align: center; }
             .custom-empty-state .icon-box { font-size: 64px; margin-bottom: 20px; display: inline-block; background: #e7f5ff; width: 100px; height: 100px; line-height: 100px; border-radius: 50%; }
 
-            /* Modal Styling */
-            .branch-modal-wrapper { padding: 5px; }
-            .branch-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef; }
-            .info-item label { display: block; font-size: 11px; text-transform: uppercase; color: #6c757d; font-weight: 600; margin-bottom: 2px; }
-            .info-item span { font-size: 14px; font-weight: 500; color: #212529; }
+            /* Modal Styling (Wide & Compact Height) */
+            .branch-modal-wrapper { padding: 0px; }
+            /* 3 Columns to save vertical space */
+            .branch-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e9ecef; }
+            .info-item label { display: block; font-size: 10px; text-transform: uppercase; color: #6c757d; font-weight: 600; margin-bottom: 1px; }
+            .info-item span { font-size: 13px; font-weight: 500; color: #212529; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             
             /* Staff Table in Modal */
-            .staff-table-wrapper { border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; }
+            .staff-table-wrapper { border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; }
             .staff-table { width: 100%; border-collapse: collapse; }
-            .staff-table th { background-color: #f1f3f5; color: #495057; font-weight: 600; font-size: 12px; text-transform: uppercase; padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; }
-            .staff-table td { padding: 12px; font-size: 13px; color: #343a40; border-bottom: 1px solid #e9ecef; vertical-align: middle; }
+            .staff-table th { background-color: #f1f3f5; color: #495057; font-weight: 600; font-size: 11px; text-transform: uppercase; padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6; }
+            .staff-table td { padding: 6px 8px; font-size: 12px; color: #343a40; border-bottom: 1px solid #e9ecef; vertical-align: middle; }
             .staff-table tr:last-child td { border-bottom: none; }
-            .staff-role-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+            .staff-role-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
             
             /* Role Colors */
             .role-bm { background-color: #e3f2fd; color: #0d47a1; }
@@ -64,16 +65,10 @@ frappe.query_reports["Branch Master"] = {
         `;
         $("<style>").prop("type", "text/css").html(css).appendTo("head");
 
-        // === EVENT LISTENER (THE FIX) ===
-        // We attach to 'report.page.wrapper' which is permanent.
-        // It listens for clicks on '.dt-cell' which are the table cells.
+        // === EVENT LISTENER ===
         report.page.wrapper.on('click', '.dt-cell', function(e) {
-            // Prevent if user is selecting text
             if (window.getSelection().toString()) return;
-            
-            // Trigger Modal with Current Report Data
             if (frappe.query_report.data && frappe.query_report.data.length > 0) {
-                // We pass the first row because all rows contain the same branch info
                 show_branch_modal(frappe.query_report.data[0]);
             }
         });
@@ -145,12 +140,10 @@ function show_welcome_screen(report) {
 
 // === PROFESSIONAL MODAL LOGIC ===
 function show_branch_modal(clicked_row_data) {
-    // 1. Get ALL rows from the report to combine data
     const all_rows = frappe.query_report.data;
-
     if (!all_rows || all_rows.length === 0) return;
 
-    // 2. Extract Branch Info (using the passed row)
+    // Extract Info
     const branch_info = {
         name: clicked_row_data.branch_name,
         sol: clicked_row_data.branch_sol_id,
@@ -163,17 +156,12 @@ function show_branch_modal(clicked_row_data) {
         email: clicked_row_data.email
     };
 
-    // 3. Aggregate Employees from ALL rows
+    // Aggregate Staff
     let staff_list = [];
-    
-    // Helper to add if exists
     const add_staff = (role_code, role_name, name, contact) => {
         if (name && name.trim() !== "") {
-            // Check for duplicates
             const exists = staff_list.some(s => s.role_code === role_code && s.name === name);
-            if (!exists) {
-                staff_list.push({ role_code, role_name, name, contact });
-            }
+            if (!exists) staff_list.push({ role_code, role_name, name, contact });
         }
     };
 
@@ -187,11 +175,10 @@ function show_branch_modal(clicked_row_data) {
         add_staff("zm", "Zonal Manager", row.zm_name, row.zm_contact);
     });
 
-    // Sort by hierarchy priority
     const role_priority = { "bm": 1, "bom": 2, "com": 3, "adh": 4, "rom": 5, "rm": 6, "zm": 7 };
     staff_list.sort((a, b) => role_priority[a.role_code] - role_priority[b.role_code]);
 
-    // 4. Build HTML Table Rows
+    // Build Rows
     let staff_rows_html = "";
     if (staff_list.length > 0) {
         staff_list.forEach(staff => {
@@ -199,7 +186,7 @@ function show_branch_modal(clicked_row_data) {
                 <tr>
                     <td><span class="staff-role-badge role-${staff.role_code}">${staff.role_name}</span></td>
                     <td><b>${staff.name}</b></td>
-                    <td>${staff.contact || '<span class="text-muted">-</span>'}</td>
+                    <td>${staff.contact || '-'}</td>
                     <td>
                         <a href="tel:${staff.contact}" class="btn btn-xs btn-default"><i class="fa fa-phone"></i></a>
                     </td>
@@ -207,10 +194,10 @@ function show_branch_modal(clicked_row_data) {
             `;
         });
     } else {
-        staff_rows_html = `<tr><td colspan="4" class="text-center text-muted">No staff details found for this branch.</td></tr>`;
+        staff_rows_html = `<tr><td colspan="4" class="text-center text-muted" style="font-size:11px;">No staff details found.</td></tr>`;
     }
 
-    // 5. Create Dialog
+    // Create Dialog - ADDED size: 'large' back for width
     const d = new frappe.ui.Dialog({
         title: `Branch Details: ${branch_info.name}`,
         size: 'large', 
@@ -220,31 +207,31 @@ function show_branch_modal(clicked_row_data) {
                 fieldname: 'details_html',
                 options: `
                     <div class="branch-modal-wrapper">
-                        <!-- Header Section -->
+                        <!-- 3-Column Grid for Lower Height -->
                         <div class="branch-info-grid">
                             <div class="info-item"><label>SOL ID</label><span>${branch_info.sol}</span></div>
+                            <div class="info-item"><label>District</label><span>${branch_info.district}</span></div>
+                            <div class="info-item"><label>Open Date</label><span>${branch_info.open_date || '-'}</span></div>
                             <div class="info-item"><label>Region</label><span>${branch_info.region}</span></div>
                             <div class="info-item"><label>Zone</label><span>${branch_info.zone}</span></div>
                             <div class="info-item"><label>State</label><span>${branch_info.state}</span></div>
-                            <div class="info-item"><label>District</label><span>${branch_info.district}</span></div>
-                            <div class="info-item"><label>Opening Date</label><span>${branch_info.open_date || '-'}</span></div>
                         </div>
                         
-                         <div class="info-item" style="margin-bottom: 20px; padding: 0 5px;">
+                         <div class="info-item" style="margin-bottom: 12px; padding: 0 5px;">
                             <label>Address</label>
-                            <span style="display:block; margin-top:4px; font-size:13px;">${branch_info.address || '-'}</span>
+                            <span style="display:block; margin-top:2px; font-size:12px; line-height:1.4;">${branch_info.address || '-'}</span>
                         </div>
 
                         <!-- Staff Table -->
-                        <h5 style="margin-bottom: 15px; font-weight: 700; color: #495057;">Staff Hierarchy & Roster</h5>
+                        <h6 style="margin-bottom: 8px; font-weight: 700; color: #495057; font-size:13px;">Staff Hierarchy & Roster</h6>
                         <div class="staff-table-wrapper">
                             <table class="staff-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 25%">Designation</th>
-                                        <th style="width: 35%">Employee Name</th>
-                                        <th style="width: 25%">Contact</th>
-                                        <th style="width: 15%">Action</th>
+                                        <th style="width: 30%">Role</th>
+                                        <th style="width: 35%">Name</th>
+                                        <th style="width: 20%">Contact</th>
+                                        <th style="width: 15%">Call</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -258,13 +245,22 @@ function show_branch_modal(clicked_row_data) {
         ]
     });
 
-    // Custom styling for the dialog header
+    // Styles for Modal Header and Close Button
     d.$wrapper.find('.modal-header').css({
         'background': 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
-        'color': 'white'
+        'color': 'white',
+        'padding': '10px 15px'
     });
-    d.$wrapper.find('.modal-title').css('color', 'white');
-    d.$wrapper.find('.close').css('color', 'white');
+    d.$wrapper.find('.modal-title').css({'color': 'white', 'font-size': '15px'});
+    
+    // FORCE CLOSE BUTTON WHITE
+    d.$wrapper.find('.modal-header .close, .modal-header .btn-close').css({
+        'color': '#ffffff',
+        'opacity': '1',
+        'text-shadow': 'none',
+        'outline': 'none',
+        'box-shadow': 'none'
+    });
 
     d.show();
 }
