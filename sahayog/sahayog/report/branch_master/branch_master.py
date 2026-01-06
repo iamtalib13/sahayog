@@ -14,34 +14,48 @@ def execute(filters=None):
         return columns, []
 
     # === 2. FETCH BRANCH CONTEXT ===
-    # We need the full hierarchy of the selected branch
     branch_doc = frappe.get_doc("Sahayog Branch", selected_branch_name)
     
-    # Extract values for filtering
+    # We clean the input data here slightly, but the heavy lifting is in SQL
     params = {
         "sol_id": branch_doc.sol_id,
-        "district": branch_doc.district,
-        "region": branch_doc.region,
-        "zone": branch_doc.zone
+        "district": (branch_doc.district or "").strip(),
+        "region": (branch_doc.region or "").strip(),
+        "zone": (branch_doc.zone or "").strip()
     }
 
-    # === 3. ROBUST SQL QUERY ===
-    # This query uses OR logic with strict AND conditions within each group
+    # === 3. ROBUST SQL QUERY (NORMALIZATION ADDED) ===
     query = """
         SELECT employee_name, designation, cell_number
         FROM `tabEmployee`
         WHERE status = 'Active' AND (
             
-            -- LEVEL 1: Direct Branch Match (BM, BOM, etc.)
-            sahayog_branch = %(sol_id)s
+            -- GROUP 1: BRANCH STAFF (BM, BOM)
+            -- Strict Match on SOL ID
+            (
+                sahayog_branch = %(sol_id)s
+                AND UPPER(TRIM(designation)) IN (
+                    'BRANCH MANAGER', 
+                    'BRANCH OPERATION MANAGER'
+                )
+            )
             
-            -- LEVEL 2: District Hierarchy (Strict: District + Region + Zone)
-            -- Matches: COM, Cluster Head, ADH, District Head
+            -- GROUP 2: COM / ADH / DISTRICT HEADS
+            -- Matches: District (Case Insensitive) + Region + Zone
             OR (
-                custom_district = %(district)s 
-                AND custom_region = %(region)s 
-                AND custom_zone = %(zone)s
-                AND designation IN (
+                UPPER(TRIM(custom_district)) = UPPER(TRIM(%(district)s))
+                
+                -- Region Match (Handles 'HO' vs 'Head Office')
+                AND (
+                    UPPER(TRIM(custom_region)) = UPPER(TRIM(%(region)s))
+                    OR (UPPER(TRIM(%(region)s)) = 'HO' AND UPPER(TRIM(custom_region)) = 'HEAD OFFICE')
+                    OR (UPPER(TRIM(%(region)s)) = 'HEAD OFFICE' AND UPPER(TRIM(custom_region)) = 'HO')
+                )
+                
+                -- Zone Match (Removes spaces so 'Zone -1' matches 'ZONE-1')
+                AND UPPER(REPLACE(custom_zone, ' ', '')) = UPPER(REPLACE(%(zone)s, ' ', ''))
+                
+                AND UPPER(TRIM(designation)) IN (
                     'CLUSTER OPERATION MANAGER', 
                     'CLUSTER HEAD', 
                     'ASST. DISTRICT HEAD', 
@@ -49,73 +63,76 @@ def execute(filters=None):
                 )
             )
             
-            -- LEVEL 3: Region Hierarchy (Strict: Region + Zone)
-            -- Matches: ROM, RM
+            -- GROUP 3: REGIONAL STAFF (ROM, AZM, RM)
+            -- Matches: Region + Zone
             OR (
-                custom_region = %(region)s 
-                AND custom_zone = %(zone)s
-                AND designation IN (
+                -- Region Match (Handles 'HO' vs 'Head Office')
+                (
+                    UPPER(TRIM(custom_region)) = UPPER(TRIM(%(region)s))
+                    OR (UPPER(TRIM(%(region)s)) = 'HO' AND UPPER(TRIM(custom_region)) = 'HEAD OFFICE')
+                    OR (UPPER(TRIM(%(region)s)) = 'HEAD OFFICE' AND UPPER(TRIM(custom_region)) = 'HO')
+                )
+                
+                -- Zone Match (Removes spaces)
+                AND UPPER(REPLACE(custom_zone, ' ', '')) = UPPER(REPLACE(%(zone)s, ' ', ''))
+                
+                AND UPPER(TRIM(designation)) IN (
                     'REGIONAL OPERATION MANAGER', 
+                    'ASST. ZONAL MANAGER',
                     'REGIONAL MANAGER'
                 )
             )
-            
-            -- LEVEL 4: Zone Hierarchy (Strict: Zone)
-            -- Matches: ZM, AZM
+
+            -- GROUP 4: ZONAL STAFF (ZM)
+            -- Matches: Zone Only
             OR (
-                custom_zone = %(zone)s 
-                AND designation IN (
-                    'ZONAL MANAGER', 
-                    'ASST. ZONAL MANAGER'
-                )
+                -- Zone Match (Removes spaces)
+                UPPER(REPLACE(custom_zone, ' ', '')) = UPPER(REPLACE(%(zone)s, ' ', ''))
+                
+                AND UPPER(TRIM(designation)) IN ('ZONAL MANAGER')
             )
         )
-        ORDER BY 
-            CASE 
-                WHEN designation = 'BRANCH MANAGER' THEN 1
-                WHEN designation = 'BRANCH OPERATION MANAGER' THEN 2
-                ELSE 3 
-            END,
-            employee_name ASC
+        ORDER BY employee_name ASC
     """
     
     employees = frappe.db.sql(query, params, as_dict=True)
 
-    # === 4. BUCKETING & MAPPING ===
+    # === 4. BUCKETING (Case Insensitive Mapping) ===
     roles = {
         "BM": [], "BOM": [], "COM": [], "ROM": [], 
         "ADH": [], "RM": [], "ZM": []
     }
 
     for emp in employees:
-        desig = (emp.designation or "").strip().upper()
+        # Normalize designation from DB to UPPERCASE for reliable bucket mapping
+        u_desig = (emp.designation or "").strip().upper()
+        
         person_data = {
             "name": emp.employee_name or "",
             "contact": emp.cell_number or ""
         }
 
         # --- MAPPING RULES ---
-        
-        if desig == "BRANCH MANAGER": 
-            roles["BM"].append(person_data)
-            
-        elif desig == "BRANCH OPERATION MANAGER": 
-            roles["BOM"].append(person_data)
-            
-        elif desig in ["CLUSTER OPERATION MANAGER", "CLUSTER HEAD"]: 
+        if u_desig == "CLUSTER OPERATION MANAGER":
             roles["COM"].append(person_data)
-            
-        elif desig in ["ASST. DISTRICT HEAD", "DISTRICT HEAD"]: 
-            roles["ADH"].append(person_data) # Mapped to ADH column for clarity
-            
-        elif desig in ["REGIONAL OPERATION MANAGER", "ASST. ZONAL MANAGER"]: 
-            roles["ROM"].append(person_data) # AZM often grouped with ROMs
-            
-        elif desig == "REGIONAL MANAGER": 
+
+        elif u_desig in ["ASST. DISTRICT HEAD", "DISTRICT HEAD", "CLUSTER HEAD"]:
+            roles["ADH"].append(person_data)
+
+        elif u_desig in ["REGIONAL OPERATION MANAGER", "ASST. ZONAL MANAGER"]:
+            roles["ROM"].append(person_data)
+
+        elif u_desig == "REGIONAL MANAGER":
             roles["RM"].append(person_data)
-            
-        elif desig == "ZONAL MANAGER": 
+
+        elif u_desig == "ZONAL MANAGER":
             roles["ZM"].append(person_data)
+
+        elif u_desig == "BRANCH MANAGER":
+            roles["BM"].append(person_data)
+
+        elif u_desig == "BRANCH OPERATION MANAGER":
+            roles["BOM"].append(person_data)
 
     # === 5. FLATTEN TO ROWS ===
     counts = [len(v) for v in roles.values()]
@@ -125,7 +142,6 @@ def execute(filters=None):
     data = []
 
     for i in range(max_rows):
-        # Base row with branch details
         row = {
             "branch_name": branch_doc.branch,
             "branch_sol_id": branch_doc.sol_id,
@@ -139,13 +155,11 @@ def execute(filters=None):
             "email": getattr(branch_doc, 'email', ''),
         }
 
-        # Helper to fetch employee at index i safely
         def get_emp(role_key):
             if i < len(roles[role_key]):
                 return roles[role_key][i]
             return {"name": "", "contact": ""}
 
-        # Populate Employee Columns
         bm = get_emp("BM")
         row["bm_name"], row["bm_contact"] = bm["name"], bm["contact"]
 
