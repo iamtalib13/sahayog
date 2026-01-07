@@ -17,6 +17,13 @@ frappe.query_reports["Branch Master"] = {
         }
     ],
 
+     // Add this new function to disable column reordering
+    get_datatable_options: function(options) {
+        return Object.assign(options, {
+            disableReorderColumn: true
+        });
+    },
+
     onload: function(report) {
         // === SECURITY ===
         if (!frappe.user.has_role("Administrator")) {
