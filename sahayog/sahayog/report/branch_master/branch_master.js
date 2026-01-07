@@ -17,7 +17,7 @@ frappe.query_reports["Branch Master"] = {
         }
     ],
 
-     // Add this new function to disable column reordering
+    // Add this new function to disable column reordering
     get_datatable_options: function(options) {
         return Object.assign(options, {
             disableReorderColumn: true
@@ -42,6 +42,17 @@ frappe.query_reports["Branch Master"] = {
 
             .pull-right {
                 font-size: 13px;
+            }
+            
+            /* === IMPROVED COLUMN HEADERS === */
+            .dt-header .dt-cell {
+                background-color: #e9ecef !important; /* Light grey background */
+                font-weight: 700 !important;          /* Bold Text */
+                color: #212529 !important;            /* Darker Text Color */
+                text-transform: uppercase !important; /* Uppercase Labels */
+                font-size: 11px !important;           /* Professional Font Size */
+                border-bottom: 1px solid #adb5bd !important; /* Strong Header Border */
+                letter-spacing: 0.5px !important;     /* Slight spacing for readability */
             }
             
             /* Interactive Table */
@@ -78,6 +89,14 @@ frappe.query_reports["Branch Master"] = {
             .role-adh { background-color: #fce4ec; color: #880e4f; }
             .role-rm { background-color: #e8f5e9; color: #1b5e20; }
             .role-zm { background-color: #fff8e1; color: #ff6f00; }
+
+            .datatable .dt-header .dt-cell--header .dt-cell__content {
+                font-weight: bold;
+                background-color: var(--subtle-fg);
+                font-size: 14px;
+                /* color: rgb(56, 56, 56) !important; */
+                color: rgb(67 67 67) !important;
+            }
         `;
         $("<style>").prop("type", "text/css").html(css).appendTo("head");
 
@@ -213,7 +232,7 @@ function show_branch_modal(clicked_row_data) {
         staff_rows_html = `<tr><td colspan="4" class="text-center text-muted" style="font-size:11px;">No staff details found.</td></tr>`;
     }
 
-    // Create Dialog - ADDED size: 'large' back for width
+    // Create Dialog
     const d = new frappe.ui.Dialog({
         title: `Branch Details: ${branch_info.name}`,
         size: 'large', 
@@ -280,19 +299,18 @@ function show_branch_modal(clicked_row_data) {
 
     d.show();
 
-d.$wrapper.on('shown.bs.modal', function () {
-    const $btn = d.$wrapper.find('.btn-modal-close');
+    d.$wrapper.on('shown.bs.modal', function () {
+        const $btn = d.$wrapper.find('.btn-modal-close');
 
-    // Force white color
-    $btn.css('color', '#ffffff');
-    $btn.html('<i class="fa fa-times" style="color:#fff"></i>');
+        // Force white color
+        $btn.css('color', '#ffffff');
+        $btn.html('<i class="fa fa-times" style="color:#fff"></i>');
 
-
-    // OVERRIDE internal SVG opacity (THIS IS THE MISSING PIECE)
-    $btn.find('svg, svg *').css({
-        opacity: 1,
-        fill: 'currentColor',
-        stroke: 'currentColor'
+        // OVERRIDE internal SVG opacity
+        $btn.find('svg, svg *').css({
+            opacity: 1,
+            fill: 'currentColor',
+            stroke: 'currentColor'
+        });
     });
-});
 }
