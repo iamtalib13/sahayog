@@ -51,6 +51,15 @@ class Customer360UI {
     inject_css() {
         // NOTE: All selectors start with #${this.rootId} to prevent global leaks
         const css = `
+
+			/* Hide Header */
+			.page-head .page-head-content {
+				display: none !important;
+			}
+			.page-head {
+				display: none !important;
+			}
+			
             /* Variables Scope */
             #${this.rootId} {
                 --c360-primary: #6366f1;
