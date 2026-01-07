@@ -9,7 +9,7 @@ from frappe.utils import formatdate
 
 class DisciplinaryCase(Document):
 
-    # ✅ ONLY ADDITION – existing logic untouched
+    
     def on_submit(self):
         """
         Auto-send SCN email on submit.
@@ -64,11 +64,9 @@ class DisciplinaryCase(Document):
     def after_insert(self):
         # Set case_id = name after record is created
         self.db_set("case_id", self.name, update_modified=False)
+
 @frappe.whitelist()
 def get_case_stages(case_id):
-    """
-    Return stages with their status + modified timestamp
-    """
     all_stages = [
         "Disciplinary Case",
         "Suspension Process",
@@ -83,36 +81,58 @@ def get_case_stages(case_id):
     timeline = []
 
     for stage in all_stages:
-        docname = frappe.db.exists(stage, {"case_id": case_id})
+        # 1️⃣ fetch non-cancelled docs first
+        docs = frappe.get_all(
+            stage,
+            filters={"case_id": case_id, "docstatus": ["!=", 2]},
+            fields=["name", "docstatus", "modified"],
+            order_by="modified desc"
+        )
 
-        if docname:
-            doc = frappe.get_doc(stage, docname)
-            docstatus = doc.docstatus or 0
+        if docs:
+            # pick the latest active doc
+            docinfo = docs[0]
+            docstatus = docinfo.docstatus or 0
 
             if docstatus == 1:
-                timeline.append({
-                "stage": stage,      # used by your JS
-                "doctype": stage,    # future-proof
-                "status": "submitted",
-                "modified": doc.modified
-})
-
+                status = "submitted"  # 🟢
             else:
-                timeline.append({
-                    "stage": stage,
-                    "doctype": stage,
-                    "status": "saved",       # orange
-                    "modified": doc.modified
-                })
-        else:
+                status = "saved"      # 🟠
+
             timeline.append({
                 "stage": stage,
                 "doctype": stage,
-                "status": "current",       # yellow
-                "modified": None
+                "status": status,
+                "modified": docinfo.modified
             })
+        else:
+            # fallback: only cancelled exists
+            cancelled_doc = frappe.get_all(
+                stage,
+                filters={"case_id": case_id, "docstatus": 2},
+                fields=["name", "modified"],
+                order_by="modified desc",
+                limit=1
+            )
+            if cancelled_doc:
+                timeline.append({
+                    "stage": stage,
+                    "doctype": stage,
+                    "status": "cancelled",  # grey
+                    "modified": cancelled_doc[0].modified
+                })
+            else:
+                # no doc at all
+                timeline.append({
+                    "stage": stage,
+                    "doctype": stage,
+                    "status": "current",    # ⚪
+                    "modified": None
+                })
 
     return {"timeline": timeline}
+
+
 @frappe.whitelist()
 def get_case_stage_counts(case_id):
     """
