@@ -187,30 +187,30 @@ def execute(filters=None):
 
 def get_columns():
     return [
+        {"label": "Branch Code", "fieldname": "branch_sol_id", "fieldtype": "Int", "width": 80},
         {"label": "Branch Name", "fieldname": "branch_name", "fieldtype": "Data", "width": 180},
-        {"label": "SOL ID", "fieldname": "branch_sol_id", "fieldtype": "Int", "width": 80},
+        {"label": "Branch Opening Date", "fieldname": "branch_opening_date", "fieldtype": "Date", "width": 100},
+        {"label": "Branch Email", "fieldname": "email", "fieldtype": "Data", "width": 160},
+        {"label": "Branch Address", "fieldname": "branch_address", "fieldtype": "Data", "width": 350},
+        {"label": "District", "fieldname": "district", "fieldtype": "Data", "width": 120},
+        {"label": "Region", "fieldname": "region", "fieldtype": "Data", "width": 100},
+        {"label": "Zone", "fieldname": "zone", "fieldtype": "Data", "width": 100},
         {"label": "State Code", "fieldname": "state_code", "fieldtype": "Data", "width": 90},
         {"label": "State", "fieldname": "state", "fieldtype": "Data", "width": 135},
-        {"label": "District", "fieldname": "district", "fieldtype": "Data", "width": 120},
-        {"label": "Zone", "fieldname": "zone", "fieldtype": "Data", "width": 100},
-        {"label": "Region", "fieldname": "region", "fieldtype": "Data", "width": 100},
-        {"label": "Address", "fieldname": "branch_address", "fieldtype": "Data", "width": 350},
-        {"label": "Open Date", "fieldname": "branch_opening_date", "fieldtype": "Date", "width": 100},
-        {"label": "Email", "fieldname": "email", "fieldtype": "Data", "width": 160},
         {"label": "BM Name", "fieldname": "bm_name", "fieldtype": "Data", "width": 160},
         {"label": "BM Contact", "fieldname": "bm_contact", "fieldtype": "Data", "width": 120},
         {"label": "BOM Name", "fieldname": "bom_name", "fieldtype": "Data", "width": 160},
         {"label": "BOM Contact", "fieldname": "bom_contact", "fieldtype": "Data", "width": 120},
         {"label": "COM Name", "fieldname": "com_name", "fieldtype": "Data", "width": 160},
         {"label": "COM Contact", "fieldname": "com_contact", "fieldtype": "Data", "width": 120},
-        {"label": "ROM Name", "fieldname": "rom_name", "fieldtype": "Data", "width": 160},
-        {"label": "ROM Contact", "fieldname": "rom_contact", "fieldtype": "Data", "width": 120},
-        {"label": "ADH Name", "fieldname": "adh_name", "fieldtype": "Data", "width": 160},
-        {"label": "ADH Contact", "fieldname": "adh_contact", "fieldtype": "Data", "width": 120},
+        {"label": "ROM/Azom Name", "fieldname": "rom_name", "fieldtype": "Data", "width": 160},
+        {"label": "ROM/Azom Contact", "fieldname": "rom_contact", "fieldtype": "Data", "width": 120},
+        {"label": "ADH/DH/CH Name", "fieldname": "adh_name", "fieldtype": "Data", "width": 160},
+        {"label": "ADH/DH/CH Contact", "fieldname": "adh_contact", "fieldtype": "Data", "width": 120},
         {"label": "RM Name", "fieldname": "rm_name", "fieldtype": "Data", "width": 160},
         {"label": "RM Contact", "fieldname": "rm_contact", "fieldtype": "Data", "width": 120},
-        {"label": "ZM Name", "fieldname": "zm_name", "fieldtype": "Data", "width": 160},
-        {"label": "ZM Contact", "fieldname": "zm_contact", "fieldtype": "Data", "width": 120}
+        {"label": "ZH Name", "fieldname": "zm_name", "fieldtype": "Data", "width": 160},
+        {"label": "ZH Contact", "fieldname": "zm_contact", "fieldtype": "Data", "width": 120}
     ]
 
 @frappe.whitelist()

@@ -17,6 +17,13 @@ frappe.query_reports["Branch Master"] = {
         }
     ],
 
+     // Add this new function to disable column reordering
+    get_datatable_options: function(options) {
+        return Object.assign(options, {
+            disableReorderColumn: true
+        });
+    },
+
     onload: function(report) {
         // === SECURITY ===
         if (!frappe.user.has_role("Administrator")) {
@@ -28,6 +35,15 @@ frappe.query_reports["Branch Master"] = {
 
         // === CSS ===
         const css = `
+            /* General */
+            .col-md-12 {
+                font-size: 0px;
+            }
+
+            .pull-right {
+                font-size: 13px;
+            }
+            
             /* Interactive Table */
             .dt-cell { cursor: pointer !important; }
             .dt-cell:hover { background-color: #f1f3f5 !important; }
