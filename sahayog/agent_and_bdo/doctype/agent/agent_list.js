@@ -1,9 +1,9 @@
 frappe.listview_settings["Agent"] = {
-     refresh(listview) {
-        if (frappe.session.user !== "Administrator") {
-            listview.page.clear_primary_action();
-        }
-    },
+    //  refresh(listview) {
+    //     if (frappe.session.user !== "Administrator") {
+    //         listview.page.clear_primary_action();
+    //     }
+    // },
   onload(listview) {
     // Hide sidebar elements
     $(".layout-side-section").hide();
@@ -19,7 +19,7 @@ frappe.listview_settings["Agent"] = {
     }
 
     // Bulk Unallocate button - only visible to System Manager and MIS Admin
-    if (frappe.session.user === "Administrator") {
+    // if (frappe.session.user === "Administrator") {
     listview.page.add_inner_button(__("Bulk Unallocate by Employee"), () => {
       let d = new frappe.ui.Dialog({
         title: __("Select Employee to Unallocate Agents"),
@@ -141,10 +141,10 @@ frappe.listview_settings["Agent"] = {
       });
       d.show();
     });
-  }
+  // }
 
     // Bulk Transfer button - only visible to System Manager and MIS Admin
-    if (frappe.session.user === "Administrator") {
+    // if (frappe.session.user === "Administrator") {
     listview.page.add_inner_button(__("Bulk Transfer by Employee"), () => {
       let d = new frappe.ui.Dialog({
         title: __("Bulk Transfer Agents"),
@@ -281,10 +281,10 @@ frappe.listview_settings["Agent"] = {
       });
       d.show();
     });
-  }
+  // }
 
     // Optimized Download Report button
-    if (frappe.session.user === "Administrator") {
+    // if (frappe.session.user === "Administrator") {
     listview.page.add_inner_button(__("Download Report"), () => {
       // Single API call to get all required data
       frappe.call({
@@ -316,7 +316,7 @@ frappe.listview_settings["Agent"] = {
         },
       });
     });
-  }
+  // }
 
     // Optimized CSV generation function
     function generateAndDownloadCSV(data) {
