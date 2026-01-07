@@ -4,9 +4,9 @@
 frappe.ui.form.on("Agent", {
   
   refresh(frm) {
-     if (frappe.session.user !== "Administrator") {
+    //  if (frappe.session.user !== "Administrator") {
             frm.page.btn_primary?.hide();
-        }
+        // }
     frm.clear_custom_buttons(); // remove old buttons
     frm.trigger("employee_details"); // trigger employee details display
     frm.trigger("read_only_fields");
@@ -14,7 +14,7 @@ frappe.ui.form.on("Agent", {
     // --- Unallocated: Show Allocate ---
     if (frm.doc.status === "Unallocated") {
       
-      if (frappe.session.user === "Administrator") {
+      // if (frappe.session.user === "Administrator") {
       frm.add_custom_button(__("Allocate"), () => {
         frappe.confirm(
           __("Are you sure you want to request allocation?"),
@@ -59,13 +59,13 @@ frappe.ui.form.on("Agent", {
           }
         );
       });
-      }
+      // }
     }
 
     // --- Pending: Show Approve / Reject ---
     if (frm.doc.approved_by == frappe.session.user) {
       if (frm.doc.status === "Pending") {
-        if (frappe.session.user === "Administrator") {
+        // if (frappe.session.user === "Administrator") {
         frm.add_custom_button(__("Approve"), () => {
           frappe.confirm(
             __("Are you sure you want to approve this allocation?"),
@@ -88,9 +88,9 @@ frappe.ui.form.on("Agent", {
             }
           );
         });
-      }
+      // }
 
-      if (frappe.session.user === "Administrator") {
+      // if (frappe.session.user === "Administrator") {
         frm.add_custom_button(__("Reject"), () => {
           frappe.confirm(
             __("Are you sure you want to reject this allocation?"),
@@ -113,13 +113,13 @@ frappe.ui.form.on("Agent", {
             }
           );
         });
-      }
+      // }
       }
     }
 
     // --- Allocated: Show Unallocate ---
     if (frm.doc.status === "Allocated") {
-      if (frappe.session.user === "Administrator") {
+      // if (frappe.session.user === "Administrator") {
       frm.add_custom_button(__("Unallocate"), () => {
         frappe.confirm(
           __("Are you sure you want to unallocate this agent?"),
@@ -142,12 +142,12 @@ frappe.ui.form.on("Agent", {
           }
         );
       });
-    }
+    // }
     }
 
     // --- Allocated: Show Cancel ---
     if (frm.doc.status === "Pending") {
-      if (frappe.session.user === "Administrator") {
+      // if (frappe.session.user === "Administrator") {
       frm.add_custom_button(__("Cancel"), () => {
         frappe.confirm(
           __("Are you sure you want to cancel this allocation?"),
@@ -170,7 +170,7 @@ frappe.ui.form.on("Agent", {
           }
         );
       });
-      }
+      // }
     }
 
     frm.trigger("hide_sidebar_options");
