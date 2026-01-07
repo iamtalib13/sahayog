@@ -187,16 +187,16 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        {"label": "Branch Name", "fieldname": "branch_name", "fieldtype": "Data", "width": 180},
         {"label": "SOL ID", "fieldname": "branch_sol_id", "fieldtype": "Int", "width": 80},
-        {"label": "State Code", "fieldname": "state_code", "fieldtype": "Data", "width": 90},
-        {"label": "State", "fieldname": "state", "fieldtype": "Data", "width": 135},
-        {"label": "District", "fieldname": "district", "fieldtype": "Data", "width": 120},
-        {"label": "Zone", "fieldname": "zone", "fieldtype": "Data", "width": 100},
-        {"label": "Region", "fieldname": "region", "fieldtype": "Data", "width": 100},
-        {"label": "Address", "fieldname": "branch_address", "fieldtype": "Data", "width": 350},
+        {"label": "Branch Name", "fieldname": "branch_name", "fieldtype": "Data", "width": 180},
         {"label": "Open Date", "fieldname": "branch_opening_date", "fieldtype": "Date", "width": 100},
         {"label": "Email", "fieldname": "email", "fieldtype": "Data", "width": 160},
+        {"label": "Address", "fieldname": "branch_address", "fieldtype": "Data", "width": 350},
+        {"label": "District", "fieldname": "district", "fieldtype": "Data", "width": 120},
+        {"label": "Region", "fieldname": "region", "fieldtype": "Data", "width": 100},
+        {"label": "Zone", "fieldname": "zone", "fieldtype": "Data", "width": 100},
+        {"label": "State Code", "fieldname": "state_code", "fieldtype": "Data", "width": 90},
+        {"label": "State", "fieldname": "state", "fieldtype": "Data", "width": 135},
         {"label": "BM Name", "fieldname": "bm_name", "fieldtype": "Data", "width": 160},
         {"label": "BM Contact", "fieldname": "bm_contact", "fieldtype": "Data", "width": 120},
         {"label": "BOM Name", "fieldname": "bom_name", "fieldtype": "Data", "width": 160},
