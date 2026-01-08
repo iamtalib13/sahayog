@@ -1157,7 +1157,8 @@ async fetchAssignedLeads() {
     if (emp) {
       this.assignedByMap[row.reference_name] = {
         full_name: emp.name,
-        employee_code: emp.code
+        employee_code: emp.code,
+        branch: emp.branch
       };
 
       this.assignedLeadNames.push(row.reference_name);
@@ -1176,6 +1177,29 @@ console.log("🧪 Map:", this.assignedByMap);
 }
 
 
+// async getEmployeeByUser(userId) {
+//   if (!userId) return null;
+
+//   try {
+//     const res = await frappe.db.get_value(
+//       "Employee",
+//       { user_id: userId },
+//       ["employee_name", "employee"]
+//     );
+
+//     if (res && res.message) {
+//       return {
+//         name: res.message.employee_name,
+//         code: res.message.employee,
+//       };
+//     }
+//   } catch (e) {
+//     console.warn("Employee fetch failed for", userId);
+//   }
+
+//   return null;
+// }
+
 async getEmployeeByUser(userId) {
   if (!userId) return null;
 
@@ -1183,13 +1207,14 @@ async getEmployeeByUser(userId) {
     const res = await frappe.db.get_value(
       "Employee",
       { user_id: userId },
-      ["employee_name", "employee"]
+      ["employee_name", "employee", "branch"]
     );
 
     if (res && res.message) {
       return {
         name: res.message.employee_name,
         code: res.message.employee,
+        branch: res.message.branch || ""
       };
     }
   } catch (e) {
@@ -1198,7 +1223,6 @@ async getEmployeeByUser(userId) {
 
   return null;
 }
-
 
 
   countStatus(status) {
@@ -1300,26 +1324,55 @@ async getEmployeeByUser(userId) {
       if (item.source) details.push(`📌 ${item.source}`);
 
       // ✅ Assigned By (NO status / filter dependency)
+
+
+
 if (this.assignedByMap?.[item.name]) {
-  const assignedBy = this.assignedByMap[item.name];
+  const a = this.assignedByMap[item.name];
 
-  let assignedByText = "";
+  details.push(`
+    <div style="
+      margin-top:6px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:12px;
+    ">
 
-  // agar object hai
-  if (typeof assignedBy === "object") {
-    assignedByText = `${assignedBy.full_name} (${assignedBy.employee_code})`;
-  } 
-  // agar string hai
-  else {
-    assignedByText = assignedBy;
-  }
+      <!-- Assigned By -->
+      <span style="
+        background:#f1f5f9;
+        padding:4px 8px;
+        border-radius:6px;
+        color:#111;
+      ">Assigned By:
+        👤 <b>${a.full_name}</b>
+        <span style="color:#0f0a21;"><b>(${a.employee_code})</b></span>
+      </span>
 
-  details.push(
-    `<span style="color:#555;font-size:11px;">
-      Assigned By: <b>${assignedByText}</b>
-    </span>`
-  );
+      <!-- Branch -->
+      ${
+        a.branch
+          ? `
+          <span style="
+            background:#dcf8c6;
+            padding:4px 8px;
+            border-radius:6px;
+            color:#065f46;
+            font-weight:600;
+          ">
+            🏢 ${a.branch}
+          </span>
+          `
+          : ""
+      }
+
+    </div>
+  `);
 }
+
+
+
 
       message = details.join(" • ") || "No details";
       statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
