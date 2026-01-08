@@ -303,7 +303,7 @@ class Customer360UI {
         const value = $('#kyc-input').val();
         const $results = $('#results-area');
 
-        $results.html(`<div style="grid-column:1/-1; text-align:center; padding:50px; color:var(--c360-text-sub);">Scanning Finacle DB...</div>`);
+        $results.html(`<div style="grid-column:1/-1; text-align:center; padding:50px; color:var(--c360-text-sub);">Fetching User Details...</div>`);
 
         frappe.call({
             method: "sahayog.sahayog.page.customer_360.customer_360.search_account_by_kyc",
