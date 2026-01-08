@@ -5,61 +5,46 @@ frappe.pages['customer-360'].on_page_load = function(wrapper) {
         single_column: true
     });
 
-    // 1. Hide the Default Title & Header
     page.main.find('.page-head').hide();
     
-    // 2. FULL SCREEN HACK (Scoped to this page instance)
-    // We traverse up to find the main container and force it to be full width/height
     const $pageContainer = $(wrapper).closest('.page-container');
     const $layoutMain = $(wrapper).closest('.layout-main-section');
     
-    // Apply styles inline to override Frappe defaults strictly for this view
     $pageContainer.css({
-        'margin': '0',
-        'padding': '0',
-        'max-width': '100%',
-        'background-color': 'transparent',
-        'width': '100%'
+        'margin': '0', 'padding': '0', 'max-width': '100%',
+        'background-color': 'transparent', 'width': '100%'
     });
     
     $layoutMain.css({
-        'padding': '0',
-        'border': 'none',
-        'box-shadow': 'none',
+        'padding': '0', 'border': 'none', 'box-shadow': 'none',
         'background-color': 'transparent'
     });
 
-    // Remove the white background from the standard wrapper
     $(wrapper).css('padding', '0');
 
-    // 3. Initialize UI with a unique Root ID for CSS scoping
     new Customer360UI(page.body);
 };
 
 class Customer360UI {
     constructor(parent) {
         this.parent = parent;
-        // Assign a unique ID to the root for CSS Scoping
         this.rootId = 'c360-root-' + frappe.utils.get_random(5);
         this.parent.attr('id', this.rootId);
         
         this.inject_css();
         this.render_interface();
         this.setup_validators();
+        
+        // NEW: Call the enhancement method
+        this.setup_enhanced_ux();
     }
 
     inject_css() {
-        // NOTE: All selectors start with #${this.rootId} to prevent global leaks
         const css = `
-
-			/* Hide Header */
-			.page-head .page-head-content {
-				display: none !important;
-			}
-			.page-head {
-				display: none !important;
-			}
-			
+            /* Hide Header */
+            .page-head .page-head-content { display: none !important; }
+            .page-head { display: none !important; }
+            
             /* Variables Scope */
             #${this.rootId} {
                 --c360-primary: #6366f1;
@@ -88,20 +73,17 @@ class Customer360UI {
                 background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.15), transparent 40%),
                             radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.15), transparent 40%),
                             var(--c360-bg);
-                min-height: calc(100vh - 45px); /* Subtract Navbar height */
-                width: 100vw; /* Force full viewport width */
-                margin-left: calc(-50vw + 50%); /* Center trick to break container if needed */
-                padding: 60px 20px;
+                min-height: calc(100vh - 45px);
+                width: 100vw;
+                margin-left: calc(-50vw + 50%);
+                padding: 120px 20px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 box-sizing: border-box;
                 position: relative;
-                top: 0;
-                left: 0;
             }
 
-            /* Search Section */
             #${this.rootId} .c360-hero {
                 text-align: center;
                 margin-bottom: 60px;
@@ -127,7 +109,6 @@ class Customer360UI {
                  margin-bottom: 40px;
             }
 
-            /* Glass Bar */
             #${this.rootId} .c360-search-bar {
                 display: flex;
                 align-items: center;
@@ -190,10 +171,9 @@ class Customer360UI {
                 box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
             }
 
-            /* Results Grid */
             #${this.rootId} .c360-results {
                 width: 100%;
-                max-width: 1200px;
+                max-width: 900px;
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
                 gap: 25px;
@@ -210,6 +190,8 @@ class Customer360UI {
                 opacity: 0;
                 transform: translateY(20px);
                 transition: transform 0.3s;
+                position: relative;
+                overflow: hidden;
             }
             #${this.rootId} .c360-card:hover {
                 transform: translateY(-5px);
@@ -252,7 +234,6 @@ class Customer360UI {
     }
 
     setup_validators() {
-        // Regex Patterns
         this.validators = {
             'Mobile': { regex: /^[6-9]\d{9}$/, placeholder: 'Enter 10-digit Mobile Number', error: 'Invalid Mobile Number' },
             'Aadhaar': { regex: /^\d{12}$/, placeholder: 'Enter 12-digit Aadhaar Number', error: 'Invalid Aadhaar (Must be 12 digits)' },
@@ -298,12 +279,42 @@ class Customer360UI {
         });
     }
 
+    // NEW: Dedicated method to handle UI UX Enhancements (Auto-focus & Clearing)
+    setup_enhanced_ux() {
+        const $input = $('#kyc-input');
+        const $type = $('#kyc-type');
+        const $results = $('#results-area');
+
+        // Requirement 1: Trigger input field automatically on load
+        // We use a small timeout to ensure the CSS animation 'slideDown' has started/settled
+        setTimeout(() => {
+            $input.focus();
+        }, 600); 
+
+        // Requirement 2: Clear results on new interaction
+        // If user clicks into input or types, clear the previous results
+        $input.on('focus click input', () => {
+            // Only clear if there is content to clear to avoid jitter
+            if ($results.children().length > 0) {
+                $results.empty();
+                $input.val('');       // clear input field
+                $('#validation-msg').text('');
+                $('#search-btn').prop('disabled', true);
+            }
+        });
+
+        // Also clear if they change the dropdown type
+        $type.on('change', () => {
+            $results.empty();
+        });
+    }
+
     perform_search() {
         const type = $('#kyc-type').val();
         const value = $('#kyc-input').val();
         const $results = $('#results-area');
 
-        $results.html(`<div style="grid-column:1/-1; text-align:center; padding:50px; color:var(--c360-text-sub);">Scanning Finacle DB...</div>`);
+        $results.html(`<div style="grid-column:1/-1; text-align:center; padding:50px; color:var(--c360-text-sub);">Fetching User Details...</div>`);
 
         frappe.call({
             method: "sahayog.sahayog.page.customer_360.customer_360.search_account_by_kyc",
@@ -321,8 +332,9 @@ class Customer360UI {
 
     render_card(data, index) {
         const initials = (data.acct_name || 'U').substring(0, 2).toUpperCase();
+        // Added 'cursor:pointer' to indicate it's clickable (UX Best Practice)
         const html = `
-            <div class="c360-card" style="animation-delay: ${index * 0.1}s">
+            <div class="c360-card" style="animation-delay: ${index * 0.1}s; cursor:pointer;" onclick="frappe.set_route('crm-profile', '${data.cif_id}')">
                 <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
                     <div>
                         <div style="font-size:0.8rem; color:var(--c360-text-sub); margin-bottom:4px;">CIF: ${data.cif_id}</div>
@@ -334,8 +346,18 @@ class Customer360UI {
                     <div><strong>${data.docdescr || data.doccode}</strong>: ${data.referencenumber}</div>
                     <div style="margin-top:5px;"><strong>Phone:</strong> ${data.phoneno || '-'}</div>
                 </div>
+                <!-- UX Enhancement: Hover overlay effect -->
+                <div style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:24px; box-shadow:inset 0 0 0 2px var(--c360-primary); opacity:0; transition:opacity 0.2s; pointer-events:none;" class="hover-border"></div>
             </div>
         `;
-        $('#results-area').append(html);
+        
+        // Minor UX tweak: Add hover effect logic via JS or rely on CSS
+        const $card = $(html);
+        $card.hover(
+            function() { $(this).find('.hover-border').css('opacity', 1); },
+            function() { $(this).find('.hover-border').css('opacity', 0); }
+        );
+        
+        $('#results-area').append($card);
     }
 }
