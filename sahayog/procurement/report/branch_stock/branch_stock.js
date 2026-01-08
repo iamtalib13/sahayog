@@ -101,19 +101,40 @@ frappe.query_reports["Branch Stock"] = {
           }
 
           if (type === "emmr") {
-            frappe.route_options = {
-              employee: values.employee,
-              source_warehouse: values.warehouse,
-              items: items.map((i) => ({
-                item_code: i.item_code,
-                qty: i.qty,
-              })),
-            };
-            frappe.set_route(
-              "Form",
-              "Employee Material Request",
-              "new-employee-material-request-1"
-            );
+            const item_codes = items.map((i) => i.item_code);
+
+            frappe.db
+              .get_list("Item", {
+                filters: { name: ["in", item_codes] },
+                fields: ["name", "item_name", "is_fixed_asset"],
+              })
+              .then((item_data) => {
+                const category_map = {};
+
+                item_data.forEach((d) => {
+                  category_map[d.name] = d.is_fixed_asset
+                    ? "Asset"
+                    : "Stock Item";
+                });
+
+                frappe.route_options = {
+                  employee: values.employee,
+                  source_warehouse: values.warehouse,
+                  items: items.map((i) => ({
+                    item_code: i.item_code,
+                    item_name: item_data.find((d) => d.name === i.item_code)
+                      .item_name,
+                    quantity: i.qty, // keeping your field as-is
+                    item_category: category_map[i.item_code], // ✅ derived from is_fixed_asset
+                  })),
+                };
+
+                frappe.set_route(
+                  "Form",
+                  "Employee Material Request",
+                  "new-employee-material-request-1"
+                );
+              });
           }
         },
         "Enter Details",
