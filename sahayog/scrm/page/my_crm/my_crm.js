@@ -1060,6 +1060,24 @@ class MyCRM {
     this.renderList();
     this.renderFilters();
     this.updateCount();
+
+if (this.state.filter === "Assigned To Me") {
+  if (!this.assignedLeadNames || !this.assignedLeadNames.length) {
+    this.state.filteredData = [];
+    this.state.activeFilter = this.state.filter;
+    this.renderList();
+    return;
+  }
+
+  this.state.filteredData = this.state.data.filter(lead =>
+    this.assignedLeadNames.includes(lead.name)
+  );
+
+  this.state.activeFilter = this.state.filter;
+  this.renderList();
+  return;
+}
+
   }
 
   renderFilters() {
@@ -1088,6 +1106,7 @@ class MyCRM {
   getFilters() {
     if (this.state.section === "lead") {
       return [
+        { name: "Assigned To Me", count: this.assignedCount || 0 },
         { name: "All", count: this.state.data.length },
         { name: "Lead", count: this.countStatus("Lead") },
         { name: "Follow Up", count: this.countStatus("Follow Up") },
@@ -1105,6 +1124,82 @@ class MyCRM {
       ];
     }
   }
+
+async fetchAssignedLeads() {
+  const res = await frappe.call({
+    method: "frappe.client.get_list",
+    args: {
+      doctype: "ToDo",
+      fields: ["reference_name", "assigned_by"],
+      filters: {
+        reference_type: "Lead",
+        allocated_to: frappe.session.user
+      },
+      limit_page_length: 1000
+    }
+  });
+
+  const rows = res.message || [];
+
+  // ✅ RESET EVERYTHING (VERY IMPORTANT)
+  this.assignedByMap = {};
+  this.assignedLeadNames = [];
+
+  const uniqueLeadSet = new Set();
+
+  for (const row of rows) {
+    if (!row.reference_name || uniqueLeadSet.has(row.reference_name)) continue;
+
+    uniqueLeadSet.add(row.reference_name);
+
+    const emp = await this.getEmployeeByUser(row.assigned_by);
+
+    if (emp) {
+      this.assignedByMap[row.reference_name] = {
+        full_name: emp.name,
+        employee_code: emp.code
+      };
+
+      this.assignedLeadNames.push(row.reference_name);
+    }
+  }
+
+  // ✅ COUNT = UNIQUE LEADS ONLY
+  this.assignedCount = uniqueLeadSet.size;
+
+  console.log("✅ Assigned Leads (unique):", this.assignedLeadNames);
+
+  console.log("🧪 ToDo rows:", rows.length);
+console.log("🧪 Unique Leads:", this.assignedLeadNames.length);
+console.log("🧪 Map:", this.assignedByMap);
+
+}
+
+
+async getEmployeeByUser(userId) {
+  if (!userId) return null;
+
+  try {
+    const res = await frappe.db.get_value(
+      "Employee",
+      { user_id: userId },
+      ["employee_name", "employee"]
+    );
+
+    if (res && res.message) {
+      return {
+        name: res.message.employee_name,
+        code: res.message.employee,
+      };
+    }
+  } catch (e) {
+    console.warn("Employee fetch failed for", userId);
+  }
+
+  return null;
+}
+
+
 
   countStatus(status) {
     return this.state.data.filter((d) => d.status === status).length;
@@ -1203,6 +1298,28 @@ class MyCRM {
       if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
       if (item.email_id) details.push(`✉️ ${item.email_id}`);
       if (item.source) details.push(`📌 ${item.source}`);
+
+      // ✅ Assigned By (NO status / filter dependency)
+if (this.assignedByMap?.[item.name]) {
+  const assignedBy = this.assignedByMap[item.name];
+
+  let assignedByText = "";
+
+  // agar object hai
+  if (typeof assignedBy === "object") {
+    assignedByText = `${assignedBy.full_name} (${assignedBy.employee_code})`;
+  } 
+  // agar string hai
+  else {
+    assignedByText = assignedBy;
+  }
+
+  details.push(
+    `<span style="color:#555;font-size:11px;">
+      Assigned By: <b>${assignedByText}</b>
+    </span>`
+  );
+}
 
       message = details.join(" • ") || "No details";
       statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
@@ -1322,7 +1439,7 @@ class MyCRM {
     frappe.show_alert({ message: "Refreshed", indicator: "green" }, 2);
   }
 
-  switchSection(section) {
+  async switchSection(section) {
     sessionStorage.setItem("mycrm_active_tab", section);
 
     console.log(`%c Switch: ${section}`, "color: #25d366; font-weight: bold;");
@@ -1346,6 +1463,9 @@ class MyCRM {
     } else {
       $("#mycrm-fab").hide();
     }
+if (section === "lead") {
+  await this.fetchAssignedLeads(); // ✅ preload assigned data
+}
 
     if (section === "reports") {
       $("#mycrm-search-bar").hide();
