@@ -76,7 +76,7 @@ class Customer360UI {
                 min-height: calc(100vh - 45px);
                 width: 100vw;
                 margin-left: calc(-50vw + 50%);
-                padding: 60px 20px;
+                padding: 120px 20px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
