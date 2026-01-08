@@ -297,6 +297,9 @@ class Customer360UI {
             // Only clear if there is content to clear to avoid jitter
             if ($results.children().length > 0) {
                 $results.empty();
+                $input.val('');       // clear input field
+                $('#validation-msg').text('');
+                $('#search-btn').prop('disabled', true);
             }
         });
 
