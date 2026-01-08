@@ -334,7 +334,7 @@ class Customer360UI {
         const initials = (data.acct_name || 'U').substring(0, 2).toUpperCase();
         // Added 'cursor:pointer' to indicate it's clickable (UX Best Practice)
         const html = `
-            <div class="c360-card" style="animation-delay: ${index * 0.1}s; cursor:pointer;" onclick="frappe.set_route('crm-profile', '${data.cif_id}')">
+            <div class="c360-card" style="animation-delay: ${index * 0.1}s; cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
                     <div>
                         <div style="font-size:0.8rem; color:var(--c360-text-sub); margin-bottom:4px;">CIF: ${data.cif_id}</div>
