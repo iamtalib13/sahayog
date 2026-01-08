@@ -193,7 +193,7 @@ class Customer360UI {
             /* Results Grid */
             #${this.rootId} .c360-results {
                 width: 100%;
-                max-width: 1200px;
+                max-width: 900px;
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
                 gap: 25px;
