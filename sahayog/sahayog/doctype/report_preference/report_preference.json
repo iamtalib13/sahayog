@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:{report_type}-{user}",
  "creation": "2025-12-10 12:55:52.629871",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -102,10 +103,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-20 11:36:47.428267",
+ "modified": "2026-01-09 10:24:26.268398",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Report Preference",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -117,6 +119,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
    "share": 1,
    "write": 1
   }
