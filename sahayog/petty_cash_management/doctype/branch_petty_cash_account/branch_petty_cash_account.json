@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:branch",
  "creation": "2026-01-09 15:36:24.693692",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -24,7 +25,8 @@
    "in_list_view": 1,
    "label": "Branch",
    "options": "Sahayog Branch",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "branch_name",
@@ -89,10 +91,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 15:44:38.582784",
+ "modified": "2026-01-09 15:46:11.503459",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
