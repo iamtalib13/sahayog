@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:category_name",
  "creation": "2026-01-09 13:57:57.793203",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -17,7 +18,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Category Name",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "metro_limit",
@@ -46,10 +48,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 14:01:12.768138",
+ "modified": "2026-01-09 14:03:13.637629",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
