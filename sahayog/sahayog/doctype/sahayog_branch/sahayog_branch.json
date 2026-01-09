@@ -22,6 +22,7 @@
   "branch_opening_date",
   "email_details_section",
   "email",
+  "branch_type",
   "section_break_zjir",
   "branch_details"
  ],
@@ -130,12 +131,18 @@
    "fieldname": "branch_opening_date",
    "fieldtype": "Date",
    "label": "Branch Opening Date"
+  },
+  {
+   "fieldname": "branch_type",
+   "fieldtype": "Select",
+   "label": "Branch Type",
+   "options": "Metro\nNon Metro"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-05 16:28:45.809719",
+ "modified": "2026-01-09 17:13:12.978900",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",

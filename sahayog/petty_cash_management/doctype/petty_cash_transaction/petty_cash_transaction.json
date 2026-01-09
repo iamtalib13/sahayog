@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PCT-.YYYY.-.#####",
+ "creation": "2026-01-09 15:55:19.085118",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_puvj",
+  "transaction_type",
+  "branch",
+  "branch_name",
+  "transaction_date",
+  "column_break_pnzp",
+  "amount",
+  "current_branch_balance",
+  "amended_from",
+  "expense_details_section",
+  "expense_category",
+  "vendor_name",
+  "bill_number",
+  "bill_date",
+  "description",
+  "column_break_rqmd",
+  "bill_attachment",
+  "approval_and_finacle_section",
+  "approved_by",
+  "posted_to_finacle",
+  "finacle_transaction_id",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_puvj",
+   "fieldtype": "Section Break",
+   "label": "Transaction Details"
+  },
+  {
+   "fieldname": "transaction_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transaction Type",
+   "options": "Fund Allocation\nExpense",
+   "reqd": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Sahayog Branch",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "branch.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_date",
+   "fieldtype": "Date",
+   "label": "Transaction Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "current_branch_balance",
+   "fieldtype": "Currency",
+   "label": "Current Branch Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pnzp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Petty Cash Transaction",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "expense_details_section",
+   "fieldtype": "Section Break",
+   "label": "Expense Details"
+  },
+  {
+   "fieldname": "expense_category",
+   "fieldtype": "Link",
+   "label": "Expense Category",
+   "options": "Expense Category",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vendor_name",
+   "fieldtype": "Data",
+   "label": "Vendor Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bill_number",
+   "fieldtype": "Data",
+   "label": "Bill Number"
+  },
+  {
+   "fieldname": "bill_date",
+   "fieldtype": "Date",
+   "label": "Bill Date"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "column_break_rqmd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bill_attachment",
+   "fieldtype": "Attach Image",
+   "label": "Bill Attachment"
+  },
+  {
+   "fieldname": "approval_and_finacle_section",
+   "fieldtype": "Section Break",
+   "label": "Approval and Finacle"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "posted_to_finacle",
+   "fieldtype": "Check",
+   "label": "Posted to Finacle"
+  },
+  {
+   "fieldname": "finacle_transaction_id",
+   "fieldtype": "Data",
+   "label": "Finacle Transaction ID"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-01-09 16:20:15.068338",
+ "modified_by": "Administrator",
+ "module": "Petty Cash Management",
+ "name": "Petty Cash Transaction",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

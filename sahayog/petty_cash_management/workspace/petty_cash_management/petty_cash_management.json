@@ -1,0 +1,50 @@
+{
+  "doctype": "Workspace",
+  "name": "Petty Cash Management",
+  "label": "Petty Cash Management",
+  "module": "Petty Cash Management",
+  "icon": "money",
+  "is_standard": 1,
+  "public": 1,
+  "sequence_id": 10,
+
+  "charts": [
+    {
+      "chart_name": "Monthly Expense by Category",
+      "label": "Expense Breakdown"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "type": "DocType",
+      "label": "New Expense",
+      "doc_view": "New",
+      "doctype": "Petty Cash Transaction",
+      "color": "Red"
+    },
+    {
+      "type": "DocType",
+      "label": "My Expenses",
+      "doc_view": "List",
+      "doctype": "Petty Cash Transaction"
+    },
+    {
+      "type": "DocType",
+      "label": "My Account",
+      "doc_view": "List",
+      "doctype": "Branch Petty Cash Account"
+    }
+  ],
+
+  "cards": [
+    {
+      "name": "Available Balance",
+      "type": "Number Card"
+    },
+    {
+      "name": "This Month Spent",
+      "type": "Number Card"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:branch",
+ "creation": "2026-01-09 15:36:24.693692",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "branch_details_section",
+  "branch",
+  "branch_name",
+  "branch_type",
+  "zone",
+  "column_break_zpzt",
+  "monthly_limit",
+  "current_balance",
+  "last_funded_on",
+  "section_break_dsps",
+  "gl_sub_code",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Branch",
+   "options": "Sahayog Branch",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fetch_from": "branch.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch_type",
+   "fieldtype": "Select",
+   "label": "Branch Type",
+   "options": "Metro\nNon Metro",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "label": "Zone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zpzt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "monthly_limit",
+   "fieldtype": "Currency",
+   "label": "Monthly Limit",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "current_balance",
+   "fieldtype": "Currency",
+   "label": "Current Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_funded_on",
+   "fieldtype": "Date",
+   "label": "Last Funded On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_dsps",
+   "fieldtype": "Section Break",
+   "label": "Financial Details"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nInactive\nSuspended",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gl_sub_code",
+   "fieldtype": "Data",
+   "label": "GL Sub Code"
+  },
+  {
+   "fieldname": "branch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Details"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-09 16:33:41.433149",
+ "modified_by": "Administrator",
+ "module": "Petty Cash Management",
+ "name": "Branch Petty Cash Account",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
