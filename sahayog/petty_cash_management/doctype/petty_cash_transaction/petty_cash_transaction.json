@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "PCT-.YYYY.-.#####",
  "creation": "2026-01-09 15:55:19.085118",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -163,10 +164,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-09 16:17:52.349583",
+ "modified": "2026-01-09 16:20:15.068338",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
