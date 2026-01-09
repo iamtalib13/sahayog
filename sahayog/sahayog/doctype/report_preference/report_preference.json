@@ -2,47 +2,51 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:{report_type}-{user}",
- "creation": "2025-12-10 12:55:52.629871",
+ "creation": "2026-01-09 10:59:05.380617",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "user_details_section",
   "user",
-  "column_break_ckcs",
+  "column_break_itey",
   "report_type",
   "preference_details_section",
   "product",
   "source",
-  "column_break_vlii",
+  "column_break_wauf",
   "sol_id",
   "district",
-  "column_break_enpx",
+  "column_break_wfdf",
   "state",
-  "zone",
-  "region"
+  "region",
+  "zone"
  ],
  "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "report_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Report Type",
+   "options": "\nFinacle\nLead",
+   "reqd": 1
+  },
   {
    "fieldname": "user_details_section",
    "fieldtype": "Section Break",
    "label": "User Details"
   },
   {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "User",
-   "options": "User"
-  },
-  {
-   "fieldname": "column_break_ckcs",
+   "fieldname": "column_break_itey",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "report_type",
-   "fieldtype": "Select",
-   "label": "Report Type",
-   "options": "\nFinacle\nLead"
   },
   {
    "fieldname": "preference_details_section",
@@ -62,23 +66,13 @@
    "options": "Source Items"
   },
   {
-   "fieldname": "column_break_vlii",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "sol_id",
-   "fieldtype": "Table MultiSelect",
-   "label": "Sol ID",
-   "options": "Sol Items"
-  },
-  {
    "fieldname": "district",
    "fieldtype": "Table MultiSelect",
    "label": "District",
    "options": "District Items"
   },
   {
-   "fieldname": "column_break_enpx",
+   "fieldname": "column_break_wauf",
    "fieldtype": "Column Break"
   },
   {
@@ -86,6 +80,10 @@
    "fieldtype": "Table MultiSelect",
    "label": "State",
    "options": "State Items"
+  },
+  {
+   "fieldname": "column_break_wfdf",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "zone",
@@ -98,12 +96,18 @@
    "fieldtype": "Table MultiSelect",
    "label": "Region",
    "options": "Region Items"
+  },
+  {
+   "fieldname": "sol_id",
+   "fieldtype": "Table MultiSelect",
+   "label": "Sol ID",
+   "options": "Sol Items"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 10:24:26.268398",
+ "modified": "2026-01-09 11:07:05.088050",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Report Preference",
@@ -119,18 +123,6 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Employee",
    "share": 1,
    "write": 1
   }
