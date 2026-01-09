@@ -30,6 +30,7 @@
    "unique": 1
   },
   {
+   "fetch_from": "branch.branch",
    "fieldname": "branch_name",
    "fieldtype": "Data",
    "label": "Branch Name",
@@ -98,7 +99,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 15:48:17.208980",
+ "modified": "2026-01-09 16:33:41.433149",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
