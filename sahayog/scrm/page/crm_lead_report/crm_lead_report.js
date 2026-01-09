@@ -106,18 +106,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   </div>
 `;
 
-  $container.append(`
-  <div class="row mb-3" id="kpi_section"></div>
-`);
   $container.append(filter_html);
-  function render_kpis(stats) {
-    $("#kpi_section").html(`
-    <div class="col-md-3"><div class="kpi-card">TOTAL LEADS<br><strong>${stats.total}</strong></div></div>
-    <div class="col-md-3"><div class="kpi-card text-success">CONVERTED<br><strong>${stats.converted}</strong></div></div>
-    <div class="col-md-3"><div class="kpi-card text-warning">FOLLOW UP<br><strong>${stats.follow_up}</strong></div></div>
-    <div class="col-md-3"><div class="kpi-card text-danger">NOT INTERESTED<br><strong>${stats.not_interested}</strong></div></div>
-  `);
-  }
+
   $container.append(`
   <div class="card p-3">
     <h5>Lead List</h5>
@@ -169,8 +159,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     const data = res.message || {};
     const leads = data.leads || [];
     const stats = data.stats || {};
-
-    render_kpis(stats);
 
     const tbody = $("#lead_table tbody").empty();
 
