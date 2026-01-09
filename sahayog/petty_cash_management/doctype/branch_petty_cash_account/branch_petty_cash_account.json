@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "branch_details_section",
   "branch",
   "branch_name",
   "branch_type",
@@ -15,7 +16,7 @@
   "current_balance",
   "last_funded_on",
   "section_break_dsps",
-  "financial_details",
+  "gl_sub_code",
   "status"
  ],
  "fields": [
@@ -73,11 +74,7 @@
   },
   {
    "fieldname": "section_break_dsps",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "financial_details",
-   "fieldtype": "Data",
+   "fieldtype": "Section Break",
    "label": "Financial Details"
   },
   {
@@ -86,12 +83,22 @@
    "label": "Status",
    "options": "Active\nInactive\nSuspended",
    "reqd": 1
+  },
+  {
+   "fieldname": "gl_sub_code",
+   "fieldtype": "Data",
+   "label": "GL Sub Code"
+  },
+  {
+   "fieldname": "branch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 15:46:11.503459",
+ "modified": "2026-01-09 15:48:17.208980",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
