@@ -5,18 +5,91 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_wrse"
+  "branch",
+  "branch_name",
+  "branch_type",
+  "zone",
+  "column_break_zpzt",
+  "monthly_limit",
+  "current_balance",
+  "last_funded_on",
+  "section_break_dsps",
+  "financial_details",
+  "status"
  ],
  "fields": [
   {
-   "fieldname": "section_break_wrse",
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Branch",
+   "options": "Sahayog Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch_type",
+   "fieldtype": "Select",
+   "label": "Branch Type",
+   "options": "Metro\nNon Metro",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "label": "Zone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zpzt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "monthly_limit",
+   "fieldtype": "Currency",
+   "label": "Monthly Limit",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "current_balance",
+   "fieldtype": "Currency",
+   "label": "Current Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_funded_on",
+   "fieldtype": "Date",
+   "label": "Last Funded On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_dsps",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "financial_details",
+   "fieldtype": "Data",
+   "label": "Financial Details"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nInactive\nSuspended",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 15:36:24.693692",
+ "modified": "2026-01-09 15:44:38.582784",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
