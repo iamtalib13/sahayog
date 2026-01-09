@@ -5,18 +5,48 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_blre"
+  "category_name",
+  "metro_limit",
+  "non_metro_limit",
+  "finacle_gl_code",
+  "is_active"
  ],
  "fields": [
   {
-   "fieldname": "section_break_blre",
-   "fieldtype": "Section Break"
+   "fieldname": "category_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Category Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "metro_limit",
+   "fieldtype": "Currency",
+   "label": "Metro Limit",
+   "reqd": 1
+  },
+  {
+   "fieldname": "non_metro_limit",
+   "fieldtype": "Currency",
+   "label": "Non Metro Limit",
+   "reqd": 1
+  },
+  {
+   "fieldname": "finacle_gl_code",
+   "fieldtype": "Data",
+   "label": "Finacle GL Code"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 13:57:57.793203",
+ "modified": "2026-01-09 14:01:12.768138",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
