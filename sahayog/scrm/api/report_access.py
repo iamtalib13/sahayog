@@ -163,6 +163,13 @@ def get_leads(from_date, to_date):
     # -------------------------------
     # 5️⃣ Populate Lead Details & Final Filtering
     # -------------------------------
+    has_any_preference = any([
+        products_pref,
+        sources_pref,
+        zones_pref,
+        regions_pref,
+        sol_ids_pref
+    ])
     final_leads = []
 
     for l in leads:
@@ -197,8 +204,12 @@ def get_leads(from_date, to_date):
         if regions_pref and branch and branch.get("region") in regions_pref:
             match = True
 
-        if match or not any([products_pref, sources_pref, sol_ids_pref, zones_pref, regions_pref]):
-            final_leads.append(l)
+
+        # Include lead ONLY if:
+        # 1️⃣ At least one preference exists
+        # 2️⃣ Lead matches at least one preference
+        if has_any_preference and match:
+           final_leads.append(l)
 
     if not final_leads:
         return {"leads": [], "stats": empty_stats()}
