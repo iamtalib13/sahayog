@@ -1176,30 +1176,6 @@ console.log("🧪 Map:", this.assignedByMap);
 
 }
 
-
-// async getEmployeeByUser(userId) {
-//   if (!userId) return null;
-
-//   try {
-//     const res = await frappe.db.get_value(
-//       "Employee",
-//       { user_id: userId },
-//       ["employee_name", "employee"]
-//     );
-
-//     if (res && res.message) {
-//       return {
-//         name: res.message.employee_name,
-//         code: res.message.employee,
-//       };
-//     }
-//   } catch (e) {
-//     console.warn("Employee fetch failed for", userId);
-//   }
-
-//   return null;
-// }
-
 async getEmployeeByUser(userId) {
   if (!userId) return null;
 
@@ -1223,7 +1199,6 @@ async getEmployeeByUser(userId) {
 
   return null;
 }
-
 
   countStatus(status) {
     return this.state.data.filter((d) => d.status === status).length;
