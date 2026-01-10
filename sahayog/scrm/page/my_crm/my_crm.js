@@ -9,6 +9,8 @@ frappe.pages["my-crm"].on_page_load = function (wrapper) {
     single_column: true,
   });
   new MyCRM(wrapper);
+  src="/assets/sahayog/js/petite-vue.iife.js"
+
 };
 
 class MyCRM {
@@ -52,6 +54,23 @@ class MyCRM {
     };
 
     console.log("%c🚀 CRM Initialized", "color: #25d366; font-weight: bold;");
+
+  // Petite-Vue bridge
+  this.vue = null;
+  this.vueMounted = false;
+
+
+  // Petite-Vue shared reactive state
+if (!window.mycrmVue) {
+  window.mycrmVue = {
+    section: "lead",
+    search: "",
+    leadCount: 0,
+    appointmentCount: 0,
+    cacheHit: false,
+  };
+}
+
     this.init();
   }
 
@@ -59,6 +78,8 @@ class MyCRM {
     this.detectMobile();
     this.setupPage();
     this.render();
+    // 🟢 Petite-Vue init (after DOM render)
+    this.initPetiteVue();
     // ✅ Restore last active tab after render
     this.switchSection(this.state.section);
 
@@ -69,127 +90,344 @@ class MyCRM {
     this.setupPWA();
     this.updateTabBadges();
   }
+// ------------------------------------
+// Petite-Vue Initialization
+// ------------------------------------
+initPetiteVue() {
+  if (this.vueMounted || !window.PetiteVue) return;
 
-  detectMobile() {
-    window.addEventListener("resize", () => {
-      const wasMobile = this.state.isMobile;
-      this.state.isMobile = window.innerWidth <= 768;
+  const crm = this; // preserve MyCRM reference
 
-      if (wasMobile !== this.state.isMobile) {
-        this.render();
-        this.applyFilter();
-      }
+  this.vue = PetiteVue.createApp({
+    // 🔗 Existing state (reactive UI binding)
+    state: crm.state,
+
+    // 🔍 Read-only helpers (UI ke liye)
+    isLead() {
+      return this.state.section === "lead";
+    },
+
+    isAppointment() {
+      return this.state.section === "appointment";
+    },
+
+    hasData() {
+      return this.state.filteredData.length > 0;
+    },
+
+    // 🔘 UI actions (bridge to existing logic)
+    switchSection(section) {
+      crm.switchSection(section);
+    },
+
+    applyFilter(filter) {
+      crm.state.filter = filter;
+      crm.applyFilter();
+    },
+
+    searchChanged(val) {
+      crm.state.search = val;
+      crm.applySearch?.();
+    }
+  });
+
+  // 🧠 Mount on page-content (existing DOM)
+  this.vue.mount(this.wrapper[0]);
+
+  this.vueMounted = true;
+
+  console.log(
+    "%c🧩 Petite-Vue Mounted",
+    "color:#42b883;font-weight:bold;"
+  );
+}
+
+
+  // detectMobile() {
+  //   window.addEventListener("resize", () => {
+  //     const wasMobile = this.state.isMobile;
+  //     this.state.isMobile = window.innerWidth <= 768;
+
+  //     if (wasMobile !== this.state.isMobile) {
+  //       this.render();
+  //       this.applyFilter();
+  //     }
+  //   });
+  // }
+
+  // isCacheValid(key) {
+  //   const cache = this.cache[key];
+  //   if (!cache?.timestamp) return false;
+
+  //   const age = Date.now() - cache.timestamp;
+  //   const isValid = age < cache.ttl;
+
+  //   if (isValid) {
+  //     console.log(
+  //       `%c✅ CACHE HIT: ${key}`,
+  //       "color: #25d366; font-weight: bold;",
+  //       {
+  //         age: `${Math.round(age / 1000)}s`,
+  //         records: cache.data?.length || 0,
+  //       }
+  //     );
+  //   }
+  //   return isValid;
+  // }
+
+  // getCachedData(key) {
+  //   return this.isCacheValid(key) ? this.cache[key].data : null;
+  // }
+
+  // setCacheData(key, data, totalCount = null) {
+  //   if (!this.cache[key]) {
+  //     this.cache[key] = {
+  //       data: [],
+  //       totalCount: 0,
+  //       timestamp: null,
+  //       ttl: 5 * 60 * 1000,
+  //       searches: new Map(),
+  //     };
+  //   }
+
+  //   this.cache[key].data = data;
+  //   this.cache[key].timestamp = Date.now();
+  //   if (totalCount !== null) this.cache[key].totalCount = totalCount;
+
+  //   console.log(`%c💾 CACHED: ${key}`, "color: #128c7e; font-weight: bold;", {
+  //     records: data.length,
+  //   });
+  // }
+
+  // getCachedSearch(section, term) {
+  //   const cache = this.cache[section];
+  //   if (!cache?.searches) return null;
+
+  //   const cached = cache.searches.get(term);
+  //   if (cached && Date.now() - cached.timestamp < cache.ttl) {
+  //     console.log(
+  //       `%c🔍 SEARCH HIT: "${term}"`,
+  //       "color: #25d366; font-weight: bold;"
+  //     );
+  //     return cached.data;
+  //   }
+  //   return null;
+  // }
+
+  // setCachedSearch(section, term, data) {
+  //   const cache = this.cache[section];
+  //   if (!cache?.searches) return;
+
+  //   cache.searches.set(term, { data, timestamp: Date.now() });
+
+  //   if (cache.searches.size > 20) {
+  //     const firstKey = cache.searches.keys().next().value;
+  //     cache.searches.delete(firstKey);
+  //   }
+  // }
+
+  // invalidateCache(section = null) {
+  //   if (section) {
+  //     if (this.cache[section]) {
+  //       this.cache[section].timestamp = null;
+  //       this.cache[section].searches?.clear();
+  //     }
+  //   } else {
+  //     Object.values(this.cache).forEach((cache) => {
+  //       cache.timestamp = null;
+  //       cache.searches?.clear();
+  //     });
+  //   }
+  // }
+
+  // startCacheMonitoring() {
+  //   setInterval(() => {
+  //     console.group("%c📊 Cache Stats", "color: #128c7e; font-weight: bold;");
+  //     Object.keys(this.cache).forEach((key) => {
+  //       const cache = this.cache[key];
+  //       if (cache.timestamp) {
+  //         const age = Math.round((Date.now() - cache.timestamp) / 1000);
+  //         console.log(
+  //           `${key}: ${cache.data?.length || 0} records, ${age}s old`
+  //         );
+  //       }
+  //     });
+  //     console.groupEnd();
+  //   }, 30000);
+  // }
+
+  // setupPage() {
+  //   this.page.set_title_sub("");
+  //   this.page.clear_primary_action();
+  //   this.page.clear_secondary_action();
+  //   this.page.clear_actions();
+  //   this.page.set_indicator("Lead", "green");
+  // }
+
+  
+// Mobile Detection (Optimized + Debounced)
+// ----------------------------------------
+detectMobile() {
+  let resizeTimer = null;
+
+  const handleResize = () => {
+    const wasMobile = this.state.isMobile;
+    const isMobileNow = window.innerWidth <= 768;
+
+    if (wasMobile !== isMobileNow) {
+      this.state.isMobile = isMobileNow;
+
+      // UI refresh only when breakpoint changes
+      this.render();
+      this.applyFilter?.();
+    }
+  };
+
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(handleResize, 150);
+  });
+}
+
+// ----------------------------------------
+// Cache Validation (Readable + Safe)
+// ----------------------------------------
+isCacheValid(key) {
+  const cache = this.cache?.[key];
+  if (!cache || !cache.timestamp) return false;
+
+  const age = Date.now() - cache.timestamp;
+  const isValid = age < cache.ttl;
+
+  if (isValid) {
+    console.debug(`✅ CACHE HIT → ${key}`, {
+      age: `${Math.floor(age / 1000)}s`,
+      records: cache.data?.length || 0,
     });
   }
 
-  isCacheValid(key) {
-    const cache = this.cache[key];
-    if (!cache?.timestamp) return false;
+  return isValid;
+}
 
-    const age = Date.now() - cache.timestamp;
-    const isValid = age < cache.ttl;
+getCachedData(key) {
+  return this.isCacheValid(key) ? this.cache[key].data : null;
+}
 
-    if (isValid) {
-      console.log(
-        `%c✅ CACHE HIT: ${key}`,
-        "color: #25d366; font-weight: bold;",
-        {
-          age: `${Math.round(age / 1000)}s`,
-          records: cache.data?.length || 0,
-        }
-      );
-    }
-    return isValid;
+// ----------------------------------------
+// Cache Setter (Non-breaking)
+// ----------------------------------------
+setCacheData(key, data = [], totalCount = null) {
+  if (!this.cache[key]) {
+    this.cache[key] = {
+      data: [],
+      totalCount: 0,
+      timestamp: null,
+      ttl: 5 * 60 * 1000,
+      searches: new Map(),
+    };
   }
 
-  getCachedData(key) {
-    return this.isCacheValid(key) ? this.cache[key].data : null;
+  const cache = this.cache[key];
+  cache.data = data;
+  cache.timestamp = Date.now();
+
+  if (typeof totalCount === "number") {
+    cache.totalCount = totalCount;
   }
 
-  setCacheData(key, data, totalCount = null) {
-    if (!this.cache[key]) {
-      this.cache[key] = {
-        data: [],
-        totalCount: 0,
-        timestamp: null,
-        ttl: 5 * 60 * 1000,
-        searches: new Map(),
-      };
-    }
+  console.debug(`💾 CACHE UPDATED → ${key}`, {
+    records: data.length,
+  });
+}
 
-    this.cache[key].data = data;
-    this.cache[key].timestamp = Date.now();
-    if (totalCount !== null) this.cache[key].totalCount = totalCount;
+// ----------------------------------------
+// Search Cache (Optimized)
+// ----------------------------------------
+getCachedSearch(section, term) {
+  const cache = this.cache?.[section];
+  if (!cache?.searches || !term) return null;
 
-    console.log(`%c💾 CACHED: ${key}`, "color: #128c7e; font-weight: bold;", {
-      records: data.length,
+  const cached = cache.searches.get(term);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp < cache.ttl) {
+    console.debug(`🔍 SEARCH CACHE HIT → "${term}"`);
+    return cached.data;
+  }
+
+  // Auto cleanup expired search
+  cache.searches.delete(term);
+  return null;
+}
+
+setCachedSearch(section, term, data) {
+  const cache = this.cache?.[section];
+  if (!cache?.searches || !term) return;
+
+  cache.searches.set(term, {
+    data,
+    timestamp: Date.now(),
+  });
+
+  // Keep cache size limited
+  if (cache.searches.size > 20) {
+    const oldestKey = cache.searches.keys().next().value;
+    cache.searches.delete(oldestKey);
+  }
+}
+
+// ----------------------------------------
+// Cache Invalidator (Safer)
+// ----------------------------------------
+invalidateCache(section = null) {
+  if (section && this.cache[section]) {
+    this.cache[section].timestamp = null;
+    this.cache[section].searches?.clear();
+    return;
+  }
+
+  Object.values(this.cache).forEach((cache) => {
+    cache.timestamp = null;
+    cache.searches?.clear();
+  });
+}
+
+// ----------------------------------------
+// Cache Monitoring (Dev Friendly)
+// ----------------------------------------
+startCacheMonitoring() {
+  setInterval(() => {
+    console.groupCollapsed("📊 CRM Cache Stats");
+
+    Object.entries(this.cache).forEach(([key, cache]) => {
+      if (!cache.timestamp) return;
+
+      const age = Math.floor((Date.now() - cache.timestamp) / 1000);
+      console.log(`${key}`, {
+        records: cache.data?.length || 0,
+        age: `${age}s`,
+      });
     });
-  }
 
-  getCachedSearch(section, term) {
-    const cache = this.cache[section];
-    if (!cache?.searches) return null;
+    console.groupEnd();
+  }, 30000);
+}
 
-    const cached = cache.searches.get(term);
-    if (cached && Date.now() - cached.timestamp < cache.ttl) {
-      console.log(
-        `%c🔍 SEARCH HIT: "${term}"`,
-        "color: #25d366; font-weight: bold;"
-      );
-      return cached.data;
-    }
-    return null;
-  }
+// ----------------------------------------
+// Page Setup (Petite-Vue Friendly)
+// ----------------------------------------
+setupPage() {
+  this.page.set_title_sub("");
+  this.page.clear_primary_action();
+  this.page.clear_secondary_action();
+  this.page.clear_actions();
 
-  setCachedSearch(section, term, data) {
-    const cache = this.cache[section];
-    if (!cache?.searches) return;
-
-    cache.searches.set(term, { data, timestamp: Date.now() });
-
-    if (cache.searches.size > 20) {
-      const firstKey = cache.searches.keys().next().value;
-      cache.searches.delete(firstKey);
-    }
-  }
-
-  invalidateCache(section = null) {
-    if (section) {
-      if (this.cache[section]) {
-        this.cache[section].timestamp = null;
-        this.cache[section].searches?.clear();
-      }
-    } else {
-      Object.values(this.cache).forEach((cache) => {
-        cache.timestamp = null;
-        cache.searches?.clear();
-      });
-    }
-  }
-
-  startCacheMonitoring() {
-    setInterval(() => {
-      console.group("%c📊 Cache Stats", "color: #128c7e; font-weight: bold;");
-      Object.keys(this.cache).forEach((key) => {
-        const cache = this.cache[key];
-        if (cache.timestamp) {
-          const age = Math.round((Date.now() - cache.timestamp) / 1000);
-          console.log(
-            `${key}: ${cache.data?.length || 0} records, ${age}s old`
-          );
-        }
-      });
-      console.groupEnd();
-    }, 30000);
-  }
-
-  setupPage() {
-    this.page.set_title_sub("");
-    this.page.clear_primary_action();
-    this.page.clear_secondary_action();
-    this.page.clear_actions();
-    this.page.set_indicator("Lead", "green");
-  }
+  // Indicator reactive friendly
+  this.page.set_indicator(
+    this.state?.section === "appointment" ? "Appointment" : "Lead",
+    "green"
+  );
+}
 
   render() {
     const isMobile = this.state.isMobile;
@@ -614,7 +852,7 @@ class MyCRM {
         }
       </style>
 
-      <div class="mycrm-root mycrm-container">
+      <div class="mycrm-root mycrm-container" v-scope="mycrmVue">
         
         <div class="mycrm-tabs">
           <button class="mycrm-tab ${
@@ -706,49 +944,129 @@ class MyCRM {
     `);
 
     this.attachEventListeners();
+    // Petite-Vue reactive bridge (SAFE)
+if (!window.mycrmVue) {
+  window.mycrmVue = {
+    section: this.state.section,
+    search: this.state.search,
+    isMobile: this.state.isMobile,
+    leadCount: 0,
+    appointmentCount: 0,
+  };
+}
+
+// Sync state → vue (no override)
+Object.assign(window.mycrmVue, {
+  section: this.state.section,
+  search: this.state.search,
+  isMobile: this.state.isMobile,
+});
+// Mount Petite-Vue once
+if (!this._vueMounted) {
+  PetiteVue.createApp({ mycrmVue: window.mycrmVue }).mount();
+  this._vueMounted = true;
+}
+
+
     frappe.crm_app = this;
   }
+  
+
+  // attachEventListeners() {
+  //   $(".mycrm-tab").on("click", (e) => {
+  //     const section = $(e.currentTarget).data("section");
+  //     this.switchSection(section);
+  //   });
+
+  //   $("#mycrm-search").on("input", (e) => {
+  //     const val = $(e.target).val();
+  //     $("#mycrm-clear-search").toggle(val.length > 0);
+
+  //     clearTimeout(this.searchTimeout);
+  //     this.searchTimeout = setTimeout(() => {
+  //       this.state.search = val;
+  //       this.state.offset = 0;
+  //       if (this.state.section !== "reports") this.fetchData();
+  //     }, 300);
+  //   });
+
+  //   $("#mycrm-clear-search").on("click", () => {
+  //     $("#mycrm-search").val("");
+  //     $("#mycrm-clear-search").hide();
+  //     this.state.search = "";
+  //     this.state.offset = 0;
+  //     if (this.state.section !== "reports") this.fetchData();
+  //   });
+
+  //   $("#mycrm-list-container").on("scroll", () => this.handleScroll());
+  //   $("#mycrm-load-more-btn").on("click", () => this.loadMore());
+
+  //   $("#mycrm-fab").on("click", () => {
+  //     if (this.state.section === "lead") {
+  //       this.createLead();
+  //     } else if (this.state.section === "appointment") {
+  //       this.createAppointment();
+  //     } else {
+  //       this.switchSection("lead");
+  //       setTimeout(() => this.createLead(), 100);
+  //     }
+  //   });
+  // }
 
   attachEventListeners() {
-    $(".mycrm-tab").on("click", (e) => {
-      const section = $(e.currentTarget).data("section");
-      this.switchSection(section);
-    });
+  $(".mycrm-tab").on("click", (e) => {
+    const section = $(e.currentTarget).data("section");
+    this.switchSection(section);
 
-    $("#mycrm-search").on("input", (e) => {
-      const val = $(e.target).val();
-      $("#mycrm-clear-search").toggle(val.length > 0);
+    // Vue sync
+    window.mycrmVue.section = section;
+  });
 
-      clearTimeout(this.searchTimeout);
-      this.searchTimeout = setTimeout(() => {
-        this.state.search = val;
-        this.state.offset = 0;
-        if (this.state.section !== "reports") this.fetchData();
-      }, 300);
-    });
+  $("#mycrm-search").on("input", (e) => {
+    const val = $(e.target).val();
+    $("#mycrm-clear-search").toggle(val.length > 0);
 
-    $("#mycrm-clear-search").on("click", () => {
-      $("#mycrm-search").val("");
-      $("#mycrm-clear-search").hide();
-      this.state.search = "";
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => {
+      this.state.search = val;
+      window.mycrmVue.search = val; // 👈 sync
       this.state.offset = 0;
-      if (this.state.section !== "reports") this.fetchData();
-    });
 
-    $("#mycrm-list-container").on("scroll", () => this.handleScroll());
-    $("#mycrm-load-more-btn").on("click", () => this.loadMore());
-
-    $("#mycrm-fab").on("click", () => {
-      if (this.state.section === "lead") {
-        this.createLead();
-      } else if (this.state.section === "appointment") {
-        this.createAppointment();
-      } else {
-        this.switchSection("lead");
-        setTimeout(() => this.createLead(), 100);
+      if (this.state.section !== "reports") {
+        this.fetchData();
       }
-    });
-  }
+    }, 300);
+  });
+
+  $("#mycrm-clear-search").on("click", () => {
+    $("#mycrm-search").val("");
+    $("#mycrm-clear-search").hide();
+
+    this.state.search = "";
+    window.mycrmVue.search = ""; // 👈 sync
+    this.state.offset = 0;
+
+    if (this.state.section !== "reports") {
+      this.fetchData();
+    }
+  });
+
+  $("#mycrm-list-container").on("scroll", () => this.handleScroll());
+  $("#mycrm-load-more-btn").on("click", () => this.loadMore());
+
+  $("#mycrm-fab").on("click", () => {
+    if (this.state.section === "lead") {
+      this.createLead();
+    } else if (this.state.section === "appointment") {
+      this.createAppointment();
+    } else {
+      this.switchSection("lead");
+      window.mycrmVue.section = "lead";
+      setTimeout(() => this.createLead(), 100);
+    }
+  });
+}
+
 
   async loadUserLeads() {
     console.group("%c👥 User Leads", "color: #128c7e; font-weight: bold;");
@@ -779,6 +1097,12 @@ class MyCRM {
 
     console.log(`⚡ ${fetchTime}ms`);
     console.groupEnd();
+    this.state.userLeadNames = (response.message || []).map(d => d.name);
+this.setCacheData("userLeadNames", this.state.userLeadNames);
+
+// Vue sync (optional UI use)
+window.mycrmVue.leadCount = this.state.userLeadNames.length;
+
   }
 
   async fetchData(append = false) {
@@ -811,6 +1135,15 @@ class MyCRM {
           this.state.totalCount = cachedSearch.length;
           this.applyFilter();
           this.updateCacheIndicator(true);
+// 👇 ADD
+window.mycrmVue.cacheHit = false;
+
+// 👇 ADD COUNTS
+if (this.state.section === "lead") {
+  window.mycrmVue.leadCount = this.state.totalCount;
+} else if (this.state.section === "appointment") {
+  window.mycrmVue.appointmentCount = this.state.totalCount;
+}
           console.groupEnd();
           return;
         }
@@ -848,23 +1181,51 @@ class MyCRM {
     }
   }
 
+  // async fetchTotalCount() {
+  //   const filters = this.buildServerFilters();
+  //   const or_filters = this.buildOrFilters();
+
+  //   const doctype = this.state.section === "lead" ? "Lead" : "Appointment";
+
+  //   const response = await frappe.call({
+  //     method: "frappe.client.get_count",
+  //     args: {
+  //       doctype,
+  //       filters,
+  //       or_filters,
+  //     },
+  //   });
+
+  //   this.state.totalCount = response.message || 0;
+  // }
+
   async fetchTotalCount() {
-    const filters = this.buildServerFilters();
-    const or_filters = this.buildOrFilters();
+  const filters = this.buildServerFilters();
+  const or_filters = this.buildOrFilters();
 
-    const doctype = this.state.section === "lead" ? "Lead" : "Appointment";
+  const doctype = this.state.section === "lead" ? "Lead" : "Appointment";
 
-    const response = await frappe.call({
-      method: "frappe.client.get_count",
-      args: {
-        doctype,
-        filters,
-        or_filters,
-      },
-    });
+  const response = await frappe.call({
+    method: "frappe.client.get_count",
+    args: {
+      doctype,
+      filters,
+      or_filters,
+    },
+  });
 
-    this.state.totalCount = response.message || 0;
+  this.state.totalCount = response.message || 0;
+
+  // ✅ Petite-Vue sync (NO logic change)
+  if (window.mycrmVue) {
+    if (this.state.section === "lead") {
+      window.mycrmVue.leadCount = this.state.totalCount;
+    } else if (this.state.section === "appointment") {
+      window.mycrmVue.appointmentCount = this.state.totalCount;
+    }
   }
+}
+
 
   buildServerFilters() {
     const filters = [];
@@ -1125,8 +1486,83 @@ if (this.state.filter === "Assigned To Me") {
     }
   }
 
+// async fetchAssignedLeads() {
+//   const res = await frappe.call({
+//     method: "frappe.client.get_list",
+//     args: {
+//       doctype: "ToDo",
+//       fields: ["reference_name", "assigned_by"],
+//       filters: {
+//         reference_type: "Lead",
+//         allocated_to: frappe.session.user
+//       },
+//       limit_page_length: 1000
+//     }
+//   });
+
+//   const rows = res.message || [];
+
+//   // ✅ RESET EVERYTHING (VERY IMPORTANT)
+//   this.assignedByMap = {};
+//   this.assignedLeadNames = [];
+
+//   const uniqueLeadSet = new Set();
+
+//   for (const row of rows) {
+//     if (!row.reference_name || uniqueLeadSet.has(row.reference_name)) continue;
+
+//     uniqueLeadSet.add(row.reference_name);
+
+//     const emp = await this.getEmployeeByUser(row.assigned_by);
+
+//     if (emp) {
+//       this.assignedByMap[row.reference_name] = {
+//         full_name: emp.name,
+//         employee_code: emp.code,
+//         branch: emp.branch
+//       };
+
+//       this.assignedLeadNames.push(row.reference_name);
+//     }
+//   }
+
+//   // ✅ COUNT = UNIQUE LEADS ONLY
+//   this.assignedCount = uniqueLeadSet.size;
+
+//   console.log("✅ Assigned Leads (unique):", this.assignedLeadNames);
+
+//   console.log("🧪 ToDo rows:", rows.length);
+// console.log("🧪 Unique Leads:", this.assignedLeadNames.length);
+// console.log("🧪 Map:", this.assignedByMap);
+
+// }
+
+
+// async getEmployeeByUser(userId) {
+//   if (!userId) return null;
+
+//   try {
+//     const res = await frappe.db.get_value(
+//       "Employee",
+//       { user_id: userId },
+//       ["employee_name", "employee"]
+//     );
+
+//     if (res && res.message) {
+//       return {
+//         name: res.message.employee_name,
+//         code: res.message.employee,
+//       };
+//     }
+//   } catch (e) {
+//     console.warn("Employee fetch failed for", userId);
+//   }
+
+//   return null;
+// }
+
 async fetchAssignedLeads() {
-  const res = await frappe.call({
+  const { message = [] } = await frappe.call({
     method: "frappe.client.get_list",
     args: {
       doctype: "ToDo",
@@ -1139,42 +1575,45 @@ async fetchAssignedLeads() {
     }
   });
 
-  const rows = res.message || [];
-
-  // ✅ RESET EVERYTHING (VERY IMPORTANT)
+  // 🔁 reset reactive state
   this.assignedByMap = {};
   this.assignedLeadNames = [];
+  this.assignedCount = 0;
 
-  const uniqueLeadSet = new Set();
+  const uniqueLeads = [...new Set(
+    message.map(r => r.reference_name).filter(Boolean)
+  )];
 
-  for (const row of rows) {
-    if (!row.reference_name || uniqueLeadSet.has(row.reference_name)) continue;
+  const employees = await Promise.all(
+    uniqueLeads.map(async (lead) => {
+      const row = message.find(r => r.reference_name === lead);
+      const emp = row?.assigned_by
+        ? await this.getEmployeeByUser(row.assigned_by)
+        : null;
 
-    uniqueLeadSet.add(row.reference_name);
+      return emp
+        ? {
+            lead,
+            emp
+          }
+        : null;
+    })
+  );
 
-    const emp = await this.getEmployeeByUser(row.assigned_by);
+  employees.filter(Boolean).forEach(({ lead, emp }) => {
+    this.assignedByMap[lead] = {
+      full_name: emp.name,
+      employee_code: emp.code,
+      branch: emp.branch
+    };
+    this.assignedLeadNames.push(lead);
+  });
 
-    if (emp) {
-      this.assignedByMap[row.reference_name] = {
-        full_name: emp.name,
-        employee_code: emp.code,
-        branch: emp.branch
-      };
+  this.assignedCount = this.assignedLeadNames.length;
 
-      this.assignedLeadNames.push(row.reference_name);
-    }
-  }
-
-  // ✅ COUNT = UNIQUE LEADS ONLY
-  this.assignedCount = uniqueLeadSet.size;
-
-  console.log("✅ Assigned Leads (unique):", this.assignedLeadNames);
-
-  console.log("🧪 ToDo rows:", rows.length);
-console.log("🧪 Unique Leads:", this.assignedLeadNames.length);
-console.log("🧪 Map:", this.assignedByMap);
-
+  console.log("✅ Assigned Leads:", this.assignedLeadNames);
 }
+
 
 async getEmployeeByUser(userId) {
   if (!userId) return null;
@@ -1200,78 +1639,161 @@ async getEmployeeByUser(userId) {
   return null;
 }
 
-  countStatus(status) {
-    return this.state.data.filter((d) => d.status === status).length;
-  }
 
-  countToday() {
-    const today = frappe.datetime.get_today();
-    return this.state.data.filter((d) => {
-      if (!d.scheduled_time) return false;
-      const schedDate = frappe.datetime.str_to_obj(d.scheduled_time);
-      return frappe.datetime.obj_to_str(schedDate) === today;
-    }).length;
-  }
+  // countStatus(status) {
+  //   return this.state.data.filter((d) => d.status === status).length;
+  // }
 
-  countDue() {
-    const now = frappe.datetime.now_datetime();
-    return this.state.data.filter(
-      (d) => d.scheduled_time && d.scheduled_time < now && d.status !== "Closed"
-    ).length;
-  }
+  // countToday() {
+  //   const today = frappe.datetime.get_today();
+  //   return this.state.data.filter((d) => {
+  //     if (!d.scheduled_time) return false;
+  //     const schedDate = frappe.datetime.str_to_obj(d.scheduled_time);
+  //     return frappe.datetime.obj_to_str(schedDate) === today;
+  //   }).length;
+  // }
 
-  countUpcoming() {
-    const now = frappe.datetime.now_datetime();
-    return this.state.data.filter(
-      (d) => d.scheduled_time && d.scheduled_time > now && d.status !== "Closed"
-    ).length;
-  }
+  // countDue() {
+  //   const now = frappe.datetime.now_datetime();
+  //   return this.state.data.filter(
+  //     (d) => d.scheduled_time && d.scheduled_time < now && d.status !== "Closed"
+  //   ).length;
+  // }
 
-  updateCount() {
-    const showing = this.state.filteredData.length;
-    const total = this.state.totalCount;
+  // countUpcoming() {
+  //   const now = frappe.datetime.now_datetime();
+  //   return this.state.data.filter(
+  //     (d) => d.scheduled_time && d.scheduled_time > now && d.status !== "Closed"
+  //   ).length;
+  // }
 
-    let text = `${showing} of ${total} ${this.state.section}s`;
-    if (this.state.search) {
-      text = `${showing} results`;
-    }
+  // updateCount() {
+  //   const showing = this.state.filteredData.length;
+  //   const total = this.state.totalCount;
 
-    $("#mycrm-count-text").text(text);
-  }
+  //   let text = `${showing} of ${total} ${this.state.section}s`;
+  //   if (this.state.search) {
+  //     text = `${showing} results`;
+  //   }
+
+  //   $("#mycrm-count-text").text(text);
+  // }
+
+countStatus(status) {
+  return this.state.data.filter(d => d.status === status).length;
+}
+
+countToday() {
+  const today = frappe.datetime.get_today();
+  return this.state.data.filter(d => {
+    if (!d.scheduled_time) return false;
+    return frappe.datetime.obj_to_str(
+      frappe.datetime.str_to_obj(d.scheduled_time)
+    ) === today;
+  }).length;
+}
+
+countDue() {
+  const now = frappe.datetime.now_datetime();
+  return this.state.data.filter(d =>
+    d.scheduled_time &&
+    d.scheduled_time < now &&
+    d.status !== "Closed"
+  ).length;
+}
+
+countUpcoming() {
+  const now = frappe.datetime.now_datetime();
+  return this.state.data.filter(d =>
+    d.scheduled_time &&
+    d.scheduled_time > now &&
+    d.status !== "Closed"
+  ).length;
+}
+
+updateCount() {
+  const showing = this.state.filteredData.length;
+  const total = this.state.totalCount;
+
+  this.countText = this.state.search
+    ? `${showing} results`
+    : `${showing} of ${total} ${this.state.section}s`;
+
+  // 🔁 keep existing DOM behavior intact
+  $("#mycrm-count-text").text(this.countText);
+}
+
+
+  // renderList() {
+  //   const container = $("#mycrm-list-body");
+  //   const data = this.state.filteredData;
+
+  //   if (data.length === 0) {
+  //     $("#mycrm-empty").show();
+  //     $("#mycrm-load-more").hide();
+  //     container.hide();
+  //     return;
+  //   }
+
+  //   $("#mycrm-empty").hide();
+  //   container.show();
+  //   container.empty();
+
+  //   const fragment = document.createDocumentFragment();
+
+  //   data.forEach((item) => {
+  //     const card = this.renderWhatsAppCard(item);
+  //     fragment.appendChild(card[0]);
+  //   });
+
+  //   container[0].appendChild(fragment);
+
+  //   if (
+  //     this.state.hasMore &&
+  //     this.state.filteredData.length === this.state.data.length
+  //   ) {
+  //     $("#mycrm-load-more").show();
+  //   } else {
+  //     $("#mycrm-load-more").hide();
+  //   }
+  // }
 
   renderList() {
-    const container = $("#mycrm-list-body");
-    const data = this.state.filteredData;
+  const container = $("#mycrm-list-body");
+  const data = this.state.filteredData;
 
-    if (data.length === 0) {
-      $("#mycrm-empty").show();
-      $("#mycrm-load-more").hide();
-      container.hide();
-      return;
-    }
-
-    $("#mycrm-empty").hide();
-    container.show();
-    container.empty();
-
-    const fragment = document.createDocumentFragment();
-
-    data.forEach((item) => {
-      const card = this.renderWhatsAppCard(item);
-      fragment.appendChild(card[0]);
-    });
-
-    container[0].appendChild(fragment);
-
-    if (
-      this.state.hasMore &&
-      this.state.filteredData.length === this.state.data.length
-    ) {
-      $("#mycrm-load-more").show();
-    } else {
-      $("#mycrm-load-more").hide();
-    }
+  // Empty state
+  if (!data || data.length === 0) {
+    this.showEmptyState(true);
+    return;
   }
+
+  this.showEmptyState(false);
+  container.empty();
+
+  const fragment = document.createDocumentFragment();
+
+  for (const item of data) {
+    const card = this.renderWhatsAppCard(item);
+    fragment.appendChild(card[0]); // existing jQuery card
+  }
+
+  container[0].appendChild(fragment);
+
+  const canLoadMore =
+    this.state.hasMore &&
+    this.state.filteredData.length === this.state.data.length;
+
+  $("#mycrm-load-more").toggle(canLoadMore);
+}
+
+// 🔹 extracted helper (Petite-Vue friendly & reusable)
+showEmptyState(show) {
+  $("#mycrm-empty").toggle(show);
+  $("#mycrm-list-body").toggle(!show);
+  $("#mycrm-load-more").toggle(!show && this.state.hasMore);
+}
+
   renderWhatsAppCard(item) {
     const modified = frappe.datetime.comment_when(item.modified);
 
