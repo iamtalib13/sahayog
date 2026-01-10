@@ -87,23 +87,35 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   const today = frappe.datetime.get_today();
 
   let filter_html = `
-  <div class="card mb-3 p-3">
-    <div class="row align-items-end">
-      <div class="col-md-3">
-        <label>From Date</label>
-        <input type="date" class="form-control" id="from_date" value="${today}">
-      </div>
-      <div class="col-md-3">
-        <label>To Date</label>
-        <input type="date" class="form-control" id="to_date" value="${today}">
-      </div>
-      <div class="col-md-2">
-        <button class="btn btn-primary mt-4" id="apply_filters">
-          Apply
-        </button>
-      </div>
+ <div class="card mb-3 p-3">
+  <div class="row align-items-end">
+    
+    <div class="col-md-3">
+      <label>From Date</label>
+      <input type="date" class="form-control" id="from_date" value="${today}">
     </div>
+
+    <div class="col-md-3">
+      <label>To Date</label>
+      <input type="date" class="form-control" id="to_date" value="${today}">
+    </div>
+
+    <!-- Apply -->
+    <div class="col-md-2">
+      <button class="btn btn-dark mt-4 w-100" id="apply_filters">
+        Apply
+      </button>
+    </div>
+
+    <!-- ✅ Export (RIGHT MOST) -->
+    <div class="col-md-4 d-flex justify-content-end">
+      <button class="btn btn-success mt-4 px-4" id="export_leads">
+        ⬇ Export
+      </button>
+    </div>
+
   </div>
+</div>
 `;
 
   $container.append(filter_html);
@@ -185,12 +197,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   <td>${l.employee_id || "-"}</td>
   <td>${l.designation || "-"}</td>
   <td>${l.sol_id || "-"}</td>
- <td>${l.branch_info?.branch || "-"}</td>
-<td>${l.branch_info?.district || "-"}</td>
-<td>${l.branch_info?.region || "-"}</td>
-<td>${l.branch_info?.zone || "-"}</td>
+  <td>${l.branch_info?.branch || "-"}</td>
+  <td>${l.branch_info?.district || "-"}</td>
+  <td>${l.branch_info?.region || "-"}</td>
+  <td>${l.branch_info?.zone || "-"}</td>
 
-  <td>${frappe.datetime.str_to_user(l.creation)}</td>
+  <td>${format_ddmmyyyy(l.creation)}</td>
+
+
 </tr>
 `);
     });
@@ -202,6 +216,47 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
   $("#apply_filters").on("click", load_leads);
 
+  // ✅ EXPORT BUTTON (FIX)
+  $("#export_leads").on("click", function () {
+    const from_date = $("#from_date").val();
+    const to_date = $("#to_date").val();
+
+    if (!from_date || !to_date) {
+      frappe.msgprint("Please select From Date and To Date");
+      return;
+    }
+
+    const url =
+      `/api/method/sahayog.scrm.api.report_access.export_leads` +
+      `?from_date=${from_date}&to_date=${to_date}`;
+
+    window.open(url);
+  });
+  // Export Button Styles
+  $("<style>")
+    .prop("type", "text/css")
+    .html(
+      `
+    #export_leads {
+      font-weight: 600;
+      box-shadow: 0 0 0 0.2rem rgba(25,135,84,.25);
+    }
+  `
+    )
+    .appendTo("head");
+
   // initial load
   load_leads();
 };
+// Helper to format date as DD/MM/YYYY
+function format_ddmmyyyy(datetime) {
+  if (!datetime) return "-";
+
+  const d = frappe.datetime.str_to_obj(datetime);
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}

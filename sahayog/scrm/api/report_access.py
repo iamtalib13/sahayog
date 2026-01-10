@@ -1,5 +1,8 @@
 
 import frappe
+import csv
+from frappe.utils import now_datetime
+from frappe import response
 
 @frappe.whitelist()
 def get_user_report_preference_record(user, report_type="Lead"):
@@ -231,3 +234,122 @@ def get_leads(from_date, to_date):
     )
 
     return {"leads": final_leads, "stats": stats}
+#  -------------------------------
+# Export Leads as CSV
+# -------------------------------
+@frappe.whitelist()
+def export_leads(from_date, to_date):
+    data = get_leads(from_date, to_date)
+    leads = data.get("leads", [])
+
+    if not leads:
+        frappe.throw("No leads found for export")
+
+    filename = f"CRM_Leads_Report_{now_datetime().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    headers = [
+        "Sr.No.", "Status", "Lead ID", "Customer", "Contact", "Source",
+        "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+    ]
+
+    output = []
+    output.append(",".join(headers))
+
+    for idx, l in enumerate(leads, start=1):
+
+        product = l.products[0] if l.products else {}
+
+        row = [
+            idx,
+            l.status,
+            l.name,
+            l.lead_name or "",
+            l.contact or "",
+            l.source or "",
+            product.get("product", ""),
+            product.get("product_name", ""),
+            product.get("product_amount", ""),
+            l.employee_name or "",
+            l.employee_id or "",
+            l.designation or "",
+            l.sol_id or "",
+            l.branch_info.branch if l.branch_info else "",
+            l.branch_info.district if l.branch_info else "",
+            l.branch_info.region if l.branch_info else "",
+            l.branch_info.zone if l.branch_info else "",
+            l.creation,
+        ]
+
+        output.append(",".join([f'"{str(col)}"' for col in row]))
+
+    frappe.response.clear()
+    frappe.response["type"] = "download"
+    frappe.response["filename"] = filename
+    frappe.response["filecontent"] = "\n".join(output)
+# -------------------------------   
+# Export Leads as CSV in Batches
+# -------------------------------
+@frappe.whitelist()
+def export_leads_batch(from_date, to_date, limit=500, offset=0):
+    limit = int(limit)
+    offset = int(offset)
+
+    data = get_leads(from_date, to_date)
+    leads = data.get("leads", [])
+
+    # Apply batching
+    batch = leads[offset: offset + limit]
+
+    if not batch:
+        return None
+
+    import csv
+    from frappe import response
+    from frappe.utils import now_datetime
+
+    filename = f"CRM_Leads_{offset + 1}_{offset + len(batch)}.csv"
+
+    response.filename = filename
+    response.type = "download"
+
+    headers = [
+        "Sr.No.", "Status", "Lead ID", "Customer", "Contact", "Source",
+        "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+    ]
+
+    rows = [headers]
+
+    for index, l in enumerate(batch):
+        sr_no = offset + index + 1
+
+        product = l.products[0] if l.products else {}
+        rows.append([
+            sr_no,
+            l.status,
+            l.name,
+            l.lead_name or "",
+            l.contact or "",
+            l.source or "",
+            product.get("product", ""),
+            product.get("product_name", ""),
+            product.get("product_amount", ""),
+            l.employee_name or "",
+            l.employee_id or "",
+            l.designation or "",
+            l.sol_id or "",
+            l.branch_info.branch if l.branch_info else "",
+            l.branch_info.district if l.branch_info else "",
+            l.branch_info.region if l.branch_info else "",
+            l.branch_info.zone if l.branch_info else "",
+            l.creation,
+        ])
+
+    output = []
+    for row in rows:
+        output.append(",".join([f'"{str(col)}"' for col in row]))
+
+    response.filecontent = "\n".join(output)
