@@ -37,8 +37,9 @@
    "read_only": 1
   },
   {
+   "fetch_from": "branch.branch_type",
    "fieldname": "branch_type",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Branch Type",
    "options": "Metro\nNon Metro",
    "read_only": 1,
@@ -58,7 +59,6 @@
    "fieldname": "monthly_limit",
    "fieldtype": "Currency",
    "label": "Monthly Limit",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -99,11 +99,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 16:33:41.433149",
+ "modified": "2026-01-12 12:24:44.175801",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
