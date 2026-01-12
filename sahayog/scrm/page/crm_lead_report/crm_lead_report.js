@@ -158,6 +158,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     </div>
   </div>
 `);
+  // ---------- Load Leads Function ----------
   async function load_leads() {
     if (LOADING || !HAS_MORE) return;
 
@@ -195,7 +196,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       LOADING = false;
       return;
     }
-
+    // Append leads to table
     leads.forEach((l, i) => {
       tbody.append(`
       <tr>
@@ -229,7 +230,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     LOADING = false;
   }
-
+  // ---------- Apply Filters Button ----------
   $("#apply_filters").on("click", () => {
     OFFSET = 0;
     HAS_MORE = true;
@@ -238,7 +239,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   });
 
   // ✅ EXPORT BUTTON (FIX)
-  $("#export_leads").on("click", function () {
+  $("#export_leads").on("click", async function () {
     const from_date = $("#from_date").val();
     const to_date = $("#to_date").val();
 
@@ -247,12 +248,39 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return;
     }
 
-    const url =
-      `/api/method/sahayog.scrm.api.report_access.export_leads` +
-      `?from_date=${from_date}&to_date=${to_date}`;
+    let offset = 0;
+    const limit = 500;
+    let has_more = true;
 
-    window.open(url);
+    frappe.show_alert({
+      message: "Export started (batch wise)...",
+      indicator: "blue",
+    });
+
+    while (has_more) {
+      const url =
+        `/api/method/sahayog.scrm.api.report_access.export_leads_batch` +
+        `?from_date=${from_date}` +
+        `&to_date=${to_date}` +
+        `&limit=${limit}` +
+        `&offset=${offset}`;
+
+      window.open(url); // ✅ Correct for download
+
+      offset += limit;
+
+      // Small delay to avoid browser blocking popups
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Stop condition (same as backend)
+      if (limit < 500) {
+        has_more = false;
+      }
+    }
+
+    frappe.msgprint("Export completed successfully");
   });
+
   // Export Button Styles
   $("<style>")
     .prop("type", "text/css")
