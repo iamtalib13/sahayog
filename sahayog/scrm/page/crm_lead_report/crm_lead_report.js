@@ -4,6 +4,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     title: "CRM Leads Report",
     single_column: true,
   });
+  let LIMIT = 100;
+  let OFFSET = 0;
+  let LOADING = false;
+  let HAS_MORE = true;
 
   const $container = $(page.body).empty();
   const user = frappe.session.user;
@@ -12,7 +16,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   let pref_res = await frappe.call({
     method: "sahayog.scrm.api.report_access.get_user_report_preference_record",
     args: { user: user, report_type: "Lead" },
-    async: false,
   });
 
   const prefs = pref_res.message || [];
@@ -123,7 +126,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   $container.append(`
   <div class="card p-3">
     <h5>Lead List</h5>
-    <div class="table-responsive">
+    <div class="table-responsive" 
+     style="max-height: 65vh; overflow-y: auto;"
+     id="lead_scroll_container">
+
       <table class="table table-bordered table-sm" id="lead_table">
         <thead>
           <tr>
@@ -153,68 +159,83 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   </div>
 `);
   async function load_leads() {
+    if (LOADING || !HAS_MORE) return;
+
     const from_date = $("#from_date").val();
     const to_date = $("#to_date").val();
 
-    console.log("Date Filter:", from_date, to_date);
+    LOADING = true;
 
     const res = await frappe.call({
       method: "sahayog.scrm.api.report_access.get_leads",
       args: {
         from_date,
         to_date,
+        limit: LIMIT,
+        offset: OFFSET,
       },
     });
 
-    console.log("Leads API Response:", res);
-
     const data = res.message || {};
     const leads = data.leads || [];
-    const stats = data.stats || {};
 
-    const tbody = $("#lead_table tbody").empty();
+    const tbody = $("#lead_table tbody");
+
+    if (OFFSET === 0) {
+      tbody.empty();
+    }
 
     if (!leads.length) {
-      tbody.append(
-        `<tr><td colspan="18" class="text-center">No Leads Found</td></tr>`
-      );
+      HAS_MORE = false;
+      if (OFFSET === 0) {
+        tbody.append(
+          `<tr><td colspan="18" class="text-center">No Leads Found</td></tr>`
+        );
+      }
+      LOADING = false;
       return;
     }
 
     leads.forEach((l, i) => {
       tbody.append(`
-<tr>
-  <td>${i + 1}</td>
-  <td>${l.status}</td>
-  <td>${l.name}</td>
-  <td>${l.lead_name || "-"}</td>
-  <td>${l.contact || "-"}</td>
-  <td>${l.source || "-"}</td>
-  <td>${l.products?.[0]?.product || "-"}</td>
-  <td>${l.products?.[0]?.product_name || "-"}</td>
-  <td>${l.products?.[0]?.product_amount || "-"}</td>
-  <td>${l.employee_name || "-"}</td>
-  <td>${l.employee_id || "-"}</td>
-  <td>${l.designation || "-"}</td>
-  <td>${l.sol_id || "-"}</td>
-  <td>${l.branch_info?.branch || "-"}</td>
-  <td>${l.branch_info?.district || "-"}</td>
-  <td>${l.branch_info?.region || "-"}</td>
-  <td>${l.branch_info?.zone || "-"}</td>
-
-  <td>${format_ddmmyyyy(l.creation)}</td>
-
-
-</tr>
-`);
+      <tr>
+        <td>${OFFSET + i + 1}</td>
+        <td>${l.status}</td>
+        <td>${l.name}</td>
+        <td>${l.lead_name || "-"}</td>
+        <td>${l.contact || "-"}</td>
+        <td>${l.source || "-"}</td>
+        <td>${l.products?.[0]?.product || "-"}</td>
+        <td>${l.products?.[0]?.product_name || "-"}</td>
+        <td>${l.products?.[0]?.product_amount || "-"}</td>
+        <td>${l.employee_name || "-"}</td>
+        <td>${l.employee_id || "-"}</td>
+        <td>${l.designation || "-"}</td>
+        <td>${l.sol_id || "-"}</td>
+        <td>${l.branch_info?.branch || "-"}</td>
+        <td>${l.branch_info?.district || "-"}</td>
+        <td>${l.branch_info?.region || "-"}</td>
+        <td>${l.branch_info?.zone || "-"}</td>
+        <td>${format_ddmmyyyy(l.creation)}</td>
+      </tr>
+    `);
     });
-    console.log("Date Filter:", from_date, to_date);
-    console.log("API Response:", res.message);
-    console.log("Leads:", leads);
-    console.log("Stats:", stats);
+
+    OFFSET += leads.length;
+
+    if (leads.length < LIMIT) {
+      HAS_MORE = false;
+    }
+
+    LOADING = false;
   }
 
-  $("#apply_filters").on("click", load_leads);
+  $("#apply_filters").on("click", () => {
+    OFFSET = 0;
+    HAS_MORE = true;
+    $("#lead_table tbody").empty();
+    load_leads();
+  });
 
   // ✅ EXPORT BUTTON (FIX)
   $("#export_leads").on("click", function () {
@@ -244,6 +265,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   `
     )
     .appendTo("head");
+  $("#lead_scroll_container").on("scroll", function () {
+    const el = this;
+
+    if (
+      !LOADING &&
+      HAS_MORE &&
+      el.scrollTop + el.clientHeight >= el.scrollHeight - 20
+    ) {
+      load_leads();
+    }
+  });
 
   // initial load
   load_leads();
