@@ -1,11 +1,14 @@
 
 import frappe
-import csv
 from frappe.utils import now_datetime
+from frappe.utils import getdate, date_diff
 from frappe import response
-import frappe
-from frappe.utils import getdate
 
+MAX_EXPORT_BATCH_SIZE = 1000
+
+# -------------------------------
+# Get User Report Preference Record
+# -------------------------------
 @frappe.whitelist()
 def get_user_report_preference_record(user, report_type="Lead"):
     result = []
@@ -36,7 +39,9 @@ def get_user_report_preference_record(user, report_type="Lead"):
         })
 
     return result
-
+# -------------------------------
+# Get Leads with Preferences Applied
+# -------------------------------
 def empty_stats():
     return {
         "total": 0,
@@ -44,6 +49,9 @@ def empty_stats():
         "follow_up": 0,
         "not_interested": 0,
     }
+# -------------------------------
+# Caching Helpers
+# -------------------------------
 def get_branch_map(sol_ids):
     if not sol_ids:
         return {}
@@ -63,7 +71,9 @@ def get_branch_map(sol_ids):
     frappe.cache().set_value(cache_key, data, expires_in_sec=300)
     return data
 
-
+# -------------------------------
+# Caching Helpers
+# -------------------------------
 def get_employee_map(lead_owners):
     if not lead_owners:
         return {}
@@ -82,11 +92,16 @@ def get_employee_map(lead_owners):
     data = {e.user_id: e for e in employees}
     frappe.cache().set_value(cache_key, data, expires_in_sec=300)
     return data
+# -------------------------------
+# Get Leads with Preferences Applied        
 
 @frappe.whitelist()
 def get_leads(from_date, to_date, limit=100, offset=0):
     user = frappe.session.user
-
+    
+    # ---------------- Validate Dates ----------------
+    from_date, to_date = validate_date_range(from_date, to_date)
+   
     # ---------------- Preferences ----------------
     if user == "Administrator":
         products_pref = sources_pref = zones_pref = regions_pref = sol_ids_pref = []
@@ -180,63 +195,48 @@ def get_leads(from_date, to_date, limit=100, offset=0):
 
     return {"leads": final_leads, "stats": stats}
 
-#  -------------------------------
-# Export Leads as CSV
-# -------------------------------
-@frappe.whitelist()
-def export_leads(from_date, to_date):
-    data = get_leads(from_date, to_date)
-    leads = data.get("leads", [])
-
-    if not leads:
-        frappe.throw("No leads found")
-
-    filename = f"CRM_Leads_{now_datetime().strftime('%Y%m%d_%H%M%S')}.csv"
-
-    headers = [
-        "Sr.No.", "Status", "Lead ID", "Customer", "Contact", "Source",
-        "Product Code", "Product Name", "Amount",
-        "Employee Name", "Employee ID", "Designation",
-        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
-    ]
-
-    rows = [headers]
-
-    for i, l in enumerate(leads, start=1):
-        p = l.products[0] if l.products else {}
-        rows.append([
-            i, l.status, l.name, l.lead_name, l.contact, l.source,
-            p.get("product", ""), p.get("product_name", ""), p.get("product_amount", ""),
-            l.employee_name, l.employee_id, l.designation,
-            l.sol_id,
-            l.branch_info.branch if l.branch_info else "",
-            l.branch_info.district if l.branch_info else "",
-            l.branch_info.region if l.branch_info else "",
-            l.branch_info.zone if l.branch_info else "",
-            l.creation
-        ])
-
-    response.type = "download"
-    response.filename = filename
-    response.filecontent = "\n".join(
-        ",".join(f'"{c}"' for c in r) for r in rows
-    )
 
 # -------------------------------   
 # Export Leads as CSV in Batches
 # -------------------------------
 @frappe.whitelist()
 def export_leads_batch(from_date, to_date, limit=500, offset=0):
+    # 1️⃣ Date validation
+    from_date, to_date = validate_date_range(from_date, to_date)
+
+    # 2️⃣ Permission check
+    if not frappe.has_permission("Lead", "read"):
+        frappe.throw("Not permitted", frappe.PermissionError)
+
     limit = int(limit)
     offset = int(offset)
 
-    data = get_leads(from_date, to_date, limit=limit, offset=offset)
-    leads = data.get("leads", [])
+    # 3️⃣ Hard batch limit
+    if limit > MAX_EXPORT_BATCH_SIZE:
+        frappe.throw(
+            f"Batch export limit cannot exceed {MAX_EXPORT_BATCH_SIZE} rows"
+        )
 
+    # 4️⃣ Fetch leads (pagination-safe)
+    data = get_leads(
+        from_date,
+        to_date,
+        limit=limit,
+        offset=offset
+    )
+
+    leads = data.get("leads", [])
     if not leads:
         return None
 
-    filename = f"CRM_Leads_{offset+1}_{offset+len(leads)}.csv"
+    # 5️⃣ File naming (DATE + ROW RANGE)
+    start = offset + 1
+    end = offset + len(leads)
+
+    filename = (
+        f"crm_leads_{from_date}_to_{to_date}_"
+        f"{start}_to_{end}.csv"
+    )
 
     headers = [
         "Sr.No.", "Status", "Lead ID", "Customer", "Contact", "Source",
@@ -249,6 +249,8 @@ def export_leads_batch(from_date, to_date, limit=500, offset=0):
 
     for i, l in enumerate(leads):
         p = l.products[0] if l.products else {}
+        b = l.branch_info or {}
+
         rows.append([
             offset + i + 1,
             l.status,
@@ -263,15 +265,50 @@ def export_leads_batch(from_date, to_date, limit=500, offset=0):
             l.employee_id or "",
             l.designation or "",
             l.sol_id or "",
-            l.branch_info.branch if l.branch_info else "",
-            l.branch_info.district if l.branch_info else "",
-            l.branch_info.region if l.branch_info else "",
-            l.branch_info.zone if l.branch_info else "",
+            b.get("branch", ""),
+            b.get("district", ""),
+            b.get("region", ""),
+            b.get("zone", ""),
             l.creation,
         ])
 
-    response.type = "download"
-    response.filename = filename
-    response.filecontent = "\n".join(
+    # 6️⃣ CSV response
+    frappe.response.type = "download"
+    frappe.response.filename = filename
+    frappe.response.filecontent = "\n".join(
         ",".join(f'"{c}"' for c in row) for row in rows
     )
+
+    # 7️⃣ Metadata for frontend success message
+    frappe.response["export_info"] = {
+        "rows": len(leads),
+        "filename": filename,
+        "from_date": from_date,
+        "to_date": to_date,
+        "range": f"{start}-{end}"
+    }
+
+# -------------------------------   
+# Validate Date Range
+# -------------------------------
+MAX_DATE_RANGE_DAYS = 90
+
+def validate_date_range(from_date, to_date):
+    if not from_date or not to_date:
+        frappe.throw("From Date and To Date are required")
+
+    try:
+        from_dt = getdate(from_date)
+        to_dt = getdate(to_date)
+    except Exception:
+        frappe.throw("Invalid date format")
+
+    if from_dt > to_dt:
+        frappe.throw("From Date cannot be greater than To Date")
+
+    if date_diff(to_dt, from_dt) > MAX_DATE_RANGE_DAYS:
+        frappe.throw(
+            f"Date range cannot exceed {MAX_DATE_RANGE_DAYS} days"
+        )
+
+    return from_dt, to_dt
