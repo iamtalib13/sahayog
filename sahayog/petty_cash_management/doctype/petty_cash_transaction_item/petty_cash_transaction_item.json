@@ -3,7 +3,6 @@
  "allow_rename": 1,
  "creation": "2026-01-12 17:32:30.658912",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "expense_category",
@@ -61,7 +60,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-12 17:37:11.454000",
+ "modified": "2026-01-12 17:50:10.301029",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction Item",
