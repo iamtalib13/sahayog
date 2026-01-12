@@ -1,0 +1,67 @@
+{
+
+ "content": "[{\"id\":\"j6tGKq4RYj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Petty Cash Management</span>\",\"col\":12}}]",
+ "creation": "2026-01-10 12:05:44.682221",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Petty Cash Management",
+ "links": [],
+ "modified": "2026-01-10 12:06:32.285949",
+ "modified_by": "Administrator",
+ "module": "Petty Cash Management",
+
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 94.0,
+
+ "name": "Petty Cash Management",
+ "title": "Petty Cash Management",
+ "icon": "money",
+ "charts": [
+  {
+   "chart_name": "Monthly Expense by Category",
+   "label": "Expense Breakdown"
+  }
+ ],
+ "shortcuts": [
+  {
+   "type": "DocType",
+   "label": "New Expense",
+   "doc_view": "New",
+   "doctype": "Petty Cash Transaction",
+   "color": "Red"
+  },
+  {
+   "type": "DocType",
+   "label": "My Expenses",
+   "doc_view": "List",
+   "doctype": "Petty Cash Transaction"
+  },
+  {
+   "type": "DocType",
+   "label": "My Account",
+   "doc_view": "List",
+   "doctype": "Branch Petty Cash Account"
+  }
+ ],
+ "cards": [
+  {
+   "name": "Available Balance",
+   "type": "Number Card"
+  },
+  {
+   "name": "This Month Spent",
+   "type": "Number Card"
+  }
+ ]
+}

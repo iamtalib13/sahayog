@@ -211,6 +211,12 @@ permission_query_conditions = {
     "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",
     "Shareholder": "sahayog.permissions.get_shareholder_permission",
     "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
+
+
+    "Petty Cash Transaction": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
+    "Branch Petty Cash Account": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
+    # You can even restrict the Branch Master itself if you want:
+    # "Sahayog Branch": "sahayog.petty_cash_management.permissions.get_branch_permission_query"
 }
 #
 # has_permission = {
