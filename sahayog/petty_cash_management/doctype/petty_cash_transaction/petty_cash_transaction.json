@@ -2,38 +2,39 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "PCT-.YYYY.-.#####",
- "creation": "2026-01-09 15:55:19.085118",
+ "creation": "2026-01-13 11:21:10.278832",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_puvj",
+  "transaction_details_section",
   "transaction_type",
+  "transaction_date",
+  "column_break_1",
   "branch",
   "branch_name",
-  "transaction_date",
-  "column_break_pnzp",
+  "amount_section",
   "amount",
   "current_branch_balance",
-  "amended_from",
-  "expense_details_with_child_table_section",
-  "items",
   "expense_details_section",
   "expense_category",
   "vendor_name",
+  "column_break_2",
   "bill_number",
   "bill_date",
-  "description",
-  "column_break_rqmd",
   "bill_attachment",
-  "approval_and_finacle_section",
+  "description",
+  "expense_items_section",
+  "items",
+  "approval_section",
   "approved_by",
   "posted_to_finacle",
   "finacle_transaction_id",
-  "remarks"
+  "remarks",
+  "amended_from"
  ],
  "fields": [
   {
-   "fieldname": "section_break_puvj",
+   "fieldname": "transaction_details_section",
    "fieldtype": "Section Break",
    "label": "Transaction Details"
   },
@@ -44,6 +45,16 @@
    "label": "Transaction Type",
    "options": "Fund Allocation\nExpense",
    "reqd": 1
+  },
+  {
+   "fieldname": "transaction_date",
+   "fieldtype": "Date",
+   "label": "Transaction Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "branch",
@@ -60,10 +71,9 @@
    "read_only": 1
   },
   {
-   "fieldname": "transaction_date",
-   "fieldtype": "Date",
-   "label": "Transaction Date",
-   "reqd": 1
+   "fieldname": "amount_section",
+   "fieldtype": "Section Break",
+   "label": "Amount Details"
   },
   {
    "fieldname": "amount",
@@ -78,24 +88,9 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_pnzp",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Petty Cash Transaction",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
    "depends_on": "eval:doc.transaction_type == 'Expense'",
    "fieldname": "expense_details_section",
    "fieldtype": "Section Break",
-   "hidden": 1,
    "label": "Expense Details"
   },
   {
@@ -112,6 +107,10 @@
    "label": "Vendor Name"
   },
   {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "bill_number",
    "fieldtype": "Data",
    "label": "Bill Number"
@@ -122,23 +121,33 @@
    "label": "Bill Date"
   },
   {
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description"
-  },
-  {
-   "fieldname": "column_break_rqmd",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "bill_attachment",
    "fieldtype": "Attach Image",
    "label": "Bill Attachment"
   },
   {
-   "fieldname": "approval_and_finacle_section",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "depends_on": "eval:doc.transaction_type == 'Expense'",
+   "fieldname": "expense_items_section",
    "fieldtype": "Section Break",
-   "label": "Approval and Finacle"
+   "label": "Expense Items"
+  },
+  {
+   "depends_on": "eval:doc.transaction_type == 'Expense'",
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Expenses",
+   "options": "Petty Cash Transaction Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval & Integration"
   },
   {
    "fieldname": "approved_by",
@@ -164,24 +173,20 @@
    "label": "Remarks"
   },
   {
-   "fieldname": "expense_details_with_child_table_section",
-   "fieldtype": "Section Break",
-   "label": "Expense Details With Child Table"
-  },
-  {
-   "depends_on": "eval:doc.transaction_type == 'Expense'",
-   "fieldname": "items",
-   "fieldtype": "Table",
-   "label": "Expenses",
-   "options": "Petty Cash Transaction Item",
-   "reqd": 1
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Petty Cash Transaction",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-12 17:54:39.819021",
+ "modified": "2026-01-13 11:40:57.601345",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
@@ -189,6 +194,7 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -197,6 +203,32 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Branch User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HO Petty Cash Manager",
+   "select": 1,
    "share": 1,
    "submit": 1,
    "write": 1

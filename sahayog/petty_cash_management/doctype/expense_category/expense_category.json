@@ -1,11 +1,11 @@
 {
  "actions": [],
- "allow_rename": 1,
- "autoname": "field:category_name",
+ "autoname": "autoincrement",
  "creation": "2026-01-09 13:57:57.793203",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "table_nezx",
   "category_name",
   "metro_limit",
   "non_metro_limit",
@@ -13,14 +13,6 @@
   "is_active"
  ],
  "fields": [
-  {
-   "fieldname": "category_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Category Name",
-   "reqd": 1,
-   "unique": 1
-  },
   {
    "fieldname": "metro_limit",
    "fieldtype": "Currency",
@@ -43,16 +35,28 @@
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active"
+  },
+  {
+   "fieldname": "table_nezx",
+   "fieldtype": "Table",
+   "options": "Expense Category Item"
+  },
+  {
+   "fieldname": "category_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Category Name",
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 14:03:13.637629",
+ "modified": "2026-01-13 11:55:51.070788",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
- "naming_rule": "By fieldname",
+ "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
   {
@@ -66,11 +70,23 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "category_name",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "category_name"
 }
