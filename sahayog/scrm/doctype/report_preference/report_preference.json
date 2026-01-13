@@ -9,16 +9,18 @@
   "user",
   "column_break_ckcs",
   "report_type",
-  "preference_details_section",
-  "product",
-  "source",
-  "column_break_vlii",
-  "sol_id",
-  "district",
-  "column_break_enpx",
-  "state",
+  "section_break_yzaw",
   "zone",
-  "region"
+  "state",
+  "column_break_aagm",
+  "region",
+  "district",
+  "preference_details_section",
+  "sol_id",
+  "column_break_vlii",
+  "product",
+  "column_break_enpx",
+  "source"
  ],
  "fields": [
   {
@@ -97,13 +99,21 @@
    "fieldtype": "Table MultiSelect",
    "label": "Region",
    "options": "Region Items"
+  },
+  {
+   "fieldname": "section_break_yzaw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_aagm",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-07 15:27:13.159559",
- "modified_by": "Administrator",
+ "modified": "2026-01-13 11:01:54.776831",
+ "modified_by": "9517@sahayog.com",
  "module": "SCRM",
  "name": "Report Preference",
  "owner": "Administrator",
