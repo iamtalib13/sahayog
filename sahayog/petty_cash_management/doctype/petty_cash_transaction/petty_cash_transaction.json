@@ -15,14 +15,6 @@
   "amount_section",
   "amount",
   "current_branch_balance",
-  "expense_details_section",
-  "expense_category",
-  "vendor_name",
-  "column_break_2",
-  "bill_number",
-  "bill_date",
-  "bill_attachment",
-  "description",
   "expense_items_section",
   "items",
   "approval_section",
@@ -89,49 +81,6 @@
   },
   {
    "depends_on": "eval:doc.transaction_type == 'Expense'",
-   "fieldname": "expense_details_section",
-   "fieldtype": "Section Break",
-   "label": "Expense Details"
-  },
-  {
-   "depends_on": "eval:doc.transaction_type == 'Expense'",
-   "fieldname": "expense_category",
-   "fieldtype": "Link",
-   "label": "Expense Category",
-   "options": "Expense Category"
-  },
-  {
-   "depends_on": "eval:doc.transaction_type == 'Expense'",
-   "fieldname": "vendor_name",
-   "fieldtype": "Data",
-   "label": "Vendor Name"
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "bill_number",
-   "fieldtype": "Data",
-   "label": "Bill Number"
-  },
-  {
-   "fieldname": "bill_date",
-   "fieldtype": "Date",
-   "label": "Bill Date"
-  },
-  {
-   "fieldname": "bill_attachment",
-   "fieldtype": "Attach Image",
-   "label": "Bill Attachment"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description"
-  },
-  {
-   "depends_on": "eval:doc.transaction_type == 'Expense'",
    "fieldname": "expense_items_section",
    "fieldtype": "Section Break",
    "label": "Expense Items"
@@ -186,7 +135,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-13 11:40:57.601345",
+ "modified": "2026-01-13 13:06:49.479013",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
