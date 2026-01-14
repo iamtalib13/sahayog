@@ -31,6 +31,7 @@
    "label": "Transaction Details"
   },
   {
+   "default": "Expense",
    "fieldname": "transaction_type",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -135,7 +136,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-13 13:06:49.479013",
+ "modified": "2026-01-14 17:00:29.241112",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
