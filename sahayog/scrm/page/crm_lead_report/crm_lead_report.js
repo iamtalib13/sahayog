@@ -64,13 +64,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       <div style="flex:1; line-height:1.6;">
         📋 <strong>Your Report Preferences:</strong>
+        ${inline_list("Regions", pref.region)}
+        ${inline_list("Zones", pref.zone)}
+        ${inline_list("District", pref.district ? [pref.district] : [])}
+        ${inline_list("State", pref.state ? [pref.state] : [])}
         ${inline_list("Products", pref.product)}
         ${inline_list("Sources", pref.source)}
         ${inline_list("SOL IDs", pref.sol_id)}
-        ${inline_list("District", pref.district ? [pref.district] : [])}
-        ${inline_list("State", pref.state ? [pref.state] : [])}
-        ${inline_list("Zones", pref.zone)}
-        ${inline_list("Regions", pref.region)}
+       
+        
+       
       </div>
 
       <div>
@@ -273,12 +276,32 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       await new Promise((r) => setTimeout(r, 800));
 
       // Stop condition (same as backend)
-      if (limit < 500) {
-        has_more = false;
+      let rows_fetched = 0;
+
+      while (has_more) {
+        const url = `/api/method/sahayog.scrm.api.report_access.export_leads_batch`;
+
+        const win = window.open(url);
+
+        rows_fetched = limit;
+        offset += limit;
+
+        await new Promise((r) => setTimeout(r, 800));
+
+        if (rows_fetched < limit) {
+          has_more = false;
+        }
       }
     }
 
     frappe.msgprint("Export completed successfully");
+    console.group("CRM LEADS DEBUG");
+    console.log("User:", frappe.session.user);
+    console.log("OFFSET:", OFFSET);
+    console.log("LIMIT:", LIMIT);
+    console.log("Raw Response:", res);
+    console.log("Leads Count:", leads.length);
+    console.groupEnd();
   });
 
   // Export Button Styles
@@ -304,6 +327,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       load_leads();
     }
   });
+  console.group("CRM LOAD DEBUG");
+  console.log("From:", from_date);
+  console.log("To:", to_date);
+  console.log("OFFSET:", OFFSET);
+  console.log("LIMIT:", LIMIT);
+  console.log("Response:", res.message);
+  console.groupEnd();
 
   // initial load
   load_leads();
