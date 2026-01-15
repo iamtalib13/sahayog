@@ -119,6 +119,16 @@ class PettyCashTransaction(Document):
             emp_branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
             if emp_branch:
                 self.branch = emp_branch
+        
+
+    def before_insert(self):
+        emp_branch = frappe.db.get_value(
+            "Employee",
+            {"user_id": frappe.session.user, "status": "Active"},
+            "sahayog_branch"
+        )
+        if emp_branch:
+            self.branch = emp_branch
 
     def before_save(self):
         # Fetch branch name
