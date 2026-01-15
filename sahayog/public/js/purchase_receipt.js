@@ -1,8 +1,8 @@
 frappe.ui.form.on("Purchase Receipt", {
   refresh: function (frm) {
-    if(frappe.session.user !== "Administrator") {
-    frm.trigger("hide_rejected_quantity_and_button");
-    }    
+    if (frappe.session.user !== "Administrator") {
+      frm.trigger("hide_rejected_quantity_and_button");
+    }
     // Apply UI customizations
     frm.trigger("customize_ui");
     frm.trigger("hide_fields");
@@ -91,13 +91,14 @@ frappe.ui.form.on("Purchase Receipt", {
 
       console.log("Hidden field/tab:", fieldname);
     });
-    
   },
 
-  hide_rejected_quantity_and_button: function(frm) {
+  hide_rejected_quantity_and_button: function (frm) {
     setTimeout(() => {
       // Hide header
-      $('[data-fieldname="rejected_qty"]').closest('.grid-header-row,[class^="col"]').hide();
+      $('[data-fieldname="rejected_qty"]')
+        .closest('.grid-header-row,[class^="col"]')
+        .hide();
       // Hide cells
       $('[data-fieldname="rejected_qty"]').hide();
 
@@ -122,12 +123,11 @@ frappe.ui.form.on("Purchase Receipt", {
       $('button:contains("Preview")').hide();
       $('button:contains("View")').hide();
       $('button:contains("Status")').hide();
-        frm.set_df_property("set_warehouse", "read_only", 1);
+      frm.set_df_property("set_warehouse", "read_only", 1);
     }, 200);
-    
   },
-    set_warehouse: function(frm) {
-     if (frm.is_new()) {
+  set_warehouse: function (frm) {
+    if (frm.is_new()) {
       frappe.call({
         method: "sahayog.procurement.api.stock_entry_report.get_user_warehouse",
         callback: function (r) {
@@ -137,21 +137,25 @@ frappe.ui.form.on("Purchase Receipt", {
 
             console.log("Warehouse:", warehouse);
             // set values on the form
-            frm.set_value("set_warehouse", warehouse);            
+            frm.set_value("set_warehouse", warehouse);
           }
-        }
+        },
       });
-    }   
+    }
   },
-hide_rejected_qty_column: function(frm) {
-  if (!frm.fields_dict.items) return;
+  hide_rejected_qty_column: function (frm) {
+    if (!frm.fields_dict.items) return;
 
-  // Listen for every grid render event
-  frm.fields_dict.items.grid.on('render', function() {
-    // Hide the "Rejected Quantity" header cell
-    frm.fields_dict["items"].$wrapper.find('th[data-fieldname="rejected_qty"]').hide();
-    // Hide all "Rejected Quantity" cells in every row
-    frm.fields_dict["items"].$wrapper.find('td[data-fieldname="rejected_qty"]').hide();
-  });
-}
+    // Listen for every grid render event
+    frm.fields_dict.items.grid.on("render", function () {
+      // Hide the "Rejected Quantity" header cell
+      frm.fields_dict["items"].$wrapper
+        .find('th[data-fieldname="rejected_qty"]')
+        .hide();
+      // Hide all "Rejected Quantity" cells in every row
+      frm.fields_dict["items"].$wrapper
+        .find('td[data-fieldname="rejected_qty"]')
+        .hide();
+    });
+  },
 });
