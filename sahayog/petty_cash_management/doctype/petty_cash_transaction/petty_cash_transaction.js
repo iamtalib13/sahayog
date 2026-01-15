@@ -7,25 +7,88 @@
 // 	},
 // });
 
+//////////////////////////////////////////////////////////////////////////////////
+
+// frappe.ui.form.on('Petty Cash Transaction', {
+//     onload: function(frm) {
+//         if (frm.is_new()) {
+//              // 1. Set Date to Today [web:15]
+//             frm.set_value('transaction_date', frappe.datetime.get_today());
+//             frm.set_value('amount', 0)
+//             frm.set_value('current_branch_balance', wallet.get_current_balance())
+
+//             // 2. Existing logic: Fetch Branch
+//             frappe.db.get_value('Employee',
+//                 { user_id: frappe.session.user, status: 'Active' },
+//                 'sahayog_branch'
+//             ).then(r => {
+//                 if (r && r.message && r.message.sahayog_branch) {
+//                     frm.set_value('branch', r.message.sahayog_branch);
+//                 }
+//             });
+//         }
+//     }
+// });
+
 
 frappe.ui.form.on('Petty Cash Transaction', {
     onload: function(frm) {
         if (frm.is_new()) {
-             // 1. Set Date to Today [web:15]
+            // 1. Set Date to Today
             frm.set_value('transaction_date', frappe.datetime.get_today());
-            frm.set_value('amount', 0)
+            frm.set_value('amount', 0);
 
-            // 2. Existing logic: Fetch Branch
-            frappe.db.get_value('Employee',
-                { user_id: frappe.session.user, status: 'Active' },
+            // 2. Fetch Branch from Employee
+            frappe.db.get_value('Employee', 
+                { user_id: frappe.session.user, status: 'Active' }, 
                 'sahayog_branch'
             ).then(r => {
                 if (r && r.message && r.message.sahayog_branch) {
-                    frm.set_value('branch', r.message.sahayog_branch);
+                    let user_branch = r.message.sahayog_branch;
+                    
+                    // Set the branch
+                    frm.set_value('branch', user_branch);
+
+                    // 3. NOW fetch the Wallet Balance for this specific branch
+                    frappe.db.get_value('Branch Petty Cash Account', 
+                        { branch: user_branch }, 
+                        'current_balance'
+                    ).then(wallet_r => {
+                        let balance = 0;
+                        if (wallet_r && wallet_r.message) {
+                            balance = wallet_r.message.current_balance;
+                        }
+                        frm.set_value('current_branch_balance', balance);
+                    });
                 }
             });
         }
-    }
+    },
+
+    // Optional: Also update balance if the user manually changes the Branch field
+    branch: function(frm) {
+        if (frm.doc.branch) {
+            frappe.db.get_value('Branch Petty Cash Account', 
+                { branch: frm.doc.branch }, 
+                'current_balance'
+            ).then(r => {
+                let balance = (r && r.message) ? r.message.current_balance : 0;
+                frm.set_value('current_branch_balance', balance);
+            });
+        }
+    },
+    // This create a issue if balance changes after submission doc status is changed to Not Saved
+    // on_submit: function(frm) {
+    //     if (frm.doc.branch) {
+    //         frappe.db.get_value('Branch Petty Cash Account', 
+    //             { branch: frm.doc.branch }, 
+    //             'current_balance'
+    //         ).then(r => {
+    //             let balance = (r && r.message) ? r.message.current_balance : 0;
+    //             frm.set_value('current_branch_balance', balance);
+    //         });
+    //     }
+    // }
 });
 
 
