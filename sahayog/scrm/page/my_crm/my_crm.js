@@ -1723,7 +1723,7 @@ updateCount() {
   $("#mycrm-count-text").text(this.countText);
 }
 
-
+// 1.0 original renderList
   // renderList() {
   //   const container = $("#mycrm-list-body");
   //   const data = this.state.filteredData;
@@ -1757,34 +1757,163 @@ updateCount() {
   //     $("#mycrm-load-more").hide();
   //   }
   // }
+// 2.0 improved renderList with extracted helper
+//   renderList() {
+//   const container = $("#mycrm-list-body");
+//   const data = this.state.filteredData;
 
-  renderList() {
-  const container = $("#mycrm-list-body");
-  const data = this.state.filteredData;
+//   // Empty state
+//   if (!data || data.length === 0) {
+//     this.showEmptyState(true);
+//     return;
+//   }
 
-  // Empty state
-  if (!data || data.length === 0) {
-    this.showEmptyState(true);
-    return;
-  }
+//   this.showEmptyState(false);
+//   container.empty();
 
-  this.showEmptyState(false);
-  container.empty();
+//   const fragment = document.createDocumentFragment();
 
-  const fragment = document.createDocumentFragment();
+//   for (const item of data) {
+//     const card = this.renderWhatsAppCard(item);
+//     fragment.appendChild(card[0]); // existing jQuery card
+//   }
 
-  for (const item of data) {
-    const card = this.renderWhatsAppCard(item);
-    fragment.appendChild(card[0]); // existing jQuery card
-  }
+//   container[0].appendChild(fragment);
 
-  container[0].appendChild(fragment);
+//   const canLoadMore =
+//     this.state.hasMore &&
+//     this.state.filteredData.length === this.state.data.length;
 
-  const canLoadMore =
-    this.state.hasMore &&
-    this.state.filteredData.length === this.state.data.length;
+//   $("#mycrm-load-more").toggle(canLoadMore);
+// }
 
-  $("#mycrm-load-more").toggle(canLoadMore);
+
+renderList() {
+    const container = $("#mycrm-list-body");
+    const data = this.state.filteredData;
+
+    if (!container.length) return;
+    container.empty();
+
+    if (!data || data.length === 0) {
+        this.showEmptyState(true);
+        return;
+    }
+
+    this.showEmptyState(false);
+    data.forEach(item => {
+        const card = this.renderWhatsAppCard(item);
+        container.append(card);
+    });
+
+    // Central Event Delegation
+    container.off("click", ".mycrm-list-item").on("click", ".mycrm-list-item", (e) => {
+        e.preventDefault();
+        const name = $(e.currentTarget).attr("data-name");
+        if (this.state.section === "lead") {
+            this.editLead(name); 
+        } else {
+            frappe.set_route("Form", "Appointment", name);
+        }
+    });
+}
+
+async editLead(name) {
+    const me = this;
+    
+    // Frappe logic: Jis lead par click kiya, uska document fetch karein
+    frappe.model.with_doc("Lead", name, async function() {
+        const doc = frappe.get_doc("Lead", name);
+        if (!doc) return;
+
+        // 1. PRODUCT FETCHING: custom_product_table (aapke idea code ke mutabiq)
+        let product_text_html = "";
+        // Idea code mein table ka naam 'custom_product_table' hai
+        const products = doc.custom_product_table || []; 
+        
+        if (products.length > 0) {
+            products.forEach(p => {
+                product_text_html += `
+                    <div style="margin-bottom: 12px; padding: 10px; border-bottom: 1px solid #edf2f7; background: #fff;">
+                        <p style="margin:0; font-size:14px; color:#1a202c;">
+                            <b>Product Name:</b> ${p.product_name || p.product} (${p.product || 'N/A'})
+                        </p>
+                        <p style="margin:0; font-size:14px; color:#059669;">
+                            <b>Product Amount:</b> ₹${p.product_amount || p.amount || 0}
+                        </p>
+                    </div>`;
+            });
+        } else {
+            product_text_html = `<div class="text-muted text-center" style="padding:20px;">No products found in this lead.</div>`;
+        }
+
+        const d = new frappe.ui.Dialog({
+            title: __(`Lead Details: ${doc.first_name || doc.lead_name || name}`),
+            fields: [
+                { label: 'Full Name', fieldname: 'first_name', fieldtype: 'Data', reqd: 1 },
+                { label: 'Phone Number', fieldname: 'mobile_no', fieldtype: 'Data', reqd: 1 },
+                { fieldtype: 'Column Break' },
+                { label: 'Status', fieldname: 'status', fieldtype: 'Select', 
+                  options: ["Lead", "Follow Up", "Converted", "Not Interested"], reqd: 1 },
+                { label: 'Source', fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', reqd: 1 },
+                { fieldtype: 'Section Break', label: 'Lead Products' },
+                { 
+                    fieldname: 'product_info_html', 
+                    fieldtype: 'HTML', 
+                    options: `<div style="background:#f8fafc; border:1px solid #cbd5e1; padding:10px; border-radius:6px;">${product_text_html}</div>` 
+                }
+            ],
+            primary_action_label: __('Update Lead'),
+            primary_action(values) {
+                frappe.call({
+                    method: "frappe.client.set_value",
+                    args: { doctype: "Lead", name: name, fieldname: values },
+                    callback: (r) => {
+                        if(!r.exc) {
+                            frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
+                            d.hide();
+                            me.fetchData(); 
+                        }
+                    }
+                });
+            }
+        });
+
+        // --- FULL WINDOW JS (Height & Width 100%) ---
+        d.$wrapper.find('.modal-dialog').css({
+            'width': '100vw',
+            'max-width': '100vw',
+            'height': '100vh',
+            'margin': '0',
+            'padding': '0'
+        });
+        d.$wrapper.find('.modal-content').css({
+            'height': '100vh',
+            'border-radius': '0',
+            'border': 'none'
+        });
+        d.$wrapper.find('.modal-body').css({
+            'height': 'calc(100vh - 110px)',
+            'overflow-y': 'auto',
+            'background': '#ffffff'
+        });
+
+        // --- DATA FETCHING & POPULATION ---
+        // Match error aur phone crash se bachne ke liye manual mapping
+        d.set_values({
+            'first_name': doc.first_name || doc.lead_name || "",
+            'mobile_no': doc.mobile_no || "",
+            'status': doc.status || "Lead",
+            'source': doc.source || ""
+        });
+
+        d.add_custom_action(__('View Full Lead'), () => {
+            frappe.set_route("Form", "Lead", name);
+            d.hide();
+        });
+
+        d.show();
+    });
 }
 
 // 🔹 extracted helper (Petite-Vue friendly & reusable)
@@ -1794,147 +1923,201 @@ showEmptyState(show) {
   $("#mycrm-load-more").toggle(!show && this.state.hasMore);
 }
 
-  renderWhatsAppCard(item) {
-    const modified = frappe.datetime.comment_when(item.modified);
+//   renderWhatsAppCard(item) {
+//     const modified = frappe.datetime.comment_when(item.modified);
 
+//     let name, message, statusClass, statusText, avatar;
+
+//     if (this.state.section === "lead") {
+//       name =
+//         item.lead_name ||
+//         `${item.first_name || ""} ${item.last_name || ""}`.trim() ||
+//         "Unnamed";
+//       avatar = (item.first_name || name).charAt(0).toUpperCase();
+
+//       // Indian currency format
+//       const totalAmount = item.totalAmount || 0;
+//       const amountDisplay =
+//         totalAmount > 0
+//           ? ` - <span style="color: #10b981; font-weight: 700;">₹${this.formatIndianCurrency(
+//               totalAmount
+//             )}</span>`
+//           : "";
+
+//       const details = [];
+//       if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
+//       if (item.email_id) details.push(`✉️ ${item.email_id}`);
+//       if (item.source) details.push(`📌 ${item.source}`);
+
+//       // ✅ Assigned By (NO status / filter dependency)
+
+
+
+// if (this.assignedByMap?.[item.name]) {
+//   const a = this.assignedByMap[item.name];
+
+//   details.push(`
+//     <div style="
+//       margin-top:6px;
+//       display:flex;
+//       flex-wrap:wrap;
+//       gap:6px;
+//       font-size:12px;
+//     ">
+
+//       <!-- Assigned By -->
+//       <span style="
+//         background:#f1f5f9;
+//         padding:4px 8px;
+//         border-radius:6px;
+//         color:#111;
+//       ">Assigned By:
+//         👤 <b>${a.full_name}</b>
+//         <span style="color:#0f0a21;"><b>(${a.employee_code})</b></span>
+//       </span>
+
+//       <!-- Branch -->
+//       ${
+//         a.branch
+//           ? `
+//           <span style="
+//             background:#dcf8c6;
+//             padding:4px 8px;
+//             border-radius:6px;
+//             color:#065f46;
+//             font-weight:600;
+//           ">
+//             🏢 ${a.branch}
+//           </span>
+//           `
+//           : ""
+//       }
+
+//     </div>
+//   `);
+// }
+
+
+
+
+//       message = details.join(" • ") || "No details";
+//       statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
+//       statusText = item.status || "Lead";
+
+//       const card = $(`
+//       <div class="mycrm-list-item" data-name="${item.name}">
+//         <div class="mycrm-avatar">${avatar}</div>
+//         <div class="mycrm-content">
+//           <div class="mycrm-header">
+//             <div class="mycrm-name">${name}${amountDisplay}</div>
+//             <div class="mycrm-time">${modified}</div>
+//           </div>
+//           <div class="mycrm-message mycrm-scrollable">
+//             <span style="flex: 1; min-width: 0;">${message}</span>
+//             <span class="mycrm-status-badge ${statusClass}">${statusText}</span>
+//           </div>
+//         </div>
+//       </div>
+//     `);
+
+//       card.on("click", () => {
+//         frappe.set_route("Form", "Lead", item.name);
+//       });
+
+//       return card;
+//     } else {
+//       // Appointment section
+//       name = item.customer_name || "Unnamed";
+//       avatar = name.charAt(0).toUpperCase();
+
+//       const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
+//       const isPast = item.scheduled_time < frappe.datetime.now_datetime();
+
+//       message = `📅 ${scheduledTime}`;
+//       if (isPast) message += " 🔴 OVERDUE";
+//       if (item.customer_phone_number)
+//         message += ` • 📱 ${item.customer_phone_number}`;
+
+//       statusClass = (item.status || "open").toLowerCase();
+//       statusText = item.status || "Open";
+
+//       const card = $(`
+//       <div class="mycrm-list-item" data-name="${item.name}">
+//         <div class="mycrm-avatar">${avatar}</div>
+//         <div class="mycrm-content">
+//           <div class="mycrm-header">
+//             <div class="mycrm-name">${name}</div>
+//             <div class="mycrm-time">${modified}</div>
+//           </div>
+//           <div class="mycrm-message mycrm-scrollable">
+//             <span style="flex: 1; min-width: 0;">${message}</span>
+//             <span class="mycrm-status-badge ${statusClass}">${statusText}</span>
+//           </div>
+//         </div>
+//       </div>
+//     `);
+
+//       card.on("click", () => {
+//         frappe.set_route("Form", "Appointment", item.name);
+//       });
+
+//       return card;
+//     }
+//   }
+
+renderWhatsAppCard(item) {
+    const modified = frappe.datetime.comment_when(item.modified);
     let name, message, statusClass, statusText, avatar;
 
     if (this.state.section === "lead") {
-      name =
-        item.lead_name ||
-        `${item.first_name || ""} ${item.last_name || ""}`.trim() ||
-        "Unnamed";
-      avatar = (item.first_name || name).charAt(0).toUpperCase();
+        name = item.lead_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unnamed";
+        avatar = name.charAt(0).toUpperCase();
 
-      // Indian currency format
-      const totalAmount = item.totalAmount || 0;
-      const amountDisplay =
-        totalAmount > 0
-          ? ` - <span style="color: #10b981; font-weight: 700;">₹${this.formatIndianCurrency(
-              totalAmount
-            )}</span>`
-          : "";
+        const details = [];
+        if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
+        if (item.source) details.push(`📌 ${item.source}`);
 
-      const details = [];
-      if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
-      if (item.email_id) details.push(`✉️ ${item.email_id}`);
-      if (item.source) details.push(`📌 ${item.source}`);
-
-      // ✅ Assigned By (NO status / filter dependency)
-
-
-
-if (this.assignedByMap?.[item.name]) {
-  const a = this.assignedByMap[item.name];
-
-  details.push(`
-    <div style="
-      margin-top:6px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:6px;
-      font-size:12px;
-    ">
-
-      <!-- Assigned By -->
-      <span style="
-        background:#f1f5f9;
-        padding:4px 8px;
-        border-radius:6px;
-        color:#111;
-      ">Assigned By:
-        👤 <b>${a.full_name}</b>
-        <span style="color:#0f0a21;"><b>(${a.employee_code})</b></span>
-      </span>
-
-      <!-- Branch -->
-      ${
-        a.branch
-          ? `
-          <span style="
-            background:#dcf8c6;
-            padding:4px 8px;
-            border-radius:6px;
-            color:#065f46;
-            font-weight:600;
-          ">
-            🏢 ${a.branch}
-          </span>
-          `
-          : ""
-      }
-
-    </div>
-  `);
-}
-
-
-
-
-      message = details.join(" • ") || "No details";
-      statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
-      statusText = item.status || "Lead";
-
-      const card = $(`
-      <div class="mycrm-list-item" data-name="${item.name}">
-        <div class="mycrm-avatar">${avatar}</div>
-        <div class="mycrm-content">
-          <div class="mycrm-header">
-            <div class="mycrm-name">${name}${amountDisplay}</div>
-            <div class="mycrm-time">${modified}</div>
-          </div>
-          <div class="mycrm-message mycrm-scrollable">
-            <span style="flex: 1; min-width: 0;">${message}</span>
-            <span class="mycrm-status-badge ${statusClass}">${statusText}</span>
-          </div>
-        </div>
-      </div>
-    `);
-
-      card.on("click", () => {
-        frappe.set_route("Form", "Lead", item.name);
-      });
-
-      return card;
+        // Assigned By Logic (Original)
+        if (this.assignedByMap?.[item.name]) {
+            const a = this.assignedByMap[item.name];
+            details.push(`
+                <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
+                    <span style="background:#f1f5f9; padding:4px 8px; border-radius:6px; color:#111;">
+                        Assigned By: 👤 <b>${a.full_name}</b> (<b>${a.employee_code}</b>)
+                    </span>
+                    ${a.branch ? `<span style="background:#dcf8c6; padding:4px 8px; border-radius:6px; color:#065f46; font-weight:600;">🏢 ${a.branch}</span>` : ""}
+                </div>
+            `);
+        }
+        message = details.join(" • ") || "No details";
+        statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
+        statusText = item.status || "Lead";
     } else {
-      // Appointment section
-      name = item.customer_name || "Unnamed";
-      avatar = name.charAt(0).toUpperCase();
-
-      const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
-      const isPast = item.scheduled_time < frappe.datetime.now_datetime();
-
-      message = `📅 ${scheduledTime}`;
-      if (isPast) message += " 🔴 OVERDUE";
-      if (item.customer_phone_number)
-        message += ` • 📱 ${item.customer_phone_number}`;
-
-      statusClass = (item.status || "open").toLowerCase();
-      statusText = item.status || "Open";
-
-      const card = $(`
-      <div class="mycrm-list-item" data-name="${item.name}">
-        <div class="mycrm-avatar">${avatar}</div>
-        <div class="mycrm-content">
-          <div class="mycrm-header">
-            <div class="mycrm-name">${name}</div>
-            <div class="mycrm-time">${modified}</div>
-          </div>
-          <div class="mycrm-message mycrm-scrollable">
-            <span style="flex: 1; min-width: 0;">${message}</span>
-            <span class="mycrm-status-badge ${statusClass}">${statusText}</span>
-          </div>
-        </div>
-      </div>
-    `);
-
-      card.on("click", () => {
-        frappe.set_route("Form", "Appointment", item.name);
-      });
-
-      return card;
+        // Appointment UI Fix
+        name = item.customer_name || "Unnamed";
+        avatar = name.charAt(0).toUpperCase();
+        const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
+        message = `📅 ${scheduledTime} ${item.mobile_no ? `• 📱 ${item.mobile_no}` : ""}`;
+        statusClass = (item.status || "open").toLowerCase();
+        statusText = item.status || "Open";
     }
-  }
+
+    return $(`
+        <div class="mycrm-list-item" data-name="${item.name}" style="cursor: pointer; padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 12px;">
+            <div class="mycrm-avatar" style="min-width: 42px; height: 42px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4b5563;">${avatar}</div>
+            <div class="mycrm-content" style="flex: 1; min-width: 0;">
+                <div class="mycrm-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <div class="mycrm-name" style="font-weight: 600; color: #111827;">${name}</div>
+                    <div class="mycrm-time" style="font-size: 11px; color: #6b7280;">${modified}</div>
+                </div>
+                <div class="mycrm-message" style="font-size: 13px; color: #4b5563; display: flex; justify-content: space-between; align-items: flex-end;">
+                    <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${message}</span>
+                    <span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px;">${statusText}</span>
+                </div>
+            </div>
+        </div>
+    `);
+}
 
   formatIndianCurrency(amount) {
     if (!amount || amount === 0) return "0";
