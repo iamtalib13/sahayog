@@ -263,3 +263,46 @@ class PettyCashTransaction(Document):
             wallet.last_funded_on = self.transaction_date
             
         wallet.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_category_limit_status(branch, category, transaction_date, doc_name=None):
+    """
+    Returns the remaining limit for a specific category and branch for the current month.
+    """
+    if not branch or not category or not transaction_date:
+        return 0
+
+    # 1. Get Branch Type
+    branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": branch}, "branch_type")
+    if not branch_type:
+        return 0
+
+    # 2. Get Category Limit
+    category_doc = frappe.get_doc("Expense Category", category)
+    limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+    
+    # If unlimited, return a high number or -1 to indicate 'Unlimited'
+    if limit <= 0:
+        return 999999999 
+
+    # 3. Calculate Already Spent
+    first_day = get_first_day(transaction_date)
+    last_day = get_last_day(transaction_date)
+
+    # We use sql to sum up committed expenses
+    # doc_name is passed to exclude the current document if we are editing it
+    spent_sql = """
+        SELECT COALESCE(SUM(child.amount), 0)
+        FROM `tabPetty Cash Transaction Item` child
+        JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
+        WHERE parent.branch = %s 
+          AND child.expense_category = %s
+          AND parent.transaction_date BETWEEN %s AND %s
+          AND parent.docstatus = 1
+          AND parent.name != %s
+    """
+    spent = frappe.db.sql(spent_sql, (branch, category, first_day, last_day, doc_name or "New"))[0][0]
+
+    available = flt(limit) - flt(spent)
+    return max(available, 0)

@@ -27,3 +27,32 @@ frappe.ui.form.on('Petty Cash Transaction', {
         }
     }
 });
+
+
+// Logic for the Child Table "Petty Cash Transaction Item"
+frappe.ui.form.on('Petty Cash Transaction Item', {
+    expense_category: function(frm, cdt, cdn) {
+        var row = locals[cdt][cdn];
+        
+        if (!frm.doc.branch || !frm.doc.transaction_date || !row.expense_category) {
+            return;
+        }
+
+        // Call the Python API we created
+        frappe.call({
+            method: "sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.get_category_limit_status",
+            args: {
+                branch: frm.doc.branch,
+                category: row.expense_category,
+                transaction_date: frm.doc.transaction_date,
+                doc_name: frm.doc.name
+            },
+            callback: function(r) {
+                if (r.message != null) {
+                    // Set the available limit in the row
+                    frappe.model.set_value(cdt, cdn, 'available_limit', r.message);
+                }
+            }
+        });
+    }
+});
