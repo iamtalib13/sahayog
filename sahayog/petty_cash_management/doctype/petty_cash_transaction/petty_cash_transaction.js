@@ -1,35 +1,4 @@
-// Copyright (c) 2026, Developer Team and contributors
-// For license information, please see license.txt
-
-// frappe.ui.form.on("Petty Cash Transaction", {
-// 	refresh(frm) {
-
-// 	},
-// });
-
-//////////////////////////////////////////////////////////////////////////////////
-
-// frappe.ui.form.on('Petty Cash Transaction', {
-//     onload: function(frm) {
-//         if (frm.is_new()) {
-//              // 1. Set Date to Today [web:15]
-//             frm.set_value('transaction_date', frappe.datetime.get_today());
-//             frm.set_value('amount', 0)
-//             frm.set_value('current_branch_balance', wallet.get_current_balance())
-
-//             // 2. Existing logic: Fetch Branch
-//             frappe.db.get_value('Employee',
-//                 { user_id: frappe.session.user, status: 'Active' },
-//                 'sahayog_branch'
-//             ).then(r => {
-//                 if (r && r.message && r.message.sahayog_branch) {
-//                     frm.set_value('branch', r.message.sahayog_branch);
-//                 }
-//             });
-//         }
-//     }
-// });
-
+// Logic for the Main Doctype "Petty Cash Transaction"
 
 frappe.ui.form.on('Petty Cash Transaction', {
     onload: function(frm) {
@@ -77,6 +46,7 @@ frappe.ui.form.on('Petty Cash Transaction', {
             });
         }
     },
+    
     // This create a issue if balance changes after submission doc status is changed to Not Saved
     // on_submit: function(frm) {
     //     if (frm.doc.branch) {
