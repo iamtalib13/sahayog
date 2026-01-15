@@ -110,10 +110,16 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_first_day, get_last_day
+from frappe.utils import nowdate
 
 class PettyCashTransaction(Document):
 
     def before_insert(self):
+        # 1. Set Date to Today [code:1]
+        if not self.transaction_date:
+            self.transaction_date = nowdate()
+
+        # 2. Existing logic: Auto-set branch from Employee
         # Auto-set branch for non-HO users
         if "HO Petty Cash Manager" not in frappe.get_roles():
             emp_branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")

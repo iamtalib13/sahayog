@@ -11,6 +11,11 @@
 frappe.ui.form.on('Petty Cash Transaction', {
     onload: function(frm) {
         if (frm.is_new()) {
+             // 1. Set Date to Today [web:15]
+            frm.set_value('transaction_date', frappe.datetime.get_today());
+            frm.set_value('amount', 0)
+
+            // 2. Existing logic: Fetch Branch
             frappe.db.get_value('Employee',
                 { user_id: frappe.session.user, status: 'Active' },
                 'sahayog_branch'
