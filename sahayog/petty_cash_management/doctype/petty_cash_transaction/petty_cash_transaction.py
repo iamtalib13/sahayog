@@ -148,6 +148,12 @@ class PettyCashTransaction(Document):
         if not self.transaction_date:
             self.transaction_date = nowdate()
 
+        
+        # 2. STRICT ROLE ENFORCEMENT
+        # If user is NOT a Manager, force Type to Expense
+        if "HO Petty Cash Manager" not in frappe.get_roles():
+            self.transaction_type = "Expense"
+
         # 2. Auto-set branch (Restored "HO Petty Cash Manager" check)
         if "HO Petty Cash Manager" not in frappe.get_roles():
             emp_branch = frappe.db.get_value(

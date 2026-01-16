@@ -1,6 +1,18 @@
 // Logic for the Main Doctype "Petty Cash Transaction"
 
 frappe.ui.form.on('Petty Cash Transaction', {
+
+    refresh: function(frm) {
+        // 1. STRICT UI Enforcement: Handle Read-Only state based on Role
+        // We do this in 'refresh' so it applies even after saving
+        if (!frappe.user.has_role('HO Petty Cash Manager')) {
+            // Non-Managers: Cannot change Transaction Type
+            frm.set_df_property('transaction_type', 'read_only', 1);
+        } else {
+            // HO Managers: Can change it
+            frm.set_df_property('transaction_type', 'read_only', 0);
+        }
+    },
     onload: function(frm) {
         if (frm.is_new()) {
             // 1. Set Date to Today
