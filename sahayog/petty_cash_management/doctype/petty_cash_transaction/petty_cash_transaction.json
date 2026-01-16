@@ -97,6 +97,7 @@
   {
    "fieldname": "approval_section",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Approval & Integration"
   },
   {
@@ -136,7 +137,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-14 17:00:29.241112",
+ "modified": "2026-01-16 17:38:21.145405",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
