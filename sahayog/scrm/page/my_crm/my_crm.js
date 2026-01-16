@@ -1818,100 +1818,364 @@ renderList() {
     });
 }
 
+// 6. full working final version with all improvements, no console errors, simple and clean.
+// async editLead(name) {
+//     const me = this;
+
+//     frappe.model.with_doc("Lead", name, function() {
+//         const doc = frappe.get_doc("Lead", name);
+//         if (!doc) return;
+        
+//         let productsData = JSON.parse(JSON.stringify(doc.custom_product_table || []));
+
+//         const d = new frappe.ui.Dialog({
+//             title: `<div class="custom-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+//                         <span style="font-weight: 600; font-size: 16px; color: #1a202c;">Update Lead: ${name}</span>
+//                         <div class="header-btns-container" style="display: flex; gap: 8px;"></div>
+//                     </div>`,
+//             fields: [
+//                 { label: 'Full Name', fieldname: 'first_name', fieldtype: 'Data', read_only: 1 },
+//                 { label: 'Status', fieldname: 'status', fieldtype: 'Select', 
+//                   options: ["Lead", "Follow Up", "Converted", "Not Interested"], read_only: 1 },
+//                 { fieldtype: 'Column Break' },
+//                 { label: 'Phone Number', fieldname: 'mobile_no', fieldtype: 'Data', read_only: 1 },
+//                 { label: 'Source', fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', read_only: 1 },
+//                 { fieldtype: 'Section Break', label: 'Products' },
+//                 { fieldname: 'product_container', fieldtype: 'HTML' }
+//             ],
+//             primary_action_label: __('Update Lead'),
+//             primary_action: async (values) => {
+//                 frappe.call({
+//                     method: "frappe.client.set_value",
+//                     args: { 
+//                         doctype: "Lead", name: name, 
+//                         fieldname: { ...values, custom_product_table: productsData } 
+//                     },
+//                     callback: (r) => {
+//                         if(!r.exc) {
+//                             frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
+//                             d.hide();
+//                             me.fetchData(); 
+//                         }
+//                     }
+//                 });
+//             }
+//         });
+
+//         // --- Forced Editable Logic ---
+//         const toggleInputs = (isEditable) => {
+//             d.fields.forEach(f => {
+//                 if (f.df && f.fieldname && f.fieldname !== 'product_container') {
+//                     d.set_df_property(f.fieldname, 'read_only', isEditable ? 0 : 1);
+//                     let field = d.get_field(f.fieldname);
+//                     if(field) {
+//                         field.refresh();
+//                         $(field.input).prop('disabled', !isEditable).css('background-color', isEditable ? '#fff' : '#f8fafc');
+//                     }
+//                 }
+//             });
+//         };
+
+//         // --- Render Logic ---
+//         const renderTableRows = (isEdit) => {
+//             const tbody = d.$wrapper.find("#product-rows-body").empty();
+//             productsData.forEach((row, index) => {
+//                 const tr = $(`<tr data-index="${index}">
+//                     <td style="text-align:center; vertical-align:middle;">${index + 1}</td>
+//                     <td style="padding:8px;"><div class="p-id-link-${index}"></div></td>
+//                     <td style="padding:8px;"><input type="text" class="form-control input-sm p-name-disp" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none;"></td>
+//                     <td style="padding:8px;"><input type="number" class="form-control input-sm p-amt-input" value="${row.product_amount || 0}" ${!isEdit ? 'readonly' : ''} style="text-align: right; border: ${isEdit ? '1px solid #d1d8dd' : 'none'};"></td>
+//                     ${isEdit ? `<td class="text-center" style="padding:8px;"><button class="btn btn-xs btn-danger del-row-btn">Remove</button></td>` : ''}
+//                 </tr>`).appendTo(tbody);
+
+//                 if (isEdit) {
+//                     frappe.ui.form.make_control({
+//                         df: { fieldtype: "Link", options: "Product", onchange: function() {
+//                             const val = this.get_value();
+//                             productsData[index].product = val;
+//                             if(val) {
+//                                 frappe.db.get_value('Product', val, 'product_name', r => {
+//                                     productsData[index].product_name = r.product_name;
+//                                     tr.find('.p-name-disp').val(r.product_name);
+//                                 });
+//                             }
+//                         }},
+//                         parent: tr.find(`.p-id-link-${index}`), render_input: true
+//                     }).set_value(row.product);
+
+//                     tr.find(".p-amt-input").on("input", function() {
+//                         productsData[index].product_amount = parseFloat($(this).val()) || 0;
+//                     });
+//                 } else {
+//                     tr.find(`.p-id-link-${index}`).text(row.product || '-').css('padding-top', '5px');
+//                 }
+//             });
+//         };
+
+//         const renderTableContainer = (isEdit) => {
+//             toggleInputs(isEdit);
+//             const container = d.fields_dict.product_container.$wrapper;
+//             container.html(`
+//                 <div style="border: 1px solid #d1d8dd; border-radius: 8px; overflow: hidden; background: #fff;">
+//                     <div style="overflow-x: auto;">
+//                         <table class="table table-bordered" style="margin:0; font-size: 13px; min-width: 600px;">
+//                             <thead style="background: #f7fafc;">
+//                                 <tr>
+//                                     <th style="width: 40px; text-align:center;">#</th>
+//                                     <th style="width: 200px;">Product ID</th>
+//                                     <th>Product Name</th>
+//                                     <th style="width: 120px; text-align:right;">Amount (₹)</th>
+//                                     ${isEdit ? '<th style="width: 80px; text-align:center;">Action</th>' : ''}
+//                                 </tr>
+//                             </thead>
+//                             <tbody id="product-rows-body"></tbody>
+//                         </table>
+//                     </div>
+//                     ${isEdit ? `<div style="padding: 10px; background: #f7fafc; border-top: 1px solid #d1d8dd;">
+//                         <button class="btn btn-xs" id="add-row-btn" style="background:#006264; color:white; border:none; padding: 6px 15px;">+ Add Product</button>
+//                     </div>` : ''}
+//                 </div>`);
+
+//             renderTableRows(isEdit);
+
+//             d.$wrapper.find("#add-row-btn").on("click", () => {
+//                 productsData.push({ product: "", product_name: "", product_amount: 0 });
+//                 renderTableRows(isEdit);
+//             });
+
+//             d.$wrapper.on("click", ".del-row-btn", function() {
+//                 const idx = $(this).closest('tr').data('index');
+//                 productsData.splice(idx, 1);
+//                 renderTableRows(isEdit);
+//             });
+//         };
+
+//         // --- Header Buttons Logic ---
+//         const header_btns = d.$wrapper.find('.header-btns-container');
+        
+//         // Update Button (Hidden by default)
+//         const update_btn = d.get_primary_btn().detach().appendTo(header_btns).hide();
+//         update_btn.css({'background': '#006264', 'border': 'none', 'color': '#fff'});
+
+//         // Edit Button
+//         const edit_btn = $(`<button class="btn btn-default btn-sm btn-edit-action" style="border: 1px solid #006264; color: #006264; font-weight: 500;">Edit Form</button>`)
+//             .appendTo(header_btns);
+
+//         edit_btn.on('click', () => {
+//             renderTableContainer(true);
+//             edit_btn.hide();
+//             update_btn.show(); // Show only after edit click
+//         });
+
+//         // Responsive Styles
+//         if (!$('#header-responsive-style').length) {
+//             $(`<style id="header-responsive-style">
+//                 @media (max-width: 767px) {
+//                     .custom-header-wrapper { flex-direction: column !important; align-items: flex-start !important; }
+//                     .header-btns-container { width: 100%; justify-content: flex-start; margin-top: 5px; }
+//                     .modal-dialog { margin: 10px auto !important; width: 95% !important; }
+//                 }
+//             </style>`).appendTo("head");
+//         }
+
+//         d.$wrapper.find('.modal-dialog').css({'width': 'auto', 'max-width': '900px', 'margin': '30px auto'});
+        
+//         d.set_values({
+//             'first_name': doc.first_name || "",
+//             'mobile_no': doc.mobile_no || "",
+//             'status': doc.status || "Lead",
+//             'source': doc.source || ""
+//         });
+
+//         renderTableContainer(false);
+//         d.show();
+//     });
+// }
+
 async editLead(name) {
     const me = this;
-    
-    // Frappe logic: Jis lead par click kiya, uska document fetch karein
-    frappe.model.with_doc("Lead", name, async function() {
+
+    // 1. Load document data safely
+    frappe.model.with_doc("Lead", name, function() {
         const doc = frappe.get_doc("Lead", name);
         if (!doc) return;
 
-        // 1. PRODUCT FETCHING: custom_product_table (aapke idea code ke mutabiq)
-        let product_text_html = "";
-        // Idea code mein table ka naam 'custom_product_table' hai
-        const products = doc.custom_product_table || []; 
-        
-        if (products.length > 0) {
-            products.forEach(p => {
-                product_text_html += `
-                    <div style="margin-bottom: 12px; padding: 10px; border-bottom: 1px solid #edf2f7; background: #fff;">
-                        <p style="margin:0; font-size:14px; color:#1a202c;">
-                            <b>Product Name:</b> ${p.product_name || p.product} (${p.product || 'N/A'})
-                        </p>
-                        <p style="margin:0; font-size:14px; color:#059669;">
-                            <b>Product Amount:</b> ₹${p.product_amount || p.amount || 0}
-                        </p>
-                    </div>`;
-            });
-        } else {
-            product_text_html = `<div class="text-muted text-center" style="padding:20px;">No products found in this lead.</div>`;
-        }
+        // Clone product table data to a local state
+        let productsData = JSON.parse(JSON.stringify(doc.custom_product_table || []));
 
+        // 2. Initialize Dialog
         const d = new frappe.ui.Dialog({
-            title: __(`Lead Details: ${doc.first_name || doc.lead_name || name}`),
+            title: `<div class="custom-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <span class="lead-id-title" style="font-weight: 600; font-size: 16px; color: #1a202c;">Update Lead: ${name}</span>
+                        <div class="header-btns-container" style="display: flex; gap: 8px; align-items: center; margin-right: 35px;"></div>
+                    </div>`,
             fields: [
-                { label: 'Full Name', fieldname: 'first_name', fieldtype: 'Data', reqd: 1 },
-                { label: 'Phone Number', fieldname: 'mobile_no', fieldtype: 'Data', reqd: 1 },
+                { label: 'Full Name', fieldname: 'first_name', fieldtype: 'Data', read_only: 0 },
+                { label: 'Status', fieldname: 'status', fieldtype: 'Select', options: ["Lead", "Follow Up", "Converted", "Not Interested"], read_only: 0 },
                 { fieldtype: 'Column Break' },
-                { label: 'Status', fieldname: 'status', fieldtype: 'Select', 
-                  options: ["Lead", "Follow Up", "Converted", "Not Interested"], reqd: 1 },
-                { label: 'Source', fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', reqd: 1 },
-                { fieldtype: 'Section Break', label: 'Lead Products' },
-                { 
-                    fieldname: 'product_info_html', 
-                    fieldtype: 'HTML', 
-                    options: `<div style="background:#f8fafc; border:1px solid #cbd5e1; padding:10px; border-radius:6px;">${product_text_html}</div>` 
-                }
+                { label: 'Phone Number', fieldname: 'mobile_no', fieldtype: 'Data', read_only: 0 },
+                { label: 'Source', fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', read_only: 0 },
+                { fieldtype: 'Section Break', label: 'Products' },
+                { fieldname: 'product_container', fieldtype: 'HTML' }
             ],
             primary_action_label: __('Update Lead'),
-            primary_action(values) {
-                frappe.call({
-                    method: "frappe.client.set_value",
-                    args: { doctype: "Lead", name: name, fieldname: values },
-                    callback: (r) => {
-                        if(!r.exc) {
-                            frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
-                            d.hide();
-                            me.fetchData(); 
-                        }
+            primary_action: async (values) => saveLead(values)
+        });
+
+        // 3. Helper: Toggle Field Editability (Standard Fields)
+        const toggleInputs = (isEditable) => {
+            d.fields.forEach(f => {
+                if (f.df && f.fieldname && f.fieldname !== 'product_container') {
+                    d.set_df_property(f.fieldname, 'read_only', isEditable ? 0 : 1);
+                    let field = d.get_field(f.fieldname);
+                    if (field) {
+                        field.refresh();
+                        $(field.input).prop('disabled', !isEditable).css('background-color', isEditable ? '#fff' : '#f8fafc');
                     }
-                });
-            }
+                }
+            });
+        };
+
+        // 4. Helper: Render Individual Table Rows
+        const renderTableRows = (isEdit) => {
+            const tbody = d.$wrapper.find("#product-rows-body").empty();
+            
+            productsData.forEach((row, index) => {
+                const tr = $(`<tr data-index="${index}">
+                    <td style="text-align:center; vertical-align:middle; color:#718096;">${index + 1}</td>
+                    <td style="padding:8px;"><div class="p-id-link-${index}"></div></td>
+                    <td style="padding:8px;"><input type="text" id="p_name_${index}" name="p_name_${index}" class="form-control input-sm p-name-disp" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none; font-size:12px;"></td>
+                    <td style="padding:8px;"><input type="number" id="p_amt_${index}" name="p_amt_${index}" class="form-control input-sm p-amt-input" value="${row.product_amount || 0}" ${!isEdit ? 'readonly' : ''} style="text-align: right; border: ${isEdit ? '1px solid #d1d8dd' : 'none'}; font-weight:600;"></td>
+                    ${isEdit ? `<td class="text-center" style="padding:8px; vertical-align:middle;"><button class="btn btn-xs btn-danger del-row-btn">Remove</button></td>` : ''}
+                </tr>`).appendTo(tbody);
+
+                if (isEdit) {
+                    // Create Link Control for Product ID
+                    frappe.ui.form.make_control({
+                        df: { 
+                            fieldtype: "Link", options: "Product", fieldname: `p_link_${index}`,
+                            onchange: function() {
+                                const val = this.get_value();
+                                productsData[index].product = val;
+                                if(val) {
+                                    frappe.db.get_value('Product', val, 'product_name', r => {
+                                        productsData[index].product_name = r.product_name;
+                                        tr.find('.p-name-disp').val(r.product_name);
+                                    });
+                                }
+                            }
+                        },
+                        parent: tr.find(`.p-id-link-${index}`), render_input: true
+                    }).set_value(row.product);
+
+                    // Sync amount input to local state
+                    tr.find(".p-amt-input").on("input", function() {
+                        productsData[index].product_amount = parseFloat($(this).val()) || 0;
+                    });
+                } else {
+                    tr.find(`.p-id-link-${index}`).text(row.product || '-').css({'padding-top': '8px', 'font-size': '12px'});
+                }
+            });
+        };
+
+        // 5. Helper: Render Main Product Table Structure
+        const renderTableContainer = (isEdit) => {
+            toggleInputs(isEdit);
+            const container = d.fields_dict.product_container.$wrapper;
+            container.html(`
+                <div style="border: 1px solid #d1d8dd; border-radius: 8px; overflow: hidden; background: #fff;">
+                    <div style="overflow-x: auto;">
+                        <table class="table table-bordered" style="margin:0; font-size: 13px; min-width: 600px;">
+                            <thead style="background: #f7fafc;">
+                                <tr>
+                                    <th style="width: 45px; text-align:center;">#</th>
+                                    <th style="width: 200px;">Product ID</th>
+                                    <th>Product Name</th>
+                                    <th style="width: 120px; text-align:right;">Amount (₹)</th>
+                                    ${isEdit ? '<th style="width: 90px; text-align:center;">Action</th>' : ''}
+                                </tr>
+                            </thead>
+                            <tbody id="product-rows-body"></tbody>
+                        </table>
+                    </div>
+                    ${isEdit ? `<div style="padding: 10px; background: #f7fafc; border-top: 1px solid #d1d8dd;">
+                        <button class="btn btn-xs" id="add-row-btn" style="background:#006264; color:white; border:none; padding: 6px 15px;">+ Add Product</button>
+                    </div>` : ''}
+                </div>`);
+            renderTableRows(isEdit);
+        };
+
+        // 6. Logic: Handle Save Action
+        const saveLead = (values) => {
+            frappe.call({
+                method: "frappe.client.set_value",
+                args: { 
+                    doctype: "Lead", name: name, 
+                    fieldname: { ...values, custom_product_table: productsData } 
+                },
+                callback: (r) => {
+                    if(!r.exc) {
+                        frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
+                        d.hide();
+                        me.fetchData(); 
+                    }
+                }
+            });
+        };
+
+        // 7. UI Setup: Header Buttons & Responsive Styling
+        const header_btns = d.$wrapper.find('.header-btns-container');
+        const update_btn = d.get_primary_btn().detach().appendTo(header_btns).hide();
+        update_btn.css({'background': '#006264', 'border': 'none', 'color': '#fff', 'padding': '5px 15px'});
+
+        const edit_btn = $(`<button class="btn btn-default btn-sm" style="border: 1px solid #006264; color: #006264; font-weight: 500;">Edit Form</button>`)
+            .appendTo(header_btns);
+
+        // Switch from View to Edit mode
+        edit_btn.on('click', () => {
+            renderTableContainer(true);
+            edit_btn.hide();
+            update_btn.show();
         });
 
-        // --- FULL WINDOW JS (Height & Width 100%) ---
-        d.$wrapper.find('.modal-dialog').css({
-            'width': '100vw',
-            'max-width': '100vw',
-            'height': '100vh',
-            'margin': '0',
-            'padding': '0'
-        });
-        d.$wrapper.find('.modal-content').css({
-            'height': '100vh',
-            'border-radius': '0',
-            'border': 'none'
-        });
-        d.$wrapper.find('.modal-body').css({
-            'height': 'calc(100vh - 110px)',
-            'overflow-y': 'auto',
-            'background': '#ffffff'
+        // Event Delegation for Table Buttons
+        d.$wrapper.on("click", "#add-row-btn", () => {
+            productsData.push({ product: "", product_name: "", product_amount: 0 });
+            renderTableRows(true);
         });
 
-        // --- DATA FETCHING & POPULATION ---
-        // Match error aur phone crash se bachne ke liye manual mapping
+        d.$wrapper.on("click", ".del-row-btn", function() {
+            const idx = $(this).closest('tr').data('index');
+            productsData.splice(idx, 1);
+            renderTableRows(true);
+        });
+
+        // Inject Responsive CSS for Header Alignment
+        if (!$('#header-position-style').length) {
+            $(`<style id="header-position-style">
+                @media (min-width: 768px) {
+                    .custom-header-wrapper { display: flex; justify-content: space-between; align-items: center; }
+                    .header-btns-container { order: 2; margin-right: 15px; }
+                    .lead-id-title { order: 1; }
+                }
+                @media (max-width: 767px) {
+                    .custom-header-wrapper { flex-direction: column !important; align-items: flex-start !important; }
+                    .header-btns-container { width: 100%; margin-top: 8px; margin-right: 0 !important; }
+                    .modal-dialog { margin: 10px auto !important; width: 95% !important; }
+                }
+            </style>`).appendTo("head");
+        }
+
+        // 8. Final Dialog Initialization
+        d.$wrapper.find('.modal-dialog').css({'max-width': '900px', 'margin': '30px auto'});
         d.set_values({
-            'first_name': doc.first_name || doc.lead_name || "",
+            'first_name': doc.first_name || "",
             'mobile_no': doc.mobile_no || "",
             'status': doc.status || "Lead",
             'source': doc.source || ""
         });
 
-        d.add_custom_action(__('View Full Lead'), () => {
-            frappe.set_route("Form", "Lead", name);
-            d.hide();
-        });
-
+        renderTableContainer(false); // Start in View Mode
         d.show();
     });
 }
