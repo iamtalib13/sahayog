@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "expense_category",
+  "available_limit",
   "vendor_name",
   "description",
   "amount",
@@ -54,13 +55,20 @@
    "fieldtype": "Data",
    "label": "Vendor Name",
    "reqd": 1
+  },
+  {
+   "fieldname": "available_limit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Available Category Limit",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-12 17:50:10.301029",
+ "modified": "2026-01-15 17:01:47.883460",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction Item",

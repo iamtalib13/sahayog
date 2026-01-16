@@ -90,9 +90,8 @@ if (!window.mycrmVue) {
     this.setupPWA();
     this.updateTabBadges();
   }
-// ------------------------------------
+
 // Petite-Vue Initialization
-// ------------------------------------
 initPetiteVue() {
   if (this.vueMounted || !window.PetiteVue) return;
 
@@ -142,131 +141,7 @@ initPetiteVue() {
   );
 }
 
-
-  // detectMobile() {
-  //   window.addEventListener("resize", () => {
-  //     const wasMobile = this.state.isMobile;
-  //     this.state.isMobile = window.innerWidth <= 768;
-
-  //     if (wasMobile !== this.state.isMobile) {
-  //       this.render();
-  //       this.applyFilter();
-  //     }
-  //   });
-  // }
-
-  // isCacheValid(key) {
-  //   const cache = this.cache[key];
-  //   if (!cache?.timestamp) return false;
-
-  //   const age = Date.now() - cache.timestamp;
-  //   const isValid = age < cache.ttl;
-
-  //   if (isValid) {
-  //     console.log(
-  //       `%c✅ CACHE HIT: ${key}`,
-  //       "color: #25d366; font-weight: bold;",
-  //       {
-  //         age: `${Math.round(age / 1000)}s`,
-  //         records: cache.data?.length || 0,
-  //       }
-  //     );
-  //   }
-  //   return isValid;
-  // }
-
-  // getCachedData(key) {
-  //   return this.isCacheValid(key) ? this.cache[key].data : null;
-  // }
-
-  // setCacheData(key, data, totalCount = null) {
-  //   if (!this.cache[key]) {
-  //     this.cache[key] = {
-  //       data: [],
-  //       totalCount: 0,
-  //       timestamp: null,
-  //       ttl: 5 * 60 * 1000,
-  //       searches: new Map(),
-  //     };
-  //   }
-
-  //   this.cache[key].data = data;
-  //   this.cache[key].timestamp = Date.now();
-  //   if (totalCount !== null) this.cache[key].totalCount = totalCount;
-
-  //   console.log(`%c💾 CACHED: ${key}`, "color: #128c7e; font-weight: bold;", {
-  //     records: data.length,
-  //   });
-  // }
-
-  // getCachedSearch(section, term) {
-  //   const cache = this.cache[section];
-  //   if (!cache?.searches) return null;
-
-  //   const cached = cache.searches.get(term);
-  //   if (cached && Date.now() - cached.timestamp < cache.ttl) {
-  //     console.log(
-  //       `%c🔍 SEARCH HIT: "${term}"`,
-  //       "color: #25d366; font-weight: bold;"
-  //     );
-  //     return cached.data;
-  //   }
-  //   return null;
-  // }
-
-  // setCachedSearch(section, term, data) {
-  //   const cache = this.cache[section];
-  //   if (!cache?.searches) return;
-
-  //   cache.searches.set(term, { data, timestamp: Date.now() });
-
-  //   if (cache.searches.size > 20) {
-  //     const firstKey = cache.searches.keys().next().value;
-  //     cache.searches.delete(firstKey);
-  //   }
-  // }
-
-  // invalidateCache(section = null) {
-  //   if (section) {
-  //     if (this.cache[section]) {
-  //       this.cache[section].timestamp = null;
-  //       this.cache[section].searches?.clear();
-  //     }
-  //   } else {
-  //     Object.values(this.cache).forEach((cache) => {
-  //       cache.timestamp = null;
-  //       cache.searches?.clear();
-  //     });
-  //   }
-  // }
-
-  // startCacheMonitoring() {
-  //   setInterval(() => {
-  //     console.group("%c📊 Cache Stats", "color: #128c7e; font-weight: bold;");
-  //     Object.keys(this.cache).forEach((key) => {
-  //       const cache = this.cache[key];
-  //       if (cache.timestamp) {
-  //         const age = Math.round((Date.now() - cache.timestamp) / 1000);
-  //         console.log(
-  //           `${key}: ${cache.data?.length || 0} records, ${age}s old`
-  //         );
-  //       }
-  //     });
-  //     console.groupEnd();
-  //   }, 30000);
-  // }
-
-  // setupPage() {
-  //   this.page.set_title_sub("");
-  //   this.page.clear_primary_action();
-  //   this.page.clear_secondary_action();
-  //   this.page.clear_actions();
-  //   this.page.set_indicator("Lead", "green");
-  // }
-
-  
 // Mobile Detection (Optimized + Debounced)
-// ----------------------------------------
 detectMobile() {
   let resizeTimer = null;
 
@@ -289,9 +164,7 @@ detectMobile() {
   });
 }
 
-// ----------------------------------------
 // Cache Validation (Readable + Safe)
-// ----------------------------------------
 isCacheValid(key) {
   const cache = this.cache?.[key];
   if (!cache || !cache.timestamp) return false;
@@ -313,9 +186,7 @@ getCachedData(key) {
   return this.isCacheValid(key) ? this.cache[key].data : null;
 }
 
-// ----------------------------------------
 // Cache Setter (Non-breaking)
-// ----------------------------------------
 setCacheData(key, data = [], totalCount = null) {
   if (!this.cache[key]) {
     this.cache[key] = {
@@ -340,9 +211,7 @@ setCacheData(key, data = [], totalCount = null) {
   });
 }
 
-// ----------------------------------------
 // Search Cache (Optimized)
-// ----------------------------------------
 getCachedSearch(section, term) {
   const cache = this.cache?.[section];
   if (!cache?.searches || !term) return null;
@@ -376,9 +245,7 @@ setCachedSearch(section, term, data) {
   }
 }
 
-// ----------------------------------------
 // Cache Invalidator (Safer)
-// ----------------------------------------
 invalidateCache(section = null) {
   if (section && this.cache[section]) {
     this.cache[section].timestamp = null;
@@ -392,9 +259,7 @@ invalidateCache(section = null) {
   });
 }
 
-// ----------------------------------------
 // Cache Monitoring (Dev Friendly)
-// ----------------------------------------
 startCacheMonitoring() {
   setInterval(() => {
     console.groupCollapsed("📊 CRM Cache Stats");
@@ -413,9 +278,7 @@ startCacheMonitoring() {
   }, 30000);
 }
 
-// ----------------------------------------
 // Page Setup (Petite-Vue Friendly)
-// ----------------------------------------
 setupPage() {
   this.page.set_title_sub("");
   this.page.clear_primary_action();
@@ -970,48 +833,6 @@ if (!this._vueMounted) {
 
     frappe.crm_app = this;
   }
-  
-
-  // attachEventListeners() {
-  //   $(".mycrm-tab").on("click", (e) => {
-  //     const section = $(e.currentTarget).data("section");
-  //     this.switchSection(section);
-  //   });
-
-  //   $("#mycrm-search").on("input", (e) => {
-  //     const val = $(e.target).val();
-  //     $("#mycrm-clear-search").toggle(val.length > 0);
-
-  //     clearTimeout(this.searchTimeout);
-  //     this.searchTimeout = setTimeout(() => {
-  //       this.state.search = val;
-  //       this.state.offset = 0;
-  //       if (this.state.section !== "reports") this.fetchData();
-  //     }, 300);
-  //   });
-
-  //   $("#mycrm-clear-search").on("click", () => {
-  //     $("#mycrm-search").val("");
-  //     $("#mycrm-clear-search").hide();
-  //     this.state.search = "";
-  //     this.state.offset = 0;
-  //     if (this.state.section !== "reports") this.fetchData();
-  //   });
-
-  //   $("#mycrm-list-container").on("scroll", () => this.handleScroll());
-  //   $("#mycrm-load-more-btn").on("click", () => this.loadMore());
-
-  //   $("#mycrm-fab").on("click", () => {
-  //     if (this.state.section === "lead") {
-  //       this.createLead();
-  //     } else if (this.state.section === "appointment") {
-  //       this.createAppointment();
-  //     } else {
-  //       this.switchSection("lead");
-  //       setTimeout(() => this.createLead(), 100);
-  //     }
-  //   });
-  // }
 
   attachEventListeners() {
   $(".mycrm-tab").on("click", (e) => {
@@ -1066,7 +887,6 @@ if (!this._vueMounted) {
     }
   });
 }
-
 
   async loadUserLeads() {
     console.group("%c👥 User Leads", "color: #128c7e; font-weight: bold;");
@@ -1181,24 +1001,6 @@ if (this.state.section === "lead") {
     }
   }
 
-  // async fetchTotalCount() {
-  //   const filters = this.buildServerFilters();
-  //   const or_filters = this.buildOrFilters();
-
-  //   const doctype = this.state.section === "lead" ? "Lead" : "Appointment";
-
-  //   const response = await frappe.call({
-  //     method: "frappe.client.get_count",
-  //     args: {
-  //       doctype,
-  //       filters,
-  //       or_filters,
-  //     },
-  //   });
-
-  //   this.state.totalCount = response.message || 0;
-  // }
-
   async fetchTotalCount() {
   const filters = this.buildServerFilters();
   const or_filters = this.buildOrFilters();
@@ -1225,7 +1027,6 @@ if (this.state.section === "lead") {
     }
   }
 }
-
 
   buildServerFilters() {
     const filters = [];
@@ -1486,81 +1287,6 @@ if (this.state.filter === "Assigned To Me") {
     }
   }
 
-// async fetchAssignedLeads() {
-//   const res = await frappe.call({
-//     method: "frappe.client.get_list",
-//     args: {
-//       doctype: "ToDo",
-//       fields: ["reference_name", "assigned_by"],
-//       filters: {
-//         reference_type: "Lead",
-//         allocated_to: frappe.session.user
-//       },
-//       limit_page_length: 1000
-//     }
-//   });
-
-//   const rows = res.message || [];
-
-//   // ✅ RESET EVERYTHING (VERY IMPORTANT)
-//   this.assignedByMap = {};
-//   this.assignedLeadNames = [];
-
-//   const uniqueLeadSet = new Set();
-
-//   for (const row of rows) {
-//     if (!row.reference_name || uniqueLeadSet.has(row.reference_name)) continue;
-
-//     uniqueLeadSet.add(row.reference_name);
-
-//     const emp = await this.getEmployeeByUser(row.assigned_by);
-
-//     if (emp) {
-//       this.assignedByMap[row.reference_name] = {
-//         full_name: emp.name,
-//         employee_code: emp.code,
-//         branch: emp.branch
-//       };
-
-//       this.assignedLeadNames.push(row.reference_name);
-//     }
-//   }
-
-//   // ✅ COUNT = UNIQUE LEADS ONLY
-//   this.assignedCount = uniqueLeadSet.size;
-
-//   console.log("✅ Assigned Leads (unique):", this.assignedLeadNames);
-
-//   console.log("🧪 ToDo rows:", rows.length);
-// console.log("🧪 Unique Leads:", this.assignedLeadNames.length);
-// console.log("🧪 Map:", this.assignedByMap);
-
-// }
-
-
-// async getEmployeeByUser(userId) {
-//   if (!userId) return null;
-
-//   try {
-//     const res = await frappe.db.get_value(
-//       "Employee",
-//       { user_id: userId },
-//       ["employee_name", "employee"]
-//     );
-
-//     if (res && res.message) {
-//       return {
-//         name: res.message.employee_name,
-//         code: res.message.employee,
-//       };
-//     }
-//   } catch (e) {
-//     console.warn("Employee fetch failed for", userId);
-//   }
-
-//   return null;
-// }
-
 async fetchAssignedLeads() {
   const { message = [] } = await frappe.call({
     method: "frappe.client.get_list",
@@ -1614,7 +1340,6 @@ async fetchAssignedLeads() {
   console.log("✅ Assigned Leads:", this.assignedLeadNames);
 }
 
-
 async getEmployeeByUser(userId) {
   if (!userId) return null;
 
@@ -1638,46 +1363,6 @@ async getEmployeeByUser(userId) {
 
   return null;
 }
-
-
-  // countStatus(status) {
-  //   return this.state.data.filter((d) => d.status === status).length;
-  // }
-
-  // countToday() {
-  //   const today = frappe.datetime.get_today();
-  //   return this.state.data.filter((d) => {
-  //     if (!d.scheduled_time) return false;
-  //     const schedDate = frappe.datetime.str_to_obj(d.scheduled_time);
-  //     return frappe.datetime.obj_to_str(schedDate) === today;
-  //   }).length;
-  // }
-
-  // countDue() {
-  //   const now = frappe.datetime.now_datetime();
-  //   return this.state.data.filter(
-  //     (d) => d.scheduled_time && d.scheduled_time < now && d.status !== "Closed"
-  //   ).length;
-  // }
-
-  // countUpcoming() {
-  //   const now = frappe.datetime.now_datetime();
-  //   return this.state.data.filter(
-  //     (d) => d.scheduled_time && d.scheduled_time > now && d.status !== "Closed"
-  //   ).length;
-  // }
-
-  // updateCount() {
-  //   const showing = this.state.filteredData.length;
-  //   const total = this.state.totalCount;
-
-  //   let text = `${showing} of ${total} ${this.state.section}s`;
-  //   if (this.state.search) {
-  //     text = `${showing} results`;
-  //   }
-
-  //   $("#mycrm-count-text").text(text);
-  // }
 
 countStatus(status) {
   return this.state.data.filter(d => d.status === status).length;

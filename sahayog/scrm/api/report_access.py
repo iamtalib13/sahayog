@@ -242,25 +242,28 @@ def get_leads(from_date, to_date, limit=100, offset=0):
 
         # ---------- Secondary Filters ----------
         l_products = product_map.get(l.name, [])
-
-        product_codes = {
-            norm(p.get("product"))
-            for p in l_products
-            if p.get("product")
-        }
-
-        # ---------- Product Filter (STRICT) ----------
+        allowed_products = l_products
+        # Filter products strictly according to preference
         if products_pref:
-            if not product_codes:
-                frappe.log_error("DROP - PRODUCT EMPTY", l.name)
-                continue
+           allowed_products = [
+                p for p in l_products
+                if norm(p.get("product")) in products_pref
+            ]
+        if not allowed_products:
+           frappe.log_error("DROP - PRODUCT EMPTY", l.name)
+           continue
+        l_products = allowed_products
 
-            if not product_codes.intersection(products_pref):
-                frappe.log_error(
-                    "DROP - PRODUCT",
-                    f"Lead Products={product_codes}, Allowed={products_pref}"
-                )
-                continue
+        product_codes = {p['product'] for p in l_products}
+
+        frappe.log_error("DEBUG PRODUCT", str(l_products))
+        frappe.log_error("PRODUCT PREF CHECK", f"{[d.product for d in pref.product]} | norm: {products_pref}")
+        
+        frappe.log_error(
+        "ALL PRODUCTS FOR LEAD",
+        f"{l.name} => {[p.get('product') for p in l_products]}"
+)
+
 
         # ---------- Source Filter (STRICT) ----------
         if sources_pref:
