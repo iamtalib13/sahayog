@@ -5,7 +5,7 @@ frappe.ui.form.on("Agent", {
   
   refresh(frm) {
     //  if (frappe.session.user !== "Administrator") {
-            frm.page.btn_primary?.hide();
+            // frm.page.btn_primary?.hide();
         // }
     frm.clear_custom_buttons(); // remove old buttons
     frm.trigger("employee_details"); // trigger employee details display
