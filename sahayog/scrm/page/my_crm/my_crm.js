@@ -279,17 +279,67 @@ startCacheMonitoring() {
 }
 
 // Page Setup (Petite-Vue Friendly)
+// setupPage() {
+//   this.page.set_title_sub("");
+//   this.page.clear_primary_action();
+//   this.page.clear_secondary_action();
+//   this.page.clear_actions();
+
+//   // Indicator reactive friendly
+//   this.page.set_indicator(
+//     this.state?.section === "appointment" ? "Appointment" : "Lead",
+//     "green"
+//   );
+// }
+
 setupPage() {
+  // 1. Frappe Page ke standard elements ko reset aur set karna
   this.page.set_title_sub("");
   this.page.clear_primary_action();
   this.page.clear_secondary_action();
   this.page.clear_actions();
 
-  // Indicator reactive friendly
+  // Reactive indicator set karna (Lead/Appointment status ke liye)
   this.page.set_indicator(
     this.state?.section === "appointment" ? "Appointment" : "Lead",
     "green"
   );
+
+  // 2. DOM Cleanup: Duplicate logo ko hatana (Page refresh/re-render ke waqt zaroori hai)
+  const $pageHead = $(this.page.wrapper).find(".page-head");
+  $pageHead.find(".crm-branding-header").remove();
+
+  // 3. Branding Template: Logo container ka HTML aur Inline CSS
+  // isme 'position: sticky' use kiya hai taaki scroll karne par logo top par rahe
+  const brandingHtml = `
+    <div class="crm-branding-header" style="
+        width: 100%; padding: 12px 45px; background: #fff;
+        border-bottom: 1px solid #f0f2f5; position: sticky; top: 0; z-index: 101;">
+        
+        <div class="crm-logo-wrapper" title="Refresh Page"
+             style="cursor: pointer; display: inline-block;" 
+             onclick="window.location.reload();">
+            <img src="/assets/sahayog/images/sahayog_logo_2025.png" 
+                 style="height: ${this.state.isMobile ? '30px' : '35px'}; width: auto; display: block;" 
+                 alt="Logo">
+        </div>
+    </div>
+  `;
+
+  // 4. Inject & Layout Fix: Logo ko top par dalna aur "My CRM" title ko uske niche dhakelna
+  $pageHead.prepend(brandingHtml).css({
+      "display": "flex",
+      "flex-direction": "column", // Title aur Logo ko vertical (ek ke niche ek) karne ke liye
+      "padding-top": "0px"
+  });
+
+  // Title area (My CRM) aur Indicator ki spacing theek karna
+  $pageHead.find(".page-head-content").css({
+      "padding": "15px 20px",
+      "width": "100%",
+      "display": "flex",
+      "align-items": "center"
+  });
 }
 
   render() {
