@@ -127,6 +127,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   });
 
   // ---------- Export ----------
+  // ---------- Export Button Logic ----------
+  // ---------- Export Button Logic ----------
   $("#export_leads").on("click", async function () {
     const from_date = $("#from_date").val();
     const to_date = $("#to_date").val();
@@ -136,35 +138,57 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return;
     }
 
-    let offset = 0;
-    const limit = 500;
-    let has_more = true;
-
-    frappe.show_alert({
-      message: "Export started (batch wise)...",
-      indicator: "blue",
+    let res = await frappe.call({
+      method: "sahayog.scrm.api.report_access.queue_leads_export",
+      args: { from_date, to_date },
     });
 
-    while (has_more) {
-      const url =
-        `/api/method/sahayog.scrm.api.report_access.export_leads_batch` +
-        `?from_date=${from_date}` +
-        `&to_date=${to_date}` +
-        `&limit=${limit}` +
-        `&offset=${offset}`;
+    if (res.message && res.message.status === "queued") {
+      frappe.show_alert({
+        message: __("Export started. Polling for results..."),
+        indicator: "blue",
+      });
 
-      window.open(url);
+      // ✅ Single Polling Logic
+      // Polling section inside your export click handler
+      let checkInterval = setInterval(async () => {
+        let statusRes = await frappe.call({
+          method: "sahayog.scrm.api.report_access.check_export_status",
+        });
 
-      offset += limit;
-      await new Promise((r) => setTimeout(r, 800));
+        if (statusRes.message && statusRes.message.status === "completed") {
+          clearInterval(checkInterval);
+          const fileUrl = statusRes.message.file_url;
 
-      // backend will stop returning data when finished
-      if (offset > 100000) {
-        has_more = false;
-      }
+          // Fetch current date for the success message
+          const today = frappe.datetime.get_today();
+          const formattedToday = frappe.datetime.str_to_user(today); // Formats to dd-mm-yyyy based on user settings
+
+          // Force a hidden link click for download
+          const a = document.createElement("a");
+          a.href = fileUrl;
+          a.download = "";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          // Success message with dynamic actual date
+          frappe.msgprint({
+            title: __("Export Ready"),
+            indicator: "green",
+            message: `
+                <div class="text-center">
+                    <p>Leads exported successfully on <b>${formattedToday}</b>.</p>
+                    <a href="${fileUrl}" target="_blank" class="btn btn-primary btn-sm mt-2">
+                        Manual Download Link
+                    </a>
+                    <p class="text-muted small mt-2">Note: This file will be automatically deleted from the server in 1 hour.</p>
+                </div>
+            `,
+          });
+        }
+      }, 5000);
     }
-
-    frappe.msgprint("Export completed successfully");
   });
 
   // Export button style
@@ -179,4 +203,18 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     `
     )
     .appendTo("head");
+
+  // Is block ko on_page_load ke andar rakhein
+  frappe.realtime.on("crm_leads_export_done", (data) => {
+    console.log("Realtime message received:", data); // Debugging ke liye
+    frappe.msgprint({
+      title: __("Export Ready"),
+      message: data.message,
+      indicator: "green",
+      primary_action: {
+        label: __("Close"),
+        action: () => frappe.msgprint.clear(),
+      },
+    });
+  });
 };

@@ -3,6 +3,7 @@ import frappe
 from frappe.utils import now_datetime
 from frappe.utils import getdate, date_diff
 from frappe import response
+from frappe.utils import format_date
 
 MAX_EXPORT_BATCH_SIZE = 1000
 def norm(val):
@@ -425,3 +426,133 @@ def validate_date_range(from_date, to_date):
         )
 
     return from_dt, to_dt
+# -------------------------------   
+# Queue Leads Export Job
+# -------------------------------
+@frappe.whitelist()
+def queue_leads_export(from_date, to_date):
+    from_date, to_date = validate_date_range(from_date, to_date)
+
+    frappe.enqueue(
+        method="sahayog.scrm.api.report_access.run_leads_export_job",
+        queue="long",
+        timeout=1800,
+        job_name=f"CRM Leads Export - {frappe.session.user}",
+        user=frappe.session.user,
+        from_date=str(from_date),
+        to_date=str(to_date)
+    )
+
+    return {"status": "queued"}
+
+
+# -------------------------------   
+# Run Leads Export Job
+# -------------------------------
+def run_leads_export_job(user, from_date, to_date):
+    frappe.set_user(user)
+    offset = 0
+    limit = 1000
+    all_rows = []
+
+    headers = [
+        "Sr.No.", "Status", "Lead ID", "Customer", "Contact", "Source",
+        "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+    ]
+    all_rows.append(headers)
+
+    sr_no = 1
+    while True:
+        data = get_leads(from_date, to_date, limit, offset)
+        leads = data.get("leads", [])
+        if not leads:
+            break
+            
+        for l in leads:
+            p = l.products[0] if l.products else {}
+            b = l.branch_info or {}
+            
+            # ✅ Requirement: Created On in dd-mm-yyyy format
+            formatted_date = format_date(l.creation, "dd-mm-yyyy")
+
+            all_rows.append([
+                sr_no, l.status, l.name, l.lead_name or "",
+                l.contact or "", l.source or "",
+                p.get("product", ""), p.get("product_name", ""),
+                p.get("product_amount", ""),
+                l.employee_name or "", l.employee_id or "",
+                l.designation or "", l.sol_id or "",
+                b.get("branch", ""), b.get("district", ""),
+                b.get("region", ""), b.get("zone", ""),
+                formatted_date,
+            ])
+            sr_no += 1
+        offset += limit
+
+    if len(all_rows) == 1:
+        notify_user(user, "No leads found for the selected filters.")
+        return
+
+    filename = f"crm_leads_{from_date}_to_{to_date}.csv"
+    
+    # ✅ Create File only ONCE
+    file_doc = frappe.get_doc({
+        "doctype": "File",
+        "file_name": filename,
+        "content": "\n".join(",".join(f'"{c}"' for c in r) for r in all_rows),
+        "is_private": 1
+    }).insert(ignore_permissions=True)
+
+    # ✅ Set Cache for Polling
+    cache_key = f"export_status_{user}"
+    frappe.cache().set_value(cache_key, file_doc.file_url, expires_in_sec=600)
+
+    # ✅ Notification Log (Bell Icon)
+    notify_user(user, f"Export Ready: {filename}. <a href='{file_doc.file_url}' target='_blank'>Download</a>")
+    
+    frappe.db.commit()
+
+    # ✅ Requirement: Auto-delete to save storage (After 1 hour)
+    frappe.enqueue(
+        "frappe.utils.file_manager.delete_file_data_content",
+        file_data_name=file_doc.name,
+        now=False,
+        at_front=False,
+        after_commit=True,
+        enqueue_after_delay=3600
+    )
+# --- ISSE BAHAR RAKHEIN ---
+@frappe.whitelist()
+def check_export_status():
+    user = frappe.session.user
+    cache_key = f"export_status_{user}"
+    file_url = frappe.cache().get_value(cache_key)
+    
+    if file_url:
+        frappe.cache().delete_value(cache_key) # Clean up
+        return {"status": "completed", "file_url": file_url}
+    
+    return {"status": "pending"}
+# -------------------------------   
+# Notify User via Realtime
+# -------------------------------
+def notify_user(user, message):
+    """
+    Creates a System Notification (Bell Icon) for the user.
+    This bypasses Socket.io issues.
+    """
+    # Create a new Notification Log entry
+    notification_doc = frappe.new_doc("Notification Log")
+    notification_doc.for_user = user
+    notification_doc.subject = "Lead Export Ready"
+    notification_doc.email_content = message  # This contains the HTML download link
+    notification_doc.type = "Alert"
+    notification_doc.document_type = "Lead"
+    notification_doc.insert(ignore_permissions=True)
+    
+    # Crucial: Commit changes so the background worker saves the record
+    frappe.db.commit()
+
+    frappe.log_error("CRM NOTIFICATION SENT", f"User: {user}")
