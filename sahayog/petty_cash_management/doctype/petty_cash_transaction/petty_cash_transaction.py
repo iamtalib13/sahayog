@@ -38,23 +38,45 @@ class PettyCashTransaction(Document):
             total_expense = sum(flt(item.amount) for item in self.items)
             self.amount = total_expense
 
-    def validate(self):
-        # 1. Check Account Existence (Ignoring Permissions)
-        account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
-        if not account_exists:
-            frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found! Please ask Administrator to create it.").format(self.branch))
+    # def validate(self):
+    #     # 1. Check Account Existence (Ignoring Permissions)
+    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
+    #     if not account_exists:
+    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found! Please ask Administrator to create it.").format(self.branch))
 
-        # 2. Fetch the wallet ignoring permissions for balance check
-        wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-        # Forceful bypass as requested
-        wallet.check_permission = lambda: None 
+    #     # 2. Fetch the wallet ignoring permissions for balance check
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+    #     # Forceful bypass as requested
+    #     wallet.check_permission = lambda: None 
         
-        # 3. Validations for Expense
-        if self.transaction_type == "Expense":
-            self.validate_expense(wallet)
+    #     # 3. Validations for Expense
+    #     if self.transaction_type == "Expense":
+    #         self.validate_expense(wallet)
         
-        # 4. Set current balance for display (UI purpose only)
-        self.current_branch_balance = wallet.get_current_balance()
+    #     # 4. Set current balance for display (UI purpose only)
+    #     self.current_branch_balance = wallet.get_current_balance()
+
+
+        def validate(self):
+            # 1. Check Account Existence (Ignoring Permissions)
+            account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
+            if not account_exists:
+                frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found! Please ask Administrator to create it.").format(self.branch))
+
+            # 2. Fetch the wallet ignoring permissions for balance check
+            wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+            wallet.check_permission = lambda: None 
+            
+            # 3. Validations for Expense
+            if self.transaction_type == "Expense":
+                # [FIX] Manually enforce mandatory check for items table
+                if not self.items:
+                    frappe.throw(_("At least one expense item is required when Transaction Type is 'Expense'."))
+
+                self.validate_expense(wallet)
+            
+            # 4. Set current balance for display (UI purpose only)
+            self.current_branch_balance = wallet.get_current_balance()
 
     def validate_expense(self, wallet):
         # A. Check Total Balance
