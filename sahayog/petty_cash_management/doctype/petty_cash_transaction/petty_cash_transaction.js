@@ -13,6 +13,15 @@ frappe.ui.form.on('Petty Cash Transaction', {
             frm.set_df_property('transaction_type', 'read_only', 0);
         }
     },
+
+      // [FIX] Add this trigger to clean up data when switching types
+    transaction_type: function(frm) {
+        if (frm.doc.transaction_type === "Fund Allocation") {
+            frm.clear_table("items");
+            frm.refresh_field("items");
+        }
+    },
+    
     onload: function(frm) {
         if (frm.is_new()) {
             // 1. Set Date to Today
