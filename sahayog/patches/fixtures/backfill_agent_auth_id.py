@@ -1,5 +1,8 @@
 import frappe
 
+# This script fills in missing auth_id values for Agent records
+# where the status is 'Allocated'. The auth_id is generated based
+# on the employee ID, padded to ensure a consistent format.
 def execute():
     """
     Backfill auth_id for Agents where it is empty AND status is 'Allocated'.
