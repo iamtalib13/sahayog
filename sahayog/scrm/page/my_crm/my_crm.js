@@ -2959,7 +2959,8 @@ createLead() {
 
     dialog.show();
     // ✅ Initial State: Hide Appointment Field on Dialog Open
-    dialog.get_field("scheduled_time").$wrapper.hide();
+    const appt = dialog.get_field("scheduled_time").$wrapper.hide();
+    appt.find('input').attr('placeholder', 'DD/MM/YYYY, HH:MM:SS');
     renderProductTable();
     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
 }
