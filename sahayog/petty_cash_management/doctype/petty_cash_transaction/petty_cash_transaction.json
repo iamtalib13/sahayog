@@ -91,8 +91,7 @@
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Expenses",
-   "options": "Petty Cash Transaction Item",
-   "reqd": 1
+   "options": "Petty Cash Transaction Item"
   },
   {
    "fieldname": "approval_section",
@@ -137,7 +136,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-16 17:38:21.145405",
+ "modified": "2026-01-19 17:32:17.517524",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
