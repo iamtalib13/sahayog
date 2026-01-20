@@ -24,7 +24,7 @@ frappe.ui.form.on("Stock Entry", {
       frm.page.set_title(custom_title);
     }
 
-    const cur_page = frappe.ui.get_cur_page();
+    // const cur_page = frappe.ui.get_cur_page();
     if (cur_page && cur_page.set_title) {
       cur_page.set_title(custom_title);
     }
@@ -229,15 +229,13 @@ frappe.ui.form.on("Stock Entry", {
         frm.set_value(to_warehouse, emmr_doc.target_warehouse);
         frm.dashboard.clear_headline();
 
+        (function () {
+          const style_id = "stock-entry-intro-override";
+          if (document.getElementById(style_id)) return;
 
-
-    (function () {
-    const style_id = 'stock-entry-intro-override';
-    if (document.getElementById(style_id)) return;
-
-    const style = document.createElement('style');
-    style.id = style_id;
-    style.innerHTML = `
+          const style = document.createElement("style");
+          style.id = style_id;
+          style.innerHTML = `
         body[data-route^="Form/Stock Entry"] .form-message-container .form-message.blue {
             background: transparent !important;
             background-color: transparent !important;
@@ -250,11 +248,11 @@ frappe.ui.form.on("Stock Entry", {
             margin: 0 !important;
         }
     `;
-    document.head.appendChild(style);
-})();
+          document.head.appendChild(style);
+        })();
 
-// Set dashboard headline form EMR
-frm.dashboard.set_headline(`
+        // Set dashboard headline form EMR
+        frm.dashboard.set_headline(`
   <div style="
     background: transparent;
     padding: 14px 16px;
@@ -391,9 +389,6 @@ frm.dashboard.set_headline(`
     </div>
   </div>
 `);
-
-
-
 
         if (!emmr_doc.items?.length) {
           frappe.msgprint("No items found in this EMMR.");
