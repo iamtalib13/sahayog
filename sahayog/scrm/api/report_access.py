@@ -523,16 +523,30 @@ def run_leads_export_job(user, from_date, to_date):
         after_commit=True,
         enqueue_after_delay=3600
     )
+    total_leads_exported = sr_no - 1 # Headers hata kar total count
+
+    # ✅ Cache mein URL ke saath Count bhi save karein
+    cache_key = f"export_status_{user}"
+    status_data = {
+        "status": "completed",
+        "file_url": file_doc.file_url,
+        "row_count": total_leads_exported,
+        "from_date": from_date,
+        "to_date": to_date
+    }
+    frappe.cache().set_value(cache_key, status_data, expires_in_sec=600)
 # --- ISSE BAHAR RAKHEIN ---
+# --- check_export_status ko update karein ---
 @frappe.whitelist()
 def check_export_status():
     user = frappe.session.user
     cache_key = f"export_status_{user}"
-    file_url = frappe.cache().get_value(cache_key)
+    data = frappe.cache().get_value(cache_key)
     
-    if file_url:
-        frappe.cache().delete_value(cache_key) # Clean up
-        return {"status": "completed", "file_url": file_url}
+    if data:
+        # Note: Delete mat karein jab tak frontend success confirm na kar le
+        # ya phir 10 second baad delete karein
+        return data # Isme ab row_count automatically jayega
     
     return {"status": "pending"}
 # -------------------------------   
