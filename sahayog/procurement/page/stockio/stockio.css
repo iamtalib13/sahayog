@@ -256,3 +256,35 @@ body:has(.stockio-app) .page-head {
 body:has(.stockio-app) .page-head {
   position: relative !important;
 }
+
+/* ==================================================
+   🔒 DISABLE VERTICAL SCROLL (STOCKIO ONLY)
+================================================== */
+
+/* Stop page scrolling */
+body:has(.stockio-app),
+html:has(.stockio-app) {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+/* Prevent internal wrappers from scrolling */
+body:has(.stockio-app) .main-section,
+body:has(.stockio-app) .page-container,
+body:has(.stockio-app) .layout-main-section,
+body:has(.stockio-app) .page-content {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+/* Sidebar stays fixed height */
+.stockio-sidebar {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Main content also static */
+.stockio-main {
+  height: 100vh;
+  overflow: hidden;
+}
