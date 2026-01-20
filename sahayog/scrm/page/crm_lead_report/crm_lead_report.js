@@ -119,128 +119,128 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   // ... existing code (filters ke baad) ...
 
   // 1. Table Container (Bohat saari fields hain isliye table-responsive zaroori hai)
-  $container.append(`
-    <div id="leads-preview-section" class="mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5>Lead Preview (Filter Testing)</h5>
-            <div id="stats-badge-container"></div>
-        </div>
-        <div class="table-responsive" style="max-height: 600px; border: 1px solid #d1d8dd;">
-            <table class="table table-bordered table-hover bg-white" style="font-size: 11px; min-width: 1800px;">
-                <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
-                    <tr>
-                        <th>Sr.No.</th>
-                        <th>Status</th>
-                        <th>Lead ID</th>
-                        <th>Customer</th>
-                        <th>Contact</th>
-                        <th>Source</th>
-                        <th>Product Code</th>
-                        <th>Product Name</th>
-                        <th>Amount</th>
-                        <th>Employee Name</th>
-                        <th>Employee ID</th>
-                        <th>Designation</th>
-                        <th>SOL ID</th>
-                        <th>Branch</th>
-                        <th>District</th>
-                        <th>Region</th>
-                        <th>Zone</th>
-                        <th>Created On</th>
-                    </tr>
-                </thead>
-                <tbody id="leads-table-body">
-                    <tr><td colspan="18" class="text-center text-muted">Select dates and click Apply to test filters</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-`);
+  //   $container.append(`
+  //     <div id="leads-preview-section" class="mt-4">
+  //         <div class="d-flex justify-content-between align-items-center mb-2">
+  //             <h5>Lead Preview (Filter Testing)</h5>
+  //             <div id="stats-badge-container"></div>
+  //         </div>
+  //         <div class="table-responsive" style="max-height: 600px; border: 1px solid #d1d8dd;">
+  //             <table class="table table-bordered table-hover bg-white" style="font-size: 11px; min-width: 1800px;">
+  //                 <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
+  //                     <tr>
+  //                         <th>Sr.No.</th>
+  //                         <th>Status</th>
+  //                         <th>Lead ID</th>
+  //                         <th>Customer</th>
+  //                         <th>Contact</th>
+  //                         <th>Source</th>
+  //                         <th>Product Code</th>
+  //                         <th>Product Name</th>
+  //                         <th>Amount</th>
+  //                         <th>Employee Name</th>
+  //                         <th>Employee ID</th>
+  //                         <th>Designation</th>
+  //                         <th>SOL ID</th>
+  //                         <th>Branch</th>
+  //                         <th>District</th>
+  //                         <th>Region</th>
+  //                         <th>Zone</th>
+  //                         <th>Created On</th>
+  //                     </tr>
+  //                 </thead>
+  //                 <tbody id="leads-table-body">
+  //                     <tr><td colspan="18" class="text-center text-muted">Select dates and click Apply to test filters</td></tr>
+  //                 </tbody>
+  //             </table>
+  //         </div>
+  //     </div>
+  // `);
 
-  // 2. Apply Filters Logic
-  $("#apply_filters").on("click", async () => {
-    const from_date = $("#from_date").val();
-    const to_date = $("#to_date").val();
+  //   // 2. Apply Filters Logic
+  //   $("#apply_filters").on("click", async () => {
+  //     const from_date = $("#from_date").val();
+  //     const to_date = $("#to_date").val();
 
-    if (!from_date || !to_date) {
-      frappe.msgprint(__("Please select date range"));
-      return;
-    }
+  //     if (!from_date || !to_date) {
+  //       frappe.msgprint(__("Please select date range"));
+  //       return;
+  //     }
 
-    $("#leads-table-body").html(
-      '<tr><td colspan="18" class="text-center">Fetching data...</td></tr>',
-    );
+  //     $("#leads-table-body").html(
+  //       '<tr><td colspan="18" class="text-center">Fetching data...</td></tr>',
+  //     );
 
-    try {
-      let res = await frappe.call({
-        method: "sahayog.scrm.api.report_access.get_leads",
-        args: { from_date, to_date, limit: 100 }, // Testing ke liye 100 kaafi hain
-      });
+  //     try {
+  //       let res = await frappe.call({
+  //         method: "sahayog.scrm.api.report_access.get_leads",
+  //         args: { from_date, to_date, limit: 100 }, // Testing ke liye 100 kaafi hain
+  //       });
 
-      const data = res.message;
-      const leads = data.leads || [];
-      const stats = data.stats || {};
+  //       const data = res.message;
+  //       const leads = data.leads || [];
+  //       const stats = data.stats || {};
 
-      // Update Stats Summary
-      $("#stats-badge-container").html(`
-            <span class="badge badge-info">Total: ${stats.total}</span>
-            <span class="badge badge-success">Converted: ${stats.converted}</span>
-            <span class="badge badge-warning">Follow Up: ${stats.follow_up}</span>
-        `);
+  //       // Update Stats Summary
+  //       $("#stats-badge-container").html(`
+  //             <span class="badge badge-info">Total: ${stats.total}</span>
+  //             <span class="badge badge-success">Converted: ${stats.converted}</span>
+  //             <span class="badge badge-warning">Follow Up: ${stats.follow_up}</span>
+  //         `);
 
-      let html = "";
-      if (leads.length === 0) {
-        html =
-          '<tr><td colspan="18" class="text-center">No leads found for these criteria. Check your Report Preferences.</td></tr>';
-      } else {
-        leads.forEach((l, i) => {
-          const branch = l.branch_info || {};
-          const created_on = l.creation
-            ? frappe.datetime.str_to_user(l.creation)
-            : "-";
+  //       let html = "";
+  //       if (leads.length === 0) {
+  //         html =
+  //           '<tr><td colspan="18" class="text-center">No leads found for these criteria. Check your Report Preferences.</td></tr>';
+  //       } else {
+  //         leads.forEach((l, i) => {
+  //           const branch = l.branch_info || {};
+  //           const created_on = l.creation
+  //             ? frappe.datetime.str_to_user(l.creation)
+  //             : "-";
 
-          html += `
-                    <tr>
-                        <td class="text-center">${i + 1}</td>
-                        <td><span class="label label-${get_status_indicator(l.status)}">${l.status}</span></td>
-                        <td><a href="/app/lead/${l.name}" target="_blank"><b>${l.name}</b></a></td>
-                        <td>${l.lead_name || "-"}</td>
-                        <td>${l.contact || "-"}</td>
-                        <td>${l.source || "-"}</td>
-                        <td>${l.product_code || "-"}</td>
-                        <td>${l.product_name || "-"}</td>
-                        <td>${l.amount || "0"}</td>
-                        <td>${l.employee_name || "-"}</td>
-                        <td>${l.employee_id || "-"}</td>
-                        <td>${l.designation || "-"}</td>
-                        <td>${l.sol_id || "-"}</td>
-                        <td>${branch.branch || "-"}</td>
-                        <td>${branch.district || "-"}</td>
-                        <td>${branch.region || "-"}</td>
-                        <td>${branch.zone || "-"}</td>
-                        <td>${created_on}</td>
-                    </tr>
-                `;
-        });
-      }
-      $("#leads-table-body").html(html);
-    } catch (err) {
-      console.error(err);
-      $("#leads-table-body").html(
-        '<tr><td colspan="18" class="text-center text-danger">Error fetching data. Check Error Log.</td></tr>',
-      );
-    }
-  });
+  //           html += `
+  //                     <tr>
+  //                         <td class="text-center">${i + 1}</td>
+  //                         <td><span class="label label-${get_status_indicator(l.status)}">${l.status}</span></td>
+  //                         <td><a href="/app/lead/${l.name}" target="_blank"><b>${l.name}</b></a></td>
+  //                         <td>${l.lead_name || "-"}</td>
+  //                         <td>${l.contact || "-"}</td>
+  //                         <td>${l.source || "-"}</td>
+  //                         <td>${l.product_code || "-"}</td>
+  //                         <td>${l.product_name || "-"}</td>
+  //                         <td>${l.amount || "0"}</td>
+  //                         <td>${l.employee_name || "-"}</td>
+  //                         <td>${l.employee_id || "-"}</td>
+  //                         <td>${l.designation || "-"}</td>
+  //                         <td>${l.sol_id || "-"}</td>
+  //                         <td>${branch.branch || "-"}</td>
+  //                         <td>${branch.district || "-"}</td>
+  //                         <td>${branch.region || "-"}</td>
+  //                         <td>${branch.zone || "-"}</td>
+  //                         <td>${created_on}</td>
+  //                     </tr>
+  //                 `;
+  //         });
+  //       }
+  //       $("#leads-table-body").html(html);
+  //     } catch (err) {
+  //       console.error(err);
+  //       $("#leads-table-body").html(
+  //         '<tr><td colspan="18" class="text-center text-danger">Error fetching data. Check Error Log.</td></tr>',
+  //       );
+  //     }
+  //   });
 
-  // Helper for status colors
-  function get_status_indicator(status) {
-    let color = "gray";
-    if (status === "Converted") color = "green";
-    if (status === "Follow Up") color = "orange";
-    if (status === "Not Interested") color = "red";
-    if (status === "Lead") color = "blue";
-    return color;
-  }
+  //   // Helper for status colors
+  //   function get_status_indicator(status) {
+  //     let color = "gray";
+  //     if (status === "Converted") color = "green";
+  //     if (status === "Follow Up") color = "orange";
+  //     if (status === "Not Interested") color = "red";
+  //     if (status === "Lead") color = "blue";
+  //     return color;
+  //   }
 
   // ---------- Apply Filters ----------
   $("#apply_filters").on("click", () => {
@@ -254,14 +254,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   // ---------- Export ----------
   // ---------- Export Button Logic ----------
   // ---------- Export Button Logic ----------
+  // ---------- Export Button Logic ----------
+  // --- Export Button Logic Update ---
   $("#export_leads").on("click", async function () {
     const from_date = $("#from_date").val();
     const to_date = $("#to_date").val();
 
-    if (!from_date || !to_date) {
-      frappe.msgprint("Please select From Date and To Date");
-      return;
-    }
+    const $btn = $(this);
+    // UI Improvement: Spinner and text change
+    $btn
+      .prop("disabled", true)
+      .html('<i class="fa fa-spinner fa-spin"></i> Processing...');
 
     let res = await frappe.call({
       method: "sahayog.scrm.api.report_access.queue_leads_export",
@@ -270,12 +273,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     if (res.message && res.message.status === "queued") {
       frappe.show_alert({
-        message: __("Export started. Polling for results..."),
-        indicator: "blue",
+        message: __("Exporting leads... Please do not close the tab."),
+        indicator: "orange",
       });
 
-      // ✅ Single Polling Logic
-      // Polling section inside your export click handler
       let checkInterval = setInterval(async () => {
         let statusRes = await frappe.call({
           method: "sahayog.scrm.api.report_access.check_export_status",
@@ -283,39 +284,41 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
         if (statusRes.message && statusRes.message.status === "completed") {
           clearInterval(checkInterval);
-          const fileUrl = statusRes.message.file_url;
+          $btn.prop("disabled", false).html("⬇ Export");
 
-          // Fetch current date for the success message
-          const today = frappe.datetime.get_today();
-          const formattedToday = frappe.datetime.str_to_user(today); // Formats to dd-mm-yyyy based on user settings
+          const data = statusRes.message;
 
-          // Force a hidden link click for download
+          // ✅ Silent Download
           const a = document.createElement("a");
-          a.href = fileUrl;
-          a.download = "";
+          a.href = data.file_url;
+          a.download = data.file_url.split("/").pop();
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
 
-          // Success message with dynamic actual date
+          // ✅ Improved Success Message
           frappe.msgprint({
-            title: __("Export Ready"),
-            indicator: "green",
+            title: __(
+              '<div style="color: #28a745; font-weight: bold;">✅ Export Successful</div>',
+            ),
             message: `
-                <div class="text-center">
-                    <p>Leads exported successfully on <b>${formattedToday}</b>.</p>
-                    <a href="${fileUrl}" target="_blank" class="btn btn-primary btn-sm mt-2">
-                        Manual Download Link
-                    </a>
-                    <p class="text-muted small mt-2">Note: This file will be automatically deleted from the server in 1 hour.</p>
-                </div>
-            `,
+                        <div style="font-family: sans-serif; padding: 10px;">
+                            <p style="font-size: 16px;">Successfully exported <b>${data.row_count}</b> rows!</p>
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                                📁 <b>File:</b> <span class="text-muted" style="word-break: break-all;">${data.file_url.split("/").pop()}</span><br>
+                                📅 <b>Range:</b> ${frappe.datetime.str_to_user(data.from_date)} to ${frappe.datetime.str_to_user(data.to_date)}
+                            </div>
+                            <p style="margin-top: 15px; color: #666; font-size: 12px;">
+                                <i class="fa fa-info-circle"></i> File has been saved to your <b>Downloads</b> folder.
+                            </p>
+                        </div>
+                    `,
+            indicator: "green",
           });
         }
-      }, 5000);
+      }, 3000); // Polling faster (3 sec) for better feel
     }
   });
-
   // Export button style
   $("<style>")
     .prop("type", "text/css")
