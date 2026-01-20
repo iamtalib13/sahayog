@@ -191,3 +191,23 @@ def get_category_limit_status(branch, category, transaction_date, doc_name=None)
 
     available = flt(limit) - flt(spent)
     return max(available, 0)
+
+
+@frappe.whitelist()
+def get_branch_balance(branch):
+    """
+    Returns the current wallet balance for the branch using direct SQL.
+    """
+    if not branch:
+        return 0.0
+        
+    # [FIX] Use SQL to ensure we find the record even if permissions or caching act up
+    balance = frappe.db.sql("""
+        SELECT current_balance 
+        FROM `tabBranch Petty Cash Account` 
+        WHERE branch = %s 
+        LIMIT 1
+    """, branch)
+    
+    # If a record is found, return the balance; otherwise return 0.0
+    return flt(balance[0][0]) if balance else 0.0
