@@ -93,6 +93,27 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 // Logic for the Child Table "Petty Cash Transaction Item"
 frappe.ui.form.on('Petty Cash Transaction Item', {
+
+     bill_date: function(frm, cdt, cdn) {
+        var row = locals[cdt][cdn];
+        if (row.bill_date) {
+            var today_str = frappe.datetime.get_today();
+            
+            // Use Frappe helper to compare dates properly
+            // get_diff returns: date_1 - date_2
+            // If result is negative, bill_date is in the future relative to today
+            if (frappe.datetime.get_diff(today_str, row.bill_date) < 0) {
+                 frappe.msgprint({
+                    title: __('Invalid Date'),
+                    indicator: 'red',
+                    message: __('Bill Date <b>{0}</b> cannot be in the future. The field has been reset.', [row.bill_date])
+                });
+                
+                // Clear the invalid date
+                frappe.model.set_value(cdt, cdn, 'bill_date', '');
+            }
+        }
+    },
     expense_category: function(frm, cdt, cdn) {
         var row = locals[cdt][cdn];
         

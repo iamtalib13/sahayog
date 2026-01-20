@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import get_first_day, get_last_day, nowdate, flt
+from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
 
 class PettyCashTransaction(Document):
 
@@ -72,11 +72,28 @@ class PettyCashTransaction(Document):
                 # [FIX] Manually enforce mandatory check for items table
                 if not self.items:
                     frappe.throw(_("At least one expense item is required when Transaction Type is 'Expense'."))
+                
+                # [NEW] Validate Bill Dates
+                self.validate_bill_dates()
 
                 self.validate_expense(wallet)
             
             # 4. Set current balance for display (UI purpose only)
             self.current_branch_balance = wallet.get_current_balance()
+        
+        # [NEW METHOD]
+        def validate_bill_dates(self):
+            current_date = getdate(nowdate())
+            
+            for item in self.items:
+                if item.bill_date:
+                    bill_date = getdate(item.bill_date)
+                    if bill_date > current_date:
+                        frappe.throw(
+                            _("Row #{0}: Bill Date ({1}) cannot be in the future. Today is {2}.").format(
+                                item.idx, item.bill_date, current_date
+                            )
+                        )
 
     def validate_expense(self, wallet):
         # A. Check Total Balance
