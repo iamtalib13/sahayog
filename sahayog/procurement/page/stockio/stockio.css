@@ -94,8 +94,16 @@ body:has(.stockio-app) .page-content {
   gap: 6px;
 }
 
+/* ==================================================
+   SIDEBAR MENU – ICON + TEXT (NO SPACE)
+================================================== */
+
 .menu-item {
-  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 0; /* no space between icon & text */
+  padding: 10px 14px; /* vertical padding */
+  padding-left: 0; /* 👈 icon starts at left edge */
   border-radius: 8px;
   cursor: pointer;
   color: var(--sidebar-text);
@@ -109,6 +117,21 @@ body:has(.stockio-app) .page-content {
 .menu-item.active {
   background: var(--sidebar-active);
   color: #ffffff;
+}
+
+/* ICON */
+.menu-item .icon {
+  width: auto; /* 👈 no reserved spacing */
+  font-size: 18px;
+  flex-shrink: 0;
+  margin: 0; /* 👈 force no margin */
+  padding: 0; /* 👈 force no padding */
+}
+
+/* TEXT */
+.menu-item span:not(.icon) {
+  margin: 0;
+  padding: 0;
 }
 
 /* ==================================================
@@ -287,4 +310,76 @@ body:has(.stockio-app) .page-content {
 .stockio-main {
   height: 100vh;
   overflow: hidden;
+}
+/* ==================================================
+   COLLAPSIBLE SIDEBAR
+================================================== */
+
+.stockio-sidebar {
+  width: 180px;
+  transition: width 0.25s ease;
+  position: relative;
+}
+
+.stockio-sidebar.collapsed {
+  width: 48px; /* 👈 tighter */
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Sidebar top bar */
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+/* Toggle button */
+.sidebar-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Menu item layout */
+/* .menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 👈 key */
+/* padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  font-weight: 500;
+} */
+*/
+
+/* Icons */
+.menu-item .icon {
+  margin-left: auto; /* 👈 pushes icon to the right */
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Center icons when collapsed */
+.stockio-sidebar.collapsed .menu-item {
+  justify-content: center;
+}
+
+/* Hide text smoothly */
+.stockio-sidebar.collapsed .menu-item span:not(.icon),
+.stockio-sidebar.collapsed .logo {
+  display: none;
 }
