@@ -112,192 +112,133 @@ def get_leads(from_date, to_date, limit=100, offset=0):
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
 
-    # ---------- Region Alias ----------
     REGION_ALIAS = {
-        "ho": "headoffice",
-        "head-office": "headoffice",
-        "head office": "headoffice",
+        "ho": "head office",
+        "headoffice": "head office",
+        "head-office": "head office",
     }
 
-    # ---------- Normalizer ----------
     def norm(val):
-        if not val:
-            return ""
-        v = str(val).lower().replace(" ", "").replace("_", "-").strip()
+        if not val: return ""
+        v = str(val).lower().replace("_", " ").replace("-", " ").strip()
+        v = " ".join(v.split())
         return REGION_ALIAS.get(v, v)
 
-    # ---------- Preferences ----------
+    # ---------- Preferences Fetching ----------
     if user == "Administrator":
-        products_pref = set()
-        sources_pref = set()
-        zones_pref = set()
-        regions_pref = set()
-        sol_ids_pref = set()
+        products_pref = sources_pref = zones_pref = regions_pref = sol_ids_pref = set()
     else:
-        pref_name = frappe.get_value(
-            "Report Preference",
-            {"user": user, "report_type": "Lead"},
-            "name"
-        )
+        pref_name = frappe.get_value("Report Preference", {"user": user, "report_type": "Lead"}, "name")
         if not pref_name:
+            frappe.log_error("CRM DEBUG", f"No Report Preference found for user: {user}")
             return {"leads": [], "stats": empty_stats()}
 
         pref = frappe.get_doc("Report Preference", pref_name)
+        products_pref = {norm(d.product) for d in pref.product if d.product}
+        sources_pref = {norm(d.source) for d in pref.source if d.source}
+        zones_pref = {norm(d.zone) for d in pref.zone if d.zone}
+        regions_pref = {norm(d.region) for d in pref.region if d.region}
+        sol_ids_pref = {str(d.sol_id).strip() for d in pref.sol_id if d.sol_id}
 
-        products_pref = {norm(d.product) for d in pref.product}
-        sources_pref = {norm(d.source) for d in pref.source}
-        zones_pref = {norm(d.zone) for d in pref.zone}
-        regions_pref = {norm(d.region) for d in pref.region}
-        sol_ids_pref = {str(d.sol_id) for d in pref.sol_id if d.sol_id}
-
-    # ---------- Leads ----------
+    # ---------- Raw Leads Fetching ----------
     leads = frappe.get_all(
         "Lead",
         filters=[
             ["creation", ">=", f"{from_date} 00:00:00"],
-            ["creation", "<=", f"{to_date} 23:59:59"],
+            ["creation", "<=", f"{to_date} 23:59:59"]
         ],
-        fields=[
-            "name", "status", "lead_name", "mobile_no", "phone",
-            "source", "lead_owner", "sol_id", "creation"
-        ],
+        fields=["name", "status", "lead_name", "mobile_no", "phone", "source", "lead_owner", "sol_id", "creation"],
         order_by="creation desc",
         limit_start=int(offset),
         limit_page_length=int(limit)
     )
 
-    frappe.log_error("CRM DEBUG 1 - RAW LEADS", f"{len(leads)} leads fetched")
+    frappe.log_error("CRM STEP 1 - RAW FETCH", f"Found {len(leads)} leads in DB for date {from_date} to {to_date}")
 
-    if not leads:
-        return {"leads": [], "stats": empty_stats()}
+    if not leads: return {"leads": [], "stats": empty_stats()}
 
-    # ---------- Products ----------
+    # ---------- Data Mapping ----------
     product_rows = frappe.get_all(
-        "Lead Product",
-        filters={"parent": ["in", [l.name for l in leads]]},
+        "Lead Product", 
+        filters={"parent": ["in", [l.name for l in leads]]}, 
         fields=["parent", "product", "product_name", "product_amount"]
     )
-
     product_map = {}
-    for p in product_rows:
-        product_map.setdefault(p.parent, []).append({
-            "product": p.product,
-            "product_name": p.product_name,
-            "product_amount": p.product_amount
-        })
+    for p in product_rows: product_map.setdefault(p.parent, []).append(p)
 
-    # ---------- Branch & Employee ----------
     sol_ids = tuple({int(l.sol_id) for l in leads if str(l.sol_id).isdigit()})
     branch_map = get_branch_map(sol_ids) if sol_ids else {}
-    employee_map = get_employee_map(
-        tuple({l.lead_owner for l in leads if l.lead_owner})
-    )
+    employee_map = get_employee_map(tuple({l.lead_owner for l in leads if l.lead_owner}))
 
-    # ---------- Final Filter ----------
+    # ---------- Final Filter with Detailed Logs ----------
     final_leads = []
 
     for l in leads:
-        frappe.log_error("CRM DEBUG LOOP", f"{l.name} | SOL {l.sol_id}")
-
-        # ---------- SOL validation ----------
-        if not l.sol_id or not str(l.sol_id).isdigit():
-            frappe.log_error("DROP - INVALID SOL", l.sol_id)
+        # LOG 1: SOL Check
+        if not l.sol_id:
+            frappe.log_error("DROP - NO SOL", f"Lead: {l.name} has no SOL ID.")
+            continue
+        
+        if sol_ids_pref and str(l.sol_id).strip() not in sol_ids_pref:
+            frappe.log_error("DROP - SOL PREF", f"Lead: {l.name}, SOL: {l.sol_id} not in User Preference SOL list.")
             continue
 
-        if sol_ids_pref and str(l.sol_id) not in sol_ids_pref:
-            frappe.log_error("DROP - SOL PREF", f"SOL={l.sol_id}")
-            continue
-
+        # LOG 2: Branch Data Check
         branch = branch_map.get(int(l.sol_id))
         if not branch:
-            frappe.log_error("DROP - BRANCH NOT FOUND", l.sol_id)
+            frappe.log_error("DROP - BRANCH MISSING", f"Lead: {l.name}, SOL: {l.sol_id} not found in Sahayog Branch master.")
             continue
 
         lead_zone = norm(branch.zone)
         lead_region = norm(branch.region)
+        lead_source = norm(l.source)
 
-        frappe.log_error(
-            "CRM ZONE CHECK",
-            f"""
-            Lead: {l.name}
-            Branch Zone RAW: '{branch.zone}'
-            Branch Zone NORM: '{lead_zone}'
-            Pref Zones: {list(zones_pref)}
-            """
-        )
-
-        # ---------- Primary Filters ----------
+        # LOG 3: Location Filters
         if zones_pref and lead_zone not in zones_pref:
-            frappe.log_error(
-                "DROP - ZONE",
-                f"Lead Zone={lead_zone}, Allowed={zones_pref}"
-            )
+            frappe.log_error("DROP - ZONE FILTER", f"Lead: {l.name}, Zone: {lead_zone} not in Allowed: {list(zones_pref)}")
             continue
-
-        if regions_pref and lead_region not in regions_pref:
-            frappe.log_error(
-                "DROP - REGION",
-                f"Lead Region={lead_region}, Allowed={regions_pref}"
-            )
-            continue
-
-        # ---------- Secondary Filters ----------
-        l_products = product_map.get(l.name, [])
-        allowed_products = l_products
-        # Filter products strictly according to preference
-        if products_pref:
-           allowed_products = [
-                p for p in l_products
-                if norm(p.get("product")) in products_pref
-            ]
-        if not allowed_products:
-           frappe.log_error("DROP - PRODUCT EMPTY", l.name)
-           continue
-        l_products = allowed_products
-
-        product_codes = {p['product'] for p in l_products}
-
-        frappe.log_error("DEBUG PRODUCT", str(l_products))
-        frappe.log_error("PRODUCT PREF CHECK", f"{[d.product for d in pref.product]} | norm: {products_pref}")
         
-        frappe.log_error(
-        "ALL PRODUCTS FOR LEAD",
-        f"{l.name} => {[p.get('product') for p in l_products]}"
-)
+        if regions_pref and lead_region not in regions_pref:
+            frappe.log_error("DROP - REGION FILTER", f"Lead: {l.name}, Region: {lead_region} not in Allowed: {list(regions_pref)}")
+            continue
 
+        # LOG 4: Source Filter
+        if sources_pref and lead_source not in sources_pref:
+            frappe.log_error("DROP - SOURCE FILTER", f"Lead: {l.name}, Source: {lead_source} not in Allowed: {list(sources_pref)}")
+            continue
 
-        # ---------- Source Filter (STRICT) ----------
-        if sources_pref:
-            lead_source = norm(l.source)
-            if lead_source not in sources_pref:
-                frappe.log_error(
-                    "DROP - SOURCE",
-                    f"Lead Source={lead_source}, Allowed={sources_pref}"
-                )
+        # LOG 5: Product Filter (1003 Fix)
+        l_products = product_map.get(l.name, [])
+        if products_pref:
+            matched = [p for p in l_products if norm(p.get("product")) in products_pref]
+            if not matched:
+                product_list = [p.get('product') for p in l_products]
+                frappe.log_error("DROP - PRODUCT FILTER", f"Lead: {l.name}, Lead Products: {product_list} not in User Preference: {list(products_pref)}")
                 continue
+            l_products = matched
 
-        # ---------- Enrich ----------
+        # ---------- Success: Enriching Data ----------
+        l.branch_info = branch
+        l.region = "Head Office" if lead_region == "head office" else branch.region
+        
         emp = employee_map.get(l.lead_owner)
         l.employee_name = emp.employee_name if emp else None
         l.employee_id = emp.employee_number if emp else None
         l.designation = emp.designation if emp else None
         l.products = l_products
-
-        # ---------- Product display ----------
+        
         if l_products:
             l.product_code = l_products[0].get("product")
             l.product_name = l_products[0].get("product_name")
             l.amount = l_products[0].get("product_amount")
         else:
-            l.product_code = "-"
-            l.product_name = "-"
-            l.amount = "-"
+            l.product_code = l.product_name = l.amount = "-"
 
         l.contact = l.mobile_no or l.phone or ""
-        l.branch_info = branch
-
         final_leads.append(l)
 
+    frappe.log_error("CRM STEP 2 - FINAL LIST", f"Final displayed leads: {len(final_leads)} after all filters.")
+    
     return {
         "leads": final_leads,
         "stats": {
@@ -307,9 +248,6 @@ def get_leads(from_date, to_date, limit=100, offset=0):
             "not_interested": sum(l.status == "Not Interested" for l in final_leads),
         }
     }
-
-
-
 # -------------------------------   
 # Export Leads as CSV in Batches
 # -------------------------------

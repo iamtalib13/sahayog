@@ -119,128 +119,128 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   // ... existing code (filters ke baad) ...
 
   // 1. Table Container (Bohat saari fields hain isliye table-responsive zaroori hai)
-  $container.append(`
-    <div id="leads-preview-section" class="mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5>Lead Preview (Filter Testing)</h5>
-            <div id="stats-badge-container"></div>
-        </div>
-        <div class="table-responsive" style="max-height: 600px; border: 1px solid #d1d8dd;">
-            <table class="table table-bordered table-hover bg-white" style="font-size: 11px; min-width: 1800px;">
-                <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
-                    <tr>
-                        <th>Sr.No.</th>
-                        <th>Status</th>
-                        <th>Lead ID</th>
-                        <th>Customer</th>
-                        <th>Contact</th>
-                        <th>Source</th>
-                        <th>Product Code</th>
-                        <th>Product Name</th>
-                        <th>Amount</th>
-                        <th>Employee Name</th>
-                        <th>Employee ID</th>
-                        <th>Designation</th>
-                        <th>SOL ID</th>
-                        <th>Branch</th>
-                        <th>District</th>
-                        <th>Region</th>
-                        <th>Zone</th>
-                        <th>Created On</th>
-                    </tr>
-                </thead>
-                <tbody id="leads-table-body">
-                    <tr><td colspan="18" class="text-center text-muted">Select dates and click Apply to test filters</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-`);
+  //   $container.append(`
+  //     <div id="leads-preview-section" class="mt-4">
+  //         <div class="d-flex justify-content-between align-items-center mb-2">
+  //             <h5>Lead Preview (Filter Testing)</h5>
+  //             <div id="stats-badge-container"></div>
+  //         </div>
+  //         <div class="table-responsive" style="max-height: 600px; border: 1px solid #d1d8dd;">
+  //             <table class="table table-bordered table-hover bg-white" style="font-size: 11px; min-width: 1800px;">
+  //                 <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
+  //                     <tr>
+  //                         <th>Sr.No.</th>
+  //                         <th>Status</th>
+  //                         <th>Lead ID</th>
+  //                         <th>Customer</th>
+  //                         <th>Contact</th>
+  //                         <th>Source</th>
+  //                         <th>Product Code</th>
+  //                         <th>Product Name</th>
+  //                         <th>Amount</th>
+  //                         <th>Employee Name</th>
+  //                         <th>Employee ID</th>
+  //                         <th>Designation</th>
+  //                         <th>SOL ID</th>
+  //                         <th>Branch</th>
+  //                         <th>District</th>
+  //                         <th>Region</th>
+  //                         <th>Zone</th>
+  //                         <th>Created On</th>
+  //                     </tr>
+  //                 </thead>
+  //                 <tbody id="leads-table-body">
+  //                     <tr><td colspan="18" class="text-center text-muted">Select dates and click Apply to test filters</td></tr>
+  //                 </tbody>
+  //             </table>
+  //         </div>
+  //     </div>
+  // `);
 
-  // 2. Apply Filters Logic
-  $("#apply_filters").on("click", async () => {
-    const from_date = $("#from_date").val();
-    const to_date = $("#to_date").val();
+  //   // 2. Apply Filters Logic
+  //   $("#apply_filters").on("click", async () => {
+  //     const from_date = $("#from_date").val();
+  //     const to_date = $("#to_date").val();
 
-    if (!from_date || !to_date) {
-      frappe.msgprint(__("Please select date range"));
-      return;
-    }
+  //     if (!from_date || !to_date) {
+  //       frappe.msgprint(__("Please select date range"));
+  //       return;
+  //     }
 
-    $("#leads-table-body").html(
-      '<tr><td colspan="18" class="text-center">Fetching data...</td></tr>',
-    );
+  //     $("#leads-table-body").html(
+  //       '<tr><td colspan="18" class="text-center">Fetching data...</td></tr>',
+  //     );
 
-    try {
-      let res = await frappe.call({
-        method: "sahayog.scrm.api.report_access.get_leads",
-        args: { from_date, to_date, limit: 100 }, // Testing ke liye 100 kaafi hain
-      });
+  //     try {
+  //       let res = await frappe.call({
+  //         method: "sahayog.scrm.api.report_access.get_leads",
+  //         args: { from_date, to_date, limit: 100 }, // Testing ke liye 100 kaafi hain
+  //       });
 
-      const data = res.message;
-      const leads = data.leads || [];
-      const stats = data.stats || {};
+  //       const data = res.message;
+  //       const leads = data.leads || [];
+  //       const stats = data.stats || {};
 
-      // Update Stats Summary
-      $("#stats-badge-container").html(`
-            <span class="badge badge-info">Total: ${stats.total}</span>
-            <span class="badge badge-success">Converted: ${stats.converted}</span>
-            <span class="badge badge-warning">Follow Up: ${stats.follow_up}</span>
-        `);
+  //       // Update Stats Summary
+  //       $("#stats-badge-container").html(`
+  //             <span class="badge badge-info">Total: ${stats.total}</span>
+  //             <span class="badge badge-success">Converted: ${stats.converted}</span>
+  //             <span class="badge badge-warning">Follow Up: ${stats.follow_up}</span>
+  //         `);
 
-      let html = "";
-      if (leads.length === 0) {
-        html =
-          '<tr><td colspan="18" class="text-center">No leads found for these criteria. Check your Report Preferences.</td></tr>';
-      } else {
-        leads.forEach((l, i) => {
-          const branch = l.branch_info || {};
-          const created_on = l.creation
-            ? frappe.datetime.str_to_user(l.creation)
-            : "-";
+  //       let html = "";
+  //       if (leads.length === 0) {
+  //         html =
+  //           '<tr><td colspan="18" class="text-center">No leads found for these criteria. Check your Report Preferences.</td></tr>';
+  //       } else {
+  //         leads.forEach((l, i) => {
+  //           const branch = l.branch_info || {};
+  //           const created_on = l.creation
+  //             ? frappe.datetime.str_to_user(l.creation)
+  //             : "-";
 
-          html += `
-                    <tr>
-                        <td class="text-center">${i + 1}</td>
-                        <td><span class="label label-${get_status_indicator(l.status)}">${l.status}</span></td>
-                        <td><a href="/app/lead/${l.name}" target="_blank"><b>${l.name}</b></a></td>
-                        <td>${l.lead_name || "-"}</td>
-                        <td>${l.contact || "-"}</td>
-                        <td>${l.source || "-"}</td>
-                        <td>${l.product_code || "-"}</td>
-                        <td>${l.product_name || "-"}</td>
-                        <td>${l.amount || "0"}</td>
-                        <td>${l.employee_name || "-"}</td>
-                        <td>${l.employee_id || "-"}</td>
-                        <td>${l.designation || "-"}</td>
-                        <td>${l.sol_id || "-"}</td>
-                        <td>${branch.branch || "-"}</td>
-                        <td>${branch.district || "-"}</td>
-                        <td>${branch.region || "-"}</td>
-                        <td>${branch.zone || "-"}</td>
-                        <td>${created_on}</td>
-                    </tr>
-                `;
-        });
-      }
-      $("#leads-table-body").html(html);
-    } catch (err) {
-      console.error(err);
-      $("#leads-table-body").html(
-        '<tr><td colspan="18" class="text-center text-danger">Error fetching data. Check Error Log.</td></tr>',
-      );
-    }
-  });
+  //           html += `
+  //                     <tr>
+  //                         <td class="text-center">${i + 1}</td>
+  //                         <td><span class="label label-${get_status_indicator(l.status)}">${l.status}</span></td>
+  //                         <td><a href="/app/lead/${l.name}" target="_blank"><b>${l.name}</b></a></td>
+  //                         <td>${l.lead_name || "-"}</td>
+  //                         <td>${l.contact || "-"}</td>
+  //                         <td>${l.source || "-"}</td>
+  //                         <td>${l.product_code || "-"}</td>
+  //                         <td>${l.product_name || "-"}</td>
+  //                         <td>${l.amount || "0"}</td>
+  //                         <td>${l.employee_name || "-"}</td>
+  //                         <td>${l.employee_id || "-"}</td>
+  //                         <td>${l.designation || "-"}</td>
+  //                         <td>${l.sol_id || "-"}</td>
+  //                         <td>${branch.branch || "-"}</td>
+  //                         <td>${branch.district || "-"}</td>
+  //                         <td>${branch.region || "-"}</td>
+  //                         <td>${branch.zone || "-"}</td>
+  //                         <td>${created_on}</td>
+  //                     </tr>
+  //                 `;
+  //         });
+  //       }
+  //       $("#leads-table-body").html(html);
+  //     } catch (err) {
+  //       console.error(err);
+  //       $("#leads-table-body").html(
+  //         '<tr><td colspan="18" class="text-center text-danger">Error fetching data. Check Error Log.</td></tr>',
+  //       );
+  //     }
+  //   });
 
-  // Helper for status colors
-  function get_status_indicator(status) {
-    let color = "gray";
-    if (status === "Converted") color = "green";
-    if (status === "Follow Up") color = "orange";
-    if (status === "Not Interested") color = "red";
-    if (status === "Lead") color = "blue";
-    return color;
-  }
+  //   // Helper for status colors
+  //   function get_status_indicator(status) {
+  //     let color = "gray";
+  //     if (status === "Converted") color = "green";
+  //     if (status === "Follow Up") color = "orange";
+  //     if (status === "Not Interested") color = "red";
+  //     if (status === "Lead") color = "blue";
+  //     return color;
+  // }
 
   // ---------- Apply Filters ----------
   $("#apply_filters").on("click", () => {
