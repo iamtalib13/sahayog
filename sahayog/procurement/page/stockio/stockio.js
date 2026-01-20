@@ -89,54 +89,86 @@ class StockIOPage {
 
   render() {
     this.wrapper.html(`
-      <div class="stockio-app" v-scope="app">
+    <div class="stockio-app" v-scope="app">
 
-        <!-- SIDEBAR -->
-        <aside class="stockio-sidebar">
-          <div class="logo">StockIO</div>
+      <!-- SIDEBAR -->
+      <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
 
-          <nav class="menu">
-            <div class="menu-item">Dashboard</div>
-            <div class="menu-item active">Sales</div>
-            <div class="menu-item">Products</div>
-            <div class="menu-item">Reports</div>
-            <div class="menu-item">Settings</div>
-          </nav>
-        </aside>
+        <div class="sidebar-top">
+          <div class="logo" v-if="!sidebarCollapsed">StockIO</div>
 
-        <!-- MAIN CONTENT -->
-        <main class="stockio-main">
+          <!-- TOGGLE BUTTON -->
+          <button class="sidebar-toggle" @click="toggleSidebar">
+            <span v-if="sidebarCollapsed">☰</span>
+            <span v-else>❮</span>
+          </button>
+        </div>
 
-          <div class="stockio-header">
-            <h2>Orders</h2>
-            <div class="stockio-actions">
-              <button class="btn ghost">Export</button>
-              <button class="btn primary">Create</button>
-            </div>
+        <nav class="menu">
+          <div class="menu-item">
+            <span class="icon">🏠</span>
+            <span v-if="!sidebarCollapsed">Requests</span>
           </div>
 
-          <div class="stockio-tabs">
-            <span class="tab active">All <b>410</b></span>
-            <span class="tab">New <b class="green">36</b></span>
-            <span class="tab">Pending <b class="orange">40</b></span>
-            <span class="tab">Delivered <b class="purple">334</b></span>
+          <div class="menu-item active">
+            <span class="icon">🛒</span>
+            <span v-if="!sidebarCollapsed">Sales</span>
           </div>
 
-          <div class="stockio-search">
-            <input placeholder="Search orders..." />
-            <button class="btn ghost">Filters</button>
+          <div class="menu-item">
+            <span class="icon">📦</span>
+            <span v-if="!sidebarCollapsed">Products</span>
           </div>
 
-          <div class="stockio-content">
-            <!-- Order cards will come here -->
+          <div class="menu-item">
+            <span class="icon">📊</span>
+            <span v-if="!sidebarCollapsed">Reports</span>
           </div>
 
-        </main>
-      </div>
-    `);
+          <div class="menu-item">
+            <span class="icon">⚙️</span>
+            <span v-if="!sidebarCollapsed">Settings</span>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="stockio-main">
+
+        <div class="stockio-header">
+          <h2>Material Requests</h2>
+          <div class="stockio-actions">
+            <button class="btn ghost">Export</button>
+            <button class="btn primary">Create</button>
+          </div>
+        </div>
+
+        <div class="stockio-tabs">
+          <span class="tab active">All <b>410</b></span>
+          <span class="tab">New <b class="green">36</b></span>
+          <span class="tab">Pending <b class="orange">40</b></span>
+          <span class="tab">Delivered <b class="purple">334</b></span>
+        </div>
+
+        <div class="stockio-search">
+          <input placeholder="Search orders..." />
+          <button class="btn ghost">Filters</button>
+        </div>
+
+        <div class="stockio-content"></div>
+
+      </main>
+    </div>
+  `);
   }
 
   mountVue() {
-    PetiteVue.createApp({}).mount(this.wrapper[0]);
+    PetiteVue.createApp({
+      sidebarCollapsed: false,
+
+      toggleSidebar() {
+        this.sidebarCollapsed = !this.sidebarCollapsed;
+      },
+    }).mount(this.wrapper[0]);
   }
 }
