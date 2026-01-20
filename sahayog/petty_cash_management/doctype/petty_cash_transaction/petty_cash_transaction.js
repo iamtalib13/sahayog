@@ -94,6 +94,12 @@ frappe.ui.form.on('Petty Cash Transaction', {
 // Logic for the Child Table "Petty Cash Transaction Item"
 frappe.ui.form.on('Petty Cash Transaction Item', {
 
+    // 1. Validate when Amount is changed
+    amount: function(frm, cdt, cdn) {
+        validate_limit(frm, cdt, cdn);
+    },
+
+    // 2. Bill Date Validation
      bill_date: function(frm, cdt, cdn) {
         var row = locals[cdt][cdn];
         if (row.bill_date) {
@@ -137,5 +143,26 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
                 }
             }
         });
-    }
+    },
+
+    
 });
+
+function validate_limit(frm, cdt, cdn) {
+    var row = locals[cdt][cdn];
+    
+    // Only check if we have both values
+    if (row.amount > 0 && row.available_limit != null) {
+        if (row.amount > row.available_limit) {
+            frappe.throw(
+                __("Row #{0}: Expense Amount (₹{1}) exceeds the Available Category Limit (₹{2}).<br>You cannot proceed until the amount is reduced.", 
+                [row.idx, row.amount, row.available_limit])
+            );
+            
+            // Optional: Auto-reset amount to match limit or 0? 
+            // Usually better to let user fix it, but frappe.throw stops saving.
+            // If you want to force reset:
+            // frappe.model.set_value(cdt, cdn, 'amount', 0); 
+        }
+    }
+}
