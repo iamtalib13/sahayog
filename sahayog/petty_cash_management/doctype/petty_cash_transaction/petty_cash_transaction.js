@@ -12,6 +12,14 @@ frappe.ui.form.on('Petty Cash Transaction', {
             // HO Managers: Can change it
             frm.set_df_property('transaction_type', 'read_only', 0);
         }
+
+         // 2. [NEW] Logic for Branch Field Read-Only Access
+        // Allow edit ONLY if user is Administrator OR has 'HO Petty Cash Manager' role
+        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+            frm.set_df_property('branch', 'read_only', 0); // Editable
+        } else {
+            frm.set_df_property('branch', 'read_only', 1); // Read-only
+        }
     },
 
       // [FIX] Add this trigger to clean up data when switching types
