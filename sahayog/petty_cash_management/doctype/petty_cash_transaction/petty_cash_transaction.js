@@ -12,6 +12,14 @@ frappe.ui.form.on('Petty Cash Transaction', {
             // HO Managers: Can change it
             frm.set_df_property('transaction_type', 'read_only', 0);
         }
+
+         // 2. [NEW] Logic for Branch Field Read-Only Access
+        // Allow edit ONLY if user is Administrator OR has 'HO Petty Cash Manager' role
+        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+            frm.set_df_property('branch', 'read_only', 0); // Editable
+        } else {
+            frm.set_df_property('branch', 'read_only', 1); // Read-only
+        }
     },
 
       // [FIX] Add this trigger to clean up data when switching types
@@ -85,6 +93,33 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 // Logic for the Child Table "Petty Cash Transaction Item"
 frappe.ui.form.on('Petty Cash Transaction Item', {
+
+    // 1. Validate when Amount is changed
+    amount: function(frm, cdt, cdn) {
+        validate_limit(frm, cdt, cdn);
+    },
+
+    // 2. Bill Date Validation
+     bill_date: function(frm, cdt, cdn) {
+        var row = locals[cdt][cdn];
+        if (row.bill_date) {
+            var today_str = frappe.datetime.get_today();
+            
+            // Use Frappe helper to compare dates properly
+            // get_diff returns: date_1 - date_2
+            // If result is negative, bill_date is in the future relative to today
+            if (frappe.datetime.get_diff(today_str, row.bill_date) < 0) {
+                 frappe.msgprint({
+                    title: __('Invalid Date'),
+                    indicator: 'red',
+                    message: __('Bill Date <b>{0}</b> cannot be in the future. The field has been reset.', [row.bill_date])
+                });
+                
+                // Clear the invalid date
+                frappe.model.set_value(cdt, cdn, 'bill_date', '');
+            }
+        }
+    },
     expense_category: function(frm, cdt, cdn) {
         var row = locals[cdt][cdn];
         
@@ -108,5 +143,26 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
                 }
             }
         });
-    }
+    },
+
+    
 });
+
+function validate_limit(frm, cdt, cdn) {
+    var row = locals[cdt][cdn];
+    
+    // Only check if we have both values
+    if (row.amount > 0 && row.available_limit != null) {
+        if (row.amount > row.available_limit) {
+            frappe.throw(
+                __("Row #{0}: Expense Amount (₹{1}) exceeds the Available Category Limit (₹{2}).<br>You cannot proceed until the amount is reduced.", 
+                [row.idx, row.amount, row.available_limit])
+            );
+            
+            // Optional: Auto-reset amount to match limit or 0? 
+            // Usually better to let user fix it, but frappe.throw stops saving.
+            // If you want to force reset:
+            // frappe.model.set_value(cdt, cdn, 'amount', 0); 
+        }
+    }
+}
