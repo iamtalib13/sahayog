@@ -8,36 +8,66 @@ frappe.pages["stockio"].on_page_load = function (wrapper) {
     single_column: true,
   });
 
-  // ---------- REMOVE TITLE COMPLETELY ----------
+  // ------------------------------------------------
+  // REMOVE TITLE & PAGE HEADER COMPLETELY
+  // ------------------------------------------------
   page.set_title("");
   page.main.find(".page-head").remove();
 
-  // ---------- FULL WIDTH FIX ----------
+  // ------------------------------------------------
+  // FULL WIDTH / NO LEFT-RIGHT GAP (CUSTOMER-360 STYLE)
+  // ------------------------------------------------
   const $pageContainer = $(wrapper).closest(".page-container");
   const $layoutMain = $(wrapper).closest(".layout-main-section");
+  const $pageBody = $(wrapper).closest(".page-body");
+  const $pageContent = $(wrapper).find(".page-content");
 
   $pageContainer.css({
     margin: "0",
     padding: "0",
     width: "100%",
     maxWidth: "100%",
+    background: "transparent",
   });
 
   $layoutMain.css({
+    margin: "0",
     padding: "0",
+    width: "100%",
     border: "none",
     boxShadow: "none",
     background: "transparent",
   });
 
-  $(wrapper).css({ padding: 0 });
+  $pageBody.css({
+    margin: "0",
+    padding: "0",
+    width: "100%",
+  });
 
+  $pageContent.css({
+    margin: "0",
+    padding: "0",
+    width: "100%",
+  });
+
+  $(wrapper).css({
+    margin: "0",
+    padding: "0",
+    width: "100%",
+  });
+
+  // ------------------------------------------------
+  // LOAD PETITE-VUE
+  // ------------------------------------------------
   loadPetiteVue(() => {
     new StockIOPage(wrapper);
   });
 };
 
-// ---------- PETITE VUE LOADER ----------
+// --------------------------------------------------
+// PETITE-VUE LOADER (ONCE)
+// --------------------------------------------------
 function loadPetiteVue(callback) {
   if (window.PetiteVue) return callback();
 
@@ -98,7 +128,7 @@ class StockIOPage {
           </div>
 
           <div class="stockio-content">
-            <!-- Order cards here -->
+            <!-- Order cards will come here -->
           </div>
 
         </main>

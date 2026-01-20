@@ -1,27 +1,81 @@
+/* ==================================================
+   STOCKIO – COMPLETE EDGE-TO-EDGE CSS
+   (NO LEFT / RIGHT / TOP GAP)
+================================================== */
+
+/* ------------------------------
+   COLOR VARIABLES
+------------------------------ */
 :root {
   --bg: #f5f7fb;
   --sidebar: #0f172a;
   --sidebar-text: #cbd5f5;
   --sidebar-active: #4f6ef7;
-  --card: #ffffff;
   --primary: #4f6ef7;
   --text: #111827;
   --muted: #6b7280;
   --border: #e5e7eb;
 }
 
-/* ---------- APP LAYOUT ---------- */
-.stockio-app {
-  display: flex;
-  min-height: 100vh;
-  width: 100%;
-  font-family: Inter, system-ui;
+/* ==================================================
+   🔴 REMOVE ALL FRAPPE GUTTERS (STOCKIO ONLY)
+================================================== */
+
+/* Top navbar offset */
+body:has(.stockio-app) .main-section {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
-/* ---------- SIDEBAR ---------- */
+/* Page container */
+body:has(.stockio-app) .page-container {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Layout main */
+body:has(.stockio-app) .layout-main-section {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Page body */
+body:has(.stockio-app) .page-body {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Page content */
+body:has(.stockio-app) .page-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* ==================================================
+   APP LAYOUT
+================================================== */
+
+.stockio-app {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system;
+}
+
+/* ==================================================
+   SIDEBAR
+================================================== */
+
 .stockio-sidebar {
   width: 240px;
-  background: var(--sidebar);
+  background: linear-gradient(180deg, #0f172a, #020617);
   color: var(--sidebar-text);
   padding: 20px;
 }
@@ -29,10 +83,11 @@
 .stockio-sidebar .logo {
   font-size: 20px;
   font-weight: 700;
-  color: white;
+  color: #ffffff;
   margin-bottom: 24px;
 }
 
+/* Sidebar menu */
 .menu {
   display: flex;
   flex-direction: column;
@@ -44,6 +99,7 @@
   border-radius: 8px;
   cursor: pointer;
   color: var(--sidebar-text);
+  font-weight: 500;
 }
 
 .menu-item:hover {
@@ -52,17 +108,23 @@
 
 .menu-item.active {
   background: var(--sidebar-active);
-  color: white;
+  color: #ffffff;
 }
 
-/* ---------- MAIN ---------- */
+/* ==================================================
+   MAIN CONTENT AREA
+================================================== */
+
 .stockio-main {
   flex: 1;
   background: var(--bg);
   padding: 24px;
 }
 
-/* ---------- HEADER ---------- */
+/* ==================================================
+   HEADER
+================================================== */
+
 .stockio-header {
   display: flex;
   justify-content: space-between;
@@ -72,28 +134,36 @@
 .stockio-header h2 {
   font-size: 22px;
   font-weight: 600;
+  color: var(--text);
 }
 
-/* ---------- BUTTONS ---------- */
+/* ==================================================
+   BUTTONS
+================================================== */
+
 .btn {
   padding: 8px 14px;
   border-radius: 8px;
   font-weight: 500;
-  border: none;
   cursor: pointer;
+  border: none;
 }
 
 .btn.primary {
   background: var(--primary);
-  color: white;
+  color: #ffffff;
 }
 
 .btn.ghost {
-  background: white;
+  background: #ffffff;
   border: 1px solid var(--border);
+  color: var(--text);
 }
 
-/* ---------- TABS ---------- */
+/* ==================================================
+   TABS
+================================================== */
+
 .stockio-tabs {
   display: flex;
   gap: 20px;
@@ -103,6 +173,7 @@
 .stockio-tabs .tab {
   cursor: pointer;
   color: var(--muted);
+  font-weight: 500;
 }
 
 .stockio-tabs .tab.active {
@@ -116,23 +187,29 @@
   border-radius: 999px;
   background: #eef2ff;
   margin-left: 6px;
+  font-size: 12px;
 }
 
-/* ---------- STATUS COLORS ---------- */
+/* Status colors */
 .green {
   background: #dcfce7;
   color: #15803d;
 }
+
 .orange {
   background: #ffedd5;
   color: #c2410c;
 }
+
 .purple {
   background: #ede9fe;
   color: #6d28d9;
 }
 
-/* ---------- SEARCH ---------- */
+/* ==================================================
+   SEARCH BAR
+================================================== */
+
 .stockio-search {
   display: flex;
   gap: 10px;
@@ -144,9 +221,38 @@
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
+  outline: none;
 }
 
-/* ---------- CONTENT ---------- */
+/* ==================================================
+   CONTENT
+================================================== */
+
 .stockio-content {
-  background: transparent;
+  width: 100%;
+}
+
+/* ==================================================
+   🔥 REMOVE PAGE-HEAD FLEX GAP (STOCKIO ONLY)
+================================================== */
+
+/* Completely kill page-head */
+body:has(.stockio-app) .page-head,
+body:has(.stockio-app) .page-head.flex {
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+/* Remove navbar offset applied via top */
+body:has(.stockio-app) .page-head {
+  top: 0 !important;
+}
+
+/* Safety: remove sticky behavior */
+body:has(.stockio-app) .page-head {
+  position: relative !important;
 }
