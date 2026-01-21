@@ -166,12 +166,30 @@ class StockIOPage {
 <div class="stockio-toolbar">
 
   <!-- LEFT: TABS -->
-  <div class="stockio-tabs">
-    <span class="tab active">All <b>410</b></span>
-    <span class="tab">New <b class="green">36</b></span>
-    <span class="tab">Pending <b class="orange">40</b></span>
-    <span class="tab">Delivered <b class="purple">334</b></span>
-  </div>
+<div class="stockio-tabs">
+  <span class="tab active">
+    All <b>{{ counts.all }}</b>
+  </span>
+
+  <span class="tab">
+    To Day <b class="green">{{ counts.today }}</b>
+  </span>
+  <span class="tab">
+      Draft <b class="grey">{{ counts.draft }}</b>
+    </span>
+
+  <span class="tab">
+    Pending <b class="orange">{{ counts.pending }}</b>
+  </span>
+
+  <span class="tab">
+    Approved <b class="purple">{{ counts.approved }}</b>
+  </span>
+  <span class="tab">
+    Cancelled <b class="red">{{counts.cancelled}}</b>
+  </span>
+</div>
+
 
   <!-- RIGHT: SEARCH + FILTER -->
   <div class="stockio-search">
@@ -183,157 +201,54 @@ class StockIOPage {
 
 
 <div class="stockio-body">
-  <div class="stockio-content">
-  <!-- TOOLBAR -->
-  <div class="order-toolbar">
-    <label><input type="checkbox" /> Select All</label>
+    <div class="order-toolbar">
+      <label><input type="checkbox" /> Select All</label>
 
-    <div class="toolbar-actions">
-      <button class="btn ghost">Print</button>
-      <button class="btn success">Update Order</button>
+      <div class="toolbar-actions">
+        <button class="btn ghost">Print</button>
+        <button class="btn success">Approved Request</button>
+      </div>
     </div>
-  </div>
+<div class="order-card" v-for="doc in requests" :key="doc.name">
 
-  <!-- ORDER CARD -->
-  <div class="order-card">
-    <div class="order-left">
-      <input type="checkbox" />
+  <div class="order-left">
+    <input type="checkbox" />
 
-      <div class="order-info">
-        <div class="order-title">
-          <strong>Order #2471</strong>
-          <span class="badge paid">Paid</span>
-        </div>
+    <div class="order-info">
+      <div class="order-title">
+        <strong>{{ doc.name }}</strong>
+        <span class="badge paid">{{ doc.status }}</span>
+      </div>
 
-        <div class="order-meta">
-          13 Sep, 2022 · Shipping No:
-          <a href="#">61833014105</a>
-        </div>
+      <div class="order-meta">
+        {{ formatDate(doc.creation) }} · Created By:
+        <b>{{ doc.owner }}</b>
+      </div>
 
-        <div class="order-product">
-          <img src="https://via.placeholder.com/44" />
-          <div>
-            <div class="product-name">
-              Burberry Beige 38mm Stainless Steel Watch
-            </div>
-            <div class="product-meta">
-              SKU: 11300cab-12 · Qty: 2
-            </div>
+      <div
+        class="order-product"
+        v-for="item in doc.items"
+        :key="item.name"
+      >
+        <img src="https://via.placeholder.com/44" />
+        <div>
+          <div class="product-name">
+            {{ item.item_code }}
+          </div>
+          <div class="product-meta">
+            SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
           </div>
         </div>
       </div>
     </div>
-
-    <div class="order-right">
-      <div class="order-amount">$580.99</div>
-      <button class="btn ghost">View</button>
-    </div>
   </div>
 
-  <!-- DUPLICATE CARD (EXAMPLE) -->
-  <div class="order-card">
-    <div class="order-left">
-      <input type="checkbox" />
-
-      <div class="order-info">
-        <div class="order-title">
-          <strong>Order #2472</strong>
-          <span class="badge pending">Waiting payment</span>
-        </div>
-
-        <div class="order-meta">
-          14 Sep, 2022 · Shipping No:
-          <a href="#">61833014106</a>
-        </div>
-
-        <div class="order-product">
-          <img src="https://via.placeholder.com/44" />
-          <div>
-            <div class="product-name">
-              Laced shoes on high current
-            </div>
-            <div class="product-meta">
-              SKU: dfr-t685y-1 · Qty: 1
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="order-right">
-      <div class="order-amount">$340.48</div>
-      <button class="btn ghost">View</button>
-    </div>
+  <div class="order-right">
+    <button class="btn ghost">View</button>
   </div>
-    <div class="order-card">
-    <div class="order-left">
-      <input type="checkbox" />
 
-      <div class="order-info">
-        <div class="order-title">
-          <strong>Order #2472</strong>
-          <span class="badge pending">Waiting payment</span>
-        </div>
+</div>
 
-        <div class="order-meta">
-          14 Sep, 2022 · Shipping No:
-          <a href="#">61833014106</a>
-        </div>
-
-        <div class="order-product">
-          <img src="https://via.placeholder.com/44" />
-          <div>
-            <div class="product-name">
-              Laced shoes on high current
-            </div>
-            <div class="product-meta">
-              SKU: dfr-t685y-1 · Qty: 1
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="order-right">
-      <div class="order-amount">$340.48</div>
-      <button class="btn ghost">View</button>
-    </div>
-  </div>
-    <div class="order-card">
-    <div class="order-left">
-      <input type="checkbox" />
-
-      <div class="order-info">
-        <div class="order-title">
-          <strong>Order #2472</strong>
-          <span class="badge pending">Waiting payment</span>
-        </div>
-
-        <div class="order-meta">
-          14 Sep, 2022 · Shipping No:
-          <a href="#">61833014106</a>
-        </div>
-
-        <div class="order-product">
-          <img src="https://via.placeholder.com/44" />
-          <div>
-            <div class="product-name">
-              Laced shoes on high current
-            </div>
-            <div class="product-meta">
-              SKU: dfr-t685y-1 · Qty: 1
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="order-right">
-      <div class="order-amount">$340.48</div>
-      <button class="btn ghost">View</button>
-    </div>
-  </div>
-  </div>
 
 
 </div>
@@ -344,14 +259,23 @@ class StockIOPage {
   }
 
   mountVue() {
-    PetiteVue.createApp({
+    const app = {
       sidebarCollapsed: false,
+      stockOpen: false,
+      assetOpen: false,
+
+      requests: [],
+
+      counts: {
+        all: 0,
+        today: 0,
+        pending: 0,
+        approved: 0,
+      },
 
       toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
       },
-      stockOpen: false,
-      assetOpen: false,
 
       toggleStock() {
         if (this.sidebarCollapsed) return;
@@ -364,6 +288,104 @@ class StockIOPage {
         this.assetOpen = !this.assetOpen;
         this.stockOpen = false;
       },
-    }).mount(this.wrapper[0]);
+
+      // ------------------------------------
+      // LOAD REQUESTS
+      // ------------------------------------
+      loadRequests() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Employee Material Request",
+            fields: ["name", "status", "creation", "owner"],
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+
+            this.requests = r.message.map((d) => ({
+              ...d,
+              items: [],
+            }));
+
+            this.computeCounts();
+            this.requests.forEach((doc) => this.loadItems(doc));
+          },
+        });
+      },
+
+      // ------------------------------------
+      // COUNT LOGIC
+      // ------------------------------------
+      computeCounts() {
+        const today = frappe.datetime.get_today();
+
+        this.counts.all = this.requests.length;
+        this.counts.today = 0;
+        this.counts.draft = 0;
+        this.counts.pending = 0;
+        this.counts.approved = 0;
+        this.counts.cancelled = 0;
+
+        this.requests.forEach((doc) => {
+          const docDate = doc.creation.split(" ")[0];
+
+          // Today
+          if (docDate === today) {
+            this.counts.today++;
+          }
+          // Draft
+          if (doc.status === "Draft") {
+            this.counts.draft++;
+          }
+
+          // Pending (two types)
+          if (
+            doc.status === "Pending HO Approval" ||
+            doc.status === "Pending Reporting Person"
+          ) {
+            this.counts.pending++;
+          }
+
+          // Approved
+          if (doc.status === "Approved") {
+            this.counts.approved++;
+          }
+
+          // Cancelled
+          if (doc.status === "Cancelled") {
+            this.counts.cancelled++;
+          }
+        });
+      },
+
+      // ------------------------------------
+      // LOAD CHILD ITEMS
+      // ------------------------------------
+      loadItems(doc) {
+        frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Employee Material Request",
+            name: doc.name,
+          },
+          callback: (r) => {
+            if (r.message) {
+              doc.items = r.message.items || [];
+            }
+          },
+        });
+      },
+
+      formatDate(date) {
+        return frappe.datetime.str_to_user(date);
+      },
+    };
+
+    PetiteVue.createApp(app).mount(this.wrapper[0]);
+
+    setTimeout(() => {
+      app.loadRequests();
+    }, 100);
   }
 }

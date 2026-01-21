@@ -251,9 +251,9 @@ body:has(.stockio-app) .page-content {
    CONTENT
 ================================================== */
 
-.stockio-content {
+/* .stockio-content {
   width: 100%;
-}
+} */
 
 /* ==================================================
    🔥 REMOVE PAGE-HEAD FLEX GAP (STOCKIO ONLY)
