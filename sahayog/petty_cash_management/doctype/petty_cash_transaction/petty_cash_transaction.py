@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
+from sahayog.petty_cash_management.permissions import get_user_allowed_branches # [NEW IMPORT]
 
 class PettyCashTransaction(Document):
 
@@ -264,6 +265,28 @@ class PettyCashTransaction(Document):
         # self.trigger_finacle_api()
         
         frappe.msgprint(_("Bills Verified. Ready for Finacle Integration."))
+
+         # [NEW] SECURITY CHECK
+    def has_permission(self, permtype="read"):
+        """
+        This method is called automatically by Frappe when accessing a document via URL/Form.
+        """
+        # 1. Get allowed branches for current user
+        allowed_branches = get_user_allowed_branches()
+
+        # 2. If None, it means they are Admin/Manager -> Allow
+        if allowed_branches is None:
+            return True
+
+        # 3. Check if the document's branch is in the allowed list
+        # If the document is new (no branch yet), allow creation so they can select their branch
+        if self.is_new():
+            return True
+
+        if self.branch in allowed_branches:
+            return True
+        
+        return False
 
 
 
