@@ -149,72 +149,135 @@
 
 frappe.ui.form.on('Petty Cash Transaction', {
 
+    // refresh: function(frm) {
+    //     // ==============================
+    //     // 1. Field & Role Logic
+    //     // ==============================
+    //     if (!frappe.user.has_role('HO Petty Cash Manager')) {
+    //         frm.set_df_property('transaction_type', 'read_only', 1);
+    //     } else {
+    //         frm.set_df_property('transaction_type', 'read_only', 0);
+    //     }
+
+    //     if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+    //         frm.set_df_property('branch', 'read_only', 0);
+    //     } else {
+    //         frm.set_df_property('branch', 'read_only', 1);
+    //     }
+        
+    //     // Trigger balance fetch on refresh for new docs
+    //     if(frm.doc.branch && frm.is_new()) {
+    //         frm.trigger('fetch_balance');
+    //     }
+
+    //     // ==============================
+    //     // 2. HO Approval Buttons
+    //     // ==============================
+        
+    //     // Debugging: Check console to see if logic runs
+    //     // console.log("Docstatus:", frm.doc.docstatus, "Status:", frm.doc.approval_status);
+
+    //     // BUTTON 1: Approve Limit Exceedance
+    //     // Shows if: Submitted (docstatus==1) AND Status is 'Pending Approval' AND User is Manager/Admin
+    //     if (frm.doc.docstatus === 1 && 
+    //         frm.doc.approval_status === "Pending Approval" && 
+    //         (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator')) {
+            
+    //         frm.add_custom_button(__('Approve Limit Exceedance'), function() {
+    //             frappe.confirm('Are you sure you want to approve the extra expense? This will deduct the remaining balance from the branch wallet.', () => {
+    //                 frappe.call({
+    //                     doc: frm.doc,
+    //                     method: 'ho_approve_limit',
+    //                     callback: function() {
+    //                         frm.reload_doc();
+    //                     }
+    //                 });
+    //             });
+    //         }, "Actions"); // Puts it in 'Actions' menu at top right
+            
+    //         frm.dashboard.set_headline_alert("This transaction exceeds category limits. HO Approval required for full deduction.", "orange");
+    //     }
+
+    //     // BUTTON 2: Verify & Process
+    //     // Shows if: Submitted (docstatus==1) AND Status is 'Approved' (Limits OK) AND User is Manager/Admin
+    //     if (frm.doc.docstatus === 1 && 
+    //         frm.doc.approval_status === "Approved" && 
+    //         (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator')) {
+            
+    //         frm.add_custom_button(__('Verify & Process'), function() {
+    //             frappe.call({
+    //                 doc: frm.doc,
+    //                 method: 'ho_verify_bill',
+    //                 callback: function() {
+    //                     frm.reload_doc();
+    //                 }
+    //             });
+    //         }, "Actions");
+    //     }
+    // },
+
+
     refresh: function(frm) {
-        // ==============================
-        // 1. Field & Role Logic
-        // ==============================
+        
+        // --- DEBUG LOGGING ---
+        console.log("=== DEBUGGING BUTTONS ===");
+        console.log("Docstatus (1=Submitted):", frm.doc.docstatus);
+        console.log("Approval Status:", frm.doc.approval_status);
+        console.log("User:", frappe.session.user);
+        console.log("Is Manager?", frappe.user.has_role('HO Petty Cash Manager'));
+        // ---------------------
+
+        // Standard Read-Only Logic
         if (!frappe.user.has_role('HO Petty Cash Manager')) {
             frm.set_df_property('transaction_type', 'read_only', 1);
+            frm.set_df_property('branch', 'read_only', 1);
         } else {
             frm.set_df_property('transaction_type', 'read_only', 0);
-        }
-
-        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
             frm.set_df_property('branch', 'read_only', 0);
-        } else {
-            frm.set_df_property('branch', 'read_only', 1);
-        }
-        
-        // Trigger balance fetch on refresh for new docs
-        if(frm.doc.branch && frm.is_new()) {
-            frm.trigger('fetch_balance');
         }
 
-        // ==============================
-        // 2. HO Approval Buttons
-        // ==============================
-        
-        // Debugging: Check console to see if logic runs
-        // console.log("Docstatus:", frm.doc.docstatus, "Status:", frm.doc.approval_status);
+        // --- BUTTON LOGIC ---
 
-        // BUTTON 1: Approve Limit Exceedance
-        // Shows if: Submitted (docstatus==1) AND Status is 'Pending Approval' AND User is Manager/Admin
-        if (frm.doc.docstatus === 1 && 
-            frm.doc.approval_status === "Pending Approval" && 
-            (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator')) {
+        // SCENARIO 2: Limit Exceeded -> Needs Approval
+        if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Pending Approval") {
             
-            frm.add_custom_button(__('Approve Limit Exceedance'), function() {
-                frappe.confirm('Are you sure you want to approve the extra expense? This will deduct the remaining balance from the branch wallet.', () => {
+            // Check permissions explicitly
+            if (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator') {
+                console.log(">> Adding 'Approve Limit' Button");
+                
+                frm.add_custom_button(__('Approve Limit Exceedance'), function() {
+                    frappe.confirm('Approve extra expense?', () => {
+                        frappe.call({
+                            doc: frm.doc,
+                            method: 'ho_approve_limit',
+                            callback: function() { frm.reload_doc(); }
+                        });
+                    });
+                }, "Actions"); // Should appear in 'Actions' button
+            } else {
+                console.log(">> User does not have permission for Limit Approval");
+            }
+        }
+
+        // SCENARIO 1 & 2: Limit OK -> Needs Verification
+        if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Approved") {
+            
+            if (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator') {
+                console.log(">> Adding 'Verify' Button");
+                
+                frm.add_custom_button(__('Verify & Process'), function() {
                     frappe.call({
                         doc: frm.doc,
-                        method: 'ho_approve_limit',
-                        callback: function() {
-                            frm.reload_doc();
-                        }
+                        method: 'ho_verify_bill',
+                        callback: function() { frm.reload_doc(); }
                     });
-                });
-            }, "Actions"); // Puts it in 'Actions' menu at top right
-            
-            frm.dashboard.set_headline_alert("This transaction exceeds category limits. HO Approval required for full deduction.", "orange");
-        }
-
-        // BUTTON 2: Verify & Process
-        // Shows if: Submitted (docstatus==1) AND Status is 'Approved' (Limits OK) AND User is Manager/Admin
-        if (frm.doc.docstatus === 1 && 
-            frm.doc.approval_status === "Approved" && 
-            (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator')) {
-            
-            frm.add_custom_button(__('Verify & Process'), function() {
-                frappe.call({
-                    doc: frm.doc,
-                    method: 'ho_verify_bill',
-                    callback: function() {
-                        frm.reload_doc();
-                    }
-                });
-            }, "Actions");
+                }, "Actions");
+            } else {
+                console.log(">> User does not have permission for Verification");
+            }
         }
     },
+
 
     transaction_type: function(frm) {
         if (frm.doc.transaction_type === "Fund Allocation") {
