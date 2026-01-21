@@ -383,3 +383,265 @@ body:has(.stockio-app) .page-content {
 .stockio-sidebar.collapsed .logo {
   display: none;
 }
+/* ==================================================
+   ORDER LIST / CARD BODY
+================================================== */
+
+.order-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn.success {
+  background: #22c55e;
+  color: #fff;
+}
+
+/* CARD */
+.order-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.order-left {
+  display: flex;
+  gap: 12px;
+}
+
+.order-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.order-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+}
+
+.badge.paid {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.order-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.order-meta a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.order-product {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.order-product img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+
+.product-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.product-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* RIGHT SIDE */
+.order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.order-amount {
+  font-size: 18px;
+  font-weight: 600;
+}
+/* ==================================================
+   TABS + SEARCH IN SAME ROW
+================================================== */
+
+.stockio-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  /* margin-bottom: 20px; */
+}
+
+/* Tabs stay left */
+.stockio-toolbar .stockio-tabs {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Search stays right */
+.stockio-toolbar .stockio-search {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 420px;
+}
+
+.stockio-toolbar .stockio-search input {
+  width: 320px;
+}
+/* ==================================================
+   SCROLLABLE CARD AREA (ONLY)
+================================================== */
+
+/* Main takes full height */
+.stockio-main {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* no page scroll */
+}
+
+/* Toolbar (tabs + search + buttons) stays fixed */
+.stockio-header,
+.stockio-toolbar,
+.order-toolbar {
+  flex-shrink: 0;
+}
+
+/* Scroll starts here */
+.stockio-body {
+  flex: 1; /* take remaining height */
+  overflow-y: auto; /* ✅ vertical scroll */
+  padding-right: 6px; /* prevent scrollbar overlap */
+}
+
+/* Smooth scroll */
+.stockio-body {
+  scrollbar-width: thin;
+}
+/* ==================================================
+   SIDEBAR MENU
+================================================== */
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Main menu item */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  font-weight: 500;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menu-item.active {
+  background: var(--sidebar-active);
+  color: #ffffff;
+}
+
+/* Icon */
+.menu-item .icon {
+  font-size: 18px;
+  width: 18px;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/* Chevron */
+.chevron {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* ==================================================
+   DROPDOWN (VERTICAL)
+================================================== */
+
+.menu-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Submenu */
+.submenu {
+  display: flex;
+  flex-direction: column;
+  margin-left: 24px;
+  margin-top: 4px;
+  gap: 4px;
+}
+
+/* Submenu item */
+.submenu-item {
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--sidebar-text);
+}
+
+.submenu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+/* ==================================================
+   COLLAPSED SIDEBAR
+================================================== */
+
+.stockio-sidebar.collapsed .menu-item {
+  justify-content: center;
+}
+
+.stockio-sidebar.collapsed .submenu,
+.stockio-sidebar.collapsed .chevron {
+  display: none;
+}
