@@ -160,7 +160,12 @@ class StockIOPage {
           <h2>Material Requests</h2>
           <div class="stockio-actions">
             <button class="btn ghost">Export</button>
-            <button class="btn primary">Create</button>
+<button
+  class="btn primary"
+  @click="createRequest"
+>
+  Create
+</button>
           </div>
         </div>
 <div class="stockio-toolbar">
@@ -219,20 +224,19 @@ class StockIOPage {
     </div>
 
 <div class="stockio-body">
-
 <div
   class="order-card"
   v-for="doc in visibleRequests"
   :key="doc.name"
 >
-
+  <!-- LEFT -->
   <div class="order-left">
-<input
-  type="checkbox"
-  v-model="selectedDocs"
-  :value="doc.name"
-  @change="syncSelectAll"
-/>
+    <input
+      type="checkbox"
+      v-model="selectedDocs"
+      :value="doc.name"
+      @change="syncSelectAll"
+    />
 
     <div class="order-info">
       <div class="order-title">
@@ -245,47 +249,68 @@ class StockIOPage {
         <b>{{ doc.owner }}</b>
       </div>
 
-      <div
-        class="order-product"
-        v-for="item in doc.items"
-        :key="item.name"
-      >
+      <!-- FIRST ITEM -->
+      <div class="order-product" v-if="doc.items.length">
         <img src="https://via.placeholder.com/44" />
         <div>
           <div class="product-name">
-            {{ item.item_code }}
+            {{ doc.items[0].item_code }}
           </div>
           <div class="product-meta">
-            SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
+            SKU: {{ doc.items[0].item_code }} · Qty: {{ doc.items[0].quantity }}
           </div>
         </div>
+      </div>
+
+      <!-- MORE ITEMS -->
+      <div v-if="doc.showAllItems">
+        <div
+          class="order-product"
+          v-for="item in doc.items.slice(1)"
+          :key="item.name"
+        >
+          <img src="https://via.placeholder.com/44" />
+          <div>
+            <div class="product-name">{{ item.item_code }}</div>
+            <div class="product-meta">
+              SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOGGLE -->
+      <div
+        v-if="doc.items.length > 1"
+        class="more-items"
+        @click="toggleItems(doc)"
+      >
+        {{ doc.showAllItems
+          ? 'Hide items'
+          : '+' + (doc.items.length - 1) + ' more items'
+        }}
       </div>
     </div>
   </div>
 
+  <!-- RIGHT (FIXED POSITION) -->
   <div class="order-right">
-  <button
-  class="btn ghost"
-  @click="openRequest(doc.name)"
->
-  View
-</button>
-
+    <button class="btn ghost" @click="openRequest(doc.name)">
+      View
+    </button>
   </div>
-
-
-
 </div>
 
-<div style="text-align:center; margin:16px 0" v-if="canLoadMore">
-  <button class="btn ghost" @click="loadMore">
-    Load More
-  </button>
-</div>
 
-</div>
+    <div style="text-align:center; margin:16px 0" v-if="canLoadMore">
+      <button class="btn ghost" @click="loadMore">
+        Load More
+      </button>
+    </div>
 
-      </main>
+    </div>
+
+          </main>
     </div>
   `);
   }
@@ -338,6 +363,7 @@ class StockIOPage {
             this.requests = r.message.map((d) => ({
               ...d,
               items: [],
+              showAllItems: false,
             }));
             this.selectedDocs = [];
             this.selectAll = false;
@@ -527,6 +553,7 @@ class StockIOPage {
             this.requests = r.message.map((d) => ({
               ...d,
               items: [],
+              showAllItems: false,
             }));
 
             // RESET PAGINATION
@@ -542,6 +569,16 @@ class StockIOPage {
       },
       get canLoadMore() {
         return this.visibleRequests.length < this.getFilteredRequests().length;
+      },
+      createRequest() {
+        frappe.set_route(
+          "Form",
+          "Employee Material Request",
+          "new-employee-material-request",
+        );
+      },
+      toggleItems(doc) {
+        doc.showAllItems = !doc.showAllItems;
       },
     };
 
