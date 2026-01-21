@@ -645,3 +645,15 @@ body:has(.stockio-app) .page-content {
 .stockio-sidebar.collapsed .chevron {
   display: none;
 }
+.more-items {
+  margin-left: 48px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #4f6ef7;
+  cursor: pointer;
+  user-select: none;
+}
+
+.more-items:hover {
+  text-decoration: underline;
+}
