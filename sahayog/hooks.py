@@ -215,6 +215,11 @@ permission_query_conditions = {
 
     "Petty Cash Transaction": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
     "Branch Petty Cash Account": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
+
+    # This will restrict records based on Branch assigned in Employee Master
+    "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.get_permission_query_conditions",
+    # This will restrict records based on Branch assigned in Employee Master
+    "Branch Petty Cash Account": "sahayog.petty_cash_management.permission_queries.get_account_permission_query_conditions",
     # You can even restrict the Branch Master itself if you want:
     # "Sahayog Branch": "sahayog.petty_cash_management.permissions.get_branch_permission_query"
 }
