@@ -185,6 +185,9 @@ class StockIOPage {
   <span class="tab">
     Approved <b class="purple">{{ counts.approved }}</b>
   </span>
+  <span class="tab">
+    Cancelled <b class="red">{{counts.cancelled}}</b>
+  </span>
 </div>
 
 
@@ -203,7 +206,7 @@ class StockIOPage {
 
       <div class="toolbar-actions">
         <button class="btn ghost">Print</button>
-        <button class="btn success">Update Order</button>
+        <button class="btn success">Approved Request</button>
       </div>
     </div>
 <div class="order-card" v-for="doc in requests" :key="doc.name">
@@ -322,6 +325,7 @@ class StockIOPage {
         this.counts.draft = 0;
         this.counts.pending = 0;
         this.counts.approved = 0;
+        this.counts.cancelled = 0;
 
         this.requests.forEach((doc) => {
           const docDate = doc.creation.split(" ")[0];
@@ -346,6 +350,11 @@ class StockIOPage {
           // Approved
           if (doc.status === "Approved") {
             this.counts.approved++;
+          }
+
+          // Cancelled
+          if (doc.status === "Cancelled") {
+            this.counts.cancelled++;
           }
         });
       },
