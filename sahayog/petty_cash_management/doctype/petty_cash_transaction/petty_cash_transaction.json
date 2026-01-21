@@ -130,6 +130,38 @@
    "options": "Petty Cash Transaction",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "approval_status",
+   "fieldtype": "Select",
+   "label": "Approval Status",
+   "options": "Draft\nPending Approval\nApproved\nVerified\nPosted",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_limits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount_within_limit",
+   "fieldtype": "Currency",
+   "label": "Amount Within Limit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount_exceeding_limit",
+   "fieldtype": "Currency",
+   "label": "Amount Exceeding Limit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount_deducted",
+   "fieldtype": "Currency",
+   "label": "Amount Deducted from Wallet",
+   "read_only": 1,
+   "description": "The actual amount subtracted from branch balance currently"
   }
  ],
  "grid_page_length": 50,
