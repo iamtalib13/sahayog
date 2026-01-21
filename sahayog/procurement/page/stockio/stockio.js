@@ -172,28 +172,55 @@ class StockIOPage {
 
   <!-- LEFT: TABS -->
 <div class="stockio-tabs">
-  <span class="tab active">
+  <span
+    class="tab"
+    :class="{ active: activeTab === 'all' }"
+    @click="setTab('all')"
+  >
     All <b>{{ counts.all }}</b>
   </span>
 
-  <span class="tab">
+  <span
+    class="tab"
+    :class="{ active: activeTab === 'today' }"
+    @click="setTab('today')"
+  >
     To Day <b class="green">{{ counts.today }}</b>
   </span>
-  <span class="tab">
-      Draft <b class="grey">{{ counts.draft }}</b>
-    </span>
 
-  <span class="tab">
+  <span
+    class="tab"
+    :class="{ active: activeTab === 'draft' }"
+    @click="setTab('draft')"
+  >
+    Draft <b class="grey">{{ counts.draft }}</b>
+  </span>
+
+  <span
+    class="tab"
+    :class="{ active: activeTab === 'pending' }"
+    @click="setTab('pending')"
+  >
     Pending <b class="orange">{{ counts.pending }}</b>
   </span>
 
-  <span class="tab">
+  <span
+    class="tab"
+    :class="{ active: activeTab === 'approved' }"
+    @click="setTab('approved')"
+  >
     Approved <b class="purple">{{ counts.approved }}</b>
   </span>
-  <span class="tab">
-    Cancelled <b class="red">{{counts.cancelled}}</b>
+
+  <span
+    class="tab"
+    :class="{ active: activeTab === 'cancelled' }"
+    @click="setTab('cancelled')"
+  >
+    Cancelled <b class="red">{{ counts.cancelled }}</b>
   </span>
 </div>
+
 
 
   <!-- RIGHT: SEARCH + FILTER -->
@@ -322,6 +349,7 @@ class StockIOPage {
       assetOpen: false,
 
       requests: [],
+      activeTab: "all", // all | today | draft | pending | approved | cancelled
 
       counts: {
         all: 0,
@@ -523,16 +551,45 @@ class StockIOPage {
       // FILTER (HELPER, NOT PAGINATION)
       // ---------------------------
       getFilteredRequests() {
-        if (!this.searchText) return this.requests;
+        const today = frappe.datetime.get_today();
+        let list = this.requests;
+
+        // TAB FILTER
+        if (this.activeTab === "today") {
+          list = list.filter((d) => d.creation.split(" ")[0] === today);
+        }
+
+        if (this.activeTab === "draft") {
+          list = list.filter((d) => d.status === "Draft");
+        }
+
+        if (this.activeTab === "pending") {
+          list = list.filter(
+            (d) =>
+              d.status === "Pending HO Approval" ||
+              d.status === "Pending Reporting Person",
+          );
+        }
+
+        if (this.activeTab === "approved") {
+          list = list.filter((d) => d.status === "Approved");
+        }
+
+        if (this.activeTab === "cancelled") {
+          list = list.filter((d) => d.status === "Cancelled");
+        }
+
+        // SEARCH FILTER
+        if (!this.searchText) return list;
 
         const q = this.searchText.toLowerCase();
 
-        return this.requests.filter(
-          (doc) =>
-            doc.name.toLowerCase().includes(q) ||
-            doc.owner?.toLowerCase().includes(q) ||
-            doc.status?.toLowerCase().includes(q) ||
-            doc.items?.some((i) => i.item_code?.toLowerCase().includes(q)),
+        return list.filter(
+          (d) =>
+            d.name.toLowerCase().includes(q) ||
+            d.owner?.toLowerCase().includes(q) ||
+            d.status?.toLowerCase().includes(q) ||
+            d.items?.some((i) => i.item_code?.toLowerCase().includes(q)),
         );
       },
 
@@ -579,6 +636,12 @@ class StockIOPage {
       },
       toggleItems(doc) {
         doc.showAllItems = !doc.showAllItems;
+      },
+      setTab(tab) {
+        this.activeTab = tab;
+        this.offset = 0;
+        this.visibleRequests = [];
+        this.loadMore();
       },
     };
 
