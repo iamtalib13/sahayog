@@ -94,6 +94,7 @@
 
 import frappe
 from frappe.model.document import Document
+from sahayog.petty_cash_management.permissions import get_user_allowed_branches # [NEW IMPORT]
 
 class BranchPettyCashAccount(Document):
     
@@ -125,3 +126,16 @@ class BranchPettyCashAccount(Document):
         """, self.branch)[0][0]
         
         return (total_funds - total_expenses) or 0
+    
+
+    # [NEW] SECURITY CHECK
+    def has_permission(self, permtype="read"):
+        allowed_branches = get_user_allowed_branches()
+
+        if allowed_branches is None:
+            return True
+
+        if self.branch in allowed_branches:
+            return True
+            
+        return False
