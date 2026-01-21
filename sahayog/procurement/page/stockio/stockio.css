@@ -383,3 +383,145 @@ body:has(.stockio-app) .page-content {
 .stockio-sidebar.collapsed .logo {
   display: none;
 }
+/* ==================================================
+   ORDER LIST / CARD BODY
+================================================== */
+
+.order-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn.success {
+  background: #22c55e;
+  color: #fff;
+}
+
+/* CARD */
+.order-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.order-left {
+  display: flex;
+  gap: 12px;
+}
+
+.order-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.order-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+}
+
+.badge.paid {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.order-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.order-meta a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.order-product {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.order-product img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+
+.product-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.product-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* RIGHT SIDE */
+.order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.order-amount {
+  font-size: 18px;
+  font-weight: 600;
+}
+/* ==================================================
+   TABS + SEARCH IN SAME ROW
+================================================== */
+
+.stockio-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  /* margin-bottom: 20px; */
+}
+
+/* Tabs stay left */
+.stockio-toolbar .stockio-tabs {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Search stays right */
+.stockio-toolbar .stockio-search {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 420px;
+}
+
+.stockio-toolbar .stockio-search input {
+  width: 320px;
+}
