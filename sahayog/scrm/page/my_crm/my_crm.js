@@ -1803,8 +1803,8 @@ async editLead(name) {
                     const tr = $(`<tr data-idx="${idx}">
                         <td style="text-align:center; vertical-align:middle;">${idx+1}</td>
                         <td style="padding:8px;"><div class="link-wrap-${idx}"></div></td>
-                        <td style="padding:8px;"><input type="text" class="form-control input-sm p-name" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none;"></td>
-                        <td style="padding:8px;"><input type="number" class="form-control input-sm p-amt" value="${row.product_amount || 0}" style="text-align:right;"></td>
+                        <td style="padding:8px; vertical-align:middle;"><input type="text" class="form-control input-sm p-name" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none;"></td>
+                        <td style="padding:8px; vertical-align:middle;"><input type="number" class="form-control input-sm p-amt" value="${row.product_amount || 0}" style="text-align:right;"></td>
                         <td class="text-center" style="vertical-align:middle;"><button class="btn btn-xs btn-danger del-p">Remove</button></td>
                     </tr>`).appendTo(tbody);
 
