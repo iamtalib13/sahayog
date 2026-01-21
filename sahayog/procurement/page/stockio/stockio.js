@@ -193,26 +193,46 @@ class StockIOPage {
 
   <!-- RIGHT: SEARCH + FILTER -->
   <div class="stockio-search">
-    <input placeholder="Search orders..." />
-    <button class="btn ghost">Filters</button>
+<input
+  placeholder="Search requests..."
+  v-model="searchText"
+  @input="
+    offset = 0;
+    visibleRequests = [];
+    loadMore();
+  "
+/>
+
   </div>
 
 </div>
-
-
-<div class="stockio-body">
     <div class="order-toolbar">
-      <label><input type="checkbox" /> Select All</label>
-
-      <div class="toolbar-actions">
+      <label>
+        <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
+        Select All
+      </label>
+      <div class="toolbar-actions" v-if="hasSelection">
         <button class="btn ghost">Print</button>
         <button class="btn success">Approved Request</button>
       </div>
+
     </div>
-<div class="order-card" v-for="doc in requests" :key="doc.name">
+
+<div class="stockio-body">
+
+<div
+  class="order-card"
+  v-for="doc in visibleRequests"
+  :key="doc.name"
+>
 
   <div class="order-left">
-    <input type="checkbox" />
+<input
+  type="checkbox"
+  v-model="selectedDocs"
+  :value="doc.name"
+  @change="syncSelectAll"
+/>
 
     <div class="order-info">
       <div class="order-title">
@@ -244,12 +264,24 @@ class StockIOPage {
   </div>
 
   <div class="order-right">
-    <button class="btn ghost">View</button>
+  <button
+  class="btn ghost"
+  @click="openRequest(doc.name)"
+>
+  View
+</button>
+
   </div>
+
+
 
 </div>
 
-
+<div style="text-align:center; margin:16px 0" v-if="canLoadMore">
+  <button class="btn ghost" @click="loadMore">
+    Load More
+  </button>
+</div>
 
 </div>
 
@@ -307,6 +339,8 @@ class StockIOPage {
               ...d,
               items: [],
             }));
+            this.selectedDocs = [];
+            this.selectAll = false;
 
             this.computeCounts();
             this.requests.forEach((doc) => this.loadItems(doc));
@@ -379,6 +413,135 @@ class StockIOPage {
 
       formatDate(date) {
         return frappe.datetime.str_to_user(date);
+      },
+      // ---------------------------
+      // SELECTION STATE
+      // ---------------------------
+      selectAll: false,
+      selectedDocs: [],
+
+      // ---------------------------
+      // DERIVED STATE
+      // ---------------------------
+      get hasSelection() {
+        return this.selectedDocs.length > 0;
+      },
+
+      // ---------------------------
+      // METHODS
+      // ---------------------------
+      toggleSelectAll() {
+        if (this.selectAll) {
+          this.selectedDocs = this.requests.map((doc) => doc.name);
+        } else {
+          this.selectedDocs = [];
+        }
+      },
+
+      syncSelectAll() {
+        this.selectAll = this.selectedDocs.length === this.requests.length;
+      },
+      openRequest(name) {
+        frappe.set_route("Form", "Employee Material Request", name);
+      },
+      searchText: "",
+      get filteredRequests() {
+        if (!this.searchText) return this.requests;
+
+        const q = this.searchText.toLowerCase();
+
+        return this.requests.filter((doc) => {
+          // match request name
+          if (doc.name.toLowerCase().includes(q)) return true;
+
+          // match owner
+          if (doc.owner && doc.owner.toLowerCase().includes(q)) return true;
+
+          // match status
+          if (doc.status && doc.status.toLowerCase().includes(q)) return true;
+
+          // match item codes
+          if (
+            doc.items &&
+            doc.items.some(
+              (i) => i.item_code && i.item_code.toLowerCase().includes(q),
+            )
+          )
+            return true;
+
+          return false;
+        });
+      },
+      // ---------------------------
+      // STATE
+      // ---------------------------
+      requests: [],
+      visibleRequests: [],
+      searchText: "",
+      pageSize: 2,
+      offset: 0,
+
+      // ---------------------------
+      // ONE FUNCTION ONLY
+      // ---------------------------
+      loadMore() {
+        const source = this.getFilteredRequests();
+
+        const next = source.slice(this.offset, this.offset + this.pageSize);
+
+        this.visibleRequests.push(...next);
+        this.offset += this.pageSize;
+      },
+
+      // ---------------------------
+      // FILTER (HELPER, NOT PAGINATION)
+      // ---------------------------
+      getFilteredRequests() {
+        if (!this.searchText) return this.requests;
+
+        const q = this.searchText.toLowerCase();
+
+        return this.requests.filter(
+          (doc) =>
+            doc.name.toLowerCase().includes(q) ||
+            doc.owner?.toLowerCase().includes(q) ||
+            doc.status?.toLowerCase().includes(q) ||
+            doc.items?.some((i) => i.item_code?.toLowerCase().includes(q)),
+        );
+      },
+
+      // ---------------------------
+      // LOAD REQUESTS
+      // ---------------------------
+      loadRequests() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Employee Material Request",
+            fields: ["name", "status", "creation", "owner"],
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+
+            this.requests = r.message.map((d) => ({
+              ...d,
+              items: [],
+            }));
+
+            // RESET PAGINATION
+            this.offset = 0;
+            this.visibleRequests = [];
+
+            this.computeCounts();
+            this.loadMore();
+
+            this.requests.forEach((doc) => this.loadItems(doc));
+          },
+        });
+      },
+      get canLoadMore() {
+        return this.visibleRequests.length < this.getFilteredRequests().length;
       },
     };
 
