@@ -1690,10 +1690,11 @@ async editLead(name) {
 
         // 2. Initialize Dialog
         const d = new frappe.ui.Dialog({
-            title: `<div class="custom-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
-                        <span class="lead-id-title" style="font-weight: 600; font-size: 16px; color: #1a202c;">Update Lead: ${name}</span>
-                        <div class="header-btns-container" style="display: flex; gap: 8px; align-items: center; margin-right: 35px;"></div>
-                    </div>`,
+            // title: `<div class="custom-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+            //             <span class="lead-id-title" style="font-weight: 600; font-size: 16px; color: #1a202c;">Update Lead: ${name}</span>
+            //             <div class="header-btns-container" style="display: flex; gap: 8px; align-items: center; margin-right: 35px;"></div>
+            //         </div>`,
+            title: `Update Lead: ${name}`,
             fields: [
                 { label: 'Full Name', fieldname: 'first_name', fieldtype: 'Data', read_only: 0 },
                 { label: 'Status', fieldname: 'status', fieldtype: 'Select', options: ["Lead", "Follow Up", "Converted", "Not Interested"], read_only: 0 },
@@ -1704,7 +1705,25 @@ async editLead(name) {
                 { fieldname: 'product_container', fieldtype: 'HTML' }
             ],
             primary_action_label: __('Update Lead'),
-            primary_action: async (values) => saveLead(values)
+            primary_action: async (values) => saveLead(values),
+            on_show: () => {
+                const original_update_btn = d.get_primary_btn();
+                // Hide the entire footer to ensure the original button is not visible
+                d.$wrapper.find('.modal-footer').hide(); 
+
+                const modal_header = d.$wrapper.find('.modal-header');
+                const header_btns_container = $(`<div class="header-btns-container" style="display: flex; gap: 8px; align-items: center;"></div>`);
+                modal_header.find('.close').before(header_btns_container);
+
+                // Create and show the "Update Lead" button in the header by default
+                const new_update_btn = $(`<button class="btn btn-primary btn-sm" style="background:#006264; border:none;">Update Lead</button>`)
+                    .appendTo(header_btns_container);
+
+                // When the new button is clicked, trigger the original hidden button's action
+                new_update_btn.on('click', () => {
+                    original_update_btn.click();
+                });
+            }
         });
 
         // 3. Helper: Toggle Field Editability (Standard Fields)
@@ -1809,19 +1828,7 @@ async editLead(name) {
         };
 
         // 7. UI Setup: Header Buttons & Responsive Styling
-        const header_btns = d.$wrapper.find('.header-btns-container');
-        const update_btn = d.get_primary_btn().detach().appendTo(header_btns).hide();
-        update_btn.css({'background': '#006264', 'border': 'none', 'color': '#fff', 'padding': '5px 15px'});
-
-        const edit_btn = $(`<button class="btn btn-default btn-sm" style="border: 1px solid #006264; color: #006264; font-weight: 500;">Edit Form</button>`)
-            .appendTo(header_btns);
-
-        // Switch from View to Edit mode
-        edit_btn.on('click', () => {
-            renderTableContainer(true);
-            edit_btn.hide();
-            update_btn.show();
-        });
+        // This logic has been moved to the on_show callback of the dialog.
 
         // Event Delegation for Table Buttons
         d.$wrapper.on("click", "#add-row-btn", () => {
@@ -1835,21 +1842,7 @@ async editLead(name) {
             renderTableRows(true);
         });
 
-        // Inject Responsive CSS for Header Alignment
-        if (!$('#header-position-style').length) {
-            $(`<style id="header-position-style">
-                @media (min-width: 768px) {
-                    .custom-header-wrapper { display: flex; justify-content: space-between; align-items: center; }
-                    .header-btns-container { order: 2; margin-right: 15px; }
-                    .lead-id-title { order: 1; }
-                }
-                @media (max-width: 767px) {
-                    .custom-header-wrapper { flex-direction: column !important; align-items: flex-start !important; }
-                    .header-btns-container { width: 100%; margin-top: 8px; margin-right: 0 !important; }
-                    .modal-dialog { margin: 10px auto !important; width: 95% !important; }
-                }
-            </style>`).appendTo("head");
-        }
+
 
         // 8. Final Dialog Initialization
         d.$wrapper.find('.modal-dialog').css({'max-width': '900px', 'margin': '30px auto'});
@@ -1860,7 +1853,7 @@ async editLead(name) {
             'source': doc.source || ""
         });
 
-        renderTableContainer(false); // Start in View Mode
+        renderTableContainer(true); // Start in Edit Mode by default
         d.show();
     });
 }
