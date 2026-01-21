@@ -81,39 +81,40 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   // -----------------------------
   // Date Filters
   // -----------------------------
+  // -----------------------------
+  // Filter & Status Section
+  // -----------------------------
   const today = frappe.datetime.get_today();
 
   $container.append(`
-    <div class="card mb-3 p-3">
-      <div class="row align-items-end">
-        <div class="col-md-3">
-          <label>From Date</label>
-          <input type="date" class="form-control" id="from_date" value="${today}">
-        </div>
-
-        <div class="col-md-3">
-          <label>To Date</label>
-          <input type="date" class="form-control" id="to_date" value="${today}">
-        </div>
-
-        <div class="col-md-2">
-          <button class="btn btn-dark mt-4 w-100" id="apply_filters">
-            Apply
-          </button>
-        </div>
-
-        <div class="col-md-4 d-flex justify-content-end">
-          <button class="btn btn-success mt-4 px-4" id="export_leads">
-            ⬇ Export
-          </button>
+    <div class="filter-card card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row align-items-end">
+          <div class="col-md-4">
+            <label class="text-muted small mb-1 uppercase font-weight-bold">From Date</label>
+            <input type="date" class="form-control border-0 bg-light" id="from_date" value="${today}">
+          </div>
+          <div class="col-md-4">
+            <label class="text-muted small mb-1 uppercase font-weight-bold">To Date</label>
+            <input type="date" class="form-control border-0 bg-light" id="to_date" value="${today}">
+          </div>
+          <div class="col-md-4">
+             <button class="btn btn-primary w-100 font-weight-bold" id="apply_filters" style="height: 40px;">
+                <i class="fa fa-filter mr-2"></i> Apply Filters
+             </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="alert alert-info mt-3">
-      <b>ℹ Info:</b>
-      Leads are not displayed in this report.
-      Please use the <b>Export</b> button to download filtered leads.
+    <div id="report-status-box" class="text-center p-5 border-dashed rounded-lg" style="border: 2px dashed #d1d8dd; background: #fafbfc;">
+        <div id="status-content">
+            <div class="mb-3">
+                <i class="fa fa-calendar-check-o fa-3x text-muted"></i>
+            </div>
+            <h5 class="text-dark">Ready to generate your report?</h5>
+            <p class="text-muted">Select the date range above and click <b>Apply Filters</b> to prepare your leads.</p>
+        </div>
     </div>
   `);
   // ... existing code (filters ke baad) ...
@@ -243,20 +244,72 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   //   }
 
   // ---------- Apply Filters ----------
-  $("#apply_filters").on("click", () => {
-    frappe.msgprint({
-      title: __("Filters Applied"),
-      message: __("Leads are filtered and ready for export."),
-      indicator: "green",
-    });
-  });
+  // ---------- Apply Filters Logic ----------
+  // ---------- Apply Filters Logic ----------
+  // ---------- Apply Filters Logic with Lead Count ----------
+  // ---------- Apply Filters Logic with Correct Lead Count ----------
+  $("#apply_filters").on("click", async () => {
+    const from = $("#from_date").val();
+    const to = $("#to_date").val();
 
-  // ---------- Export ----------
-  // ---------- Export Button Logic ----------
-  // ---------- Export Button Logic ----------
-  // ---------- Export Button Logic ----------
+    if (!from || !to) {
+      frappe.msgprint("Please select both dates");
+      return;
+    }
+
+    // Show loading state
+    $("#report-status-box").html(
+      `<div class="text-muted"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Calculating leads...</p></div>`,
+    );
+
+    try {
+      // Fetch data without limit to get accurate total count
+      let res = await frappe.call({
+        method: "sahayog.scrm.api.report_access.get_leads",
+        args: { from_date: from, to_date: to },
+      });
+
+      const stats = res.message.stats || { total: 0 };
+
+      // Updated UI: Showing only Filtered Leads Count
+      $("#report-status-box").css({
+        background: "#f0fff4",
+        "border-color": "#68d391",
+      }).html(`
+            <div class="text-center animate__animated animate__fadeIn">
+                <div class="mb-3">
+                    <i class="fa fa-check-circle fa-2x text-success"></i>
+                </div>
+                <h5 class="text-success font-weight-bold">Filters Applied Successfully!</h5>
+                
+                <div class="row justify-content-center my-4">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded shadow-sm border" style="border-top: 4px solid #059669 !important;">
+                            <h2 class="m-0 text-success font-weight-bold">${stats.total}</h2>
+                            <div class="text-muted uppercase small font-weight-bold mt-1">Total Filtered Leads</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-muted">You can now download the report for the period <br> 
+                   <b>${frappe.datetime.str_to_user(from)}</b> to <b>${frappe.datetime.str_to_user(to)}</b>.
+                </p>
+                
+                <button class="btn btn-success btn-lg px-5 shadow-sm mt-2" id="export_leads_v2">
+                    <i class="fa fa-download mr-2"></i> Download CSV Report
+                </button>
+            </div>
+        `);
+    } catch (e) {
+      console.error(e);
+      frappe.msgprint(
+        "Error fetching lead counts. Please check your network or filters.",
+      );
+    }
+  });
   // --- Export Button Logic Update ---
-  $("#export_leads").on("click", async function () {
+  // --- Export Button Logic (Fixed with Event Delegation) ---
+  $container.on("click", "#export_leads_v2", async function () {
     const from_date = $("#from_date").val();
     const to_date = $("#to_date").val();
 
@@ -284,7 +337,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
         if (statusRes.message && statusRes.message.status === "completed") {
           clearInterval(checkInterval);
-          $btn.prop("disabled", false).html("⬇ Export");
+          $btn
+            .prop("disabled", false)
+            .html('<i class="fa fa-download mr-2"></i> Download CSV Report');
 
           const data = statusRes.message;
 
@@ -316,7 +371,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             indicator: "green",
           });
         }
-      }, 3000); // Polling faster (3 sec) for better feel
+      }, 3000);
     }
   });
   // Export button style
@@ -345,4 +400,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       },
     });
   });
+  $("<style>")
+    .prop("type", "text/css")
+    .html(
+      `
+      .filter-card { border-radius: 12px; border: none; }
+      .form-control:focus { box-shadow: none; border: 1px solid #4f46e5; }
+      .rounded-lg { border-radius: 15px !important; }
+      .border-dashed { border-style: dashed !important; border-width: 2px !important; }
+      .btn-primary { background-color: #4f46e5; border: none; transition: all 0.2s; }
+      .btn-primary:hover { background-color: #4338ca; transform: translateY(-1px); }
+      .btn-success { background-color: #059669; border: none; }
+      .uppercase { text-transform: uppercase; letter-spacing: 0.5px; }
+    `,
+    )
+    .appendTo("head");
 };
