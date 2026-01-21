@@ -313,25 +313,46 @@ class PettyCashTransaction(Document):
         if self.amount_exceeding_limit > 0:
             frappe.msgprint(_("Warning: Expenses exceed category limits by ₹{0}. This amount will NOT be deducted until approved by HO.").format(self.amount_exceeding_limit), alert=True)
 
+    # def on_submit(self):
+    #     if self.transaction_type == "Expense":
+    #         if self.amount_exceeding_limit > 0:
+    #             # Scenario 2: Exceeding Limit
+    #             self.amount_deducted = self.amount_within_limit
+    #             self.approval_status = "Pending Approval"
+    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_deducted, self.amount_exceeding_limit))
+    #         else:
+    #             # Scenario 1: Within Limit
+    #             self.amount_deducted = self.amount
+    #             self.approval_status = "Approved" # Skip directly to Approved/Verified flow
+    #             # Actually, requirement says "Verify" is needed for everyone.
+    #             # So lets set it to 'Approved' (meaning Limits are OK), waiting for 'Verify'.
+        
+    #     elif self.transaction_type == "Fund Allocation":
+    #         self.amount_deducted = 0 # Allocation adds funds, handled differently in wallet logic usually, or we treat allocation as negative expense? 
+    #         # In your wallet logic: Balance = Sum(Alloc) - Sum(Expense Deducted).
+    #         # So amount_deducted is irrelevant for Fund Allocation.
+    #         self.approval_status = "Posted"
+
+    #     self.update_wallet()
+
     def on_submit(self):
         if self.transaction_type == "Expense":
             if self.amount_exceeding_limit > 0:
                 # Scenario 2: Exceeding Limit
-                self.amount_deducted = self.amount_within_limit
-                self.approval_status = "Pending Approval"
-                frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_deducted, self.amount_exceeding_limit))
+                # We deduct only the limit amount
+                self.db_set('amount_deducted', self.amount_within_limit)
+                self.db_set('approval_status', 'Pending Approval')
+                
+                frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
             else:
                 # Scenario 1: Within Limit
-                self.amount_deducted = self.amount
-                self.approval_status = "Approved" # Skip directly to Approved/Verified flow
-                # Actually, requirement says "Verify" is needed for everyone.
-                # So lets set it to 'Approved' (meaning Limits are OK), waiting for 'Verify'.
+                # We deduct full amount
+                self.db_set('amount_deducted', self.amount)
+                self.db_set('approval_status', 'Approved') 
         
         elif self.transaction_type == "Fund Allocation":
-            self.amount_deducted = 0 # Allocation adds funds, handled differently in wallet logic usually, or we treat allocation as negative expense? 
-            # In your wallet logic: Balance = Sum(Alloc) - Sum(Expense Deducted).
-            # So amount_deducted is irrelevant for Fund Allocation.
-            self.approval_status = "Posted"
+            self.db_set('amount_deducted', 0)
+            self.db_set('approval_status', 'Posted')
 
         self.update_wallet()
 
