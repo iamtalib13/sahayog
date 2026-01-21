@@ -104,32 +104,53 @@ class StockIOPage {
           </button>
         </div>
 
-        <nav class="menu">
-          <div class="menu-item active">
-            <span class="icon">🏠</span>
-            <span v-if="!sidebarCollapsed">Requests</span>
-          </div>
+<nav class="menu">
 
-          <div class="menu-item">
-            <span class="icon">🛒</span>
-            <span v-if="!sidebarCollapsed">Stock</span>
-          </div>
+  <div class="menu-item active">
+    <span class="icon">🏠</span>
+    <span v-if="!sidebarCollapsed">Requests</span>
+  </div>
 
-          <div class="menu-item">
-            <span class="icon">📦</span>
-            <span v-if="!sidebarCollapsed">Asset</span>
-          </div>
+  <!-- STOCK -->
+  <div class="menu-group">
+    <div class="menu-item" @click="toggleStock">
+      <span class="icon">🛒</span>
+      <span v-if="!sidebarCollapsed">Stock</span>
+      <span v-if="!sidebarCollapsed" class="chevron">▾</span>
+    </div>
 
-          <div class="menu-item">
-            <span class="icon">📊</span>
-            <span v-if="!sidebarCollapsed">Reports</span>
-          </div>
+    <div v-show="stockOpen && !sidebarCollapsed" class="submenu">
+      <div class="submenu-item">Inward</div>
+      <div class="submenu-item">Outward</div>
+    </div>
+  </div>
 
-          <div class="menu-item">
-            <span class="icon">⚙️</span>
-            <span v-if="!sidebarCollapsed">Settings</span>
-          </div>
-        </nav>
+  <!-- ASSET -->
+  <div class="menu-group">
+    <div class="menu-item" @click="toggleAsset">
+      <span class="icon">📦</span>
+      <span v-if="!sidebarCollapsed">Asset</span>
+      <span v-if="!sidebarCollapsed" class="chevron">▾</span>
+    </div>
+
+    <div v-show="assetOpen && !sidebarCollapsed" class="submenu">
+      <div class="submenu-item">Asset Item</div>
+      <div class="submenu-item">Asset Movement</div>
+    </div>
+  </div>
+
+  <div class="menu-item">
+    <span class="icon">📊</span>
+    <span v-if="!sidebarCollapsed">Reports</span>
+  </div>
+
+  <div class="menu-item">
+    <span class="icon">⚙️</span>
+    <span v-if="!sidebarCollapsed">Settings</span>
+  </div>
+
+</nav>
+
       </aside>
 
       <!-- MAIN CONTENT -->
@@ -328,6 +349,20 @@ class StockIOPage {
 
       toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
+      },
+      stockOpen: false,
+      assetOpen: false,
+
+      toggleStock() {
+        if (this.sidebarCollapsed) return;
+        this.stockOpen = !this.stockOpen;
+        this.assetOpen = false;
+      },
+
+      toggleAsset() {
+        if (this.sidebarCollapsed) return;
+        this.assetOpen = !this.assetOpen;
+        this.stockOpen = false;
       },
     }).mount(this.wrapper[0]);
   }
