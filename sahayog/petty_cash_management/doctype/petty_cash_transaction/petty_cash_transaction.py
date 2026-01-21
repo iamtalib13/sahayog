@@ -182,6 +182,26 @@ class PettyCashTransaction(Document):
             # Recalculate Limits Breakdown on every save
             self.calculate_limit_breakdown()
 
+    # def validate(self):
+    #     # 1. Check Account Existence
+    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
+    #     if not account_exists:
+    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
+
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+        
+    #     if self.transaction_type == "Expense":
+    #         if not self.items:
+    #             frappe.throw(_("At least one expense item is required."))
+            
+    #         self.validate_bill_dates()
+            
+    #         # [CHANGED] We now perform soft validation (Warning) instead of hard validation (Throw)
+    #         self.validate_expense_soft(wallet)
+        
+    #     self.current_branch_balance = wallet.get_current_balance()
+    
+
     def validate(self):
         # 1. Check Account Existence
         account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
@@ -194,13 +214,17 @@ class PettyCashTransaction(Document):
             if not self.items:
                 frappe.throw(_("At least one expense item is required."))
             
+            # [FIX] Calculate breakdown HERE so variables are set before checking
+            self.amount = sum(flt(item.amount) for item in self.items) # Ensure amount is set
+            self.calculate_limit_breakdown() 
+
             self.validate_bill_dates()
             
-            # [CHANGED] We now perform soft validation (Warning) instead of hard validation (Throw)
+            # Now safe to call because variables are set
             self.validate_expense_soft(wallet)
         
         self.current_branch_balance = wallet.get_current_balance()
-    
+
     def validate_bill_dates(self):
         current_date = getdate(nowdate())
         for item in self.items:
