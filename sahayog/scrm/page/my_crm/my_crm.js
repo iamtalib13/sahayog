@@ -1680,184 +1680,247 @@ renderList() {
 async editLead(name) {
     const me = this;
 
-    // 1. Load document data safely
-    frappe.model.with_doc("Lead", name, function() {
+    frappe.model.with_doc("Lead", name, async function() {
         const doc = frappe.get_doc("Lead", name);
         if (!doc) return;
 
-        // Clone product table data to a local state
         let productsData = JSON.parse(JSON.stringify(doc.custom_product_table || []));
+        let appointmentsData = [];
 
-        // 2. Initialize Dialog
+        // Fetch Appointments
+        const appt_res = await frappe.db.get_list('Appointment', {
+            filters: { party: name },
+            fields: ['name', 'scheduled_time', 'status'],
+            order_by: 'scheduled_time desc'
+        });
+        appointmentsData = appt_res || [];
+
         const d = new frappe.ui.Dialog({
-            // title: `<div class="custom-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
-            //             <span class="lead-id-title" style="font-weight: 600; font-size: 16px; color: #1a202c;">Update Lead: ${name}</span>
-            //             <div class="header-btns-container" style="display: flex; gap: 8px; align-items: center; margin-right: 35px;"></div>
-            //         </div>`,
             title: `Update Lead: ${name}`,
             fields: [
-                { label: 'Full Name', fieldname: 'first_name', fieldtype: 'Data', read_only: 0 },
-                { label: 'Status', fieldname: 'status', fieldtype: 'Select', options: ["Lead", "Follow Up", "Converted", "Not Interested"], read_only: 0 },
-                { fieldtype: 'Column Break' },
-                { label: 'Phone Number', fieldname: 'mobile_no', fieldtype: 'Data', read_only: 0 },
-                { label: 'Source', fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', read_only: 0 },
-                { fieldtype: 'Section Break', label: 'Products' },
-                { fieldname: 'product_container', fieldtype: 'HTML' }
+                {
+                    fieldname: 'tab_navigation',
+                    fieldtype: 'HTML',
+                    options: `
+                        <div class="custom-tabs-wrapper" style="display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 15px;">
+                            <div class="tab-link active" id="tab-lead-btn" style="padding: 10px 25px; cursor: pointer; color: #006264; border-bottom: 3px solid #006264; font-weight: bold;">Lead & Products</div>
+                            <div class="tab-link" id="tab-appt-btn" style="padding: 10px 25px; cursor: pointer; color: #6b7280;">Appointments</div>
+                        </div>
+                    `
+                },
+                { fieldname: 'lead_and_product_wrapper', fieldtype: 'HTML' },
+                { fieldname: 'appointment_tab_wrapper', fieldtype: 'HTML' },
+                { fieldname: 'first_name', fieldtype: 'Data', hidden: 1, default: doc.first_name },
+                { fieldname: 'mobile_no', fieldtype: 'Data', hidden: 1, default: doc.mobile_no },
+                { fieldname: 'status', fieldtype: 'Select', hidden: 1, options: ["Lead", "Follow Up", "Converted", "Not Interested"], default: doc.status },
+                { fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', hidden: 1, default: doc.source }
             ],
             primary_action_label: __('Update Lead'),
-            primary_action: async (values) => saveLead(values),
-            on_show: () => {
-                const original_update_btn = d.get_primary_btn();
-                // Hide the entire footer to ensure the original button is not visible
-                d.$wrapper.find('.modal-footer').hide(); 
+            primary_action: async (values) => {
+                const final_values = {
+                    first_name: d.$wrapper.find('#f_name_edit').val(),
+                    mobile_no: d.$wrapper.find('#m_no_edit').val(),
+                    status: d.$wrapper.find('#status_edit').val(),
+                    source: d.$wrapper.find('#source_edit').val()
+                };
 
-                const modal_header = d.$wrapper.find('.modal-header');
-                const header_btns_container = $(`<div class="header-btns-container" style="display: flex; gap: 8px; align-items: center;"></div>`);
-                modal_header.find('.close').before(header_btns_container);
-
-                // Create and show the "Update Lead" button in the header by default
-                const new_update_btn = $(`<button class="btn btn-primary btn-sm" style="background:#006264; border:none;">Update Lead</button>`)
-                    .appendTo(header_btns_container);
-
-                // When the new button is clicked, trigger the original hidden button's action
-                new_update_btn.on('click', () => {
-                    original_update_btn.click();
+                frappe.call({
+                    method: "frappe.client.set_value",
+                    args: { 
+                        doctype: "Lead", name: name, 
+                        fieldname: { ...final_values, custom_product_table: productsData } 
+                    },
+                    callback: (r) => {
+                        if(!r.exc) {
+                            frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
+                            d.hide();
+                            me.fetchData(); 
+                        }
+                    }
                 });
             }
         });
 
-        // 3. Helper: Toggle Field Editability (Standard Fields)
-        const toggleInputs = (isEditable) => {
-            d.fields.forEach(f => {
-                if (f.df && f.fieldname && f.fieldname !== 'product_container') {
-                    d.set_df_property(f.fieldname, 'read_only', isEditable ? 0 : 1);
-                    let field = d.get_field(f.fieldname);
-                    if (field) {
-                        field.refresh();
-                        $(field.input).prop('disabled', !isEditable).css('background-color', isEditable ? '#fff' : '#f8fafc');
-                    }
-                }
-            });
-        };
+        const renderLeadTab = () => {
+            const wrapper = d.get_field('lead_and_product_wrapper').$wrapper;
+            wrapper.html(`
+                <div id="lead-content-section">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="control-label">Full Name</label>
+                                <input type="text" id="f_name_edit" class="form-control" value="${doc.first_name || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label">Status</label>
+                                <select id="status_edit" class="form-control">
+                                    ${["Lead", "Follow Up", "Converted", "Not Interested"].map(s => `<option value="${s}" ${doc.status===s?'selected':''}>${s}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="control-label">Phone Number</label>
+                                <input type="text" id="m_no_edit" class="form-control" value="${doc.mobile_no || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label">Source</label>
+                                <input type="text" id="source_edit" class="form-control" value="${doc.source || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <h6 style="font-weight:600; margin-bottom:10px;">Products</h6>
+                        <div id="original-product-table-grid"></div>
+                    </div>
+                </div>
+            `);
 
-        // 4. Helper: Render Individual Table Rows
-        const renderTableRows = (isEdit) => {
-            const tbody = d.$wrapper.find("#product-rows-body").empty();
-            
-            productsData.forEach((row, index) => {
-                const tr = $(`<tr data-index="${index}">
-                    <td style="text-align:center; vertical-align:middle; color:#718096;">${index + 1}</td>
-                    <td style="padding:8px;"><div class="p-id-link-${index}"></div></td>
-                    <td style="padding:8px; vertical-align: middle;"><input type="text" id="p_name_${index}" name="p_name_${index}" class="form-control input-sm p-name-disp" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none; font-size:12px;"></td>
-                    <td style="padding:8px; vertical-align: middle;"><input type="number" id="p_amt_${index}" name="p_amt_${index}" class="form-control input-sm p-amt-input" value="${row.product_amount || 0}" ${!isEdit ? 'readonly' : ''} style="text-align: right; border: ${isEdit ? '1px solid #d1d8dd' : 'none'}; font-weight:600;"></td>
-                    ${isEdit ? `<td class="text-center" style="padding:8px; vertical-align:middle;"><button class="btn btn-xs btn-danger del-row-btn">Remove</button></td>` : ''}
-                </tr>`).appendTo(tbody);
-
-                if (isEdit) {
-                    // Create Link Control for Product ID
-                    frappe.ui.form.make_control({
-                        df: { 
-                            fieldtype: "Link", options: "Product", fieldname: `p_link_${index}`,
-                            onchange: function() {
-                                const val = this.get_value();
-                                productsData[index].product = val;
-                                if(val) {
-                                    frappe.db.get_value('Product', val, 'product_name', r => {
-                                        productsData[index].product_name = r.product_name;
-                                        tr.find('.p-name-disp').val(r.product_name);
-                                    });
-                                }
-                            }
-                        },
-                        parent: tr.find(`.p-id-link-${index}`), render_input: true
-                    }).set_value(row.product);
-
-                    // Sync amount input to local state
-                    tr.find(".p-amt-input").on("input", function() {
-                        productsData[index].product_amount = parseFloat($(this).val()) || 0;
-                    });
-                } else {
-                    tr.find(`.p-id-link-${index}`).text(row.product || '-').css({'padding-top': '8px', 'font-size': '12px'});
-                }
-            });
-        };
-
-        // 5. Helper: Render Main Product Table Structure
-        const renderTableContainer = (isEdit) => {
-            toggleInputs(isEdit);
-            const container = d.fields_dict.product_container.$wrapper;
-            container.html(`
-                <div style="border: 1px solid #d1d8dd; border-radius: 8px; overflow: hidden; background: #fff;">
-                    <div style="overflow-x: auto;">
-                        <table class="table table-bordered" style="margin:0; font-size: 13px; min-width: 600px;">
-                            <thead style="background: #f7fafc;">
+            const refreshProductTable = () => {
+                const grid = d.$wrapper.find('#original-product-table-grid');
+                grid.html(`
+                    <div style="border:1px solid #d1d8dd; border-radius:8px; overflow:hidden;">
+                        <table class="table table-bordered" style="margin:0; font-size:13px;">
+                            <thead style="background:#f7fafc;">
                                 <tr>
-                                    <th style="width: 45px; text-align:center;">#</th>
-                                    <th style="width: 200px;">Product ID</th>
+                                    <th style="width:40px; text-align:center;">#</th>
+                                    <th>Product ID</th>
                                     <th>Product Name</th>
-                                    <th style="width: 120px; text-align:right;">Amount (₹)</th>
-                                    ${isEdit ? '<th style="width: 90px; text-align:center;">Action</th>' : ''}
+                                    <th style="width:120px; text-align:right;">Amount (₹)</th>
+                                    <th style="width:80px; text-align:center;">Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="product-rows-body"></tbody>
+                            <tbody id="p-body-edit"></tbody>
                         </table>
+                        <div style="padding:10px; background:#f8fafc; border-top:1px solid #d1d8dd;">
+                            <button class="btn btn-xs btn-default" id="add-p-edit" style="background:#006264; color:white;">+ Add Product Row</button>
+                        </div>
                     </div>
-                    ${isEdit ? `<div style="padding: 10px; background: #f7fafc; border-top: 1px solid #d1d8dd;">
-                        <button class="btn btn-xs" id="add-row-btn" style="background:#006264; color:white; border:none; padding: 6px 15px;">+ Add Product</button>
-                    </div>` : ''}
-                </div>`);
-            renderTableRows(isEdit);
+                `);
+
+                const tbody = d.$wrapper.find('#p-body-edit');
+                productsData.forEach((row, idx) => {
+                    const tr = $(`<tr data-idx="${idx}">
+                        <td style="text-align:center; vertical-align:middle;">${idx+1}</td>
+                        <td style="padding:8px;"><div class="link-wrap-${idx}"></div></td>
+                        <td style="padding:8px;"><input type="text" class="form-control input-sm p-name" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none;"></td>
+                        <td style="padding:8px;"><input type="number" class="form-control input-sm p-amt" value="${row.product_amount || 0}" style="text-align:right;"></td>
+                        <td class="text-center" style="vertical-align:middle;"><button class="btn btn-xs btn-danger del-p">Remove</button></td>
+                    </tr>`).appendTo(tbody);
+
+                    frappe.ui.form.make_control({
+                        df: { 
+                            fieldtype: "Link", options: "Product", fieldname: `p_${idx}`,
+                            onchange: function() {
+                                productsData[idx].product = this.get_value();
+                                frappe.db.get_value('Product', this.get_value(), 'product_name', r => {
+                                    productsData[idx].product_name = r.product_name;
+                                    tr.find('.p-name').val(r.product_name);
+                                });
+                            }
+                        },
+                        parent: tr.find(`.link-wrap-${idx}`), render_input: true
+                    }).set_value(row.product);
+
+                    tr.find('.p-amt').on('input', function() { productsData[idx].product_amount = parseFloat($(this).val()) || 0; });
+                });
+            };
+            d.$wrapper.on('click', '#add-p-edit', () => { productsData.push({product:"", product_name:"", product_amount:0}); refreshProductTable(); });
+            d.$wrapper.on('click', '.del-p', function() { productsData.splice($(this).closest('tr').data('idx'), 1); refreshProductTable(); });
+            refreshProductTable();
         };
 
-        // 6. Logic: Handle Save Action
-        const saveLead = (values) => {
-            frappe.call({
-                method: "frappe.client.set_value",
-                args: { 
-                    doctype: "Lead", name: name, 
-                    fieldname: { ...values, custom_product_table: productsData } 
-                },
-                callback: (r) => {
-                    if(!r.exc) {
-                        frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
-                        d.hide();
-                        me.fetchData(); 
-                    }
-                }
+        const renderApptTab = () => {
+            const wrapper = d.get_field('appointment_tab_wrapper').$wrapper;
+            wrapper.html(`
+                <div id="appointment-content-section" style="display:none;">
+                    <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc;">
+                        <h6 style="font-weight:600; margin-bottom:12px;">Schedule New Appointment</h6>
+                        <div style="display:flex; gap:10px; margin-bottom:20px;">
+                            <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="max-width:250px;">
+                            <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264;">Schedule</button>
+                        </div>
+                        <h6 style="font-weight:600; margin-bottom:12px;">Appointment History</h6>
+                        <table class="table table-bordered" style="font-size:13px;">
+                            <thead style="background:#f7fafc;">
+                                <tr><th>Time</th><th>Status</th><th style="text-align:center;">Action</th></tr>
+                            </thead>
+                            <tbody id="appt-h-body-edit"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `);
+
+            const loadHistory = () => {
+                const tbody = d.$wrapper.find('#appt-h-body-edit').empty();
+                if(!appointmentsData.length) tbody.append('<tr><td colspan="3" class="text-center">No history found</td></tr>');
+                appointmentsData.forEach(app => {
+                    $(`<tr>
+                        <td style="vertical-align:middle;">${frappe.datetime.global_date_format(app.scheduled_time)} ${frappe.datetime.get_time(app.scheduled_time)}</td>
+                        <td style="vertical-align:middle;"><span class="label label-${app.status==='Open'?'orange':'green'}">${app.status}</span></td>
+                        <td style="text-align:center;"><button class="btn btn-xs btn-default" onclick="frappe.set_route('Form', 'Appointment', '${app.name}')">View</button></td>
+                    </tr>`).appendTo(tbody);
+                });
+            };
+
+            // --- FIXED APPOINTMENT CREATION WITH LEAD DETAILS ---
+            // --- FIXED APPOINTMENT CREATION ---
+d.$wrapper.on('click', '#btn-create-appt-final', async () => {
+    const time = d.$wrapper.find('#new_appt_t_edit').val();
+    if(!time) return frappe.msgprint("Please select date & time");
+    
+    await frappe.call({
+        method: "frappe.client.insert",
+        args: { 
+            doc: { 
+                doctype: "Appointment", 
+                party: name, 
+                appointment_with: "Lead", 
+                scheduled_time: time, 
+                status: "Open",
+                // Error ke mutabiq sahi field IDs yahan hain:
+                customer_name: doc.first_name, 
+                customer_email: doc.email_id,
+                // Agar mobile bhi error de, toh check karein uska ID kya hai (e.g., mobile_no)
+                mobile_no: doc.mobile_no 
+            } 
+        },
+        callback: (r) => {
+            if(!r.exc) {
+                frappe.show_alert("Appointment Created Successfully");
+                appointmentsData.unshift(r.message);
+                loadHistory(); // Table refresh karne ke liye
+            }
+        }
+    });
+});
+            loadHistory();
+        };
+
+        const setupTabs = () => {
+            d.$wrapper.find('#tab-lead-btn').on('click', function() {
+                d.$wrapper.find('.tab-link').css({'color': '#6b7280', 'border-bottom': 'none', 'font-weight': 'normal'});
+                $(this).css({'color': '#006264', 'border-bottom': '3px solid #006264', 'font-weight': 'bold'});
+                d.$wrapper.find('#lead-content-section').show();
+                d.$wrapper.find('#appointment-content-section').hide();
+            });
+
+            d.$wrapper.find('#tab-appt-btn').on('click', function() {
+                d.$wrapper.find('.tab-link').css({'color': '#6b7280', 'border-bottom': 'none', 'font-weight': 'normal'});
+                $(this).css({'color': '#006264', 'border-bottom': '3px solid #006264', 'font-weight': 'bold'});
+                d.$wrapper.find('#lead-content-section').hide();
+                d.$wrapper.find('#appointment-content-section').show();
             });
         };
 
-        // 7. UI Setup: Header Buttons & Responsive Styling
-        // This logic has been moved to the on_show callback of the dialog.
-
-        // Event Delegation for Table Buttons
-        d.$wrapper.on("click", "#add-row-btn", () => {
-            productsData.push({ product: "", product_name: "", product_amount: 0 });
-            renderTableRows(true);
-        });
-
-        d.$wrapper.on("click", ".del-row-btn", function() {
-            const idx = $(this).closest('tr').data('index');
-            productsData.splice(idx, 1);
-            renderTableRows(true);
-        });
-
-
-
-        // 8. Final Dialog Initialization
-        d.$wrapper.find('.modal-dialog').css({'max-width': '900px', 'margin': '30px auto'});
-        d.set_values({
-            'first_name': doc.first_name || "",
-            'mobile_no': doc.mobile_no || "",
-            'status': doc.status || "Lead",
-            'source': doc.source || ""
-        });
-
-        renderTableContainer(true); // Start in Edit Mode by default
         d.show();
+        d.$wrapper.find('.modal-dialog').css({'max-width': '850px', 'width': '95%'});
+
+        renderLeadTab();
+        renderApptTab();
+        setupTabs();
     });
 }
-
 // 🔹 extracted helper (Petite-Vue friendly & reusable)
 showEmptyState(show) {
   $("#mycrm-empty").toggle(show);
