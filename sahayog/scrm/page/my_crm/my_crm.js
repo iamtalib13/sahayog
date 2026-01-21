@@ -1748,8 +1748,8 @@ async editLead(name) {
                 const tr = $(`<tr data-index="${index}">
                     <td style="text-align:center; vertical-align:middle; color:#718096;">${index + 1}</td>
                     <td style="padding:8px;"><div class="p-id-link-${index}"></div></td>
-                    <td style="padding:8px;"><input type="text" id="p_name_${index}" name="p_name_${index}" class="form-control input-sm p-name-disp" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none; font-size:12px;"></td>
-                    <td style="padding:8px;"><input type="number" id="p_amt_${index}" name="p_amt_${index}" class="form-control input-sm p-amt-input" value="${row.product_amount || 0}" ${!isEdit ? 'readonly' : ''} style="text-align: right; border: ${isEdit ? '1px solid #d1d8dd' : 'none'}; font-weight:600;"></td>
+                    <td style="padding:8px; vertical-align: middle;"><input type="text" id="p_name_${index}" name="p_name_${index}" class="form-control input-sm p-name-disp" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none; font-size:12px;"></td>
+                    <td style="padding:8px; vertical-align: middle;"><input type="number" id="p_amt_${index}" name="p_amt_${index}" class="form-control input-sm p-amt-input" value="${row.product_amount || 0}" ${!isEdit ? 'readonly' : ''} style="text-align: right; border: ${isEdit ? '1px solid #d1d8dd' : 'none'}; font-weight:600;"></td>
                     ${isEdit ? `<td class="text-center" style="padding:8px; vertical-align:middle;"><button class="btn btn-xs btn-danger del-row-btn">Remove</button></td>` : ''}
                 </tr>`).appendTo(tbody);
 
