@@ -525,3 +525,33 @@ body:has(.stockio-app) .page-content {
 .stockio-toolbar .stockio-search input {
   width: 320px;
 }
+/* ==================================================
+   SCROLLABLE CARD AREA (ONLY)
+================================================== */
+
+/* Main takes full height */
+.stockio-main {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* no page scroll */
+}
+
+/* Toolbar (tabs + search + buttons) stays fixed */
+.stockio-header,
+.stockio-toolbar,
+.order-toolbar {
+  flex-shrink: 0;
+}
+
+/* Scroll starts here */
+.stockio-body {
+  flex: 1; /* take remaining height */
+  overflow-y: auto; /* ✅ vertical scroll */
+  padding-right: 6px; /* prevent scrollbar overlap */
+}
+
+/* Smooth scroll */
+.stockio-body {
+  scrollbar-width: thin;
+}

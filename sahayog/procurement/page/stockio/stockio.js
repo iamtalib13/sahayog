@@ -112,12 +112,12 @@ class StockIOPage {
 
           <div class="menu-item">
             <span class="icon">🛒</span>
-            <span v-if="!sidebarCollapsed">Sales</span>
+            <span v-if="!sidebarCollapsed">Stock</span>
           </div>
 
           <div class="menu-item">
             <span class="icon">📦</span>
-            <span v-if="!sidebarCollapsed">Products</span>
+            <span v-if="!sidebarCollapsed">Asset</span>
           </div>
 
           <div class="menu-item">
@@ -161,8 +161,8 @@ class StockIOPage {
 </div>
 
 
-<div class="stockio-content">
-
+<div class="stockio-body">
+  <div class="stockio-content">
   <!-- TOOLBAR -->
   <div class="order-toolbar">
     <label><input type="checkbox" /> Select All</label>
@@ -244,6 +244,76 @@ class StockIOPage {
       <button class="btn ghost">View</button>
     </div>
   </div>
+    <div class="order-card">
+    <div class="order-left">
+      <input type="checkbox" />
+
+      <div class="order-info">
+        <div class="order-title">
+          <strong>Order #2472</strong>
+          <span class="badge pending">Waiting payment</span>
+        </div>
+
+        <div class="order-meta">
+          14 Sep, 2022 · Shipping No:
+          <a href="#">61833014106</a>
+        </div>
+
+        <div class="order-product">
+          <img src="https://via.placeholder.com/44" />
+          <div>
+            <div class="product-name">
+              Laced shoes on high current
+            </div>
+            <div class="product-meta">
+              SKU: dfr-t685y-1 · Qty: 1
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="order-right">
+      <div class="order-amount">$340.48</div>
+      <button class="btn ghost">View</button>
+    </div>
+  </div>
+    <div class="order-card">
+    <div class="order-left">
+      <input type="checkbox" />
+
+      <div class="order-info">
+        <div class="order-title">
+          <strong>Order #2472</strong>
+          <span class="badge pending">Waiting payment</span>
+        </div>
+
+        <div class="order-meta">
+          14 Sep, 2022 · Shipping No:
+          <a href="#">61833014106</a>
+        </div>
+
+        <div class="order-product">
+          <img src="https://via.placeholder.com/44" />
+          <div>
+            <div class="product-name">
+              Laced shoes on high current
+            </div>
+            <div class="product-meta">
+              SKU: dfr-t685y-1 · Qty: 1
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="order-right">
+      <div class="order-amount">$340.48</div>
+      <button class="btn ghost">View</button>
+    </div>
+  </div>
+  </div>
+
 
 </div>
 
