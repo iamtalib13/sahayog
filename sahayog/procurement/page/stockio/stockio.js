@@ -296,7 +296,41 @@ class StockIOPage {
         <div class="order-meta">
           {{ formatDate(doc.creation) }} · Created By:
           <b>{{ doc.owner }}</b>
+                 <!-- APPROVAL PROGRESS -->
+        <div class="approval-progress">
+
+          <!-- STEP 1 -->
+          <div class="step" :class="stepClass('request', doc)">
+            <span class="dot"></span>
+            <span class="label">
+              {{ doc.status === 'Draft' ? 'Draft' : 'Submitted' }}
+            </span>
+          </div>
+
+          <div class="line"></div>
+
+          <!-- STEP 2 -->
+          <div class="step" :class="stepClass('reporting', doc)">
+            <span class="dot"></span>
+            <span class="label">
+              Reporting
+            </span>
+          </div>
+
+          <div class="line"></div>
+
+          <!-- STEP 3 -->
+          <div class="step" :class="stepClass('ho', doc)">
+            <span class="dot"></span>
+            <span class="label">
+              HO Approval
+            </span>
+          </div>
+
         </div>
+        </div>
+ 
+
 
         <!-- FIRST ITEM -->
         <div class="order-product" v-if="doc.items.length">
@@ -822,7 +856,14 @@ class StockIOPage {
           method: "frappe.client.get_list",
           args: {
             doctype: "Employee Material Request",
-            fields: ["name", "status", "creation", "owner"],
+            fields: [
+              "name",
+              "status",
+              "creation",
+              "owner",
+              "reporting_person_status",
+              "ho_officer_status",
+            ],
             limit_page_length: 1000,
           },
           callback: (r) => {
@@ -1080,6 +1121,27 @@ class StockIOPage {
       },
       toggleItems(doc) {
         doc.showAllItems = !doc.showAllItems;
+      },
+      stepClass(step, doc) {
+        if (step === "request") {
+          return doc.status === "Draft" ? "pending" : "done";
+        }
+
+        if (step === "reporting") {
+          if (!doc.reporting_person_status) return "disabled";
+          if (doc.reporting_person_status === "Approved") return "done";
+          if (doc.reporting_person_status === "Rejected") return "rejected";
+          return "pending";
+        }
+
+        if (step === "ho") {
+          if (!doc.ho_officer_status) return "disabled";
+          if (doc.ho_officer_status === "Approved") return "done";
+          if (doc.ho_officer_status === "Rejected") return "rejected";
+          return "pending";
+        }
+
+        return "disabled";
       },
       setTab(tab) {
         this.activeTab = tab;
