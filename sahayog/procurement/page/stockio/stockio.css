@@ -704,3 +704,58 @@ body:has(.stockio-app) .page-content {
   color: var(--text);
   line-height: 1.2;
 }
+.approval-progress {
+  display: flex;
+  align-items: center;
+  margin: 10px 0 6px;
+}
+
+.approval-progress .step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  min-width: 72px;
+}
+
+.approval-progress .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+  margin-bottom: 4px;
+}
+
+.approval-progress .line {
+  flex: 1;
+  height: 2px;
+  background: #e5e7eb;
+  margin: 0 6px;
+}
+
+/* STATES */
+.step.done .dot {
+  background: #16a34a;
+}
+.step.pending .dot {
+  background: #f59e0b;
+}
+.step.rejected .dot {
+  background: #dc2626;
+}
+.step.disabled .dot {
+  background: #d1d5db;
+}
+
+.step.done .label {
+  color: #16a34a;
+}
+.step.pending .label {
+  color: #f59e0b;
+}
+.step.rejected .label {
+  color: #dc2626;
+}
+.step.disabled .label {
+  color: #9ca3af;
+}
