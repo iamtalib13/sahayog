@@ -14,8 +14,12 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         // Only Administrator or HO Petty Cash Manager can edit the limit
         if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
             frm.set_df_property('monthly_limit', 'read_only', 0); // Editable
+            frm.set_df_property('gl_sub_code', 'read_only', 0); // Editable
+            frm.set_df_property('status', 'read_only', 0); // Editable
         } else {
             frm.set_df_property('monthly_limit', 'read_only', 1); // Read-only
+            frm.set_df_property('gl_sub_code', 'read_only', 1); // Read-only
+            frm.set_df_property('status', 'read_only', 1); // Read-only
         }
 
         // [NEW] Generate GL Code on refresh if branch exists
