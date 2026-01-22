@@ -26,6 +26,39 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         if (frm.doc.branch && !frm.doc.gl_sub_code) {
             frm.trigger('generate_gl_code');
         }
+
+         // Only show button if GL Code exists
+        if (!frm.is_new() && frm.doc.gl_sub_code) {
+            frm.add_custom_button(__('Sync Finacle Balance'), function() {
+                frm.trigger('get_finacle_balance');
+            });
+        }
+        
+    },
+
+    get_finacle_balance: function(frm) {
+        frappe.call({
+            method: "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
+            args: {
+                branch: frm.doc.branch
+            },
+            freeze: true,
+            freeze_message: __("Connecting to Database..."),
+            callback: function(r) {
+                if (r.message != null) {
+                    let balance = r.message;
+                    
+                    // Display the balance
+                    frappe.msgprint({
+                        title: __('Live Account Balance'),
+                        indicator: 'green',
+                        message: __('Account: <b>{0}</b><br>Available Balance: <b>{1}</b>', 
+                            [frm.doc.gl_sub_code, format_currency(balance)])
+                    });
+                    
+                }
+            }
+        });
     },
 
     branch: function(frm) {
