@@ -1,9 +1,14 @@
+
 import frappe
 from frappe.utils import now_datetime, getdate, date_diff, format_date
 
 def norm(val):
     if not val: return ""
     return str(val).lower().replace(" ", "").replace("_", "-").strip()
+REGION_ALIAS_MAP = {
+    "ho": {"ho", "headoffice", "head-office"},
+    "headoffice": {"ho", "headoffice", "head-office"},
+}
 
 @frappe.whitelist()
 def get_user_report_preference_record(user, report_type="Lead"):
@@ -47,7 +52,7 @@ def empty_stats():
     }
 
 @frappe.whitelist()
-def get_leads(from_date, to_date, limit=None, offset=0):
+def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
     
@@ -62,6 +67,42 @@ def get_leads(from_date, to_date, limit=None, offset=0):
             zones_pref = {norm(x) for x in p.get("zone", [])}
             regions_pref = {norm(x) for x in p.get("region", [])}
             sol_ids_pref = {str(x) for x in p.get("sol_id", [])}
+    frappe.log_error("CRM DEBUG Prefs", f"Products: {products_pref}, Sources: {sources_pref}, Zones: {zones_pref}, Regions: {regions_pref}, SOLs: {sol_ids_pref}")
+    filters = frappe.parse_json(filters) if filters else {}
+
+     # ---------- UI Override (Checked Only) ----------
+    # Preference = upper boundary
+    # UI filters = runtime narrowing
+
+    if filters.get("product"):
+        products_pref = products_pref.intersection(
+            {norm(x) for x in filters.get("product", [])}
+        )
+
+    if filters.get("source"):
+        sources_pref = sources_pref.intersection(
+            {norm(x) for x in filters.get("source", [])}
+        )
+
+    if filters.get("zone"):
+        zones_pref = zones_pref.intersection(
+            {norm(x) for x in filters.get("zone", [])}
+        )
+
+    if filters.get("region"):
+        regions_pref = regions_pref.intersection(
+            {norm(x) for x in filters.get("region", [])}
+        )
+
+    if filters.get("sol_id"):
+        sol_ids_pref = sol_ids_pref.intersection(
+            {str(x) for x in filters.get("sol_id", [])}
+        )
+
+    frappe.log_error(
+        "CRM DEBUG Final Prefs",
+        f"Products:{products_pref}, Sources:{sources_pref}, Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
+    )
 
     # ---------- Fetch Leads (Unlimited within Date Range) ----------
     leads = frappe.get_all(
@@ -104,7 +145,16 @@ def get_leads(from_date, to_date, limit=None, offset=0):
             lead_zone = norm(branch.zone)
             lead_region = norm(branch.region)
             if zones_pref and lead_zone not in zones_pref: continue
-            if regions_pref and lead_region not in regions_pref: continue
+            if regions_pref:
+                allowed = set(regions_pref)
+
+                # alias expansion
+                for r in list(regions_pref):
+                    allowed |= REGION_ALIAS_MAP.get(r, set())
+
+                if lead_region not in allowed:
+                  continue
+
         else:
             # Agar lead mein SOL nahi hai par user ne Zone select kiya hai, toh wo lead nahi dikhegi
             if zones_pref or regions_pref:
@@ -159,18 +209,18 @@ def validate_date_range(from_date, to_date):
     return f, t
 
 @frappe.whitelist()
-def queue_leads_export(from_date, to_date):
+def queue_leads_export(from_date, to_date, filters=None):
     frappe.enqueue(
         method="sahayog.scrm.api.report_access.run_leads_export_job",
         queue="long", timeout=3600, user=frappe.session.user,
-        from_date=str(from_date), to_date=str(to_date)
+        from_date=str(from_date), to_date=str(to_date), filters=filters
     )
     return {"status": "queued"}
 
-def run_leads_export_job(user, from_date, to_date):
+def run_leads_export_job(user, from_date, to_date, filters=None):
     frappe.set_user(user)
     # Fetch ALL matching leads
-    data = get_leads(from_date, to_date)
+    data = get_leads(from_date, to_date, filters=filters)
     leads = data.get("leads", [])
     
     headers = ["Sr.No.", "Status", "Lead ID", "Customer", "Contact", "Source", "Product Code", "Product Name", "Amount", "Employee Name", "Employee ID", "Designation", "SOL ID", "Branch", "District", "Region", "Zone", "Created On"]
@@ -183,8 +233,8 @@ def run_leads_export_job(user, from_date, to_date):
             l.product_code, l.product_name, l.amount, l.employee_name, l.employee_id, l.designation,
             l.sol_id or "-", b.get("branch", "-"), b.get("district", "-"), b.get("region", "-"), b.get("zone", "-"),
             format_date(l.creation, "dd-mm-yyyy")
-        ])
-
+    ])
+    
     filename = f"crm_leads_{from_date}_to_{to_date}.csv"
     file_doc = frappe.get_doc({
         "doctype": "File", "file_name": filename,
