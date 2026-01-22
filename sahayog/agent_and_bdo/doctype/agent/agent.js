@@ -11,6 +11,39 @@ frappe.ui.form.on("Agent", {
     frm.trigger("employee_details"); // trigger employee details display
     frm.trigger("read_only_fields");
 
+        // --- Feature: Update From Finacle ---
+    // Only show if:
+    // 1. It is an existing document (not new)
+    // 2. User has "System Manager" OR "MIS Admin" role
+    if (!frm.is_new() && (frappe.user.has_role("System Manager") || frappe.user.has_role("MIS Admin"))) {
+      frm.add_custom_button(__("Update From Finacle"), () => {
+        frappe.call({
+          method: "sahayog.api.auto_agent_creation.update_agent_from_finacle",
+          args: {
+            agent_code: frm.doc.name
+          },
+          freeze: true,
+          freeze_message: __("Fetching latest details from Finacle..."),
+          callback: function (r) {
+            if (r.message && r.message.status === "success") {
+              frappe.show_alert({
+                message: r.message.message,
+                indicator: "green",
+              });
+              frm.reload_doc();
+            } else {
+              frappe.msgprint({
+                title: __("Update Failed"),
+                message: r.message ? r.message.message : __("Unknown error occurred"),
+                indicator: "red",
+              });
+            }
+          }
+        });
+      });
+    }
+
+
     // --- Unallocated: Show Allocate ---
     if (frm.doc.status === "Unallocated") {
       
