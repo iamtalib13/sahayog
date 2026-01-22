@@ -2831,10 +2831,233 @@ if (section === "lead") {
   //     width: "90%",
   //   });
   // }
+// create  lead function with create appointment, Status, and validation fix but phone number validations not included
+// createLead() {
+//     let productsData = [];
+//     let existingContact = null;
+
+//     const dialog = new frappe.ui.Dialog({
+//         title: "Create New Lead",
+//         fields: [
+//             {
+//                 fieldname: "customer_info_html",
+//                 fieldtype: "HTML",
+//                 options: `<div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>`,
+//             },
+//             {
+//                 fieldname: "mobile_no",
+//                 fieldtype: "Data",
+//                 label: "Phone Number",
+//                 reqd: 1,
+//                 onchange: async function () {
+//                     const phone = this.value;
+//                     if (!phone || phone.length !== 10) {
+//                         $("#customer-info-banner").hide();
+//                         return;
+//                     }
+//                     try {
+//                         const contactRes = await frappe.call({
+//                             method: "frappe.client.get_list",
+//                             args: {
+//                                 doctype: "Contact",
+//                                 filters: { mobile_no: phone },
+//                                 fields: ["name", "full_name", "mobile_no"],
+//                                 limit: 1,
+//                             },
+//                         });
+//                         if (contactRes.message && contactRes.message.length > 0) {
+//                             existingContact = contactRes.message[0];
+//                             $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
+//                             $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
+//                             dialog.set_value("first_name", existingContact.full_name);
+//                             dialog.set_df_property("first_name", "read_only", 1);
+//                         } else {
+//                             existingContact = null;
+//                             $("#customer-info-banner").hide();
+//                             dialog.set_df_property("first_name", "read_only", 0);
+//                         }
+//                     } catch (error) { console.error(error); }
+//                 },
+//             },
+//             { fieldname: "first_name", fieldtype: "Data", label: "Full Name", reqd: 1 },
+//             { fieldname: "column_break_1", fieldtype: "Column Break" },
+//             { fieldname: "source", fieldtype: "Link", label: "Source", options: "Lead Source", reqd: 1 },
+//             {
+//                 fieldname: "status",
+//                 fieldtype: "Select",
+//                 label: "Status",
+//                 options: "Lead\nFollow Up\nConverted\nNot Interested",
+//                 default: "Lead",
+//                 reqd: 1,
+//                 onchange: function() {
+//                     const status = this.get_value();
+//                     // ✅ FORCE SHOW/HIDE LOGIC
+//                     const $appt_field = dialog.get_field("scheduled_time").$wrapper;
+//                     if (status === "Follow Up") {
+//                         $appt_field.show();
+//                         dialog.set_df_property("scheduled_time", "reqd", 1);
+//                     } else {
+//                         $appt_field.hide();
+//                         dialog.set_df_property("scheduled_time", "reqd", 0);
+//                     }
+//                 },
+//             },
+//             { fieldname: "section_break_appt", fieldtype: "Section Break" },
+//             {
+//                 fieldname: "scheduled_time",
+//                 fieldtype: "Datetime",
+//                 label: "Appointment Date & Time",
+//                 reqd: 0,
+//             },
+//             { fieldname: "section_break_products", fieldtype: "Section Break", label: "Products" },
+//             { fieldname: "product_html", fieldtype: "HTML" },
+//         ],
+//         primary_action_label: "Create Lead",
+//         primary_action: async (values) => {
+//             if (productsData.length === 0) {
+//                 frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
+//                 return;
+//             }
+//             try {
+//                 // ✅ SOLUTION: Status validation bypass karne ke liye
+//                 // Agar user ne "Follow Up" select kiya hai, toh hum Lead Doc mein "Lead" bhejenge
+//                 let actualUserSelection = values.status;
+//                 let statusForLeadDoc = (actualUserSelection === "Follow Up") ? "Lead" : actualUserSelection;
+
+//                 const leadDoc = {
+//                     doctype: "Lead",
+//                     lead_owner: this.currentUser,
+//                     status: statusForLeadDoc, // Yahan "Lead" jayega agar selection "Follow Up" hai
+//                     source: values.source,
+//                     first_name: values.first_name,
+//                     mobile_no: values.mobile_no,
+//                     custom_product_table: productsData,
+//                 };
+
+//                 const response = await frappe.call({
+//                     method: "frappe.client.insert",
+//                     args: { doc: leadDoc },
+//                     freeze: true,
+//                 });
+
+//                 const leadName = response.message.name;
+
+//                 // ✅ Appointment creation logic Selection ke base par chalega
+//                 if (actualUserSelection === "Follow Up" && values.scheduled_time) {
+//                     await frappe.call({
+//                         method: "frappe.client.insert",
+//                         args: {
+//                             doc: {
+//                                 doctype: "Appointment",
+//                                 appointment_with: "Lead", // Linking required
+//                                 party: leadName,
+//                                 scheduled_time: values.scheduled_time,
+//                                 customer_name: values.first_name,
+//                                 contact_number: values.mobile_no,
+//                                 customer_email: `${leadName}@lead.local`, // Guaranteed email
+//                                 status: "Open",
+//                             },
+//                         },
+//                     });
+//                 }
+
+//                 frappe.show_alert({ message: "Lead & Appointment Created Successfully!", indicator: "green" });
+//                 dialog.hide();
+//                 this.invalidateCache("lead");
+//                 this.invalidateCache("appointment");
+//                 this.refresh();
+//             } catch (error) { 
+//                 console.error(error);
+//                 frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
+//             }
+//         },
+//     });
+
+//     // --- ORIGINAL PRODUCT TABLE LOGIC (RESTORED) ---
+//     const renderProductTable = () => {
+//         const html = `
+//         <style>
+//             .lead-product-table table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; }
+//             .lead-product-table th { background: #f9fafb; padding: 10px; border: 1px solid #d1d5db; font-size: 13px; text-align: left; }
+//             .lead-product-table td { padding: 8px; border: 1px solid #d1d5db; }
+//             .lead-product-input { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; }
+//             .lead-product-add-btn { margin-top: 10px; background: #236867; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+//             .lead-product-del-btn { background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+//         </style>
+//         <div class="lead-product-table">
+//             <table>
+//                 <thead><tr><th>Product</th><th style="width:30%">Amount (₹)</th><th style="text-align:center; width:15%">Action</th></tr></thead>
+//                 <tbody id="lead-product-rows"></tbody>
+//             </table>
+//             <button class="lead-product-add-btn" id="lead-add-product-btn">+ Add Product</button>
+//         </div>`;
+
+//         dialog.fields_dict.product_html.$wrapper.html(html);
+
+//         const renderRows = () => {
+//             const tbody = dialog.$wrapper.find("#lead-product-rows").empty();
+//             if (productsData.length === 0) {
+//                 tbody.html('<tr><td colspan="3" style="text-align:center; padding:20px; color:#9ca3af;">No products added</td></tr>');
+//                 return;
+//             }
+//             productsData.forEach((row, index) => {
+//                 const tr = $(`<tr>
+//                     <td><div class="product-link-wrapper-${index}"></div></td>
+//                     <td><input type="number" class="lead-product-input product-amount" data-index="${index}" value="${row.product_amount || ""}"></td>
+//                     <td style="text-align:center"><button class="lead-product-del-btn" data-index="${index}">🗑</button></td>
+//                 </tr>`).appendTo(tbody);
+
+//                 const productField = frappe.ui.form.make_control({
+//                     df: {
+//                         fieldtype: "Link", options: "Product", fieldname: `product_${index}`,
+//                         onchange: function () {
+//                             const val = this.get_value();
+//                             productsData[index].product = val;
+//                             if (val) {
+//                                 frappe.db.get_value("Product", val, "product_name", (r) => {
+//                                     if (r.product_name) productsData[index].product_name = r.product_name;
+//                                 });
+//                             }
+//                         },
+//                     },
+//                     parent: tr.find(`.product-link-wrapper-${index}`),
+//                     render_input: true,
+//                 });
+//                 if (row.product) productField.set_value(row.product);
+
+//                 tr.find(".product-amount").on("change", function () {
+//                     productsData[index].product_amount = parseFloat($(this).val()) || 0;
+//                 });
+//                 tr.find(".lead-product-del-btn").on("click", function () {
+//                     productsData.splice(index, 1);
+//                     renderRows();
+//                 });
+//             });
+//         };
+//         dialog.$wrapper.find("#lead-add-product-btn").on("click", () => {
+//             productsData.push({ product: "", product_name: "", product_amount: 0 });
+//             renderRows();
+//         });
+//         renderRows();
+//     };
+
+//     dialog.show();
+//     // ✅ Initial State: Hide Appointment Field on Dialog Open
+//     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
+//     appt.find('input').attr('placeholder', 'DD/MM/YYYY, HH:MM:SS');
+//     renderProductTable();
+//     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
+// }
 
 createLead() {
     let productsData = [];
     let existingContact = null;
+
+    // Helper function to validate Indian Phone Number
+    const validateIndianPhone = (phone) => {
+        const phoneRegex = /^[6-9]\d{9}$/;
+        return phoneRegex.test(phone);
+    };
 
     const dialog = new frappe.ui.Dialog({
         title: "Create New Lead",
@@ -2851,10 +3074,33 @@ createLead() {
                 reqd: 1,
                 onchange: async function () {
                     const phone = this.value;
-                    if (!phone || phone.length !== 10) {
+                    
+                    if (!phone) {
                         $("#customer-info-banner").hide();
                         return;
                     }
+
+                    // Real-time validation check
+                    if (phone.length === 10) {
+                        if (!validateIndianPhone(phone)) {
+                            frappe.show_alert({
+                                message: __("Invalid mobile number (should start with 6-9)"),
+                                indicator: "orange"
+                            }, 3);
+                            $("#customer-info-banner").hide();
+                            return;
+                        }
+                    } else if (phone.length > 10) {
+                        frappe.show_alert({
+                            message: __("Mobile number cannot exceed 10 digits"),
+                            indicator: "red"
+                        }, 3);
+                        return;
+                    } else {
+                        $("#customer-info-banner").hide();
+                        return;
+                    }
+
                     try {
                         const contactRes = await frappe.call({
                             method: "frappe.client.get_list",
@@ -2891,7 +3137,6 @@ createLead() {
                 reqd: 1,
                 onchange: function() {
                     const status = this.get_value();
-                    // ✅ FORCE SHOW/HIDE LOGIC
                     const $appt_field = dialog.get_field("scheduled_time").$wrapper;
                     if (status === "Follow Up") {
                         $appt_field.show();
@@ -2914,20 +3159,29 @@ createLead() {
         ],
         primary_action_label: "Create Lead",
         primary_action: async (values) => {
+            // ✅ VALIDATION BEFORE SAVING
+            if (!validateIndianPhone(values.mobile_no)) {
+                frappe.msgprint({
+                    title: __("Invalid Phone Number"),
+                    indicator: "red",
+                    message: __("Please enter a valid 10-digit mobile number.")
+                });
+                return;
+            }
+
             if (productsData.length === 0) {
                 frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
                 return;
             }
+
             try {
-                // ✅ SOLUTION: Status validation bypass karne ke liye
-                // Agar user ne "Follow Up" select kiya hai, toh hum Lead Doc mein "Lead" bhejenge
                 let actualUserSelection = values.status;
                 let statusForLeadDoc = (actualUserSelection === "Follow Up") ? "Lead" : actualUserSelection;
 
                 const leadDoc = {
                     doctype: "Lead",
                     lead_owner: this.currentUser,
-                    status: statusForLeadDoc, // Yahan "Lead" jayega agar selection "Follow Up" hai
+                    status: statusForLeadDoc,
                     source: values.source,
                     first_name: values.first_name,
                     mobile_no: values.mobile_no,
@@ -2942,19 +3196,18 @@ createLead() {
 
                 const leadName = response.message.name;
 
-                // ✅ Appointment creation logic Selection ke base par chalega
                 if (actualUserSelection === "Follow Up" && values.scheduled_time) {
                     await frappe.call({
                         method: "frappe.client.insert",
                         args: {
                             doc: {
                                 doctype: "Appointment",
-                                appointment_with: "Lead", // Linking required
+                                appointment_with: "Lead",
                                 party: leadName,
                                 scheduled_time: values.scheduled_time,
                                 customer_name: values.first_name,
                                 contact_number: values.mobile_no,
-                                customer_email: `${leadName}@lead.local`, // Guaranteed email
+                                customer_email: `${leadName}@lead.local`,
                                 status: "Open",
                             },
                         },
@@ -2973,7 +3226,6 @@ createLead() {
         },
     });
 
-    // --- ORIGINAL PRODUCT TABLE LOGIC (RESTORED) ---
     const renderProductTable = () => {
         const html = `
         <style>
@@ -3042,7 +3294,6 @@ createLead() {
     };
 
     dialog.show();
-    // ✅ Initial State: Hide Appointment Field on Dialog Open
     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
     appt.find('input').attr('placeholder', 'DD/MM/YYYY, HH:MM:SS');
     renderProductTable();
