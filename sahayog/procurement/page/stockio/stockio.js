@@ -370,19 +370,19 @@ class StockIOPage {
     </div>
     <div v-if="pageMode === 'stock'" class="stockio-body">
     <div class="order-toolbar">
-  <label>
-    <input
-      type="checkbox"
-      v-model="selectAllInward"
-      @change="toggleSelectAllInward"
-    />
-    Select All
-  </label>
+      <label>
+        <input
+          type="checkbox"
+          v-model="selectAllInward"
+          @change="toggleSelectAllInward"
+        />
+        Select All
+      </label>
 
-  <div class="toolbar-actions" v-if="hasInwardSelection">
-    <button class="btn ghost">Print</button>
-    <button class="btn success">Post Receipt</button>
-  </div>
+      <div class="toolbar-actions" v-if="hasInwardSelection">
+        <button class="btn ghost">Print</button>
+        <button class="btn success">Post Receipt</button>
+      </div>
 </div>
 
 
@@ -560,30 +560,88 @@ class StockIOPage {
       </div>
     </div>
 
-    <div class="order-card" v-for="doc in assetMovementsVisible" :key="doc.name">
-      <div class="order-left">
-        <input type="checkbox" v-model="selectedAssetMovements" :value="doc.name" @change="syncSelectAllAssetMovements" />
+<div class="order-card" v-for="doc in assetMovementsVisible" :key="doc.name">
 
-        <div class="order-info">
-          <div class="order-title">
-            <strong>{{ doc.asset }}</strong>
-            <span class="badge paid">{{ doc.status }}</span>
+  <div class="order-left">
+    <input
+      type="checkbox"
+      v-model="selectedAssetMovements"
+      :value="doc.name"
+      @change="syncSelectAllAssetMovements"
+    />
+
+    <div class="order-info">
+      <div class="order-title">
+        <strong>{{ doc.name }}</strong>
+    </div>
+      <div class="order-title">
+        <strong>Reference Name:</strong>
+        <strong>{{doc.custom_reference_name}}</strong>
+        <span class="badge paid">{{ doc.status }}</span>
+      </div>
+
+      <div class="order-meta">
+        {{ formatDate(doc.transaction_date) }} · Purpose:
+        <b>{{ doc.purpose }}</b>
+      </div>
+
+      <!-- FIRST ASSET -->
+      <div class="order-product" v-if="doc.items.length">
+        <div>
+          <div class="product-name">
+            {{ doc.items[0].asset_name || doc.items[0].asset }}
           </div>
-
-          <div class="order-meta">
-            {{ formatDate(doc.creation) }} · From: <b>{{ doc.source_warehouse }}</b> To: <b>{{ doc.target_warehouse }}</b>
+          <div class="product-meta">
+            From: {{ doc.items[0].source_location }}
+            <span v-if="doc.items[0].to_employee">
+              · To: {{ doc.items[0].to_employee }}
+            </span>
           </div>
-          <div class="product-meta">Purpose: {{ doc.purpose }}</div>
-
         </div>
       </div>
 
-      <div class="order-right">
-        <button class="btn ghost" @click="openAssetMovement(doc.name)">
-          View
-        </button>
+      <!-- MORE ASSETS -->
+      <div v-if="doc.showAllItems">
+        <div
+          class="order-product"
+          v-for="item in doc.items.slice(1)"
+          :key="item.asset"
+        >
+          <div>
+            <div class="product-name">
+              {{ item.asset_name || item.asset }}
+            </div>
+            <div class="product-meta">
+              From: {{ item.source_location }}
+              <span v-if="item.to_employee">
+                · To: {{ item.to_employee }}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div
+        class="more-items"
+        v-if="doc.items.length > 1"
+        @click="doc.showAllItems = !doc.showAllItems"
+      >
+        {{ doc.showAllItems
+          ? 'Hide assets'
+          : '+' + (doc.items.length - 1) + ' more assets' }}
+      </div>
+
     </div>
+  </div>
+
+  <div class="order-right">
+    <button class="btn ghost" @click="openAssetMovement(doc.name)">
+      View
+    </button>
+  </div>
+
+</div>
+
 
     <div v-if="canLoadMoreAssetMovements" style="text-align:center;margin:16px">
       <button class="btn ghost" @click="loadMoreAssetMovements">
@@ -647,6 +705,42 @@ class StockIOPage {
 
   mountVue() {
     const app = {
+      // ASSET MOVEMENTS STATE
+      assetMovements: [],
+      assetMovementsVisible: [],
+      assetMovementsOffset: 0,
+      assetMovementsPageSize: 2,
+
+      selectAllAssetMovements: false,
+      selectedAssetMovements: [],
+
+      // ===== INITIALIZE ALL DATA LISTS =====
+      requests: [],
+      inward: [],
+      outward: [],
+      assets: [],
+      assetMovements: [],
+      // ===== ASSET MOVEMENTS =====
+      assetMovements: [],
+      assetMovementsVisible: [],
+      assetMovementsOffset: 0,
+      assetMovementsPageSize: 2,
+
+      selectAllAssetMovements: false,
+      selectedAssetMovements: [],
+
+      get hasAssetMovementSelection() {
+        return this.selectedAssetMovements.length > 0;
+      },
+
+      get canLoadMoreAssetMovements() {
+        return this.assetMovementsVisible.length < this.assetMovements.length;
+      },
+
+      // shared pagination
+      visibleRequests: [],
+      offset: 0,
+      pageSize: 2,
       pageMode: "requests", // 'requests' | 'reports'
       sidebarCollapsed: false,
       stockOpen: false,
@@ -679,20 +773,23 @@ class StockIOPage {
           if (!this.inward.length) this.loadInward();
           else this.loadMoreInward();
         }
-        
+
         if (mode === "stock" && sub === "outward") {
           if (!this.outward.length) this.loadOutward();
           else this.loadMoreOutward();
         }
-        
-        if (mode === 'asset' && sub === 'item') {
+
+        if (mode === "asset" && sub === "item") {
           if (!this.assets.length) this.loadAssets();
           else this.loadMoreAssets();
         }
-        
-        if (mode === 'asset' && sub === 'movement') {
+
+        if (mode === "asset" && sub === "movement") {
           if (!this.assetMovements.length) this.loadAssetMovements();
           else this.loadMoreAssetMovements();
+          this.assetMovements.forEach((doc) =>
+            this.loadAssetMovementItems(doc),
+          );
         }
 
         if (mode === "requests") {
@@ -762,7 +859,12 @@ class StockIOPage {
         };
 
         list.forEach((doc) => {
-          const docDate = doc.creation?.split(" ")[0];
+          const docDate =
+            this.pageMode === "stock" && this.subMode === "inward"
+              ? doc.posting_date
+              : this.pageMode === "stock" && this.subMode === "outward"
+                ? doc.posting_date
+                : doc.creation?.split(" ")[0];
 
           if (docDate === today) this.counts.today++;
 
@@ -1118,7 +1220,7 @@ class StockIOPage {
         this.selectAllInward =
           this.selectedInward.length === this.inward.length;
       },
-      
+
       // OUTWARD
       outward: [],
       outwardVisible: [],
@@ -1140,10 +1242,10 @@ class StockIOPage {
             if (!r.message) return;
 
             this.outward = r.message.map((d) => {
-              let status = '';
-              if (d.docstatus === 0) status = 'Draft';
-              if (d.docstatus === 1) status = 'Submitted';
-              if (d.docstatus === 2) status = 'Cancelled';
+              let status = "";
+              if (d.docstatus === 0) status = "Draft";
+              if (d.docstatus === 1) status = "Submitted";
+              if (d.docstatus === 2) status = "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
 
@@ -1203,9 +1305,10 @@ class StockIOPage {
       },
 
       syncSelectAllOutward() {
-        this.selectAllOutward = this.selectedOutward.length === this.outward.length;
+        this.selectAllOutward =
+          this.selectedOutward.length === this.outward.length;
       },
-      
+
       // ASSETS
       assets: [],
       assetsVisible: [],
@@ -1224,11 +1327,11 @@ class StockIOPage {
             if (!r.message) return;
 
             this.assets = r.message.map((d) => {
-              let status = '';
-              if (d.docstatus === 0) status = 'Draft';
-              if (d.docstatus === 1) status = 'Submitted';
-              if (d.docstatus === 2) status = 'Cancelled';
-              return { ...d, status };
+              let status = "";
+              if (d.docstatus === 0) status = "Draft";
+              if (d.docstatus === 1) status = "Submitted";
+              if (d.docstatus === 2) status = "Cancelled";
+              return { ...d, status, items: [], showAllItems: false };
             });
 
             this.assetsOffset = 0;
@@ -1264,7 +1367,8 @@ class StockIOPage {
         }
       },
       syncSelectAllAssets() {
-        this.selectAllAssets = this.selectedAssets.length === this.assets.length;
+        this.selectAllAssets =
+          this.selectedAssets.length === this.assets.length;
       },
 
       get activeList() {
@@ -1274,10 +1378,127 @@ class StockIOPage {
         if (this.pageMode === "stock" && this.subMode === "outward") {
           return this.outward;
         }
-        if (this.pageMode === 'asset' && this.subMode === 'item') {
+        if (this.pageMode === "asset" && this.subMode === "movement") {
+          return this.assetMovements;
+        }
+        if (this.pageMode === "asset" && this.subMode === "item") {
           return this.assets;
         }
         return this.requests;
+      },
+
+      loadAssetMovements() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Asset Movement",
+            fields: [
+              "name",
+              "custom_reference_name",
+              "purpose",
+              "transaction_date",
+              "docstatus",
+            ],
+            order_by: "transaction_date desc",
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+
+            this.assetMovements = r.message.map((d) => {
+              let status = "Draft";
+              if (d.docstatus === 1) status = "Submitted";
+              if (d.docstatus === 2) status = "Cancelled";
+
+              return {
+                ...d,
+                status,
+                items: [],
+                showAllItems: false,
+              };
+            });
+
+            this.assetMovementsOffset = 0;
+            this.assetMovementsVisible = [];
+            this.loadMoreAssetMovements();
+
+            this.assetMovements.forEach((doc) =>
+              this.loadAssetMovementItems(doc),
+            );
+          },
+        });
+      },
+      loadAssetMovementItems(doc) {
+        frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Asset Movement",
+            name: doc.name,
+          },
+          callback: (r) => {
+            if (r.message) {
+              doc.items = r.message.assets || [];
+            }
+          },
+        });
+      },
+      loadMoreAssetMovements() {
+        const next = this.assetMovements.slice(
+          this.assetMovementsOffset,
+          this.assetMovementsOffset + this.assetMovementsPageSize,
+        );
+        this.assetMovementsVisible.push(...next);
+        this.assetMovementsOffset += this.assetMovementsPageSize;
+      },
+
+      toggleSelectAllAssetMovements() {
+        this.selectedAssetMovements = this.selectAllAssetMovements
+          ? this.assetMovements.map((d) => d.name)
+          : [];
+      },
+
+      syncSelectAllAssetMovements() {
+        this.selectAllAssetMovements =
+          this.selectedAssetMovements.length === this.assetMovements.length;
+      },
+
+      openAssetMovement(name) {
+        frappe.set_route("Form", "Asset Movement", name);
+      },
+      get hasAssetMovementSelection() {
+        return this.selectedAssetMovements.length > 0;
+      },
+
+      get canLoadMoreAssetMovements() {
+        return this.assetMovementsVisible.length < this.assetMovements.length;
+      },
+      get hasAssetMovementSelection() {
+        return this.selectedAssetMovements.length > 0;
+      },
+
+      get canLoadMoreAssetMovements() {
+        return this.assetMovementsVisible.length < this.assetMovements.length;
+      },
+      loadMoreAssetMovements() {
+        const next = this.assetMovements.slice(
+          this.assetMovementsOffset,
+          this.assetMovementsOffset + this.assetMovementsPageSize,
+        );
+        this.assetMovementsVisible.push(...next);
+        this.assetMovementsOffset += this.assetMovementsPageSize;
+      },
+
+      toggleSelectAllAssetMovements() {
+        if (this.selectAllAssetMovements) {
+          this.selectedAssetMovements = this.assetMovements.map((d) => d.name);
+        } else {
+          this.selectedAssetMovements = [];
+        }
+      },
+
+      syncSelectAllAssetMovements() {
+        this.selectAllAssetMovements =
+          this.selectedAssetMovements.length === this.assetMovements.length;
       },
     };
 
