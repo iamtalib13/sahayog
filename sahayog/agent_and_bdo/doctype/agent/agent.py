@@ -13,7 +13,7 @@ class Agent(Document):
 
          # --- Start of Feature Addition ---
         # If both auth_id and employee are blank, force status to Unallocated
-        if not self.auth_id and not self.employee:
+        if not self.auth_id and not self.employee and self.status == "Allocated":
             self.status = "Unallocated"
         # --- End of Feature Addition ---
         
