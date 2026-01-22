@@ -72,7 +72,7 @@ function loadPetiteVue(callback) {
   if (window.PetiteVue) return callback();
 
   const script = document.createElement("script");
-  script.src = "/assets/sahayog/js/petite-vue.iife.js";
+  // script.src = "/assets/sahayog/js/petite-vue.iife.js";
   script.onload = callback;
   document.head.appendChild(script);
 }
@@ -89,86 +89,91 @@ class StockIOPage {
 
   render() {
     this.wrapper.html(`
-    <div class="stockio-app" v-scope="app">
+<div class="stockio-app" v-scope="app">
 
-      <!-- SIDEBAR -->
-      <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
 
-        <div class="sidebar-top">
-          <div class="logo" v-if="!sidebarCollapsed">StockIO</div>
+    <div class="sidebar-top">
+      <div class="logo" v-if="!sidebarCollapsed">StockIO</div>
+      <button class="sidebar-toggle" @click="toggleSidebar">
+        <span v-if="sidebarCollapsed">☰</span>
+        <span v-else>❮</span>
+      </button>
+    </div>
 
-          <!-- TOGGLE BUTTON -->
-          <button class="sidebar-toggle" @click="toggleSidebar">
-            <span v-if="sidebarCollapsed">☰</span>
-            <span v-else>❮</span>
-          </button>
+    <nav class="menu">
+
+      <!-- REQUESTS -->
+      <div
+        class="menu-item"
+        :class="{ active: pageMode === 'requests' }"
+        @click="openRequests"
+      >
+        <span class="icon">🏠</span>
+        <span v-if="!sidebarCollapsed">Requests</span>
+      </div>
+
+      <!-- STOCK -->
+      <div class="menu-group">
+        <div class="menu-item" @click="toggleStock">
+          <span class="icon">🛒</span>
+          <span v-if="!sidebarCollapsed">Stock</span>
+          <span v-if="!sidebarCollapsed" class="chevron">▾</span>
         </div>
 
-<nav class="menu">
-
-  <div class="menu-item active">
-    <span class="icon">🏠</span>
-    <span v-if="!sidebarCollapsed">Requests</span>
-  </div>
-
-  <!-- STOCK -->
-  <div class="menu-group">
-    <div class="menu-item" @click="toggleStock">
-      <span class="icon">🛒</span>
-      <span v-if="!sidebarCollapsed">Stock</span>
-      <span v-if="!sidebarCollapsed" class="chevron">▾</span>
-    </div>
-
-    <div v-show="stockOpen && !sidebarCollapsed" class="submenu">
-      <div class="submenu-item">Inward</div>
-      <div class="submenu-item">Outward</div>
-    </div>
-  </div>
-
-  <!-- ASSET -->
-  <div class="menu-group">
-    <div class="menu-item" @click="toggleAsset">
-      <span class="icon">📦</span>
-      <span v-if="!sidebarCollapsed">Asset</span>
-      <span v-if="!sidebarCollapsed" class="chevron">▾</span>
-    </div>
-
-    <div v-show="assetOpen && !sidebarCollapsed" class="submenu">
-      <div class="submenu-item">Asset Item</div>
-      <div class="submenu-item">Asset Movement</div>
-    </div>
-  </div>
-
-  <div class="menu-item">
-    <span class="icon">📊</span>
-    <span v-if="!sidebarCollapsed">Reports</span>
-  </div>
-
-  <div class="menu-item">
-    <span class="icon">⚙️</span>
-    <span v-if="!sidebarCollapsed">Settings</span>
-  </div>
-
-</nav>
-
-      </aside>
-
-      <!-- MAIN CONTENT -->
-      <main class="stockio-main">
-
-        <div class="stockio-header">
-          <h2>Material Requests</h2>
-          <div class="stockio-actions">
-            <button class="btn ghost">Export</button>
-<button
-  class="btn primary"
-  @click="createRequest"
->
-  Create
-</button>
-          </div>
+        <div v-show="stockOpen && !sidebarCollapsed" class="submenu">
+          <div class="submenu-item">Inward</div>
+          <div class="submenu-item">Outward</div>
         </div>
-<div class="stockio-toolbar">
+      </div>
+
+      <!-- ASSET -->
+      <div class="menu-group">
+        <div class="menu-item" @click="toggleAsset">
+          <span class="icon">📦</span>
+          <span v-if="!sidebarCollapsed">Asset</span>
+          <span v-if="!sidebarCollapsed" class="chevron">▾</span>
+        </div>
+
+        <div v-show="assetOpen && !sidebarCollapsed" class="submenu">
+          <div class="submenu-item">Asset Item</div>
+          <div class="submenu-item">Asset Movement</div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div
+        class="menu-item"
+        :class="{ active: pageMode === 'reports' }"
+        @click="openReports"
+      >
+        <span class="icon">📊</span>
+        <span v-if="!sidebarCollapsed">Reports</span>
+      </div>
+
+      <div class="menu-item">
+        <span class="icon">⚙️</span>
+        <span v-if="!sidebarCollapsed">Settings</span>
+      </div>
+
+    </nav>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="stockio-main">
+
+    <!-- HEADER -->
+    <div class="stockio-header">
+      <h2>Material Requests</h2>
+      <div class="stockio-actions">
+        <button class="btn ghost">Export</button>
+        <button class="btn primary" @click="createRequest">Create</button>
+      </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="stockio-toolbar">
 
   <!-- LEFT: TABS -->
 <div class="stockio-tabs">
@@ -221,129 +226,139 @@ class StockIOPage {
   </span>
 </div>
 
-
-
-  <!-- RIGHT: SEARCH + FILTER -->
-  <div class="stockio-search">
-<input
-  placeholder="Search requests..."
-  v-model="searchText"
-  @input="
-    offset = 0;
-    visibleRequests = [];
-    loadMore();
-  "
-/>
-
-  </div>
-
-</div>
-    <div class="order-toolbar">
-      <label>
-        <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
-        Select All
-      </label>
-      <div class="toolbar-actions" v-if="hasSelection">
-        <button class="btn ghost">Print</button>
-        <button class="btn success">Approved Request</button>
+      <div class="stockio-search">
+        <input
+          placeholder="Search requests..."
+          v-model="searchText"
+          @input="
+            offset = 0;
+            visibleRequests = [];
+            loadMore();
+          "
+        />
       </div>
 
     </div>
 
-<div class="stockio-body">
-<div
-  class="order-card"
-  v-for="doc in visibleRequests"
-  :key="doc.name"
->
-  <!-- LEFT -->
-  <div class="order-left">
-    <input
-      type="checkbox"
-      v-model="selectedDocs"
-      :value="doc.name"
-      @change="syncSelectAll"
-    />
+    <!-- ================= REQUESTS VIEW ================= -->
+    <div class="stockio-body" v-if="pageMode === 'requests'">
 
-    <div class="order-info">
-      <div class="order-title">
-        <strong>{{ doc.name }}</strong>
-        <span class="badge paid">{{ doc.status }}</span>
-      </div>
+      <div class="order-toolbar">
+        <label>
+          <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
+          Select All
+        </label>
 
-      <div class="order-meta">
-        {{ formatDate(doc.creation) }} · Created By:
-        <b>{{ doc.owner }}</b>
-      </div>
-
-      <!-- FIRST ITEM -->
-      <div class="order-product" v-if="doc.items.length">
-        <img src="https://via.placeholder.com/44" />
-        <div>
-          <div class="product-name">
-            {{ doc.items[0].item_code }}
-          </div>
-          <div class="product-meta">
-            SKU: {{ doc.items[0].item_code }} · Qty: {{ doc.items[0].quantity }}
-          </div>
+        <div class="toolbar-actions" v-if="hasSelection">
+          <button class="btn ghost">Print</button>
+          <button class="btn success">Approve Request</button>
         </div>
       </div>
 
-      <!-- MORE ITEMS -->
-      <div v-if="doc.showAllItems">
-        <div
-          class="order-product"
-          v-for="item in doc.items.slice(1)"
-          :key="item.name"
-        >
-          <img src="https://via.placeholder.com/44" />
-          <div>
-            <div class="product-name">{{ item.item_code }}</div>
-            <div class="product-meta">
-              SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TOGGLE -->
       <div
-        v-if="doc.items.length > 1"
-        class="more-items"
-        @click="toggleItems(doc)"
+        class="order-card"
+        v-for="doc in visibleRequests"
+        :key="doc.name"
       >
-        {{ doc.showAllItems
-          ? 'Hide items'
-          : '+' + (doc.items.length - 1) + ' more items'
-        }}
-      </div>
-    </div>
-  </div>
+        <div class="order-left">
+          <input
+            type="checkbox"
+            v-model="selectedDocs"
+            :value="doc.name"
+            @change="syncSelectAll"
+          />
 
-  <!-- RIGHT (FIXED POSITION) -->
-  <div class="order-right">
-    <button class="btn ghost" @click="openRequest(doc.name)">
-      View
-    </button>
-  </div>
+          <div class="order-info">
+            <div class="order-title">
+              <strong>{{ doc.name }}</strong>
+              <span class="badge paid">{{ doc.status }}</span>
+            </div>
+
+            <div class="order-meta">
+              {{ formatDate(doc.creation) }} · Created By:
+              <b>{{ doc.owner }}</b>
+            </div>
+
+            <!-- FIRST ITEM -->
+            <div class="order-product" v-if="doc.items.length">
+              <div>
+                <div class="product-name">
+                  {{ doc.items[0].item_code }}
+                </div>
+                <div class="product-meta">
+                  SKU: {{ doc.items[0].item_code }} · Qty: {{ doc.items[0].quantity }}
+                </div>
+              </div>
+            </div>
+
+            <!-- MORE ITEMS -->
+            <div v-if="doc.showAllItems">
+              <div
+                class="order-product"
+                v-for="item in doc.items.slice(1)"
+                :key="item.name"
+              >
+                <div>
+                  <div class="product-name">{{ item.item_code }}</div>
+                  <div class="product-meta">
+                    SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="more-items"
+              v-if="doc.items.length > 1"
+              @click="toggleItems(doc)"
+            >
+              {{ doc.showAllItems
+                ? 'Hide items'
+                : '+' + (doc.items.length - 1) + ' more items' }}
+            </div>
+
+          </div>
+        </div>
+
+        <div class="order-right">
+          <button class="btn ghost" @click="openRequest(doc.name)">
+            View
+          </button>
+        </div>
+      </div>
+
+      <div v-if="canLoadMore" style="text-align:center;margin:16px">
+        <button class="btn ghost" @click="loadMore">Load More</button>
+      </div>
+
+    </div>
+
+    <!-- ================= REPORTS VIEW ================= -->
+    <div class="stockio-body" v-if="pageMode === 'reports'">
+
+      <div class="report-grid">
+        <div
+          class="report-card"
+          v-for="r in reports"
+          :key="r.label"
+          @click="openReport(r.route)"
+        >
+          <div class="report-icon">📄</div>
+          <div class="report-title">{{ r.label }}</div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
 </div>
 
-
-    <div style="text-align:center; margin:16px 0" v-if="canLoadMore">
-      <button class="btn ghost" @click="loadMore">
-        Load More
-      </button>
-    </div>
-
-    </div>
-
-          </main>
-    </div>
   `);
   }
 
   mountVue() {
     const app = {
+      pageMode: "requests", // 'requests' | 'reports'
       sidebarCollapsed: false,
       stockOpen: false,
       assetOpen: false,
@@ -642,6 +657,55 @@ class StockIOPage {
         this.offset = 0;
         this.visibleRequests = [];
         this.loadMore();
+      },
+      openRequests() {
+        this.pageMode = "requests";
+      },
+
+      openReports() {
+        this.pageMode = "reports";
+      },
+      reports: [
+        {
+          label: "Stock and Asset Reports",
+          route:
+            "/app/query-report/My%20Material%20Requests?status=All&request_type=All",
+        },
+        {
+          label: "My Material Requests",
+          route: "/app/query-report/My%20Material%20Requests",
+        },
+        {
+          label: "Store Asset Master",
+          route: "/app/query-report/Store%20Asset%20Master",
+        },
+        {
+          label: "Store Material Request",
+          route: "/app/query-report/Store%20material%20request",
+        },
+        {
+          label: "My Pending Approvals",
+          route: "/app/query-report/My%20Pending%20Approvals",
+        },
+        {
+          label: "Asset Transfer",
+          route: "/app/query-report/Asset%20Transfer",
+        },
+        {
+          label: "Consumed Items",
+          route: "/app/query-report/Consumed%20Items",
+        },
+        {
+          label: "Branch Stock",
+          route: "/app/query-report/Branch%20Stock",
+        },
+        {
+          label: "My Assets",
+          route: "/app/query-report/My%20Assets",
+        },
+      ],
+      openReport(route) {
+        window.location.href = route;
       },
     };
 
