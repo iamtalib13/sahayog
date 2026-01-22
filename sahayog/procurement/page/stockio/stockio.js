@@ -369,7 +369,11 @@ class StockIOPage {
 
     </div>
     <div v-if="pageMode === 'stock'" class="stockio-body">
-    <div class="order-toolbar">
+ 
+
+
+  <div v-if="subMode === 'inward'" class="stockio-body">
+     <div class="order-toolbar">
       <label>
         <input
           type="checkbox"
@@ -383,10 +387,7 @@ class StockIOPage {
         <button class="btn ghost">Print</button>
         <button class="btn success">Post Receipt</button>
       </div>
-</div>
-
-
-  <div v-if="subMode === 'inward'" class="stockio-body">
+  </div>
 
   <div class="order-card"
        v-for="doc in inwardVisible"
