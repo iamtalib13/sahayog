@@ -61,6 +61,13 @@ def fetch_finacle_balance(branch):
             # Finacle usually stores balance in 'clr_bal_amt'
             # Convert Decimal/Float to standard float for Python
             balance = float(result.get('clr_bal_amt', 0.0))
+
+            # 1. Update the database directly
+            # This bypasses the "Read Only" restriction and saves immediately
+            frappe.db.set_value("Branch Petty Cash Account", branch, "current_balance", balance)
+            
+            # Optional: Commit to ensure it's written (though set_value usually auto-commits)
+            frappe.db.commit()
             
             # Optional: Log success for debugging
             # frappe.logger().info(f"Fetched Balance for {gl_code}: {balance}")

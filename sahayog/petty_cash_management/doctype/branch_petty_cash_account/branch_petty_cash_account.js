@@ -55,7 +55,6 @@ frappe.ui.form.on('Branch Petty Cash Account', {
                         message: __('Account: <b>{0}</b><br>Available Balance: <b>{1}</b>', 
                             [frm.doc.gl_sub_code, format_currency(balance)])
                     });
-                    
                 }
             }
         });
