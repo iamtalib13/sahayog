@@ -36,48 +36,98 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     return;
   }
 
-  // Helper
-  function inline_list(label, values) {
+  // --- Step 1: Edit Button Only for Admin & Dropdown Framework ---
+
+  // Helper function to create interactive dropdowns
+  function create_filter_dropdown(label, values, field_id) {
     if (!values || !values.length) return "";
-    return `<strong>${label}:</strong> ${values.join(", ")} | `;
+
+    // Har value ke liye checkbox wala HTML
+    let options_html = values
+      .map(
+        (val) => `
+      <li class="px-3 py-1">
+        <label class="d-flex align-items-center mb-0" style="cursor:pointer; font-weight: normal;">
+          <input type="checkbox" class="pref-filter-checkbox mr-2" 
+            data-field="${field_id}" value="${val}" checked> 
+          ${val}
+        </label>
+      </li>
+    `,
+      )
+      .join("");
+
+    return `
+      <div class="dropdown d-inline-block mr-3 mb-2">
+        <button class="btn btn-xs btn-outline-primary dropdown-toggle font-weight-bold" 
+          type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+          style="border-radius: 20px; padding: 4px 12px; background: white;">
+          ${label} <span class="badge badge-primary ml-1 count-badge">${values.length}</span>
+        </button>
+        <ul class="dropdown-menu shadow" style="max-height: 250px; overflow-y: auto; min-width: 180px;">
+          <li class="px-3 py-1 border-bottom bg-light">
+            <small class="text-muted uppercase font-weight-bold">Select ${label}</small>
+          </li>
+          ${options_html}
+        </ul>
+      </div>
+    `;
   }
 
-  // ---------- Intro Section ----------
+  // ---------- Intro Section (Revised) ----------
   prefs.forEach((pref) => {
+    // Check if user is Administrator for Edit Button
+    const show_edit = frappe.session.user === "Administrator";
+
     $container.append(`
-      <div style="
-        background:#eef6ff;
-        border-left:4px solid #4f46e5;
-        padding:12px 14px;
-        border-radius:8px;
-        margin-bottom:16px;
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:12px;
-        font-size:14px;
+      <div class="pref-container" style="
+        background: #ffffff;
+        border: 1px solid #d1d8dd;
+        border-left: 5px solid #4f46e5;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
       ">
-        <div style="flex:1; line-height:1.6;">
-          📋 <strong>Your Report Preferences:</strong>
-          ${inline_list("Regions", pref.region)}
-          ${inline_list("Zones", pref.zone)}
-          ${inline_list("District", pref.district ? [pref.district] : [])}
-          ${inline_list("State", pref.state ? [pref.state] : [])}
-          ${inline_list("Products", pref.product)}
-          ${inline_list("Sources", pref.source)}
-          ${inline_list("SOL IDs", pref.sol_id)}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div style="font-size: 14px; font-weight: 600; color: #374151;">
+            <i class="fa fa-sliders text-primary mr-2"></i> Active Report Preferences
+          </div>
+          ${
+            show_edit
+              ? `
+            <button class="btn btn-xs btn-default text-primary" 
+              onclick="frappe.set_route('List', 'Report Preference')"
+              style="border: 1px solid #d1d8dd;">
+              <i class="fa fa-pencil"></i> Edit Master
+            </button>
+          `
+              : ""
+          }
         </div>
 
-        <div>
-          <button class="btn btn-sm btn-default"
-            onclick="frappe.set_route('List', 'Report Preference')">
-            ✏️ Edit
-          </button>
+        <div id="interactive-filters" class="d-flex flex-wrap align-items-center">
+          ${create_filter_dropdown("Regions", pref.region, "region")}
+          ${create_filter_dropdown("Zones", pref.zone, "zone")}
+          ${create_filter_dropdown("Districts", pref.district ? [pref.district] : [], "district")}
+          ${create_filter_dropdown("Products", pref.product, "product")}
+          ${create_filter_dropdown("Sources", pref.source, "source")}
+          ${create_filter_dropdown("SOL IDs", pref.sol_id, "sol_id")}
         </div>
+        <small class="text-muted mt-2 d-block">
+          <i class="fa fa-info-circle"></i> Uncheck items to exclude them from the current report generation.
+        </small>
       </div>
     `);
   });
-
+  // Dropdown badges ko live update karne ke liye
+  $(document).on("change", ".pref-filter-checkbox", function () {
+    const field = $(this).data("field");
+    const count = $(
+      `.pref-filter-checkbox[data-field="${field}"]:checked`,
+    ).length;
+    $(this).closest(".dropdown").find(".count-badge").text(count);
+  });
   // -----------------------------
   // Date Filters
   // -----------------------------
@@ -308,6 +358,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return;
     }
 
+    // --- Optimized Checkbox Value Gathering ---
+    // Hum har field (Zone, Product, etc.) se sirf wahi values uthayenge jo Checked hain
+    let active_filters = {};
+    $(".pref-filter-checkbox:checked").each(function () {
+      let field = $(this).data("field");
+      let val = $(this).val();
+      if (!active_filters[field]) active_filters[field] = [];
+      active_filters[field].push(val);
+    });
+    console.log("Active Filters:", active_filters); // Debugging ke liye
     // Show loading state
     $("#report-status-box").html(
       `<div class="text-muted"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Calculating leads...</p></div>`,
@@ -317,7 +377,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       // Fetch data without limit to get accurate total count
       let res = await frappe.call({
         method: "sahayog.scrm.api.report_access.get_leads",
-        args: { from_date: from, to_date: to },
+        args: { from_date: from, to_date: to, filters: active_filters },
       });
 
       const stats = res.message.stats || { total: 0 };
@@ -364,7 +424,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   $container.on("click", "#export_leads_v2", async function () {
     const from_date = $("#from_date").val();
     const to_date = $("#to_date").val();
-
+    // JS Export button click handler mein ye line add karein:
+    let active_filters = {};
+    $(".pref-filter-checkbox:checked").each(function () {
+      let field = $(this).data("field");
+      let val = $(this).val();
+      if (!active_filters[field]) active_filters[field] = [];
+      active_filters[field].push(val);
+    });
     // 1. Show Progress Modal
     $("#export-prog-overlay").show();
     $("#export-prog-modal").show();
@@ -379,9 +446,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     let res = await frappe.call({
       method: "sahayog.scrm.api.report_access.queue_leads_export",
-      args: { from_date, to_date },
+      args: { from_date, to_date, filters: active_filters },
     });
-
     if (res.message && res.message.status === "queued") {
       $("#export-fill").css("width", "30%");
       $("#export-perc").text("30%");
