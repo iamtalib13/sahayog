@@ -89,16 +89,16 @@ class StockIOPage {
 
   render() {
     this.wrapper.html(`
-<div class="stockio-app" v-scope="app">
+  <div class="stockio-app" v-scope="app">
 
-  <!-- ================= SIDEBAR ================= -->
-  <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
 
     <div class="sidebar-top">
       <div class="logo" v-if="!sidebarCollapsed">StockIO</div>
       <button class="sidebar-toggle" @click="toggleSidebar">
-        <span v-if="sidebarCollapsed">☰</span>
-        <span v-else>❮</span>
+      <span v-if="sidebarCollapsed">☰</span>
+      <span v-else>❮</span>
       </button>
     </div>
 
@@ -106,136 +106,155 @@ class StockIOPage {
 
       <!-- REQUESTS -->
       <div
-        class="menu-item"
-        :class="{ active: pageMode === 'requests' }"
-        @click="openRequests"
+      class="menu-item"
+      :class="{ active: pageMode === 'requests' }"
+      @click="openRequests(); setMode('requests')"
       >
-        <span class="icon">🏠</span>
-        <span v-if="!sidebarCollapsed">Requests</span>
+      <span class="icon">🏠</span>
+      <span v-if="!sidebarCollapsed">Requests</span>
       </div>
 
       <!-- STOCK -->
       <div class="menu-group">
-        <div class="menu-item" @click="toggleStock">
-          <span class="icon">🛒</span>
-          <span v-if="!sidebarCollapsed">Stock</span>
-          <span v-if="!sidebarCollapsed" class="chevron">▾</span>
-        </div>
+      <div class="menu-item"
+         @click="toggleStock(); setMode('stock')">
+        <span class="icon">🛒</span>
+        <span v-if="!sidebarCollapsed">Stock</span>
+        <span v-if="!sidebarCollapsed" class="chevron">▾</span>
+      </div>
 
-        <div v-show="stockOpen && !sidebarCollapsed" class="submenu">
-          <div class="submenu-item">Inward</div>
-          <div class="submenu-item">Outward</div>
+      <div v-show="stockOpen && !sidebarCollapsed" class="submenu">
+        <div class="submenu-item"
+           :class="{ active: subMode === 'inward' }"
+           @click="setMode('stock', 'inward')"
+        >Inward
         </div>
+        <div class="submenu-item"
+           :class="{ active: subMode === 'outward' }"
+           @click="setMode('stock', 'outward')"
+        >Outward
+        </div>
+      </div>
       </div>
 
       <!-- ASSET -->
       <div class="menu-group">
-        <div class="menu-item" @click="toggleAsset">
-          <span class="icon">📦</span>
-          <span v-if="!sidebarCollapsed">Asset</span>
-          <span v-if="!sidebarCollapsed" class="chevron">▾</span>
-        </div>
+      <div class="menu-item"
+         :class="{ active: pageMode === 'asset' }"
+         @click="toggleAsset(); setMode('asset')">
+        <span class="icon">📦</span>
+        <span v-if="!sidebarCollapsed">Asset</span>
+        <span v-if="!sidebarCollapsed" class="chevron">▾</span>
+      </div>
 
-        <div v-show="assetOpen && !sidebarCollapsed" class="submenu">
-          <div class="submenu-item">Asset Item</div>
-          <div class="submenu-item">Asset Movement</div>
+      <div v-show="assetOpen && !sidebarCollapsed" class="submenu">
+        <div class="submenu-item"
+           :class="{ active: subMode === 'item' }"
+           @click="setMode('asset', 'item')"
+        >Asset Item
         </div>
+        <div class="submenu-item"
+           :class="{ active: subMode === 'movement' }"
+           @click="setMode('asset', 'movement')"
+        >Asset Movement
+        </div>
+      </div>
       </div>
 
       <!-- REPORTS -->
       <div
-        class="menu-item"
-        :class="{ active: pageMode === 'reports' }"
-        @click="openReports"
+      class="menu-item"
+      :class="{ active: pageMode === 'reports' }"
+      @click="openReports(); setMode('reports')"
       >
-        <span class="icon">📊</span>
-        <span v-if="!sidebarCollapsed">Reports</span>
+      <span class="icon">📊</span>
+      <span v-if="!sidebarCollapsed">Reports</span>
       </div>
 
       <div class="menu-item">
-        <span class="icon">⚙️</span>
-        <span v-if="!sidebarCollapsed">Settings</span>
+      <span class="icon">⚙️</span>
+      <span v-if="!sidebarCollapsed">Settings</span>
       </div>
 
     </nav>
-  </aside>
+    </aside>
 
-  <!-- ================= MAIN ================= -->
-  <main class="stockio-main">
+    <!-- ================= MAIN ================= -->
+    <main class="stockio-main">
 
     <!-- HEADER -->
     <div class="stockio-header">
       <h2>Material Requests</h2>
       <div class="stockio-actions">
-        <button class="btn ghost">Export</button>
-        <button class="btn primary" @click="createRequest">Create</button>
+      <button class="btn ghost">Export</button>
+      <button class="btn primary" @click="createRequest">Create</button>
       </div>
     </div>
 
     <!-- TOOLBAR -->
     <div class="stockio-toolbar">
 
-  <!-- LEFT: TABS -->
-<div class="stockio-tabs">
-  <span
+    <!-- LEFT: TABS -->
+  <div class="stockio-tabs">
+    <span
     class="tab"
     :class="{ active: activeTab === 'all' }"
     @click="setTab('all')"
-  >
+    >
     All <b>{{ counts.all }}</b>
-  </span>
+    </span>
 
-  <span
+    <span
     class="tab"
     :class="{ active: activeTab === 'today' }"
     @click="setTab('today')"
-  >
+    >
     To Day <b class="green">{{ counts.today }}</b>
-  </span>
+    </span>
 
-  <span
+    <span
     class="tab"
     :class="{ active: activeTab === 'draft' }"
     @click="setTab('draft')"
-  >
+    >
     Draft <b class="grey">{{ counts.draft }}</b>
-  </span>
+    </span>
 
-  <span
+    <span
     class="tab"
     :class="{ active: activeTab === 'pending' }"
     @click="setTab('pending')"
-  >
+    >
     Pending <b class="orange">{{ counts.pending }}</b>
-  </span>
+    </span>
 
-  <span
+    <span
     class="tab"
     :class="{ active: activeTab === 'approved' }"
     @click="setTab('approved')"
-  >
+    >
     Approved <b class="purple">{{ counts.approved }}</b>
-  </span>
+    </span>
 
-  <span
+    <span
     class="tab"
     :class="{ active: activeTab === 'cancelled' }"
     @click="setTab('cancelled')"
-  >
+    >
     Cancelled <b class="red">{{ counts.cancelled }}</b>
-  </span>
-</div>
+    </span>
+  </div>
 
       <div class="stockio-search">
-        <input
-          placeholder="Search requests..."
-          v-model="searchText"
-          @input="
-            offset = 0;
-            visibleRequests = [];
-            loadMore();
-          "
-        />
+      <input
+        placeholder="Search requests..."
+        v-model="searchText"
+        @input="
+        offset = 0;
+        visibleRequests = [];
+        loadMore();
+        "
+      />
       </div>
 
     </div>
@@ -244,91 +263,91 @@ class StockIOPage {
     <div class="stockio-body" v-if="pageMode === 'requests'">
 
       <div class="order-toolbar">
-        <label>
-          <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
-          Select All
-        </label>
+      <label>
+        <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
+        Select All
+      </label>
 
-        <div class="toolbar-actions" v-if="hasSelection">
-          <button class="btn ghost">Print</button>
-          <button class="btn success">Approve Request</button>
-        </div>
+      <div class="toolbar-actions" v-if="hasSelection">
+        <button class="btn ghost">Print</button>
+        <button class="btn success">Approve Request</button>
+      </div>
       </div>
 
       <div
-        class="order-card"
-        v-for="doc in visibleRequests"
-        :key="doc.name"
+      class="order-card"
+      v-for="doc in visibleRequests"
+      :key="doc.name"
       >
-        <div class="order-left">
-          <input
-            type="checkbox"
-            v-model="selectedDocs"
-            :value="doc.name"
-            @change="syncSelectAll"
-          />
+      <div class="order-left">
+        <input
+        type="checkbox"
+        v-model="selectedDocs"
+        :value="doc.name"
+        @change="syncSelectAll"
+        />
 
-          <div class="order-info">
-            <div class="order-title">
-              <strong>{{ doc.name }}</strong>
-              <span class="badge paid">{{ doc.status }}</span>
-            </div>
+        <div class="order-info">
+        <div class="order-title">
+          <strong>{{ doc.name }}</strong>
+          <span class="badge paid">{{ doc.status }}</span>
+        </div>
 
-            <div class="order-meta">
-              {{ formatDate(doc.creation) }} · Created By:
-              <b>{{ doc.owner }}</b>
-            </div>
+        <div class="order-meta">
+          {{ formatDate(doc.creation) }} · Created By:
+          <b>{{ doc.owner }}</b>
+        </div>
 
-            <!-- FIRST ITEM -->
-            <div class="order-product" v-if="doc.items.length">
-              <div>
-                <div class="product-name">
-                  {{ doc.items[0].item_code }}
-                </div>
-                <div class="product-meta">
-                  SKU: {{ doc.items[0].item_code }} · Qty: {{ doc.items[0].quantity }}
-                </div>
-              </div>
-            </div>
-
-            <!-- MORE ITEMS -->
-            <div v-if="doc.showAllItems">
-              <div
-                class="order-product"
-                v-for="item in doc.items.slice(1)"
-                :key="item.name"
-              >
-                <div>
-                  <div class="product-name">{{ item.item_code }}</div>
-                  <div class="product-meta">
-                    SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="more-items"
-              v-if="doc.items.length > 1"
-              @click="toggleItems(doc)"
-            >
-              {{ doc.showAllItems
-                ? 'Hide items'
-                : '+' + (doc.items.length - 1) + ' more items' }}
-            </div>
-
+        <!-- FIRST ITEM -->
+        <div class="order-product" v-if="doc.items.length">
+          <div>
+          <div class="product-name">
+            {{ doc.items[0].item_code }}
+          </div>
+          <div class="product-meta">
+            SKU: {{ doc.items[0].item_code }} · Qty: {{ doc.items[0].quantity }}
+          </div>
           </div>
         </div>
 
-        <div class="order-right">
-          <button class="btn ghost" @click="openRequest(doc.name)">
-            View
-          </button>
+        <!-- MORE ITEMS -->
+        <div v-if="doc.showAllItems">
+          <div
+          class="order-product"
+          v-for="item in doc.items.slice(1)"
+          :key="item.name"
+          >
+          <div>
+            <div class="product-name">{{ item.item_code }}</div>
+            <div class="product-meta">
+            SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <div
+          class="more-items"
+          v-if="doc.items.length > 1"
+          @click="toggleItems(doc)"
+        >
+          {{ doc.showAllItems
+          ? 'Hide items'
+          : '+' + (doc.items.length - 1) + ' more items' }}
+        </div>
+
         </div>
       </div>
 
+      <div class="order-right">
+        <button class="btn ghost" @click="openRequest(doc.name)">
+        View
+        </button>
+      </div>
+      </div>
+
       <div v-if="canLoadMore" style="text-align:center;margin:16px">
-        <button class="btn ghost" @click="loadMore">Load More</button>
+      <button class="btn ghost" @click="loadMore">Load More</button>
       </div>
 
     </div>
@@ -337,23 +356,46 @@ class StockIOPage {
     <div class="stockio-body" v-if="pageMode === 'reports'">
 
       <div class="report-grid">
-        <div
-          class="report-card"
-          v-for="r in reports"
-          :key="r.label"
-          @click="openReport(r.route)"
-        >
-          <div class="report-icon">📄</div>
-          <div class="report-title">{{ r.label }}</div>
-        </div>
+      <div
+        class="report-card"
+        v-for="r in reports"
+        :key="r.label"
+        @click="openReport(r.route)"
+      >
+        <div class="report-icon">📄</div>
+        <div class="report-title">{{ r.label }}</div>
+      </div>
       </div>
 
     </div>
+    <div v-if="pageMode === 'stock'" class="stockio-body">
 
-  </main>
-</div>
+    <div v-if="subMode === 'inward'">
+    <!-- INWARD CONTENT -->
+    </div>
 
-  `);
+    <div v-if="subMode === 'outward'">
+    <!-- OUTWARD CONTENT -->
+    </div>
+
+  </div>
+  <div v-if="pageMode === 'asset'" class="stockio-body">
+
+    <div v-if="subMode === 'item'">
+    <!-- ASSET ITEM CONTENT -->
+    </div>
+
+    <div v-if="subMode === 'movement'">
+    <!-- ASSET MOVEMENT CONTENT -->
+    </div>
+
+  </div>
+
+
+    </main>
+  </div>
+
+    `);
   }
 
   mountVue() {
@@ -365,6 +407,8 @@ class StockIOPage {
 
       requests: [],
       activeTab: "all", // all | today | draft | pending | approved | cancelled
+      pageMode: localStorage.getItem("stockio_page_mode") || "requests",
+      subMode: localStorage.getItem("stockio_sub_mode") || null,
 
       counts: {
         all: 0,
@@ -372,7 +416,13 @@ class StockIOPage {
         pending: 0,
         approved: 0,
       },
+      setMode(mode, sub = null) {
+        this.pageMode = mode;
+        this.subMode = sub;
 
+        localStorage.setItem("stockio_page_mode", mode);
+        localStorage.setItem("stockio_sub_mode", sub || "");
+      },
       toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
       },
@@ -668,8 +718,7 @@ class StockIOPage {
       reports: [
         {
           label: "Stock and Asset Reports",
-          route:
-            "/app/query-report/My%20Material%20Requests?status=All&request_type=All",
+          route: "/app/query-report/My%20Material%20Requests",
         },
         {
           label: "My Material Requests",
@@ -706,6 +755,10 @@ class StockIOPage {
       ],
       openReport(route) {
         window.location.href = route;
+      },
+      openReport(route) {
+        this.setMode("reports");
+        frappe.set_route(route);
       },
     };
 
