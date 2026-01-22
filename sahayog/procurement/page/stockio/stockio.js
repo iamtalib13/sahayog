@@ -369,10 +369,104 @@ class StockIOPage {
 
     </div>
     <div v-if="pageMode === 'stock'" class="stockio-body">
+    <div class="order-toolbar">
+  <label>
+    <input
+      type="checkbox"
+      v-model="selectAllInward"
+      @change="toggleSelectAllInward"
+    />
+    Select All
+  </label>
 
-    <div v-if="subMode === 'inward'">
-    <!-- INWARD CONTENT -->
+  <div class="toolbar-actions" v-if="hasInwardSelection">
+    <button class="btn ghost">Print</button>
+    <button class="btn success">Post Receipt</button>
+  </div>
+</div>
+
+
+  <div v-if="subMode === 'inward'" class="stockio-body">
+
+  <div class="order-card"
+       v-for="doc in inwardVisible"
+       :key="doc.name">
+
+       <div class="order-left">
+
+      <input
+        type="checkbox"
+        v-model="selectedInward"
+        :value="doc.name"
+        @change="syncSelectAllInward"
+      />
+
+
+
+      <div class="order-info">
+        <div class="order-title">
+          <strong>{{ doc.name }}</strong>
+          <span class="badge paid">{{ doc.status }}</span>
+        </div>
+
+        <div class="order-meta">
+          {{ formatDate(doc.posting_date) }} · Supplier:
+          <b>{{ doc.supplier }}</b>
+        </div>
+
+        <!-- FIRST ITEM -->
+        <div class="order-product" v-if="doc.items.length">
+          <div>
+            <div class="product-name">
+              {{ doc.items[0].item_code }}
+            </div>
+            <div class="product-meta">
+              Qty: {{ doc.items[0].qty }}
+            </div>
+          </div>
+        </div>
+
+        <!-- MORE ITEMS -->
+        <div v-if="doc.showAllItems">
+          <div class="order-product"
+               v-for="item in doc.items.slice(1)"
+               :key="item.name">
+            <div>
+              <div class="product-name">{{ item.item_code }}</div>
+              <div class="product-meta">Qty: {{ item.qty }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="more-items"
+             v-if="doc.items.length > 1"
+             @click="doc.showAllItems = !doc.showAllItems">
+          {{ doc.showAllItems
+            ? 'Hide items'
+            : '+' + (doc.items.length - 1) + ' more items' }}
+        </div>
+
+      </div>
     </div>
+
+    <div class="order-right">
+      <button class="btn ghost"
+              @click="openPurchaseReceipt(doc.name)">
+        View
+      </button>
+    </div>
+
+  </div>
+
+  <div v-if="canLoadMoreInward"
+       style="text-align:center;margin:16px">
+    <button class="btn ghost" @click="loadMoreInward">
+      Load More
+    </button>
+  </div>
+
+</div>
+
 
     <div v-if="subMode === 'outward'">
     <!-- OUTWARD CONTENT -->
@@ -422,7 +516,22 @@ class StockIOPage {
 
         localStorage.setItem("stockio_page_mode", mode);
         localStorage.setItem("stockio_sub_mode", sub || "");
+
+        this.offset = 0;
+        this.visibleRequests = [];
+        this.searchText = "";
+        this.activeTab = "all";
+
+        if (mode === "stock" && sub === "inward") {
+          if (!this.inward.length) this.loadInward();
+          else this.loadMore();
+        }
+
+        if (mode === "requests") {
+          this.loadMore();
+        }
       },
+
       toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
       },
@@ -473,42 +582,37 @@ class StockIOPage {
       computeCounts() {
         const today = frappe.datetime.get_today();
 
-        this.counts.all = this.requests.length;
-        this.counts.today = 0;
-        this.counts.draft = 0;
-        this.counts.pending = 0;
-        this.counts.approved = 0;
-        this.counts.cancelled = 0;
+        const list = this.activeList;
 
-        this.requests.forEach((doc) => {
-          const docDate = doc.creation.split(" ")[0];
+        this.counts = {
+          all: list.length,
+          today: 0,
+          draft: 0,
+          pending: 0,
+          approved: 0,
+          cancelled: 0,
+        };
 
-          // Today
-          if (docDate === today) {
-            this.counts.today++;
-          }
-          // Draft
-          if (doc.status === "Draft") {
-            this.counts.draft++;
-          }
+        list.forEach((doc) => {
+          const docDate = doc.creation?.split(" ")[0];
 
-          // Pending (two types)
+          if (docDate === today) this.counts.today++;
+
+          if (doc.status === "Draft") this.counts.draft++;
+
           if (
             doc.status === "Pending HO Approval" ||
-            doc.status === "Pending Reporting Person"
+            doc.status === "Pending Reporting Person" ||
+            doc.status === "To Receive"
           ) {
             this.counts.pending++;
           }
 
-          // Approved
-          if (doc.status === "Approved") {
+          if (doc.status === "Approved" || doc.status === "Submitted") {
             this.counts.approved++;
           }
 
-          // Cancelled
-          if (doc.status === "Cancelled") {
-            this.counts.cancelled++;
-          }
+          if (doc.status === "Cancelled") this.counts.cancelled++;
         });
       },
 
@@ -604,8 +708,7 @@ class StockIOPage {
       // ONE FUNCTION ONLY
       // ---------------------------
       loadMore() {
-        const source = this.getFilteredRequests();
-
+        const source = this.getFilteredList();
         const next = source.slice(this.offset, this.offset + this.pageSize);
 
         this.visibleRequests.push(...next);
@@ -615,13 +718,13 @@ class StockIOPage {
       // ---------------------------
       // FILTER (HELPER, NOT PAGINATION)
       // ---------------------------
-      getFilteredRequests() {
+      getFilteredList() {
         const today = frappe.datetime.get_today();
-        let list = this.requests;
+        let list = this.activeList;
 
         // TAB FILTER
         if (this.activeTab === "today") {
-          list = list.filter((d) => d.creation.split(" ")[0] === today);
+          list = list.filter((d) => d.creation?.split(" ")[0] === today);
         }
 
         if (this.activeTab === "draft") {
@@ -629,29 +732,33 @@ class StockIOPage {
         }
 
         if (this.activeTab === "pending") {
-          list = list.filter(
-            (d) =>
-              d.status === "Pending HO Approval" ||
-              d.status === "Pending Reporting Person",
+          list = list.filter((d) =>
+            [
+              "Pending HO Approval",
+              "Pending Reporting Person",
+              "To Receive",
+            ].includes(d.status),
           );
         }
 
         if (this.activeTab === "approved") {
-          list = list.filter((d) => d.status === "Approved");
+          list = list.filter((d) =>
+            ["Approved", "Submitted"].includes(d.status),
+          );
         }
 
         if (this.activeTab === "cancelled") {
           list = list.filter((d) => d.status === "Cancelled");
         }
 
-        // SEARCH FILTER
+        // SEARCH
         if (!this.searchText) return list;
 
         const q = this.searchText.toLowerCase();
 
         return list.filter(
           (d) =>
-            d.name.toLowerCase().includes(q) ||
+            d.name?.toLowerCase().includes(q) ||
             d.owner?.toLowerCase().includes(q) ||
             d.status?.toLowerCase().includes(q) ||
             d.items?.some((i) => i.item_code?.toLowerCase().includes(q)),
@@ -690,8 +797,9 @@ class StockIOPage {
         });
       },
       get canLoadMore() {
-        return this.visibleRequests.length < this.getFilteredRequests().length;
+        return this.visibleRequests.length < this.getFilteredList().length;
       },
+
       createRequest() {
         frappe.set_route(
           "Form",
@@ -759,6 +867,95 @@ class StockIOPage {
       openReport(route) {
         this.setMode("reports");
         frappe.set_route(route);
+      },
+
+      inward: [],
+      inwardVisible: [],
+      inwardOffset: 0,
+      inwardPageSize: 2,
+      loadInward() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Purchase Receipt",
+            fields: ["name", "posting_date", "supplier", "status"],
+            order_by: "posting_date desc",
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+
+            this.inward = r.message.map((d) => ({
+              ...d,
+              items: [],
+              showAllItems: false,
+            }));
+
+            this.inwardOffset = 0;
+            this.inwardVisible = [];
+            this.loadMoreInward();
+
+            this.inward.forEach((doc) => this.loadInwardItems(doc));
+          },
+        });
+      },
+      loadInwardItems(doc) {
+        frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Purchase Receipt",
+            name: doc.name,
+          },
+          callback: (r) => {
+            if (r.message) {
+              doc.items = r.message.items || [];
+            }
+          },
+        });
+      },
+      loadMoreInward() {
+        const next = this.inward.slice(
+          this.inwardOffset,
+          this.inwardOffset + this.inwardPageSize,
+        );
+
+        this.inwardVisible.push(...next);
+        this.inwardOffset += this.inwardPageSize;
+      },
+
+      get canLoadMoreInward() {
+        return this.inwardVisible.length < this.inward.length;
+      },
+      openPurchaseReceipt(name) {
+        frappe.set_route("Form", "Purchase Receipt", name);
+      },
+
+      // INWARD SELECTION
+      selectAllInward: false,
+      selectedInward: [],
+
+      get hasInwardSelection() {
+        return this.selectedInward.length > 0;
+      },
+
+      toggleSelectAllInward() {
+        if (this.selectAllInward) {
+          this.selectedInward = this.inward.map((doc) => doc.name);
+        } else {
+          this.selectedInward = [];
+        }
+      },
+
+      syncSelectAllInward() {
+        this.selectAllInward =
+          this.selectedInward.length === this.inward.length;
+      },
+
+      get activeList() {
+        if (this.pageMode === "stock" && this.subMode === "inward") {
+          return this.inward;
+        }
+        return this.requests;
       },
     };
 
