@@ -2070,19 +2070,81 @@ showEmptyState(show) {
 //     }
 //   }
 
+// Working final version of renderWhatsAppCard with improved UI and fixes but amount display removed.
+// renderWhatsAppCard(item) {
+//     const modified = frappe.datetime.comment_when(item.modified);
+//     let name, message, statusClass, statusText, avatar;
+
+//     if (this.state.section === "lead") {
+//         name = item.lead_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unnamed";
+//         avatar = name.charAt(0).toUpperCase();
+
+//         const details = [];
+//         if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
+//         if (item.source) details.push(`📌 ${item.source}`);
+
+//         // Assigned By Logic (Original)
+//         if (this.assignedByMap?.[item.name]) {
+//             const a = this.assignedByMap[item.name];
+//             details.push(`
+//                 <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
+//                     <span style="background:#f1f5f9; padding:4px 8px; border-radius:6px; color:#111;">
+//                         Assigned By: 👤 <b>${a.full_name}</b> (<b>${a.employee_code}</b>)
+//                     </span>
+//                     ${a.branch ? `<span style="background:#dcf8c6; padding:4px 8px; border-radius:6px; color:#065f46; font-weight:600;">🏢 ${a.branch}</span>` : ""}
+//                 </div>
+//             `);
+//         }
+//         message = details.join(" • ") || "No details";
+//         statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
+//         statusText = item.status || "Lead";
+//     } else {
+//         // Appointment UI Fix
+//         name = item.customer_name || "Unnamed";
+//         avatar = name.charAt(0).toUpperCase();
+//         const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
+//         message = `📅 ${scheduledTime} ${item.mobile_no ? `• 📱 ${item.mobile_no}` : ""}`;
+//         statusClass = (item.status || "open").toLowerCase();
+//         statusText = item.status || "Open";
+//     }
+
+//     return $(`
+//         <div class="mycrm-list-item" data-name="${item.name}" style="cursor: pointer; padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 12px;">
+//             <div class="mycrm-avatar" style="min-width: 42px; height: 42px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4b5563;">${avatar}</div>
+//             <div class="mycrm-content" style="flex: 1; min-width: 0;">
+//                 <div class="mycrm-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+//                     <div class="mycrm-name" style="font-weight: 600; color: #111827;">${name}</div>
+//                     <div class="mycrm-time" style="font-size: 11px; color: #6b7280;">${modified}</div>
+//                 </div>
+//                 <div class="mycrm-message" style="font-size: 13px; color: #4b5563; display: flex; justify-content: space-between; align-items: flex-end;">
+//                     <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${message}</span>
+//                     <span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px;">${statusText}</span>
+//                 </div>
+//             </div>
+//         </div>
+//     `);
+// }
+
+
 renderWhatsAppCard(item) {
     const modified = frappe.datetime.comment_when(item.modified);
-    let name, message, statusClass, statusText, avatar;
+    let name, message, statusClass, statusText, avatar, amountDisplay = "";
 
     if (this.state.section === "lead") {
         name = item.lead_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unnamed";
         avatar = name.charAt(0).toUpperCase();
 
+        // ✅ Amount Display logic (Restored)
+        const totalAmount = item.totalAmount || 0;
+        amountDisplay = totalAmount > 0 
+            ? ` - <span style="color: #10b981; font-weight: 700;">₹${this.formatIndianCurrency(totalAmount)}</span>` 
+            : "";
+
         const details = [];
         if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
         if (item.source) details.push(`📌 ${item.source}`);
 
-        // Assigned By Logic (Original)
+        // Assigned By Logic
         if (this.assignedByMap?.[item.name]) {
             const a = this.assignedByMap[item.name];
             details.push(`
@@ -2098,7 +2160,7 @@ renderWhatsAppCard(item) {
         statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
         statusText = item.status || "Lead";
     } else {
-        // Appointment UI Fix
+        // Appointment Section
         name = item.customer_name || "Unnamed";
         avatar = name.charAt(0).toUpperCase();
         const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
@@ -2107,12 +2169,12 @@ renderWhatsAppCard(item) {
         statusText = item.status || "Open";
     }
 
-    return $(`
+    const card = $(`
         <div class="mycrm-list-item" data-name="${item.name}" style="cursor: pointer; padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 12px;">
             <div class="mycrm-avatar" style="min-width: 42px; height: 42px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4b5563;">${avatar}</div>
             <div class="mycrm-content" style="flex: 1; min-width: 0;">
                 <div class="mycrm-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <div class="mycrm-name" style="font-weight: 600; color: #111827;">${name}</div>
+                    <div class="mycrm-name" style="font-weight: 600; color: #111827;">${name}${amountDisplay}</div>
                     <div class="mycrm-time" style="font-size: 11px; color: #6b7280;">${modified}</div>
                 </div>
                 <div class="mycrm-message" style="font-size: 13px; color: #4b5563; display: flex; justify-content: space-between; align-items: flex-end;">
@@ -2122,8 +2184,24 @@ renderWhatsAppCard(item) {
             </div>
         </div>
     `);
-}
 
+    // ✅ CLICK HANDLER FIX: 
+    // Lead ke liye sirf custom dialog kholega, Appointment ke liye direct form.
+    card.on("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation(); // Click event ko standard route par jane se rokta hai
+
+        if (this.state.section === "lead") {
+            // Sirf custom dialog call hoga
+            this.editLead(item.name);
+        } else {
+            // Appointment ke liye standard route thik hai
+            frappe.set_route("Form", "Appointment", item.name);
+        }
+    });
+
+    return card;
+}
   formatIndianCurrency(amount) {
     if (!amount || amount === 0) return "0";
 
