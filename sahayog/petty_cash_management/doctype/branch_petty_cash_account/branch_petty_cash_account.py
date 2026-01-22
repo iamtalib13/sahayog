@@ -107,6 +107,12 @@ class BranchPettyCashAccount(Document):
             else:
                 self.monthly_limit = 15000
 
+         # 2. [NEW] Auto-generate GL Sub Code
+        # Logic: Branch Code (e.g., 1001) + Fixed Suffix (01390200001)
+        if self.branch:
+            account_suffix = "01390200001"
+            self.gl_sub_code = f"{self.branch}{account_suffix}"
+
     def get_current_balance(self):
         # 1. Total Funds Allocated
         total_funds = frappe.db.sql("""
