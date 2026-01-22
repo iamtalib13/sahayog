@@ -30,6 +30,47 @@ class PettyCashTransaction(Document):
             # Recalculate Limits Breakdown on every save
             self.calculate_limit_breakdown()
 
+
+        if self.transaction_type == "Expense":
+            total_expense = sum(flt(item.amount) for item in self.items)
+            self.amount = total_expense
+            
+            # [NEW] Generate GL Codes dynamically
+            self.generate_item_gl_codes()
+
+            self.calculate_limit_breakdown()
+
+    def generate_item_gl_codes(self):
+        if not self.branch or not self.items:
+            return
+
+        # 1. Collect all Category IDs from the child table rows
+        # 'item.expense_category' stores the ID (e.g., '1004'), not the name
+        category_ids = [item.expense_category for item in self.items if item.expense_category]
+        
+        # 2. Fetch Suffixes for these IDs
+        # Returns dict: {'1004': '01840390001', '1005': '...'}
+        category_map = {}
+        if category_ids:
+            # We filter by 'name' (the ID) because that's what is stored in the link field
+            results = frappe.get_all(
+                "Expense Category",
+                filters={"name": ["in", category_ids]},
+                fields=["name", "finacle_gl_code"],
+                as_list=True
+            )
+            category_map = {row[0]: row[1] for row in results}
+
+        # 3. Apply Logic: Branch Code + Suffix
+        for item in self.items:
+            # Get suffix using the Link field value (ID)
+            suffix = category_map.get(item.expense_category)
+            
+            if suffix:
+                item.finacle_gl_code = f"{self.branch}{suffix}"
+            else:
+                item.finacle_gl_code = ""
+
     # def validate(self):
     #     # 1. Check Account Existence
     #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
