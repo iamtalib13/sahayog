@@ -468,9 +468,77 @@ class StockIOPage {
 </div>
 
 
-    <div v-if="subMode === 'outward'">
-    <!-- OUTWARD CONTENT -->
+    <div v-if="subMode === 'outward'" class="stockio-body">
+    <div class="order-toolbar">
+      <label>
+        <input type="checkbox" v-model="selectAllOutward" @change="toggleSelectAllOutward" />
+        Select All
+      </label>
+
+      <div class="toolbar-actions" v-if="hasOutwardSelection">
+        <button class="btn ghost">Print</button>
+        <button class="btn success">Submit</button>
+      </div>
     </div>
+
+    <div class="order-card" v-for="doc in outwardVisible" :key="doc.name">
+      <div class="order-left">
+        <input type="checkbox" v-model="selectedOutward" :value="doc.name" @change="syncSelectAllOutward" />
+
+        <div class="order-info">
+          <div class="order-title">
+            <strong>{{ doc.name }}</strong>
+            <span class="badge paid">{{ doc.status }}</span>
+          </div>
+
+          <div class="order-meta">
+            {{ formatDate(doc.posting_date) }} · Purpose:
+            <b>{{ doc.purpose }}</b>
+          </div>
+
+          <!-- FIRST ITEM -->
+          <div class="order-product" v-if="doc.items.length">
+            <div>
+              <div class="product-name">
+                {{ doc.items[0].item_code }}
+              </div>
+              <div class="product-meta">
+                Qty: {{ doc.items[0].qty }}
+              </div>
+            </div>
+          </div>
+
+          <!-- MORE ITEMS -->
+          <div v-if="doc.showAllItems">
+            <div class="order-product" v-for="item in doc.items.slice(1)" :key="item.name">
+              <div>
+                <div class="product-name">{{ item.item_code }}</div>
+                <div class="product-meta">Qty: {{ item.qty }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="more-items" v-if="doc.items.length > 1" @click="doc.showAllItems = !doc.showAllItems">
+            {{ doc.showAllItems
+              ? 'Hide items'
+              : '+' + (doc.items.length - 1) + ' more items' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="order-right">
+        <button class="btn ghost" @click="openStockEntry(doc.name)">
+          View
+        </button>
+      </div>
+    </div>
+
+    <div v-if="canLoadMoreOutward" style="text-align:center;margin:16px">
+      <button class="btn ghost" @click="loadMoreOutward">
+        Load More
+      </button>
+    </div>
+  </div>
 
   </div>
   <div v-if="pageMode === 'asset'" class="stockio-body">
@@ -479,9 +547,94 @@ class StockIOPage {
     <!-- ASSET ITEM CONTENT -->
     </div>
 
-    <div v-if="subMode === 'movement'">
-    <!-- ASSET MOVEMENT CONTENT -->
+    <div v-if="subMode === 'movement'" class="stockio-body">
+    <div class="order-toolbar">
+      <label>
+        <input type="checkbox" v-model="selectAllAssetMovements" @change="toggleSelectAllAssetMovements" />
+        Select All
+      </label>
+
+      <div class="toolbar-actions" v-if="hasAssetMovementSelection">
+        <button class="btn ghost">Print</button>
+        <button class="btn success">Submit</button>
+      </div>
     </div>
+
+    <div class="order-card" v-for="doc in assetMovementsVisible" :key="doc.name">
+      <div class="order-left">
+        <input type="checkbox" v-model="selectedAssetMovements" :value="doc.name" @change="syncSelectAllAssetMovements" />
+
+        <div class="order-info">
+          <div class="order-title">
+            <strong>{{ doc.asset }}</strong>
+            <span class="badge paid">{{ doc.status }}</span>
+          </div>
+
+          <div class="order-meta">
+            {{ formatDate(doc.creation) }} · From: <b>{{ doc.source_warehouse }}</b> To: <b>{{ doc.target_warehouse }}</b>
+          </div>
+          <div class="product-meta">Purpose: {{ doc.purpose }}</div>
+
+        </div>
+      </div>
+
+      <div class="order-right">
+        <button class="btn ghost" @click="openAssetMovement(doc.name)">
+          View
+        </button>
+      </div>
+    </div>
+
+    <div v-if="canLoadMoreAssetMovements" style="text-align:center;margin:16px">
+      <button class="btn ghost" @click="loadMoreAssetMovements">
+        Load More
+      </button>
+    </div>
+  </div>
+    <div v-if="pageMode === 'asset' && subMode === 'item'" class="stockio-body">
+    <div class="order-toolbar">
+      <label>
+        <input type="checkbox" v-model="selectAllAssets" @change="toggleSelectAllAssets" />
+        Select All
+      </label>
+
+      <div class="toolbar-actions" v-if="hasAssetSelection">
+        <button class="btn ghost">Print</button>
+        <button class="btn success">Transfer</button>
+      </div>
+    </div>
+
+    <div class="order-card" v-for="doc in assetsVisible" :key="doc.name">
+      <div class="order-left">
+        <input type="checkbox" v-model="selectedAssets" :value="doc.name" @change="syncSelectAllAssets" />
+
+        <div class="order-info">
+          <div class="order-title">
+            <strong>{{ doc.asset_name }}</strong>
+            <span class="badge paid">{{ doc.status }}</span>
+          </div>
+
+          <div class="order-meta">
+            {{ doc.name }} · Owner:
+            <b>{{ doc.owner }}</b>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="order-right">
+        <button class="btn ghost" @click="openAsset(doc.name)">
+          View
+        </button>
+      </div>
+    </div>
+
+    <div v-if="canLoadMoreAssets" style="text-align:center;margin:16px">
+      <button class="btn ghost" @click="loadMoreAssets">
+        Load More
+      </button>
+    </div>
+  </div>
 
   </div>
 
@@ -524,7 +677,22 @@ class StockIOPage {
 
         if (mode === "stock" && sub === "inward") {
           if (!this.inward.length) this.loadInward();
-          else this.loadMore();
+          else this.loadMoreInward();
+        }
+        
+        if (mode === "stock" && sub === "outward") {
+          if (!this.outward.length) this.loadOutward();
+          else this.loadMoreOutward();
+        }
+        
+        if (mode === 'asset' && sub === 'item') {
+          if (!this.assets.length) this.loadAssets();
+          else this.loadMoreAssets();
+        }
+        
+        if (mode === 'asset' && sub === 'movement') {
+          if (!this.assetMovements.length) this.loadAssetMovements();
+          else this.loadMoreAssetMovements();
         }
 
         if (mode === "requests") {
@@ -950,10 +1118,164 @@ class StockIOPage {
         this.selectAllInward =
           this.selectedInward.length === this.inward.length;
       },
+      
+      // OUTWARD
+      outward: [],
+      outwardVisible: [],
+      outwardOffset: 0,
+      outwardPageSize: 2,
+      loadOutward() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Stock Entry",
+            fields: ["name", "posting_date", "purpose", "docstatus"],
+            filters: {
+              purpose: ["in", ["Material Issue", "Material Transfer"]],
+            },
+            order_by: "posting_date desc",
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+
+            this.outward = r.message.map((d) => {
+              let status = '';
+              if (d.docstatus === 0) status = 'Draft';
+              if (d.docstatus === 1) status = 'Submitted';
+              if (d.docstatus === 2) status = 'Cancelled';
+              return { ...d, status, items: [], showAllItems: false };
+            });
+
+            this.outwardOffset = 0;
+            this.outwardVisible = [];
+            this.loadMoreOutward();
+
+            this.outward.forEach((doc) => this.loadOutwardItems(doc));
+          },
+        });
+      },
+      loadOutwardItems(doc) {
+        frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Stock Entry",
+            name: doc.name,
+          },
+          callback: (r) => {
+            if (r.message) {
+              doc.items = r.message.items || [];
+            }
+          },
+        });
+      },
+      loadMoreOutward() {
+        const next = this.outward.slice(
+          this.outwardOffset,
+          this.outwardOffset + this.outwardPageSize,
+        );
+
+        this.outwardVisible.push(...next);
+        this.outwardOffset += this.outwardPageSize;
+      },
+
+      get canLoadMoreOutward() {
+        return this.outwardVisible.length < this.outward.length;
+      },
+      openStockEntry(name) {
+        frappe.set_route("Form", "Stock Entry", name);
+      },
+
+      // OUTWARD SELECTION
+      selectAllOutward: false,
+      selectedOutward: [],
+
+      get hasOutwardSelection() {
+        return this.selectedOutward.length > 0;
+      },
+
+      toggleSelectAllOutward() {
+        if (this.selectAllOutward) {
+          this.selectedOutward = this.outward.map((doc) => doc.name);
+        } else {
+          this.selectedOutward = [];
+        }
+      },
+
+      syncSelectAllOutward() {
+        this.selectAllOutward = this.selectedOutward.length === this.outward.length;
+      },
+      
+      // ASSETS
+      assets: [],
+      assetsVisible: [],
+      assetsOffset: 0,
+      assetsPageSize: 2,
+      loadAssets() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Asset",
+            fields: ["name", "asset_name", "docstatus", "owner"],
+            order_by: "creation desc",
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+
+            this.assets = r.message.map((d) => {
+              let status = '';
+              if (d.docstatus === 0) status = 'Draft';
+              if (d.docstatus === 1) status = 'Submitted';
+              if (d.docstatus === 2) status = 'Cancelled';
+              return { ...d, status };
+            });
+
+            this.assetsOffset = 0;
+            this.assetsVisible = [];
+            this.loadMoreAssets();
+          },
+        });
+      },
+      loadMoreAssets() {
+        const next = this.assets.slice(
+          this.assetsOffset,
+          this.assetsOffset + this.assetsPageSize,
+        );
+        this.assetsVisible.push(...next);
+        this.assetsOffset += this.assetsPageSize;
+      },
+      get canLoadMoreAssets() {
+        return this.assetsVisible.length < this.assets.length;
+      },
+      openAsset(name) {
+        frappe.set_route("Form", "Asset", name);
+      },
+      selectAllAssets: false,
+      selectedAssets: [],
+      get hasAssetSelection() {
+        return this.selectedAssets.length > 0;
+      },
+      toggleSelectAllAssets() {
+        if (this.selectAllAssets) {
+          this.selectedAssets = this.assets.map((doc) => doc.name);
+        } else {
+          this.selectedAssets = [];
+        }
+      },
+      syncSelectAllAssets() {
+        this.selectAllAssets = this.selectedAssets.length === this.assets.length;
+      },
 
       get activeList() {
         if (this.pageMode === "stock" && this.subMode === "inward") {
           return this.inward;
+        }
+        if (this.pageMode === "stock" && this.subMode === "outward") {
+          return this.outward;
+        }
+        if (this.pageMode === 'asset' && this.subMode === 'item') {
+          return this.assets;
         }
         return this.requests;
       },
