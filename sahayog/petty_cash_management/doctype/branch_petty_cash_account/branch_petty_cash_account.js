@@ -17,6 +17,11 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         } else {
             frm.set_df_property('monthly_limit', 'read_only', 1); // Read-only
         }
+
+        // [NEW] Generate GL Code on refresh if branch exists
+        if (frm.doc.branch && !frm.doc.gl_sub_code) {
+            frm.trigger('generate_gl_code');
+        }
     },
 
     branch: function(frm) {
@@ -37,6 +42,18 @@ frappe.ui.form.on('Branch Petty Cash Account', {
                         }
                     }
                 });
+
+            // 2. [NEW] Auto-generate GL Code immediately
+            frm.trigger('generate_gl_code');
+        }
+    },
+
+     // [NEW] Custom function to generate GL code on frontend
+    generate_gl_code: function(frm) {
+        if (frm.doc.branch) {
+            let account_suffix = "01390200001";
+            let full_code = frm.doc.branch + account_suffix;
+            frm.set_value('gl_sub_code', full_code);
         }
     }
 });
