@@ -11,7 +11,7 @@ def execute():
     Run via: bench execute sahayog.patches.sync_all_agents_batch.execute
     """
     BATCH_SIZE = 100
-    WAIT_TIME = 2  # Changed to 2 seconds for faster processing at night
+    WAIT_TIME = 5  # Changed to 5 seconds for faster processing at night
     
     print(f"[{now()}] Agent UpdateStart")
     
