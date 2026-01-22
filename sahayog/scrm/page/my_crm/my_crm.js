@@ -3214,7 +3214,7 @@ createLead() {
                     });
                 }
 
-                frappe.show_alert({ message: "Lead & Appointment Created Successfully!", indicator: "green" });
+                frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
                 dialog.hide();
                 this.invalidateCache("lead");
                 this.invalidateCache("appointment");
