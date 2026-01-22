@@ -20,3 +20,5 @@ sahayog.patches.fixtures.agent
 sahayog.patches.fixtures.add_sahayog_branch_to_all_employee
 sahayog.patches.fixtures.backfill_agent_auth_id
 sahayog.patches.fixtures.fix_unallocated
+sahayog.patches.update_branch_account_gl_codes
+sahayog.patches.update_expense_category_gl_codes
