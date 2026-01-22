@@ -19,3 +19,4 @@ sahayog.patches.fixtures.create_asset_state_workflow
 sahayog.patches.fixtures.agent
 sahayog.patches.fixtures.add_sahayog_branch_to_all_employee
 sahayog.patches.fixtures.backfill_agent_auth_id
+sahayog.patches.fixtures.fix_unallocated
