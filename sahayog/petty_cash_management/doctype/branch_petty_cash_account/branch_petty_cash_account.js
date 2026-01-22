@@ -36,24 +36,49 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         
     },
 
-    get_finacle_balance: function(frm) {
+    // get_finacle_balance: function(frm) {
+    //     frappe.call({
+    //         method: "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
+    //         args: {
+    //             branch: frm.doc.branch
+    //         },
+    //         freeze: true,
+    //         freeze_message: __("Connecting to Database..."),
+    //         callback: function(r) {
+    //             if (r.message != null) {
+    //                 let balance = r.message;
+                    
+    //                 // Display the balance
+    //                 frappe.msgprint({
+    //                     title: __('Live Account Balance'),
+    //                     indicator: 'green',
+    //                     message: __('Account: <b>{0}</b><br>Available Balance: <b>{1}</b>', 
+    //                         [frm.doc.gl_sub_code, format_currency(balance)])
+    //                 });
+    //             }
+    //         }
+    //     });
+    // },
+
+
+        get_finacle_balance: function(frm) {
         frappe.call({
             method: "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
             args: {
                 branch: frm.doc.branch
             },
             freeze: true,
-            freeze_message: __("Connecting to Database..."),
+            freeze_message: __("Syncing with Finacle..."),
             callback: function(r) {
                 if (r.message != null) {
-                    let balance = r.message;
-                    
-                    // Display the balance
+                    // 1. Reload the document
+                    // This updates the UI with the saved value and keeps the form "Clean" (Saved)
+                    frm.reload_doc();
+
                     frappe.msgprint({
-                        title: __('Live Account Balance'),
+                        title: __('Success'),
                         indicator: 'green',
-                        message: __('Account: <b>{0}</b><br>Available Balance: <b>{1}</b>', 
-                            [frm.doc.gl_sub_code, format_currency(balance)])
+                        message: __('Balance Synced: <b>{0}</b>', [format_currency(r.message)])
                     });
                 }
             }
