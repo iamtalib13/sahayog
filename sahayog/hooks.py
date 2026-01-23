@@ -149,7 +149,6 @@ after_migrate = [
     # "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
     #    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
-    "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
     "sahayog.patches.add_roles.execute",
     # "sahayog.patches.fixtures.add_item_group.execute",
     # "sahayog.patches.fixtures.add_warehouses.execute",
