@@ -759,3 +759,12 @@ body:has(.stockio-app) .page-content {
 .step.disabled .label {
   color: #9ca3af;
 }
+.approval-progress .step.cancelled .dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+.approval-progress .step.cancelled .label {
+  color: #dc2626;
+  font-weight: 600;
+}

@@ -297,37 +297,40 @@ class StockIOPage {
           {{ formatDate(doc.creation) }} · Created By:
           <b>{{ doc.owner }}</b>
                  <!-- APPROVAL PROGRESS -->
-        <div class="approval-progress">
+<div class="approval-progress compact">
 
-          <!-- STEP 1 -->
-          <div class="step" :class="stepClass('request', doc)">
-            <span class="dot"></span>
-            <span class="label">
-              {{ doc.status === 'Draft' ? 'Draft' : 'Submitted' }}
-            </span>
-          </div>
+  <!-- STEP 1 : Draft / Submitted -->
+<div class="step" :class="getProgressFlow(doc).step1.state">
+    <span class="dot"></span>
+    <span class="label">{{ getProgressFlow(doc).step1.label }}</span>
+  </div>
 
-          <div class="line"></div>
+  <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
 
-          <!-- STEP 2 -->
-          <div class="step" :class="stepClass('reporting', doc)">
-            <span class="dot"></span>
-            <span class="label">
-              Reporting
-            </span>
-          </div>
+  <!-- STEP 2 : Reporting -->
+<div
+  class="step"
+  v-if="getProgressFlow(doc).step2.visible"
+  :class="getProgressFlow(doc).step2.state"
+>
+    <span class="dot"></span>
+    <span class="label">Reporting</span>
+  </div>
 
-          <div class="line"></div>
+  <div class="line"></div>
 
-          <!-- STEP 3 -->
-          <div class="step" :class="stepClass('ho', doc)">
-            <span class="dot"></span>
-            <span class="label">
-              HO Approval
-            </span>
-          </div>
+  <!-- STEP 3 : HO Approval / Cancelled -->
+<div
+  class="step"
+  :class="getProgressFlow(doc).step3.state"
+>
 
-        </div>
+    <span class="dot"></span>
+    <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
+  </div>
+
+</div>
+
         </div>
  
 
@@ -1122,27 +1125,27 @@ class StockIOPage {
       toggleItems(doc) {
         doc.showAllItems = !doc.showAllItems;
       },
-      stepClass(step, doc) {
-        if (step === "request") {
-          return doc.status === "Draft" ? "pending" : "done";
-        }
+      // stepClass(step, doc) {
+      //   if (step === "request") {
+      //     return doc.status === "Draft" ? "pending" : "done";
+      //   }
 
-        if (step === "reporting") {
-          if (!doc.reporting_person_status) return "disabled";
-          if (doc.reporting_person_status === "Approved") return "done";
-          if (doc.reporting_person_status === "Rejected") return "rejected";
-          return "pending";
-        }
+      //   if (step === "reporting") {
+      //     if (!doc.reporting_person_status) return "disabled";
+      //     if (doc.reporting_person_status === "Approved") return "done";
+      //     if (doc.reporting_person_status === "Rejected") return "rejected";
+      //     return "pending";
+      //   }
 
-        if (step === "ho") {
-          if (!doc.ho_officer_status) return "disabled";
-          if (doc.ho_officer_status === "Approved") return "done";
-          if (doc.ho_officer_status === "Rejected") return "rejected";
-          return "pending";
-        }
+      //   if (step === "ho") {
+      //     if (!doc.ho_officer_status) return "disabled";
+      //     if (doc.ho_officer_status === "Approved") return "done";
+      //     if (doc.ho_officer_status === "Rejected") return "rejected";
+      //     return "pending";
+      //   }
 
-        return "disabled";
-      },
+      //   return "disabled";
+      // },
       setTab(tab) {
         this.activeTab = tab;
         this.offset = 0;
@@ -1562,6 +1565,65 @@ class StockIOPage {
       syncSelectAllAssetMovements() {
         this.selectAllAssetMovements =
           this.selectedAssetMovements.length === this.assetMovements.length;
+      },
+      getProgressFlow(doc) {
+        const status = doc.status;
+
+        // STEP 1: Draft / Submitted
+        let step1State = "disabled";
+        let step1Label = "Submitted";
+
+        if (status === "Draft") {
+          step1State = "pending";
+          step1Label = "Draft";
+        } else {
+          step1State = "done";
+          step1Label = "Submitted";
+        }
+
+        // STEP 2: Reporting
+        let step2Visible = status !== "Cancelled";
+        let step2State = "disabled";
+
+        if (status === "Pending Reporting Person") {
+          step2State = "pending";
+        }
+
+        if (status === "Pending HO Approval" || status === "Approved") {
+          step2State = "done";
+        }
+
+        // STEP 3: HO Approval / Cancelled
+        let step3State = "disabled";
+        let step3Label = "HO Approval";
+
+        if (status === "Pending HO Approval") {
+          step3State = "pending";
+        }
+
+        if (status === "Approved") {
+          step3State = "done";
+        }
+
+        if (status === "Cancelled") {
+          step3State = "cancelled";
+          step3Label = "Cancelled";
+        }
+
+        return {
+          step1: {
+            label: step1Label,
+            state: step1State,
+          },
+          step2: {
+            visible: step2Visible,
+            state: step2State,
+          },
+          step3: {
+            label: step3Label,
+            state: step3State,
+          },
+        };
       },
     };
 
