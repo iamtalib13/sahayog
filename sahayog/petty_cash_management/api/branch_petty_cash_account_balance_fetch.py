@@ -3,9 +3,9 @@ from frappe import _
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Reuse your existing connection logic
+# --- 1. Database Connection ---
 def db_connection():
-    """Connect to external PostgreSQL (Finacle/ODS)."""
+    """Connect to external PostgreSQL (Finacle)."""
     try:
         creds = frappe.get_single("Finacle Settings")
         conn = psycopg2.connect(
@@ -18,70 +18,108 @@ def db_connection():
         return conn
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "PostgreSQL Connection Failed")
-        frappe.throw(_("Database Connection Error: {0}").format(str(e)))
+        # Only throw error if a User is clicking the button
+        if frappe.request:
+            frappe.throw(_("Database Connection Error: {0}").format(str(e)))
+        return None
 
+# --- 2. Scheduler Logic (The Loop) ---
+def sync_all_branches():
+    """Called automatically by the Scheduler."""
+    # Fetch all Active branches
+    branches = frappe.get_all("Branch Petty Cash Account", filters={"status": "Active"}, pluck="branch")
+    
+    print(f"--- Starting Bulk Sync for {len(branches)} Branches ---")
+    
+    for branch in branches:
+        try:
+            # We call the main function for each branch individually
+            fetch_finacle_balance(branch)
+        except Exception as e:
+            # Log error but continue to next branch so one failure doesn't stop the job
+            print(f"Failed to sync branch {branch}: {str(e)}")
+            frappe.log_error(f"Failed to sync branch {branch}: {str(e)}", "Daily Balance Sync Error")
+
+    print("--- Bulk Sync Completed ---")
+
+# --- 3. Main API (Handles Both Button & Scheduler) ---
 @frappe.whitelist()
-def fetch_finacle_balance(branch):
+def fetch_finacle_balance(branch=None):
     """
-    Fetches the real-time balance from the external Postgres DB
-    using the Branch's GL Sub Code.
+    If 'branch' is passed -> Updates single branch (Button Click)
+    If 'branch' is None   -> Updates ALL branches (Scheduler)
     """
+    
+    # CASE A: Scheduler called this without arguments
+    if not branch:
+        return sync_all_branches()
+
+    # CASE B: Button Click or Single Sync
     conn = None
     try:
-        # 1. Get GL Sub Code
-        wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": branch})
+        # 1. Get Wallet Document Name & GL Code
+        # We use db.get_value to find the document name from the Branch ID
+        wallet_name = frappe.db.get_value("Branch Petty Cash Account", {"branch": branch}, "name")
         
-        if not wallet.gl_sub_code:
-            frappe.throw(_("GL Sub Code is missing for this branch."))
+        if not wallet_name:
+            if frappe.request: frappe.throw(_("Branch Petty Cash Account not found for branch: {0}").format(branch))
+            return
 
-        gl_code = wallet.gl_sub_code
+        gl_code = frappe.db.get_value("Branch Petty Cash Account", wallet_name, "gl_sub_code")
+
+        if not gl_code:
+            msg = f"GL Sub Code missing for branch {branch}"
+            if frappe.request: frappe.throw(_(msg))
+            print(msg)
+            return
 
         # 2. Connect to DB
         conn = db_connection()
+        if not conn: return 
+
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 3. The Query (Adapted for Postgres with %s placeholder)
+        # 3. The Query
         sql = """
-            SELECT
-                g.foracid,
-                g.acct_name,
-                g.sol_id,
-                g.clr_bal_amt
-            FROM tbaadm.gam g
-            WHERE g.del_flg = 'N'
-              AND g.foracid = %s
+            SELECT clr_bal_amt
+            FROM tbaadm.gam
+            WHERE del_flg = 'N'
+              AND foracid = %s
         """
 
         # 4. Execute
         cursor.execute(sql, (gl_code,))
-        result = cursor.fetchone() # Fetch single record
+        result = cursor.fetchone()
 
         # 5. Process Result
         if result:
-            # Finacle usually stores balance in 'clr_bal_amt'
-            # Convert Decimal/Float to standard float for Python
             balance = float(result.get('clr_bal_amt', 0.0))
 
-            # 1. Update the database directly
-            # This bypasses the "Read Only" restriction and saves immediately
-            frappe.db.set_value("Branch Petty Cash Account", branch, "current_balance", balance)
-            
-            # Optional: Commit to ensure it's written (though set_value usually auto-commits)
+            # Update the database directly (Bypasses Read-Only / validations)
+            frappe.db.set_value("Branch Petty Cash Account", wallet_name, "current_balance", balance)
             frappe.db.commit()
             
-            # Optional: Log success for debugging
-            # frappe.logger().info(f"Fetched Balance for {gl_code}: {balance}")
-            
-            return balance
+            # If User clicked button -> Return value to JS
+            if frappe.request:
+                 return balance
+            else:
+                 # If Scheduler -> Just print log
+                 print(f"Synced {branch}: ₹{balance}")
+                 return balance
         else:
-            frappe.msgprint(_("Account Number <b>{0}</b> not found in the external database.").format(gl_code))
+            msg = f"Account {gl_code} not found in Finacle."
+            if frappe.request: frappe.msgprint(_(msg))
+            print(msg)
             return None
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), f"Balance Fetch Failed for {branch}")
-        frappe.throw(_("Error fetching balance: {0}").format(str(e)))
+        # If User Interface, throw error to show them
+        if frappe.request:
+            frappe.throw(_("Error fetching balance: {0}").format(str(e)))
+        else:
+            # If Scheduler, raise it so sync_all_branches can catch and log it
+            raise e 
         
     finally:
-        # 6. Clean up connection
         if conn:
             conn.close()
