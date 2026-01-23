@@ -356,6 +356,12 @@ doc_events = {
 # ---------------
 scheduler_events = {
     "cron": {
+
+        # Run daily at 10:40 AM — Branch Petty Cash Account Balance Sync
+         "00 12 * * *": [
+            "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
+        ],
+
         # Run daily at 6:00 PM — Evening trainer daily activity email
         "0 18 * * *": [
             "sahayog.agent_and_bdo.doctype.agent_activation_call_log.trainer_report.send_daily_trainer_report"
