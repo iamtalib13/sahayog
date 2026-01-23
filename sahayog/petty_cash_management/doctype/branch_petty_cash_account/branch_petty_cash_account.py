@@ -95,6 +95,7 @@
 import frappe
 from frappe.model.document import Document
 from sahayog.petty_cash_management.permissions import get_user_allowed_branches # [NEW IMPORT]
+from frappe.utils import flt
 
 class BranchPettyCashAccount(Document):
     
@@ -145,3 +146,38 @@ class BranchPettyCashAccount(Document):
             return True
             
         return False
+    
+    def update_unsettled_cash(self, amount, transaction_type):
+        """
+        Updates the Unsettled Cash (Cash-In-Hand) tracker.
+        transaction_type: 'Withdrawal' (Finacle Debit) or 'Expense' (Portal Submission)
+        """
+        current_val = flt(self.unsettled_cash)
+        amount = flt(amount)
+        
+        if transaction_type == "Withdrawal":
+            # Money left the bank -> User has cash now -> Unsettled Cash INCREASES
+            self.unsettled_cash = current_val + amount
+            
+        elif transaction_type == "Expense":
+            # User submitted bills -> Cash is accounted for -> Unsettled Cash DECREASES
+            self.unsettled_cash = current_val - amount
+        
+        # Validation: Negative Cash in Hand logic
+        if self.unsettled_cash < 0:
+            frappe.msgprint(f"Note: Unsettled Cash is negative ({self.unsettled_cash}). This implies a reimbursement claim is pending.")
+
+        # Save ignoring permissions (System update)
+        self.save(ignore_permissions=True)
+        
+        # Check for Hoarding
+        self.check_cash_hoarding()
+
+    def check_cash_hoarding(self):
+        """Alert HO if branch is holding too much cash without bills"""
+        THRESHOLD = 2000 # Configurable limit (e.g., ₹2000)
+        
+        if self.unsettled_cash > THRESHOLD:
+            # OPTIONAL: Send a system notification or email
+            # frappe.sendmail(recipients="ho_manager@sahayog.com", subject="Cash Hoarding Alert", ...)
+            print(f"⚠️ ALERT: Branch {self.branch} is holding ₹{self.unsettled_cash} (Limit: ₹{THRESHOLD})")
