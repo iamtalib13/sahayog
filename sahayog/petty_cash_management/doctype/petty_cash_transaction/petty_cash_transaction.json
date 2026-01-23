@@ -15,6 +15,14 @@
   "amount_section",
   "amount",
   "current_branch_balance",
+  "column_break_dmoz",
+  "amount_within_limit",
+  "amount_exceeding_limit",
+  "amount_deducted",
+  "approval_status",
+  "finacle_tran_id",
+  "finacle_tran_date",
+  "finacle_tran_particular",
   "expense_items_section",
   "items",
   "approval_section",
@@ -22,7 +30,8 @@
   "posted_to_finacle",
   "finacle_transaction_id",
   "remarks",
-  "amended_from"
+  "amended_from",
+  "column_break_limits"
  ],
  "fields": [
   {
@@ -132,13 +141,13 @@
    "read_only": 1
   },
   {
+   "default": "Draft",
    "fieldname": "approval_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Approval Status",
    "options": "Draft\nPending Approval\nApproved\nVerified\nPosted",
-   "default": "Draft",
-   "read_only": 1,
-   "in_list_view": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_limits",
@@ -157,18 +166,37 @@
    "read_only": 1
   },
   {
+   "description": "The actual amount subtracted from branch balance currently",
    "fieldname": "amount_deducted",
    "fieldtype": "Currency",
    "label": "Amount Deducted from Wallet",
-   "read_only": 1,
-   "description": "The actual amount subtracted from branch balance currently"
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dmoz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "finacle_tran_id",
+   "fieldtype": "Data",
+   "label": "Finacle Transaction ID"
+  },
+  {
+   "fieldname": "finacle_tran_date",
+   "fieldtype": "Date",
+   "label": "Finacle Transaction Date"
+  },
+  {
+   "fieldname": "finacle_tran_particular",
+   "fieldtype": "Small Text",
+   "label": "FInacle Transaction Particular"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-20 11:35:18.065444",
+ "modified": "2026-01-23 12:00:32.728624",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
