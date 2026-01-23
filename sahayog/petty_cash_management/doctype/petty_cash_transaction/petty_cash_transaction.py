@@ -225,6 +225,14 @@ class PettyCashTransaction(Document):
     #     self.update_wallet()
 
     def on_submit(self):
+
+        # 1. Update Unsettled Cash if this is an Expense
+        if self.transaction_type == "Expense":
+            wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+            # Deduct the total amount from their "Cash in Hand" bucket
+            wallet.update_unsettled_cash(self.amount, "Expense")
+
+
         if self.transaction_type == "Expense":
             if self.amount_exceeding_limit > 0:
                 # Scenario 2: Exceeding Limit
@@ -246,6 +254,15 @@ class PettyCashTransaction(Document):
         self.update_wallet()
 
     def on_cancel(self):
+
+         # If cancelled, the cash is legally "back" with the user (unaccounted for)
+        if self.transaction_type == "Expense":
+            wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+            # Treat it like a Withdrawal (Add it back to liability)
+            wallet.update_unsettled_cash(self.amount, "Withdrawal") 
+
+
+
         # Refund whatever was deducted
         self.amount_deducted = 0
         self.approval_status = "Draft"
