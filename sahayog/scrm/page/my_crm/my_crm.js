@@ -9,8 +9,7 @@ frappe.pages["my-crm"].on_page_load = function (wrapper) {
     single_column: true,
   });
   new MyCRM(wrapper);
-  src="/assets/sahayog/js/petite-vue.iife.js"
-
+  src = "/assets/sahayog/js/petite-vue.iife.js";
 };
 
 class MyCRM {
@@ -45,31 +44,32 @@ class MyCRM {
       search: "",
       data: [],
       filteredData: [],
-      userLeadNames: [],
-      offset: 0,
       limit: 50,
       hasMore: true,
-      totalCount: 0,
+      totalCount: 0, // Total for the current section
+      leadCount: 0, // Total lead count for badge
+      appointmentCount: 0, // Total appointment count for badge
+      leadCursor: null, // Cursor for lead pagination
+      appointmentCursor: null, // Cursor for appointment pagination
       isMobile: window.innerWidth <= 768,
     };
 
     console.log("%c🚀 CRM Initialized", "color: #25d366; font-weight: bold;");
 
-  // Petite-Vue bridge
-  this.vue = null;
-  this.vueMounted = false;
+    // Petite-Vue bridge
+    this.vue = null;
+    this.vueMounted = false;
 
-
-  // Petite-Vue shared reactive state
-if (!window.mycrmVue) {
-  window.mycrmVue = {
-    section: "lead",
-    search: "",
-    leadCount: 0,
-    appointmentCount: 0,
-    cacheHit: false,
-  };
-}
+    // Petite-Vue shared reactive state
+    if (!window.mycrmVue) {
+      window.mycrmVue = {
+        section: "lead",
+        search: "",
+        leadCount: 0,
+        appointmentCount: 0,
+        cacheHit: false,
+      };
+    }
 
     this.init();
   }
@@ -83,214 +83,215 @@ if (!window.mycrmVue) {
     // ✅ Restore last active tab after render
     this.switchSection(this.state.section);
 
-    await this.loadUserLeads();
-    await this.fetchData();
+    // Initial data fetch and badge updates are now handled by switchSection calling fetchData
+    // and fetchData getting all consolidated info from the backend.
+    // The following calls are no longer needed here.
+    // await this.loadUserLeads(); // Removed
+    // this.updateTabBadges();     // Removed
+
     this.setupRealtime();
     this.startCacheMonitoring();
     this.setupPWA();
-    this.updateTabBadges();
+
   }
 
-// Petite-Vue Initialization
-initPetiteVue() {
-  if (this.vueMounted || !window.PetiteVue) return;
+  // Petite-Vue Initialization
+  initPetiteVue() {
+    if (this.vueMounted || !window.PetiteVue) return;
 
-  const crm = this; // preserve MyCRM reference
+    const crm = this; // preserve MyCRM reference
 
-  this.vue = PetiteVue.createApp({
-    // 🔗 Existing state (reactive UI binding)
-    state: crm.state,
+    this.vue = PetiteVue.createApp({
+      // 🔗 Existing state (reactive UI binding)
+      state: crm.state,
 
-    // 🔍 Read-only helpers (UI ke liye)
-    isLead() {
-      return this.state.section === "lead";
-    },
+      // 🔍 Read-only helpers (UI ke liye)
+      isLead() {
+        return this.state.section === "lead";
+      },
 
-    isAppointment() {
-      return this.state.section === "appointment";
-    },
+      isAppointment() {
+        return this.state.section === "appointment";
+      },
 
-    hasData() {
-      return this.state.filteredData.length > 0;
-    },
+      hasData() {
+        return this.state.filteredData.length > 0;
+      },
 
-    // 🔘 UI actions (bridge to existing logic)
-    switchSection(section) {
-      crm.switchSection(section);
-    },
+      // 🔘 UI actions (bridge to existing logic)
+      switchSection(section) {
+        crm.switchSection(section);
+      },
 
-    applyFilter(filter) {
-      crm.state.filter = filter;
-      crm.applyFilter();
-    },
+      applyFilter(filter) {
+        crm.state.filter = filter;
+        crm.applyFilter();
+      },
 
-    searchChanged(val) {
-      crm.state.search = val;
-      crm.applySearch?.();
-    }
-  });
-
-  // 🧠 Mount on page-content (existing DOM)
-  this.vue.mount(this.wrapper[0]);
-
-  this.vueMounted = true;
-
-  console.log(
-    "%c🧩 Petite-Vue Mounted",
-    "color:#42b883;font-weight:bold;"
-  );
-}
-
-// Mobile Detection (Optimized + Debounced)
-detectMobile() {
-  let resizeTimer = null;
-
-  const handleResize = () => {
-    const wasMobile = this.state.isMobile;
-    const isMobileNow = window.innerWidth <= 768;
-
-    if (wasMobile !== isMobileNow) {
-      this.state.isMobile = isMobileNow;
-
-      // UI refresh only when breakpoint changes
-      this.render();
-      this.applyFilter?.();
-    }
-  };
-
-  window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(handleResize, 150);
-  });
-}
-
-// Cache Validation (Readable + Safe)
-isCacheValid(key) {
-  const cache = this.cache?.[key];
-  if (!cache || !cache.timestamp) return false;
-
-  const age = Date.now() - cache.timestamp;
-  const isValid = age < cache.ttl;
-
-  if (isValid) {
-    console.debug(`✅ CACHE HIT → ${key}`, {
-      age: `${Math.floor(age / 1000)}s`,
-      records: cache.data?.length || 0,
+      searchChanged(val) {
+        crm.state.search = val;
+        crm.applySearch?.();
+      },
     });
+
+    // 🧠 Mount on page-content (existing DOM)
+    this.vue.mount(this.wrapper[0]);
+
+    this.vueMounted = true;
+
+    console.log("%c🧩 Petite-Vue Mounted", "color:#42b883;font-weight:bold;");
   }
 
-  return isValid;
-}
+  // Mobile Detection (Optimized + Debounced)
+  detectMobile() {
+    let resizeTimer = null;
 
-getCachedData(key) {
-  return this.isCacheValid(key) ? this.cache[key].data : null;
-}
+    const handleResize = () => {
+      const wasMobile = this.state.isMobile;
+      const isMobileNow = window.innerWidth <= 768;
 
-// Cache Setter (Non-breaking)
-setCacheData(key, data = [], totalCount = null) {
-  if (!this.cache[key]) {
-    this.cache[key] = {
-      data: [],
-      totalCount: 0,
-      timestamp: null,
-      ttl: 5 * 60 * 1000,
-      searches: new Map(),
+      if (wasMobile !== isMobileNow) {
+        this.state.isMobile = isMobileNow;
+
+        // UI refresh only when breakpoint changes
+        this.render();
+        this.applyFilter?.();
+      }
     };
+
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(handleResize, 150);
+    });
   }
 
-  const cache = this.cache[key];
-  cache.data = data;
-  cache.timestamp = Date.now();
+  // Cache Validation (Readable + Safe)
+  isCacheValid(key) {
+    const cache = this.cache?.[key];
+    if (!cache || !cache.timestamp) return false;
 
-  if (typeof totalCount === "number") {
-    cache.totalCount = totalCount;
-  }
+    const age = Date.now() - cache.timestamp;
+    const isValid = age < cache.ttl;
 
-  console.debug(`💾 CACHE UPDATED → ${key}`, {
-    records: data.length,
-  });
-}
-
-// Search Cache (Optimized)
-getCachedSearch(section, term) {
-  const cache = this.cache?.[section];
-  if (!cache?.searches || !term) return null;
-
-  const cached = cache.searches.get(term);
-  if (!cached) return null;
-
-  if (Date.now() - cached.timestamp < cache.ttl) {
-    console.debug(`🔍 SEARCH CACHE HIT → "${term}"`);
-    return cached.data;
-  }
-
-  // Auto cleanup expired search
-  cache.searches.delete(term);
-  return null;
-}
-
-setCachedSearch(section, term, data) {
-  const cache = this.cache?.[section];
-  if (!cache?.searches || !term) return;
-
-  cache.searches.set(term, {
-    data,
-    timestamp: Date.now(),
-  });
-
-  // Keep cache size limited
-  if (cache.searches.size > 20) {
-    const oldestKey = cache.searches.keys().next().value;
-    cache.searches.delete(oldestKey);
-  }
-}
-
-// Cache Invalidator (Safer)
-invalidateCache(section = null) {
-  if (section && this.cache[section]) {
-    this.cache[section].timestamp = null;
-    this.cache[section].searches?.clear();
-    return;
-  }
-
-  Object.values(this.cache).forEach((cache) => {
-    cache.timestamp = null;
-    cache.searches?.clear();
-  });
-}
-
-// Cache Monitoring (Dev Friendly)
-startCacheMonitoring() {
-  setInterval(() => {
-    console.groupCollapsed("📊 CRM Cache Stats");
-
-    Object.entries(this.cache).forEach(([key, cache]) => {
-      if (!cache.timestamp) return;
-
-      const age = Math.floor((Date.now() - cache.timestamp) / 1000);
-      console.log(`${key}`, {
+    if (isValid) {
+      console.debug(`✅ CACHE HIT → ${key}`, {
+        age: `${Math.floor(age / 1000)}s`,
         records: cache.data?.length || 0,
-        age: `${age}s`,
       });
+    }
+
+    return isValid;
+  }
+
+  getCachedData(key) {
+    return this.isCacheValid(key) ? this.cache[key].data : null;
+  }
+
+  // Cache Setter (Non-breaking)
+  setCacheData(key, data = [], totalCount = null) {
+    if (!this.cache[key]) {
+      this.cache[key] = {
+        data: [],
+        totalCount: 0,
+        timestamp: null,
+        ttl: 5 * 60 * 1000,
+        searches: new Map(),
+      };
+    }
+
+    const cache = this.cache[key];
+    cache.data = data;
+    cache.timestamp = Date.now();
+
+    if (typeof totalCount === "number") {
+      cache.totalCount = totalCount;
+    }
+
+    console.debug(`💾 CACHE UPDATED → ${key}`, {
+      records: data.length,
+    });
+  }
+
+  // Search Cache (Optimized)
+  getCachedSearch(section, term) {
+    const cache = this.cache?.[section];
+    if (!cache?.searches || !term) return null;
+
+    const cached = cache.searches.get(term);
+    if (!cached) return null;
+
+    if (Date.now() - cached.timestamp < cache.ttl) {
+      console.debug(`🔍 SEARCH CACHE HIT → "${term}"`);
+      return cached.data;
+    }
+
+    // Auto cleanup expired search
+    cache.searches.delete(term);
+    return null;
+  }
+
+  setCachedSearch(section, term, data) {
+    const cache = this.cache?.[section];
+    if (!cache?.searches || !term) return;
+
+    cache.searches.set(term, {
+      data,
+      timestamp: Date.now(),
     });
 
-    console.groupEnd();
-  }, 30000);
-}
+    // Keep cache size limited
+    if (cache.searches.size > 20) {
+      const oldestKey = cache.searches.keys().next().value;
+      cache.searches.delete(oldestKey);
+    }
+  }
 
-// Page Setup (Petite-Vue Friendly)
-setupPage() {
-  this.page.set_title_sub("");
-  this.page.clear_primary_action();
-  this.page.clear_secondary_action();
-  this.page.clear_actions();
+  // Cache Invalidator (Safer)
+  invalidateCache(section = null) {
+    if (section && this.cache[section]) {
+      this.cache[section].timestamp = null;
+      this.cache[section].searches?.clear();
+      return;
+    }
 
-  // Indicator reactive friendly
-  this.page.set_indicator(
-    this.state?.section === "appointment" ? "Appointment" : "Lead",
-    "green"
-  );
-}
+    Object.values(this.cache).forEach((cache) => {
+      cache.timestamp = null;
+      cache.searches?.clear();
+    });
+  }
+
+  // Cache Monitoring (Dev Friendly)
+  startCacheMonitoring() {
+    setInterval(() => {
+      console.groupCollapsed("📊 CRM Cache Stats");
+
+      Object.entries(this.cache).forEach(([key, cache]) => {
+        if (!cache.timestamp) return;
+
+        const age = Math.floor((Date.now() - cache.timestamp) / 1000);
+        console.log(`${key}`, {
+          records: cache.data?.length || 0,
+          age: `${age}s`,
+        });
+      });
+
+      console.groupEnd();
+    }, 30000);
+  }
+
+  // Page Setup (Petite-Vue Friendly)
+  setupPage() {
+    this.page.set_title_sub("");
+    this.page.clear_primary_action();
+    this.page.clear_secondary_action();
+    this.page.clear_actions();
+
+    // Indicator reactive friendly
+    this.page.set_indicator(
+      this.state?.section === "appointment" ? "Appointment" : "Lead",
+      "green",
+    );
+  }
 
   render() {
     const isMobile = this.state.isMobile;
@@ -808,121 +809,83 @@ setupPage() {
 
     this.attachEventListeners();
     // Petite-Vue reactive bridge (SAFE)
-if (!window.mycrmVue) {
-  window.mycrmVue = {
-    section: this.state.section,
-    search: this.state.search,
-    isMobile: this.state.isMobile,
-    leadCount: 0,
-    appointmentCount: 0,
-  };
-}
+    if (!window.mycrmVue) {
+      window.mycrmVue = {
+        section: this.state.section,
+        search: this.state.search,
+        isMobile: this.state.isMobile,
+        leadCount: 0,
+        appointmentCount: 0,
+      };
+    }
 
-// Sync state → vue (no override)
-Object.assign(window.mycrmVue, {
-  section: this.state.section,
-  search: this.state.search,
-  isMobile: this.state.isMobile,
-});
-// Mount Petite-Vue once
-if (!this._vueMounted) {
-  PetiteVue.createApp({ mycrmVue: window.mycrmVue }).mount();
-  this._vueMounted = true;
-}
-
+    // Sync state → vue (no override)
+    Object.assign(window.mycrmVue, {
+      section: this.state.section,
+      search: this.state.search,
+      isMobile: this.state.isMobile,
+    });
+    // Mount Petite-Vue once
+    if (!this._vueMounted) {
+      PetiteVue.createApp({ mycrmVue: window.mycrmVue }).mount();
+      this._vueMounted = true;
+    }
 
     frappe.crm_app = this;
   }
 
   attachEventListeners() {
-  $(".mycrm-tab").on("click", (e) => {
-    const section = $(e.currentTarget).data("section");
-    this.switchSection(section);
+    $(".mycrm-tab").on("click", (e) => {
+      const section = $(e.currentTarget).data("section");
+      this.switchSection(section);
 
-    // Vue sync
-    window.mycrmVue.section = section;
-  });
+      // Vue sync
+      window.mycrmVue.section = section;
+    });
 
-  $("#mycrm-search").on("input", (e) => {
-    const val = $(e.target).val();
-    $("#mycrm-clear-search").toggle(val.length > 0);
+    $("#mycrm-search").on("input", (e) => {
+      const val = $(e.target).val();
+      $("#mycrm-clear-search").toggle(val.length > 0);
 
-    clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(() => {
-      this.state.search = val;
-      window.mycrmVue.search = val; // 👈 sync
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        this.state.search = val;
+        window.mycrmVue.search = val; // 👈 sync
+        this.state.offset = 0;
+
+        if (this.state.section !== "reports") {
+          this.fetchData();
+        }
+      }, 300);
+    });
+
+    $("#mycrm-clear-search").on("click", () => {
+      $("#mycrm-search").val("");
+      $("#mycrm-clear-search").hide();
+
+      this.state.search = "";
+      window.mycrmVue.search = ""; // 👈 sync
       this.state.offset = 0;
 
       if (this.state.section !== "reports") {
         this.fetchData();
       }
-    }, 300);
-  });
-
-  $("#mycrm-clear-search").on("click", () => {
-    $("#mycrm-search").val("");
-    $("#mycrm-clear-search").hide();
-
-    this.state.search = "";
-    window.mycrmVue.search = ""; // 👈 sync
-    this.state.offset = 0;
-
-    if (this.state.section !== "reports") {
-      this.fetchData();
-    }
-  });
-
-  $("#mycrm-list-container").on("scroll", () => this.handleScroll());
-  $("#mycrm-load-more-btn").on("click", () => this.loadMore());
-
-  $("#mycrm-fab").on("click", () => {
-    if (this.state.section === "lead") {
-      this.createLead();
-    } else if (this.state.section === "appointment") {
-      this.createAppointment();
-    } else {
-      this.switchSection("lead");
-      window.mycrmVue.section = "lead";
-      setTimeout(() => this.createLead(), 100);
-    }
-  });
-}
-
-  async loadUserLeads() {
-    console.group("%c👥 User Leads", "color: #128c7e; font-weight: bold;");
-
-    const cached = this.getCachedData("userLeadNames");
-    if (cached?.length > 0) {
-      this.state.userLeadNames = cached;
-      console.groupEnd();
-      return;
-    }
-
-    const startTime = performance.now();
-
-    const response = await frappe.call({
-      method: "frappe.client.get_list",
-      args: {
-        doctype: "Lead",
-        fields: ["name"],
-        filters: [["lead_owner", "=", this.currentUser]],
-        limit_page_length: 0,
-      },
     });
 
-    const fetchTime = Math.round(performance.now() - startTime);
+    $("#mycrm-list-container").on("scroll", () => this.handleScroll());
+    $("#mycrm-load-more-btn").on("click", () => this.loadMore());
 
-    this.state.userLeadNames = (response.message || []).map((d) => d.name);
-    this.setCacheData("userLeadNames", this.state.userLeadNames);
-
-    console.log(`⚡ ${fetchTime}ms`);
-    console.groupEnd();
-    this.state.userLeadNames = (response.message || []).map(d => d.name);
-this.setCacheData("userLeadNames", this.state.userLeadNames);
-
-// Vue sync (optional UI use)
-window.mycrmVue.leadCount = this.state.userLeadNames.length;
-
+    $("#mycrm-fab").on("click", () => {
+      if (this.state.section === "lead") {
+        this.createLead();
+      } else if (this.state.section === "appointment") {
+        this.createAppointment();
+      } else {
+        this.switchSection("lead");
+        window.mycrmVue.section = "lead";
+        setTimeout(() => this.createLead(), 100);
+      }
+    });
   }
 
   async fetchData(append = false) {
@@ -931,251 +894,80 @@ window.mycrmVue.leadCount = this.state.userLeadNames.length;
       "color: #25d366; font-weight: bold;"
     );
 
-    if (!append) {
-      this.state.offset = 0;
+    let cursorForFetch = null;
+    if (append) {
+        cursorForFetch = (this.state.section === "lead") ? this.state.leadCursor : this.state.appointmentCursor;
+    }
 
-      if (!this.state.search?.trim()) {
-        const cached = this.getCachedData(this.state.section);
-        if (cached?.length > 0) {
-          this.state.data = cached;
-          this.state.totalCount =
-            this.cache[this.state.section].totalCount || cached.length;
-          this.applyFilter();
-          this.updateCacheIndicator(true);
-          console.groupEnd();
-          return;
-        }
-      } else {
-        const cachedSearch = this.getCachedSearch(
-          this.state.section,
-          this.state.search
-        );
-        if (cachedSearch) {
-          this.state.data = cachedSearch;
-          this.state.totalCount = cachedSearch.length;
-          this.applyFilter();
-          this.updateCacheIndicator(true);
-// 👇 ADD
-window.mycrmVue.cacheHit = false;
-
-// 👇 ADD COUNTS
-if (this.state.section === "lead") {
-  window.mycrmVue.leadCount = this.state.totalCount;
-} else if (this.state.section === "appointment") {
-  window.mycrmVue.appointmentCount = this.state.totalCount;
-}
-          console.groupEnd();
-          return;
-        }
+    if (!append || (append && !cursorForFetch)) { // If not appending, or appending but no cursor (meaning no more pages)
+      // Reset data for a fresh fetch if not appending
+      if (!append) {
+        this.state.data = [];
       }
-
+      // Reset cursors for new fetches for the current section
+      if (this.state.section === "lead") {
+        this.state.leadCursor = null;
+      } else if (this.state.section === "appointment") {
+        this.state.appointmentCursor = null;
+      }
       this.showLoading();
     }
 
-    const startTime = performance.now();
-
     try {
-      await this.fetchTotalCount();
+      const response = await frappe.call({
+        method: "sahayog.scrm.page.my_crm.my_crm.get_crm_data",
+        args: {
+          section: this.state.section,
+          limit: this.state.limit,
+          cursor: cursorForFetch, // Pass current cursor (null for first fetch)
+          search_term: this.state.search,
+        },
+      });
 
-      if (this.state.section === "lead") {
-        await this.fetchLeads(append);
+      const { data, next_cursor, total_count, lead_count, appointment_count } = response.message;
+
+      if (append) {
+        this.state.data = [...this.state.data, ...data];
       } else {
-        await this.fetchAppointments(append);
+        this.state.data = data;
       }
 
-      const fetchTime = Math.round(performance.now() - startTime);
-      console.log(`⚡ ${fetchTime}ms`);
+      this.state.totalCount = total_count; // Total for the current section
+      this.state.hasMore = !!next_cursor; // hasMore is true if next_cursor exists
+
+      // Update cursor for the next fetch for the current section
+      if (this.state.section === "lead") {
+          this.state.leadCursor = next_cursor;
+      } else {
+          this.state.appointmentCursor = next_cursor;
+      }
+      
+      // Update global Vue state for counts (from consolidated response)
+      if (window.mycrmVue) {
+          window.mycrmVue.leadCount = lead_count || 0;
+          window.mycrmVue.appointmentCount = appointment_count || 0;
+      }
+
+      // Caching logic
+      // If we are passing total_count from BE, then the cache should also store that.
+      if (!this.state.search?.trim() && !append) {
+        this.setCacheData(this.state.section, this.state.data, this.state.totalCount);
+      }
 
       this.applyFilter();
-      this.updateCacheIndicator(false, fetchTime);
+      this.updateCacheIndicator(false, null);
+
     } catch (error) {
-      console.error("❌ Error:", error);
+      console.error(`❌ Error fetching ${this.state.section}:`, error);
       frappe.msgprint({
         title: "Error",
         indicator: "red",
-        message: error.message,
+        message: "Could not fetch CRM data.",
       });
     } finally {
       this.hideLoading();
       console.groupEnd();
     }
-  }
-
-  async fetchTotalCount() {
-  const filters = this.buildServerFilters();
-  const or_filters = this.buildOrFilters();
-
-  const doctype = this.state.section === "lead" ? "Lead" : "Appointment";
-
-  const response = await frappe.call({
-    method: "frappe.client.get_count",
-    args: {
-      doctype,
-      filters,
-      or_filters,
-    },
-  });
-
-  this.state.totalCount = response.message || 0;
-
-  // ✅ Petite-Vue sync (NO logic change)
-  if (window.mycrmVue) {
-    if (this.state.section === "lead") {
-      window.mycrmVue.leadCount = this.state.totalCount;
-    } else if (this.state.section === "appointment") {
-      window.mycrmVue.appointmentCount = this.state.totalCount;
-    }
-  }
-}
-
-  buildServerFilters() {
-    const filters = [];
-
-    if (this.state.section === "lead") {
-      filters.push(["lead_owner", "=", this.currentUser]);
-    } else {
-      if (this.state.userLeadNames.length > 0) {
-        filters.push(["party", "in", this.state.userLeadNames]);
-      }
-    }
-
-    return filters; // ❗ NO SEARCH HERE
-  }
-  buildOrFilters() {
-    const s = this.state.search?.trim();
-    if (!s) return [];
-
-    if (this.state.section === "lead") {
-      return [
-        ["lead_name", "like", `%${s}%`],
-        ["mobile_no", "like", `%${s}%`],
-        ["first_name", "like", `%${s}%`],
-        ["email_id", "like", `%${s}%`],
-      ];
-    }
-
-    return [
-      ["customer_name", "like", `%${s}%`],
-      ["customer_phone_number", "like", `%${s}%`],
-    ];
-  }
-
-  async fetchLeads(append = false) {
-    const filters = this.buildServerFilters();
-    const or_filters = this.buildOrFilters(); // ✅ ADD SEARCH FILTERS
-    const response = await frappe.call({
-      method: "frappe.client.get_list",
-      args: {
-        doctype: "Lead",
-        fields: [
-          "name",
-          "lead_name",
-          "first_name",
-          "last_name",
-          "mobile_no",
-          "email_id",
-          "status",
-          "source",
-          "modified",
-        ],
-        filters: filters,
-        or_filters, // ✅ ADD SEARCH FILTERS
-        order_by: "modified desc",
-        limit_start: this.state.offset,
-        limit_page_length: this.state.limit,
-      },
-    });
-
-    const newData = response.message || [];
-
-    // Calculate total amount for each lead
-    const leadsWithAmount = await Promise.all(
-      newData.map(async (lead) => {
-        const amountRes = await frappe.call({
-          method: "frappe.client.get",
-          args: {
-            doctype: "Lead",
-            name: lead.name,
-            fields: ["custom_product_table"],
-          },
-        });
-
-        let totalAmount = 0;
-        if (amountRes.message && amountRes.message.custom_product_table) {
-          amountRes.message.custom_product_table.forEach((item) => {
-            totalAmount += parseFloat(item.product_amount || 0);
-          });
-        }
-
-        return { ...lead, totalAmount };
-      })
-    );
-
-    if (append) {
-      this.state.data = [...this.state.data, ...leadsWithAmount];
-    } else {
-      this.state.data = leadsWithAmount;
-
-      if (!this.state.search?.trim()) {
-        this.setCacheData("lead", this.state.data, this.state.totalCount);
-      } else {
-        this.setCachedSearch("lead", this.state.search, this.state.data);
-      }
-    }
-
-    this.state.hasMore = newData.length === this.state.limit;
-    this.state.offset += newData.length;
-  }
-
-  async fetchAppointments(append = false) {
-    if (this.state.userLeadNames.length === 0) {
-      this.state.data = [];
-      this.state.hasMore = false;
-      return;
-    }
-
-    const filters = this.buildServerFilters();
-
-    const response = await frappe.call({
-      method: "frappe.client.get_list",
-      args: {
-        doctype: "Appointment",
-        fields: [
-          "name",
-          "customer_name",
-          "customer_phone_number",
-          "scheduled_time",
-          "status",
-          "party",
-          "modified",
-        ],
-        filters: filters,
-        order_by: "scheduled_time desc",
-        limit_start: this.state.offset,
-        limit_page_length: this.state.limit,
-      },
-    });
-
-    const newData = response.message || [];
-
-    if (append) {
-      this.state.data = [...this.state.data, ...newData];
-    } else {
-      this.state.data = newData;
-
-      if (!this.state.search?.trim()) {
-        this.setCacheData(
-          "appointment",
-          this.state.data,
-          this.state.totalCount
-        );
-      } else {
-        this.setCachedSearch("appointment", this.state.search, this.state.data);
-      }
-    }
-
-    this.state.hasMore = newData.length === this.state.limit;
-    this.state.offset += newData.length;
   }
 
   updateCacheIndicator(fromCache, fetchTime = null) {
@@ -1189,6 +981,24 @@ if (this.state.section === "lead") {
   }
 
   applyFilter() {
+
+      // ✅ FIRST: Assigned To Me
+ if (this.state.filter === "Assigned To Me") {
+      if (!this.assignedLeadNames || !this.assignedLeadNames.length) {
+        this.state.filteredData = [];
+        this.state.activeFilter = this.state.filter;
+        this.renderList();
+        return;
+      }
+
+      this.state.filteredData = this.state.data.filter((lead) =>
+        this.assignedLeadNames.includes(lead.name),
+      );
+
+      this.state.activeFilter = this.state.filter;
+      this.renderList();
+      return;
+    }
     let data = [...this.state.data];
 
     if (this.state.filter !== "All") {
@@ -1222,24 +1032,6 @@ if (this.state.section === "lead") {
     this.renderList();
     this.renderFilters();
     this.updateCount();
-
-if (this.state.filter === "Assigned To Me") {
-  if (!this.assignedLeadNames || !this.assignedLeadNames.length) {
-    this.state.filteredData = [];
-    this.state.activeFilter = this.state.filter;
-    this.renderList();
-    return;
-  }
-
-  this.state.filteredData = this.state.data.filter(lead =>
-    this.assignedLeadNames.includes(lead.name)
-  );
-
-  this.state.activeFilter = this.state.filter;
-  this.renderList();
-  return;
-}
-
   }
 
   renderFilters() {
@@ -1287,7 +1079,7 @@ if (this.state.filter === "Assigned To Me") {
     }
   }
 
-async fetchAssignedLeads() {
+  async fetchAssignedLeads() {
   const { message = [] } = await frappe.call({
     method: "frappe.client.get_list",
     args: {
@@ -1340,140 +1132,75 @@ async fetchAssignedLeads() {
   console.log("✅ Assigned Leads:", this.assignedLeadNames);
 }
 
-async getEmployeeByUser(userId) {
-  if (!userId) return null;
+  async getEmployeeByUser(userId) {
+    if (!userId) return null;
 
-  try {
-    const res = await frappe.db.get_value(
-      "Employee",
-      { user_id: userId },
-      ["employee_name", "employee", "branch"]
-    );
+    try {
+      const res = await frappe.db.get_value("Employee", { user_id: userId }, [
+        "employee_name",
+        "employee",
+        "branch",
+      ]);
 
-    if (res && res.message) {
-      return {
-        name: res.message.employee_name,
-        code: res.message.employee,
-        branch: res.message.branch || ""
-      };
+      if (res && res.message) {
+        return {
+          name: res.message.employee_name,
+          code: res.message.employee,
+          branch: res.message.branch || "",
+        };
+      }
+    } catch (e) {
+      console.warn("Employee fetch failed for", userId);
     }
-  } catch (e) {
-    console.warn("Employee fetch failed for", userId);
+
+    return null;
   }
 
-  return null;
-}
+  countStatus(status) {
+    return this.state.data.filter((d) => d.status === status).length;
+  }
 
-countStatus(status) {
-  return this.state.data.filter(d => d.status === status).length;
-}
+  countToday() {
+    const today = frappe.datetime.get_today();
+    return this.state.data.filter((d) => {
+      if (!d.scheduled_time) return false;
+      return (
+        frappe.datetime.obj_to_str(
+          frappe.datetime.str_to_obj(d.scheduled_time),
+        ) === today
+      );
+    }).length;
+  }
 
-countToday() {
-  const today = frappe.datetime.get_today();
-  return this.state.data.filter(d => {
-    if (!d.scheduled_time) return false;
-    return frappe.datetime.obj_to_str(
-      frappe.datetime.str_to_obj(d.scheduled_time)
-    ) === today;
-  }).length;
-}
+  countDue() {
+    const now = frappe.datetime.now_datetime();
+    return this.state.data.filter(
+      (d) =>
+        d.scheduled_time && d.scheduled_time < now && d.status !== "Closed",
+    ).length;
+  }
 
-countDue() {
-  const now = frappe.datetime.now_datetime();
-  return this.state.data.filter(d =>
-    d.scheduled_time &&
-    d.scheduled_time < now &&
-    d.status !== "Closed"
-  ).length;
-}
+  countUpcoming() {
+    const now = frappe.datetime.now_datetime();
+    return this.state.data.filter(
+      (d) =>
+        d.scheduled_time && d.scheduled_time > now && d.status !== "Closed",
+    ).length;
+  }
 
-countUpcoming() {
-  const now = frappe.datetime.now_datetime();
-  return this.state.data.filter(d =>
-    d.scheduled_time &&
-    d.scheduled_time > now &&
-    d.status !== "Closed"
-  ).length;
-}
+  updateCount() {
+    const showing = this.state.filteredData.length;
+    const total = this.state.totalCount;
 
-updateCount() {
-  const showing = this.state.filteredData.length;
-  const total = this.state.totalCount;
+    this.countText = this.state.search
+      ? `${showing} results`
+      : `${showing} of ${total} ${this.state.section}s`;
 
-  this.countText = this.state.search
-    ? `${showing} results`
-    : `${showing} of ${total} ${this.state.section}s`;
+    // 🔁 keep existing DOM behavior intact
+    $("#mycrm-count-text").text(this.countText);
+  }
 
-  // 🔁 keep existing DOM behavior intact
-  $("#mycrm-count-text").text(this.countText);
-}
-
-// 1.0 original renderList
-  // renderList() {
-  //   const container = $("#mycrm-list-body");
-  //   const data = this.state.filteredData;
-
-  //   if (data.length === 0) {
-  //     $("#mycrm-empty").show();
-  //     $("#mycrm-load-more").hide();
-  //     container.hide();
-  //     return;
-  //   }
-
-  //   $("#mycrm-empty").hide();
-  //   container.show();
-  //   container.empty();
-
-  //   const fragment = document.createDocumentFragment();
-
-  //   data.forEach((item) => {
-  //     const card = this.renderWhatsAppCard(item);
-  //     fragment.appendChild(card[0]);
-  //   });
-
-  //   container[0].appendChild(fragment);
-
-  //   if (
-  //     this.state.hasMore &&
-  //     this.state.filteredData.length === this.state.data.length
-  //   ) {
-  //     $("#mycrm-load-more").show();
-  //   } else {
-  //     $("#mycrm-load-more").hide();
-  //   }
-  // }
-// 2.0 improved renderList with extracted helper
-//   renderList() {
-//   const container = $("#mycrm-list-body");
-//   const data = this.state.filteredData;
-
-//   // Empty state
-//   if (!data || data.length === 0) {
-//     this.showEmptyState(true);
-//     return;
-//   }
-
-//   this.showEmptyState(false);
-//   container.empty();
-
-//   const fragment = document.createDocumentFragment();
-
-//   for (const item of data) {
-//     const card = this.renderWhatsAppCard(item);
-//     fragment.appendChild(card[0]); // existing jQuery card
-//   }
-
-//   container[0].appendChild(fragment);
-
-//   const canLoadMore =
-//     this.state.hasMore &&
-//     this.state.filteredData.length === this.state.data.length;
-
-//   $("#mycrm-load-more").toggle(canLoadMore);
-// }
-
-
-renderList() {
+  renderList() {
     const container = $("#mycrm-list-body");
     const data = this.state.filteredData;
 
@@ -1481,291 +1208,150 @@ renderList() {
     container.empty();
 
     if (!data || data.length === 0) {
-        this.showEmptyState(true);
-        return;
+      this.showEmptyState(true);
+      return;
     }
 
     this.showEmptyState(false);
-    data.forEach(item => {
-        const card = this.renderWhatsAppCard(item);
-        container.append(card);
+    data.forEach((item) => {
+      const card = this.renderWhatsAppCard(item);
+      container.append(card);
     });
 
     // Central Event Delegation
-    container.off("click", ".mycrm-list-item").on("click", ".mycrm-list-item", (e) => {
+    container
+      .off("click", ".mycrm-list-item")
+      .on("click", ".mycrm-list-item", (e) => {
         e.preventDefault();
         const name = $(e.currentTarget).attr("data-name");
         if (this.state.section === "lead") {
-            this.editLead(name); 
+          this.editLead(name);
         } else {
-            frappe.set_route("Form", "Appointment", name);
+          frappe.set_route("Form", "Appointment", name);
         }
-    });
-}
+      });
+  }
 
-// 6. full working final version with all improvements, no console errors, simple and clean.
-// async editLead(name) {
-//     const me = this;
-
-//     frappe.model.with_doc("Lead", name, function() {
-//         const doc = frappe.get_doc("Lead", name);
-//         if (!doc) return;
-        
-//         let productsData = JSON.parse(JSON.stringify(doc.custom_product_table || []));
-
-//         const d = new frappe.ui.Dialog({
-//             title: `<div class="custom-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
-//                         <span style="font-weight: 600; font-size: 16px; color: #1a202c;">Update Lead: ${name}</span>
-//                         <div class="header-btns-container" style="display: flex; gap: 8px;"></div>
-//                     </div>`,
-//             fields: [
-//                 { label: 'Full Name', fieldname: 'first_name', fieldtype: 'Data', read_only: 1 },
-//                 { label: 'Status', fieldname: 'status', fieldtype: 'Select', 
-//                   options: ["Lead", "Follow Up", "Converted", "Not Interested"], read_only: 1 },
-//                 { fieldtype: 'Column Break' },
-//                 { label: 'Phone Number', fieldname: 'mobile_no', fieldtype: 'Data', read_only: 1 },
-//                 { label: 'Source', fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', read_only: 1 },
-//                 { fieldtype: 'Section Break', label: 'Products' },
-//                 { fieldname: 'product_container', fieldtype: 'HTML' }
-//             ],
-//             primary_action_label: __('Update Lead'),
-//             primary_action: async (values) => {
-//                 frappe.call({
-//                     method: "frappe.client.set_value",
-//                     args: { 
-//                         doctype: "Lead", name: name, 
-//                         fieldname: { ...values, custom_product_table: productsData } 
-//                     },
-//                     callback: (r) => {
-//                         if(!r.exc) {
-//                             frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
-//                             d.hide();
-//                             me.fetchData(); 
-//                         }
-//                     }
-//                 });
-//             }
-//         });
-
-//         // --- Forced Editable Logic ---
-//         const toggleInputs = (isEditable) => {
-//             d.fields.forEach(f => {
-//                 if (f.df && f.fieldname && f.fieldname !== 'product_container') {
-//                     d.set_df_property(f.fieldname, 'read_only', isEditable ? 0 : 1);
-//                     let field = d.get_field(f.fieldname);
-//                     if(field) {
-//                         field.refresh();
-//                         $(field.input).prop('disabled', !isEditable).css('background-color', isEditable ? '#fff' : '#f8fafc');
-//                     }
-//                 }
-//             });
-//         };
-
-//         // --- Render Logic ---
-//         const renderTableRows = (isEdit) => {
-//             const tbody = d.$wrapper.find("#product-rows-body").empty();
-//             productsData.forEach((row, index) => {
-//                 const tr = $(`<tr data-index="${index}">
-//                     <td style="text-align:center; vertical-align:middle;">${index + 1}</td>
-//                     <td style="padding:8px;"><div class="p-id-link-${index}"></div></td>
-//                     <td style="padding:8px;"><input type="text" class="form-control input-sm p-name-disp" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none;"></td>
-//                     <td style="padding:8px;"><input type="number" class="form-control input-sm p-amt-input" value="${row.product_amount || 0}" ${!isEdit ? 'readonly' : ''} style="text-align: right; border: ${isEdit ? '1px solid #d1d8dd' : 'none'};"></td>
-//                     ${isEdit ? `<td class="text-center" style="padding:8px;"><button class="btn btn-xs btn-danger del-row-btn">Remove</button></td>` : ''}
-//                 </tr>`).appendTo(tbody);
-
-//                 if (isEdit) {
-//                     frappe.ui.form.make_control({
-//                         df: { fieldtype: "Link", options: "Product", onchange: function() {
-//                             const val = this.get_value();
-//                             productsData[index].product = val;
-//                             if(val) {
-//                                 frappe.db.get_value('Product', val, 'product_name', r => {
-//                                     productsData[index].product_name = r.product_name;
-//                                     tr.find('.p-name-disp').val(r.product_name);
-//                                 });
-//                             }
-//                         }},
-//                         parent: tr.find(`.p-id-link-${index}`), render_input: true
-//                     }).set_value(row.product);
-
-//                     tr.find(".p-amt-input").on("input", function() {
-//                         productsData[index].product_amount = parseFloat($(this).val()) || 0;
-//                     });
-//                 } else {
-//                     tr.find(`.p-id-link-${index}`).text(row.product || '-').css('padding-top', '5px');
-//                 }
-//             });
-//         };
-
-//         const renderTableContainer = (isEdit) => {
-//             toggleInputs(isEdit);
-//             const container = d.fields_dict.product_container.$wrapper;
-//             container.html(`
-//                 <div style="border: 1px solid #d1d8dd; border-radius: 8px; overflow: hidden; background: #fff;">
-//                     <div style="overflow-x: auto;">
-//                         <table class="table table-bordered" style="margin:0; font-size: 13px; min-width: 600px;">
-//                             <thead style="background: #f7fafc;">
-//                                 <tr>
-//                                     <th style="width: 40px; text-align:center;">#</th>
-//                                     <th style="width: 200px;">Product ID</th>
-//                                     <th>Product Name</th>
-//                                     <th style="width: 120px; text-align:right;">Amount (₹)</th>
-//                                     ${isEdit ? '<th style="width: 80px; text-align:center;">Action</th>' : ''}
-//                                 </tr>
-//                             </thead>
-//                             <tbody id="product-rows-body"></tbody>
-//                         </table>
-//                     </div>
-//                     ${isEdit ? `<div style="padding: 10px; background: #f7fafc; border-top: 1px solid #d1d8dd;">
-//                         <button class="btn btn-xs" id="add-row-btn" style="background:#006264; color:white; border:none; padding: 6px 15px;">+ Add Product</button>
-//                     </div>` : ''}
-//                 </div>`);
-
-//             renderTableRows(isEdit);
-
-//             d.$wrapper.find("#add-row-btn").on("click", () => {
-//                 productsData.push({ product: "", product_name: "", product_amount: 0 });
-//                 renderTableRows(isEdit);
-//             });
-
-//             d.$wrapper.on("click", ".del-row-btn", function() {
-//                 const idx = $(this).closest('tr').data('index');
-//                 productsData.splice(idx, 1);
-//                 renderTableRows(isEdit);
-//             });
-//         };
-
-//         // --- Header Buttons Logic ---
-//         const header_btns = d.$wrapper.find('.header-btns-container');
-        
-//         // Update Button (Hidden by default)
-//         const update_btn = d.get_primary_btn().detach().appendTo(header_btns).hide();
-//         update_btn.css({'background': '#006264', 'border': 'none', 'color': '#fff'});
-
-//         // Edit Button
-//         const edit_btn = $(`<button class="btn btn-default btn-sm btn-edit-action" style="border: 1px solid #006264; color: #006264; font-weight: 500;">Edit Form</button>`)
-//             .appendTo(header_btns);
-
-//         edit_btn.on('click', () => {
-//             renderTableContainer(true);
-//             edit_btn.hide();
-//             update_btn.show(); // Show only after edit click
-//         });
-
-//         // Responsive Styles
-//         if (!$('#header-responsive-style').length) {
-//             $(`<style id="header-responsive-style">
-//                 @media (max-width: 767px) {
-//                     .custom-header-wrapper { flex-direction: column !important; align-items: flex-start !important; }
-//                     .header-btns-container { width: 100%; justify-content: flex-start; margin-top: 5px; }
-//                     .modal-dialog { margin: 10px auto !important; width: 95% !important; }
-//                 }
-//             </style>`).appendTo("head");
-//         }
-
-//         d.$wrapper.find('.modal-dialog').css({'width': 'auto', 'max-width': '900px', 'margin': '30px auto'});
-        
-//         d.set_values({
-//             'first_name': doc.first_name || "",
-//             'mobile_no': doc.mobile_no || "",
-//             'status': doc.status || "Lead",
-//             'source': doc.source || ""
-//         });
-
-//         renderTableContainer(false);
-//         d.show();
-//     });
-// }
-
-async editLead(name) {
+  async editLead(name) {
     const me = this;
 
-    frappe.model.with_doc("Lead", name, async function() {
-        const doc = frappe.get_doc("Lead", name);
-        if (!doc) return;
+    frappe.model.with_doc("Lead", name, async function () {
+      const doc = frappe.get_doc("Lead", name);
+      if (!doc) return;
 
-        let productsData = JSON.parse(JSON.stringify(doc.custom_product_table || []));
-        let appointmentsData = [];
+      let productsData = JSON.parse(
+        JSON.stringify(doc.custom_product_table || []),
+      );
+      let appointmentsData = [];
 
-        // Fetch Appointments
-        const appt_res = await frappe.db.get_list('Appointment', {
-            filters: { party: name },
-            fields: ['name', 'scheduled_time', 'status'],
-            order_by: 'scheduled_time desc'
-        });
-        appointmentsData = appt_res || [];
+      // Fetch Appointments
+      const appt_res = await frappe.db.get_list("Appointment", {
+        filters: { party: name },
+        fields: ["name", "scheduled_time", "status"],
+        order_by: "scheduled_time desc",
+      });
+      appointmentsData = appt_res || [];
 
-        const d = new frappe.ui.Dialog({
-            title: `Update Lead: ${name}`,
-            fields: [
-                {
-                    fieldname: 'tab_navigation',
-                    fieldtype: 'HTML',
-                    options: `
+      const d = new frappe.ui.Dialog({
+        title: `Update Lead: ${name}`,
+        fields: [
+          {
+            fieldname: "tab_navigation",
+            fieldtype: "HTML",
+            options: `
                         <div class="custom-tabs-wrapper" style="display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 15px;">
                             <div class="tab-link active" id="tab-lead-btn" style="padding: 10px 25px; cursor: pointer; color: #006264; border-bottom: 3px solid #006264; font-weight: bold;">Lead & Products</div>
                             <div class="tab-link" id="tab-appt-btn" style="padding: 10px 25px; cursor: pointer; color: #6b7280;">Appointments</div>
                         </div>
-                    `
-                },
-                { fieldname: 'lead_and_product_wrapper', fieldtype: 'HTML' },
-                { fieldname: 'appointment_tab_wrapper', fieldtype: 'HTML' },
-                { fieldname: 'first_name', fieldtype: 'Data', hidden: 1, default: doc.first_name },
-                { fieldname: 'mobile_no', fieldtype: 'Data', hidden: 1, default: doc.mobile_no },
-                { fieldname: 'status', fieldtype: 'Select', hidden: 1, options: ["Lead", "Follow Up", "Converted", "Not Interested"], default: doc.status },
-                { fieldname: 'source', fieldtype: 'Link', options: 'Lead Source', hidden: 1, default: doc.source }
-            ],
-            primary_action_label: __('Update Lead'),
-            primary_action: async (values) => {
-                const final_values = {
-                    first_name: d.$wrapper.find('#f_name_edit').val(),
-                    mobile_no: d.$wrapper.find('#m_no_edit').val(),
-                    status: d.$wrapper.find('#status_edit').val(),
-                    source: d.$wrapper.find('#source_edit').val()
-                };
+                    `,
+          },
+          { fieldname: "lead_and_product_wrapper", fieldtype: "HTML" },
+          { fieldname: "appointment_tab_wrapper", fieldtype: "HTML" },
+          {
+            fieldname: "first_name",
+            fieldtype: "Data",
+            hidden: 1,
+            default: doc.first_name,
+          },
+          {
+            fieldname: "mobile_no",
+            fieldtype: "Data",
+            hidden: 1,
+            default: doc.mobile_no,
+          },
+          {
+            fieldname: "status",
+            fieldtype: "Select",
+            hidden: 1,
+            options: ["Lead", "Follow Up", "Converted", "Not Interested"],
+            default: doc.status,
+          },
+          {
+            fieldname: "source",
+            fieldtype: "Link",
+            options: "Lead Source",
+            hidden: 1,
+            default: doc.source,
+          },
+        ],
+        primary_action_label: __("Update Lead"),
+        primary_action: async (values) => {
+          const final_values = {
+            first_name: d.$wrapper.find("#f_name_edit").val(),
+            mobile_no: d.$wrapper.find("#m_no_edit").val(),
+            status: d.$wrapper.find("#status_edit").val(),
+            source: d.$wrapper.find("#source_edit").val(),
+          };
 
-                frappe.call({
-                    method: "frappe.client.set_value",
-                    args: { 
-                        doctype: "Lead", name: name, 
-                        fieldname: { ...final_values, custom_product_table: productsData } 
-                    },
-                    callback: (r) => {
-                        if(!r.exc) {
-                            frappe.show_alert({ message: __('Lead Updated'), indicator: 'green' });
-                            d.hide();
-                            me.fetchData(); 
-                        }
-                    }
+          frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+              doctype: "Lead",
+              name: name,
+              fieldname: {
+                ...final_values,
+                custom_product_table: productsData,
+              },
+            },
+            callback: (r) => {
+              if (!r.exc) {
+                frappe.show_alert({
+                  message: __("Lead Updated"),
+                  indicator: "green",
                 });
-            }
-        });
+                d.hide();
+                me.fetchData();
+              }
+            },
+          });
+        },
+      });
 
-        const renderLeadTab = () => {
-            const wrapper = d.get_field('lead_and_product_wrapper').$wrapper;
-            wrapper.html(`
+      const renderLeadTab = () => {
+        const wrapper = d.get_field("lead_and_product_wrapper").$wrapper;
+        wrapper.html(`
                 <div id="lead-content-section">
                     <div class="row">
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label">Full Name</label>
-                                <input type="text" id="f_name_edit" class="form-control" value="${doc.first_name || ''}">
+                                <input type="text" id="f_name_edit" class="form-control" value="${doc.first_name || ""}">
                             </div>
                             <div class="form-group">
                                 <label class="control-label">Status</label>
                                 <select id="status_edit" class="form-control">
-                                    ${["Lead", "Follow Up", "Converted", "Not Interested"].map(s => `<option value="${s}" ${doc.status===s?'selected':''}>${s}</option>`).join('')}
+                                    ${["Lead", "Follow Up", "Converted", "Not Interested"].map((s) => `<option value="${s}" ${doc.status === s ? "selected" : ""}>${s}</option>`).join("")}
                                 </select>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label">Phone Number</label>
-                                <input type="text" id="m_no_edit" class="form-control" value="${doc.mobile_no || ''}">
+                                <input type="text" id="m_no_edit" class="form-control" value="${doc.mobile_no || ""}">
                             </div>
                             <div class="form-group">
                                 <label class="control-label">Source</label>
-                                <input type="text" id="source_edit" class="form-control" value="${doc.source || ''}">
+                                <input type="text" id="source_edit" class="form-control" value="${doc.source || ""}">
                             </div>
                         </div>
                     </div>
@@ -1776,9 +1362,9 @@ async editLead(name) {
                 </div>
             `);
 
-            const refreshProductTable = () => {
-                const grid = d.$wrapper.find('#original-product-table-grid');
-                grid.html(`
+        const refreshProductTable = () => {
+          const grid = d.$wrapper.find("#original-product-table-grid");
+          grid.html(`
                     <div style="border:1px solid #d1d8dd; border-radius:8px; overflow:hidden;">
                         <table class="table table-bordered" style="margin:0; font-size:13px;">
                             <thead style="background:#f7fafc;">
@@ -1798,41 +1384,63 @@ async editLead(name) {
                     </div>
                 `);
 
-                const tbody = d.$wrapper.find('#p-body-edit');
-                productsData.forEach((row, idx) => {
-                    const tr = $(`<tr data-idx="${idx}">
-                        <td style="text-align:center; vertical-align:middle;">${idx+1}</td>
+          const tbody = d.$wrapper.find("#p-body-edit");
+          productsData.forEach((row, idx) => {
+            const tr = $(`<tr data-idx="${idx}">
+                        <td style="text-align:center; vertical-align:middle;">${idx + 1}</td>
                         <td style="padding:8px;"><div class="link-wrap-${idx}"></div></td>
-                        <td style="padding:8px; vertical-align:middle;"><input type="text" class="form-control input-sm p-name" value="${row.product_name || ''}" readonly style="background:#f8fafc; border:none;"></td>
+                        <td style="padding:8px; vertical-align:middle;"><input type="text" class="form-control input-sm p-name" value="${row.product_name || ""}" readonly style="background:#f8fafc; border:none;"></td>
                         <td style="padding:8px; vertical-align:middle;"><input type="number" class="form-control input-sm p-amt" value="${row.product_amount || 0}" style="text-align:right;"></td>
                         <td class="text-center" style="vertical-align:middle;"><button class="btn btn-xs btn-danger del-p">Remove</button></td>
                     </tr>`).appendTo(tbody);
 
-                    frappe.ui.form.make_control({
-                        df: { 
-                            fieldtype: "Link", options: "Product", fieldname: `p_${idx}`,
-                            onchange: function() {
-                                productsData[idx].product = this.get_value();
-                                frappe.db.get_value('Product', this.get_value(), 'product_name', r => {
-                                    productsData[idx].product_name = r.product_name;
-                                    tr.find('.p-name').val(r.product_name);
-                                });
-                            }
-                        },
-                        parent: tr.find(`.link-wrap-${idx}`), render_input: true
-                    }).set_value(row.product);
+            frappe.ui.form
+              .make_control({
+                df: {
+                  fieldtype: "Link",
+                  options: "Product",
+                  fieldname: `p_${idx}`,
+                  onchange: function () {
+                    productsData[idx].product = this.get_value();
+                    frappe.db.get_value(
+                      "Product",
+                      this.get_value(),
+                      "product_name",
+                      (r) => {
+                        productsData[idx].product_name = r.product_name;
+                        tr.find(".p-name").val(r.product_name);
+                      },
+                    );
+                  },
+                },
+                parent: tr.find(`.link-wrap-${idx}`),
+                render_input: true,
+              })
+              .set_value(row.product);
 
-                    tr.find('.p-amt').on('input', function() { productsData[idx].product_amount = parseFloat($(this).val()) || 0; });
-                });
-            };
-            d.$wrapper.on('click', '#add-p-edit', () => { productsData.push({product:"", product_name:"", product_amount:0}); refreshProductTable(); });
-            d.$wrapper.on('click', '.del-p', function() { productsData.splice($(this).closest('tr').data('idx'), 1); refreshProductTable(); });
-            refreshProductTable();
+            tr.find(".p-amt").on("input", function () {
+              productsData[idx].product_amount = parseFloat($(this).val()) || 0;
+            });
+          });
         };
+        d.$wrapper.on("click", "#add-p-edit", () => {
+          productsData.push({
+            product: "",
+            product_name: "",
+            product_amount: 0,
+          });
+          refreshProductTable();
+        });
+        d.$wrapper.on("click", ".del-p", function () {
+          productsData.splice($(this).closest("tr").data("idx"), 1);
+          refreshProductTable();
+        });
+        refreshProductTable();
+      };
 
-        const renderApptTab = () => {
-            const wrapper = d.get_field('appointment_tab_wrapper').$wrapper;
-            wrapper.html(`
+      const renderApptTab = () => {
+        const wrapper = d.get_field("appointment_tab_wrapper").$wrapper;
+        wrapper.html(`
                 <div id="appointment-content-section" style="display:none;">
                     <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc;">
                         <h6 style="font-weight:600; margin-bottom:12px;">Schedule New Appointment</h6>
@@ -1851,301 +1459,133 @@ async editLead(name) {
                 </div>
             `);
 
-            const loadHistory = () => {
-                const tbody = d.$wrapper.find('#appt-h-body-edit').empty();
-                if(!appointmentsData.length) tbody.append('<tr><td colspan="3" class="text-center">No history found</td></tr>');
-                appointmentsData.forEach(app => {
-                    $(`<tr>
+        const loadHistory = () => {
+          const tbody = d.$wrapper.find("#appt-h-body-edit").empty();
+          if (!appointmentsData.length)
+            tbody.append(
+              '<tr><td colspan="3" class="text-center">No history found</td></tr>',
+            );
+          appointmentsData.forEach((app) => {
+            $(`<tr>
                         <td style="vertical-align:middle;">${frappe.datetime.global_date_format(app.scheduled_time)} ${frappe.datetime.get_time(app.scheduled_time)}</td>
-                        <td style="vertical-align:middle;"><span class="label label-${app.status==='Open'?'orange':'green'}">${app.status}</span></td>
+                        <td style="vertical-align:middle;"><span class="label label-${app.status === "Open" ? "orange" : "green"}">${app.status}</span></td>
                         <td style="text-align:center;"><button class="btn btn-xs btn-default" onclick="frappe.set_route('Form', 'Appointment', '${app.name}')">View</button></td>
                     </tr>`).appendTo(tbody);
-                });
-            };
+          });
+        };
 
-            // --- FIXED APPOINTMENT CREATION WITH LEAD DETAILS ---
-            // --- FIXED APPOINTMENT CREATION ---
-d.$wrapper.on('click', '#btn-create-appt-final', async () => {
-    const time = d.$wrapper.find('#new_appt_t_edit').val();
-    if(!time) return frappe.msgprint("Please select date & time");
-    
-    await frappe.call({
-        method: "frappe.client.insert",
-        args: { 
-            doc: { 
-                doctype: "Appointment", 
-                party: name, 
-                appointment_with: "Lead", 
-                scheduled_time: time, 
+        // --- FIXED APPOINTMENT CREATION WITH LEAD DETAILS ---
+        // --- FIXED APPOINTMENT CREATION ---
+        d.$wrapper.on("click", "#btn-create-appt-final", async () => {
+          const time = d.$wrapper.find("#new_appt_t_edit").val();
+          if (!time) return frappe.msgprint("Please select date & time");
+
+          await frappe.call({
+            method: "frappe.client.insert",
+            args: {
+              doc: {
+                doctype: "Appointment",
+                party: name,
+                appointment_with: "Lead",
+                scheduled_time: time,
                 status: "Open",
                 // Error ke mutabiq sahi field IDs yahan hain:
-                customer_name: doc.first_name, 
+                customer_name: doc.first_name,
                 customer_email: doc.email_id,
                 // Agar mobile bhi error de, toh check karein uska ID kya hai (e.g., mobile_no)
-                mobile_no: doc.mobile_no 
-            } 
-        },
-        callback: (r) => {
-            if(!r.exc) {
+                mobile_no: doc.mobile_no,
+              },
+            },
+            callback: (r) => {
+              if (!r.exc) {
                 frappe.show_alert("Appointment Created Successfully");
                 appointmentsData.unshift(r.message);
                 loadHistory(); // Table refresh karne ke liye
-            }
-        }
+              }
+            },
+          });
+        });
+        loadHistory();
+      };
+
+      const setupTabs = () => {
+        d.$wrapper.find("#tab-lead-btn").on("click", function () {
+          d.$wrapper.find(".tab-link").css({
+            color: "#6b7280",
+            "border-bottom": "none",
+            "font-weight": "normal",
+          });
+          $(this).css({
+            color: "#006264",
+            "border-bottom": "3px solid #006264",
+            "font-weight": "bold",
+          });
+          d.$wrapper.find("#lead-content-section").show();
+          d.$wrapper.find("#appointment-content-section").hide();
+        });
+
+        d.$wrapper.find("#tab-appt-btn").on("click", function () {
+          d.$wrapper.find(".tab-link").css({
+            color: "#6b7280",
+            "border-bottom": "none",
+            "font-weight": "normal",
+          });
+          $(this).css({
+            color: "#006264",
+            "border-bottom": "3px solid #006264",
+            "font-weight": "bold",
+          });
+          d.$wrapper.find("#lead-content-section").hide();
+          d.$wrapper.find("#appointment-content-section").show();
+        });
+      };
+
+      d.show();
+      d.$wrapper
+        .find(".modal-dialog")
+        .css({ "max-width": "850px", width: "95%" });
+
+      renderLeadTab();
+      renderApptTab();
+      setupTabs();
     });
-});
-            loadHistory();
-        };
+  }
+  // 🔹 extracted helper (Petite-Vue friendly & reusable)
+  showEmptyState(show) {
+    $("#mycrm-empty").toggle(show);
+    $("#mycrm-list-body").toggle(!show);
+    $("#mycrm-load-more").toggle(!show && this.state.hasMore);
+  }
 
-        const setupTabs = () => {
-            d.$wrapper.find('#tab-lead-btn').on('click', function() {
-                d.$wrapper.find('.tab-link').css({'color': '#6b7280', 'border-bottom': 'none', 'font-weight': 'normal'});
-                $(this).css({'color': '#006264', 'border-bottom': '3px solid #006264', 'font-weight': 'bold'});
-                d.$wrapper.find('#lead-content-section').show();
-                d.$wrapper.find('#appointment-content-section').hide();
-            });
-
-            d.$wrapper.find('#tab-appt-btn').on('click', function() {
-                d.$wrapper.find('.tab-link').css({'color': '#6b7280', 'border-bottom': 'none', 'font-weight': 'normal'});
-                $(this).css({'color': '#006264', 'border-bottom': '3px solid #006264', 'font-weight': 'bold'});
-                d.$wrapper.find('#lead-content-section').hide();
-                d.$wrapper.find('#appointment-content-section').show();
-            });
-        };
-
-        d.show();
-        d.$wrapper.find('.modal-dialog').css({'max-width': '850px', 'width': '95%'});
-
-        renderLeadTab();
-        renderApptTab();
-        setupTabs();
-    });
-}
-// 🔹 extracted helper (Petite-Vue friendly & reusable)
-showEmptyState(show) {
-  $("#mycrm-empty").toggle(show);
-  $("#mycrm-list-body").toggle(!show);
-  $("#mycrm-load-more").toggle(!show && this.state.hasMore);
-}
-
-//   renderWhatsAppCard(item) {
-//     const modified = frappe.datetime.comment_when(item.modified);
-
-//     let name, message, statusClass, statusText, avatar;
-
-//     if (this.state.section === "lead") {
-//       name =
-//         item.lead_name ||
-//         `${item.first_name || ""} ${item.last_name || ""}`.trim() ||
-//         "Unnamed";
-//       avatar = (item.first_name || name).charAt(0).toUpperCase();
-
-//       // Indian currency format
-//       const totalAmount = item.totalAmount || 0;
-//       const amountDisplay =
-//         totalAmount > 0
-//           ? ` - <span style="color: #10b981; font-weight: 700;">₹${this.formatIndianCurrency(
-//               totalAmount
-//             )}</span>`
-//           : "";
-
-//       const details = [];
-//       if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
-//       if (item.email_id) details.push(`✉️ ${item.email_id}`);
-//       if (item.source) details.push(`📌 ${item.source}`);
-
-//       // ✅ Assigned By (NO status / filter dependency)
-
-
-
-// if (this.assignedByMap?.[item.name]) {
-//   const a = this.assignedByMap[item.name];
-
-//   details.push(`
-//     <div style="
-//       margin-top:6px;
-//       display:flex;
-//       flex-wrap:wrap;
-//       gap:6px;
-//       font-size:12px;
-//     ">
-
-//       <!-- Assigned By -->
-//       <span style="
-//         background:#f1f5f9;
-//         padding:4px 8px;
-//         border-radius:6px;
-//         color:#111;
-//       ">Assigned By:
-//         👤 <b>${a.full_name}</b>
-//         <span style="color:#0f0a21;"><b>(${a.employee_code})</b></span>
-//       </span>
-
-//       <!-- Branch -->
-//       ${
-//         a.branch
-//           ? `
-//           <span style="
-//             background:#dcf8c6;
-//             padding:4px 8px;
-//             border-radius:6px;
-//             color:#065f46;
-//             font-weight:600;
-//           ">
-//             🏢 ${a.branch}
-//           </span>
-//           `
-//           : ""
-//       }
-
-//     </div>
-//   `);
-// }
-
-
-
-
-//       message = details.join(" • ") || "No details";
-//       statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
-//       statusText = item.status || "Lead";
-
-//       const card = $(`
-//       <div class="mycrm-list-item" data-name="${item.name}">
-//         <div class="mycrm-avatar">${avatar}</div>
-//         <div class="mycrm-content">
-//           <div class="mycrm-header">
-//             <div class="mycrm-name">${name}${amountDisplay}</div>
-//             <div class="mycrm-time">${modified}</div>
-//           </div>
-//           <div class="mycrm-message mycrm-scrollable">
-//             <span style="flex: 1; min-width: 0;">${message}</span>
-//             <span class="mycrm-status-badge ${statusClass}">${statusText}</span>
-//           </div>
-//         </div>
-//       </div>
-//     `);
-
-//       card.on("click", () => {
-//         frappe.set_route("Form", "Lead", item.name);
-//       });
-
-//       return card;
-//     } else {
-//       // Appointment section
-//       name = item.customer_name || "Unnamed";
-//       avatar = name.charAt(0).toUpperCase();
-
-//       const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
-//       const isPast = item.scheduled_time < frappe.datetime.now_datetime();
-
-//       message = `📅 ${scheduledTime}`;
-//       if (isPast) message += " 🔴 OVERDUE";
-//       if (item.customer_phone_number)
-//         message += ` • 📱 ${item.customer_phone_number}`;
-
-//       statusClass = (item.status || "open").toLowerCase();
-//       statusText = item.status || "Open";
-
-//       const card = $(`
-//       <div class="mycrm-list-item" data-name="${item.name}">
-//         <div class="mycrm-avatar">${avatar}</div>
-//         <div class="mycrm-content">
-//           <div class="mycrm-header">
-//             <div class="mycrm-name">${name}</div>
-//             <div class="mycrm-time">${modified}</div>
-//           </div>
-//           <div class="mycrm-message mycrm-scrollable">
-//             <span style="flex: 1; min-width: 0;">${message}</span>
-//             <span class="mycrm-status-badge ${statusClass}">${statusText}</span>
-//           </div>
-//         </div>
-//       </div>
-//     `);
-
-//       card.on("click", () => {
-//         frappe.set_route("Form", "Appointment", item.name);
-//       });
-
-//       return card;
-//     }
-//   }
-
-// Working final version of renderWhatsAppCard with improved UI and fixes but amount display removed.
-// renderWhatsAppCard(item) {
-//     const modified = frappe.datetime.comment_when(item.modified);
-//     let name, message, statusClass, statusText, avatar;
-
-//     if (this.state.section === "lead") {
-//         name = item.lead_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unnamed";
-//         avatar = name.charAt(0).toUpperCase();
-
-//         const details = [];
-//         if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
-//         if (item.source) details.push(`📌 ${item.source}`);
-
-//         // Assigned By Logic (Original)
-//         if (this.assignedByMap?.[item.name]) {
-//             const a = this.assignedByMap[item.name];
-//             details.push(`
-//                 <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
-//                     <span style="background:#f1f5f9; padding:4px 8px; border-radius:6px; color:#111;">
-//                         Assigned By: 👤 <b>${a.full_name}</b> (<b>${a.employee_code}</b>)
-//                     </span>
-//                     ${a.branch ? `<span style="background:#dcf8c6; padding:4px 8px; border-radius:6px; color:#065f46; font-weight:600;">🏢 ${a.branch}</span>` : ""}
-//                 </div>
-//             `);
-//         }
-//         message = details.join(" • ") || "No details";
-//         statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
-//         statusText = item.status || "Lead";
-//     } else {
-//         // Appointment UI Fix
-//         name = item.customer_name || "Unnamed";
-//         avatar = name.charAt(0).toUpperCase();
-//         const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
-//         message = `📅 ${scheduledTime} ${item.mobile_no ? `• 📱 ${item.mobile_no}` : ""}`;
-//         statusClass = (item.status || "open").toLowerCase();
-//         statusText = item.status || "Open";
-//     }
-
-//     return $(`
-//         <div class="mycrm-list-item" data-name="${item.name}" style="cursor: pointer; padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 12px;">
-//             <div class="mycrm-avatar" style="min-width: 42px; height: 42px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4b5563;">${avatar}</div>
-//             <div class="mycrm-content" style="flex: 1; min-width: 0;">
-//                 <div class="mycrm-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-//                     <div class="mycrm-name" style="font-weight: 600; color: #111827;">${name}</div>
-//                     <div class="mycrm-time" style="font-size: 11px; color: #6b7280;">${modified}</div>
-//                 </div>
-//                 <div class="mycrm-message" style="font-size: 13px; color: #4b5563; display: flex; justify-content: space-between; align-items: flex-end;">
-//                     <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${message}</span>
-//                     <span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px;">${statusText}</span>
-//                 </div>
-//             </div>
-//         </div>
-//     `);
-// }
-
-
-renderWhatsAppCard(item) {
+  renderWhatsAppCard(item) {
     const modified = frappe.datetime.comment_when(item.modified);
-    let name, message, statusClass, statusText, avatar, amountDisplay = "";
+    let name,
+      message,
+      statusClass,
+      statusText,
+      avatar,
+      amountDisplay = "";
 
     if (this.state.section === "lead") {
-        name = item.lead_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unnamed";
-        avatar = name.charAt(0).toUpperCase();
+      name =
+        item.lead_name ||
+        `${item.first_name || ""} ${item.last_name || ""}`.trim() ||
+        "Unnamed";
+      avatar = name.charAt(0).toUpperCase();
 
-        // ✅ Amount Display logic (Restored)
-        const totalAmount = item.totalAmount || 0;
-        amountDisplay = totalAmount > 0 
-            ? ` - <span style="color: #10b981; font-weight: 700;">₹${this.formatIndianCurrency(totalAmount)}</span>` 
-            : "";
+      // ✅ Amount Display logic (Restored)
+      const totalAmount = item.totalAmount || 0;
+      amountDisplay =
+        totalAmount > 0
+          ? ` - <span style="color: #10b981; font-weight: 700;">₹${this.formatIndianCurrency(totalAmount)}</span>`
+          : "";
 
-        const details = [];
-        if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
-        if (item.source) details.push(`📌 ${item.source}`);
+      const details = [];
+      if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
+      if (item.source) details.push(`📌 ${item.source}`);
 
-        // Assigned By Logic
-        if (this.assignedByMap?.[item.name]) {
+      // Assigned By Logic
+      if (this.assignedByMap?.[item.name]) {
             const a = this.assignedByMap[item.name];
             details.push(`
                 <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
@@ -2156,17 +1596,17 @@ renderWhatsAppCard(item) {
                 </div>
             `);
         }
-        message = details.join(" • ") || "No details";
-        statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
-        statusText = item.status || "Lead";
+      message = details.join(" • ") || "No details";
+      statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
+      statusText = item.status || "Lead";
     } else {
-        // Appointment Section
-        name = item.customer_name || "Unnamed";
-        avatar = name.charAt(0).toUpperCase();
-        const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
-        message = `📅 ${scheduledTime} ${item.mobile_no ? `• 📱 ${item.mobile_no}` : ""}`;
-        statusClass = (item.status || "open").toLowerCase();
-        statusText = item.status || "Open";
+      // Appointment Section
+      name = item.customer_name || "Unnamed";
+      avatar = name.charAt(0).toUpperCase();
+      const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
+      message = `📅 ${scheduledTime} ${item.mobile_no ? `• 📱 ${item.mobile_no}` : ""}`;
+      statusClass = (item.status || "open").toLowerCase();
+      statusText = item.status || "Open";
     }
 
     const card = $(`
@@ -2185,23 +1625,23 @@ renderWhatsAppCard(item) {
         </div>
     `);
 
-    // ✅ CLICK HANDLER FIX: 
+    // ✅ CLICK HANDLER FIX:
     // Lead ke liye sirf custom dialog kholega, Appointment ke liye direct form.
     card.on("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation(); // Click event ko standard route par jane se rokta hai
+      e.preventDefault();
+      e.stopPropagation(); // Click event ko standard route par jane se rokta hai
 
-        if (this.state.section === "lead") {
-            // Sirf custom dialog call hoga
-            this.editLead(item.name);
-        } else {
-            // Appointment ke liye standard route thik hai
-            frappe.set_route("Form", "Appointment", item.name);
-        }
+      if (this.state.section === "lead") {
+        // Sirf custom dialog call hoga
+        this.editLead(item.name);
+      } else {
+        // Appointment ke liye standard route thik hai
+        frappe.set_route("Form", "Appointment", item.name);
+      }
     });
 
     return card;
-}
+  }
   formatIndianCurrency(amount) {
     if (!amount || amount === 0) return "0";
 
@@ -2235,22 +1675,29 @@ renderWhatsAppCard(item) {
 
     this.isLoading = true;
     $("#mycrm-load-more-btn").html(
-      '<i class="fa fa-spinner fa-spin"></i> Loading...'
+      '<i class="fa fa-spinner fa-spin"></i> Loading...',
     );
 
     await this.fetchData(true);
 
     this.isLoading = false;
     $("#mycrm-load-more-btn").html(
-      '<i class="fa fa-arrow-down"></i> Load More'
+      '<i class="fa fa-arrow-down"></i> Load More',
     );
   }
 
   async refresh() {
     this.invalidateCache(this.state.section);
-    this.state.offset = 0;
-    await this.loadUserLeads();
-    await this.fetchData();
+    // Reset cursors for the current section to fetch from start
+    if (this.state.section === "lead") {
+        this.state.leadCursor = null;
+    } else if (this.state.section === "appointment") {
+        this.state.appointmentCursor = null;
+    }
+    // No need to reset this.state.offset as it's no longer used for pagination logic
+
+    // await this.loadUserLeads(); // Removed
+    await this.fetchData(); // This will fetch data from the beginning due to null cursor
     $("#mycrm-list-container").scrollTop(0);
     frappe.show_alert({ message: "Refreshed", indicator: "green" }, 2);
   }
@@ -2279,9 +1726,11 @@ renderWhatsAppCard(item) {
     } else {
       $("#mycrm-fab").hide();
     }
-if (section === "lead") {
+
+    if (section === "lead") {
   await this.fetchAssignedLeads(); // ✅ preload assigned data
 }
+
 
     if (section === "reports") {
       $("#mycrm-search-bar").hide();
@@ -2325,33 +1774,7 @@ if (section === "lead") {
     this.switchSection("lead");
   }
 
-  updateTabBadges() {
-    // Leads
-    frappe.call({
-      method: "frappe.client.get_count",
-      args: {
-        doctype: "Lead",
-        filters: [["lead_owner", "=", this.currentUser]],
-      },
-      callback: (r) => {
-        $("#mycrm-lead-count").text(r.message || 0);
-      },
-    });
 
-    // Appointments
-    if (this.state.userLeadNames.length > 0) {
-      frappe.call({
-        method: "frappe.client.get_count",
-        args: {
-          doctype: "Appointment",
-          filters: [["party", "in", this.state.userLeadNames]],
-        },
-        callback: (r) => {
-          $("#mycrm-appointment-count").text(r.message || 0);
-        },
-      });
-    }
-  }
 
   // createLead() {
   //   let productsData = [];
@@ -2747,9 +2170,9 @@ if (section === "lead") {
   //             <div class="product-link-wrapper-${index}"></div>
   //           </td>
   //           <td>
-  //             <input type="number" 
-  //               class="lead-product-input product-amount" 
-  //               data-index="${index}" 
+  //             <input type="number"
+  //               class="lead-product-input product-amount"
+  //               data-index="${index}"
   //               value="${row.product_amount || ""}"
   //               placeholder="0"
   //               step="0.01"
@@ -2831,403 +2254,447 @@ if (section === "lead") {
   //     width: "90%",
   //   });
   // }
-// create  lead function with create appointment, Status, and validation fix but phone number validations not included
-// createLead() {
-//     let productsData = [];
-//     let existingContact = null;
+  // create  lead function with create appointment, Status, and validation fix but phone number validations not included
+  // createLead() {
+  //     let productsData = [];
+  //     let existingContact = null;
 
-//     const dialog = new frappe.ui.Dialog({
-//         title: "Create New Lead",
-//         fields: [
-//             {
-//                 fieldname: "customer_info_html",
-//                 fieldtype: "HTML",
-//                 options: `<div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>`,
-//             },
-//             {
-//                 fieldname: "mobile_no",
-//                 fieldtype: "Data",
-//                 label: "Phone Number",
-//                 reqd: 1,
-//                 onchange: async function () {
-//                     const phone = this.value;
-//                     if (!phone || phone.length !== 10) {
-//                         $("#customer-info-banner").hide();
-//                         return;
-//                     }
-//                     try {
-//                         const contactRes = await frappe.call({
-//                             method: "frappe.client.get_list",
-//                             args: {
-//                                 doctype: "Contact",
-//                                 filters: { mobile_no: phone },
-//                                 fields: ["name", "full_name", "mobile_no"],
-//                                 limit: 1,
-//                             },
-//                         });
-//                         if (contactRes.message && contactRes.message.length > 0) {
-//                             existingContact = contactRes.message[0];
-//                             $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
-//                             $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
-//                             dialog.set_value("first_name", existingContact.full_name);
-//                             dialog.set_df_property("first_name", "read_only", 1);
-//                         } else {
-//                             existingContact = null;
-//                             $("#customer-info-banner").hide();
-//                             dialog.set_df_property("first_name", "read_only", 0);
-//                         }
-//                     } catch (error) { console.error(error); }
-//                 },
-//             },
-//             { fieldname: "first_name", fieldtype: "Data", label: "Full Name", reqd: 1 },
-//             { fieldname: "column_break_1", fieldtype: "Column Break" },
-//             { fieldname: "source", fieldtype: "Link", label: "Source", options: "Lead Source", reqd: 1 },
-//             {
-//                 fieldname: "status",
-//                 fieldtype: "Select",
-//                 label: "Status",
-//                 options: "Lead\nFollow Up\nConverted\nNot Interested",
-//                 default: "Lead",
-//                 reqd: 1,
-//                 onchange: function() {
-//                     const status = this.get_value();
-//                     // ✅ FORCE SHOW/HIDE LOGIC
-//                     const $appt_field = dialog.get_field("scheduled_time").$wrapper;
-//                     if (status === "Follow Up") {
-//                         $appt_field.show();
-//                         dialog.set_df_property("scheduled_time", "reqd", 1);
-//                     } else {
-//                         $appt_field.hide();
-//                         dialog.set_df_property("scheduled_time", "reqd", 0);
-//                     }
-//                 },
-//             },
-//             { fieldname: "section_break_appt", fieldtype: "Section Break" },
-//             {
-//                 fieldname: "scheduled_time",
-//                 fieldtype: "Datetime",
-//                 label: "Appointment Date & Time",
-//                 reqd: 0,
-//             },
-//             { fieldname: "section_break_products", fieldtype: "Section Break", label: "Products" },
-//             { fieldname: "product_html", fieldtype: "HTML" },
-//         ],
-//         primary_action_label: "Create Lead",
-//         primary_action: async (values) => {
-//             if (productsData.length === 0) {
-//                 frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
-//                 return;
-//             }
-//             try {
-//                 // ✅ SOLUTION: Status validation bypass karne ke liye
-//                 // Agar user ne "Follow Up" select kiya hai, toh hum Lead Doc mein "Lead" bhejenge
-//                 let actualUserSelection = values.status;
-//                 let statusForLeadDoc = (actualUserSelection === "Follow Up") ? "Lead" : actualUserSelection;
+  //     const dialog = new frappe.ui.Dialog({
+  //         title: "Create New Lead",
+  //         fields: [
+  //             {
+  //                 fieldname: "customer_info_html",
+  //                 fieldtype: "HTML",
+  //                 options: `<div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>`,
+  //             },
+  //             {
+  //                 fieldname: "mobile_no",
+  //                 fieldtype: "Data",
+  //                 label: "Phone Number",
+  //                 reqd: 1,
+  //                 onchange: async function () {
+  //                     const phone = this.value;
+  //                     if (!phone || phone.length !== 10) {
+  //                         $("#customer-info-banner").hide();
+  //                         return;
+  //                     }
+  //                     try {
+  //                         const contactRes = await frappe.call({
+  //                             method: "frappe.client.get_list",
+  //                             args: {
+  //                                 doctype: "Contact",
+  //                                 filters: { mobile_no: phone },
+  //                                 fields: ["name", "full_name", "mobile_no"],
+  //                                 limit: 1,
+  //                             },
+  //                         });
+  //                         if (contactRes.message && contactRes.message.length > 0) {
+  //                             existingContact = contactRes.message[0];
+  //                             $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
+  //                             $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
+  //                             dialog.set_value("first_name", existingContact.full_name);
+  //                             dialog.set_df_property("first_name", "read_only", 1);
+  //                         } else {
+  //                             existingContact = null;
+  //                             $("#customer-info-banner").hide();
+  //                             dialog.set_df_property("first_name", "read_only", 0);
+  //                         }
+  //                     } catch (error) { console.error(error); }
+  //                 },
+  //             },
+  //             { fieldname: "first_name", fieldtype: "Data", label: "Full Name", reqd: 1 },
+  //             { fieldname: "column_break_1", fieldtype: "Column Break" },
+  //             { fieldname: "source", fieldtype: "Link", label: "Source", options: "Lead Source", reqd: 1 },
+  //             {
+  //                 fieldname: "status",
+  //                 fieldtype: "Select",
+  //                 label: "Status",
+  //                 options: "Lead\nFollow Up\nConverted\nNot Interested",
+  //                 default: "Lead",
+  //                 reqd: 1,
+  //                 onchange: function() {
+  //                     const status = this.get_value();
+  //                     // ✅ FORCE SHOW/HIDE LOGIC
+  //                     const $appt_field = dialog.get_field("scheduled_time").$wrapper;
+  //                     if (status === "Follow Up") {
+  //                         $appt_field.show();
+  //                         dialog.set_df_property("scheduled_time", "reqd", 1);
+  //                     } else {
+  //                         $appt_field.hide();
+  //                         dialog.set_df_property("scheduled_time", "reqd", 0);
+  //                     }
+  //                 },
+  //             },
+  //             { fieldname: "section_break_appt", fieldtype: "Section Break" },
+  //             {
+  //                 fieldname: "scheduled_time",
+  //                 fieldtype: "Datetime",
+  //                 label: "Appointment Date & Time",
+  //                 reqd: 0,
+  //             },
+  //             { fieldname: "section_break_products", fieldtype: "Section Break", label: "Products" },
+  //             { fieldname: "product_html", fieldtype: "HTML" },
+  //         ],
+  //         primary_action_label: "Create Lead",
+  //         primary_action: async (values) => {
+  //             if (productsData.length === 0) {
+  //                 frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
+  //                 return;
+  //             }
+  //             try {
+  //                 // ✅ SOLUTION: Status validation bypass karne ke liye
+  //                 // Agar user ne "Follow Up" select kiya hai, toh hum Lead Doc mein "Lead" bhejenge
+  //                 let actualUserSelection = values.status;
+  //                 let statusForLeadDoc = (actualUserSelection === "Follow Up") ? "Lead" : actualUserSelection;
 
-//                 const leadDoc = {
-//                     doctype: "Lead",
-//                     lead_owner: this.currentUser,
-//                     status: statusForLeadDoc, // Yahan "Lead" jayega agar selection "Follow Up" hai
-//                     source: values.source,
-//                     first_name: values.first_name,
-//                     mobile_no: values.mobile_no,
-//                     custom_product_table: productsData,
-//                 };
+  //                 const leadDoc = {
+  //                     doctype: "Lead",
+  //                     lead_owner: this.currentUser,
+  //                     status: statusForLeadDoc, // Yahan "Lead" jayega agar selection "Follow Up" hai
+  //                     source: values.source,
+  //                     first_name: values.first_name,
+  //                     mobile_no: values.mobile_no,
+  //                     custom_product_table: productsData,
+  //                 };
 
-//                 const response = await frappe.call({
-//                     method: "frappe.client.insert",
-//                     args: { doc: leadDoc },
-//                     freeze: true,
-//                 });
+  //                 const response = await frappe.call({
+  //                     method: "frappe.client.insert",
+  //                     args: { doc: leadDoc },
+  //                     freeze: true,
+  //                 });
 
-//                 const leadName = response.message.name;
+  //                 const leadName = response.message.name;
 
-//                 // ✅ Appointment creation logic Selection ke base par chalega
-//                 if (actualUserSelection === "Follow Up" && values.scheduled_time) {
-//                     await frappe.call({
-//                         method: "frappe.client.insert",
-//                         args: {
-//                             doc: {
-//                                 doctype: "Appointment",
-//                                 appointment_with: "Lead", // Linking required
-//                                 party: leadName,
-//                                 scheduled_time: values.scheduled_time,
-//                                 customer_name: values.first_name,
-//                                 contact_number: values.mobile_no,
-//                                 customer_email: `${leadName}@lead.local`, // Guaranteed email
-//                                 status: "Open",
-//                             },
-//                         },
-//                     });
-//                 }
+  //                 // ✅ Appointment creation logic Selection ke base par chalega
+  //                 if (actualUserSelection === "Follow Up" && values.scheduled_time) {
+  //                     await frappe.call({
+  //                         method: "frappe.client.insert",
+  //                         args: {
+  //                             doc: {
+  //                                 doctype: "Appointment",
+  //                                 appointment_with: "Lead", // Linking required
+  //                                 party: leadName,
+  //                                 scheduled_time: values.scheduled_time,
+  //                                 customer_name: values.first_name,
+  //                                 contact_number: values.mobile_no,
+  //                                 customer_email: `${leadName}@lead.local`, // Guaranteed email
+  //                                 status: "Open",
+  //                             },
+  //                         },
+  //                     });
+  //                 }
 
-//                 frappe.show_alert({ message: "Lead & Appointment Created Successfully!", indicator: "green" });
-//                 dialog.hide();
-//                 this.invalidateCache("lead");
-//                 this.invalidateCache("appointment");
-//                 this.refresh();
-//             } catch (error) { 
-//                 console.error(error);
-//                 frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
-//             }
-//         },
-//     });
+  //                 frappe.show_alert({ message: "Lead & Appointment Created Successfully!", indicator: "green" });
+  //                 dialog.hide();
+  //                 this.invalidateCache("lead");
+  //                 this.invalidateCache("appointment");
+  //                 this.refresh();
+  //             } catch (error) {
+  //                 console.error(error);
+  //                 frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
+  //             }
+  //         },
+  //     });
 
-//     // --- ORIGINAL PRODUCT TABLE LOGIC (RESTORED) ---
-//     const renderProductTable = () => {
-//         const html = `
-//         <style>
-//             .lead-product-table table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; }
-//             .lead-product-table th { background: #f9fafb; padding: 10px; border: 1px solid #d1d5db; font-size: 13px; text-align: left; }
-//             .lead-product-table td { padding: 8px; border: 1px solid #d1d5db; }
-//             .lead-product-input { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; }
-//             .lead-product-add-btn { margin-top: 10px; background: #236867; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-//             .lead-product-del-btn { background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
-//         </style>
-//         <div class="lead-product-table">
-//             <table>
-//                 <thead><tr><th>Product</th><th style="width:30%">Amount (₹)</th><th style="text-align:center; width:15%">Action</th></tr></thead>
-//                 <tbody id="lead-product-rows"></tbody>
-//             </table>
-//             <button class="lead-product-add-btn" id="lead-add-product-btn">+ Add Product</button>
-//         </div>`;
+  //     // --- ORIGINAL PRODUCT TABLE LOGIC (RESTORED) ---
+  //     const renderProductTable = () => {
+  //         const html = `
+  //         <style>
+  //             .lead-product-table table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; }
+  //             .lead-product-table th { background: #f9fafb; padding: 10px; border: 1px solid #d1d5db; font-size: 13px; text-align: left; }
+  //             .lead-product-table td { padding: 8px; border: 1px solid #d1d5db; }
+  //             .lead-product-input { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; }
+  //             .lead-product-add-btn { margin-top: 10px; background: #236867; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+  //             .lead-product-del-btn { background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+  //         </style>
+  //         <div class="lead-product-table">
+  //             <table>
+  //                 <thead><tr><th>Product</th><th style="width:30%">Amount (₹)</th><th style="text-align:center; width:15%">Action</th></tr></thead>
+  //                 <tbody id="lead-product-rows"></tbody>
+  //             </table>
+  //             <button class="lead-product-add-btn" id="lead-add-product-btn">+ Add Product</button>
+  //         </div>`;
 
-//         dialog.fields_dict.product_html.$wrapper.html(html);
+  //         dialog.fields_dict.product_html.$wrapper.html(html);
 
-//         const renderRows = () => {
-//             const tbody = dialog.$wrapper.find("#lead-product-rows").empty();
-//             if (productsData.length === 0) {
-//                 tbody.html('<tr><td colspan="3" style="text-align:center; padding:20px; color:#9ca3af;">No products added</td></tr>');
-//                 return;
-//             }
-//             productsData.forEach((row, index) => {
-//                 const tr = $(`<tr>
-//                     <td><div class="product-link-wrapper-${index}"></div></td>
-//                     <td><input type="number" class="lead-product-input product-amount" data-index="${index}" value="${row.product_amount || ""}"></td>
-//                     <td style="text-align:center"><button class="lead-product-del-btn" data-index="${index}">🗑</button></td>
-//                 </tr>`).appendTo(tbody);
+  //         const renderRows = () => {
+  //             const tbody = dialog.$wrapper.find("#lead-product-rows").empty();
+  //             if (productsData.length === 0) {
+  //                 tbody.html('<tr><td colspan="3" style="text-align:center; padding:20px; color:#9ca3af;">No products added</td></tr>');
+  //                 return;
+  //             }
+  //             productsData.forEach((row, index) => {
+  //                 const tr = $(`<tr>
+  //                     <td><div class="product-link-wrapper-${index}"></div></td>
+  //                     <td><input type="number" class="lead-product-input product-amount" data-index="${index}" value="${row.product_amount || ""}"></td>
+  //                     <td style="text-align:center"><button class="lead-product-del-btn" data-index="${index}">🗑</button></td>
+  //                 </tr>`).appendTo(tbody);
 
-//                 const productField = frappe.ui.form.make_control({
-//                     df: {
-//                         fieldtype: "Link", options: "Product", fieldname: `product_${index}`,
-//                         onchange: function () {
-//                             const val = this.get_value();
-//                             productsData[index].product = val;
-//                             if (val) {
-//                                 frappe.db.get_value("Product", val, "product_name", (r) => {
-//                                     if (r.product_name) productsData[index].product_name = r.product_name;
-//                                 });
-//                             }
-//                         },
-//                     },
-//                     parent: tr.find(`.product-link-wrapper-${index}`),
-//                     render_input: true,
-//                 });
-//                 if (row.product) productField.set_value(row.product);
+  //                 const productField = frappe.ui.form.make_control({
+  //                     df: {
+  //                         fieldtype: "Link", options: "Product", fieldname: `product_${index}`,
+  //                         onchange: function () {
+  //                             const val = this.get_value();
+  //                             productsData[index].product = val;
+  //                             if (val) {
+  //                                 frappe.db.get_value("Product", val, "product_name", (r) => {
+  //                                     if (r.product_name) productsData[index].product_name = r.product_name;
+  //                                 });
+  //                             }
+  //                         },
+  //                     },
+  //                     parent: tr.find(`.product-link-wrapper-${index}`),
+  //                     render_input: true,
+  //                 });
+  //                 if (row.product) productField.set_value(row.product);
 
-//                 tr.find(".product-amount").on("change", function () {
-//                     productsData[index].product_amount = parseFloat($(this).val()) || 0;
-//                 });
-//                 tr.find(".lead-product-del-btn").on("click", function () {
-//                     productsData.splice(index, 1);
-//                     renderRows();
-//                 });
-//             });
-//         };
-//         dialog.$wrapper.find("#lead-add-product-btn").on("click", () => {
-//             productsData.push({ product: "", product_name: "", product_amount: 0 });
-//             renderRows();
-//         });
-//         renderRows();
-//     };
+  //                 tr.find(".product-amount").on("change", function () {
+  //                     productsData[index].product_amount = parseFloat($(this).val()) || 0;
+  //                 });
+  //                 tr.find(".lead-product-del-btn").on("click", function () {
+  //                     productsData.splice(index, 1);
+  //                     renderRows();
+  //                 });
+  //             });
+  //         };
+  //         dialog.$wrapper.find("#lead-add-product-btn").on("click", () => {
+  //             productsData.push({ product: "", product_name: "", product_amount: 0 });
+  //             renderRows();
+  //         });
+  //         renderRows();
+  //     };
 
-//     dialog.show();
-//     // ✅ Initial State: Hide Appointment Field on Dialog Open
-//     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
-//     appt.find('input').attr('placeholder', 'DD/MM/YYYY, HH:MM:SS');
-//     renderProductTable();
-//     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
-// }
+  //     dialog.show();
+  //     // ✅ Initial State: Hide Appointment Field on Dialog Open
+  //     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
+  //     appt.find('input').attr('placeholder', 'DD/MM/YYYY, HH:MM:SS');
+  //     renderProductTable();
+  //     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
+  // }
 
-createLead() {
+  createLead() {
     let productsData = [];
     let existingContact = null;
 
     // Helper function to validate Indian Phone Number
     const validateIndianPhone = (phone) => {
-        const phoneRegex = /^[6-9]\d{9}$/;
-        return phoneRegex.test(phone);
+      const phoneRegex = /^[6-9]\d{9}$/;
+      return phoneRegex.test(phone);
     };
 
     const dialog = new frappe.ui.Dialog({
-        title: "Create New Lead",
-        fields: [
-            {
-                fieldname: "customer_info_html",
-                fieldtype: "HTML",
-                options: `<div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>`,
-            },
-            {
-                fieldname: "mobile_no",
-                fieldtype: "Data",
-                label: "Phone Number",
-                reqd: 1,
-                onchange: async function () {
-                    const phone = this.value;
-                    
-                    if (!phone) {
-                        $("#customer-info-banner").hide();
-                        return;
-                    }
+      title: "Create New Lead",
+      fields: [
+        {
+          fieldname: "customer_info_html",
+          fieldtype: "HTML",
+          options: `<div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>`,
+        },
+        {
+          fieldname: "mobile_no",
+          fieldtype: "Data",
+          label: "Phone Number",
+          reqd: 1,
+          onchange: async function () {
+            const phone = this.value;
 
-                    // Real-time validation check
-                    if (phone.length === 10) {
-                        if (!validateIndianPhone(phone)) {
-                            frappe.show_alert({
-                                message: __("Invalid mobile number (should start with 6-9)"),
-                                indicator: "orange"
-                            }, 3);
-                            $("#customer-info-banner").hide();
-                            return;
-                        }
-                    } else if (phone.length > 10) {
-                        frappe.show_alert({
-                            message: __("Mobile number cannot exceed 10 digits"),
-                            indicator: "red"
-                        }, 3);
-                        return;
-                    } else {
-                        $("#customer-info-banner").hide();
-                        return;
-                    }
-
-                    try {
-                        const contactRes = await frappe.call({
-                            method: "frappe.client.get_list",
-                            args: {
-                                doctype: "Contact",
-                                filters: { mobile_no: phone },
-                                fields: ["name", "full_name", "mobile_no"],
-                                limit: 1,
-                            },
-                        });
-                        if (contactRes.message && contactRes.message.length > 0) {
-                            existingContact = contactRes.message[0];
-                            $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
-                            $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
-                            dialog.set_value("first_name", existingContact.full_name);
-                            dialog.set_df_property("first_name", "read_only", 1);
-                        } else {
-                            existingContact = null;
-                            $("#customer-info-banner").hide();
-                            dialog.set_df_property("first_name", "read_only", 0);
-                        }
-                    } catch (error) { console.error(error); }
-                },
-            },
-            { fieldname: "first_name", fieldtype: "Data", label: "Full Name", reqd: 1 },
-            { fieldname: "column_break_1", fieldtype: "Column Break" },
-            { fieldname: "source", fieldtype: "Link", label: "Source", options: "Lead Source", reqd: 1 },
-            {
-                fieldname: "status",
-                fieldtype: "Select",
-                label: "Status",
-                options: "Lead\nFollow Up\nConverted\nNot Interested",
-                default: "Lead",
-                reqd: 1,
-                onchange: function() {
-                    const status = this.get_value();
-                    const $appt_field = dialog.get_field("scheduled_time").$wrapper;
-                    if (status === "Follow Up") {
-                        $appt_field.show();
-                        dialog.set_df_property("scheduled_time", "reqd", 1);
-                    } else {
-                        $appt_field.hide();
-                        dialog.set_df_property("scheduled_time", "reqd", 0);
-                    }
-                },
-            },
-            { fieldname: "section_break_appt", fieldtype: "Section Break" },
-            {
-                fieldname: "scheduled_time",
-                fieldtype: "Datetime",
-                label: "Appointment Date & Time",
-                reqd: 0,
-            },
-            { fieldname: "section_break_products", fieldtype: "Section Break", label: "Products" },
-            { fieldname: "product_html", fieldtype: "HTML" },
-        ],
-        primary_action_label: "Create Lead",
-        primary_action: async (values) => {
-            // ✅ VALIDATION BEFORE SAVING
-            if (!validateIndianPhone(values.mobile_no)) {
-                frappe.msgprint({
-                    title: __("Invalid Phone Number"),
-                    indicator: "red",
-                    message: __("Please enter a valid 10-digit mobile number.")
-                });
-                return;
+            if (!phone) {
+              $("#customer-info-banner").hide();
+              return;
             }
 
-            if (productsData.length === 0) {
-                frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
+            // Real-time validation check
+            if (phone.length === 10) {
+              if (!validateIndianPhone(phone)) {
+                frappe.show_alert(
+                  {
+                    message: __(
+                      "Invalid mobile number (should start with 6-9)",
+                    ),
+                    indicator: "orange",
+                  },
+                  3,
+                );
+                $("#customer-info-banner").hide();
                 return;
+              }
+            } else if (phone.length > 10) {
+              frappe.show_alert(
+                {
+                  message: __("Mobile number cannot exceed 10 digits"),
+                  indicator: "red",
+                },
+                3,
+              );
+              return;
+            } else {
+              $("#customer-info-banner").hide();
+              return;
             }
 
             try {
-                let actualUserSelection = values.status;
-                let statusForLeadDoc = (actualUserSelection === "Follow Up") ? "Lead" : actualUserSelection;
-
-                const leadDoc = {
-                    doctype: "Lead",
-                    lead_owner: this.currentUser,
-                    status: statusForLeadDoc,
-                    source: values.source,
-                    first_name: values.first_name,
-                    mobile_no: values.mobile_no,
-                    custom_product_table: productsData,
-                };
-
-                const response = await frappe.call({
-                    method: "frappe.client.insert",
-                    args: { doc: leadDoc },
-                    freeze: true,
-                });
-
-                const leadName = response.message.name;
-
-                if (actualUserSelection === "Follow Up" && values.scheduled_time) {
-                    await frappe.call({
-                        method: "frappe.client.insert",
-                        args: {
-                            doc: {
-                                doctype: "Appointment",
-                                appointment_with: "Lead",
-                                party: leadName,
-                                scheduled_time: values.scheduled_time,
-                                customer_name: values.first_name,
-                                contact_number: values.mobile_no,
-                                customer_email: `${leadName}@lead.local`,
-                                status: "Open",
-                            },
-                        },
-                    });
-                }
-
-                frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
-                dialog.hide();
-                this.invalidateCache("lead");
-                this.invalidateCache("appointment");
-                this.refresh();
-            } catch (error) { 
-                console.error(error);
-                frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
+              const contactRes = await frappe.call({
+                method: "frappe.client.get_list",
+                args: {
+                  doctype: "Contact",
+                  filters: { mobile_no: phone },
+                  fields: ["name", "full_name", "mobile_no"],
+                  limit: 1,
+                },
+              });
+              if (contactRes.message && contactRes.message.length > 0) {
+                existingContact = contactRes.message[0];
+                $("#customer-info-text").html(
+                  `<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`,
+                );
+                $("#customer-info-banner")
+                  .css({
+                    background: "#ecfdf5",
+                    "border-left-color": "#10b981",
+                  })
+                  .show();
+                dialog.set_value("first_name", existingContact.full_name);
+                dialog.set_df_property("first_name", "read_only", 1);
+              } else {
+                existingContact = null;
+                $("#customer-info-banner").hide();
+                dialog.set_df_property("first_name", "read_only", 0);
+              }
+            } catch (error) {
+              console.error(error);
             }
+          },
         },
+        {
+          fieldname: "first_name",
+          fieldtype: "Data",
+          label: "Full Name",
+          reqd: 1,
+        },
+        { fieldname: "column_break_1", fieldtype: "Column Break" },
+        {
+          fieldname: "source",
+          fieldtype: "Link",
+          label: "Source",
+          options: "Lead Source",
+          reqd: 1,
+        },
+        {
+          fieldname: "status",
+          fieldtype: "Select",
+          label: "Status",
+          options: "Lead\nFollow Up\nConverted\nNot Interested",
+          default: "Lead",
+          reqd: 1,
+          onchange: function () {
+            const status = this.get_value();
+            const $appt_field = dialog.get_field("scheduled_time").$wrapper;
+            if (status === "Follow Up") {
+              $appt_field.show();
+              dialog.set_df_property("scheduled_time", "reqd", 1);
+            } else {
+              $appt_field.hide();
+              dialog.set_df_property("scheduled_time", "reqd", 0);
+            }
+          },
+        },
+        { fieldname: "section_break_appt", fieldtype: "Section Break" },
+        {
+          fieldname: "scheduled_time",
+          fieldtype: "Datetime",
+          label: "Appointment Date & Time",
+          reqd: 0,
+        },
+        {
+          fieldname: "section_break_products",
+          fieldtype: "Section Break",
+          label: "Products",
+        },
+        { fieldname: "product_html", fieldtype: "HTML" },
+      ],
+      primary_action_label: "Create Lead",
+      primary_action: async (values) => {
+        // ✅ VALIDATION BEFORE SAVING
+        if (!validateIndianPhone(values.mobile_no)) {
+          frappe.msgprint({
+            title: __("Invalid Phone Number"),
+            indicator: "red",
+            message: __("Please enter a valid 10-digit mobile number."),
+          });
+          return;
+        }
+
+        if (productsData.length === 0) {
+          frappe.msgprint({
+            title: "Missing Products",
+            indicator: "red",
+            message: "Please add products",
+          });
+          return;
+        }
+
+        try {
+          let actualUserSelection = values.status;
+          let statusForLeadDoc =
+            actualUserSelection === "Follow Up" ? "Lead" : actualUserSelection;
+
+          const leadDoc = {
+            doctype: "Lead",
+            lead_owner: this.currentUser,
+            status: statusForLeadDoc,
+            source: values.source,
+            first_name: values.first_name,
+            mobile_no: values.mobile_no,
+            custom_product_table: productsData,
+          };
+
+          const response = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc: leadDoc },
+            freeze: true,
+          });
+
+          const leadName = response.message.name;
+
+          if (actualUserSelection === "Follow Up" && values.scheduled_time) {
+            await frappe.call({
+              method: "frappe.client.insert",
+              args: {
+                doc: {
+                  doctype: "Appointment",
+                  appointment_with: "Lead",
+                  party: leadName,
+                  scheduled_time: values.scheduled_time,
+                  customer_name: values.first_name,
+                  contact_number: values.mobile_no,
+                  customer_email: `${leadName}@lead.local`,
+                  status: "Open",
+                },
+              },
+            });
+          }
+
+          frappe.show_alert({
+            message: "Lead Created Successfully!",
+            indicator: "green",
+          });
+          dialog.hide();
+          this.invalidateCache("lead");
+          this.invalidateCache("appointment");
+          this.refresh();
+        } catch (error) {
+          console.error(error);
+          frappe.msgprint({
+            title: "Error",
+            indicator: "red",
+            message: error.message,
+          });
+        }
+      },
     });
 
     const renderProductTable = () => {
-        const html = `
+      const html = `
         <style>
             .lead-product-table table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; }
             .lead-product-table th { background: #f9fafb; padding: 10px; border: 1px solid #d1d5db; font-size: 13px; text-align: left; }
@@ -3244,61 +2711,68 @@ createLead() {
             <button class="lead-product-add-btn" id="lead-add-product-btn">+ Add Product</button>
         </div>`;
 
-        dialog.fields_dict.product_html.$wrapper.html(html);
+      dialog.fields_dict.product_html.$wrapper.html(html);
 
-        const renderRows = () => {
-            const tbody = dialog.$wrapper.find("#lead-product-rows").empty();
-            if (productsData.length === 0) {
-                tbody.html('<tr><td colspan="3" style="text-align:center; padding:20px; color:#9ca3af;">No products added</td></tr>');
-                return;
-            }
-            productsData.forEach((row, index) => {
-                const tr = $(`<tr>
+      const renderRows = () => {
+        const tbody = dialog.$wrapper.find("#lead-product-rows").empty();
+        if (productsData.length === 0) {
+          tbody.html(
+            '<tr><td colspan="3" style="text-align:center; padding:20px; color:#9ca3af;">No products added</td></tr>',
+          );
+          return;
+        }
+        productsData.forEach((row, index) => {
+          const tr = $(`<tr>
                     <td><div class="product-link-wrapper-${index}"></div></td>
                     <td><input type="number" class="lead-product-input product-amount" data-index="${index}" value="${row.product_amount || ""}"></td>
                     <td style="text-align:center"><button class="lead-product-del-btn" data-index="${index}">🗑</button></td>
                 </tr>`).appendTo(tbody);
 
-                const productField = frappe.ui.form.make_control({
-                    df: {
-                        fieldtype: "Link", options: "Product", fieldname: `product_${index}`,
-                        onchange: function () {
-                            const val = this.get_value();
-                            productsData[index].product = val;
-                            if (val) {
-                                frappe.db.get_value("Product", val, "product_name", (r) => {
-                                    if (r.product_name) productsData[index].product_name = r.product_name;
-                                });
-                            }
-                        },
-                    },
-                    parent: tr.find(`.product-link-wrapper-${index}`),
-                    render_input: true,
-                });
-                if (row.product) productField.set_value(row.product);
+          const productField = frappe.ui.form.make_control({
+            df: {
+              fieldtype: "Link",
+              options: "Product",
+              fieldname: `product_${index}`,
+              onchange: function () {
+                const val = this.get_value();
+                productsData[index].product = val;
+                if (val) {
+                  frappe.db.get_value("Product", val, "product_name", (r) => {
+                    if (r.product_name)
+                      productsData[index].product_name = r.product_name;
+                  });
+                }
+              },
+            },
+            parent: tr.find(`.product-link-wrapper-${index}`),
+            render_input: true,
+          });
+          if (row.product) productField.set_value(row.product);
 
-                tr.find(".product-amount").on("change", function () {
-                    productsData[index].product_amount = parseFloat($(this).val()) || 0;
-                });
-                tr.find(".lead-product-del-btn").on("click", function () {
-                    productsData.splice(index, 1);
-                    renderRows();
-                });
-            });
-        };
-        dialog.$wrapper.find("#lead-add-product-btn").on("click", () => {
-            productsData.push({ product: "", product_name: "", product_amount: 0 });
+          tr.find(".product-amount").on("change", function () {
+            productsData[index].product_amount = parseFloat($(this).val()) || 0;
+          });
+          tr.find(".lead-product-del-btn").on("click", function () {
+            productsData.splice(index, 1);
             renderRows();
+          });
         });
+      };
+      dialog.$wrapper.find("#lead-add-product-btn").on("click", () => {
+        productsData.push({ product: "", product_name: "", product_amount: 0 });
         renderRows();
+      });
+      renderRows();
     };
 
     dialog.show();
     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
-    appt.find('input').attr('placeholder', 'DD/MM/YYYY, HH:MM:SS');
+    appt.find("input").attr("placeholder", "DD/MM/YYYY, HH:MM:SS");
     renderProductTable();
-    dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
-}
+    dialog.$wrapper
+      .find(".modal-dialog")
+      .css({ "max-width": "800px", width: "95%" });
+  }
 
   createAppointment() {
     const dialog = new frappe.ui.Dialog({
@@ -3328,7 +2802,7 @@ createLead() {
               dialog.set_value("customer_name", r.message.lead_name || "");
               dialog.set_value(
                 "customer_phone_number",
-                r.message.mobile_no || r.message.phone || ""
+                r.message.mobile_no || r.message.phone || "",
               );
               dialog.set_value("customer_email", r.message.email_id || "");
             }
@@ -3398,7 +2872,7 @@ createLead() {
 
           frappe.show_alert(
             { message: "✅ Appointment created", indicator: "green" },
-            3
+            3,
           );
 
           dialog.hide();
@@ -3431,7 +2905,7 @@ createLead() {
         if (r.message) {
           frappe.show_alert(
             { message: "📥 Export ready!", indicator: "green" },
-            2
+            2,
           );
           window.open(frappe.urllib.get_full_url(r.message));
         }
@@ -3451,7 +2925,7 @@ createLead() {
   setupPWA() {
     if (!$('meta[name="viewport"]').length) {
       $("head").append(
-        '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">',
       );
     }
 
