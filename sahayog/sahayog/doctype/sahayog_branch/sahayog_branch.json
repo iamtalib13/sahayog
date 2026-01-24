@@ -140,7 +140,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-24 15:21:16.240039",
+ "modified": "2026-01-24 15:36:43.133512",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
@@ -172,6 +172,7 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "branch",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
