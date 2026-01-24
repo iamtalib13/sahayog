@@ -1,7 +1,6 @@
 {
  "actions": [],
  "allow_import": 1,
- "allow_rename": 1,
  "autoname": "field:sol_id",
  "creation": "2025-10-03 13:22:42.516947",
  "doctype": "DocType",
@@ -141,7 +140,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-10 12:13:37.081424",
+ "modified": "2026-01-24 15:36:43.133512",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
@@ -173,6 +172,7 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "branch",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

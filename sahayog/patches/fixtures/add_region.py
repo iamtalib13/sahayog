@@ -1,20 +1,36 @@
 import frappe
 
+
 def execute():
-    # List of regions to create
-    regions_to_create = ['Head Office', 'Region-1', 'Region-2', 'Region-3', 'Region-4', 'Region-5', 'Region-6']
+    """
+    Create default Regions (ALL CAPS).
+    Safe to run multiple times.
+    """
+
+    regions_to_create = [
+        "HEAD OFFICE",
+        "REGION-1",
+        "REGION-2",
+        "REGION-3",
+        "REGION-4",
+        "REGION-5",
+        "REGION-6",
+    ]
 
     for region_name in regions_to_create:
         try:
-            # Check if the region already exists
-            if not frappe.db.exists('Region', region_name):
-                # Create a new Region document
-                doc = frappe.new_doc('Region')
-                doc.region = region_name  # Assuming 'region' is the field
-                doc.insert()
-                frappe.db.commit()  # Commit the transaction if insert is successful
-                print(f"Region '{region_name}' created successfully.")
-        except Exception as e:
-            # Catch any errors and log them
-            frappe.log_error(message=str(e), title=f"Error creating region: {region_name}")
-            print(f"Error creating region '{region_name}': {str(e)}")
+            # Check by document name
+            if frappe.db.exists("Region", region_name):
+                continue
+
+            region_doc = frappe.new_doc("Region")
+            region_doc.region = region_name  # adjust if fieldname differs
+            region_doc.insert(ignore_permissions=True)
+
+        except Exception:
+            frappe.log_error(
+                message=frappe.get_traceback(),
+                title=f"Region Patch Failed: {region_name}",
+            )
+
+    frappe.db.commit()
