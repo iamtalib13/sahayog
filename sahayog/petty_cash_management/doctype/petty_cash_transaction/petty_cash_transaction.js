@@ -309,18 +309,55 @@ frappe.ui.form.on('Petty Cash Transaction', {
         frm.trigger('fetch_balance');
     },
 
-    fetch_balance: function(frm) {
+    // fetch_balance: function(frm) {
+    //     if (!frm.doc.branch) return;
+
+    //     frappe.call({
+    //         method: "sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.get_branch_balance",
+    //         args: { branch: frm.doc.branch },
+    //         callback: function(r) {
+    //             frm.set_value('current_branch_balance', r.message || 0);
+    //             frm.refresh_field('current_branch_balance'); 
+    //         }
+    //     });
+    // }
+
+        fetch_balance: function(frm) {
         if (!frm.doc.branch) return;
 
         frappe.call({
             method: "sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.get_branch_balance",
             args: { branch: frm.doc.branch },
             callback: function(r) {
-                frm.set_value('current_branch_balance', r.message || 0);
-                frm.refresh_field('current_branch_balance'); 
+                // Check if response is an object (new format) or just a number (fallback)
+                let balance = 0;
+                let cash_in_hand = 0;
+
+                if (r.message && typeof r.message === 'object') {
+                    // New Dictionary Format
+                    balance = r.message.current_balance || 0;
+                    cash_in_hand = r.message.unsettled_cash || 0;
+                } else {
+                    // Old Number Format fallback
+                    balance = r.message || 0;
+                }
+                
+                // Set Bank Balance
+                frm.set_value('current_branch_balance', balance);
+                
+                // Set Cash in Hand (only if the field exists in your form)
+                if (frm.fields_dict['current_unsettled_cash']) {
+                    frm.set_value('current_unsettled_cash', cash_in_hand);
+                }
+
+                frm.refresh_field('current_branch_balance');
+                frm.refresh_field('current_unsettled_cash');
+                
+                console.log(`Updated Balances -> Bank: ₹${balance}, Cash: ₹${cash_in_hand}`);
             }
         });
     }
+
 });
 
 // Child Table Logic
