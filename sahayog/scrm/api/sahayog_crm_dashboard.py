@@ -200,3 +200,24 @@ def get_all_crm_view_settings():
         frappe.log_error(frappe.get_traceback(), "Error in get_all_crm_view_settings")
         return {"error": "Internal server error"}
     
+# get Product wise lead counts
+@frappe.whitelist()
+def get_product_lead_counts():
+    """Return a dictionary of product -> lead count using optimized SQL query."""
+    result = frappe.db.sql("""
+        SELECT
+            lp.product AS product,
+            COUNT(DISTINCT lp.parent) AS lead_count
+        FROM
+            `tabLead Product` AS lp
+        INNER JOIN
+            `tabLead` AS l
+        ON
+            l.name = lp.parent
+        GROUP BY
+            lp.product
+    """, as_dict=True)
+
+    # Convert SQL result list to dictionary
+    return {row["product"]: row["lead_count"] for row in result if row["product"]}
+

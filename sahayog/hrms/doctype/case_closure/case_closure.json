@@ -1,0 +1,303 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-15 13:04:24.780019",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_webc",
+  "domestic_enquiry",
+  "place_of_enquiry",
+  "remarks",
+  "linked_enquiry_type",
+  "column_break_hoah",
+  "status_of_response",
+  "date_of_enquiry",
+  "enquiry_officer_name",
+  "enquiry_status",
+  "enquiry_report_upload",
+  "linked_enquiry",
+  "section_break_ekou",
+  "review_details_html",
+  "section_break_wfuu",
+  "review_details",
+  "section_break_ulcv",
+  "case_id",
+  "employee_id",
+  "employee_name",
+  "branch_id",
+  "zone_name",
+  "issue_in_details",
+  "issue_occurrence_date",
+  "column_break_eecd",
+  "designation",
+  "branch_name",
+  "case_type",
+  "category",
+  "issue_reported_to_hr",
+  "status",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fetch_from": "case_id.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "label": "Employee ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Link",
+   "label": "Case ID",
+   "options": "Disciplinary Case",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_eecd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "case_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_id",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_name",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.zone",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.case_type",
+   "fieldname": "case_type",
+   "fieldtype": "Data",
+   "label": "Case Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.description",
+   "fieldname": "issue_in_details",
+   "fieldtype": "Small Text",
+   "label": "Issue In Details",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.category",
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.issue_report_to_hr",
+   "fieldname": "issue_reported_to_hr",
+   "fieldtype": "Date",
+   "label": "Date of issue Reported to hr",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.issue_occurrence_date",
+   "fieldname": "issue_occurrence_date",
+   "fieldtype": "Date",
+   "label": "Issue Occurrence Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_of_response",
+   "fieldtype": "Data",
+   "label": "Status of Response",
+   "options": "\n",
+   "read_only": 1
+  },
+  {
+   "fieldname": "domestic_enquiry",
+   "fieldtype": "Data",
+   "label": "Domestic Enquiry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date_of_enquiry",
+   "fieldtype": "Date",
+   "label": "Date of Enquiry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "enquiry_officer_name",
+   "fieldtype": "Data",
+   "label": "Enquiry Officer Name",
+   "read_only": 1
+  },
+  {
+   "default": "Completed Enquiry",
+   "fieldname": "enquiry_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Enquiry Status",
+   "options": "\nNot Responded\nCompleted Enquiry"
+  },
+  {
+   "fieldname": "place_of_enquiry",
+   "fieldtype": "Data",
+   "label": "Place of Enquiry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
+   "reqd": 1
+  },
+  {
+   "fieldname": "enquiry_report_upload",
+   "fieldtype": "Attach",
+   "label": "Enquiry Report Upload"
+  },
+  {
+   "fieldname": "section_break_webc",
+   "fieldtype": "Section Break",
+   "label": "Closure Details"
+  },
+  {
+   "fieldname": "column_break_hoah",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ulcv",
+   "fieldtype": "Section Break",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Case Status",
+   "options": "\nDraft\nUnder Reviewed\nVerified\nClosed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "linked_enquiry_type",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Linked Enquiry Type",
+   "options": "\nResponse to SCN\nDomestic Enquiry\nEnquiry Reminder"
+  },
+  {
+   "fieldname": "linked_enquiry",
+   "fieldtype": "Dynamic Link",
+   "hidden": 1,
+   "label": "Linked Enquiry",
+   "options": "linked_enquiry_type"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Case Closure",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_wfuu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.review_details && doc.review_details.length > 0\n",
+   "fieldname": "review_details",
+   "fieldtype": "Table",
+   "label": "Review Details",
+   "options": "Review Details"
+  },
+  {
+   "depends_on": "eval:doc.review_details && doc.review_details.length > 0",
+   "fieldname": "review_details_html",
+   "fieldtype": "HTML",
+   "label": "Review Details HTML"
+  },
+  {
+   "fieldname": "section_break_ekou",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-19 13:34:13.778974",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Case Closure",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Executive",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -4,11 +4,96 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+import re
 
 class Agent(Document):
+    def validate(self):
+        if self.status == "Allocated":
+           self.agent_status = "LIVE"
+
+         # --- Start of Feature Addition ---
+        # If both auth_id and employee are blank, force status to Unallocated
+        if not self.auth_id and not self.employee and self.status == "Allocated":
+            self.status = "Unallocated"
+        # --- End of Feature Addition ---
+        
+
+#         # Proceed only if employee exists
+#         if self.requested_by:
+#             expected_email = f"{self.employee}@sahayog.com"
+#             if str(self.requested_by).strip().lower() != expected_email.lower():
+#                 # frappe.throw(_(
+#                 #     f"Employee  '{self.employee}' and '{self.requested_by}' does not match, Please connect MIS Team or AppTech Team apptech@sahayogmultistate.com."
+#                 # ))
+#                 frappe.throw(_(
+#     f"""
+#     <div style='font-size:14px; line-height:1.6; color:#333;'>
+#         <p>
+#             <strong>Validation Error:</strong><br>
+#             Employee <b style='color:#d9534f;'>{self.employee}</b> 
+#             and Requested By <b style='color:#d9534f;'>{self.requested_by}</b> 
+#             do not match.
+#         </p>
+#         <p>
+#             Please contact the MIS Team or AppTech Team for verification.<br>
+#             <a href='mailto:apptech@sahayogmultistate.com' 
+#                style='color:#0275d8; text-decoration:none; font-weight:500;'>
+#                apptech@sahayogmultistate.com
+#             </a>
+#         </p>
+#     </div>
+#     """
+# ))
+
+
+
+
     def before_save(self):
+        # if getattr(self, "_requested_by_validated", False):
+        #     return
+        self._requested_by_validated = True
+
         if self.agent_name:
             self.agent_name = self.agent_name.upper()
+
+        if self.status == "Unallocated":
+            self.clear_allocation_fields()
+
+
+        # Skip if requested_by is blank
+        # if not self.requested_by:
+        #     return
+
+        # # Proceed only if employee exists
+        # if self.requested_by:
+        #     expected_email = f"{self.employee}@sahayog.com"
+        #     if str(self.requested_by).strip().lower() != expected_email.lower():
+        #         frappe.throw(_(
+        #             f"Invalid Requested By value. It must match '{expected_email}'."
+        #         ))
+
+        # Call helper method
+        # self.set_employee_from_auth_id()
+
+
+    def set_employee_from_auth_id(self):
+        """Extract employee number from auth_id if it starts with SAH"""
+        if not self.auth_id:
+            # No auth_id → do nothing
+            return
+
+        auth = self.auth_id.strip().upper()
+
+        if auth.startswith("SAH"):
+            match = re.search(r'\d+', auth)
+            if match:
+                number_part = match.group(0).lstrip('0')  # remove leading zeros
+                self.employee = number_part if number_part else ""
+            else:
+                self.employee = ""
+        else:
+            # Not SAH prefix → clear employee
+            self.employee = ""
 
     @frappe.whitelist()
     def approve_allocation(self):
@@ -37,15 +122,20 @@ class Agent(Document):
         self.save()
         return {"success": True, "message": "Agent Allocation Rejected"}
 
-    @frappe.whitelist()
-    def unallocate_agent(self):
-        """Unallocate agent and clear all mapping"""
-        self.status = "Unallocated"
+    def clear_allocation_fields(self):
+        """Clear allocation fields without saving"""
         self.requested_by = None
         self.requested_on = None
         self.approved_by = None
         self.approved_on = None
         self.employee = None
+        self.auth_id = None
+
+    @frappe.whitelist()
+    def unallocate_agent(self):
+        """Public method to unallocate and save changes"""
+        self.status = "Unallocated"
+        self.clear_allocation_fields()
         self.save()
         return {"success": True, "message": "Agent Unallocated Successfully"}
 
@@ -194,6 +284,7 @@ def get_branch_managers(branch_code):
         return []
 
 
+
 @frappe.whitelist()
 def get_approver_details(user_id):
     """Get employee details by user_id for approver display"""
@@ -201,11 +292,11 @@ def get_approver_details(user_id):
         return None
     
     try:
-        # First try to get employee details by user_id
+        # First try to get employee details by user_id, including email and phone
         employee = frappe.db.get_value(
             "Employee", 
             {"user_id": user_id, "status": "Active"}, 
-            ["employee_name", "name", "designation", "branch"], 
+            ["employee_name", "name", "designation", "branch", "company_email", "cell_number"], 
             as_dict=True
         )
         
@@ -215,6 +306,8 @@ def get_approver_details(user_id):
                 "employee_id": employee.name,
                 "designation": employee.designation,
                 "branch": employee.branch,
+                "company_email": employee.company_email,
+                "cell_number": employee.cell_number,
                 "display_name": employee.employee_name
             }
         
@@ -232,6 +325,8 @@ def get_approver_details(user_id):
                 "employee_id": None,
                 "designation": None,
                 "branch": None,
+                "company_email": None,
+                "cell_number": None,
                 "display_name": user.full_name or user.email
             }
         
@@ -244,6 +339,8 @@ def get_approver_details(user_id):
         return {
             "display_name": user_id
         }
+
+
 
 @frappe.whitelist()
 def get_employee_info(employee):
@@ -265,3 +362,16 @@ def get_employee_info(employee):
         return emp[0]
     else:
         return {}
+
+
+def has_permission(doc, ptype, user):
+    # Allow Administrator everything
+    if user == "Administrator":
+        return True
+
+    # Block create for everyone else
+    if ptype == "create":
+        return False
+
+    # Allow read / write / etc based on role permissions
+    return True

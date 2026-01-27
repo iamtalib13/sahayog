@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-10 12:55:52.629871",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user_details_section",
+  "user",
+  "column_break_ckcs",
+  "report_type",
+  "section_break_yzaw",
+  "zone",
+  "state",
+  "column_break_aagm",
+  "region",
+  "district",
+  "preference_details_section",
+  "sol_id",
+  "column_break_vlii",
+  "product",
+  "column_break_enpx",
+  "source"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_ckcs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "report_type",
+   "fieldtype": "Select",
+   "label": "Report Type",
+   "options": "\nFinacle\nLead"
+  },
+  {
+   "fieldname": "user_details_section",
+   "fieldtype": "Section Break",
+   "label": "User Details"
+  },
+  {
+   "fieldname": "preference_details_section",
+   "fieldtype": "Section Break",
+   "label": "Preference Details"
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Table MultiSelect",
+   "label": "Product",
+   "options": "Product Items"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Table MultiSelect",
+   "label": "Source",
+   "options": "Source Items"
+  },
+  {
+   "fieldname": "column_break_vlii",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sol_id",
+   "fieldtype": "Table MultiSelect",
+   "label": "Sol ID",
+   "options": "Sol Items"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Table MultiSelect",
+   "label": "District",
+   "options": "District Items"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Table MultiSelect",
+   "label": "State",
+   "options": "State Items"
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Table MultiSelect",
+   "label": "Zone",
+   "options": "Zone Items"
+  },
+  {
+   "fieldname": "column_break_enpx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Table MultiSelect",
+   "label": "Region",
+   "options": "Region Items"
+  },
+  {
+   "fieldname": "section_break_yzaw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_aagm",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-13 11:01:54.776831",
+ "modified_by": "9517@sahayog.com",
+ "module": "SCRM",
+ "name": "Report Preference",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

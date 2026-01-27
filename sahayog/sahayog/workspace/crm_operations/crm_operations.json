@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "CRM-Operations",
  "links": [],
- "modified": "2025-10-07 13:05:32.176899",
+ "modified": "2025-12-18 10:44:37.720257",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "CRM-Operations",
@@ -35,17 +35,18 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Operations Leads",
-   "link_to": "Lead",
-   "stats_filter": "[[\"Lead\",\"custom_is_operation_lead\",\"=\",1,false]]",
-   "type": "DocType"
+   "label": "Operation Lead Report",
+   "link_to": "Operation Lead Report",
+   "report_ref_doctype": "Lead",
+   "type": "Report"
   },
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Operation Lead Report",
-   "link_to": "operation-lead-repor",
-   "type": "Page"
+   "label": "Operations Leads",
+   "link_to": "Lead",
+   "stats_filter": "[[\"Lead\",\"custom_is_operation_lead\",\"=\",1,false]]",
+   "type": "DocType"
   },
   {
    "color": "Grey",

@@ -1,0 +1,167 @@
+# apps/sahayog/sahayog/sahayog/sahayog/api/ttum.py
+import frappe
+import requests
+
+
+@frappe.whitelist(allow_guest=False)
+def convert():
+    target_url = "http://10.0.115.6:9098/api/ttum/convert"
+    # target_url = "http://182.19.71.130:9098/api/ttum/convert"
+
+    try:
+        files = frappe.request.files or {}
+        form = frappe.form_dict or {}
+
+        multipart_payload = {}
+
+        # ---- FILE PART ----
+        if "file" in files:
+            f = files["file"]
+            file_bytes = f.stream.read()
+
+            multipart_payload["file"] = (
+                f.filename,
+                file_bytes,
+                f.mimetype
+            )
+
+            frappe.logger().info(
+                f"TTUM proxy → file: {f.filename}, size={len(file_bytes)}"
+            )
+
+        # ---- JSON PART (🔥 MOST IMPORTANT) ----
+        if "ttum" in form:
+            multipart_payload["ttum"] = (
+                None,
+                form.get("ttum"),
+                "application/json"
+            )
+
+        # ---- OTHER FORM PARTS ----
+        if "split" in form:
+            multipart_payload["split"] = (None, form.get("split"))
+
+        if "numberOfSplitRecords" in form:
+            multipart_payload["numberOfSplitRecords"] = (
+                None,
+                form.get("numberOfSplitRecords")
+            )
+
+        frappe.logger().info(f"TTUM proxy → multipart keys: {list(multipart_payload.keys())}")
+
+        # ---- FINAL REQUEST ----
+        resp = requests.post(
+            target_url,
+            files=multipart_payload,
+            timeout=300
+        )
+
+        frappe.logger().info(f"Outgoing headers: {resp.request.headers}")
+        frappe.logger().info(f"TTUM proxy → response {resp.status_code}: {resp.text[:300]}")
+
+        try:
+            json_resp = resp.json()
+        except Exception:
+            json_resp = {"raw": resp.text}
+
+        frappe.response.status_code = resp.status_code
+        frappe.response["message"] = json_resp
+        return json_resp
+
+    except Exception as e:
+        frappe.logger().error(f"TTUM proxy error: {e}")
+        frappe.response.status_code = 500
+        frappe.response["message"] = {"error": str(e)}
+        return {"error": str(e)}
+
+
+@frappe.whitelist()
+def download_all(ttum_id):
+    """
+    Download all TTUM files (ZIP) for a given ttumId
+    """
+    api_url = f"http://10.0.115.6:9098/api/ttum/getallbyid/{ttum_id}/download/all"
+
+    try:
+        # 🔥 MUST use stream=True for binary files
+        resp = requests.get(api_url, timeout=300, stream=True)
+
+        if resp.status_code != 200:
+            frappe.throw(
+                f"TTUM download failed ({resp.status_code})"
+            )
+
+        # ---- Force browser download ----
+        frappe.response["type"] = "binary"
+        frappe.response["filename"] = f"TTUM_{ttum_id}.zip"
+        frappe.response["filecontent"] = resp.content
+        frappe.response["content_type"] = "application/zip"
+
+        return
+
+    except Exception as e:
+        frappe.logger().error(f"TTUM download error: {e}")
+        frappe.throw(str(e))
+
+
+@frappe.whitelist()
+def get_ttum_by_id(ttum_id):
+    """
+    Fetch an existing TTUM by ttumId
+    """
+    if not ttum_id:
+        frappe.response.status_code = 400
+        return {"error": "TTUM ID is required"}
+
+    api_url = f"http://10.0.115.6:9098/api/ttum/{ttum_id}"
+
+    try:
+        resp = requests.get(api_url, timeout=120)
+
+        # 🔴 INVALID TTUM ID
+        if resp.status_code == 404:
+            frappe.response.status_code = 404
+            return {"error": "Invalid TTUM ID"}
+
+        # 🟡 NO FILES
+        if resp.status_code == 204:
+            frappe.response.status_code = 204
+            return {"error": "No files found for this TTUM ID"}
+
+        # 🔴 BAD REQUEST
+        if resp.status_code == 400:
+            frappe.response.status_code = 400
+            return {"error": "Invalid TTUM request"}
+
+        # 🔴 SERVER ERROR
+        if resp.status_code >= 500:
+            frappe.response.status_code = 503
+            return {"error": "TTUM service is currently unreachable"}
+
+        # ✅ SUCCESS
+        if resp.status_code == 200:
+            try:
+                data = resp.json()
+            except Exception:
+                frappe.response.status_code = 500
+                return {"error": "Invalid response from TTUM service"}
+
+            frappe.response.status_code = 200
+            return data
+
+        # ⚠️ ANY OTHER CASE
+        frappe.response.status_code = resp.status_code
+        return {"error": "Unexpected TTUM response"}
+
+    except requests.exceptions.Timeout:
+        frappe.response.status_code = 504
+        return {"error": "TTUM service timeout"}
+
+    except requests.exceptions.ConnectionError:
+        frappe.response.status_code = 503
+        return {"error": "TTUM service is currently unreachable"}
+
+    except Exception as e:
+        frappe.logger().error(f"GET TTUM error: {e}")
+        frappe.response.status_code = 500
+        return {"error": "Internal server error"}

@@ -1,4 +1,3 @@
-
 import frappe
 import json
 from datetime import datetime
@@ -10,7 +9,6 @@ def get_agent_report_data():
     using a single efficient query with joins
     """
     try:
-        # Simplified query without complex CASE statements that might cause issues
         query = """
         SELECT 
             a.name as agent_id,
@@ -35,44 +33,60 @@ def get_agent_report_data():
         """
         
         data = frappe.db.sql(query, as_dict=True)
-        
-        # Handle Employee and AUTH ID logic in Python instead of SQL
+
         for row in data:
-            # Format creation date
+
+            # Format creation datetime
             if row.get('creation'):
                 try:
                     row['creation'] = frappe.utils.format_datetime(
-                        row['creation'], 
+                        row['creation'],
                         format_string="dd-MM-yyyy hh:mm:ss"
                     )
                 except:
                     pass
-            
-            # Handle Employee field - make blank if null, empty, or '0'
+
+            # Process employee & AUTH ID
             employee_val = row.get('employee')
-            if not employee_val or str(employee_val).strip() == '' or str(employee_val) == '0':
+
+            if not employee_val or str(employee_val).strip() in ['', '0']:
                 row['employee'] = ''
                 row['auth_id'] = ''
             else:
-                # Generate AUTH ID for valid employee
                 try:
                     emp_num = str(employee_val).strip()
-                    row['auth_id'] = f"SAH{emp_num.zfill(5)}"
+                    length = len(emp_num)
+
+                    # --- Custom Padding Logic ---
+                    if length == 1:
+                        padded = "000" + emp_num
+                    elif length == 2:
+                        padded = "00" + emp_num
+                    elif length == 3:
+                        padded = "0" + emp_num
+                    elif length in (4, 5):
+                        padded = emp_num
+                    else:
+                        padded = emp_num  # fallback
+                    # ----------------------------
+
+                    row['auth_id'] = f"SAH0{padded}"
+
                 except:
                     row['employee'] = ''
                     row['auth_id'] = ''
-            
-            # Handle other null fields
+
+            # Replace null fields with blank
             for field in ['employee_name', 'branch', 'zone', 'region', 'district', 'sol_id']:
                 if row.get(field) is None:
                     row[field] = ''
-        
+
         return {
             'status': 'success',
             'data': data,
             'count': len(data)
         }
-        
+
     except Exception as e:
         frappe.log_error(f"Agent Report Error: {str(e)}", "Agent Report Generation")
         frappe.local.response['http_status_code'] = 500

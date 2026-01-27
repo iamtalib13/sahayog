@@ -1,0 +1,47 @@
+import frappe
+
+
+def reset_auto_prepared_reports():
+    """Reset reports where prepared_report=1"""
+    reports = frappe.get_all('Report', filters={'prepared_report': 1}, pluck='name')
+    
+    if not reports:
+        return
+    
+    for report_name in reports:
+        frappe.db.set_value('Report', report_name, 'prepared_report', 0, update_modified=False)
+    
+    frappe.db.commit()
+
+
+
+@frappe.whitelist()
+def sync_district_state():
+    # Fetch unique district and state
+    data = frappe.db.sql("""
+        SELECT DISTINCT district, state
+        FROM `tabSahayog Branch`
+        WHERE district IS NOT NULL AND state IS NOT NULL
+    """, as_dict=True)
+
+    for row in data:
+        district = row.get("district")
+        state = row.get("state")
+
+        # Create State if not exists
+        if state and not frappe.db.exists("State", state):
+            doc = frappe.new_doc("State")
+            doc.state = state          # field
+            doc.name = state           # required for naming series = field: state
+            doc.insert(ignore_permissions=True)
+
+        # Create District if not exists
+        if district and not frappe.db.exists("District", district):
+            doc = frappe.new_doc("District")
+            doc.district = district    # field
+            doc.state = state          # link to state
+            doc.name = district        # required for naming series = field: district
+            doc.insert(ignore_permissions=True)
+
+    frappe.db.commit()
+    return "District + State Sync Complete"

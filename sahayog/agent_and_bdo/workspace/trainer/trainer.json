@@ -1,8 +1,13 @@
 {
  "charts": [],
- "content": "[{\"id\":\"Kd1IgRwrm1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Agent &amp; BDO Management</span>\",\"col\":12}},{\"id\":\"HN5slot4s3\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Meeting\",\"col\":6}},{\"id\":\"7rkm4PFErc\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Agent Activation Calls\",\"col\":6}},{\"id\":\"1ifWFNo03Y\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Meeting\",\"col\":6}},{\"id\":\"uewQeF8Yuj\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Agent Activation Call Log\",\"col\":6}}]",
+ "content": "[{\"id\":\"8XYO-gAul9\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Trainer Dashboard\",\"col\":12}}]",
  "creation": "2025-06-11 17:41:21.628216",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "Trainer Dashboard",
+   "label": "Trainer Dashboard"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -13,35 +18,15 @@
  "is_hidden": 0,
  "label": "Trainer",
  "links": [],
- "modified": "2025-08-02 12:57:35.874380",
+ "modified": "2025-11-07 00:02:49.910841",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Trainer",
- "number_cards": [
-  {
-   "label": "Meeting",
-   "number_card_name": "Meeting"
-  },
-  {
-   "label": "Agent Activation Calls",
-   "number_card_name": "Agent Activation Calls"
-  }
- ],
+ "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
- "quick_lists": [
-  {
-   "document_type": "Meeting",
-   "label": "Meeting",
-   "quick_list_filter": "[]"
-  },
-  {
-   "document_type": "Agent Activation Call Log",
-   "label": "Agent Activation Call Log",
-   "quick_list_filter": "[]"
-  }
- ],
+ "quick_lists": [],
  "roles": [
   {
    "role": "Trainer"

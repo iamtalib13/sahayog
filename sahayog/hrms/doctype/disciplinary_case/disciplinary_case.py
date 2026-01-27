@@ -1,15 +1,51 @@
-# Copyright (c) 2025, Developer Team and contributors
+# Copyright (c) 2025
 # For license information, please see license.txt
 
 import frappe
 from frappe.model.document import Document
-
+import frappe
+from frappe.core.doctype.communication.email import make
+from frappe.utils import formatdate
 
 class DisciplinaryCase(Document):
+
+    
+    def on_submit(self):
+        """
+        Auto-send SCN email on submit.
+        Manual Send Email button remains unchanged.
+        """
+        try:
+            # Fetch employee
+            emp = frappe.get_doc("Employee", self.employee_id)
+
+            # If employee email missing → do not block submit
+            if not emp.company_email:
+                frappe.msgprint(
+                    "Case submitted successfully, but email was not sent because employee email is missing.",
+                    indicator="orange"
+                )
+                return
+
+            # Send SCN email
+            send_scn_email(self.name)
+
+            frappe.msgprint(
+                "Case submitted successfully and SCN email sent to employee.",
+                indicator="green"
+            )
+
+        except Exception:
+            # Never block submit
+            frappe.log_error(
+                frappe.get_traceback(),
+                "Auto SCN Email Failed on Submit"
+            )
+
     def before_insert(self):
         user = frappe.session.user
 
-        # If user is Administrator, set hr_employee_id and hr_name to "Administrator"
+        # If user is Administrator
         if user == "Administrator":
             self.hr_employee_id = "Administrator"
             self.hr_name = "Administrator"
@@ -29,4 +65,192 @@ class DisciplinaryCase(Document):
         # Set case_id = name after record is created
         self.db_set("case_id", self.name, update_modified=False)
 
+@frappe.whitelist()
+def get_case_stages(case_id):
+    all_stages = [
+        "Disciplinary Case",
+        "Suspension Process",
+        "Response to SCN",
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
+        "Domestic Enquiry",
+        "Enquiry Reminder",
+        "Case Closure",
+    ]
 
+    timeline = []
+
+    for stage in all_stages:
+        # 1️⃣ fetch non-cancelled docs first
+        docs = frappe.get_all(
+            stage,
+            filters={"case_id": case_id, "docstatus": ["!=", 2]},
+            fields=["name", "docstatus", "modified"],
+            order_by="modified desc"
+        )
+
+        if docs:
+            # pick the latest active doc
+            docinfo = docs[0]
+            docstatus = docinfo.docstatus or 0
+
+            if docstatus == 1:
+                status = "submitted"  # 🟢
+            else:
+                status = "saved"      # 🟠
+
+            timeline.append({
+                "stage": stage,
+                "doctype": stage,
+                "status": status,
+                "modified": docinfo.modified
+            })
+        else:
+            # fallback: only cancelled exists
+            cancelled_doc = frappe.get_all(
+                stage,
+                filters={"case_id": case_id, "docstatus": 2},
+                fields=["name", "modified"],
+                order_by="modified desc",
+                limit=1
+            )
+            if cancelled_doc:
+                timeline.append({
+                    "stage": stage,
+                    "doctype": stage,
+                    "status": "cancelled",  # grey
+                    "modified": cancelled_doc[0].modified
+                })
+            else:
+                # no doc at all
+                timeline.append({
+                    "stage": stage,
+                    "doctype": stage,
+                    "status": "current",    # ⚪
+                    "modified": None
+                })
+
+    return {"timeline": timeline}
+
+
+@frappe.whitelist()
+def get_case_stage_counts(case_id):
+    """
+    Return count + record names for each DAMS doctype linked to a case_id.
+    Used for timeline hover tooltip.
+    """
+
+    if not case_id:
+        return {}
+
+    dams_doctypes = [
+        "Disciplinary Case",
+        "Suspension Process",
+        "Response to SCN",
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
+        "Domestic Enquiry",
+        "Enquiry Reminder",
+        "Case Closure",
+    ]
+
+    result = {}
+
+    for dt in dams_doctypes:
+        records = frappe.get_all(
+            dt,
+            filters={"case_id": case_id},
+            fields=["name"],
+            order_by="creation asc"
+        )
+
+        result[dt] = {
+            "count": len(records),
+            "names": [r.name for r in records]
+        }
+
+    return result
+
+
+# check if employee has company email
+@frappe.whitelist()
+def check_employee_email(employee):
+    if not employee:
+        return None
+    emp = frappe.get_doc("Employee", employee)
+    return emp.company_email if emp.company_email else None
+
+# save email and send SCN email
+@frappe.whitelist()
+def save_and_send_email(employee, email, docname):
+    """
+    Save manually entered employee email, then send SCN email immediately.
+    """
+    # Save email into Employee Doctype
+    emp = frappe.get_doc("Employee", employee)
+    emp.company_email = email
+    emp.save(ignore_permissions=True)
+
+    # Send SCN email directly
+    send_scn_email(docname)
+
+    return "OK"
+
+# send SCN email with attachment
+@frappe.whitelist()
+def send_scn_email(docname):
+    """
+    Send SCN email with attachment:
+    Print Format → "Disciplinary Case Notice"
+    """
+    doc = frappe.get_doc("Disciplinary Case", docname)
+    
+    # Employee email
+    emp = frappe.get_doc("Employee", doc.employee_id)
+    final_email = emp.company_email
+
+    if not final_email:
+        frappe.throw("No email found for this employee.")
+
+    # Prepare doc_dict and apply formatted dates
+    doc_dict = doc.as_dict()
+    if doc.issue_occurrence_date:
+        doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
+    if doc.issue_report_to_hr:
+        doc_dict["issue_report_to_hr"] = formatdate(doc.issue_report_to_hr)
+
+    # Load email template
+    template = frappe.get_doc("Email Template", "Disciplinary - SCN")
+    message = frappe.render_template(template.response_html, doc_dict)
+    subject = frappe.render_template(template.subject, doc_dict)
+
+    # Attach Print Format → **Disciplinary Case Notice**
+    attachments = [
+        frappe.attach_print(
+            doctype="Disciplinary Case",
+            name=docname,
+            print_format="Disciplinary Case Notice",
+            file_name=f"{docname}"
+        )
+    ]
+
+    # Send email
+    frappe.sendmail(
+        recipients=[final_email],
+        subject=subject,
+        message=message,
+        attachments=attachments,
+        reference_doctype="Disciplinary Case",
+        reference_name=docname,
+        now=True
+    )
+
+    return "Email Sent"
+
+# save employee email only
+@frappe.whitelist()
+def save_employee_email(employee, email):
+    emp = frappe.get_doc("Employee", employee)
+    emp.company_email = email
+    emp.db_update()
+    return "OK"

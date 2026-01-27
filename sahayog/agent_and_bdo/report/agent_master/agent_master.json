@@ -1,0 +1,38 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2025-12-16 13:59:46.513880",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": "Sahayog Letter Head",
+ "letterhead": null,
+ "modified": "2025-12-16 15:50:55.466179",
+ "modified_by": "Administrator",
+ "module": "Agent and BDO",
+ "name": "Agent Master",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Agent",
+ "report_name": "Agent Master",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Trainer"
+  },
+  {
+   "role": "Trainer Head"
+  },
+  {
+   "role": "MIS Admin"
+  }
+ ],
+ "timeout": 0
+}

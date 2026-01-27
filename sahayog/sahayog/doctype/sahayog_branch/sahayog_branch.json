@@ -1,23 +1,37 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "allow_import": 1,
  "autoname": "field:sol_id",
  "creation": "2025-10-03 13:22:42.516947",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "sol_id",
+  "branch_details_section",
   "branch",
+  "column_break_dpfb",
+  "sol_id",
+  "location_details_section",
+  "state_code",
+  "state",
   "district",
-  "region",
+  "column_break_iujn",
   "zone",
-  "state"
+  "region",
+  "branch_address",
+  "branch_opening_date",
+  "email_details_section",
+  "email",
+  "branch_type",
+  "section_break_zjir",
+  "branch_details"
  ],
  "fields": [
   {
    "fieldname": "sol_id",
    "fieldtype": "Int",
-   "label": "Sol Id",
+   "label": "SOL ID",
+   "non_negative": 1,
+   "reqd": 1,
    "unique": 1
   },
   {
@@ -25,39 +39,108 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "BRANCH"
+   "label": "BRANCH",
+   "reqd": 1
   },
   {
    "fieldname": "district",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "DISTRICT"
+   "label": "DISTRICT",
+   "reqd": 1
   },
   {
    "fieldname": "region",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "REGION"
+   "label": "REGION",
+   "reqd": 1
   },
   {
    "fieldname": "zone",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "ZONE"
+   "label": "ZONE",
+   "reqd": 1
   },
   {
    "fieldname": "state",
    "fieldtype": "Data",
-   "label": "STATE"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "STATE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "branch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Details"
+  },
+  {
+   "fieldname": "column_break_dpfb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "location_details_section",
+   "fieldtype": "Section Break",
+   "label": "Location Details"
+  },
+  {
+   "fieldname": "state_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "STATE CODE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_iujn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email_details_section",
+   "fieldtype": "Section Break",
+   "label": "Email Details"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "EMAIL"
+  },
+  {
+   "fieldname": "section_break_zjir",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "branch_details",
+   "fieldtype": "Table",
+   "label": "Branch Details",
+   "options": "Sahayog Branch Items"
+  },
+  {
+   "fieldname": "branch_address",
+   "fieldtype": "Data",
+   "label": "Branch Address"
+  },
+  {
+   "fieldname": "branch_opening_date",
+   "fieldtype": "Date",
+   "label": "Branch Opening Date"
+  },
+  {
+   "fieldname": "branch_type",
+   "fieldtype": "Data",
+   "label": "Branch Type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-06 13:58:47.206139",
+ "modified": "2026-01-24 15:36:43.133512",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
@@ -89,6 +172,7 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "branch",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

@@ -76,6 +76,20 @@ def execute():
                 "default": 0,
                 "insert_after": "custom_zone",
             },
+
+
+            {
+                "fieldtype": "Column Break",
+                "fieldname": "custom_column_break_1",
+                "insert_after": "custom_is_operation_lead",
+            },
+            {
+                "label": "Sol ID",
+                "fieldname": "sol_id",
+                "fieldtype": "Link",
+                "options": "Sahayog Branch",
+                "insert_after": "custom_column_break_1",
+            }
             
 
         ],

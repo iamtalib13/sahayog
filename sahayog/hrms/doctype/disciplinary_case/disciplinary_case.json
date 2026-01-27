@@ -16,11 +16,11 @@
   "suspension_required",
   "document_upload",
   "remarks",
-  "closing_remark",
   "column_break_bnqh",
   "case_id",
   "designation",
   "branch_name",
+  "region",
   "case_type",
   "category",
   "issue_report_to_hr",
@@ -28,13 +28,9 @@
   "level",
   "hr_employee_id",
   "hr_name",
-  "status",
   "response_time",
-  "section_break_fakz",
-  "enquiry_item_html",
-  "schedule_enquiry_btn",
-  "suspension_order_tab",
-  "issue_suspension_letter"
+  "status",
+  "amended_from"
  ],
  "fields": [
   {
@@ -43,7 +39,7 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Case Type",
-   "options": "\nViolation Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nOthers",
+   "options": "\nViolation of Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nUnauthorized Absence\nOthers",
    "reqd": 1
   },
   {
@@ -53,60 +49,37 @@
    "reqd": 1
   },
   {
-   "fieldname": "section_break_fakz",
-   "fieldtype": "Section Break",
-   "label": "Enquiry Details"
-  },
-  {
    "fieldname": "case_information_section",
    "fieldtype": "Section Break",
    "label": "Case Information"
   },
   {
-   "default": "Open",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "\nOpen\nClosed",
-   "read_only": 1
-  },
-  {
-   "fieldname": "schedule_enquiry_btn",
-   "fieldtype": "Button",
-   "label": "Schedule Enquiry"
-  },
-  {
-   "fieldname": "enquiry_item_html",
-   "fieldtype": "HTML",
-   "label": "Enquiry"
-  },
-  {
    "fieldname": "category",
    "fieldtype": "Select",
    "label": "Category",
-   "options": "\nMajor\nMinor"
+   "options": "\nMajor\nMinor",
+   "reqd": 1
   },
   {
-   "default": "Today",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Date",
    "label": "Issue Occurrence Date",
    "reqd": 1
   },
   {
+   "default": "Today",
    "fieldname": "issue_report_to_hr",
    "fieldtype": "Date",
-   "label": "Issue Reported To HR",
+   "label": "Date of issue Reported to hr",
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
+   "default": "No",
    "fieldname": "suspension_required",
    "fieldtype": "Select",
    "label": "Suspension Required",
-   "options": "\nYes\nNo",
-   "reqd": 1
+   "options": "\nYes\nNo"
   },
   {
    "fieldname": "hr_employee_id",
@@ -119,7 +92,8 @@
    "fieldname": "level",
    "fieldtype": "Select",
    "label": "Level",
-   "options": "\n1\n2\n3\n4"
+   "options": "\n1\n2\n3\n4",
+   "reqd": 1
   },
   {
    "fieldname": "document_upload",
@@ -129,9 +103,11 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "amount_of_fraud",
    "fieldtype": "Currency",
    "label": "Amount of Fraud"
@@ -140,16 +116,6 @@
    "fieldname": "issue_show_cause_notice_tab",
    "fieldtype": "Tab Break",
    "label": "Issue Show Cause Notice"
-  },
-  {
-   "fieldname": "suspension_order_tab",
-   "fieldtype": "Tab Break",
-   "label": "Suspension Order"
-  },
-  {
-   "fieldname": "issue_suspension_letter",
-   "fieldtype": "Data",
-   "label": "Issue Suspension Letter"
   },
   {
    "fieldname": "column_break_bnqh",
@@ -165,8 +131,8 @@
   {
    "fieldname": "case_id",
    "fieldtype": "Data",
-   "label": "Case ID",
-   "read_only": 1
+   "hidden": 1,
+   "label": "Case ID"
   },
   {
    "fieldname": "employee_id",
@@ -174,7 +140,8 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Employee ID",
-   "options": "Employee"
+   "options": "Employee",
+   "reqd": 1
   },
   {
    "fetch_from": "employee_id.employee_name",
@@ -216,24 +183,58 @@
    "fieldname": "response_time",
    "fieldtype": "Select",
    "label": "Response Time",
-   "options": "\n24 hours\n48 hours"
+   "options": "\n24 hours\n48 hours",
+   "reqd": 1
   },
   {
-   "depends_on": "eval:doc.status==\"Closed\";\n\n\n",
-   "fieldname": "closing_remark",
-   "fieldtype": "Small Text",
-   "label": "Closing Remark"
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Case Status",
+   "options": "\nDraft\nUnder Process\nClosed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Disciplinary Case",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "employee_id.custom_region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
-   "link_doctype": "Enquiry",
-   "link_fieldname": "disciplinary_case"
+   "group": "Suspension",
+   "link_doctype": "Suspension Process",
+   "link_fieldname": "case_id"
+  },
+  {
+   "group": "Response SCN",
+   "link_doctype": "Response to SCN",
+   "link_fieldname": "case_id"
+  },
+  {
+   "group": "Unauthorized",
+   "link_doctype": "Unauthorized Absence",
+   "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-10-06 10:34:49.035688",
+ "modified": "2025-12-17 13:43:39.362133",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
@@ -249,6 +250,30 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Executive",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Manager",
    "share": 1,
    "write": 1
   }

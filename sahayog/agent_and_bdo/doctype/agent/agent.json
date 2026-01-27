@@ -6,21 +6,25 @@
  "engine": "InnoDB",
  "field_order": [
   "agent_details_section",
-  "status",
   "agent_code",
   "agent_name",
+  "phone_number",
   "agent_status",
+  "creation_date",
   "column_break_dxwu",
   "branch_code",
   "branch_name",
   "role",
-  "employee",
+  "auth_id",
+  "status",
   "bdo_details_section",
   "requested_by",
   "requested_on",
   "column_break_nbix",
   "approved_by",
-  "approved_on"
+  "approved_on",
+  "employee",
+  "amended_from"
  ],
  "fields": [
   {
@@ -29,7 +33,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Agent Name",
-   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
    "search_index": 1
   },
   {
@@ -37,8 +41,14 @@
    "fieldtype": "Data",
    "in_standard_filter": 1,
    "label": "Agent Code",
-   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
    "unique": 1
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "Phone Number",
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "fieldname": "branch_code",
@@ -46,7 +56,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Branch Code",
-   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
    "search_index": 1
   },
   {
@@ -55,14 +65,14 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Branch Name",
-   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
    "search_index": 1
   },
   {
    "fieldname": "role",
    "fieldtype": "Data",
    "label": "Role",
-   "read_only": 1
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "default": "Unallocated",
@@ -71,7 +81,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Unallocated\nAllocated\nPending",
-   "read_only": 1
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "fieldname": "agent_details_section",
@@ -89,11 +99,9 @@
   },
   {
    "fieldname": "employee",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
+   "fieldtype": "Data",
    "label": "Employee",
-   "options": "Employee",
-   "read_only": 1
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "fieldname": "column_break_nbix",
@@ -103,39 +111,65 @@
    "fieldname": "agent_status",
    "fieldtype": "Data",
    "label": "Agent Status",
-   "read_only": 1
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "fieldname": "requested_by",
    "fieldtype": "Link",
    "label": "Requested By",
    "options": "User",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "fieldname": "requested_on",
    "fieldtype": "Datetime",
    "label": "Requested On",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "fieldname": "approved_by",
    "fieldtype": "Link",
    "label": "Approved By",
    "options": "User",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
   },
   {
    "fieldname": "approved_on",
    "fieldtype": "Datetime",
    "label": "Approved On",
-   "read_only": 1
+   "read_only": 1,
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+  },
+  {
+   "fieldname": "auth_id",
+   "fieldtype": "Data",
+   "label": "Auth ID",
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+  },
+  {
+   "fieldname": "creation_date",
+   "fieldtype": "Date",
+   "label": "Creation Date",
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Agent",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-18 13:19:31.823371",
+ "modified": "2026-01-16 11:01:33.765437",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",
@@ -192,5 +226,7 @@
    "color": "Yellow",
    "title": "Pending"
   }
- ]
+ ],
+ "track_changes": 1,
+ "track_seen": 1
 }

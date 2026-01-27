@@ -5,11 +5,11 @@ def execute():
     fields = {
         "Stock Entry": [
             {
-                "fieldname": "custom_asset_request",
+                "fieldname": "employee_material_request",
                 "fieldtype": "Link",
-                "options": "Asset Request",
-                "insert_after": "inspection_required",
-                "label": "Asset Request",
+                "options": "Employee Material Request",
+                "insert_after": "company",
+                "label": "Employee Material Request",
             },      
         ],
     }

@@ -1,0 +1,252 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PCT-.YYYY.-.#####",
+ "creation": "2026-01-13 11:21:10.278832",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "transaction_details_section",
+  "transaction_type",
+  "transaction_date",
+  "column_break_1",
+  "branch",
+  "branch_name",
+  "amount_section",
+  "amount",
+  "current_branch_balance",
+  "column_break_dmoz",
+  "amount_within_limit",
+  "amount_exceeding_limit",
+  "amount_deducted",
+  "approval_status",
+  "finacle_tran_id",
+  "finacle_tran_date",
+  "finacle_tran_particular",
+  "expense_items_section",
+  "items",
+  "approval_section",
+  "approved_by",
+  "posted_to_finacle",
+  "finacle_transaction_id",
+  "remarks",
+  "amended_from",
+  "column_break_limits"
+ ],
+ "fields": [
+  {
+   "fieldname": "transaction_details_section",
+   "fieldtype": "Section Break",
+   "label": "Transaction Details"
+  },
+  {
+   "default": "Expense",
+   "fieldname": "transaction_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transaction Type",
+   "options": "Fund Allocation\nExpense",
+   "reqd": 1
+  },
+  {
+   "fieldname": "transaction_date",
+   "fieldtype": "Date",
+   "label": "Transaction Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Sahayog Branch",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "branch.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount_section",
+   "fieldtype": "Section Break",
+   "label": "Amount Details"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "current_branch_balance",
+   "fieldtype": "Currency",
+   "label": "Current Branch Balance",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.transaction_type == 'Expense'",
+   "fieldname": "expense_items_section",
+   "fieldtype": "Section Break",
+   "label": "Expense Items"
+  },
+  {
+   "depends_on": "eval:doc.transaction_type == 'Expense'",
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Expenses",
+   "options": "Petty Cash Transaction Item"
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Approval & Integration"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "posted_to_finacle",
+   "fieldtype": "Check",
+   "label": "Posted to Finacle"
+  },
+  {
+   "fieldname": "finacle_transaction_id",
+   "fieldtype": "Data",
+   "label": "Finacle Transaction ID"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Petty Cash Transaction",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "approval_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval Status",
+   "options": "Draft\nPending Approval\nApproved\nVerified\nPosted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_limits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount_within_limit",
+   "fieldtype": "Currency",
+   "label": "Amount Within Limit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount_exceeding_limit",
+   "fieldtype": "Currency",
+   "label": "Amount Exceeding Limit",
+   "read_only": 1
+  },
+  {
+   "description": "The actual amount subtracted from branch balance currently",
+   "fieldname": "amount_deducted",
+   "fieldtype": "Currency",
+   "label": "Amount Deducted from Wallet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dmoz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "finacle_tran_id",
+   "fieldtype": "Data",
+   "label": "Finacle Transaction ID"
+  },
+  {
+   "fieldname": "finacle_tran_date",
+   "fieldtype": "Date",
+   "label": "Finacle Transaction Date"
+  },
+  {
+   "fieldname": "finacle_tran_particular",
+   "fieldtype": "Small Text",
+   "label": "FInacle Transaction Particular"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-01-23 12:00:32.728624",
+ "modified_by": "Administrator",
+ "module": "Petty Cash Management",
+ "name": "Petty Cash Transaction",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Branch User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HO Petty Cash Manager",
+   "select": 1,
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

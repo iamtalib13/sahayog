@@ -16,6 +16,14 @@ def execute():
                 "insert_after": "sol_id",
                 "label": "Account Number",
             },
+            { 
+                "fieldname": "serial_number",
+                "fieldtype": "Data",
+                "insert_after": "account_number",
+                "label": "Serial Number",
+                "unique": "1",
+                "allow_on_submit": "1",
+            },
             {
                 "fieldname": "enable_print",
                 "fieldtype": "Check",
