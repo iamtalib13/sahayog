@@ -16,6 +16,7 @@
   "amount",
   "current_branch_balance",
   "current_unsettled_cash",
+  "journal_entry_ref",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -197,13 +198,19 @@
    "fieldtype": "Currency",
    "label": "Cash in Hand (Unsettled)",
    "read_only": 1
+  },
+  {
+   "fieldname": "journal_entry_ref",
+   "fieldtype": "Link",
+   "label": "Journal Entry Ref",
+   "options": "Journal Entry"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-27 16:12:51.368352",
+ "modified": "2026-01-27 17:42:21.006544",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

@@ -341,6 +341,220 @@ class PettyCashTransaction(Document):
 
         self.update_wallet()
 
+
+    # [NEW] Create Draft Journal Entry
+        if self.transaction_type == "Expense":
+            self.create_journal_entry()
+
+        self.update_wallet()
+
+    # def create_journal_entry(self):
+    #     """
+    #     Creates a Draft Journal Entry with:
+    #     - Debits: Individual Expense Categories (GL Code = Branch Code + Suffix)
+    #     - Credit: Branch Petty Cash Account (GL Code = From Wallet Master)
+    #     """
+        
+    #     # 1. Get Credit Account (The Branch Wallet)
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+    #     if not wallet.gl_sub_code:
+    #         frappe.throw(_("Branch Wallet has no GL Sub Code defined."))
+            
+    #     credit_account = self.get_or_create_account(
+    #         gl_code=wallet.gl_sub_code,
+    #         account_name=f"Petty Cash - {self.branch_name}",
+    #         parent_group="Cash In Hand - S" # Adjust based on your Chart of Accounts
+    #     )
+
+    #     # 2. Prepare Journal Accounts
+    #     accounts = []
+    #     total_credit = 0.0
+
+    #     for item in self.items:
+    #         amount = flt(item.amount)
+    #         if amount <= 0: continue
+
+    #         # Get GL Code for this Item (You already generated this in before_save)
+    #         if not item.finacle_gl_code:
+    #             frappe.throw(_("Row #{0}: Missing Finacle GL Code. Cannot create Journal Entry.").format(item.idx))
+
+    #         # Find/Create Debit Account
+    #         debit_account = self.get_or_create_account(
+    #             gl_code=item.finacle_gl_code,
+    #             account_name=f"{item.expense_category} - {self.branch_name}",
+    #             parent_group="Direct Expenses - S" # Adjust based on your Chart of Accounts
+    #         )
+
+    #         # Add Debit Line
+    #         accounts.append({
+    #             "account": debit_account,
+    #             "debit_in_account_currency": amount,
+    #             "credit_in_account_currency": 0,
+    #             "cost_center": self.branch, # Assuming Branch is Cost Center
+    #             "user_remark": f"{item.description} (Bill: {item.bill_number})"
+    #         })
+    #         total_credit += amount
+
+    #     # Add Credit Line (Total)
+    #     accounts.append({
+    #         "account": credit_account,
+    #         "debit_in_account_currency": 0,
+    #         "credit_in_account_currency": total_credit,
+    #         "cost_center": self.branch,
+    #         "user_remark": f"Total Petty Cash Expense for {self.name}"
+    #     })
+
+    #     # 3. Create Journal Entry Doc
+    #     je = frappe.get_doc({
+    #         "doctype": "Journal Entry",
+    #         "voucher_type": "Journal Entry",
+    #         "posting_date": self.transaction_date,
+    #         "company": frappe.defaults.get_user_default("Company"), # Or hardcode "Sahayog"
+    #         "accounts": accounts,
+    #         "cheque_no": "", # Empty for now, will be filled by Finacle
+    #         "cheque_date": self.transaction_date,
+    #         "user_remark": f"Petty Cash Expense: {self.name}",
+    #         "reference_type": "Petty Cash Transaction",
+    #         "reference_name": self.name
+    #     })
+
+    #     # 4. Save (Status: Draft)
+    #     je.insert(ignore_permissions=True)
+        
+    #     # Link JE back to this doc for easy reference
+    #     self.db_set("journal_entry_ref", je.name)
+        
+    #     frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
+
+    
+
+    def create_journal_entry(self):
+        """
+        Creates a Draft Journal Entry. 
+        [UPDATED] Now auto-generates Cost Centers to prevent errors.
+        """
+        # 1. Get Credit Account (The Branch Wallet)
+        wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+        if not wallet.gl_sub_code:
+            frappe.throw(_("Branch Wallet has no GL Sub Code defined."))
+            
+        credit_account = self.get_or_create_account(
+            gl_code=wallet.gl_sub_code,
+            account_name=f"Petty Cash - {self.branch_name}",
+            parent_group="Sahayog Petty Cash Wallets"
+        )
+
+        # [NEW] Get or Create the Cost Center automatically
+        valid_cost_center = self.get_or_create_cost_center()
+
+        # 2. Prepare Journal Accounts
+        accounts = []
+        total_credit = 0.0
+
+        for item in self.items:
+            amount = flt(item.amount)
+            if amount <= 0: continue
+
+            if not item.finacle_gl_code:
+                frappe.throw(_("Row #{0}: Missing Finacle GL Code.").format(item.idx))
+
+            # Find/Create Debit Account
+            debit_account = self.get_or_create_account(
+                gl_code=item.finacle_gl_code,
+                account_name=f"{item.expense_category} - {self.branch_name}",
+                parent_group="Sahayog Branch Expenses"
+            )
+
+            # Add Debit Line
+            accounts.append({
+                "account": debit_account,
+                "debit_in_account_currency": amount,
+                "credit_in_account_currency": 0,
+                "cost_center": valid_cost_center, # <--- Uses the auto-created CC
+                "user_remark": f"{item.description} (Bill: {item.bill_number})"
+            })
+            total_credit += amount
+
+        # 3. Add Credit Line (Total)
+        accounts.append({
+            "account": credit_account,
+            "debit_in_account_currency": 0,
+            "credit_in_account_currency": total_credit,
+            "cost_center": valid_cost_center, # <--- Uses the auto-created CC
+            "user_remark": f"Total Petty Cash Expense for {self.name}"
+        })
+
+        # 4. Create Journal Entry Doc
+        je = frappe.get_doc({
+            "doctype": "Journal Entry",
+            "voucher_type": "Journal Entry",
+            "posting_date": self.transaction_date,
+            "company": frappe.defaults.get_user_default("Company"), 
+            "accounts": accounts,
+            "cheque_no": "", 
+            "cheque_date": self.transaction_date,
+            "user_remark": f"Petty Cash Expense: {self.name}",
+            "reference_type": "Petty Cash Transaction",
+            "reference_name": self.name
+        })
+
+        # 5. Save (Status: Draft)
+        je.insert(ignore_permissions=True)
+        
+        # Link JE back to this doc
+        self.db_set("journal_entry_ref", je.name)
+        
+        frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
+    
+
+   
+
+    def get_or_create_account(self, gl_code, account_name, parent_group):
+        """
+        Helper: Checks if Account exists by GL Code. If not, creates it.
+        """
+        # 1. Define Company
+        company = frappe.defaults.get_user_default("Company") or frappe.db.get_single_value("Global Defaults", "default_company")
+        if not company:
+            frappe.throw("Default Company is not set.")
+
+        # 2. Check if Account already exists
+        existing = frappe.db.get_value("Account", {"account_number": gl_code, "company": company}, "name")
+        if existing:
+            return existing
+
+        # 3. Find Parent Account
+        parent_acc_name = frappe.db.get_value("Account", {"account_name": parent_group, "company": company}, "name")
+        if not parent_acc_name:
+             frappe.throw(f"Parent Account Group '{parent_group}' not found for company '{company}'. Please create it in Chart of Accounts.")
+
+        # 4. Verify Parent is a Group
+        is_group = frappe.db.get_value("Account", parent_acc_name, "is_group")
+        if not is_group:
+            frappe.throw(f"Account '{parent_acc_name}' exists but is NOT a Group. Please check 'Is Group' in Chart of Accounts.")
+
+        # 5. Determine Correct Account Type
+        # If the group has 'Expenses' in the name, we assume it's a Direct Expense
+        if "Expenses" in parent_group:
+            acc_type = "Direct Expense" 
+        else:
+            acc_type = "Cash"
+
+        # 6. Create the New Account
+        new_account = frappe.get_doc({
+            "doctype": "Account",
+            "account_name": account_name, 
+            "account_number": gl_code,    
+            "company": company,
+            "parent_account": parent_acc_name,
+            "account_type": acc_type, # <--- FIXED: Now uses "Direct Expense"
+            "currency": "INR" 
+        })
+        new_account.insert(ignore_permissions=True)
+        
+        return new_account.name
+
+
     def on_cancel(self):
 
          # If cancelled, the cash is legally "back" with the user (unaccounted for)
@@ -446,6 +660,51 @@ class PettyCashTransaction(Document):
         return False
 
 
+    def get_or_create_cost_center(self):
+        """ 
+        [NEW] Automates Cost Center Creation.
+        Checks if a Cost Center exists for this Branch (e.g. '1113').
+        If not, creates it automatically under a 'Sahayog Branches' group.
+        """
+        company = frappe.defaults.get_user_default("Company") or frappe.db.get_single_value("Global Defaults", "default_company")
+        
+        # 1. Search by Cost Center Number (Branch ID)
+        existing_cc = frappe.db.get_value("Cost Center", {"cost_center_number": self.branch, "company": company}, "name")
+        if existing_cc:
+            return existing_cc
+
+        # 2. If missing, find a Parent Group to attach to
+        # Try to find 'Sahayog Branches' or create it
+        parent_group_name = "Sahayog Branches"
+        parent_cc = frappe.db.get_value("Cost Center", {"cost_center_name": parent_group_name, "company": company}, "name")
+        
+        if not parent_cc:
+                # Create the Group Node if it doesn't exist
+                root_cc_name = frappe.db.get_value("Cost Center", {"is_group": 1, "company": company, "parent_cost_center": ["is", "not set"]}, "name") # Main Root
+                
+                new_group = frappe.get_doc({
+                    "doctype": "Cost Center",
+                    "cost_center_name": parent_group_name,
+                    "is_group": 1,
+                    "company": company,
+                    "parent_cost_center": root_cc_name or "Main - S" # Fallback
+                })
+                new_group.insert(ignore_permissions=True)
+                parent_cc = new_group.name
+
+        # 3. Create the Branch Cost Center
+        new_cc = frappe.get_doc({
+            "doctype": "Cost Center",
+            "cost_center_name": self.branch_name, # e.g. "CHEMBUR BRANCH"
+            "cost_center_number": self.branch,    # e.g. "1113"
+            "company": company,
+            "parent_cost_center": parent_cc
+        })
+        new_cc.insert(ignore_permissions=True)
+        
+        return new_cc.name
+
+
 
 
 @frappe.whitelist()
@@ -528,3 +787,6 @@ def get_branch_balance(branch):
         "current_balance": flt(data.current_balance) if data else 0.0,
         "unsettled_cash": flt(data.unsettled_cash) if data else 0.0
     }
+
+
+
