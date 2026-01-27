@@ -15,6 +15,7 @@
   "amount_section",
   "amount",
   "current_branch_balance",
+  "current_unsettled_cash",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -190,13 +191,19 @@
    "fieldname": "finacle_tran_particular",
    "fieldtype": "Small Text",
    "label": "FInacle Transaction Particular"
+  },
+  {
+   "fieldname": "current_unsettled_cash",
+   "fieldtype": "Currency",
+   "label": "Cash in Hand (Unsettled)",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-23 12:00:32.728624",
+ "modified": "2026-01-27 16:12:51.368352",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

@@ -91,10 +91,59 @@ class PettyCashTransaction(Document):
     #     self.current_branch_balance = wallet.get_current_balance()
     
 
+    # def validate(self):
+    #     # 1. Check Account Existence
+    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
+    #     if not account_exists:
+    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
+
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+        
+    #     if self.transaction_type == "Expense":
+    #         if not self.items:
+    #             frappe.throw(_("At least one expense item is required."))
+            
+    #         # [FIX] Calculate breakdown HERE so variables are set before checking
+    #         self.amount = sum(flt(item.amount) for item in self.items) # Ensure amount is set
+    #         self.calculate_limit_breakdown() 
+
+    #         self.validate_bill_dates()
+            
+    #         # Now safe to call because variables are set
+    #         self.validate_expense_soft(wallet)
+        
+    #     self.current_branch_balance = wallet.get_current_balance()
+
+    # def validate(self):
+    #     # 1. Check Account Existence
+    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
+    #     if not account_exists:
+    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
+
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+        
+    #     if self.transaction_type == "Expense":
+    #         if not self.items:
+    #             frappe.throw(_("At least one expense item is required."))
+            
+    #         # Ensure amount is set
+    #         self.amount = sum(flt(item.amount) for item in self.items) 
+    #         self.calculate_limit_breakdown() 
+
+    #         self.validate_bill_dates()
+            
+    #         # Soft Validation
+    #         self.validate_expense_soft(wallet)
+        
+    #     # [FIX] Fetch the REAL balance directly from the database for display
+    #     # This ensures it shows 21047 (Finacle Value) instead of 693 (Old Calculation)
+    #     real_balance = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "current_balance")
+    #     self.current_branch_balance = flt(real_balance)
+
+
     def validate(self):
         # 1. Check Account Existence
-        account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
-        if not account_exists:
+        if not frappe.db.exists("Branch Petty Cash Account", {"branch": self.branch}):
             frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
 
         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
@@ -103,16 +152,23 @@ class PettyCashTransaction(Document):
             if not self.items:
                 frappe.throw(_("At least one expense item is required."))
             
-            # [FIX] Calculate breakdown HERE so variables are set before checking
-            self.amount = sum(flt(item.amount) for item in self.items) # Ensure amount is set
+            self.amount = sum(flt(item.amount) for item in self.items) 
             self.calculate_limit_breakdown() 
-
             self.validate_bill_dates()
-            
-            # Now safe to call because variables are set
             self.validate_expense_soft(wallet)
         
-        self.current_branch_balance = wallet.get_current_balance()
+        # [FIX] Fetch BOTH Real Balance and Unsettled Cash for display
+        wallet_values = frappe.db.get_value("Branch Petty Cash Account", 
+            {"branch": self.branch}, 
+            ["current_balance", "unsettled_cash"], 
+            as_dict=True
+        )
+        
+        if wallet_values:
+            self.current_branch_balance = flt(wallet_values.current_balance)
+            self.current_unsettled_cash = flt(wallet_values.unsettled_cash) # <--- New Field
+
+
 
     def validate_bill_dates(self):
         current_date = getdate(nowdate())
@@ -181,69 +237,101 @@ class PettyCashTransaction(Document):
         self.amount_within_limit = total_within
         self.amount_exceeding_limit = total_exceeding
 
-    def validate_expense_soft(self, wallet):
-        # 1. Wallet Balance Check (Still Strict for TOTAL amount? Or Partial?)
-        # Requirement: "Submit... not deduct". 
-        # But if the wallet physically doesn't have money, we probably shouldn't allow even creating the debt.
-        # However, for now, let's strictly check if wallet has enough for the *Within Limit* portion at least?
-        # Scenario: Wallet has 5000. Bill is 10000. Limit is 2000.
-        # We deduct 2000. Wallet has 3000. 
-        # For now, let's keep Wallet Balance check strictly for the Amount being Deducted NOW.
+    # def validate_expense_soft(self, wallet):
+    #     # 1. Wallet Balance Check (Still Strict for TOTAL amount? Or Partial?)
+    #     # Requirement: "Submit... not deduct". 
+    #     # But if the wallet physically doesn't have money, we probably shouldn't allow even creating the debt.
+    #     # However, for now, let's strictly check if wallet has enough for the *Within Limit* portion at least?
+    #     # Scenario: Wallet has 5000. Bill is 10000. Limit is 2000.
+    #     # We deduct 2000. Wallet has 3000. 
+    #     # For now, let's keep Wallet Balance check strictly for the Amount being Deducted NOW.
         
-        # But wait, if we eventually approve, we need the money. 
-        # Let's keep Wallet Check strict for the FULL Amount to prevent negative cash later.
-        current_balance = wallet.get_current_balance()
+    #     # But wait, if we eventually approve, we need the money. 
+    #     # Let's keep Wallet Check strict for the FULL Amount to prevent negative cash later.
+    #     current_balance = wallet.get_current_balance()
         
-        # Note: current_balance check is tricky because we haven't deducted anything yet.
-        if current_balance < self.amount:
-             frappe.throw(_("Insufficient Branch Wallet Balance. Available: ₹{0}, Required: ₹{1}").format(current_balance, self.amount))
+    #     # Note: current_balance check is tricky because we haven't deducted anything yet.
+    #     if current_balance < self.amount:
+    #          frappe.throw(_("Insufficient Branch Wallet Balance. Available: ₹{0}, Required: ₹{1}").format(current_balance, self.amount))
 
-        # 2. Notify user if limits exceeded
+    #     # 2. Notify user if limits exceeded
+    #     if self.amount_exceeding_limit > 0:
+    #         frappe.msgprint(_("Warning: Expenses exceed category limits by ₹{0}. This amount will NOT be deducted until approved by HO.").format(self.amount_exceeding_limit), alert=True)
+
+    def validate_expense_soft(self, wallet):
+        # 1. Fetch Latest Values Directly from DB (Bypassing any old calculation logic)
+        wallet_data = frappe.db.get_value("Branch Petty Cash Account", 
+            {"branch": self.branch}, 
+            ["current_balance", "unsettled_cash"], 
+            as_dict=True
+        )
+        
+        if not wallet_data:
+            return
+
+        # 2. Read the Real Synced Balance
+        available_balance = flt(wallet_data.current_balance) # Should be 21047
+        unsettled_cash = flt(wallet_data.unsettled_cash)     # Should be 12000
+        
+        # 3. Calculate Total Buying Power (Bank + Cash Hand)
+        total_buying_power = available_balance + unsettled_cash
+
+        # 4. Validate
+        if total_buying_power < self.amount:
+             frappe.throw(_("Insufficient Funds. Bank: ₹{0} + Cash-in-Hand: ₹{1} = Total: ₹{2}. Required: ₹{3}").format(
+                 available_balance, unsettled_cash, total_buying_power, self.amount))
+
+        # 5. Check Category Limits
         if self.amount_exceeding_limit > 0:
             frappe.msgprint(_("Warning: Expenses exceed category limits by ₹{0}. This amount will NOT be deducted until approved by HO.").format(self.amount_exceeding_limit), alert=True)
 
+
     # def on_submit(self):
+
+    #     # 1. Update Unsettled Cash if this is an Expense
+    #     if self.transaction_type == "Expense":
+    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+    #         # Deduct the total amount from their "Cash in Hand" bucket
+    #         wallet.update_unsettled_cash(self.amount, "Expense")
+
+
     #     if self.transaction_type == "Expense":
     #         if self.amount_exceeding_limit > 0:
     #             # Scenario 2: Exceeding Limit
-    #             self.amount_deducted = self.amount_within_limit
-    #             self.approval_status = "Pending Approval"
-    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_deducted, self.amount_exceeding_limit))
+    #             # We deduct only the limit amount
+    #             self.db_set('amount_deducted', self.amount_within_limit)
+    #             self.db_set('approval_status', 'Pending Approval')
+                
+    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
     #         else:
     #             # Scenario 1: Within Limit
-    #             self.amount_deducted = self.amount
-    #             self.approval_status = "Approved" # Skip directly to Approved/Verified flow
-    #             # Actually, requirement says "Verify" is needed for everyone.
-    #             # So lets set it to 'Approved' (meaning Limits are OK), waiting for 'Verify'.
+    #             # We deduct full amount
+    #             self.db_set('amount_deducted', self.amount)
+    #             self.db_set('approval_status', 'Approved') 
         
     #     elif self.transaction_type == "Fund Allocation":
-    #         self.amount_deducted = 0 # Allocation adds funds, handled differently in wallet logic usually, or we treat allocation as negative expense? 
-    #         # In your wallet logic: Balance = Sum(Alloc) - Sum(Expense Deducted).
-    #         # So amount_deducted is irrelevant for Fund Allocation.
-    #         self.approval_status = "Posted"
+    #         self.db_set('amount_deducted', 0)
+    #         self.db_set('approval_status', 'Posted')
 
     #     self.update_wallet()
 
     def on_submit(self):
-
         # 1. Update Unsettled Cash if this is an Expense
         if self.transaction_type == "Expense":
             wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-            # Deduct the total amount from their "Cash in Hand" bucket
+            
+            # Deduct the total amount from their "Cash in Hand" bucket (Liability)
+            # This is the ONLY place where money "leaves" the wallet in our portal
             wallet.update_unsettled_cash(self.amount, "Expense")
 
-
-        if self.transaction_type == "Expense":
+            # 2. Handle Status & Limits
             if self.amount_exceeding_limit > 0:
                 # Scenario 2: Exceeding Limit
-                # We deduct only the limit amount
                 self.db_set('amount_deducted', self.amount_within_limit)
                 self.db_set('approval_status', 'Pending Approval')
-                
                 frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
             else:
                 # Scenario 1: Within Limit
-                # We deduct full amount
                 self.db_set('amount_deducted', self.amount)
                 self.db_set('approval_status', 'Approved') 
         
@@ -268,15 +356,26 @@ class PettyCashTransaction(Document):
         self.approval_status = "Draft"
         self.update_wallet()
 
+    # def update_wallet(self):
+    #     # Trigger wallet update (recalculation based on Sum(amount_deducted))
+    #     if frappe.flags.in_test: return
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+    #     wallet.flags.ignore_permissions = True
+    #     wallet.current_balance = wallet.get_current_balance() # This calls the new SQL logic
+    #     if self.transaction_type == "Fund Allocation" and self.docstatus == 1:
+    #         wallet.last_funded_on = self.transaction_date
+    #     wallet.save(ignore_permissions=True)
+
     def update_wallet(self):
-        # Trigger wallet update (recalculation based on Sum(amount_deducted))
+        # Trigger wallet update
         if frappe.flags.in_test: return
-        wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-        wallet.flags.ignore_permissions = True
-        wallet.current_balance = wallet.get_current_balance() # This calls the new SQL logic
+        
+        # [FIX] We REMOVED the line: wallet.current_balance = wallet.get_current_balance()
+        # This prevents the system from overwriting the Finacle Balance with a manual calculation.
+        
+        # We only update 'last_funded_on' for Fund Allocations
         if self.transaction_type == "Fund Allocation" and self.docstatus == 1:
-            wallet.last_funded_on = self.transaction_date
-        wallet.save(ignore_permissions=True)
+             frappe.db.set_value("Branch Petty Cash Account", {"branch": self.branch}, "last_funded_on", self.transaction_date)
 
     @frappe.whitelist()
     def ho_approve_limit(self):
@@ -390,21 +489,42 @@ def get_category_limit_status(branch, category, transaction_date, doc_name=None)
     return max(available, 0)
 
 
+# @frappe.whitelist()
+# def get_branch_balance(branch):
+#     """
+#     Returns the current wallet balance for the branch using direct SQL.
+#     """
+#     if not branch:
+#         return 0.0
+        
+#     # [FIX] Use SQL to ensure we find the record even if permissions or caching act up
+#     balance = frappe.db.sql("""
+#         SELECT current_balance 
+#         FROM `tabBranch Petty Cash Account` 
+#         WHERE branch = %s 
+#         LIMIT 1
+#     """, branch)
+    
+#     # If a record is found, return the balance; otherwise return 0.0
+#     return flt(balance[0][0]) if balance else 0.0
+
+
 @frappe.whitelist()
 def get_branch_balance(branch):
     """
-    Returns the current wallet balance for the branch using direct SQL.
+    Returns both Bank Balance and Unsettled Cash for the UI.
     """
     if not branch:
-        return 0.0
+        return {}
         
-    # [FIX] Use SQL to ensure we find the record even if permissions or caching act up
-    balance = frappe.db.sql("""
-        SELECT current_balance 
-        FROM `tabBranch Petty Cash Account` 
-        WHERE branch = %s 
-        LIMIT 1
-    """, branch)
+    data = frappe.db.get_value("Branch Petty Cash Account", 
+        {"branch": branch}, 
+        ["current_balance", "unsettled_cash"], 
+        as_dict=True
+    )
     
-    # If a record is found, return the balance; otherwise return 0.0
-    return flt(balance[0][0]) if balance else 0.0
+    # Return 0 if None
+    return {
+        "current_balance": flt(data.current_balance) if data else 0.0,
+        "unsettled_cash": flt(data.unsettled_cash) if data else 0.0
+    }
