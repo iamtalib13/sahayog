@@ -14,11 +14,4 @@ sahayog.patches.add_role_in_workspace
 
 sahayog.patches.set_employee_create_user_permission_default
 sahayog.patches.set_ignore_user_permission_in_lead
-sahayog.patches.update_operation_lead_owner
-sahayog.patches.fixtures.create_asset_state_workflow
-sahayog.patches.fixtures.agent
-sahayog.patches.fixtures.add_sahayog_branch_to_all_employee
-sahayog.patches.fixtures.backfill_agent_auth_id
-sahayog.patches.fixtures.fix_unallocated
-sahayog.patches.fixtures.update_branch_account_gl_codes
-sahayog.patches.fixtures.update_expense_category_gl_codes
+sahayog.patches.set_sahayog_branch_from_sol_id  
