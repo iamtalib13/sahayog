@@ -428,12 +428,91 @@ class PettyCashTransaction(Document):
 
     
 
+    # def create_journal_entry(self):
+    #     """
+    #     Creates a Draft Journal Entry. 
+    #     [UPDATED] Now auto-generates Cost Centers to prevent errors.
+    #     """
+    #     # 1. Get Credit Account (The Branch Wallet)
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+    #     if not wallet.gl_sub_code:
+    #         frappe.throw(_("Branch Wallet has no GL Sub Code defined."))
+            
+    #     credit_account = self.get_or_create_account(
+    #         gl_code=wallet.gl_sub_code,
+    #         account_name=f"Petty Cash - {self.branch_name}",
+    #         parent_group="Sahayog Petty Cash Wallets"
+    #     )
+
+    #     # [NEW] Get or Create the Cost Center automatically
+    #     valid_cost_center = self.get_or_create_cost_center()
+
+    #     # 2. Prepare Journal Accounts
+    #     accounts = []
+    #     total_credit = 0.0
+
+    #     for item in self.items:
+    #         amount = flt(item.amount)
+    #         if amount <= 0: continue
+
+    #         if not item.finacle_gl_code:
+    #             frappe.throw(_("Row #{0}: Missing Finacle GL Code.").format(item.idx))
+
+    #         # Find/Create Debit Account
+    #         debit_account = self.get_or_create_account(
+    #             gl_code=item.finacle_gl_code,
+    #             account_name=f"{item.expense_category} - {self.branch_name}",
+    #             parent_group="Sahayog Branch Expenses"
+    #         )
+
+    #         # Add Debit Line
+    #         accounts.append({
+    #             "account": debit_account,
+    #             "debit_in_account_currency": amount,
+    #             "credit_in_account_currency": 0,
+    #             "cost_center": valid_cost_center, # <--- Uses the auto-created CC
+    #             "user_remark": f"{item.description} (Bill: {item.bill_number})"
+    #         })
+    #         total_credit += amount
+
+    #     # 3. Add Credit Line (Total)
+    #     accounts.append({
+    #         "account": credit_account,
+    #         "debit_in_account_currency": 0,
+    #         "credit_in_account_currency": total_credit,
+    #         "cost_center": valid_cost_center, # <--- Uses the auto-created CC
+    #         "user_remark": f"Total Petty Cash Expense for {self.name}"
+    #     })
+
+    #     # 4. Create Journal Entry Doc
+    #     je = frappe.get_doc({
+    #         "doctype": "Journal Entry",
+    #         "voucher_type": "Journal Entry",
+    #         "posting_date": self.transaction_date,
+    #         "company": frappe.defaults.get_user_default("Company"), 
+    #         "accounts": accounts,
+    #         "cheque_no": "", 
+    #         "cheque_date": self.transaction_date,
+    #         "user_remark": f"Petty Cash Expense: {self.name}",
+    #         "reference_type": "Petty Cash Transaction",
+    #         "reference_name": self.name
+    #     })
+
+    #     # 5. Save (Status: Draft)
+    #     je.insert(ignore_permissions=True)
+        
+    #     # Link JE back to this doc
+    #     self.db_set("journal_entry_ref", je.name)
+        
+    #     frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
+    
+
     def create_journal_entry(self):
         """
         Creates a Draft Journal Entry. 
-        [UPDATED] Now auto-generates Cost Centers to prevent errors.
+        [UPDATED] Uses custom fields for Remarks and Date to avoid conflicts.
         """
-        # 1. Get Credit Account (The Branch Wallet)
+        # 1. Get Credit Account
         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
         if not wallet.gl_sub_code:
             frappe.throw(_("Branch Wallet has no GL Sub Code defined."))
@@ -444,7 +523,7 @@ class PettyCashTransaction(Document):
             parent_group="Sahayog Petty Cash Wallets"
         )
 
-        # [NEW] Get or Create the Cost Center automatically
+        # Get or Create Cost Center
         valid_cost_center = self.get_or_create_cost_center()
 
         # 2. Prepare Journal Accounts
@@ -470,7 +549,7 @@ class PettyCashTransaction(Document):
                 "account": debit_account,
                 "debit_in_account_currency": amount,
                 "credit_in_account_currency": 0,
-                "cost_center": valid_cost_center, # <--- Uses the auto-created CC
+                "cost_center": valid_cost_center, 
                 "user_remark": f"{item.description} (Bill: {item.bill_number})"
             })
             total_credit += amount
@@ -480,7 +559,7 @@ class PettyCashTransaction(Document):
             "account": credit_account,
             "debit_in_account_currency": 0,
             "credit_in_account_currency": total_credit,
-            "cost_center": valid_cost_center, # <--- Uses the auto-created CC
+            "cost_center": valid_cost_center, 
             "user_remark": f"Total Petty Cash Expense for {self.name}"
         })
 
@@ -491,9 +570,18 @@ class PettyCashTransaction(Document):
             "posting_date": self.transaction_date,
             "company": frappe.defaults.get_user_default("Company"), 
             "accounts": accounts,
-            "cheque_no": "", 
-            "cheque_date": self.transaction_date,
-            "user_remark": f"Petty Cash Expense: {self.name}",
+            
+            # --- UPDATED FIELDS ---
+            "cheque_no": "",
+            # "cheque_date": self.transaction_date,  <-- REMOVED (Conflicted)
+            
+            # Map to NEW Custom Fields
+            "custom_petty_cash_date": self.transaction_date,
+            "custom_petty_cash_remarks": f"Petty Cash Expense: {self.name}",
+            
+            # Keep standard remark generic or empty to avoid conflict
+            # "user_remark": "Auto-generated from Petty Cash", 
+            
             "reference_type": "Petty Cash Transaction",
             "reference_name": self.name
         })
@@ -505,7 +593,7 @@ class PettyCashTransaction(Document):
         self.db_set("journal_entry_ref", je.name)
         
         frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
-    
+
 
    
 
