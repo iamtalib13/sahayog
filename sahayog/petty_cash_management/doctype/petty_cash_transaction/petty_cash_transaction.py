@@ -114,10 +114,36 @@ class PettyCashTransaction(Document):
         
     #     self.current_branch_balance = wallet.get_current_balance()
 
+    # def validate(self):
+    #     # 1. Check Account Existence
+    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
+    #     if not account_exists:
+    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
+
+    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+        
+    #     if self.transaction_type == "Expense":
+    #         if not self.items:
+    #             frappe.throw(_("At least one expense item is required."))
+            
+    #         # Ensure amount is set
+    #         self.amount = sum(flt(item.amount) for item in self.items) 
+    #         self.calculate_limit_breakdown() 
+
+    #         self.validate_bill_dates()
+            
+    #         # Soft Validation
+    #         self.validate_expense_soft(wallet)
+        
+    #     # [FIX] Fetch the REAL balance directly from the database for display
+    #     # This ensures it shows 21047 (Finacle Value) instead of 693 (Old Calculation)
+    #     real_balance = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "current_balance")
+    #     self.current_branch_balance = flt(real_balance)
+
+
     def validate(self):
         # 1. Check Account Existence
-        account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
-        if not account_exists:
+        if not frappe.db.exists("Branch Petty Cash Account", {"branch": self.branch}):
             frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
 
         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
@@ -126,19 +152,21 @@ class PettyCashTransaction(Document):
             if not self.items:
                 frappe.throw(_("At least one expense item is required."))
             
-            # Ensure amount is set
             self.amount = sum(flt(item.amount) for item in self.items) 
             self.calculate_limit_breakdown() 
-
             self.validate_bill_dates()
-            
-            # Soft Validation
             self.validate_expense_soft(wallet)
         
-        # [FIX] Fetch the REAL balance directly from the database for display
-        # This ensures it shows 21047 (Finacle Value) instead of 693 (Old Calculation)
-        real_balance = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "current_balance")
-        self.current_branch_balance = flt(real_balance)
+        # [FIX] Fetch BOTH Real Balance and Unsettled Cash for display
+        wallet_values = frappe.db.get_value("Branch Petty Cash Account", 
+            {"branch": self.branch}, 
+            ["current_balance", "unsettled_cash"], 
+            as_dict=True
+        )
+        
+        if wallet_values:
+            self.current_branch_balance = flt(wallet_values.current_balance)
+            self.current_unsettled_cash = flt(wallet_values.unsettled_cash) # <--- New Field
 
 
 
