@@ -152,7 +152,7 @@
    "fieldname": "days_of_suspension",
    "fieldtype": "Select",
    "label": "Number of Days Suspension required",
-   "options": "\n30\n60\n90",
+   "options": "\n30\n45\n60\n90",
    "reqd": 1
   },
   {
@@ -213,7 +213,7 @@
    "link_fieldname": "previous_record"
   }
  ],
- "modified": "2025-12-18 12:24:28.696234",
+ "modified": "2026-01-28 16:56:17.285897",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
