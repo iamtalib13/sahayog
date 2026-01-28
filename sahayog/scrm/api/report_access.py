@@ -10,6 +10,13 @@ REGION_ALIAS_MAP = {
     "headoffice": {"ho", "headoffice", "head-office"},
 }
 
+    
+@frappe.whitelist()
+def get_all_system_regions():
+    # Sahayog Branch doctype se saare unique regions fetch karna
+    regions = frappe.get_all("Sahayog Branch", fields=["distinct region"], order_by="region asc")
+    return [r.region for r in regions if r.region]
+
 @frappe.whitelist()
 def get_user_report_preference_record(user, report_type="Lead"):
     frappe.log_error(f"CRM Preference Fetch", f"User: {user}")
@@ -25,6 +32,7 @@ def get_user_report_preference_record(user, report_type="Lead"):
         doc = frappe.get_doc("Report Preference", name)
         result.append({
             "user": doc.user,
+            "all_regions": doc.all_regions,
             "product": [d.product for d in doc.product],
             "source": [d.source for d in doc.source],
             "zone": [d.zone for d in doc.zone],
@@ -57,11 +65,13 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     from_date, to_date = validate_date_range(from_date, to_date)
     
     # ---------- Preferences ----------
+    is_all_regions = False # Default False
     products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
         if pref_res:
             p = pref_res[0]
+            is_all_regions = p.get("all_regions")
             products_pref = {norm(x) for x in p.get("product", [])}
             sources_pref = {norm(x) for x in p.get("source", [])}
             zones_pref = {norm(x) for x in p.get("zone", [])}
@@ -88,11 +98,11 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         zones_pref = zones_pref.intersection(
             {norm(x) for x in filters.get("zone", [])}
         )
-
-    if filters.get("region"):
-        regions_pref = regions_pref.intersection(
-            {norm(x) for x in filters.get("region", [])}
-        )
+    if not is_all_regions and filters.get("region"):
+            regions_pref = regions_pref.intersection({norm(x) for x in filters.get("region", [])})
+    elif is_all_regions and filters.get("region"):
+            # Agar all_regions check hai toh UI ke selected regions ko hi final maanenge
+            regions_pref = {norm(x) for x in filters.get("region", [])}
 
     if filters.get("sol_id"):
         sol_ids_pref = sol_ids_pref.intersection(
