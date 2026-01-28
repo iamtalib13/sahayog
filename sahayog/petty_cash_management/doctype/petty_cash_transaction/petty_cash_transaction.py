@@ -368,16 +368,17 @@ class PettyCashTransaction(Document):
             self.create_journal_entry()
 
         elif self.transaction_type == "Fund Allocation":
-            # This is Bank-to-Bank transfer, doesn't affect Cash-in-Hand (Unsettled Cash)
-            # It affects 'current_balance' via Finacle Sync
             self.db_set('amount_deducted', 0)
             self.db_set('approval_status', 'Posted')
             
-        elif self.transaction_type == "Cash Withdrawal": # <--- NEW TYPE
-            # Money withdrawn from Bank -> Increases Cash-in-Hand Liability
+        # --- THIS BLOCK WAS LIKELY MISSING OR BROKEN ---
+        elif self.transaction_type == "Cash Withdrawal": 
+            # Money withdrawn from Bank -> INCREASES Cash-in-Hand Liability
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
+            
             self.db_set('amount_deducted', 0)
             self.db_set('approval_status', 'Posted')
+        # -----------------------------------------------
 
         self.update_wallet()
 
