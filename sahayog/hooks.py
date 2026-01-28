@@ -350,6 +350,12 @@ doc_events = {
         "after_insert": "sahayog.doc_events.create_asset_key.create_asset_keys",
         "on_update": "sahayog.doc_events.create_asset_key.create_asset_keys",
     },  
+        "Comment": {
+        "after_insert": "sahayog.sahayog.api.comment_email.handle_comment"
+    },
+    "File": {
+        "after_insert": "sahayog.sahayog.api.comment_email.handle_attachment"
+    }
 }
 # Scheduled Tasks
 # ---------------
