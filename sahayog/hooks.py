@@ -363,16 +363,20 @@ scheduler_events = {
     "cron": {
 
         # Run daily at 10:40 AM — Branch Petty Cash Account Balance Sync
-         "00 12 * * *": [
+         "00 11 * * *": [
             "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
         ],
-
-         
-
-        # Run every 30 minutes — Auto Fund Allocation from Finacle
-         "*/30 * * * *": [
+     
+        "*/30 * * * *": [
+        "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
         "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
-        ],
+    ],
+    
+      # Run every 30 minutes — Auto Cash Withdrawal from Finacle
+        # "*/30 * * * *": [
+        # "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
+        # # ... your other fund allocation job ...
+        # ],    
 
     #     "* * * * *": [
     #     "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
@@ -383,11 +387,6 @@ scheduler_events = {
             "sahayog.agent_and_bdo.doctype.agent_activation_call_log.trainer_report.send_daily_trainer_report"
         ],
 
-        # Run every 30 minutes — Auto Cash Withdrawal from Finacle
-        "*/30 * * * *": [
-        "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
-        # ... your other fund allocation job ...
-        ],
 
         # Run daily at 6:00 PM — Evening trainer weekly activity email
         "0 16 * * 6": [
