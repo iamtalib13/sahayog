@@ -16,6 +16,8 @@
   "monthly_limit",
   "current_balance",
   "last_funded_on",
+  "unsettled_cash",
+  "last_synced_transaction_id",
   "section_break_dsps",
   "gl_sub_code",
   "status"
@@ -95,12 +97,27 @@
    "fieldname": "branch_details_section",
    "fieldtype": "Section Break",
    "label": "Branch Details"
+  },
+  {
+   "description": "Cash withdrawn from Finacle but not yet expensed in Portal.",
+   "fieldname": "unsettled_cash",
+   "fieldtype": "Currency",
+   "label": "Unsettled Cash (Cash In Hand)",
+   "read_only": 1
+  },
+  {
+   "description": "Stores the ID of the last Finacle transaction processed to prevent duplicates.",
+   "fieldname": "last_synced_transaction_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Last Synced Transaction ID",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 16:10:14.747735",
+ "modified": "2026-01-23 16:22:28.589169",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",

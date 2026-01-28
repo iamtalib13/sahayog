@@ -15,6 +15,16 @@
   "amount_section",
   "amount",
   "current_branch_balance",
+  "current_unsettled_cash",
+  "journal_entry_ref",
+  "column_break_dmoz",
+  "amount_within_limit",
+  "amount_exceeding_limit",
+  "amount_deducted",
+  "approval_status",
+  "finacle_tran_id",
+  "finacle_tran_date",
+  "finacle_tran_particular",
   "expense_items_section",
   "items",
   "approval_section",
@@ -22,7 +32,8 @@
   "posted_to_finacle",
   "finacle_transaction_id",
   "remarks",
-  "amended_from"
+  "amended_from",
+  "column_break_limits"
  ],
  "fields": [
   {
@@ -91,12 +102,12 @@
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Expenses",
-   "options": "Petty Cash Transaction Item",
-   "reqd": 1
+   "options": "Petty Cash Transaction Item"
   },
   {
    "fieldname": "approval_section",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Approval & Integration"
   },
   {
@@ -130,13 +141,76 @@
    "options": "Petty Cash Transaction",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "approval_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval Status",
+   "options": "Draft\nPending Approval\nApproved\nVerified\nPosted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_limits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount_within_limit",
+   "fieldtype": "Currency",
+   "label": "Amount Within Limit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount_exceeding_limit",
+   "fieldtype": "Currency",
+   "label": "Amount Exceeding Limit",
+   "read_only": 1
+  },
+  {
+   "description": "The actual amount subtracted from branch balance currently",
+   "fieldname": "amount_deducted",
+   "fieldtype": "Currency",
+   "label": "Amount Deducted from Wallet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dmoz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "finacle_tran_id",
+   "fieldtype": "Data",
+   "label": "Finacle Transaction ID"
+  },
+  {
+   "fieldname": "finacle_tran_date",
+   "fieldtype": "Date",
+   "label": "Finacle Transaction Date"
+  },
+  {
+   "fieldname": "finacle_tran_particular",
+   "fieldtype": "Small Text",
+   "label": "FInacle Transaction Particular"
+  },
+  {
+   "fieldname": "current_unsettled_cash",
+   "fieldtype": "Currency",
+   "label": "Cash in Hand (Unsettled)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "journal_entry_ref",
+   "fieldtype": "Link",
+   "label": "Journal Entry Ref",
+   "options": "Journal Entry"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-14 17:00:29.241112",
+ "modified": "2026-01-27 17:42:21.006544",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

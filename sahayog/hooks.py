@@ -149,7 +149,6 @@ after_migrate = [
     # "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
     #    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
-    "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
     "sahayog.patches.add_roles.execute",
     # "sahayog.patches.fixtures.add_item_group.execute",
     # "sahayog.patches.fixtures.add_warehouses.execute",
@@ -215,6 +214,11 @@ permission_query_conditions = {
 
     "Petty Cash Transaction": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
     "Branch Petty Cash Account": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
+
+    # This will restrict records based on Branch assigned in Employee Master
+    "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.get_permission_query_conditions",
+    # This will restrict records based on Branch assigned in Employee Master
+    "Branch Petty Cash Account": "sahayog.petty_cash_management.permission_queries.get_account_permission_query_conditions",
     # You can even restrict the Branch Master itself if you want:
     # "Sahayog Branch": "sahayog.petty_cash_management.permissions.get_branch_permission_query"
 }
@@ -351,9 +355,32 @@ doc_events = {
 # ---------------
 scheduler_events = {
     "cron": {
+
+        # Run daily at 10:40 AM — Branch Petty Cash Account Balance Sync
+         "00 12 * * *": [
+            "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
+        ],
+
+         
+
+        # Run every 30 minutes — Auto Fund Allocation from Finacle
+         "*/30 * * * *": [
+        "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
+        ],
+
+    #     "* * * * *": [
+    #     "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
+    #   ],
+
         # Run daily at 6:00 PM — Evening trainer daily activity email
         "0 18 * * *": [
             "sahayog.agent_and_bdo.doctype.agent_activation_call_log.trainer_report.send_daily_trainer_report"
+        ],
+
+        # Run every 30 minutes — Auto Cash Withdrawal from Finacle
+        "*/30 * * * *": [
+        "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
+        # ... your other fund allocation job ...
         ],
 
         # Run daily at 6:00 PM — Evening trainer weekly activity email
