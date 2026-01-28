@@ -13,8 +13,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     method: "sahayog.scrm.api.report_access.get_user_report_preference_record",
     args: { user: user, report_type: "Lead" },
   });
-
   const prefs = pref_res.message || [];
+
+  // AGAR All Regions checked hai, toh saare regions API se mangwayein
+  let system_regions = [];
+  if (prefs.length > 0 && prefs[0].all_regions) {
+    let reg_res = await frappe.call({
+      method: "sahayog.scrm.api.report_access.get_all_system_regions",
+    });
+    system_regions = reg_res.message || [];
+  }
 
   // ❌ Access denied
   if (!prefs.length && user !== "Administrator") {
@@ -78,6 +86,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   prefs.forEach((pref) => {
     // Check if user is Administrator for Edit Button
     const show_edit = frappe.session.user === "Administrator";
+    // Logic: Agar all_regions check hai to saare regions dikhao, warna sirf selected wale
+    const region_data = pref.all_regions ? system_regions : pref.region || [];
 
     $container.append(`
       <div class="pref-container" style="
@@ -107,8 +117,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         </div>
 
         <div id="interactive-filters" class="d-flex flex-wrap align-items-center">
-          ${create_filter_dropdown("Regions", pref.region, "region")}
           ${create_filter_dropdown("Zones", pref.zone, "zone")}
+          ${create_filter_dropdown("Regions", region_data, "region")}
           ${create_filter_dropdown("Districts", pref.district ? [pref.district] : [], "district")}
           ${create_filter_dropdown("Products", pref.product, "product")}
           ${create_filter_dropdown("Sources", pref.source, "source")}
