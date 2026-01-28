@@ -11,6 +11,13 @@ class Agent(Document):
         if self.status == "Allocated":
            self.agent_status = "LIVE"
 
+         # --- Start of Feature Addition ---
+        # If both auth_id and employee are blank, force status to Unallocated
+        if not self.auth_id and not self.employee and self.status == "Allocated":
+            self.status = "Unallocated"
+        # --- End of Feature Addition ---
+        
+
 #         # Proceed only if employee exists
 #         if self.requested_by:
 #             expected_email = f"{self.employee}@sahayog.com"
