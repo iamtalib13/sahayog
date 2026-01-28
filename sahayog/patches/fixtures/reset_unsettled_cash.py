@@ -1,25 +1,26 @@
 import frappe
 from sahayog.petty_cash_management.api.auto_cash_withdrawal_sync import sync_finacle_withdrawals
 
-def execute():
-    frappe.logger().info("--- Starting Unsettled Cash Reset ---")
+def fix_my_data():
+    print("--- Starting Data Cleanup ---")
+
+    # 1. Reset Unsettled Cash to 0 (Start fresh)
+    frappe.db.sql("UPDATE `tabBranch Petty Cash Account` SET unsettled_cash = 0")
     
-    # 1. Reset Fields for ALL Branches
-    frappe.db.sql("""
-        UPDATE `tabBranch Petty Cash Account`
-        SET 
-            unsettled_cash = 0,
-            last_synced_transaction_id = '0'
-    """)
+    # 2. Delete any old "Cash Withdrawal" transactions (optional, if you want a clean slate)
+    # frappe.db.sql("DELETE FROM `tabPetty Cash Transaction` WHERE transaction_type = 'Cash Withdrawal'")
     
     frappe.db.commit()
-    print("✅ All Branch Unsettled Cash & Sync IDs reset to 0.")
-    
-    # 2. Trigger the Sync to fetch fresh data (Jan 1 2026 onwards)
-    print("🔄 Running Sync to fetch latest withdrawals...")
-    
-    # We call the existing API function we wrote earlier
-    # This will fetch all Debits > '0' (since we reset ID) and >= '2026-01-01'
+    print("✅ Reset Complete. Starting Re-Sync...")
+
+    # 3. Run the NEW Sync Logic
+    # This will fetch withdrawals from Finacle.
+    # Because we check 'if exists', it will create records for MISSING ones.
+    # And because we reset unsettled_cash to 0, submitting these new records
+    # will calculate the correct total from scratch.
     sync_finacle_withdrawals()
     
-    print("✅ Sync Complete. Unsettled Cash is now up to date.")
+    print("✅ Data Fixed! Unsettled Cash should now be accurate.")
+
+# Run this function
+fix_my_data()
