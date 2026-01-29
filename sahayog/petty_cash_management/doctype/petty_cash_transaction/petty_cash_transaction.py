@@ -314,76 +314,40 @@ class PettyCashTransaction(Document):
     #         self.db_set('approval_status', 'Posted')
 
     #     self.update_wallet()
-    ###########################
-    # def on_submit(self):
-    #     # 1. Update Unsettled Cash if this is an Expense
-    #     if self.transaction_type == "Expense":
-    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-            
-    #         # Deduct the total amount from their "Cash in Hand" bucket (Liability)
-    #         # This is the ONLY place where money "leaves" the wallet in our portal
-    #         wallet.update_unsettled_cash(self.amount, "Expense")
-
-    #         # 2. Handle Status & Limits
-    #         if self.amount_exceeding_limit > 0:
-    #             # Scenario 2: Exceeding Limit
-    #             self.db_set('amount_deducted', self.amount_within_limit)
-    #             self.db_set('approval_status', 'Pending Approval')
-    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
-    #         else:
-    #             # Scenario 1: Within Limit
-    #             self.db_set('amount_deducted', self.amount)
-    #             self.db_set('approval_status', 'Approved') 
-        
-    #     elif self.transaction_type == "Fund Allocation":
-    #         self.db_set('amount_deducted', 0)
-    #         self.db_set('approval_status', 'Posted')
-
-    #     self.update_wallet()
-
-
-    # # [NEW] Create Draft Journal Entry
-    #     if self.transaction_type == "Expense":
-    #         self.create_journal_entry()
-
-    #     self.update_wallet()
-
 
     def on_submit(self):
-        # 1. Update Unsettled Cash based on Type
-        wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-        
+        # 1. Update Unsettled Cash if this is an Expense
         if self.transaction_type == "Expense":
-            # Cash used for bills -> Decrease Liability
-            wallet.update_unsettled_cash(self.amount, "Expense")
+            wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
             
-            # Handle Limits & Status
+            # Deduct the total amount from their "Cash in Hand" bucket (Liability)
+            # This is the ONLY place where money "leaves" the wallet in our portal
+            wallet.update_unsettled_cash(self.amount, "Expense")
+
+            # 2. Handle Status & Limits
             if self.amount_exceeding_limit > 0:
+                # Scenario 2: Exceeding Limit
                 self.db_set('amount_deducted', self.amount_within_limit)
                 self.db_set('approval_status', 'Pending Approval')
+                frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
             else:
+                # Scenario 1: Within Limit
                 self.db_set('amount_deducted', self.amount)
-                self.db_set('approval_status', 'Approved')
-                
-            self.create_journal_entry()
-
+                self.db_set('approval_status', 'Approved') 
+        
         elif self.transaction_type == "Fund Allocation":
             self.db_set('amount_deducted', 0)
             self.db_set('approval_status', 'Posted')
-            
-        # --- THIS BLOCK WAS LIKELY MISSING OR BROKEN ---
-        elif self.transaction_type == "Cash Withdrawal": 
-            # Money withdrawn from Bank -> INCREASES Cash-in-Hand Liability
-            wallet.update_unsettled_cash(self.amount, "Withdrawal")
-            
-            self.db_set('amount_deducted', 0)
-            self.db_set('approval_status', 'Posted')
-        # -----------------------------------------------
 
         self.update_wallet()
 
 
-###################
+    # [NEW] Create Draft Journal Entry
+        if self.transaction_type == "Expense":
+            self.create_journal_entry()
+
+        self.update_wallet()
+
     # def create_journal_entry(self):
     #     """
     #     Creates a Draft Journal Entry with:
@@ -612,10 +576,8 @@ class PettyCashTransaction(Document):
             # "cheque_date": self.transaction_date,  <-- REMOVED (Conflicted)
             
             # Map to NEW Custom Fields
-            # "custom_petty_cash_date": self.transaction_date,
-            # "custom_petty_cash_remarks": f"Petty Cash Expense: {self.name}",
             "cheque_date": self.transaction_date,
-            "user_remark": f"Petty Cash Expense: {self.name}",
+            "cheque_no": f"Petty Cash Expense: {self.name}",
             
             # Keep standard remark generic or empty to avoid conflict
             # "user_remark": "Auto-generated from Petty Cash", 

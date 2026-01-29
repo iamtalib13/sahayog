@@ -179,19 +179,16 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.finacle_tran_id\n",
    "fieldname": "finacle_tran_id",
    "fieldtype": "Data",
    "label": "Finacle Transaction ID"
   },
   {
-   "depends_on": "eval:doc.finacle_tran_date",
    "fieldname": "finacle_tran_date",
    "fieldtype": "Date",
    "label": "Finacle Transaction Date"
   },
   {
-   "depends_on": "eval:doc.finacle_tran_particular",
    "fieldname": "finacle_tran_particular",
    "fieldtype": "Small Text",
    "label": "FInacle Transaction Particular"
@@ -213,7 +210,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-28 13:47:38.311096",
+ "modified": "2026-01-29 17:15:25.736560",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

@@ -350,33 +350,22 @@ doc_events = {
         "after_insert": "sahayog.doc_events.create_asset_key.create_asset_keys",
         "on_update": "sahayog.doc_events.create_asset_key.create_asset_keys",
     },  
-        "Comment": {
-        "after_insert": "sahayog.sahayog.api.comment_email.handle_comment"
-    },
-    "File": {
-        "after_insert": "sahayog.sahayog.api.comment_email.handle_attachment"
-    }
 }
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
     "cron": {
 
-        # Run daily at 10:40 AM — Branch Petty Cash Account Balance Sync
-         "00 11 * * *": [
+        # Run daily at 12:00 PM — Branch Petty Cash Account Balance Sync
+        "00 12 * * *": [
             "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
         ],
-     
+
+          # Run every 1 minute — Auto Fund Allocation AND Auto Cash Withdrawal
         "*/30 * * * *": [
-        "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
-        "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
-    ],
-    
-      # Run every 30 minutes — Auto Cash Withdrawal from Finacle
-        # "*/30 * * * *": [
-        # "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
-        # # ... your other fund allocation job ...
-        # ],    
+            "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle",
+            "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals"
+        ],
 
     #     "* * * * *": [
     #     "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
@@ -387,7 +376,7 @@ scheduler_events = {
             "sahayog.agent_and_bdo.doctype.agent_activation_call_log.trainer_report.send_daily_trainer_report"
         ],
 
-
+        
         # Run daily at 6:00 PM — Evening trainer weekly activity email
         "0 16 * * 6": [
             "sahayog.agent_and_bdo.doctype.agent_activation_call_log.weekly_trainer_report.send_weekly_trainer_report"

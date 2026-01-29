@@ -18,11 +18,11 @@ def individual_finacle_fund_transfer_api(entry_name):
     """
     
     # ================= CONFIGURATION =================
-    # FINACLE_PRODUCTION_URL = 'https://finacle.sahayog.com:PORT/FISERVLET/fihttp' 
-    FINACLE_MIG_URL = 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
+    FINACLE_PRODUCTION_URL = 'https://finacle.sahayog.com:PORT/FISERVLET/fihttp' 
+    FINACLE_UAT_URL = 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
     
     # SET ACTIVE URL
-    ACTIVE_URL = FINACLE_MIG_URL 
+    ACTIVE_URL = FINACLE_UAT_URL 
     # =================================================
 
     try:
