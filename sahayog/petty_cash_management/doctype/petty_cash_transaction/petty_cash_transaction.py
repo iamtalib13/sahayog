@@ -576,8 +576,8 @@ class PettyCashTransaction(Document):
             # "cheque_date": self.transaction_date,  <-- REMOVED (Conflicted)
             
             # Map to NEW Custom Fields
-            "custom_petty_cash_date": self.transaction_date,
-            "custom_petty_cash_remarks": f"Petty Cash Expense: {self.name}",
+            "cheque_date": self.transaction_date,
+            "cheque_no": f"Petty Cash Expense: {self.name}",
             
             # Keep standard remark generic or empty to avoid conflict
             # "user_remark": "Auto-generated from Petty Cash", 
