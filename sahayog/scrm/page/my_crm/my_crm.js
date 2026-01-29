@@ -980,60 +980,6 @@ class MyCRM {
     }
   }
 
-  applyFilter() {
-
-      // ✅ FIRST: Assigned To Me
- if (this.state.filter === "Assigned To Me") {
-      if (!this.assignedLeadNames || !this.assignedLeadNames.length) {
-        this.state.filteredData = [];
-        this.state.activeFilter = this.state.filter;
-        this.renderList();
-        return;
-      }
-
-      this.state.filteredData = this.state.data.filter((lead) =>
-        this.assignedLeadNames.includes(lead.name),
-      );
-
-      this.state.activeFilter = this.state.filter;
-      this.renderList();
-      return;
-    }
-    let data = [...this.state.data];
-
-    if (this.state.filter !== "All") {
-      if (this.state.section === "appointment") {
-        const now = frappe.datetime.now_datetime();
-        const today = frappe.datetime.get_today();
-
-        data = data.filter((item) => {
-          switch (this.state.filter) {
-            case "Today":
-              const schedDate = frappe.datetime.str_to_obj(item.scheduled_time);
-              return frappe.datetime.obj_to_str(schedDate) === today;
-            case "Due":
-              return item.scheduled_time < now && item.status !== "Closed";
-            case "Upcoming":
-              return item.scheduled_time > now && item.status !== "Closed";
-            case "Open":
-              return item.status === "Open";
-            case "Closed":
-              return item.status === "Closed";
-            default:
-              return true;
-          }
-        });
-      } else {
-        data = data.filter((item) => item.status === this.state.filter);
-      }
-    }
-
-    this.state.filteredData = data;
-    this.renderList();
-    this.renderFilters();
-    this.updateCount();
-  }
-
   renderFilters() {
     const container = $("#mycrm-filters");
     container.empty();
@@ -1056,7 +1002,7 @@ class MyCRM {
       container.append(chip);
     });
   }
-
+// Define filters based on section
   getFilters() {
     if (this.state.section === "lead") {
       return [
@@ -1078,13 +1024,67 @@ class MyCRM {
       ];
     }
   }
+// apply current filter to data
+  applyFilter() {
 
-  async fetchAssignedLeads() {
+  // ✅ ASSIGNED TO ME — FIRST
+  if (this.state.filter === "Assigned To Me") {
+    this.state.filteredData = this.state.data.filter(item =>
+      this.assignedLeadNames.includes(item.name)
+    );
+
+    this.state.activeFilter = this.state.filter;
+    this.renderList();
+    this.renderFilters();
+    this.updateCount();
+    return;
+  }
+
+  let data = [...this.state.data];
+
+  if (this.state.filter !== "All") {
+    if (this.state.section === "appointment") {
+      const now = frappe.datetime.now_datetime();
+      const today = frappe.datetime.get_today();
+
+      data = data.filter(item => {
+        switch (this.state.filter) {
+          case "Today":
+            const d = frappe.datetime.str_to_obj(item.scheduled_time);
+            return frappe.datetime.obj_to_str(d) === today;
+          case "Due":
+            return item.scheduled_time < now && item.status !== "Closed";
+          case "Upcoming":
+            return item.scheduled_time > now && item.status !== "Closed";
+          case "Open":
+            return item.status === "Open";
+          case "Closed":
+            return item.status === "Closed";
+          default:
+            return true;
+        }
+      });
+    } else {
+      data = data.filter(item => item.status === this.state.filter);
+    }
+  }
+
+  this.state.filteredData = data;
+  this.renderList();
+  this.renderFilters();
+  this.updateCount();
+  }
+// Fetch assigned leads and map assigned by details
+async fetchAssignedLeads() {
   const { message = [] } = await frappe.call({
     method: "frappe.client.get_list",
     args: {
       doctype: "ToDo",
-      fields: ["reference_name", "assigned_by"],
+      fields: [
+        "reference_name",
+        "assigned_by",
+        "assigned_by_full_name"
+      ],
       filters: {
         reference_type: "Lead",
         allocated_to: frappe.session.user
@@ -1093,68 +1093,59 @@ class MyCRM {
     }
   });
 
-  // 🔁 reset reactive state
   this.assignedByMap = {};
   this.assignedLeadNames = [];
-  this.assignedCount = 0;
 
   const uniqueLeads = [...new Set(
     message.map(r => r.reference_name).filter(Boolean)
   )];
 
-  const employees = await Promise.all(
-    uniqueLeads.map(async (lead) => {
-      const row = message.find(r => r.reference_name === lead);
-      const emp = row?.assigned_by
-        ? await this.getEmployeeByUser(row.assigned_by)
-        : null;
+  for (const lead of uniqueLeads) {
+    const row = message.find(r => r.reference_name === lead);
+    if (!row) continue;
 
-      return emp
-        ? {
-            lead,
-            emp
-          }
-        : null;
-    })
-  );
+    const emp = row.assigned_by
+      ? await this.getEmployeeByUser(row.assigned_by)
+      : null;
 
-  employees.filter(Boolean).forEach(({ lead, emp }) => {
     this.assignedByMap[lead] = {
-      full_name: emp.name,
-      employee_code: emp.code,
-      branch: emp.branch
+      full_name:emp?.name ||  row.assigned_by_full_name || row.assigned_by ||
+        "Unknown",
+      employee_code: emp?.code || "",
+      branch: emp?.branch || ""
     };
+
     this.assignedLeadNames.push(lead);
-  });
+  }
 
   this.assignedCount = this.assignedLeadNames.length;
 
   console.log("✅ Assigned Leads:", this.assignedLeadNames);
 }
+// Get employee details by user ID for assigned leads
+async getEmployeeByUser(userId) {
+  if (!userId) return null;
 
-  async getEmployeeByUser(userId) {
-    if (!userId) return null;
+  try {
+    const res = await frappe.db.get_value(
+      "Employee",
+      { user_id: userId },
+      ["employee_name", "employee", "branch"]
+    );
 
-    try {
-      const res = await frappe.db.get_value("Employee", { user_id: userId }, [
-        "employee_name",
-        "employee",
-        "branch",
-      ]);
-
-      if (res && res.message) {
-        return {
-          name: res.message.employee_name,
-          code: res.message.employee,
-          branch: res.message.branch || "",
-        };
-      }
-    } catch (e) {
-      console.warn("Employee fetch failed for", userId);
+    if (res && res.message) {
+      return {
+        name: res.message.employee_name,
+        code: res.message.employee,
+        branch: res.message.branch || ""
+      };
     }
-
-    return null;
+  } catch (e) {
+    console.warn("Employee fetch failed for", userId);
   }
+
+  return null;
+}
 
   countStatus(status) {
     return this.state.data.filter((d) => d.status === status).length;
@@ -1556,7 +1547,7 @@ class MyCRM {
     $("#mycrm-list-body").toggle(!show);
     $("#mycrm-load-more").toggle(!show && this.state.hasMore);
   }
-
+// UI implementation of a WhatsApp-style card
   renderWhatsAppCard(item) {
     const modified = frappe.datetime.comment_when(item.modified);
     let name,
@@ -1585,17 +1576,16 @@ class MyCRM {
       if (item.source) details.push(`📌 ${item.source}`);
 
       // Assigned By Logic
-      if (this.assignedByMap?.[item.name]) {
-            const a = this.assignedByMap[item.name];
-            details.push(`
-                <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
-                    <span style="background:#f1f5f9; padding:4px 8px; border-radius:6px; color:#111;">
-                        Assigned By: 👤 <b>${a.full_name}</b> (<b>${a.employee_code}</b>)
-                    </span>
-                    ${a.branch ? `<span style="background:#dcf8c6; padding:4px 8px; border-radius:6px; color:#065f46; font-weight:600;">🏢 ${a.branch}</span>` : ""}
-                </div>
-            `);
-        }
+if (this.assignedByMap?.[item.name]) {
+  const a = this.assignedByMap[item.name];
+  details.push(`
+    <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
+      <span style="background:#f1f5f9; padding:4px 8px; border-radius:6px; color:#111;">
+        Assigned By: <b>${a.full_name}
+    </div>
+  `);
+}
+
       message = details.join(" • ") || "No details";
       statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
       statusText = item.status || "Lead";
@@ -1642,6 +1632,7 @@ class MyCRM {
 
     return card;
   }
+  // Helper to format currency in Indian style
   formatIndianCurrency(amount) {
     if (!amount || amount === 0) return "0";
 
@@ -1701,7 +1692,7 @@ class MyCRM {
     $("#mycrm-list-container").scrollTop(0);
     frappe.show_alert({ message: "Refreshed", indicator: "green" }, 2);
   }
-
+// section switcher
   async switchSection(section) {
     sessionStorage.setItem("mycrm_active_tab", section);
 
@@ -1726,10 +1717,12 @@ class MyCRM {
     } else {
       $("#mycrm-fab").hide();
     }
-
-    if (section === "lead") {
-  await this.fetchAssignedLeads(); // ✅ preload assigned data
+  if (section === "lead") {
+  await this.fetchAssignedLeads();
+  this.applyFilter();   // 🔥 force re-render
 }
+
+
 
 
     if (section === "reports") {
@@ -1752,7 +1745,7 @@ class MyCRM {
       this.fetchData();
     }
   }
-
+// render reports section
   renderReports() {
     const reportsBody = $("#mycrm-reports-body");
     reportsBody.html(`
@@ -1773,8 +1766,6 @@ class MyCRM {
   viewMyLeads() {
     this.switchSection("lead");
   }
-
-
 
   // createLead() {
   //   let productsData = [];
