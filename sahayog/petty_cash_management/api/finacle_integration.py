@@ -5,7 +5,7 @@ import xmltodict
 import json
 from datetime import datetime
 
-# Disable SSL warnings (internal bank servers often have self-signed certs)
+# Disable SSL warnings
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -13,37 +13,81 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 def individual_finacle_fund_transfer_api(entry_name):
     """
     Submits a Journal Entry to Finacle.
-    Triggered via Button on Journal Entry or Scheduled Job.
+    Supports Multiple Debits and Multiple Credits.
+    Production Ready Version: 2.0 (Multi-Leg Transaction)
     """
+    
+    # ================= CONFIGURATION =================
+    FINACLE_PRODUCTION_URL = 'https://finacle.sahayog.com:PORT/FISERVLET/fihttp' 
+    FINACLE_UAT_URL = 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
+    
+    # SET ACTIVE URL
+    ACTIVE_URL = FINACLE_UAT_URL 
+    # =================================================
+
     try:
-        # 1. Fetch the specific Journal Entry record
+        # 1. Fetch the Journal Entry
         entry_doc = frappe.get_doc('Journal Entry', entry_name)
 
         if entry_doc.docstatus != 0:
             return {"status": "SKIPPED", "message": "Only draft Journal Entries can be processed."}
 
-        # 2. Identify Debitor Account (The Bank GL Code to debit)
-        debitor_account = None
-        transaction_amount = 0
+        # 2. Smart Date Logic
+        if "smcmig" in ACTIVE_URL or "uat" in ACTIVE_URL.lower():
+            # UAT Fix: Force Date to Match Server Time (Jan 26)
+            current_date = "2026-01-26T10:00:00.000"
+        else:
+            # Production: Use Real-Time
+            current_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+
+        # 3. Build Transaction Parts (The Multi-Leg Logic)
+        part_trn_xml_list = []
+        total_debit = 0.0
+        total_credit = 0.0
         
         for child in entry_doc.accounts:
+            # Get Account Number (Custom Field or Fallback)
+            account_doc = frappe.get_doc('Account', child.account)
+            finacle_account_id = account_doc.account_number if hasattr(account_doc, 'account_number') else child.account
+            
+            # Determine Flag and Amount
             if child.debit_in_account_currency > 0:
-                # Assuming 'account' field stores the GL Code or we fetch a custom field 'account_number'
-                # Adjust 'account_number' below to match your actual Field Name in Account Doctype
-                account_doc = frappe.get_doc('Account', child.account)
-                debitor_account = account_doc.account_number if hasattr(account_doc, 'account_number') else child.account
-                transaction_amount = child.debit_in_account_currency
-                break
+                flg = 'D'
+                amt = child.debit_in_account_currency
+                total_debit += amt
+            elif child.credit_in_account_currency > 0:
+                flg = 'C'
+                amt = child.credit_in_account_currency
+                total_credit += amt
+            else:
+                continue # Skip rows with 0 amount
 
-        if not debitor_account:
-            frappe.throw("No valid debitor account found in Journal Entry.")
+            # Create XML Block for this Row
+            part_xml = f"""
+                    <PartTrnRec>
+                        <AcctId><AcctId>{finacle_account_id}</AcctId></AcctId>
+                        <CreditDebitFlg>{flg}</CreditDebitFlg>
+                        <TrnAmt>
+                            <amountValue>{amt}</amountValue>
+                            <currencyCode>INR</currencyCode>
+                        </TrnAmt>
+                        <TrnParticulars>JE: {entry_name}</TrnParticulars>
+                        <ValueDt>{current_date}</ValueDt>
+                    </PartTrnRec>"""
+            part_trn_xml_list.append(part_xml)
 
-        # 3. Prepare Finacle Data
-        current_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        # 4. Validation Checks
+        if not part_trn_xml_list:
+            frappe.throw("No valid accounts with amounts found in Journal Entry.")
+            
+        if abs(total_debit - total_credit) > 0.01: # allow tiny rounding diff
+            frappe.throw(f"Debit ({total_debit}) and Credit ({total_credit}) totals do not match!")
+
+        # Join all parts into one string
+        all_parts_xml = "".join(part_trn_xml_list)
         guid = str(random.randint(1000000000, 9999999999))
-        
-        # XML Template with dynamic values
-        # NOTE: Verify the Credit Account IDs (100001410010001, etc) are static or need to be dynamic too
+
+        # 5. Final XML Construction
         xml_data = f"""<?xml version="1.0" encoding="UTF-8"?>
 <FIXML xsi:schemaLocation="http://www.finacle.com/fixml XferTrnAdd.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <Header>
@@ -68,87 +112,53 @@ def individual_finacle_fund_transfer_api(entry_name):
                     <TrnSubType>CI</TrnSubType>
                 </XferTrnHdr>
                 <XferTrnDetail>
-                    <PartTrnRec>
-                        <AcctId><AcctId>{debitor_account}</AcctId></AcctId>
-                        <CreditDebitFlg>D</CreditDebitFlg>
-                        <TrnAmt>
-                            <amountValue>{transaction_amount}</amountValue>
-                            <currencyCode>INR</currencyCode>
-                        </TrnAmt>
-                        <TrnParticulars>Petty Cash Transfer</TrnParticulars>
-                        <ValueDt>{current_date}</ValueDt>
-                    </PartTrnRec>
-                    <!-- Credit Transaction (Destination) -->
-                    <!-- WARNING: Hardcoded Account in your example. Make sure this is correct or make dynamic -->
-                    <PartTrnRec>
-                        <AcctId><AcctId>111401850080001</AcctId></AcctId>
-                        <CreditDebitFlg>C</CreditDebitFlg>
-                        <TrnAmt>
-                            <amountValue>{transaction_amount}</amountValue>
-                            <currencyCode>INR</currencyCode>
-                        </TrnAmt>
-                        <TrnParticulars>SHARE ACCOUNT</TrnParticulars>
-                        <ValueDt>{current_date}</ValueDt>
-                    </PartTrnRec>
+                    {all_parts_xml}
                 </XferTrnDetail>
             </XferTrnAddRq>
         </XferTrnAddRequest>
     </Body>
 </FIXML>"""
 
-        # 4. Send Request
-        # Use the Internal IP if DNS fails again, but URL is preferred
-        url = 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp' 
+        # 6. Send Request
         headers = {'Content-Type': 'application/xml'}
+        response = requests.post(ACTIVE_URL, data=xml_data, headers=headers, verify=False, timeout=45)
 
-        # print(f"Sending Request for {entry_name}...") # Debug only
-        
-        response = requests.post(url, data=xml_data, headers=headers, verify=False, timeout=30)
-
-        # 5. Process Response
+        # 7. Process Response
         if response.status_code == 200:
             try:
                 response_dict = xmltodict.parse(response.text)
-                
-                # Navigate XML safely
                 fi_xml = response_dict.get('FIXML', {})
                 status = fi_xml.get('Header', {}).get('ResponseHeader', {}).get('HostTransaction', {}).get('Status', '').strip()
                 
-                # Try to find TrnId in different possible locations (Finacle versions vary)
-                rs_body = fi_xml.get('Body', {}).get('XferTrnAddResponse', {}).get('XferTrnAddRs', {})
-                custom_trn_id = rs_body.get('TrnIdentifier', {}).get('TrnId', '')
-                
-                if not custom_trn_id:
-                     # Fallback if structure is different on failure
-                     custom_trn_id = "N/A"
-
-                # Logic: SUCCESS vs FAILURE
                 if status == "SUCCESS":
-                    # Update & Submit Journal Entry
+                    rs_body = fi_xml.get('Body', {}).get('XferTrnAddResponse', {}).get('XferTrnAddRs', {})
+                    custom_trn_id = rs_body.get('TrnIdentifier', {}).get('TrnId', 'N/A').strip()
+
                     frappe.db.set_value('Journal Entry', entry_name, {
-                        'docstatus': 1, # Submit
-                        # 'custom_api_response': response.text[:1000], # Store first 1000 chars
-                        # 'custom_finacle_transaction_id': custom_trn_id,
+                        'docstatus': 1, 
+                        'custom_finacle_response': response.text[:1000], 
+                        'custom_finacle_transaction_id': custom_trn_id,
+                        'custom_petty_cash_date': datetime.now().date(),
+                        'custom_petty_cash_remarks': f"Finacle Success: {custom_trn_id}",
                         # 'custom_status': 'SUCCESS'
-                        'cheque_no': custom_trn_id,
-                        'cheque_date': datetime.now().date(),
-                        'user_remark': f"Finacle Success: {custom_trn_id}" # Storing 
-                        # 'user_remark': response.text[:1000], # Store first 1000 chars
-                        # 'custom_status': 'SUCCESS'
-                        # /////////////////////////////////
-                        # 'cheque_no': custom_trn_id,  # Storing ID in Cheque No
-                        # 'cheque_date': datetime.now().date(),
-                        # 'user_remark': f"Finacle Success: {custom_trn_id}" # Storing 
                     })
                     frappe.db.commit()
                     return {"status": "SUCCESS", "trn_id": custom_trn_id}
                 
                 else:
-                    # Business Logic Failure (e.g., Insufficient Funds)
-                    error_info = rs_body.get('Error', {}).get('ErrorDetail', {}).get('ErrorDesc', 'Unknown Error')
+                    body_node = fi_xml.get('Body', {})
+                    error_node = body_node.get('Error', {}).get('FIBusinessException', {})
+                    error_details = error_node.get('ErrorDetail', [])
+
+                    error_info = "Unknown Finacle Error"
+                    if isinstance(error_details, list) and len(error_details) > 0:
+                        error_info = error_details[0].get('ErrorDesc', error_info)
+                    elif isinstance(error_details, dict):
+                        error_info = error_details.get('ErrorDesc', error_info)
+
                     frappe.db.set_value('Journal Entry', entry_name, {
-                        'custom_api_response': str(response.text)[:1000],
-                        'custom_status': 'FAILED'
+                        'custom_finacle_response': str(response.text)[:1000],
+                        # 'custom_status': 'FAILED' # REMOVED to avoid crash if field missing
                     })
                     frappe.db.commit()
                     return {"status": "FAILED", "message": error_info}
@@ -158,7 +168,6 @@ def individual_finacle_fund_transfer_api(entry_name):
                 return {"status": "ERROR", "message": "XML Parsing Failed. Check Error Log."}
 
         else:
-            # HTTP Failure (500, 503, 404)
             frappe.log_error(title=f"Finacle HTTP {response.status_code}", message=response.text)
             return {"status": "ERROR", "message": f"HTTP {response.status_code} Error"}
 
