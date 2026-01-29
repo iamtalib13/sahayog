@@ -41,6 +41,13 @@ def execute():
                 "label": "Division",
                 "options":"Division",
             },
+            {
+                "fieldname": "cxo_level",
+                "fieldtype": "Check",
+                "insert_after": "employee_number",
+                "label": "CXO Level",
+                "default": 0
+            },
 
             {
                 "fieldname": "custom_skip_auto_creation",
