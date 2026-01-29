@@ -135,19 +135,76 @@ def _send_attachment_email(reference_name, file_url, uploaded_by):
 # CORE EMAIL SENDER (YOUR UI)
 # ==================================================
 def _send_email(reference_name, added_by, body_html, is_attachment=False):
+    import frappe
+    from frappe.utils import get_url_to_form
 
+    # --------------------------------------------------
+    # 1. Get ticket owner
+    # --------------------------------------------------
     ticket_owner = frappe.db.get_value(
         "Sahayog Ticket", reference_name, "owner"
     )
     if not ticket_owner:
         return
 
-    recipient_email = frappe.db.get_value(
-        "Employee", {"user_id": ticket_owner}, "company_email"
+    recipient_email = None
+
+    # --------------------------------------------------
+    # 2. Try Employee.company_email
+    # --------------------------------------------------
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": ticket_owner},
+        ["company_email", "branch"],
+        as_dict=True
     )
+
+    if employee and employee.company_email:
+        recipient_email = employee.company_email
+
+    # --------------------------------------------------
+    # 3. Fallback → Sahayog Branch email (NORMALIZED)
+    # --------------------------------------------------
+    def normalize_branch(val):
+        if not val:
+            return ""
+        return val.lower().replace("branch", "").strip()
+
+    if not recipient_email and employee and employee.branch:
+        emp_branch_norm = normalize_branch(employee.branch)
+
+        branch_email = frappe.db.sql(
+            """
+            SELECT email
+            FROM `tabSahayog Branch`
+            WHERE LOWER(REPLACE(branch, 'branch', '')) LIKE %s
+            LIMIT 1
+            """,
+            (f"%{emp_branch_norm}%",),
+            as_dict=True
+        )
+
+        if branch_email:
+            recipient_email = branch_email[0].email
+
+    # --------------------------------------------------
+    # 4. Still no email → LOG & EXIT (DO NOT BREAK COMMENT)
+    # --------------------------------------------------
     if not recipient_email:
+        frappe.log_error(
+            title="Ticket Email Skipped",
+            message=f"""
+            No recipient email found.
+
+            Ticket: {reference_name}
+            Owner: {ticket_owner}
+            """
+        )
         return
 
+    # --------------------------------------------------
+    # 5. Email content
+    # --------------------------------------------------
     ticket_url = get_url_to_form("Sahayog Ticket", reference_name)
 
     if is_attachment:
@@ -249,6 +306,9 @@ def _send_email(reference_name, added_by, body_html, is_attachment=False):
     </table>
     """
 
+    # --------------------------------------------------
+    # 6. Send email
+    # --------------------------------------------------
     frappe.sendmail(
         recipients=[recipient_email],
         subject=subject,
