@@ -4,14 +4,15 @@ from frappe.utils import get_url_to_form
 
 # ==================================================
 # BENCH EXECUTE ENTRY POINT
-# ==================================================
 def send_all_pending_ticket_notifications():
     """
     Run manually:
     bench execute sahayog.sahayog.api.comment_email.send_all_pending_ticket_notifications
     """
 
-    # ---- Pending text comments
+    # --------------------------------------------------
+    # 1. Pending text comments
+    # --------------------------------------------------
     comments = frappe.get_all(
         "Comment",
         filters={
@@ -26,7 +27,10 @@ def send_all_pending_ticket_notifications():
         comment = frappe.get_doc("Comment", name)
         _send_comment_email(comment)
 
-    # ---- Pending attachments (File based)
+
+    # --------------------------------------------------
+    # 2. Pending attachments (File based)
+    # --------------------------------------------------
     files = frappe.get_all(
         "File",
         filters={"attached_to_doctype": "Sahayog Ticket"},
@@ -41,9 +45,9 @@ def send_all_pending_ticket_notifications():
         )
 
 
+
 # ==================================================
 # EVENT HANDLERS
-# ==================================================
 def handle_comment(comment, method=None):
     if comment.reference_doctype != "Sahayog Ticket":
         return
@@ -60,14 +64,12 @@ def handle_attachment(file_doc, method=None):
         file_url=file_doc.file_url,
         uploaded_by=file_doc.owner
     )
-
-
 # ==================================================
 # INTERNAL HELPERS
 # ==================================================
 def _send_comment_email(comment):
-    if getattr(comment, "email_sent", 0):
-        return
+    if not frappe.db.get_single_value("Sahayog Settings", "send"):
+        return  # 🚫 STOP — email disabled
 
     _send_email(
         reference_name=comment.reference_name,
@@ -82,6 +84,10 @@ def _send_comment_email(comment):
 
 
 def _send_attachment_email(reference_name, file_url, uploaded_by):
+    if not frappe.db.get_single_value("Sahayog Settings", "send"):
+        return  # 🚫 STOP — email disabled
+
+    # ✅ send email here
     """
     Send attachment email AND mark related Comment.email_sent = 1
     """
