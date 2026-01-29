@@ -85,20 +85,21 @@
   {
    "fieldname": "email_tab",
    "fieldtype": "Tab Break",
-   "label": "Email"
+   "label": "Email Permission"
   },
   {
    "default": "0",
+   "description": "Currently used only for the Sahayog ticket",
    "fieldname": "send",
    "fieldtype": "Check",
-   "label": "Send"
+   "label": "Send Email"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-27 13:28:32.915046",
+ "modified": "2026-01-29 13:18:33.147711",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
