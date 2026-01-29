@@ -210,7 +210,6 @@ def _send_email(
         message=email_html,
         now=True
     )
-
 @frappe.whitelist()
 def send_manual_ticket_notification(
     reference_name,
@@ -218,11 +217,14 @@ def send_manual_ticket_notification(
     notify_mode,
     recipient_email=None
 ):
+    import frappe
     from frappe.utils import get_url_to_form
 
-    # -----------------------------------------
-    # Resolve recipient
-    # -----------------------------------------
+    # ---------------------------------------------
+    # 1. Resolve recipient email
+    # ---------------------------------------------
+    final_email = None
+
     if notify_mode == "employee":
         if not recipient_email:
             frappe.throw("Employee email is required")
@@ -237,13 +239,14 @@ def send_manual_ticket_notification(
             ["branch"],
             as_dict=True
         )
+
         if not emp or not emp.branch:
             frappe.throw("Employee branch not found")
 
         def normalize(val):
             return val.lower().replace("branch", "").strip()
 
-        branch_key = normalize(emp.branch)
+        emp_branch_norm = normalize(emp.branch)
 
         branch_email = frappe.db.sql(
             """
@@ -252,7 +255,7 @@ def send_manual_ticket_notification(
             WHERE LOWER(REPLACE(branch, 'branch', '')) LIKE %s
             LIMIT 1
             """,
-            (f"%{branch_key}%",),
+            (f"%{emp_branch_norm}%",),
             as_dict=True
         )
 
@@ -264,24 +267,104 @@ def send_manual_ticket_notification(
     else:
         frappe.throw("Invalid notify mode")
 
-    # -----------------------------------------
-    # Send email
-    # -----------------------------------------
+    # ---------------------------------------------
+    # 2. Email UI content (SAME AS EXISTING)
+    # ---------------------------------------------
     ticket_url = get_url_to_form("Sahayog Ticket", reference_name)
 
-    subject = f"Manual Notification – Ticket {reference_name}"
+    header_title = "Ticket Manual Notification"
+    success_text = "A manual notification has been sent successfully."
+    middle_label = "Comment"
+    middle_value = comment
+    subject = f"Manual Notification on Ticket {reference_name}"
 
+    email_html = f"""
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="background:#f3f6f9;padding:20px 0;
+                  font-family:Arial,Helvetica,sans-serif;">
+    <tr>
+        <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0"
+               style="background:#ffffff;border-radius:8px;
+                      overflow:hidden;
+                      box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+            <tr>
+            <td style="background:#0d9488;color:#ffffff;
+                       padding:14px 20px;font-size:16px;
+                       font-weight:bold;text-align:center;">
+                ✅ {header_title}
+            </td>
+            </tr>
+
+            <tr>
+            <td style="padding:14px 20px;background:#ecfdf5;
+                       color:#065f46;font-size:14px;">
+                {success_text}
+            </td>
+            </tr>
+
+            <tr>
+            <td style="padding:20px;">
+                <table width="100%" cellpadding="6" cellspacing="0"
+                       style="font-size:14px;color:#111827;">
+                <tr>
+                    <td width="35%" style="color:#6b7280;">Ticket No</td>
+                    <td><b>{reference_name}</b></td>
+                </tr>
+                <tr>
+                    <td style="color:#6b7280;">Added By</td>
+                    <td>{frappe.session.user}</td>
+                </tr>
+                <tr>
+                    <td style="color:#6b7280;vertical-align:top;">
+                        {middle_label}
+                    </td>
+                    <td style="background:#f9fafb;
+                               padding:10px;border-radius:6px;">
+                        {middle_value}
+                    </td>
+                </tr>
+                </table>
+
+                <div style="margin-top:18px;text-align:center;">
+                <a href="{ticket_url}"
+                   style="display:inline-block;background:#0d9488;
+                          color:#ffffff;text-decoration:none;
+                          padding:10px 18px;border-radius:6px;
+                          font-size:14px;font-weight:600;">
+                    View Ticket
+                </a>
+                </div>
+            </td>
+            </tr>
+
+            <tr>
+            <td style="padding:12px 20px;background:#fff7ed;
+                       color:#9a3412;font-size:12px;">
+                ⚠️ Note: Please review the update and take necessary action.
+            </td>
+            </tr>
+
+            <tr>
+            <td style="padding:12px 20px;text-align:center;
+                       font-size:11px;color:#6b7280;">
+                Please do not reply to this email.
+            </td>
+            </tr>
+
+        </table>
+        </td>
+    </tr>
+    </table>
+    """
+
+    # ---------------------------------------------
+    # 3. Send email
+    # ---------------------------------------------
     frappe.sendmail(
         recipients=[final_email],
         subject=subject,
-        message=f"""
-        <p><b>Ticket:</b> {reference_name}</p>
-        <p><b>Comment:</b></p>
-        <div style="padding:10px;background:#f9fafb;border-radius:6px;">
-            {comment}
-        </div>
-        <br>
-        <a href="{ticket_url}">View Ticket</a>
-        """,
+        message=email_html,
         now=True
     )
