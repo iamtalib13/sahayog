@@ -23,7 +23,8 @@ def execute():
                     "Not Started",
                     "Under Development",
                     "Live"
-                ])  
+                ]),
+                "depends_on": "eval:doc.project_template"
             },
               {
                 "fieldname": "custom_branch_col_1",
