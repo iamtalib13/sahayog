@@ -38,7 +38,8 @@ def execute():
                 "insert_after": "custom_branch_status",
                 "label": "Zone",
                 "options":"Zone",
-                "reqd":1,
+                "reqd": 0,
+                "mandatory_depends_on": "eval:doc.project_template",
                
             },
             {
@@ -54,7 +55,8 @@ def execute():
                 "insert_after": "custom_branch_col_2",
                 "label": "Region",
                 "options":"Region",
-                "reqd":1,
+                "reqd": 0,
+                "mandatory_depends_on": "eval:doc.project_template",
                
             },
               {
@@ -70,8 +72,8 @@ def execute():
                 "insert_after": "custom_branch_col_3",
                 "label": "Division",
                 "options":"Division",
-                "reqd":1,  
-            },
+                "reqd": 0,
+                "mandatory_depends_on": "eval:doc.project_template",            },
             {
                 "fieldname": "custom_project_warehouse",
                 "fieldtype": "Link",
