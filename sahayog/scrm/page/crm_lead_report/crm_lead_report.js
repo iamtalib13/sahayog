@@ -8,440 +8,272 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   const $container = $(page.body).empty();
   const user = frappe.session.user;
 
-  // Fetch Report Preference
-  let pref_res = await frappe.call({
-    method: "sahayog.scrm.api.report_access.get_user_report_preference_record",
-    args: { user: user, report_type: "Lead" },
-  });
-  const prefs = pref_res.message || [];
+  // --- Step 1: CSS (Original + Progress Bar Styles) ---
+  $("<style>")
+    .prop("type", "text/css")
+    .html(
+      `
+    .dashboard-tabs { display: flex; border-bottom: 1px solid #d1d8dd; margin-bottom: 20px; gap: 5px; }
+    .nav-tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 600; color: #6b7280; }
+    .nav-tab.active { color: #7775ce; border-bottom-color: #7775ce; background: #f9fafb; }
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+    .filter-chip { 
+        padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
+        border: 1px solid #d1d8dd; cursor: pointer; background: #fff;
+        display: flex; align-items: center; transition: all 0.2s;
+    }
+    .filter-chip.active { background: #7775ce; color: #fff; border-color: #7775ce; }
+    .chip-count { background: rgba(0,0,0,0.1); padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-size: 10px; }
+    .filter-chip.active .chip-count { background: rgba(255,255,255,0.2); }
+    .section-label { font-size: 12px; text-transform: uppercase; color: #000 !important; font-weight: 700; margin-bottom: 8px; margin-top: 10px;letter-spacing: 0.5px;}
+    /* Naya Button Color (Indigo) */
+    .btn-generate {
+        background: #5e5cc7 !important; /* Modern Indigo */
+        color: white !important;
+        font-weight: bold !important;
+        border: none !important;
+        height: 38px;
+        transition: all 0.2s ease;
+    }
+    .btn-generate:hover {
+        background: #4b49ac !important;
+        transform: translateY(-1px);
+    }
+    .dashboard-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .border-dashed { border: 2px dashed #d1d8dd !important; background: #fafbfc; border-radius: 12px; }
+    
+    .filters-wrapper { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; }
+    /* Isse har section sirf utni space lega jitni zaruri hai */
+    .filter-section { 
+        flex: 0 1 auto; /* Flex-grow ko 0 kiya taaki faltu space na khiche */
+        min-width: 150px; 
+        border-right: 1px solid #f0f0f0; 
+        padding-right: 15px; 
+        margin-bottom: 10px;
+    }
+    .filter-section:last-child { border-right: none; }
+    .date-action-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; gap: 15px; }
 
-  // AGAR All Regions checked hai, toh saare regions API se mangwayein
-  let system_regions = [];
-  if (prefs.length > 0 && prefs[0].all_regions) {
-    let reg_res = await frappe.call({
-      method: "sahayog.scrm.api.report_access.get_all_system_regions",
-    });
-    system_regions = reg_res.message || [];
-  }
+    /* Progress Bar Modal */
+    #export-prog-modal {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: white; padding: 30px; border-radius: 12px; z-index: 2000;
+        width: 90%; max-width: 450px; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center;
+    }
+    #export-prog-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.5); z-index: 1999; display: none; backdrop-filter: blur(3px);
+    }
+    .export-progress-bar { width: 100%; height: 10px; background: #e0e6ed; border-radius: 5px; overflow: hidden; margin: 20px 0; }
+    #export-fill { height: 100%; background: linear-gradient(90deg, #7775ce, #059669); width: 0%; transition: width 0.4s ease; }
+    #export-perc { font-weight: bold; font-size: 18px; color: #7775ce; }
+  `,
+    )
+    .appendTo("head");
 
-  // ❌ Access denied
-  if (!prefs.length && user !== "Administrator") {
-    $container.html(`
-      <div class="text-center text-muted">
-        <h4>You are not authorized to view this report.</h4>
-      </div>
-    `);
-    return;
-  }
-
-  // ℹ️ Admin with no preferences
-  if (!prefs.length && user === "Administrator") {
-    $container.html(`
-      <div class="text-center text-muted">
-        <h5>No Report Preference records found.</h5>
-      </div>
-    `);
-    return;
-  }
-
-  // --- Step 1: Edit Button Only for Admin & Dropdown Framework ---
-
-  // Helper function to create interactive dropdowns
-  function create_filter_dropdown(label, values, field_id) {
-    if (!values || !values.length) return "";
-
-    // Har value ke liye checkbox wala HTML
-    let options_html = values
-      .map(
-        (val) => `
-      <li class="px-3 py-1">
-        <label class="d-flex align-items-center mb-0" style="cursor:pointer; font-weight: normal;">
-          <input type="checkbox" class="pref-filter-checkbox mr-2" 
-            data-field="${field_id}" value="${val}" checked> 
-          ${val}
-        </label>
-      </li>
-    `,
-      )
-      .join("");
-
-    return `
-      <div class="dropdown d-inline-block mr-3 mb-2">
-        <button class="btn btn-xs btn-outline-primary dropdown-toggle font-weight-bold" 
-          type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-          style="border-radius: 20px; padding: 4px 12px; background: white;">
-          ${label} <span class="badge badge-primary ml-1 count-badge">${values.length}</span>
-        </button>
-        <ul class="dropdown-menu shadow" style="max-height: 250px; overflow-y: auto; min-width: 180px;">
-          <li class="px-3 py-1 border-bottom bg-light">
-            <small class="text-muted uppercase font-weight-bold">Select ${label}</small>
-          </li>
-          ${options_html}
-        </ul>
-      </div>
-    `;
-  }
-
-  // ---------- Intro Section (Revised) ----------
-  prefs.forEach((pref) => {
-    // Check if user is Administrator for Edit Button
-    const show_edit = frappe.session.user === "Administrator";
-    // Logic: Agar all_regions check hai to saare regions dikhao, warna sirf selected wale
-    const region_data = pref.all_regions ? system_regions : pref.region || [];
-
-    $container.append(`
-      <div class="pref-container" style="
-        background: #ffffff;
-        border: 1px solid #d1d8dd;
-        border-left: 5px solid #4f46e5;
-        padding: 16px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-      ">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div style="font-size: 14px; font-weight: 600; color: #374151;">
-            <i class="fa fa-sliders text-primary mr-2"></i> Active Report Preferences
-          </div>
-          ${
-            show_edit
-              ? `
-            <button class="btn btn-xs btn-default text-primary" 
-              onclick="frappe.set_route('List', 'Report Preference')"
-              style="border: 1px solid #d1d8dd;">
-              <i class="fa fa-pencil"></i> Edit Master
-            </button>
-          `
-              : ""
-          }
-        </div>
-
-        <div id="interactive-filters" class="d-flex flex-wrap align-items-center">
-          ${create_filter_dropdown("Zones", pref.zone, "zone")}
-          ${create_filter_dropdown("Regions", region_data, "region")}
-          ${create_filter_dropdown("Districts", pref.district ? [pref.district] : [], "district")}
-          ${create_filter_dropdown("Products", pref.product, "product")}
-          ${create_filter_dropdown("Sources", pref.source, "source")}
-          ${create_filter_dropdown("SOL IDs", pref.sol_id, "sol_id")}
-        </div>
-        <small class="text-muted mt-2 d-block">
-          <i class="fa fa-info-circle"></i> Uncheck items to exclude them from the current report generation.
-        </small>
-      </div>
-    `);
-  });
-  // Dropdown badges ko live update karne ke liye
-  $(document).on("change", ".pref-filter-checkbox", function () {
-    const field = $(this).data("field");
-    const count = $(
-      `.pref-filter-checkbox[data-field="${field}"]:checked`,
-    ).length;
-    $(this).closest(".dropdown").find(".count-badge").text(count);
-  });
-  // -----------------------------
-  // Date Filters
-  // -----------------------------
-  // -----------------------------
-  // Filter & Status Section
-  // -----------------------------
-  const today = frappe.datetime.get_today();
-
+  // --- Step 2: Structure ---
   $container.append(`
-    <div class="filter-card card shadow-sm mb-4">
-      <div class="card-body">
-        <div class="row align-items-end">
-          <div class="col-md-4">
-            <label class="text-muted small mb-1 uppercase font-weight-bold">From Date</label>
-            <input type="date" class="form-control border-0 bg-light" id="from_date" value="${today}">
-          </div>
-          <div class="col-md-4">
-            <label class="text-muted small mb-1 uppercase font-weight-bold">To Date</label>
-            <input type="date" class="form-control border-0 bg-light" id="to_date" value="${today}">
-          </div>
-          <div class="col-md-4">
-             <button class="btn btn-primary w-100 font-weight-bold" id="apply_filters" style="height: 40px;">
-                <i class="fa fa-filter mr-2"></i> Apply Filters
-             </button>
-          </div>
-        </div>
-      </div>
+    <div id="export-prog-overlay"></div>
+    <div id="export-prog-modal">
+        <h4 style="margin:0;">Generating Report</h4>
+        <p class="text-muted" id="export-status-text">Processing records...</p>
+        <div class="export-progress-bar"><div id="export-fill"></div></div>
+        <div id="export-perc">0%</div>
     </div>
 
-    <div id="report-status-box" class="text-center p-5 border-dashed rounded-lg" style="border: 2px dashed #d1d8dd; background: #fafbfc;">
-        <div id="status-content">
-            <div class="mb-3">
-                <i class="fa fa-calendar-check-o fa-3x text-muted"></i>
-            </div>
-            <h5 class="text-dark">Ready to generate your report?</h5>
-            <p class="text-muted">Select the date range above and click <b>Apply Filters</b> to prepare your leads.</p>
-        </div>
+    <div class="dashboard-tabs">
+        <div class="nav-tab active" data-tab="preference">Preference Wise</div>
+        <div class="nav-tab" data-tab="employee">Employee Wise</div>
+        <div class="nav-tab" data-tab="daily_sales">Daily Sales Report</div>
+        <div class="nav-tab" data-tab="lead_mgmt">Lead Management</div>
     </div>
-    <style>
-  /* Export Progress Modal Styles */
-  .export-progress-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    z-index: 2000;
-    width: 90%;
-    max-width: 450px;
-    display: none;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-    text-align: center;
-  }
-  .modal-overlay-custom {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1999;
-    display: none;
-    backdrop-filter: blur(3px);
-  }
-  .export-progress-bar {
-    width: 100%; height: 10px;
-    background: #e0e6ed;
-    border-radius: 5px;
-    overflow: hidden;
-    margin: 20px 0;
-  }
-  .export-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4f46e5, #059669);
-    width: 0%;
-    transition: width 0.4s ease;
-  }
-  .export-percentage { font-weight: bold; font-size: 18px; color: #4f46e5; }
-</style>
-
-<div class="modal-overlay-custom" id="export-prog-overlay"></div>
-<div class="export-progress-modal" id="export-prog-modal">
-  <h4 style="margin-bottom:10px;">Exporting Report</h4>
-  <p class="text-muted" id="export-status-text">Starting export process...</p>
-  <div class="export-percentage" id="export-perc">0%</div>
-  <div class="export-progress-bar">
-    <div class="export-progress-fill" id="export-fill"></div>
-  </div>
-  <small class="text-muted">Please keep this tab open</small>
-</div>
+    <div id="tab-content-area"></div>
   `);
-  // ... existing code (filters ke baad) ...
 
-  // 1. Table Container (Bohat saari fields hain isliye table-responsive zaroori hai)
-  //   $container.append(`
-  //     <div id="leads-preview-section" class="mt-4">
-  //         <div class="d-flex justify-content-between align-items-center mb-2">
-  //             <h5>Lead Preview (Filter Testing)</h5>
-  //             <div id="stats-badge-container"></div>
-  //         </div>
-  //         <div class="table-responsive" style="max-height: 600px; border: 1px solid #d1d8dd;">
-  //             <table class="table table-bordered table-hover bg-white" style="font-size: 11px; min-width: 1800px;">
-  //                 <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
-  //                     <tr>
-  //                         <th>Sr.No.</th>
-  //                         <th>Status</th>
-  //                         <th>Lead ID</th>
-  //                         <th>Customer</th>
-  //                         <th>Contact</th>
-  //                         <th>Source</th>
-  //                         <th>Product Code</th>
-  //                         <th>Product Name</th>
-  //                         <th>Amount</th>
-  //                         <th>Employee Name</th>
-  //                         <th>Employee ID</th>
-  //                         <th>Designation</th>
-  //                         <th>SOL ID</th>
-  //                         <th>Branch</th>
-  //                         <th>District</th>
-  //                         <th>Region</th>
-  //                         <th>Zone</th>
-  //                         <th>Created On</th>
-  //                     </tr>
-  //                 </thead>
-  //                 <tbody id="leads-table-body">
-  //                     <tr><td colspan="18" class="text-center text-muted">Select dates and click Apply to test filters</td></tr>
-  //                 </tbody>
-  //             </table>
-  //         </div>
-  //     </div>
-  // `);
+  // --- Step 3: Render Function ---
+  // --- Step 3: Render Function (Modified only to add SOL ID) ---
+  // --- Step 3: Render Function (Optimized for Dynamic Space) ---
+  async function render_preference_view() {
+    const $view = $("#tab-content-area").empty();
+    let res = await frappe.call({
+      method:
+        "sahayog.scrm.api.report_access.get_user_report_preference_record",
+      args: { user: user, report_type: "Lead" },
+    });
 
-  //   // 2. Apply Filters Logic
-  //   $("#apply_filters").on("click", async () => {
-  //     const from_date = $("#from_date").val();
-  //     const to_date = $("#to_date").val();
-
-  //     if (!from_date || !to_date) {
-  //       frappe.msgprint(__("Please select date range"));
-  //       return;
-  //     }
-
-  //     $("#leads-table-body").html(
-  //       '<tr><td colspan="18" class="text-center">Fetching data...</td></tr>',
-  //     );
-
-  //     try {
-  //       let res = await frappe.call({
-  //         method: "sahayog.scrm.api.report_access.get_leads",
-  //         args: { from_date, to_date, limit: 100 }, // Testing ke liye 100 kaafi hain
-  //       });
-
-  //       const data = res.message;
-  //       const leads = data.leads || [];
-  //       const stats = data.stats || {};
-
-  //       // Update Stats Summary
-  //       $("#stats-badge-container").html(`
-  //             <span class="badge badge-info">Total: ${stats.total}</span>
-  //             <span class="badge badge-success">Converted: ${stats.converted}</span>
-  //             <span class="badge badge-warning">Follow Up: ${stats.follow_up}</span>
-  //         `);
-
-  //       let html = "";
-  //       if (leads.length === 0) {
-  //         html =
-  //           '<tr><td colspan="18" class="text-center">No leads found for these criteria. Check your Report Preferences.</td></tr>';
-  //       } else {
-  //         leads.forEach((l, i) => {
-  //           const branch = l.branch_info || {};
-  //           const created_on = l.creation
-  //             ? frappe.datetime.str_to_user(l.creation)
-  //             : "-";
-
-  //           html += `
-  //                     <tr>
-  //                         <td class="text-center">${i + 1}</td>
-  //                         <td><span class="label label-${get_status_indicator(l.status)}">${l.status}</span></td>
-  //                         <td><a href="/app/lead/${l.name}" target="_blank"><b>${l.name}</b></a></td>
-  //                         <td>${l.lead_name || "-"}</td>
-  //                         <td>${l.contact || "-"}</td>
-  //                         <td>${l.source || "-"}</td>
-  //                         <td>${l.product_code || "-"}</td>
-  //                         <td>${l.product_name || "-"}</td>
-  //                         <td>${l.amount || "0"}</td>
-  //                         <td>${l.employee_name || "-"}</td>
-  //                         <td>${l.employee_id || "-"}</td>
-  //                         <td>${l.designation || "-"}</td>
-  //                         <td>${l.sol_id || "-"}</td>
-  //                         <td>${branch.branch || "-"}</td>
-  //                         <td>${branch.district || "-"}</td>
-  //                         <td>${branch.region || "-"}</td>
-  //                         <td>${branch.zone || "-"}</td>
-  //                         <td>${created_on}</td>
-  //                     </tr>
-  //                 `;
-  //         });
-  //       }
-  //       $("#leads-table-body").html(html);
-  //     } catch (err) {
-  //       console.error(err);
-  //       $("#leads-table-body").html(
-  //         '<tr><td colspan="18" class="text-center text-danger">Error fetching data. Check Error Log.</td></tr>',
-  //       );
-  //     }
-  //   });
-
-  //   // Helper for status colors
-  //   function get_status_indicator(status) {
-  //     let color = "gray";
-  //     if (status === "Converted") color = "green";
-  //     if (status === "Follow Up") color = "orange";
-  //     if (status === "Not Interested") color = "red";
-  //     if (status === "Lead") color = "blue";
-  //     return color;
-  //   }
-
-  // ---------- Apply Filters ----------
-  // ---------- Apply Filters Logic ----------
-  // ---------- Apply Filters Logic ----------
-  // ---------- Apply Filters Logic with Lead Count ----------
-  // ---------- Apply Filters Logic with Correct Lead Count ----------
-  $("#apply_filters").on("click", async () => {
-    const from = $("#from_date").val();
-    const to = $("#to_date").val();
-
-    if (!from || !to) {
-      frappe.msgprint("Please select both dates");
+    const pref = (res.message || [])[0];
+    if (!pref) {
+      $view.html(
+        `<div class="text-center p-5 text-muted">No preferences found.</div>`,
+      );
       return;
     }
 
-    // --- Optimized Checkbox Value Gathering ---
-    // Hum har field (Zone, Product, etc.) se sirf wahi values uthayenge jo Checked hain
+    let region_data = pref.all_regions
+      ? (
+          await frappe.call({
+            method: "sahayog.scrm.api.report_access.get_all_system_regions",
+          })
+        ).message
+      : pref.region || [];
+
+    // Naya helper function: sirf tabhi div banayega jab data array empty na ho
+    const render_section = (label, values, field_id) => {
+      if (!values || !values.length) return ""; // Blank string return karega
+      return `<div class="filter-section">${render_chip_group(label, values, field_id)}</div>`;
+    };
+
+    $view.append(`
+      <div class="dashboard-card">
+        <div class="filters-wrapper">
+            ${render_section("Zones", pref.zone, "zone")}
+            ${render_section("Regions", region_data, "region")}
+            ${render_section("SOL IDs", pref.sol_id, "sol_id")}
+            ${render_section("Products", pref.product, "product")}
+            ${render_section("Sources", pref.source, "source")}
+        </div>
+        <div class="date-action-row">
+            <div style="flex: 1;"><div class="section-label">From Date</div><input type="date" class="form-control" id="from_date" value="${frappe.datetime.get_today()}"></div>
+            <div style="flex: 1;"><div class="section-label">To Date</div><input type="date" class="form-control" id="to_date" value="${frappe.datetime.get_today()}"></div>
+            <div style="flex: 0.5;">
+              <button class="btn btn-primary w-100 btn-generate" id="apply_filters">
+                  <i class="fa fa-play-circle mr-2"></i> GENERATE REPORT
+              </button>
+        </div>
+        </div>
+      </div>
+      <div id="report-status-box" class="mt-4 text-center p-5 border-dashed">
+        <i class="fa fa-bar-chart fa-2x text-muted mb-2"></i>
+        <h7 class="text-muted">Click "Generate Report" to fetch data</h7>
+      </div>
+    `);
+  }
+  function render_chip_group(label, values, field_id) {
+    let chips = values
+      .map(
+        (val) => `
+        <div class="filter-chip active" data-field="${field_id}" data-value="${val}">
+            ${val} <span class="chip-count"><i class="fa fa-check"></i></span>
+        </div>
+    `,
+      )
+      .join("");
+    return `<div class="section-label">${label}</div><div class="chip-group">${chips}</div>`;
+  }
+
+  // --- Step 4: Logic Handlers ---
+
+  // Tab Switching
+  $(document).on("click", ".nav-tab", function () {
+    $(".nav-tab").removeClass("active");
+    $(this).addClass("active");
+    const tab = $(this).data("tab");
+    if (tab === "preference") render_preference_view();
+    else if (tab === "daily_sales") frappe.set_route("daily-sales-report");
+    else if (tab === "lead_mgmt") frappe.set_route("crm-lead-management");
+    else
+      $("#tab-content-area").html(
+        `<div class="p-5 text-center text-muted">View for ${tab} is under development.</div>`,
+      );
+  });
+
+  // Chip Toggle
+  $(document).on("click", ".filter-chip", function () {
+    $(this).toggleClass("active"); // Ye 'active' class add/remove karega
+
+    // Icon update karne ke liye (Check/Cross)
+    const isActive = $(this).hasClass("active");
+    $(this)
+      .find(".chip-count")
+      .html(
+        isActive
+          ? '<i class="fa fa-check"></i>'
+          : '<i class="fa fa-times"></i>',
+      );
+    // YEH CONSOLE ADD KAREIN
+    console.log("Chip Clicked:", $(this).data("value"));
+    console.log(
+      "Current State (Has Active Class?):",
+      $(this).hasClass("active"),
+    );
+  });
+
+  // Apply Filters (Fixing value gathering)
+  $(document).on("click", "#apply_filters", async () => {
+    const from = $("#from_date").val();
+    const to = $("#to_date").val();
     let active_filters = {};
-    $(".pref-filter-checkbox:checked").each(function () {
+
+    $(".filter-chip.active").each(function () {
       let field = $(this).data("field");
-      let val = $(this).val();
+      let val = $(this).data("value");
       if (!active_filters[field]) active_filters[field] = [];
       active_filters[field].push(val);
     });
-    console.log("Active Filters:", active_filters); // Debugging ke liye
-    // Show loading state
-    $("#report-status-box").html(
-      `<div class="text-muted"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Calculating leads...</p></div>`,
-    );
 
-    try {
-      // Fetch data without limit to get accurate total count
-      let res = await frappe.call({
-        method: "sahayog.scrm.api.report_access.get_leads",
-        args: { from_date: from, to_date: to, filters: active_filters },
-      });
+    // 🔥 YAHI ADD KARNA HAI (THIS IS THE FIX)
+    const all_fields = ["zone", "region", "sol_id", "product", "source"];
 
-      const stats = res.message.stats || { total: 0 };
+    all_fields.forEach((field) => {
+      if (!active_filters[field]) {
+        active_filters[field] = [];
+      }
+    });
 
-      // Updated UI: Showing only Filtered Leads Count
-      $("#report-status-box").css({
-        background: "#f0fff4",
-        "border-color": "#68d391",
-      }).html(`
-            <div class="text-center animate__animated animate__fadeIn">
-                <div class="mb-3">
-                    <i class="fa fa-check-circle fa-2x text-success"></i>
-                </div>
-                <h5 class="text-success font-weight-bold">Filters Applied Successfully!</h5>
-                
-                <div class="row justify-content-center my-4">
-                    <div class="col-md-4">
-                        <div class="p-3 bg-white rounded shadow-sm border" style="border-top: 4px solid #059669 !important;">
-                            <h2 class="m-0 text-success font-weight-bold">${stats.total}</h2>
-                            <div class="text-muted uppercase small font-weight-bold mt-1">Total Filtered Leads</div>
-                        </div>
-                    </div>
-                </div>
+    $("#report-status-box").html('<i class="fa fa-spinner fa-spin fa-2x"></i>');
 
-                <p class="text-muted">You can now download the report for the period <br> 
-                   <b>${frappe.datetime.str_to_user(from)}</b> to <b>${frappe.datetime.str_to_user(to)}</b>.
-                </p>
-                
-                <button class="btn btn-success btn-lg px-5 shadow-sm mt-2" id="export_leads_v2">
-                    <i class="fa fa-download mr-2"></i> Download CSV Report
-                </button>
-            </div>
-        `);
-    } catch (e) {
-      console.error(e);
-      frappe.msgprint(
-        "Error fetching lead counts. Please check your network or filters.",
-      );
-    }
+    let res = await frappe.call({
+      method: "sahayog.scrm.api.report_access.get_leads",
+      args: { from_date: from, to_date: to, filters: active_filters },
+    });
+
+    const stats = res.message.stats || { total: 0 };
+    $("#report-status-box").html(`
+        <h2 class="text-primary">${stats.total}</h2>
+        <p class="text-muted">Leads found for selected criteria</p>
+        <button class="btn btn-success btn-sm" id="export_leads_v2"><i class="fa fa-download"></i> Export CSV</button>
+    `);
   });
+
+  // Initial Load
+  render_preference_view();
+
+  // Note: Export Modal HTML and Progress Logic remains same at the end of your script.
+
   // --- Export Button Logic Update ---
   // --- Export Button Logic (Fixed with Event Delegation) ---
   // --- Updated Export Button Logic (Progress Bar + Detailed Success Message) ---
   $container.on("click", "#export_leads_v2", async function () {
     const from_date = $("#from_date").val();
     const to_date = $("#to_date").val();
-    // JS Export button click handler mein ye line add karein:
+
+    // --- UPDATE: Filter collection logic changed from checkbox to chips ---
     let active_filters = {};
-    $(".pref-filter-checkbox:checked").each(function () {
-      let field = $(this).data("field");
-      let val = $(this).val();
+    // Hum chips ki 'active' class check karenge
+    $(".filter-chip.active").each(function () {
+      let field = $(this).data("field"); // e.g., 'source'
+      let val = $(this).data("value"); // e.g., 'Campaign'
+
       if (!active_filters[field]) active_filters[field] = [];
       active_filters[field].push(val);
+
+      // 🔥 YAHI ADD KARNA HAI (THIS IS THE FIX)
+      const all_fields = ["zone", "region", "sol_id", "product", "source"];
+
+      all_fields.forEach((field) => {
+        if (!active_filters[field]) {
+          active_filters[field] = [];
+        }
+      });
+      // YEH CONSOLE ADD KAREIN
+      console.log("---------- DEBUG FILTERS ----------");
+      console.log("Is any chip found?", $(".filter-chip").length);
+      console.log("Is any ACTIVE chip found?", $(".filter-chip.active").length);
+      console.log("Final Filters JSON:", JSON.stringify(active_filters));
+      console.log("-----------------------------------");
     });
+    // ---------------------------------------------------------------------
+
     // 1. Show Progress Modal
     $("#export-prog-overlay").show();
     $("#export-prog-modal").show();
@@ -458,6 +290,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       method: "sahayog.scrm.api.report_access.queue_leads_export",
       args: { from_date, to_date, filters: active_filters },
     });
+
     if (res.message && res.message.status === "queued") {
       $("#export-fill").css("width", "30%");
       $("#export-perc").text("30%");
@@ -506,7 +339,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           a.click();
           document.body.removeChild(a);
 
-          // 4. Detailed Success Message (Restored & Improved)
+          // 4. Detailed Success Message
           frappe.msgprint({
             title: __(
               '<div style="color: #059669; font-weight: bold;">🚀 Export Completed</div>',
@@ -514,7 +347,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             message: `
               <div style="font-family: 'Inter', sans-serif; padding: 5px;">
                 <p style="font-size: 15px; margin-bottom: 15px;">Your report has been generated successfully.</p>
-                
                 <div style="background: #f0fdf4; padding: 15px; border-radius: 10px; border: 1px solid #bbf7d0;">
                   <div style="margin-bottom: 8px;">
                     <span style="color: #166534; font-weight: 600;">📊 Row Count:</span> 
@@ -524,16 +356,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <span style="color: #166534; font-weight: 600;">📁 Filename:</span><br>
                     <small style="word-break: break-all; color: #666;">${data.file_url.split("/").pop()}</small>
                   </div>
-                  <div style="border-top: 1px dashed #bbf7d0; padding-top: 8px;">
-                    <span style="color: #166534; font-weight: 600;">📅 Period:</span><br>
-                    <span style="font-size: 13px;">${frappe.datetime.str_to_user(data.from_date)} to ${frappe.datetime.str_to_user(data.to_date)}</span>
-                  </div>
-                </div>
-
-                <div style="margin-top: 15px; text-align: center;">
-                   <a href="${data.file_url}" target="_blank" class="btn btn-xs btn-default" style="text-decoration: none;">
-                     <i class="fa fa-external-link"></i> Re-download File
-                   </a>
                 </div>
               </div>
             `,
