@@ -116,13 +116,14 @@
   {
    "fieldname": "last_synced_date",
    "fieldtype": "Date",
-   "label": "Last Synced Transaction Date"
+   "label": "Last Synced Transaction Date",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-30 12:35:14.184764",
+ "modified": "2026-01-30 13:08:08.776658",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
