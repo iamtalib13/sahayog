@@ -103,8 +103,7 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "reqd": 1
+   "label": "Remarks"
   },
   {
    "allow_on_submit": 1,
@@ -234,7 +233,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-01-29 17:40:29.479580",
+ "modified": "2026-01-29 17:57:14.581045",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

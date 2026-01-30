@@ -131,8 +131,7 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "reqd": 1
+   "label": "Remarks"
   },
   {
    "fieldname": "section_break_fqsb",
@@ -213,7 +212,7 @@
    "link_fieldname": "previous_record"
   }
  ],
- "modified": "2026-01-28 16:56:17.285897",
+ "modified": "2026-01-30 11:26:25.971572",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
