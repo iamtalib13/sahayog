@@ -19,6 +19,8 @@
   "unsettled_cash",
   "last_synced_transaction_id",
   "last_synced_date",
+  "last_synced_fund_id",
+  "last_synced_fund_date",
   "section_break_dsps",
   "gl_sub_code",
   "status"
@@ -118,12 +120,24 @@
    "fieldtype": "Date",
    "label": "Last Synced Transaction Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "last_synced_fund_id",
+   "fieldtype": "Data",
+   "label": "Last Synced Fund ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_synced_fund_date",
+   "fieldtype": "Date",
+   "label": " Last Synced Fund Date",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-30 13:08:08.776658",
+ "modified": "2026-01-30 14:01:09.154550",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
