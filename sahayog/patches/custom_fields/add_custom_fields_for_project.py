@@ -20,6 +20,7 @@ def execute():
                 "label": "Branch Status",
                 "reqd": 1,
                 "options": "\n".join([
+                    "",
                     "Not Started",
                     "Under Development",
                     "Live"
