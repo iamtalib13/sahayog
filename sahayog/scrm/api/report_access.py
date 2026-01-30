@@ -63,6 +63,10 @@ def empty_stats():
 def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
+    frappe.log_error(
+            "CRM INPUT DEBUG",
+            f"User:{user}, From:{from_date}, To:{to_date}, Filters:{filters}"
+        )
     
     # ---------- Preferences ----------
     is_all_regions = False # Default False
@@ -78,40 +82,68 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             regions_pref = {norm(x) for x in p.get("region", [])}
             sol_ids_pref = {str(x) for x in p.get("sol_id", [])}
     frappe.log_error("CRM DEBUG Prefs", f"Products: {products_pref}, Sources: {sources_pref}, Zones: {zones_pref}, Regions: {regions_pref}, SOLs: {sol_ids_pref}")
+    frappe.log_error(
+    "CRM PREF DEBUG",
+    f"all_regions:{is_all_regions} | Products:{products_pref} | "
+    f"Sources:{sources_pref} | Zones:{zones_pref} | "
+    f"Regions:{regions_pref} | SOLs:{sol_ids_pref}"
+)
+
     filters = frappe.parse_json(filters) if filters else {}
 
-     # ---------- UI Override (Checked Only) ----------
+    # ---------- UI Override (Checked Only) ----------
     # Preference = upper boundary
     # UI filters = runtime narrowing
 
-    if filters.get("product"):
-        products_pref = products_pref.intersection(
-            {norm(x) for x in filters.get("product", [])}
-        )
+    # PRODUCT
+    if "product" in filters:
+        ui_products = {norm(x) for x in filters.get("product", [])}
+        if not ui_products:
+            products_pref = set()
+        else:
+            products_pref = products_pref.intersection(ui_products)
 
-    if filters.get("source"):
-        sources_pref = sources_pref.intersection(
-            {norm(x) for x in filters.get("source", [])}
-        )
+    # SOURCE
+    if "source" in filters:
+        ui_sources = {norm(x) for x in filters.get("source", [])}
+        if not ui_sources:
+            sources_pref = set()
+        else:
+            sources_pref = sources_pref.intersection(ui_sources)
 
-    if filters.get("zone"):
-        zones_pref = zones_pref.intersection(
-            {norm(x) for x in filters.get("zone", [])}
-        )
-    if not is_all_regions and filters.get("region"):
-            regions_pref = regions_pref.intersection({norm(x) for x in filters.get("region", [])})
-    elif is_all_regions and filters.get("region"):
-            # Agar all_regions check hai toh UI ke selected regions ko hi final maanenge
-            regions_pref = {norm(x) for x in filters.get("region", [])}
+    # ZONE
+    if "zone" in filters:
+        ui_zones = {norm(x) for x in filters.get("zone", [])}
+        if not ui_zones:
+            zones_pref = set()
+        else:
+            zones_pref = zones_pref.intersection(ui_zones)
 
-    if filters.get("sol_id"):
-        sol_ids_pref = sol_ids_pref.intersection(
-            {str(x) for x in filters.get("sol_id", [])}
-        )
+    # REGION (existing logic preserved)
+    if "region" in filters:
+        ui_regions = {norm(x) for x in filters.get("region", [])}
+
+        if not ui_regions:
+            regions_pref = set()
+        else:
+            if not is_all_regions:
+                regions_pref = regions_pref.intersection(ui_regions)
+            else:
+                # all_regions = true → UI selection final
+                regions_pref = ui_regions
+
+    # SOL ID
+    if "sol_id" in filters:
+        ui_sols = {str(x) for x in filters.get("sol_id", [])}
+        if not ui_sols:
+            sol_ids_pref = set()
+        else:
+            sol_ids_pref = sol_ids_pref.intersection(ui_sols)
 
     frappe.log_error(
-        "CRM DEBUG Final Prefs",
-        f"Products:{products_pref}, Sources:{sources_pref}, Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
+        "CRM FINAL FILTER STATE",
+        f"Products:{products_pref}, Sources:{sources_pref}, "
+        f"Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
     )
 
     # ---------- Fetch Leads (Unlimited within Date Range) ----------
