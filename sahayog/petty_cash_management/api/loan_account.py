@@ -88,6 +88,7 @@ def create_finacle_loan_account():
                     <CustId>400024494</CustId>
                 </CustId>
                 <LoanAcctId>
+                <AcctOpenDt>2026-01-15T00:00:00.000</AcctOpenDt> 
                     <AcctType>
                         <SchmCode>3010</SchmCode>
                     </AcctType>
@@ -99,38 +100,23 @@ def create_finacle_loan_account():
                 <LoanAcctGenInfo>
                     <AcctStmtMode>N</AcctStmtMode>
                     <DespatchMode>N</DespatchMode>
+                    
                 </LoanAcctGenInfo>
                 <LoanGenDetails>
-                    <LoanPeriodMonths>120</LoanPeriodMonths>
+                    <LoanPeriodMonths>24</LoanPeriodMonths>
                     <LoanPeriodDays>0</LoanPeriodDays>
                     <RePmtMethod>N</RePmtMethod>
                     <OperAcctId>
-                        <AcctId></AcctId>
+                        <AcctId>100110020034025</AcctId>
                     </OperAcctId>
+                       <HoldInOperAcctFlg>N</HoldInOperAcctFlg>
                     <PmtPlan>
                         <EqInstallDetails>
                             <EqInstallFlg>Y</EqInstallFlg>
                             <EqInstallType>R</EqInstallType>
                             <EqInstallFormula>P</EqInstallFormula>
                         </EqInstallDetails>
-                        <RepmtRec>
-                            <InstallmentId>INDEM</InstallmentId>
-                            <InstallStartDt>2026-08-29T00:00:00.000</InstallStartDt>
-                            <InstallFreq>
-                                <Cal>00</Cal>
-                                <Type>Y</Type>
-                                <StartDt>29</StartDt>
-                                <HolStat>N</HolStat>
-                            </InstallFreq>
-                            <IntFreq>
-                                <Cal>00</Cal>
-                                <Type>M</Type>
-                                <StartDt>19</StartDt>
-                                <HolStat>N</HolStat>
-                            </IntFreq>
-                            <NoOfInstall>9</NoOfInstall>
-                            <IntStartDt>2026-08-29T00:00:00.000</IntStartDt>
-                        </RepmtRec>
+                        
                         <RepmtRec>
                             <InstallmentId>EIDEM</InstallmentId>
                             <InstallStartDt>2026-02-14T00:00:00.000</InstallStartDt>
@@ -210,7 +196,8 @@ def create_finacle_loan_account():
                         "status": "SUCCESS",
                         "account_id": acct_id.get('AcctId'),
                         "message": "Loan Account Created Successfully",
-                        "full_response": response.text
+                        "full_response": response.text,
+                        "request_sent": xml_request  # <--- ADD THIS LINE
                     }
                 else:
                     return {
