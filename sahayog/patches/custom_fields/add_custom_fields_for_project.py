@@ -10,6 +10,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "department",
                 "label": "Branch Details",
+                "depends_on": "eval:doc.project_template"
                
                 
             },
