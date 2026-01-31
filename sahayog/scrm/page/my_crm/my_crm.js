@@ -44,7 +44,7 @@ class MyCRM {
       search: "",
       data: [],
       filteredData: [],
-      limit: 50,
+      limit: 20,
       hasMore: true,
       totalCount: 0, // Total for the current section
       leadCount: 0, // Total lead count for badge
@@ -872,7 +872,7 @@ class MyCRM {
       }
     });
 
-    $("#mycrm-list-container").on("scroll", () => this.handleScroll());
+    // $("#mycrm-list-container").on("scroll", () => this.handleScroll());
     $("#mycrm-load-more-btn").on("click", () => this.loadMore());
 
     $("#mycrm-fab").on("click", () => {
@@ -1648,18 +1648,18 @@ if (this.assignedByMap?.[item.name]) {
     return lastThree;
   }
 
-  handleScroll() {
-    const container = $("#mycrm-list-container");
-    const scrollTop = container.scrollTop();
-    const scrollHeight = container[0].scrollHeight;
-    const clientHeight = container[0].clientHeight;
+  // handleScroll() {
+  //   const container = $("#mycrm-list-container");
+  //   const scrollTop = container.scrollTop();
+  //   const scrollHeight = container[0].scrollHeight;
+  //   const clientHeight = container[0].clientHeight;
 
-    if (scrollTop + clientHeight > scrollHeight - 100) {
-      if (this.state.hasMore && !this.isLoading) {
-        this.loadMore();
-      }
-    }
-  }
+  //   if (scrollTop + clientHeight > scrollHeight - 100) {
+  //     if (this.state.hasMore && !this.isLoading) {
+  //       this.loadMore();
+  //     }
+  //   }
+  // }
 
   async loadMore() {
     if (!this.state.hasMore || this.isLoading) return;

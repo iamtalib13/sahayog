@@ -74,13 +74,36 @@ def _get_lead_data(limit, cursor, search_term):
         ]
     
     # Keyset Pagination Logic
+  # Keyset Pagination Logic (Replaced with Offset for stability)
+    # decode_cursor ko rehne dein, bas uska value offset ki tarah use karein
+    offset = 0
     if cursor:
-        last_modified, last_name = decode_cursor(cursor)
-        if last_modified and last_name:
-            # CRITICAL: Order_by in get_list must match this logic exactly
-            filters.append([
-                f"(modified < '{last_modified.isoformat()}') OR (modified = '{last_modified.isoformat()}' AND name < '{last_name}')"
-            ])
+        try:
+            # Agar cursor numeric hai (offset), toh use use karein
+            if cursor.isdigit():
+                offset = int(cursor)
+            else:
+                # Agar cursor purana base64 hai, toh safety ke liye 0 set karein ya offset nikalne ki logic likhein
+                offset = 0 
+        except:
+            offset = 0
+
+    # Fetch main lead data page
+    leads = frappe.get_list(
+        "Lead",
+        fields=["name", "lead_name", "first_name", "mobile_no", "email_id", "status", "source", "modified"],
+        filters=filters,
+        or_filters=or_filters,
+        order_by="modified desc, name desc",
+        limit_start=offset, # Offset pagination
+        limit_page_length=limit + 1
+    )
+
+    next_cursor = None
+    if len(leads) > limit:
+        leads.pop()
+        # Agla cursor agla offset number hoga
+        next_cursor = str(offset + limit)
  
     # Fetch total count with all filters for accurate badge display
     # Combine filters and or_filters for frappe.db.count
@@ -143,14 +166,25 @@ def _get_appointment_data(limit, cursor, search_term):
         ])
  
     # Keyset Pagination Logic
-    if cursor:
-        last_modified, last_name = decode_cursor(cursor)
-        if last_modified and last_name:
-            # CRITICAL: Order_by in get_list must match this logic exactly
-            filters.append([
-                f"(modified < '{last_modified.isoformat()}') OR (modified = '{last_modified.isoformat()}' AND name < '{last_name}')"
-            ])
- 
+   # Keyset Pagination Logic
+    offset = 0
+    if cursor and cursor.isdigit():
+        offset = int(cursor)
+
+    appointments = frappe.get_list(
+        "Appointment",
+        fields=["name", "customer_name", "customer_phone_number", "scheduled_time", "status", "party", "modified"],
+        filters=filters,
+        or_filters=or_filters,
+        order_by="modified desc, name desc",
+        limit_start=offset,
+        limit_page_length=limit + 1,
+    )
+
+    next_cursor = None
+    if len(appointments) > limit:
+        appointments.pop()
+        next_cursor = str(offset + limit)
     # Combine filters and or_filters for frappe.db.count
     combined_filters = list(filters) # Make a mutable copy
     if or_filters:
