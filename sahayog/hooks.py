@@ -362,10 +362,11 @@ scheduler_events = {
         ],
 
           # Run every 1 minute — Auto Fund Allocation AND Auto Cash Withdrawal
-        "*/30 * * * *": [
-            "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle",
-            "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals"
-        ],
+          # stop cron job after testing
+        # "*/30 * * * *": [
+        #     "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle",
+        #     "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals"
+        # ],
 
     #     "* * * * *": [
     #     "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
