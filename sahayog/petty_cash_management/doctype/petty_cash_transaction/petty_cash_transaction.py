@@ -71,76 +71,7 @@ class PettyCashTransaction(Document):
             else:
                 item.finacle_gl_code = ""
 
-    # def validate(self):
-    #     # 1. Check Account Existence
-    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
-    #     if not account_exists:
-    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
-
-    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-        
-    #     if self.transaction_type == "Expense":
-    #         if not self.items:
-    #             frappe.throw(_("At least one expense item is required."))
-            
-    #         self.validate_bill_dates()
-            
-    #         # [CHANGED] We now perform soft validation (Warning) instead of hard validation (Throw)
-    #         self.validate_expense_soft(wallet)
-        
-    #     self.current_branch_balance = wallet.get_current_balance()
-    
-
-    # def validate(self):
-    #     # 1. Check Account Existence
-    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
-    #     if not account_exists:
-    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
-
-    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-        
-    #     if self.transaction_type == "Expense":
-    #         if not self.items:
-    #             frappe.throw(_("At least one expense item is required."))
-            
-    #         # [FIX] Calculate breakdown HERE so variables are set before checking
-    #         self.amount = sum(flt(item.amount) for item in self.items) # Ensure amount is set
-    #         self.calculate_limit_breakdown() 
-
-    #         self.validate_bill_dates()
-            
-    #         # Now safe to call because variables are set
-    #         self.validate_expense_soft(wallet)
-        
-    #     self.current_branch_balance = wallet.get_current_balance()
-
-    # def validate(self):
-    #     # 1. Check Account Existence
-    #     account_exists = frappe.db.count("Branch Petty Cash Account", {"branch": self.branch})
-    #     if not account_exists:
-    #         frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
-
-    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-        
-    #     if self.transaction_type == "Expense":
-    #         if not self.items:
-    #             frappe.throw(_("At least one expense item is required."))
-            
-    #         # Ensure amount is set
-    #         self.amount = sum(flt(item.amount) for item in self.items) 
-    #         self.calculate_limit_breakdown() 
-
-    #         self.validate_bill_dates()
-            
-    #         # Soft Validation
-    #         self.validate_expense_soft(wallet)
-        
-    #     # [FIX] Fetch the REAL balance directly from the database for display
-    #     # This ensures it shows 21047 (Finacle Value) instead of 693 (Old Calculation)
-    #     real_balance = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "current_balance")
-    #     self.current_branch_balance = flt(real_balance)
-
-
+   
     def validate(self):
         # 1. Check Account Existence
         if not frappe.db.exists("Branch Petty Cash Account", {"branch": self.branch}):
@@ -237,27 +168,7 @@ class PettyCashTransaction(Document):
         self.amount_within_limit = total_within
         self.amount_exceeding_limit = total_exceeding
 
-    # def validate_expense_soft(self, wallet):
-    #     # 1. Wallet Balance Check (Still Strict for TOTAL amount? Or Partial?)
-    #     # Requirement: "Submit... not deduct". 
-    #     # But if the wallet physically doesn't have money, we probably shouldn't allow even creating the debt.
-    #     # However, for now, let's strictly check if wallet has enough for the *Within Limit* portion at least?
-    #     # Scenario: Wallet has 5000. Bill is 10000. Limit is 2000.
-    #     # We deduct 2000. Wallet has 3000. 
-    #     # For now, let's keep Wallet Balance check strictly for the Amount being Deducted NOW.
-        
-    #     # But wait, if we eventually approve, we need the money. 
-    #     # Let's keep Wallet Check strict for the FULL Amount to prevent negative cash later.
-    #     current_balance = wallet.get_current_balance()
-        
-    #     # Note: current_balance check is tricky because we haven't deducted anything yet.
-    #     if current_balance < self.amount:
-    #          frappe.throw(_("Insufficient Branch Wallet Balance. Available: ₹{0}, Required: ₹{1}").format(current_balance, self.amount))
-
-    #     # 2. Notify user if limits exceeded
-    #     if self.amount_exceeding_limit > 0:
-    #         frappe.msgprint(_("Warning: Expenses exceed category limits by ₹{0}. This amount will NOT be deducted until approved by HO.").format(self.amount_exceeding_limit), alert=True)
-
+   
     def validate_expense_soft(self, wallet):
         # 1. Fetch Latest Values Directly from DB (Bypassing any old calculation logic)
         wallet_data = frappe.db.get_value("Branch Petty Cash Account", 
@@ -286,34 +197,6 @@ class PettyCashTransaction(Document):
             frappe.msgprint(_("Warning: Expenses exceed category limits by ₹{0}. This amount will NOT be deducted until approved by HO.").format(self.amount_exceeding_limit), alert=True)
 
 
-    # def on_submit(self):
-
-    #     # 1. Update Unsettled Cash if this is an Expense
-    #     if self.transaction_type == "Expense":
-    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-    #         # Deduct the total amount from their "Cash in Hand" bucket
-    #         wallet.update_unsettled_cash(self.amount, "Expense")
-
-
-    #     if self.transaction_type == "Expense":
-    #         if self.amount_exceeding_limit > 0:
-    #             # Scenario 2: Exceeding Limit
-    #             # We deduct only the limit amount
-    #             self.db_set('amount_deducted', self.amount_within_limit)
-    #             self.db_set('approval_status', 'Pending Approval')
-                
-    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
-    #         else:
-    #             # Scenario 1: Within Limit
-    #             # We deduct full amount
-    #             self.db_set('amount_deducted', self.amount)
-    #             self.db_set('approval_status', 'Approved') 
-        
-    #     elif self.transaction_type == "Fund Allocation":
-    #         self.db_set('amount_deducted', 0)
-    #         self.db_set('approval_status', 'Posted')
-
-    #     self.update_wallet()
 
     def on_submit(self):
         # 1. Update Unsettled Cash if this is an Expense
@@ -348,163 +231,6 @@ class PettyCashTransaction(Document):
 
         self.update_wallet()
 
-    # def create_journal_entry(self):
-    #     """
-    #     Creates a Draft Journal Entry with:
-    #     - Debits: Individual Expense Categories (GL Code = Branch Code + Suffix)
-    #     - Credit: Branch Petty Cash Account (GL Code = From Wallet Master)
-    #     """
-        
-    #     # 1. Get Credit Account (The Branch Wallet)
-    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-    #     if not wallet.gl_sub_code:
-    #         frappe.throw(_("Branch Wallet has no GL Sub Code defined."))
-            
-    #     credit_account = self.get_or_create_account(
-    #         gl_code=wallet.gl_sub_code,
-    #         account_name=f"Petty Cash - {self.branch_name}",
-    #         parent_group="Cash In Hand - S" # Adjust based on your Chart of Accounts
-    #     )
-
-    #     # 2. Prepare Journal Accounts
-    #     accounts = []
-    #     total_credit = 0.0
-
-    #     for item in self.items:
-    #         amount = flt(item.amount)
-    #         if amount <= 0: continue
-
-    #         # Get GL Code for this Item (You already generated this in before_save)
-    #         if not item.finacle_gl_code:
-    #             frappe.throw(_("Row #{0}: Missing Finacle GL Code. Cannot create Journal Entry.").format(item.idx))
-
-    #         # Find/Create Debit Account
-    #         debit_account = self.get_or_create_account(
-    #             gl_code=item.finacle_gl_code,
-    #             account_name=f"{item.expense_category} - {self.branch_name}",
-    #             parent_group="Direct Expenses - S" # Adjust based on your Chart of Accounts
-    #         )
-
-    #         # Add Debit Line
-    #         accounts.append({
-    #             "account": debit_account,
-    #             "debit_in_account_currency": amount,
-    #             "credit_in_account_currency": 0,
-    #             "cost_center": self.branch, # Assuming Branch is Cost Center
-    #             "user_remark": f"{item.description} (Bill: {item.bill_number})"
-    #         })
-    #         total_credit += amount
-
-    #     # Add Credit Line (Total)
-    #     accounts.append({
-    #         "account": credit_account,
-    #         "debit_in_account_currency": 0,
-    #         "credit_in_account_currency": total_credit,
-    #         "cost_center": self.branch,
-    #         "user_remark": f"Total Petty Cash Expense for {self.name}"
-    #     })
-
-    #     # 3. Create Journal Entry Doc
-    #     je = frappe.get_doc({
-    #         "doctype": "Journal Entry",
-    #         "voucher_type": "Journal Entry",
-    #         "posting_date": self.transaction_date,
-    #         "company": frappe.defaults.get_user_default("Company"), # Or hardcode "Sahayog"
-    #         "accounts": accounts,
-    #         "cheque_no": "", # Empty for now, will be filled by Finacle
-    #         "cheque_date": self.transaction_date,
-    #         "user_remark": f"Petty Cash Expense: {self.name}",
-    #         "reference_type": "Petty Cash Transaction",
-    #         "reference_name": self.name
-    #     })
-
-    #     # 4. Save (Status: Draft)
-    #     je.insert(ignore_permissions=True)
-        
-    #     # Link JE back to this doc for easy reference
-    #     self.db_set("journal_entry_ref", je.name)
-        
-    #     frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
-
-    
-
-    # def create_journal_entry(self):
-    #     """
-    #     Creates a Draft Journal Entry. 
-    #     [UPDATED] Now auto-generates Cost Centers to prevent errors.
-    #     """
-    #     # 1. Get Credit Account (The Branch Wallet)
-    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-    #     if not wallet.gl_sub_code:
-    #         frappe.throw(_("Branch Wallet has no GL Sub Code defined."))
-            
-    #     credit_account = self.get_or_create_account(
-    #         gl_code=wallet.gl_sub_code,
-    #         account_name=f"Petty Cash - {self.branch_name}",
-    #         parent_group="Sahayog Petty Cash Wallets"
-    #     )
-
-    #     # [NEW] Get or Create the Cost Center automatically
-    #     valid_cost_center = self.get_or_create_cost_center()
-
-    #     # 2. Prepare Journal Accounts
-    #     accounts = []
-    #     total_credit = 0.0
-
-    #     for item in self.items:
-    #         amount = flt(item.amount)
-    #         if amount <= 0: continue
-
-    #         if not item.finacle_gl_code:
-    #             frappe.throw(_("Row #{0}: Missing Finacle GL Code.").format(item.idx))
-
-    #         # Find/Create Debit Account
-    #         debit_account = self.get_or_create_account(
-    #             gl_code=item.finacle_gl_code,
-    #             account_name=f"{item.expense_category} - {self.branch_name}",
-    #             parent_group="Sahayog Branch Expenses"
-    #         )
-
-    #         # Add Debit Line
-    #         accounts.append({
-    #             "account": debit_account,
-    #             "debit_in_account_currency": amount,
-    #             "credit_in_account_currency": 0,
-    #             "cost_center": valid_cost_center, # <--- Uses the auto-created CC
-    #             "user_remark": f"{item.description} (Bill: {item.bill_number})"
-    #         })
-    #         total_credit += amount
-
-    #     # 3. Add Credit Line (Total)
-    #     accounts.append({
-    #         "account": credit_account,
-    #         "debit_in_account_currency": 0,
-    #         "credit_in_account_currency": total_credit,
-    #         "cost_center": valid_cost_center, # <--- Uses the auto-created CC
-    #         "user_remark": f"Total Petty Cash Expense for {self.name}"
-    #     })
-
-    #     # 4. Create Journal Entry Doc
-    #     je = frappe.get_doc({
-    #         "doctype": "Journal Entry",
-    #         "voucher_type": "Journal Entry",
-    #         "posting_date": self.transaction_date,
-    #         "company": frappe.defaults.get_user_default("Company"), 
-    #         "accounts": accounts,
-    #         "cheque_no": "", 
-    #         "cheque_date": self.transaction_date,
-    #         "user_remark": f"Petty Cash Expense: {self.name}",
-    #         "reference_type": "Petty Cash Transaction",
-    #         "reference_name": self.name
-    #     })
-
-    #     # 5. Save (Status: Draft)
-    #     je.insert(ignore_permissions=True)
-        
-    #     # Link JE back to this doc
-    #     self.db_set("journal_entry_ref", je.name)
-        
-    #     frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
     
 
     def create_journal_entry(self):
@@ -658,16 +384,7 @@ class PettyCashTransaction(Document):
         self.approval_status = "Draft"
         self.update_wallet()
 
-    # def update_wallet(self):
-    #     # Trigger wallet update (recalculation based on Sum(amount_deducted))
-    #     if frappe.flags.in_test: return
-    #     wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-    #     wallet.flags.ignore_permissions = True
-    #     wallet.current_balance = wallet.get_current_balance() # This calls the new SQL logic
-    #     if self.transaction_type == "Fund Allocation" and self.docstatus == 1:
-    #         wallet.last_funded_on = self.transaction_date
-    #     wallet.save(ignore_permissions=True)
-
+  
     def update_wallet(self):
         # Trigger wallet update
         if frappe.flags.in_test: return
@@ -835,25 +552,6 @@ def get_category_limit_status(branch, category, transaction_date, doc_name=None)
     available = flt(limit) - flt(spent)
     return max(available, 0)
 
-
-# @frappe.whitelist()
-# def get_branch_balance(branch):
-#     """
-#     Returns the current wallet balance for the branch using direct SQL.
-#     """
-#     if not branch:
-#         return 0.0
-        
-#     # [FIX] Use SQL to ensure we find the record even if permissions or caching act up
-#     balance = frappe.db.sql("""
-#         SELECT current_balance 
-#         FROM `tabBranch Petty Cash Account` 
-#         WHERE branch = %s 
-#         LIMIT 1
-#     """, branch)
-    
-#     # If a record is found, return the balance; otherwise return 0.0
-#     return flt(balance[0][0]) if balance else 0.0
 
 
 @frappe.whitelist()
