@@ -129,8 +129,16 @@ def _send_email(
     added_by,
     body_html,
     is_attachment=False,
-override_email=None,):
+    override_email=None,
+):
     from frappe.utils import get_url_to_form
+
+    # --------------------------------------------------
+    # 🚫 GLOBAL EMAIL SWITCH
+    # --------------------------------------------------
+    if not frappe.db.get_single_value("Sahayog Settings", "send"):
+        # Email disabled → do NOTHING, but DO NOT break flow
+        return
 
     # --------------------------------------------------
     # 1. Resolve recipient email
