@@ -19,14 +19,14 @@ def execute():
                 "fieldtype": "Select",
                 "insert_after": "custom_branch_details_section",
                 "label": "Branch Status",
-                "reqd": 1,
+                "reqd": 0,
                 "options": "\n".join([
                     "",
                     "Not Started",
                     "Under Development",
                     "Live"
                 ]),
-                "depends_on": "eval:doc.project_template"
+                "mandatory_depends_on": "eval:doc.project_template"
             },
               {
                 "fieldname": "custom_branch_col_1",
