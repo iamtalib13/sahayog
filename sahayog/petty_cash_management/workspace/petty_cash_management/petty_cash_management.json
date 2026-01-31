@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"3ww9Yk_379\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Petty Cash Management</span>\",\"col\":12}}]",
+ "content": "[{\"id\":\"o9zi4H8HoW\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Petty Cash Management</b></span>\",\"col\":12}}]",
  "creation": "2026-01-30 16:56:06.128125",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "Petty Cash Management",
  "links": [],
- "modified": "2026-01-30 17:07:05.161078",
+ "modified": "2026-01-30 17:24:44.492395",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Management",
