@@ -605,6 +605,7 @@ fixtures = [
                     "Finacle Dashboard",
                     "IT Dashboard",
                     "Trainer Dashboard",
+                    "Petty Cash Dashboard Widget"
                 ],
             ]
         ],

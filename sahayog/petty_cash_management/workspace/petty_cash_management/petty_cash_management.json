@@ -1,19 +1,33 @@
 {
- "creation": "2026-01-30 10:00:00.000000",
+ "charts": [],
+ "content": "[{\"id\":\"o9zi4H8HoW\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Petty Cash Management</b></span>\",\"col\":12}},{\"id\":\"jzcsn5lenz\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Petty Cash Dashboard Widget\",\"col\":12}}]",
+ "creation": "2026-01-30 16:56:06.128125",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Petty Cash Dashboard Widget",
+   "label": "Petty Cash Dashboard Widget"
+  }
+ ],
  "docstatus": 0,
- "doctype": "Page",
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
  "idx": 0,
- "modified": "2026-01-30 10:00:00.000000",
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Petty Cash Management",
+ "links": [],
+ "modified": "2026-01-31 11:20:45.737804",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
- "name": "petty-cash-dashboard",
+ "name": "Petty Cash Management",
+ "number_cards": [],
  "owner": "Administrator",
- "page_name": "petty-cash-dashboard",
- "roles": [
-  { "role": "Branch User" },
-  { "role": "Accounts User" },
-  { "role": "System Manager" }
- ],
- "standard": "Yes",
- "title": "Petty Cash Dashboard"
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 94.0,
+ "shortcuts": [],
+ "title": "Petty Cash Management"
 }
