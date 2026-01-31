@@ -254,3 +254,11 @@ def save_employee_email(employee, email):
     emp.company_email = email
     emp.db_update()
     return "OK"
+# -------------------
+# excluded higher authority employees from employee selection
+# -------------------
+def validate(self):
+    if self.employee_id:
+        cxo = frappe.db.get_value("Employee", self.employee_id, "cxo_level")
+        if cxo:
+            frappe.throw("CXO / Higher Management employees cannot be added in Disciplinary Case")
