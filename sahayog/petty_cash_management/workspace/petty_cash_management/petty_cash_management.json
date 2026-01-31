@@ -1,8 +1,13 @@
 {
  "charts": [],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"Petty Cash Management\"}}]",
+ "content": "[{\"id\":\"1w6dM7hIrN\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Petty Cash Dashboard Widget\",\"col\":12}}]",
  "creation": "2026-01-31 12:14:58.050988",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "Petty Cash Dashboard Widget",
+   "label": "Petty Cash Dashboard Widget"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -13,7 +18,7 @@
  "is_hidden": 0,
  "label": "Petty Cash Management",
  "links": [],
- "modified": "2026-01-31 12:15:26.764368",
+ "modified": "2026-01-31 12:16:22.496750",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Management",
