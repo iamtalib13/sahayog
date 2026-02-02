@@ -1003,6 +1003,10 @@ class MyCRM {
 // Define filters based on section
   getFilters() {
     if (this.state.section === "lead") {
+      // Validation: Sirf un leads ko count karein jo Assigned hain AND status 'Lead' hai
+        const validatedAssignedCount = this.state.data.filter(item => 
+            this.assignedLeadNames.includes(item.name) && item.status === "Lead"
+        ).length;
       return [
         { name: "Assigned To Me", count: this.assignedCount || 0 },
         { name: "All", count: this.state.data.length },
@@ -1028,7 +1032,7 @@ class MyCRM {
   // ✅ ASSIGNED TO ME — FIRST
   if (this.state.filter === "Assigned To Me") {
     this.state.filteredData = this.state.data.filter(item =>
-      this.assignedLeadNames.includes(item.name)
+      this.assignedLeadNames.includes(item.name) && item.status === "Lead" // Added status check
     );
 
     this.state.activeFilter = this.state.filter;
@@ -1116,7 +1120,10 @@ async fetchAssignedLeads() {
     this.assignedLeadNames.push(lead);
   }
 
-  this.assignedCount = this.assignedLeadNames.length;
+  // Yahan original assignedCount ki jagah validation ke baad wala count set hoga
+    this.assignedCount = this.state.data.filter(item => 
+        this.assignedLeadNames.includes(item.name) && item.status === "Lead"
+    ).length;
 
   console.log("✅ Assigned Leads:", this.assignedLeadNames);
 }
