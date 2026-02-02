@@ -723,13 +723,11 @@ class MyCRM {
             this.state.section === "lead" ? "active" : ""
           }" data-section="lead">
             Leads
-            <span class="mycrm-tab-badge" id="mycrm-lead-count">0</span>
           </button>
           <button class="mycrm-tab ${
             this.state.section === "appointment" ? "active" : ""
           }" data-section="appointment">
             Appointments
-            <span class="mycrm-tab-badge" id="mycrm-appointment-count">0</span>
           </button>
           <button class="mycrm-tab ${
             this.state.section === "reports" ? "active" : ""
