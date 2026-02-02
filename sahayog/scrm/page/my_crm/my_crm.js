@@ -1008,7 +1008,7 @@ class MyCRM {
             this.assignedLeadNames.includes(item.name) && item.status === "Lead"
         ).length;
       return [
-        { name: "Assigned To Me", count: this.assignedCount || 0 },
+        { name: "Assigned To Me", count: validatedAssignedCount },
         { name: "All", count: this.state.data.length },
         { name: "Lead", count: this.countStatus("Lead") },
         { name: "Follow Up", count: this.countStatus("Follow Up") },
