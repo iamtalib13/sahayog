@@ -23,7 +23,7 @@ def decode_cursor(cursor):
     return None, None
  
 @frappe.whitelist()
-def get_crm_data(section: str, limit: int = 20, cursor: str = None, search_term: str = None):
+def get_crm_data(section: str, limit: int = 10, cursor: str = None, search_term: str = None):
     limit = int(limit)
     response = {"data": [], "next_cursor": None, "total_count": 0, "lead_count": 0, "appointment_count": 0}
  
