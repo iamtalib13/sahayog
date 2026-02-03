@@ -4,6 +4,13 @@ from frappe.model.document import Document
 from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
 from sahayog.petty_cash_management.permissions import get_user_allowed_branches # [NEW IMPORT]
 
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
+# Import the API function
+from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
+
 class PettyCashTransaction(Document):
 
     def before_insert(self):
@@ -419,30 +426,88 @@ class PettyCashTransaction(Document):
         
         frappe.msgprint(_("Limit Exceedance Approved. Full amount deducted from wallet."))
 
+    # @frappe.whitelist()
+    # def ho_verify_bill(self):
+    #     """
+    #     Scenario 1 & 2 Final Step: HO Manager verifies bills.
+    #     Triggers Future Finacle Logic.
+    #     """
+    #     if "HO Petty Cash Manager" not in frappe.get_roles():
+    #         frappe.throw(_("Only HO Petty Cash Manager can verify."))
+
+    #     if self.approval_status != "Approved":
+    #          frappe.throw(_("Document must be Approved (Limits Cleared) before Verification."))
+
+    #     # 1. Update Status
+    #     self.approval_status = "Verified"
+    #     self.db_set('approval_status', 'Verified')
+    #     self.approved_by = frappe.session.user
+    #     self.db_set('approved_by', frappe.session.user)
+
+    #     # 2. TRIGGER FINACLE (Placeholder)
+    #     # self.trigger_finacle_api()
+        
+    #     frappe.msgprint(_("Bills Verified. Ready for Finacle Integration."))
+
+    #      # [NEW] SECURITY CHECK
+    
+    
+
     @frappe.whitelist()
     def ho_verify_bill(self):
         """
         Scenario 1 & 2 Final Step: HO Manager verifies bills.
-        Triggers Future Finacle Logic.
+        Uses frappe.db.set_value to update submitted document fields directly.
         """
-        if "HO Petty Cash Manager" not in frappe.get_roles():
+        
+        # 1. Permission Check
+        if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
             frappe.throw(_("Only HO Petty Cash Manager can verify."))
 
+        # 2. Status Check
         if self.approval_status != "Approved":
-             frappe.throw(_("Document must be Approved (Limits Cleared) before Verification."))
+            frappe.throw(_("Document must be in 'Approved' status before Verification."))
 
-        # 1. Update Status
-        self.approval_status = "Verified"
-        self.db_set('approval_status', 'Verified')
-        self.approved_by = frappe.session.user
-        self.db_set('approved_by', frappe.session.user)
+        # 3. Validate Journal Entry Reference
+        if not self.journal_entry_ref:
+            frappe.throw(_("Journal Entry Reference is missing."))
+            
+        if not frappe.db.exists("Journal Entry", self.journal_entry_ref):
+             frappe.throw(_("Linked Journal Entry {0} not found.").format(self.journal_entry_ref))
 
-        # 2. TRIGGER FINACLE (Placeholder)
-        # self.trigger_finacle_api()
-        
-        frappe.msgprint(_("Bills Verified. Ready for Finacle Integration."))
+        # 4. Trigger Finacle API
+        response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
 
-         # [NEW] SECURITY CHECK
+        # 5. Handle Response
+        if response.get("status") == "SUCCESS":
+            # --- SUCCESS SCENARIO ---
+            # We use set_value with a dictionary to update multiple fields at once on the DB level
+            frappe.db.set_value(self.doctype, self.name, {
+                "finacle_tran_id": response.get("trn_id"),
+                "finacle_tran_date": nowdate(),
+                "approval_status": "Verified",
+                "approved_by": frappe.session.user
+            })
+            
+            frappe.msgprint(
+                msg=f"Bills Verified & Processed in Finacle successfully.<br>Transaction ID: <b>{response.get('trn_id')}</b>",
+                title="Verification Complete",
+                indicator='green'
+            )
+
+        else:
+            # --- FAILURE SCENARIO ---
+            error_msg = response.get("message", "Unknown Finacle Error")
+            
+            # Update only the error field directly in DB
+            frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", error_msg)
+            
+            frappe.msgprint(
+                msg=f"Finacle Transaction Failed.<br>Reason: {error_msg}",
+                title="Verification Stopped",
+                indicator='red'
+            )
+
     def has_permission(self, permtype="read"):
         """
         This method is called automatically by Frappe when accessing a document via URL/Form.
