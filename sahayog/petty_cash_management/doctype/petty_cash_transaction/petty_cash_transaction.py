@@ -114,17 +114,79 @@ class PettyCashTransaction(Document):
             if item.bill_date and getdate(item.bill_date) > current_date:
                 frappe.throw(_("Row #{0}: Bill Date cannot be in the future.").format(item.idx))
 
+    # def calculate_limit_breakdown(self):
+    #     """
+    #     Calculates how much of the expense is within limit and how much exceeds.
+    #     Populates amount_within_limit and amount_exceeding_limit.
+    #     """
+    #     if self.transaction_type != "Expense":
+    #         return
+
+    #     branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "branch_type")
+        
+    #     # Group by category
+    #     current_tx_categories = {}
+    #     for item in self.items:
+    #         current_tx_categories.setdefault(item.expense_category, 0.0)
+    #         current_tx_categories[item.expense_category] += flt(item.amount)
+
+    #     total_within = 0.0
+    #     total_exceeding = 0.0
+        
+    #     first_day = get_first_day(self.transaction_date)
+    #     last_day = get_last_day(self.transaction_date)
+
+    #     for category_id, tx_amount in current_tx_categories.items():
+    #         # Get Config
+    #         category_doc = frappe.get_doc("Expense Category", category_id)
+    #         limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+            
+    #         if limit <= 0:
+    #             # Unlimited
+    #             total_within += tx_amount
+    #             continue
+
+    #         # Get Spent (excluding this doc)
+    #         spent_sql = """
+    #             SELECT COALESCE(SUM(child.amount), 0)
+    #             FROM `tabPetty Cash Transaction Item` child
+    #             JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
+    #             WHERE parent.branch = %s 
+    #               AND child.expense_category = %s
+    #               AND parent.transaction_date BETWEEN %s AND %s
+    #               AND parent.docstatus = 1
+    #               AND parent.name != %s
+    #         """
+    #         already_spent = frappe.db.sql(spent_sql, (self.branch, category_id, first_day, last_day, self.name or "New"))[0][0]
+            
+    #         remaining_limit = max(flt(limit) - flt(already_spent), 0)
+
+    #         if tx_amount <= remaining_limit:
+    #             # Fully within limit
+    #             total_within += tx_amount
+    #         else:
+    #             # Split Logic
+    #             can_spend = remaining_limit
+    #             excess = tx_amount - remaining_limit
+                
+    #             total_within += can_spend
+    #             total_exceeding += excess
+
+    #     self.amount_within_limit = total_within
+    #     self.amount_exceeding_limit = total_exceeding
+
     def calculate_limit_breakdown(self):
         """
-        Calculates how much of the expense is within limit and how much exceeds.
-        Populates amount_within_limit and amount_exceeding_limit.
+        Calculates Limit.
+        UPDATED: Verified transactions are excluded from 'Used Amount', 
+        automatically replenishing the limit for the category.
         """
         if self.transaction_type != "Expense":
             return
 
         branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "branch_type")
         
-        # Group by category
+        # 1. Summarize current doc's expenses
         current_tx_categories = {}
         for item in self.items:
             current_tx_categories.setdefault(item.expense_category, 0.0)
@@ -137,16 +199,17 @@ class PettyCashTransaction(Document):
         last_day = get_last_day(self.transaction_date)
 
         for category_id, tx_amount in current_tx_categories.items():
-            # Get Config
             category_doc = frappe.get_doc("Expense Category", category_id)
             limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
             
-            if limit <= 0:
-                # Unlimited
+            # Unlimited check
+            if limit == 0:
                 total_within += tx_amount
                 continue
 
-            # Get Spent (excluding this doc)
+            # 2. Get Spent Amount
+            # CRITICAL CHANGE: Added "AND parent.approval_status != 'Verified'"
+            # This means verified bills stop counting as "Pending Usage".
             spent_sql = """
                 SELECT COALESCE(SUM(child.amount), 0)
                 FROM `tabPetty Cash Transaction Item` child
@@ -155,26 +218,27 @@ class PettyCashTransaction(Document):
                   AND child.expense_category = %s
                   AND parent.transaction_date BETWEEN %s AND %s
                   AND parent.docstatus = 1
+                  AND parent.approval_status != 'Verified'
                   AND parent.name != %s
             """
+            
             already_spent = frappe.db.sql(spent_sql, (self.branch, category_id, first_day, last_day, self.name or "New"))[0][0]
             
+            # 3. Calculate Remaining
+            # Logic: Limit (3000) - Pending (0) = 3000. 
+            # It naturally stops at the limit (3000) and won't go to 4000.
             remaining_limit = max(flt(limit) - flt(already_spent), 0)
-
+            
             if tx_amount <= remaining_limit:
-                # Fully within limit
                 total_within += tx_amount
             else:
-                # Split Logic
                 can_spend = remaining_limit
                 excess = tx_amount - remaining_limit
-                
                 total_within += can_spend
                 total_exceeding += excess
 
         self.amount_within_limit = total_within
         self.amount_exceeding_limit = total_exceeding
-
    
     def validate_expense_soft(self, wallet):
         # 1. Fetch Latest Values Directly from DB (Bypassing any old calculation logic)
@@ -577,47 +641,80 @@ class PettyCashTransaction(Document):
 
 
 
-@frappe.whitelist()
-def get_category_limit_status(branch, category, transaction_date, doc_name=None):
-    """
-    Returns the remaining limit for a specific category and branch for the current month.
-    """
-    if not branch or not category or not transaction_date:
-        return 0
+# @frappe.whitelist()
+# def get_category_limit_status(branch, category, transaction_date, doc_name=None):
+#     """
+#     Returns the remaining limit for a specific category and branch for the current month.
+#     """
+#     if not branch or not category or not transaction_date:
+#         return 0
 
-    # 1. Get Branch Type
-    branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": branch}, "branch_type")
-    if not branch_type:
-        return 0
+#     # 1. Get Branch Type
+#     branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": branch}, "branch_type")
+#     if not branch_type:
+#         return 0
 
-    # 2. Get Category Limit
-    category_doc = frappe.get_doc("Expense Category", category)
-    limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+#     # 2. Get Category Limit
+#     category_doc = frappe.get_doc("Expense Category", category)
+#     limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
     
-    # If unlimited, return a high number
-    if limit <= 0:
-        return 999999999 
+#     # If unlimited, return a high number
+#     if limit <= 0:
+#         return 999999999 
 
-    # 3. Calculate Already Spent
-    first_day = get_first_day(transaction_date)
-    last_day = get_last_day(transaction_date)
+#     # 3. Calculate Already Spent
+#     first_day = get_first_day(transaction_date)
+#     last_day = get_last_day(transaction_date)
 
-    spent_sql = """
-        SELECT COALESCE(SUM(child.amount), 0)
-        FROM `tabPetty Cash Transaction Item` child
-        JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
-        WHERE parent.branch = %s 
-          AND child.expense_category = %s
-          AND parent.transaction_date BETWEEN %s AND %s
-          AND parent.docstatus = 1
-          AND parent.name != %s
-    """
-    spent = frappe.db.sql(spent_sql, (branch, category, first_day, last_day, doc_name or "New"))[0][0]
+#     spent_sql = """
+#         SELECT COALESCE(SUM(child.amount), 0)
+#         FROM `tabPetty Cash Transaction Item` child
+#         JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
+#         WHERE parent.branch = %s 
+#           AND child.expense_category = %s
+#           AND parent.transaction_date BETWEEN %s AND %s
+#           AND parent.docstatus = 1
+#           AND parent.name != %s
+#     """
+#     spent = frappe.db.sql(spent_sql, (branch, category, first_day, last_day, doc_name or "New"))[0][0]
 
-    available = flt(limit) - flt(spent)
-    return max(available, 0)
+#     available = flt(limit) - flt(spent)
+#     return max(available, 0)
 
+@frappe.whitelist()
+def get_category_limit_status(branch, category, transaction_date, docname=None):
+        """
+        API used by Client Script to show available limit.
+        """
+        if not branch or not category or not transaction_date:
+            return 0
+            
+        branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": branch}, "branch_type")
+        category_doc = frappe.get_doc("Expense Category", category)
+        limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+        
+        if limit == 0:
+            return 999999999
 
+        first_day = get_first_day(transaction_date)
+        last_day = get_last_day(transaction_date)
+
+        # Same SQL Update Here
+        spent_sql = """
+            SELECT COALESCE(SUM(child.amount), 0)
+            FROM `tabPetty Cash Transaction Item` child
+            JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
+            WHERE parent.branch = %s 
+              AND child.expense_category = %s
+              AND parent.transaction_date BETWEEN %s AND %s
+              AND parent.docstatus = 1
+              AND parent.approval_status != 'Verified'
+              AND parent.name != %s
+        """
+        
+        already_spent = frappe.db.sql(spent_sql, (branch, category, first_day, last_day, docname or "New"))[0][0]
+        
+        return max(flt(limit) - flt(already_spent), 0)
 
 @frappe.whitelist()
 def get_branch_balance(branch):
