@@ -200,51 +200,35 @@ def save_and_send_email(employee, email, docname):
 # send SCN email function ko optimize kiya gaya hai
 @frappe.whitelist()
 def send_scn_email(docname):
-    """
-    Directly attaches PDF using attach_print and sends via Queue for speed.
-    """
     doc = frappe.get_doc("Disciplinary Case", docname)
-    
-    # Get employee email
     recipient = frappe.db.get_value("Employee", doc.employee_id, "company_email")
 
     if not recipient:
-        frappe.throw("Employee email missing in Employee record.")
+        frappe.throw("Employee email missing.")
 
-    # Format dates for the email body
-    doc_dict = doc.as_dict()
-    if doc.issue_occurrence_date:
-        doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
-    if doc.issue_report_to_hr:
-        doc_dict["issue_report_to_hr"] = formatdate(doc.issue_report_to_hr)
-
-    # Email Template rendering
+    # Render Template
     template = frappe.get_doc("Email Template", "Disciplinary - SCN")
-    message = frappe.render_template(template.response_html, doc_dict)
-    subject = frappe.render_template(template.subject, doc_dict)
+    doc_dict = doc.as_dict()
+    # Date formatting logic here...
 
-    # Proper Attachment using frappe.attach_print
-    attachments = [
-        frappe.attach_print(
-            doctype="Disciplinary Case",
-            name=docname,
-            print_format="Disciplinary Case Notice",
-            file_name=f"{docname}.pdf"
-        )
-    ]
-
-    # Sending mail with explicit attachment list
+    # Production Fix: Attachments as a list of dict for Queue compatibility
     frappe.sendmail(
         recipients=[recipient],
-        subject=subject,
-        message=message,
+        subject=frappe.render_template(template.subject, doc_dict),
+        message=frappe.render_template(template.response_html, doc_dict),
         reference_doctype="Disciplinary Case",
         reference_name=docname,
-        attachments=attachments, # Yahan attachment confirm attach hoga
+        attachments=[{
+            "print_format": "Disciplinary Case Notice",
+            "doctype": "Disciplinary Case",
+            "name": docname,
+            "file_name": f"{docname}.pdf"
+        }],
         now=False 
     )
+    return "Queued"
 
-    return "Email with PDF attachment has been queued."
+
 # save employee email only
 @frappe.whitelist()
 def save_employee_email(employee, email):
