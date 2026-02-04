@@ -2,6 +2,21 @@
 frappe.ui.form.on('Petty Cash Transaction', {
 
     refresh: function(frm) {
+
+        // Define the fields you want to check
+        const hide_fields = [
+            'finacle_tran_id', 
+            'finacle_tran_date', 
+            'finacle_tran_particular',
+            'journal_entry_ref'
+        ];
+
+        // Loop through them and hide if they don't have a value
+        hide_fields.forEach(field => {
+            // toggle_display(fieldname, show_condition)
+            // Shows the field only if frm.doc[field] is truthy (has a value)
+            frm.toggle_display(field, !!frm.doc[field]);
+        });
         
         // --- DEBUG LOGGING ---
         console.log("=== DEBUGGING BUTTONS ===");
