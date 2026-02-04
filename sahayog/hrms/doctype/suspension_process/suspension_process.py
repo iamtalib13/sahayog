@@ -112,22 +112,22 @@ def send_suspension_email(docname):
     subject = frappe.render_template(template.subject, doc_dict)
 
      # Attach Print Format → **Suspension Process Notice**
-    attachments = [
-        frappe.attach_print(
-            doctype="Suspension Process",
-            name=docname,
-            print_format="Suspension Order",
-            file_name=f"{docname}"
-        )
-    ]
+    # attachments = [
+    #     frappe.attach_print(
+    #         doctype="Suspension Process",
+    #         name=docname,
+    #         print_format="Suspension Order",
+    #         file_name=f"{docname}"
+    #     )
+    # ]
     # Send email instantly
     frappe.sendmail(
         recipients=[final_email],
         subject=subject,
         message=message,
-        attachments=attachments,
+        # attachments=attachments,
         reference_doctype="Suspension Process",
         reference_name=docname,
-        now=True
+        now=False
     )
     return "Email Sent"
