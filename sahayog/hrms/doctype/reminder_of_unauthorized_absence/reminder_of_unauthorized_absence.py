@@ -81,23 +81,23 @@ def send_reminder_unauthorized_absence_email(docname):
         frappe.throw("No email found for this employee.")
 
     # Attach Print Format → **Reminder Of Unauthorized Absence Notice**
-    attachments = [
-        frappe.attach_print(
-            doctype="Reminder Of Unauthorized Absence",
-            name=docname,
-            print_format="Reminder Unauthorized absence",
-            file_name=f"{docname}"
-        )
-    ]
+    # attachments = [
+    #     frappe.attach_print(
+    #         doctype="Reminder Of Unauthorized Absence",
+    #         name=docname,
+    #         print_format="Reminder Unauthorized absence",
+    #         file_name=f"{docname}"
+    #     )
+    # ]
 
     # Send mail
     frappe.sendmail(
         recipients=[final_email],
         subject=subject,
         message=message,
-        attachments=attachments,
+        # attachments=attachments,
         reference_doctype="Reminder Of Unauthorized Absence",
         reference_name=docname,
-        now=True
+        now=False
     )
     return "Email Sent Successfully"
