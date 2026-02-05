@@ -5,6 +5,7 @@ from frappe.utils import now_datetime
 from frappe.utils import getdate
 
 # Decorator to check whether email notifications are enabled from HR settings
+from sahayog.hrms.doctype.reminder_of_unauthorized_absence.reminder_of_unauthorized_absence import send_reminder_unauthorized_absence_email
 from sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting import (
     email_notification_enabled
 )
@@ -20,6 +21,21 @@ class CaseClosure(Document):
             self.name = f"{self.case_id}-CLS-{count:02d}"
         else:
             self.name = frappe.model.naming.make_autoname("CLS-.#####")
+
+    def on_submit(self):
+        """
+        Auto send Case Closure email on submit.
+        Existing email logic is reused without modification.
+        """
+        try:
+            send_case_closure_email(self.name)
+        except Exception:
+            # Do not block submission if email fails
+            frappe.log_error(
+                frappe.get_traceback(),
+                "Case Closure Auto Email Failed"
+            )
+
 
 # ============================================================================
 # CLOSE ALL LINKED DOCUMENTS AFTER CASE CLOSURE SUBMISSION
