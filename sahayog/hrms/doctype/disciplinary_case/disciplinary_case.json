@@ -9,6 +9,7 @@
   "case_information_section",
   "employee_id",
   "employee_name",
+  "employee_email",
   "branch_id",
   "zone",
   "description",
@@ -211,6 +212,13 @@
    "fieldtype": "Data",
    "label": "Region",
    "read_only": 1
+  },
+  {
+   "fetch_from": "employee_id.company_email",
+   "fieldname": "employee_email",
+   "fieldtype": "Data",
+   "label": "Employee Email",
+   "options": "Email"
   }
  ],
  "grid_page_length": 50,
@@ -233,7 +241,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-01-29 17:57:14.581045",
+ "modified": "2026-02-05 17:02:55.885490",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
