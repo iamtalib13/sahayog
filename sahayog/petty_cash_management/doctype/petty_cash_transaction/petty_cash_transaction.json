@@ -21,6 +21,7 @@
   "current_branch_balance",
   "current_unsettled_cash",
   "journal_entry_ref",
+  "submission_attempted",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -243,13 +244,19 @@
    "label": "Generated Journal Entry",
    "options": "Journal Entry",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "submission_attempted",
+   "fieldtype": "Check",
+   "label": "Submission Attempted"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-06 12:49:04.230742",
+ "modified": "2026-02-06 13:58:02.405071",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
