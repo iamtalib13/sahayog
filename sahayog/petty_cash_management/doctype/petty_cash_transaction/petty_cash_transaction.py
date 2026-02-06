@@ -47,6 +47,119 @@ class PettyCashTransaction(Document):
 
             self.calculate_limit_breakdown()
 
+            # if self.transaction_type == "Expense":
+            #     total_expense = sum(flt(item.amount) for item in self.items)
+            #     self.amount = total_expense
+            #     self.generate_item_gl_codes()
+            #     self.calculate_limit_breakdown()
+
+        # [NEW ADDITION] Auto-set Source Account for Fund Allocation
+        if self.transaction_type == "Fund Allocation":
+            self.set_default_source_account()
+
+
+            # [NEW] Sync Updates to Journal Entry
+            # Only if Draft (docstatus 0) and JE already exists
+            if self.docstatus == 0 and self.journal_entry_ref:
+                self.sync_journal_entry_changes()
+
+
+        # [NEW] Prevent modification if attempt was made
+        if self.submission_attempted:
+             # Check if critical fields changed using db_doc comparison
+             db_doc = frappe.db.get_value("Petty Cash Transaction", self.name, 
+                ["amount", "target_scope"], as_dict=True)
+             
+             if db_doc and (flt(self.amount) != flt(db_doc.amount) or self.target_scope != db_doc.target_scope):
+                 frappe.throw(_("Cannot modify Amount or Scope after a submission attempt has been made."))
+
+
+    def sync_journal_entry_changes(self):
+        """
+        [NEW] Updates the existing Journal Entry instead of deleting it.
+        """
+        # 1. Check if critical fields changed
+        db_doc = frappe.db.get_value("Petty Cash Transaction", self.name, 
+            ["amount", "is_bulk_allocation", "target_scope", "source_bank_account", "branch"], as_dict=True)
+            
+        if not db_doc: return 
+
+        has_changed = (
+            flt(self.amount) != flt(db_doc.amount) or
+            self.is_bulk_allocation != db_doc.is_bulk_allocation or
+            self.target_scope != db_doc.target_scope or
+            self.source_bank_account != db_doc.source_bank_account or
+            self.branch != db_doc.branch
+        )
+
+        if has_changed and self.journal_entry_ref:
+            # Switch to Admin to edit JE
+            original_user = frappe.session.user
+            frappe.set_user("Administrator")
+            
+            try:
+                # 2. Load Existing JE
+                je = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+                
+                # 3. Clear existing Accounts table
+                je.accounts = []
+                
+                # 4. Re-calculate Accounts (Same logic as create_ho_fund_allocation_je)
+                # --- LOGIC REUSE START ---
+                target_wallets = []
+                if self.is_bulk_allocation:
+                    filters = {"status": "Active", "is_fund_source": 0} 
+                    if self.target_scope == "Metro Branches Only":
+                        filters["branch_type"] = "Metro"
+                    elif self.target_scope == "Non-Metro Branches Only":
+                        filters["branch_type"] = "Non Metro"
+                    target_wallets = frappe.get_all("Branch Petty Cash Account", filters=filters, fields=["name", "branch", "gl_sub_code"])
+                else:
+                    target_wallets = frappe.get_all("Branch Petty Cash Account", filters={"branch": self.branch}, fields=["name", "branch", "gl_sub_code"])
+
+                total_amount = 0.0
+                cost_center = frappe.get_cached_value('Company', je.company, 'cost_center')
+
+                for wallet in target_wallets:
+                    if not wallet.gl_sub_code: continue
+                    acc_name = frappe.db.sql("SELECT name FROM `tabAccount` WHERE account_number=%s", wallet.gl_sub_code)
+                    if not acc_name: continue
+                    acc_name = acc_name[0][0]
+                    
+                    je.append("accounts", {
+                        "account": acc_name,
+                        "debit_in_account_currency": 0,
+                        "credit_in_account_currency": self.amount,
+                        "cost_center": cost_center,
+                        "user_remark": f"Allocation to {wallet.branch}"
+                    })
+                    total_amount += self.amount
+
+                # Debit Line
+                je.append("accounts", {
+                    "account": self.source_bank_account,
+                    "debit_in_account_currency": total_amount,
+                    "credit_in_account_currency": 0,
+                    "cost_center": cost_center,
+                    "user_remark": f"Total Fund Allocation for {len(target_wallets)} branches"
+                })
+                # --- LOGIC REUSE END ---
+
+                # 5. Save the JE
+                je.flags.ignore_permissions = True
+                je.save(ignore_permissions=True)
+                
+                frappe.msgprint(_("Linked Journal Entry updated successfully."))
+
+            except Exception as e:
+                frappe.log_error(title="JE Sync Error", message=frappe.get_traceback())
+                frappe.msgprint(_("Could not sync Journal Entry changes. Please check error log."))
+            
+            finally:
+                frappe.set_user(original_user)
+
+
+
     def generate_item_gl_codes(self):
         if not self.branch or not self.items:
             return
@@ -78,8 +191,48 @@ class PettyCashTransaction(Document):
             else:
                 item.finacle_gl_code = ""
 
-   
+    def set_default_source_account(self):
+        """
+        [NEW] Automatically finds the HO Branch (is_fund_source=1) and sets its GL Account 
+        into the 'source_bank_account' field.
+        """
+        if self.source_bank_account:
+            return # Already set manually, skipping auto-set
+            
+        # Find the Wallet marked as Source
+        ho_wallet = frappe.db.get_value("Branch Petty Cash Account", 
+            {"is_fund_source": 1, "status": "Active"}, 
+            ["name", "gl_sub_code"], 
+            as_dict=True
+        )
+        
+        if not ho_wallet:
+            # Optional: You can choose to throw an error or just let validation fail later
+            # frappe.throw(_("No Active Branch Account found with 'Is Fund Source' checked."))
+            return
+            
+        # Find the Chart of Accounts Name for this GL Code
+        # We use SQL to bypass permission checks
+        account_name = frappe.db.sql("""SELECT name FROM `tabAccount` WHERE account_number=%s""", ho_wallet.gl_sub_code)
+        
+        if account_name:
+            self.source_bank_account = account_name[0][0]
+
+
+
     def validate(self):
+         # REQUIREMENT 1: On Save, create Draft Journal Entry if Fund Allocation
+        # if self.transaction_type == "Fund Allocation" and not self.journal_entry_ref:
+        #     self.create_ho_fund_allocation_je()
+
+        if self.transaction_type == "Fund Allocation":
+            if not self.amount or self.amount <= 0:
+                frappe.throw(_("Amount is required for Fund Allocation"))
+            
+            if not self.journal_entry_ref:
+                self.create_ho_fund_allocation_je()
+
+
         # 1. Check Account Existence
         if not frappe.db.exists("Branch Petty Cash Account", {"branch": self.branch}):
             frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
@@ -269,40 +422,325 @@ class PettyCashTransaction(Document):
 
 
 
-    def on_submit(self):
-        # 1. Update Unsettled Cash if this is an Expense
-        if self.transaction_type == "Expense":
-            wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+    # def on_submit(self):
+
+    #      # On Submit, Trigger Finacle API
+    #     if self.transaction_type == "Fund Allocation":
+    #         # self.db_set('approval_status', 'Posted') # Set status to Posted
+    #         self.process_finacle_transfer()
+
+    #     # 1. Update Unsettled Cash if this is an Expense
+    #     if self.transaction_type == "Expense":
+    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
             
-            # Deduct the total amount from their "Cash in Hand" bucket (Liability)
-            # This is the ONLY place where money "leaves" the wallet in our portal
+    #         # Deduct the total amount from their "Cash in Hand" bucket (Liability)
+    #         # This is the ONLY place where money "leaves" the wallet in our portal
+    #         wallet.update_unsettled_cash(self.amount, "Expense")
+
+    #         # 2. Handle Status & Limits
+    #         if self.amount_exceeding_limit > 0:
+    #             # Scenario 2: Exceeding Limit
+    #             self.db_set('amount_deducted', self.amount_within_limit)
+    #             self.db_set('approval_status', 'Pending Approval')
+    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
+    #         else:
+    #             # Scenario 1: Within Limit
+    #             self.db_set('amount_deducted', self.amount)
+    #             self.db_set('approval_status', 'Approved') 
+        
+    #     elif self.transaction_type == "Fund Allocation":
+    #         self.db_set('amount_deducted', 0)
+    #         self.db_set('approval_status', 'Posted')
+
+    #     self.update_wallet()
+
+
+    # # [NEW] Create Draft Journal Entry
+    #     if self.transaction_type == "Expense":
+    #         self.create_journal_entry()
+
+    #     self.update_wallet()
+
+    def on_submit(self):
+        # 1. Fund Allocation Logic
+        if self.transaction_type == "Fund Allocation":
+            # We do NOT set 'Posted' here yet. We let the process function decide.
+            self.process_finacle_transfer()
+
+        # 2. Expense Logic (Existing)
+        elif self.transaction_type == "Expense":
+            wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
             wallet.update_unsettled_cash(self.amount, "Expense")
 
-            # 2. Handle Status & Limits
             if self.amount_exceeding_limit > 0:
-                # Scenario 2: Exceeding Limit
                 self.db_set('amount_deducted', self.amount_within_limit)
                 self.db_set('approval_status', 'Pending Approval')
-                frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
             else:
-                # Scenario 1: Within Limit
                 self.db_set('amount_deducted', self.amount)
                 self.db_set('approval_status', 'Approved') 
-        
-        elif self.transaction_type == "Fund Allocation":
-            self.db_set('amount_deducted', 0)
-            self.db_set('approval_status', 'Posted')
-
-        self.update_wallet()
-
-
-    # [NEW] Create Draft Journal Entry
-        if self.transaction_type == "Expense":
+            
             self.create_journal_entry()
+            self.update_wallet()
 
-        self.update_wallet()
+    def create_ho_fund_allocation_je(self):
+        """
+        Creates Draft Journal Entry for Single or Bulk Allocation.
+        """
+        original_user = frappe.session.user
+        frappe.set_user("Administrator")
+        
+        try:
+            # 1. Identify Target Branches (Logic remains same)
+            target_wallets = []
+            if self.is_bulk_allocation:
+                filters = {"status": "Active", "is_fund_source": 0} 
+                if self.target_scope == "Metro Branches Only":
+                    filters["branch_type"] = "Metro"
+                elif self.target_scope == "Non-Metro Branches Only":
+                    filters["branch_type"] = "Non Metro"
+                target_wallets = frappe.get_all("Branch Petty Cash Account", filters=filters, fields=["name", "branch", "gl_sub_code"])
+                if not target_wallets:
+                    frappe.throw(_("No branches found matching the selected Scope."))
+            else:
+                if not self.branch:
+                    frappe.throw(_("Branch is required for Single Allocation."))
+                target_wallets = frappe.get_all("Branch Petty Cash Account", filters={"branch": self.branch}, fields=["name", "branch", "gl_sub_code"])
 
-    
+            # 2. Prepare JE Accounts List
+            je_accounts = []
+            total_amount = 0.0
+            company = frappe.defaults.get_user_default("Company") or frappe.db.get_single_value("Global Defaults", "default_company")
+            cost_center = frappe.get_cached_value('Company', company, 'cost_center')
+
+            # Loop through targets (Credits)
+            for wallet in target_wallets:
+                if not wallet.gl_sub_code: continue
+                acc_name = frappe.db.sql("SELECT name FROM `tabAccount` WHERE account_number=%s", wallet.gl_sub_code)
+                if not acc_name: continue
+                acc_name = acc_name[0][0]
+                
+                je_accounts.append({
+                    "account": acc_name,
+                    "debit_in_account_currency": 0,
+                    "credit_in_account_currency": self.amount,
+                    "cost_center": cost_center,
+                    "user_remark": f"Allocation to {wallet.branch}"
+                })
+                total_amount += self.amount
+
+            if not je_accounts:
+                frappe.throw(_("No valid Accounts found for the selected branches."))
+
+            # 3. Add Debit Line (Source HO)
+            if not self.source_bank_account:
+                self.set_default_source_account() 
+            if not self.source_bank_account:
+                 frappe.throw(_("Source Bank Account (HO) is missing."))
+
+            je_accounts.append({
+                "account": self.source_bank_account,
+                "debit_in_account_currency": total_amount,
+                "credit_in_account_currency": 0,
+                "cost_center": cost_center,
+                "user_remark": f"Total Fund Allocation for {len(target_wallets)} branches"
+            })
+
+            # 4. Create JE [FIXED METHOD]
+            # Use frappe.get_doc() instead of new_doc() when passing a full dict structure
+            je = frappe.get_doc({
+                "doctype": "Journal Entry",
+                "voucher_type": "Journal Entry",
+                "posting_date": self.transaction_date,
+                "company": company,
+                "user_remark": f"Fund Allocation Ref: {self.name}",
+                "accounts": je_accounts  # Passing list of dicts works with get_doc
+            })
+            
+            # Flags
+            je.flags.ignore_permissions = True
+            je.insert(ignore_permissions=True)
+            
+            self.journal_entry_ref = je.name
+            
+            # Important: Update the current doc with the ref without saving again (avoid recursion)
+            self.db_set("journal_entry_ref", je.name)
+
+            if self.is_bulk_allocation:
+                frappe.msgprint(_("Draft Journal Entry created for {0} branches. Total: ₹{1}").format(len(target_wallets), total_amount))
+
+        finally:
+            frappe.set_user(original_user)
+
+
+    # def process_finacle_transfer(self):
+    #     if not self.journal_entry_ref:
+    #         frappe.throw(_("Journal Entry Reference is missing. Please save the document again."))
+
+    #     # 1. Call API
+    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+    #     status = response.get("status")
+        
+    #     # 2. Fetch the Linked Journal Entry Document
+    #     je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+
+    #     if status == "SUCCESS":
+    #         # --- SUCCESS PATH ---
+    #         tran_id = response.get("trn_id")
+            
+    #         # A. Submit the Journal Entry (Change status from Draft -> Submitted/Journal Entry)
+    #         if je_doc.docstatus == 0:
+    #             je_doc.flags.ignore_permissions = True
+    #             je_doc.submit()
+            
+    #         # B. Update Fields on Current Doc
+    #         self.db_set('finacle_tran_id', tran_id)
+    #         self.db_set('finacle_tran_date', nowdate())
+    #         self.db_set('approval_status', 'Posted') # NOW we mark it Posted
+            
+    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+            
+    #         # Since this is inside on_submit, returning normally allows the 
+    #         # Petty Cash Transaction to finalize its submission (docstatus=1).
+
+    #     else:
+    #         # --- FAILURE PATH ---
+    #         error_msg = response.get("message", "Unknown Finacle Error")
+            
+    #         # A. Log Error details to fields (using db.set_value to persist despite rollback)
+    #         # We update 'finacle_tran_particular' and 'finacle_tran_date'
+    #         frappe.db.set_value(self.doctype, self.name, {
+    #             "finacle_tran_particular": f"FAILED: {error_msg}",
+    #             "finacle_tran_date": nowdate()
+    #         })
+            
+    #         # B. Ensure Journal Entry stays Draft (It already is, just ensuring we don't submit it)
+    #         # (No action needed, just don't call .submit())
+
+    #         # C. STOP Submission of Petty Cash Transaction
+    #         # Throwing an error rolls back the "Submit" action for THIS document.
+    #         # The User will see the error popup, and the document stays Draft (docstatus=0).
+    #         # The "Submit" button will remain available.
+    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
+
+    # def process_finacle_transfer(self):
+    #     if not self.journal_entry_ref:
+    #         frappe.throw(_("Journal Entry Reference is missing."))
+
+    #     # Mark that we tried submitting
+    #     frappe.db.set_value(self.doctype, self.name, "submission_attempted", 1)
+    #     frappe.db.commit() # Save this flag immediately!
+
+    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+    #     status = response.get("status")
+        
+    #     # Load JE to check status
+    #     je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+
+    #     if status == "SUCCESS":
+    #         tran_id = response.get("trn_id")
+            
+    #         # Submit JE if not already
+    #         if je_doc.docstatus == 0:
+    #             je_doc.flags.ignore_permissions = True
+    #             je_doc.submit()
+            
+    #         self.db_set('finacle_tran_id', tran_id)
+    #         self.db_set('finacle_tran_date', nowdate())
+    #         self.db_set('approval_status', 'Posted') 
+    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+
+    #     elif status == "SKIPPED" and je_doc.docstatus == 1:
+    #         # Special Case: It was already done!
+    #         # Just ensure our record reflects it
+    #         self.db_set('approval_status', 'Posted')
+    #         frappe.msgprint(_("Transaction was already processed successfully."), indicator='green')
+
+    #     else:
+    #         # FAILURE
+    #         error_msg = response.get("message", "Unknown Finacle Error")
+            
+    #         # Save Error Log & Force Commit
+    #         frappe.db.set_value(self.doctype, self.name, {
+    #             "finacle_tran_particular": f"FAILED: {error_msg}",
+    #             "finacle_tran_date": nowdate()
+    #         })
+    #         frappe.db.commit() # <--- CRITICAL FIX
+            
+    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
+
+    # def process_finacle_transfer(self):
+    #     if not self.journal_entry_ref:
+    #         frappe.throw(_("Journal Entry Reference is missing."))
+            
+    #     # 1. Mark Attempted (Locks fields in UI)
+    #     frappe.db.set_value(self.doctype, self.name, "submission_attempted", 1)
+    #     frappe.db.commit()
+
+    #     # 2. Call API
+    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+    #     status = response.get("status")
+        
+    #     # 3. Handle Response
+    #     if status == "SUCCESS":
+    #         # --- SUCCESS ---
+    #         tran_id = response.get("trn_id")
+            
+    #         # Submit Linked Journal Entry
+    #         je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+    #         if je_doc.docstatus == 0:
+    #             je_doc.flags.ignore_permissions = True
+    #             je_doc.submit()
+            
+    #         # Update Success Fields
+    #         self.db_set('finacle_tran_id', tran_id)
+    #         self.db_set('finacle_tran_date', nowdate())
+    #         self.db_set('approval_status', 'Posted') 
+            
+    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+
+    #     else:
+    #         # --- FAILURE ---
+    #         error_msg = response.get("message", "Unknown Finacle Error")
+            
+    #         # We do NOT update 'finacle_tran_particular'. We keep it empty.
+            
+    #         # Just Throw Error
+    #         # This shows the popup message to the user
+    #         # And rolls back the main transaction (keeping Doc in Draft)
+    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
+
+    def process_finacle_transfer(self):
+        if not self.journal_entry_ref:
+            frappe.throw(_("Journal Entry Reference is missing."))
+
+        # Call API
+        response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+        status = response.get("status")
+
+        if status == "SUCCESS":
+            tran_id = response.get("trn_id")
+            je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+            if je_doc.docstatus == 0:
+                je_doc.flags.ignore_permissions = True
+                je_doc.submit()
+            
+            self.db_set('finacle_tran_id', tran_id)
+            self.db_set('finacle_tran_date', nowdate())
+            self.db_set('approval_status', 'Posted') 
+            frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+
+        else:
+            error_msg = response.get("message", "Unknown Finacle Error")
+            # Just Throw. Doc stays Draft. 
+            # BUT 'submission_attempted' will remain 1 because JS set it separately!
+            frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
+
+
+
 
     def create_journal_entry(self):
         """
@@ -738,3 +1176,31 @@ def get_branch_balance(branch):
 
 
 
+@frappe.whitelist()
+def get_ho_source_account():
+    """
+    Returns the Account Name (ID) for the branch marked as 'Is Fund Source'.
+    Used by Client Script to auto-populate the field.
+    """
+    # 1. Find the Wallet
+    ho_wallet = frappe.db.get_value("Branch Petty Cash Account", 
+        {"is_fund_source": 1, "status": "Active"}, 
+        ["gl_sub_code"], 
+        as_dict=True
+    )
+    
+    if not ho_wallet or not ho_wallet.gl_sub_code:
+        return None
+        
+    # 2. Find the Account
+    # Use SQL for speed/permission bypass
+    account = frappe.db.sql("""SELECT name FROM `tabAccount` WHERE account_number=%s""", ho_wallet.gl_sub_code)
+    
+    return account[0][0] if account else None
+
+
+@frappe.whitelist()
+def mark_submission_attempt(docname):
+    # Use update_modified=False to prevent timestamp change
+    frappe.db.set_value("Petty Cash Transaction", docname, "submission_attempted", 1, update_modified=False)
+    frappe.db.commit()
