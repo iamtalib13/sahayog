@@ -546,6 +546,13 @@ body.stockio-active .page-content {
   padding-right: 6px; /* prevent scrollbar overlap */
 }
 
+.stockio-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Smooth scroll */
 .stockio-body {
   scrollbar-width: thin;
