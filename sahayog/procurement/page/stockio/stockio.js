@@ -15,55 +15,24 @@ frappe.pages["stockio"].on_page_load = function (wrapper) {
   page.main.find(".page-head").remove();
 
   // ------------------------------------------------
-  // FULL WIDTH / NO LEFT-RIGHT GAP (CUSTOMER-360 STYLE)
-  // ------------------------------------------------
-  const $pageContainer = $(wrapper).closest(".page-container");
-  const $layoutMain = $(wrapper).closest(".layout-main-section");
-  const $pageBody = $(wrapper).closest(".page-body");
-  const $pageContent = $(wrapper).find(".page-content");
-
-  $pageContainer.css({
-    margin: "0",
-    padding: "0",
-    width: "100%",
-    maxWidth: "100%",
-    background: "transparent",
-  });
-
-  $layoutMain.css({
-    margin: "0",
-    padding: "0",
-    width: "100%",
-    border: "none",
-    boxShadow: "none",
-    background: "transparent",
-  });
-
-  $pageBody.css({
-    margin: "0",
-    padding: "0",
-    width: "100%",
-  });
-
-  $pageContent.css({
-    margin: "0",
-    padding: "0",
-    width: "100%",
-  });
-
-  $(wrapper).css({
-    margin: "0",
-    padding: "0",
-    width: "100%",
-  });
-
-  // ------------------------------------------------
   // LOAD PETITE-VUE
   // ------------------------------------------------
   loadPetiteVue(() => {
     new StockIOPage(wrapper);
   });
 };
+
+frappe.pages["stockio"].on_page_show = function (wrapper) {
+  $("body").addClass("stockio-active");
+  frappe.set_title("StockIO");
+};
+
+// Clean up when leaving the page via any navigation
+$(document).on("page-change", function () {
+  if (frappe.get_route_str() !== "stockio") {
+    $("body").removeClass("stockio-active");
+  }
+});
 
 // --------------------------------------------------
 // PETITE-VUE LOADER (ONCE)
@@ -72,7 +41,7 @@ function loadPetiteVue(callback) {
   if (window.PetiteVue) return callback();
 
   const script = document.createElement("script");
-  // script.src = "/assets/sahayog/js/petite-vue.iife.js";
+  script.src = "https://unpkg.com/petite-vue";
   script.onload = callback;
   document.head.appendChild(script);
 }
@@ -109,6 +78,7 @@ class StockIOPage {
       class="menu-item"
       :class="{ active: pageMode === 'requests' }"
       @click="openRequests(); setMode('requests')"
+      title="Requests"
       >
       <span class="icon">🏠</span>
       <span v-if="!sidebarCollapsed">Requests</span>
@@ -117,8 +87,13 @@ class StockIOPage {
       <!-- STOCK -->
       <div class="menu-group">
       <div class="menu-item"
-         @click="toggleStock(); setMode('stock')">
-        <span class="icon">🛒</span>
+         :class="{ active: pageMode === 'stock' }"
+         @click="toggleStock(); setMode('stock')"
+         :title="pageMode === 'stock' ? (subMode === 'inward' ? 'Stock Inward' : 'Stock Outward') : 'Stock'"
+         >
+        <span class="icon">
+          {{ pageMode === 'stock' ? (subMode === 'outward' ? '📤' : '📥') : '🛒' }}
+        </span>
         <span v-if="!sidebarCollapsed">Stock</span>
         <span v-if="!sidebarCollapsed" class="chevron">▾</span>
       </div>
@@ -141,8 +116,12 @@ class StockIOPage {
       <div class="menu-group">
       <div class="menu-item"
          :class="{ active: pageMode === 'asset' }"
-         @click="toggleAsset(); setMode('asset')">
-        <span class="icon">📦</span>
+         @click="toggleAsset(); setMode('asset')"
+         :title="pageMode === 'asset' ? (subMode === 'item' ? 'Asset Items' : 'Asset Movements') : 'Asset'"
+         >
+        <span class="icon">
+          {{ pageMode === 'asset' ? (subMode === 'movement' ? '🚛' : '🏷️') : '📦' }}
+        </span>
         <span v-if="!sidebarCollapsed">Asset</span>
         <span v-if="!sidebarCollapsed" class="chevron">▾</span>
       </div>
@@ -166,6 +145,7 @@ class StockIOPage {
       class="menu-item"
       :class="{ active: pageMode === 'reports' }"
       @click="openReports(); setMode('reports')"
+      title="Reports"
       >
       <span class="icon">📊</span>
       <span v-if="!sidebarCollapsed">Reports</span>
@@ -184,7 +164,7 @@ class StockIOPage {
 
     <!-- HEADER -->
     <div class="stockio-header">
-      <h2>Material Requests</h2>
+      <h2>{{ pageTitle }}</h2>
       <div class="stockio-actions">
       <button class="btn ghost">Export</button>
       <button class="btn primary" @click="createRequest">Create</button>
@@ -579,13 +559,9 @@ class StockIOPage {
   </div>
 
   </div>
-  <div v-if="pageMode === 'asset'" class="stockio-body">
+    <div v-if="pageMode === 'asset'" class="stockio-body">
 
-    <div v-if="subMode === 'item'">
-    <!-- ASSET ITEM CONTENT -->
-    </div>
-
-    <div v-if="subMode === 'movement'" class="stockio-body">
+    <div v-if="subMode === 'movement'">
     <div class="order-toolbar">
       <label>
         <input type="checkbox" v-model="selectAllAssetMovements" @change="toggleSelectAllAssetMovements" />
@@ -686,8 +662,9 @@ class StockIOPage {
         Load More
       </button>
     </div>
-  </div>
-    <div v-if="pageMode === 'asset' && subMode === 'item'" class="stockio-body">
+    </div>
+
+    <div v-if="subMode === 'item'">
     <div class="order-toolbar">
       <label>
         <input type="checkbox" v-model="selectAllAssets" @change="toggleSelectAllAssets" />
@@ -743,894 +720,405 @@ class StockIOPage {
 
   mountVue() {
     const app = {
-      // ASSET MOVEMENTS STATE
-      assetMovements: [],
-      assetMovementsVisible: [],
-      assetMovementsOffset: 0,
-      assetMovementsPageSize: 2,
-
-      selectAllAssetMovements: false,
-      selectedAssetMovements: [],
-
-      // ===== INITIALIZE ALL DATA LISTS =====
-      requests: [],
-      inward: [],
-      outward: [],
-      assets: [],
-      assetMovements: [],
-      // ===== ASSET MOVEMENTS =====
-      assetMovements: [],
-      assetMovementsVisible: [],
-      assetMovementsOffset: 0,
-      assetMovementsPageSize: 2,
-
-      selectAllAssetMovements: false,
-      selectedAssetMovements: [],
-
-      get hasAssetMovementSelection() {
-        return this.selectedAssetMovements.length > 0;
-      },
-
-      get canLoadMoreAssetMovements() {
-        return this.assetMovementsVisible.length < this.assetMovements.length;
-      },
-
-      // shared pagination
-      visibleRequests: [],
-      offset: 0,
-      pageSize: 2,
-      pageMode: "requests", // 'requests' | 'reports'
+      // ===== STATE =====
+      pageMode: localStorage.getItem("stockio_page_mode") || "requests",
+      subMode: localStorage.getItem("stockio_sub_mode") || null,
       sidebarCollapsed: false,
       stockOpen: false,
       assetOpen: false,
-
-      requests: [],
-      activeTab: "all", // all | today | draft | pending | approved | cancelled
-      pageMode: localStorage.getItem("stockio_page_mode") || "requests",
-      subMode: localStorage.getItem("stockio_sub_mode") || null,
-
-      counts: {
-        all: 0,
-        today: 0,
-        pending: 0,
-        approved: 0,
-      },
-      setMode(mode, sub = null) {
-        this.pageMode = mode;
-        this.subMode = sub;
-
-        localStorage.setItem("stockio_page_mode", mode);
-        localStorage.setItem("stockio_sub_mode", sub || "");
-
-        this.offset = 0;
-        this.visibleRequests = [];
-        this.searchText = "";
-        this.activeTab = "all";
-
-        if (mode === "stock" && sub === "inward") {
-          if (!this.inward.length) this.loadInward();
-          else this.loadMoreInward();
-        }
-
-        if (mode === "stock" && sub === "outward") {
-          if (!this.outward.length) this.loadOutward();
-          else this.loadMoreOutward();
-        }
-
-        if (mode === "asset" && sub === "item") {
-          if (!this.assets.length) this.loadAssets();
-          else this.loadMoreAssets();
-        }
-
-        if (mode === "asset" && sub === "movement") {
-          if (!this.assetMovements.length) this.loadAssetMovements();
-          else this.loadMoreAssetMovements();
-          this.assetMovements.forEach((doc) =>
-            this.loadAssetMovementItems(doc),
-          );
-        }
-
-        if (mode === "requests") {
-          this.loadMore();
-        }
-      },
-
-      toggleSidebar() {
-        this.sidebarCollapsed = !this.sidebarCollapsed;
-      },
-
-      toggleStock() {
-        if (this.sidebarCollapsed) return;
-        this.stockOpen = !this.stockOpen;
-        this.assetOpen = false;
-      },
-
-      toggleAsset() {
-        if (this.sidebarCollapsed) return;
-        this.assetOpen = !this.assetOpen;
-        this.stockOpen = false;
-      },
-
-      // ------------------------------------
-      // LOAD REQUESTS
-      // ------------------------------------
-      loadRequests() {
-        frappe.call({
-          method: "frappe.client.get_list",
-          args: {
-            doctype: "Employee Material Request",
-            fields: [
-              "name",
-              "status",
-              "creation",
-              "owner",
-              "reporting_person_status",
-              "ho_officer_status",
-            ],
-            limit_page_length: 1000,
-          },
-          callback: (r) => {
-            if (!r.message) return;
-
-            this.requests = r.message.map((d) => ({
-              ...d,
-              items: [],
-              showAllItems: false,
-            }));
-            this.selectedDocs = [];
-            this.selectAll = false;
-
-            this.computeCounts();
-            this.requests.forEach((doc) => this.loadItems(doc));
-          },
-        });
-      },
-
-      // ------------------------------------
-      // COUNT LOGIC
-      // ------------------------------------
-      computeCounts() {
-        const today = frappe.datetime.get_today();
-
-        const list = this.activeList;
-
-        this.counts = {
-          all: list.length,
-          today: 0,
-          draft: 0,
-          pending: 0,
-          approved: 0,
-          cancelled: 0,
-        };
-
-        list.forEach((doc) => {
-          const docDate =
-            this.pageMode === "stock" && this.subMode === "inward"
-              ? doc.posting_date
-              : this.pageMode === "stock" && this.subMode === "outward"
-                ? doc.posting_date
-                : doc.creation?.split(" ")[0];
-
-          if (docDate === today) this.counts.today++;
-
-          if (doc.status === "Draft") this.counts.draft++;
-
-          if (
-            doc.status === "Pending HO Approval" ||
-            doc.status === "Pending Reporting Person" ||
-            doc.status === "To Receive"
-          ) {
-            this.counts.pending++;
-          }
-
-          if (doc.status === "Approved" || doc.status === "Submitted") {
-            this.counts.approved++;
-          }
-
-          if (doc.status === "Cancelled") this.counts.cancelled++;
-        });
-      },
-
-      // ------------------------------------
-      // LOAD CHILD ITEMS
-      // ------------------------------------
-      loadItems(doc) {
-        frappe.call({
-          method: "frappe.client.get",
-          args: {
-            doctype: "Employee Material Request",
-            name: doc.name,
-          },
-          callback: (r) => {
-            if (r.message) {
-              doc.items = r.message.items || [];
-            }
-          },
-        });
-      },
-
-      formatDate(date) {
-        return frappe.datetime.str_to_user(date);
-      },
-      // ---------------------------
-      // SELECTION STATE
-      // ---------------------------
-      selectAll: false,
-      selectedDocs: [],
-
-      // ---------------------------
-      // DERIVED STATE
-      // ---------------------------
-      get hasSelection() {
-        return this.selectedDocs.length > 0;
-      },
-
-      // ---------------------------
-      // METHODS
-      // ---------------------------
-      toggleSelectAll() {
-        if (this.selectAll) {
-          this.selectedDocs = this.requests.map((doc) => doc.name);
-        } else {
-          this.selectedDocs = [];
-        }
-      },
-
-      syncSelectAll() {
-        this.selectAll = this.selectedDocs.length === this.requests.length;
-      },
-      openRequest(name) {
-        frappe.set_route("Form", "Employee Material Request", name);
-      },
+      activeTab: "all",
       searchText: "",
-      get filteredRequests() {
-        if (!this.searchText) return this.requests;
 
-        const q = this.searchText.toLowerCase();
-
-        return this.requests.filter((doc) => {
-          // match request name
-          if (doc.name.toLowerCase().includes(q)) return true;
-
-          // match owner
-          if (doc.owner && doc.owner.toLowerCase().includes(q)) return true;
-
-          // match status
-          if (doc.status && doc.status.toLowerCase().includes(q)) return true;
-
-          // match item codes
-          if (
-            doc.items &&
-            doc.items.some(
-              (i) => i.item_code && i.item_code.toLowerCase().includes(q),
-            )
-          )
-            return true;
-
-          return false;
-        });
-      },
-      // ---------------------------
-      // STATE
-      // ---------------------------
+      // DATA LISTS
       requests: [],
       visibleRequests: [],
-      searchText: "",
-      pageSize: 2,
       offset: 0,
-
-      // ---------------------------
-      // ONE FUNCTION ONLY
-      // ---------------------------
-      loadMore() {
-        const source = this.getFilteredList();
-        const next = source.slice(this.offset, this.offset + this.pageSize);
-
-        this.visibleRequests.push(...next);
-        this.offset += this.pageSize;
-      },
-
-      // ---------------------------
-      // FILTER (HELPER, NOT PAGINATION)
-      // ---------------------------
-      getFilteredList() {
-        const today = frappe.datetime.get_today();
-        let list = this.activeList;
-
-        // TAB FILTER
-        if (this.activeTab === "today") {
-          list = list.filter((d) => d.creation?.split(" ")[0] === today);
-        }
-
-        if (this.activeTab === "draft") {
-          list = list.filter((d) => d.status === "Draft");
-        }
-
-        if (this.activeTab === "pending") {
-          list = list.filter((d) =>
-            [
-              "Pending HO Approval",
-              "Pending Reporting Person",
-              "To Receive",
-            ].includes(d.status),
-          );
-        }
-
-        if (this.activeTab === "approved") {
-          list = list.filter((d) =>
-            ["Approved", "Submitted"].includes(d.status),
-          );
-        }
-
-        if (this.activeTab === "cancelled") {
-          list = list.filter((d) => d.status === "Cancelled");
-        }
-
-        // SEARCH
-        if (!this.searchText) return list;
-
-        const q = this.searchText.toLowerCase();
-
-        return list.filter(
-          (d) =>
-            d.name?.toLowerCase().includes(q) ||
-            d.owner?.toLowerCase().includes(q) ||
-            d.status?.toLowerCase().includes(q) ||
-            d.items?.some((i) => i.item_code?.toLowerCase().includes(q)),
-        );
-      },
-
-      // ---------------------------
-      // LOAD REQUESTS
-      // ---------------------------
-      loadRequests() {
-        frappe.call({
-          method: "frappe.client.get_list",
-          args: {
-            doctype: "Employee Material Request",
-            fields: ["name", "status", "creation", "owner"],
-            limit_page_length: 1000,
-          },
-          callback: (r) => {
-            if (!r.message) return;
-
-            this.requests = r.message.map((d) => ({
-              ...d,
-              items: [],
-              showAllItems: false,
-            }));
-
-            // RESET PAGINATION
-            this.offset = 0;
-            this.visibleRequests = [];
-
-            this.computeCounts();
-            this.loadMore();
-
-            this.requests.forEach((doc) => this.loadItems(doc));
-          },
-        });
-      },
-      get canLoadMore() {
-        return this.visibleRequests.length < this.getFilteredList().length;
-      },
-
-      createRequest() {
-        frappe.set_route(
-          "Form",
-          "Employee Material Request",
-          "new-employee-material-request",
-        );
-      },
-      toggleItems(doc) {
-        doc.showAllItems = !doc.showAllItems;
-      },
-      // stepClass(step, doc) {
-      //   if (step === "request") {
-      //     return doc.status === "Draft" ? "pending" : "done";
-      //   }
-
-      //   if (step === "reporting") {
-      //     if (!doc.reporting_person_status) return "disabled";
-      //     if (doc.reporting_person_status === "Approved") return "done";
-      //     if (doc.reporting_person_status === "Rejected") return "rejected";
-      //     return "pending";
-      //   }
-
-      //   if (step === "ho") {
-      //     if (!doc.ho_officer_status) return "disabled";
-      //     if (doc.ho_officer_status === "Approved") return "done";
-      //     if (doc.ho_officer_status === "Rejected") return "rejected";
-      //     return "pending";
-      //   }
-
-      //   return "disabled";
-      // },
-      setTab(tab) {
-        this.activeTab = tab;
-        this.offset = 0;
-        this.visibleRequests = [];
-        this.loadMore();
-      },
-      openRequests() {
-        this.pageMode = "requests";
-      },
-
-      openReports() {
-        this.pageMode = "reports";
-      },
-      reports: [
-        {
-          label: "Stock and Asset Reports",
-          route: "/app/query-report/My%20Material%20Requests",
-        },
-        {
-          label: "My Material Requests",
-          route: "/app/query-report/My%20Material%20Requests",
-        },
-        {
-          label: "Store Asset Master",
-          route: "/app/query-report/Store%20Asset%20Master",
-        },
-        {
-          label: "Store Material Request",
-          route: "/app/query-report/Store%20material%20request",
-        },
-        {
-          label: "My Pending Approvals",
-          route: "/app/query-report/My%20Pending%20Approvals",
-        },
-        {
-          label: "Asset Transfer",
-          route: "/app/query-report/Asset%20Transfer",
-        },
-        {
-          label: "Consumed Items",
-          route: "/app/query-report/Consumed%20Items",
-        },
-        {
-          label: "Branch Stock",
-          route: "/app/query-report/Branch%20Stock",
-        },
-        {
-          label: "My Assets",
-          route: "/app/query-report/My%20Assets",
-        },
-      ],
-      openReport(route) {
-        window.location.href = route;
-      },
-      openReport(route) {
-        this.setMode("reports");
-        frappe.set_route(route);
-      },
+      pageSize: 5,
 
       inward: [],
       inwardVisible: [],
       inwardOffset: 0,
-      inwardPageSize: 2,
-      loadInward() {
+      inwardPageSize: 5,
+
+      outward: [],
+      outwardVisible: [],
+      outwardOffset: 0,
+      outwardPageSize: 5,
+
+      assets: [],
+      assetsVisible: [],
+      assetsOffset: 0,
+      assetsPageSize: 5,
+
+      assetMovements: [],
+      assetMovementsVisible: [],
+      assetMovementsOffset: 0,
+      assetMovementsPageSize: 5,
+
+      // SELECTION
+      selectAll: false,
+      selectedDocs: [],
+      selectAllInward: false,
+      selectedInward: [],
+      selectAllOutward: false,
+      selectedOutward: [],
+      selectAllAssets: false,
+      selectedAssets: [],
+      selectAllAssetMovements: false,
+      selectedAssetMovements: [],
+
+      counts: {
+        all: 0,
+        today: 0,
+        draft: 0,
+        pending: 0,
+        approved: 0,
+        cancelled: 0,
+      },
+
+      // ===== GETTERS =====
+      get pageTitle() {
+        if (this.pageMode === "requests") return "Material Requests";
+        if (this.pageMode === "stock") {
+          return this.subMode === "inward" ? "Stock-Inward" : "Stock-Outward";
+        }
+        if (this.pageMode === "asset") {
+          return this.subMode === "item" ? "Asset-Item" : "Asset-Movement";
+        }
+        if (this.pageMode === "reports") return "Reports";
+        return "StockIO";
+      },
+
+      get activeList() {
+        if (this.pageMode === "stock" && this.subMode === "inward") return this.inward;
+        if (this.pageMode === "stock" && this.subMode === "outward") return this.outward;
+        if (this.pageMode === "asset" && this.subMode === "movement") return this.assetMovements;
+        if (this.pageMode === "asset" && this.subMode === "item") return this.assets;
+        return this.requests;
+      },
+
+      get hasSelection() { return this.selectedDocs.length > 0; },
+      get hasInwardSelection() { return this.selectedInward.length > 0; },
+      get hasOutwardSelection() { return this.selectedOutward.length > 0; },
+      get hasAssetSelection() { return this.selectedAssets.length > 0; },
+      get hasAssetMovementSelection() { return this.selectedAssetMovements.length > 0; },
+
+      get canLoadMore() { return this.visibleRequests.length < this.getFilteredList().length; },
+      get canLoadMoreInward() { return this.inwardVisible.length < this.inward.length; },
+      get canLoadMoreOutward() { return this.outwardVisible.length < this.outward.length; },
+      get canLoadMoreAssets() { return this.assetsVisible.length < this.assets.length; },
+      get canLoadMoreAssetMovements() { return this.assetMovementsVisible.length < this.assetMovements.length; },
+
+      // ===== METHODS =====
+      setMode(mode, sub = null) {
+        // Validate sub-mode for the category
+        if (mode === "stock" && !["inward", "outward"].includes(sub)) {
+          sub = this.subMode && ["inward", "outward"].includes(this.subMode) ? this.subMode : "inward";
+        }
+        if (mode === "asset" && !["item", "movement"].includes(sub)) {
+          sub = this.subMode && ["item", "movement"].includes(this.subMode) ? this.subMode : "item";
+        }
+
+        this.pageMode = mode;
+        this.subMode = sub;
+        localStorage.setItem("stockio_page_mode", mode);
+        localStorage.setItem("stockio_sub_mode", sub || "");
+
+        // Auto-expand submenus
+        if (mode === "stock") this.stockOpen = true;
+        if (mode === "asset") this.assetOpen = true;
+
+        this.searchText = "";
+        this.activeTab = "all";
+
+        if (mode === "requests") {
+          if (!this.requests.length) this.loadRequests();
+          else {
+            this.offset = 0;
+            this.visibleRequests = [];
+            this.loadMore();
+          }
+        } else if (mode === "stock" && sub === "inward") {
+          if (!this.inward.length) this.loadInward();
+          else {
+            this.inwardOffset = 0;
+            this.inwardVisible = [];
+            this.loadMoreInward();
+          }
+        } else if (mode === "stock" && sub === "outward") {
+          if (!this.outward.length) this.loadOutward();
+          else {
+            this.outwardOffset = 0;
+            this.outwardVisible = [];
+            this.loadMoreOutward();
+          }
+        } else if (mode === "asset" && sub === "item") {
+          if (!this.assets.length) this.loadAssets();
+          else {
+            this.assetsOffset = 0;
+            this.assetsVisible = [];
+            this.loadMoreAssets();
+          }
+        } else if (mode === "asset" && sub === "movement") {
+          if (!this.assetMovements.length) this.loadAssetMovements();
+          else {
+            this.assetMovementsOffset = 0;
+            this.assetMovementsVisible = [];
+            this.loadMoreAssetMovements();
+          }
+        }
+      },
+
+      toggleSidebar() { this.sidebarCollapsed = !this.sidebarCollapsed; },
+      toggleStock() {
+        this.stockOpen = !this.stockOpen;
+        if (this.stockOpen) {
+          this.assetOpen = false;
+          if (this.sidebarCollapsed) this.sidebarCollapsed = false;
+        }
+      },
+      toggleAsset() {
+        this.assetOpen = !this.assetOpen;
+        if (this.assetOpen) {
+          this.stockOpen = false;
+          if (this.sidebarCollapsed) this.sidebarCollapsed = false;
+        }
+      },
+      setTab(tab) { this.activeTab = tab; this.offset = 0; this.visibleRequests = []; this.loadMore(); },
+
+      // REQUESTS
+      loadRequests() {
         frappe.call({
           method: "frappe.client.get_list",
           args: {
-            doctype: "Purchase Receipt",
-            fields: ["name", "posting_date", "supplier", "status"],
-            order_by: "posting_date desc",
+            doctype: "Employee Material Request",
+            fields: ["name", "status", "creation", "owner", "reporting_person_status", "ho_officer_status"],
             limit_page_length: 1000,
           },
           callback: (r) => {
             if (!r.message) return;
+            this.requests = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
+            this.offset = 0;
+            this.visibleRequests = [];
+            this.computeCounts();
+            this.loadMore();
+            this.requests.forEach(doc => this.loadItems(doc));
+          }
+        });
+      },
+      loadItems(doc) {
+        frappe.call({
+          method: "frappe.client.get",
+          args: { doctype: "Employee Material Request", name: doc.name },
+          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
+        });
+      },
+      loadMore() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.offset, this.offset + this.pageSize);
+        this.visibleRequests.push(...next);
+        this.offset += this.pageSize;
+      },
+      getFilteredList() {
+        const today = frappe.datetime.get_today();
+        let list = this.requests;
+        if (this.activeTab === "today") list = list.filter(d => d.creation?.split(" ")[0] === today);
+        else if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
+        else if (this.activeTab === "pending") list = list.filter(d => ["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(d.status));
+        else if (this.activeTab === "approved") list = list.filter(d => ["Approved", "Submitted"].includes(d.status));
+        else if (this.activeTab === "cancelled") list = list.filter(d => d.status === "Cancelled");
 
-            this.inward = r.message.map((d) => ({
-              ...d,
-              items: [],
-              showAllItems: false,
-            }));
+        if (this.searchText) {
+          const q = this.searchText.toLowerCase();
+          list = list.filter(d => d.name?.toLowerCase().includes(q) || d.owner?.toLowerCase().includes(q) || d.status?.toLowerCase().includes(q) || d.items?.some(i => i.item_code?.toLowerCase().includes(q)));
+        }
+        return list;
+      },
 
+      // COUNTS
+      computeCounts() {
+        const today = frappe.datetime.get_today();
+        this.counts = { all: this.requests.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0 };
+        this.requests.forEach(doc => {
+          const docDate = doc.creation?.split(" ")[0];
+          if (docDate === today) this.counts.today++;
+          if (doc.status === "Draft") this.counts.draft++;
+          else if (["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(doc.status)) this.counts.pending++;
+          else if (["Approved", "Submitted"].includes(doc.status)) this.counts.approved++;
+          else if (doc.status === "Cancelled") this.counts.cancelled++;
+        });
+      },
+
+      // INWARD
+      loadInward() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: { doctype: "Purchase Receipt", fields: ["name", "posting_date", "supplier", "status"], order_by: "posting_date desc", limit_page_length: 1000 },
+          callback: (r) => {
+            if (!r.message) return;
+            this.inward = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
             this.inwardOffset = 0;
             this.inwardVisible = [];
             this.loadMoreInward();
-
-            this.inward.forEach((doc) => this.loadInwardItems(doc));
-          },
+            this.inward.forEach(doc => this.loadInwardItems(doc));
+          }
         });
       },
       loadInwardItems(doc) {
         frappe.call({
           method: "frappe.client.get",
-          args: {
-            doctype: "Purchase Receipt",
-            name: doc.name,
-          },
-          callback: (r) => {
-            if (r.message) {
-              doc.items = r.message.items || [];
-            }
-          },
+          args: { doctype: "Purchase Receipt", name: doc.name },
+          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
       loadMoreInward() {
-        const next = this.inward.slice(
-          this.inwardOffset,
-          this.inwardOffset + this.inwardPageSize,
-        );
-
+        const next = this.inward.slice(this.inwardOffset, this.inwardOffset + this.inwardPageSize);
         this.inwardVisible.push(...next);
         this.inwardOffset += this.inwardPageSize;
       },
 
-      get canLoadMoreInward() {
-        return this.inwardVisible.length < this.inward.length;
-      },
-      openPurchaseReceipt(name) {
-        frappe.set_route("Form", "Purchase Receipt", name);
-      },
-
-      // INWARD SELECTION
-      selectAllInward: false,
-      selectedInward: [],
-
-      get hasInwardSelection() {
-        return this.selectedInward.length > 0;
-      },
-
-      toggleSelectAllInward() {
-        if (this.selectAllInward) {
-          this.selectedInward = this.inward.map((doc) => doc.name);
-        } else {
-          this.selectedInward = [];
-        }
-      },
-
-      syncSelectAllInward() {
-        this.selectAllInward =
-          this.selectedInward.length === this.inward.length;
-      },
-
       // OUTWARD
-      outward: [],
-      outwardVisible: [],
-      outwardOffset: 0,
-      outwardPageSize: 2,
       loadOutward() {
         frappe.call({
           method: "frappe.client.get_list",
-          args: {
-            doctype: "Stock Entry",
-            fields: ["name", "posting_date", "purpose", "docstatus"],
-            filters: {
-              purpose: ["in", ["Material Issue", "Material Transfer"]],
-            },
-            order_by: "posting_date desc",
-            limit_page_length: 1000,
-          },
+          args: { doctype: "Stock Entry", fields: ["name", "posting_date", "purpose", "docstatus"], filters: { purpose: ["in", ["Material Issue", "Material Transfer"]] }, order_by: "posting_date desc", limit_page_length: 1000 },
           callback: (r) => {
             if (!r.message) return;
-
-            this.outward = r.message.map((d) => {
-              let status = "";
-              if (d.docstatus === 0) status = "Draft";
-              if (d.docstatus === 1) status = "Submitted";
-              if (d.docstatus === 2) status = "Cancelled";
+            this.outward = r.message.map(d => {
+              let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
-
             this.outwardOffset = 0;
             this.outwardVisible = [];
             this.loadMoreOutward();
-
-            this.outward.forEach((doc) => this.loadOutwardItems(doc));
-          },
+            this.outward.forEach(doc => this.loadOutwardItems(doc));
+          }
         });
       },
       loadOutwardItems(doc) {
         frappe.call({
           method: "frappe.client.get",
-          args: {
-            doctype: "Stock Entry",
-            name: doc.name,
-          },
-          callback: (r) => {
-            if (r.message) {
-              doc.items = r.message.items || [];
-            }
-          },
+          args: { doctype: "Stock Entry", name: doc.name },
+          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
       loadMoreOutward() {
-        const next = this.outward.slice(
-          this.outwardOffset,
-          this.outwardOffset + this.outwardPageSize,
-        );
-
+        const next = this.outward.slice(this.outwardOffset, this.outwardOffset + this.outwardPageSize);
         this.outwardVisible.push(...next);
         this.outwardOffset += this.outwardPageSize;
       },
 
-      get canLoadMoreOutward() {
-        return this.outwardVisible.length < this.outward.length;
-      },
-      openStockEntry(name) {
-        frappe.set_route("Form", "Stock Entry", name);
-      },
-
-      // OUTWARD SELECTION
-      selectAllOutward: false,
-      selectedOutward: [],
-
-      get hasOutwardSelection() {
-        return this.selectedOutward.length > 0;
-      },
-
-      toggleSelectAllOutward() {
-        if (this.selectAllOutward) {
-          this.selectedOutward = this.outward.map((doc) => doc.name);
-        } else {
-          this.selectedOutward = [];
-        }
-      },
-
-      syncSelectAllOutward() {
-        this.selectAllOutward =
-          this.selectedOutward.length === this.outward.length;
-      },
-
       // ASSETS
-      assets: [],
-      assetsVisible: [],
-      assetsOffset: 0,
-      assetsPageSize: 2,
       loadAssets() {
         frappe.call({
           method: "frappe.client.get_list",
-          args: {
-            doctype: "Asset",
-            fields: ["name", "asset_name", "docstatus", "owner"],
-            order_by: "creation desc",
-            limit_page_length: 1000,
-          },
+          args: { doctype: "Asset", fields: ["name", "asset_name", "docstatus", "owner"], order_by: "creation desc", limit_page_length: 1000 },
           callback: (r) => {
             if (!r.message) return;
-
-            this.assets = r.message.map((d) => {
-              let status = "";
-              if (d.docstatus === 0) status = "Draft";
-              if (d.docstatus === 1) status = "Submitted";
-              if (d.docstatus === 2) status = "Cancelled";
+            this.assets = r.message.map(d => {
+              let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
-
             this.assetsOffset = 0;
             this.assetsVisible = [];
             this.loadMoreAssets();
-          },
+          }
         });
       },
       loadMoreAssets() {
-        const next = this.assets.slice(
-          this.assetsOffset,
-          this.assetsOffset + this.assetsPageSize,
-        );
+        const next = this.assets.slice(this.assetsOffset, this.assetsOffset + this.assetsPageSize);
         this.assetsVisible.push(...next);
         this.assetsOffset += this.assetsPageSize;
       },
-      get canLoadMoreAssets() {
-        return this.assetsVisible.length < this.assets.length;
-      },
-      openAsset(name) {
-        frappe.set_route("Form", "Asset", name);
-      },
-      selectAllAssets: false,
-      selectedAssets: [],
-      get hasAssetSelection() {
-        return this.selectedAssets.length > 0;
-      },
-      toggleSelectAllAssets() {
-        if (this.selectAllAssets) {
-          this.selectedAssets = this.assets.map((doc) => doc.name);
-        } else {
-          this.selectedAssets = [];
-        }
-      },
-      syncSelectAllAssets() {
-        this.selectAllAssets =
-          this.selectedAssets.length === this.assets.length;
-      },
 
-      get activeList() {
-        if (this.pageMode === "stock" && this.subMode === "inward") {
-          return this.inward;
-        }
-        if (this.pageMode === "stock" && this.subMode === "outward") {
-          return this.outward;
-        }
-        if (this.pageMode === "asset" && this.subMode === "movement") {
-          return this.assetMovements;
-        }
-        if (this.pageMode === "asset" && this.subMode === "item") {
-          return this.assets;
-        }
-        return this.requests;
-      },
-
+      // ASSET MOVEMENTS
       loadAssetMovements() {
         frappe.call({
           method: "frappe.client.get_list",
-          args: {
-            doctype: "Asset Movement",
-            fields: [
-              "name",
-              "custom_reference_name",
-              "purpose",
-              "transaction_date",
-              "docstatus",
-            ],
-            order_by: "transaction_date desc",
-            limit_page_length: 1000,
-          },
+          args: { doctype: "Asset Movement", fields: ["name", "custom_reference_name", "purpose", "transaction_date", "docstatus"], order_by: "transaction_date desc", limit_page_length: 1000 },
           callback: (r) => {
             if (!r.message) return;
-
-            this.assetMovements = r.message.map((d) => {
-              let status = "Draft";
-              if (d.docstatus === 1) status = "Submitted";
-              if (d.docstatus === 2) status = "Cancelled";
-
-              return {
-                ...d,
-                status,
-                items: [],
-                showAllItems: false,
-              };
+            this.assetMovements = r.message.map(d => {
+              let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
+              return { ...d, status, items: [], showAllItems: false };
             });
-
             this.assetMovementsOffset = 0;
             this.assetMovementsVisible = [];
             this.loadMoreAssetMovements();
-
-            this.assetMovements.forEach((doc) =>
-              this.loadAssetMovementItems(doc),
-            );
-          },
+            this.assetMovements.forEach(doc => this.loadAssetMovementItems(doc));
+          }
         });
       },
       loadAssetMovementItems(doc) {
         frappe.call({
           method: "frappe.client.get",
-          args: {
-            doctype: "Asset Movement",
-            name: doc.name,
-          },
-          callback: (r) => {
-            if (r.message) {
-              doc.items = r.message.assets || [];
-            }
-          },
+          args: { doctype: "Asset Movement", name: doc.name },
+          callback: (r) => { if (r.message) doc.items = r.message.assets || []; }
         });
       },
       loadMoreAssetMovements() {
-        const next = this.assetMovements.slice(
-          this.assetMovementsOffset,
-          this.assetMovementsOffset + this.assetMovementsPageSize,
-        );
+        const next = this.assetMovements.slice(this.assetMovementsOffset, this.assetMovementsOffset + this.assetMovementsPageSize);
         this.assetMovementsVisible.push(...next);
         this.assetMovementsOffset += this.assetMovementsPageSize;
       },
 
-      toggleSelectAllAssetMovements() {
-        this.selectedAssetMovements = this.selectAllAssetMovements
-          ? this.assetMovements.map((d) => d.name)
-          : [];
-      },
-
-      syncSelectAllAssetMovements() {
-        this.selectAllAssetMovements =
-          this.selectedAssetMovements.length === this.assetMovements.length;
-      },
-
-      openAssetMovement(name) {
-        frappe.set_route("Form", "Asset Movement", name);
-      },
-      get hasAssetMovementSelection() {
-        return this.selectedAssetMovements.length > 0;
-      },
-
-      get canLoadMoreAssetMovements() {
-        return this.assetMovementsVisible.length < this.assetMovements.length;
-      },
-      get hasAssetMovementSelection() {
-        return this.selectedAssetMovements.length > 0;
-      },
-
-      get canLoadMoreAssetMovements() {
-        return this.assetMovementsVisible.length < this.assetMovements.length;
-      },
-      loadMoreAssetMovements() {
-        const next = this.assetMovements.slice(
-          this.assetMovementsOffset,
-          this.assetMovementsOffset + this.assetMovementsPageSize,
-        );
-        this.assetMovementsVisible.push(...next);
-        this.assetMovementsOffset += this.assetMovementsPageSize;
-      },
-
-      toggleSelectAllAssetMovements() {
-        if (this.selectAllAssetMovements) {
-          this.selectedAssetMovements = this.assetMovements.map((d) => d.name);
-        } else {
-          this.selectedAssetMovements = [];
+      // HELPERS
+      formatDate(date) { return frappe.datetime.str_to_user(date); },
+      toggleItems(doc) { doc.showAllItems = !doc.showAllItems; },
+      createRequest() {
+        if (this.pageMode === "stock") {
+          if (this.subMode === "inward") return frappe.set_route("Form", "Purchase Receipt", "new-purchase-receipt-1");
+          if (this.subMode === "outward") return frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
         }
+        if (this.pageMode === "asset") {
+          if (this.subMode === "item") return frappe.set_route("Form", "Asset", "new-asset-1");
+          if (this.subMode === "movement") return frappe.set_route("Form", "Asset Movement", "new-asset-movement-1");
+        }
+        frappe.set_route("Form", "Employee Material Request", "new-employee-material-request");
       },
+      openRequest(name) { frappe.set_route("Form", "Employee Material Request", name); },
+      openPurchaseReceipt(name) { frappe.set_route("Form", "Purchase Receipt", name); },
+      openStockEntry(name) { frappe.set_route("Form", "Stock Entry", name); },
+      openAsset(name) { frappe.set_route("Form", "Asset", name); },
+      openAssetMovement(name) { frappe.set_route("Form", "Asset Movement", name); },
+      openReports() { this.pageMode = "reports"; },
+      openRequests() { this.pageMode = "requests"; },
+      openReport(route) { this.setMode("reports"); frappe.set_route(route); },
 
-      syncSelectAllAssetMovements() {
-        this.selectAllAssetMovements =
-          this.selectedAssetMovements.length === this.assetMovements.length;
-      },
+      // SELECTION HANDLERS
+      toggleSelectAll() { this.selectedDocs = this.selectAll ? this.requests.map(d => d.name) : []; },
+      syncSelectAll() { this.selectAll = this.selectedDocs.length === this.requests.length; },
+      toggleSelectAllInward() { this.selectedInward = this.selectAllInward ? this.inward.map(d => d.name) : []; },
+      syncSelectAllInward() { this.selectAllInward = this.selectedInward.length === this.inward.length; },
+      toggleSelectAllOutward() { this.selectedOutward = this.selectAllOutward ? this.outward.map(d => d.name) : []; },
+      syncSelectAllOutward() { this.selectAllOutward = this.selectedOutward.length === this.outward.length; },
+      toggleSelectAllAssets() { this.selectedAssets = this.selectAllAssets ? this.assets.map(d => d.name) : []; },
+      syncSelectAllAssets() { this.selectAllAssets = this.selectedAssets.length === this.assets.length; },
+      toggleSelectAllAssetMovements() { this.selectedAssetMovements = this.selectAllAssetMovements ? this.assetMovements.map(d => d.name) : []; },
+      syncSelectAllAssetMovements() { this.selectAllAssetMovements = this.selectedAssetMovements.length === this.assetMovements.length; },
+
+      reports: [
+        { label: "Stock and Asset Reports", route: "/app/query-report/My%20Material%20Requests" },
+        { label: "My Material Requests", route: "/app/query-report/My%20Material%20Requests" },
+        { label: "Store Asset Master", route: "/app/query-report/Store%20Asset%20Master" },
+        { label: "Store Material Request", route: "/app/query-report/Store%20material%20request" },
+        { label: "My Pending Approvals", route: "/app/query-report/My%20Pending%20Approvals" },
+        { label: "Asset Transfer", route: "/app/query-report/Asset%20Transfer" },
+        { label: "Consumed Items", route: "/app/query-report/Consumed%20Items" },
+        { label: "Branch Stock", route: "/app/query-report/Branch%20Stock" },
+        { label: "My Assets", route: "/app/query-report/My%20Assets" },
+      ],
+
       getProgressFlow(doc) {
         const status = doc.status;
-
-        // STEP 1: Draft / Submitted
-        let step1State = "disabled";
-        let step1Label = "Submitted";
-
-        if (status === "Draft") {
-          step1State = "pending";
-          step1Label = "Draft";
-        } else {
-          step1State = "done";
-          step1Label = "Submitted";
-        }
-
-        // STEP 2: Reporting
-        let step2Visible = status !== "Cancelled";
-        let step2State = "disabled";
-
-        if (status === "Pending Reporting Person") {
-          step2State = "pending";
-        }
-
-        if (status === "Pending HO Approval" || status === "Approved") {
-          step2State = "done";
-        }
-
-        // STEP 3: HO Approval / Cancelled
-        let step3State = "disabled";
-        let step3Label = "HO Approval";
-
-        if (status === "Pending HO Approval") {
-          step3State = "pending";
-        }
-
-        if (status === "Approved") {
-          step3State = "done";
-        }
-
-        if (status === "Cancelled") {
-          step3State = "cancelled";
-          step3Label = "Cancelled";
-        }
-
-        return {
-          step1: {
-            label: step1Label,
-            state: step1State,
-          },
-          step2: {
-            visible: step2Visible,
-            state: step2State,
-          },
-          step3: {
-            label: step3Label,
-            state: step3State,
-          },
-        };
+        let step1 = { state: status === "Draft" ? "pending" : "done", label: status === "Draft" ? "Draft" : "Submitted" };
+        let step2 = { visible: status !== "Cancelled", state: status === "Pending Reporting Person" ? "pending" : (["Pending HO Approval", "Approved"].includes(status) ? "done" : "disabled") };
+        let step3 = { state: status === "Pending HO Approval" ? "pending" : (status === "Approved" ? "done" : (status === "Cancelled" ? "cancelled" : "disabled")), label: status === "Cancelled" ? "Cancelled" : "HO Approval" };
+        return { step1, step2, step3 };
       },
     };
 
     PetiteVue.createApp(app).mount(this.wrapper[0]);
-
-    setTimeout(() => {
-      app.loadRequests();
-    }, 100);
+    setTimeout(() => { app.setMode(app.pageMode, app.subMode); }, 100);
   }
 }
