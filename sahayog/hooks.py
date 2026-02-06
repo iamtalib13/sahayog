@@ -648,4 +648,10 @@ fixtures = [
     "filters": [["name", "in", ["Reminder Unauthorized absence", "Domestic Enquiry"]]]
 },
 
+# Notification fixtures
+    {
+        "dt": "Notification",
+        "filters": [["name", "in", ["Show Cause Notice"]]]
+    },
+
 ]
