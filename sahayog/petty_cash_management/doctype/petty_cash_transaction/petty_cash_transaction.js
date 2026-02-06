@@ -17,6 +17,9 @@ frappe.ui.form.on('Petty Cash Transaction', {
             // Shows the field only if frm.doc[field] is truthy (has a value)
             frm.toggle_display(field, !!frm.doc[field]);
         });
+
+         // [NEW] Bulk Allocation Logic
+        frm.trigger('toggle_bulk_mode');
         
         // --- DEBUG LOGGING ---
         console.log("=== DEBUGGING BUTTONS ===");
@@ -79,10 +82,64 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 
     transaction_type: function(frm) {
+         // Trigger visibility check when type changes
+        frm.trigger('toggle_bulk_mode');
+
         if (frm.doc.transaction_type === "Fund Allocation") {
             frm.clear_table("items");
             frm.refresh_field("items");
+            // [NEW] Trigger Auto-Fetch of HO Account
+            frm.trigger('set_default_ho_account');
         }
+    },
+
+    is_bulk_allocation: function(frm) {
+        frm.trigger('toggle_bulk_mode');
+    },
+
+    toggle_bulk_mode: function(frm) {
+        // 1. Check Role
+        let is_manager = frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator';
+        let is_fund = frm.doc.transaction_type === 'Fund Allocation';
+
+        // 2. Show/Hide Bulk Option
+        // Only show the Checkbox if user is Manager AND it's a Fund Allocation
+        frm.toggle_display('is_bulk_allocation', is_manager && is_fund);
+
+        // 3. Handle Bulk vs Single Mode
+        if (is_fund && frm.doc.is_bulk_allocation) {
+            // BULK MODE: Hide specific branch, Show Bulk Fields
+            frm.set_df_property('branch', 'reqd', 0); // Make branch optional
+            frm.toggle_display('branch', false);      // Hide branch
+            
+            // Note: target_scope and source_bank_account visibility is handled by 'depends_on' in JSON
+            
+            // Update Label for Amount to be clear
+            frm.set_df_property('amount', 'label', 'Amount Per Branch');
+        } else {
+            // SINGLE MODE: Restore defaults
+            if (is_manager) {
+                // Only restore if user is allowed to edit branch
+                frm.toggle_display('branch', true);
+                frm.set_df_property('branch', 'reqd', 1);
+            }
+            frm.set_df_property('amount', 'label', 'Amount');
+        }
+    },
+
+     // [NEW FUNCTION] Fetches HO Account from Backend
+    set_default_ho_account: function(frm) {
+        // Only fetch if currently empty
+        if (frm.doc.source_bank_account) return;
+
+        frappe.call({
+            method: "sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.get_ho_source_account",
+            callback: function(r) {
+                if (r.message) {
+                    frm.set_value('source_bank_account', r.message);
+                }
+            }
+        });
     },
     
     onload: function(frm) {
