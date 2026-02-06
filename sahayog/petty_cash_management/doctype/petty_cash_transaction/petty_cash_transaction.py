@@ -449,6 +449,22 @@ class PettyCashTransaction(Document):
             frappe.set_user(original_user)
 
 
+    def process_finacle_transfer(self):
+        if not self.journal_entry_ref:
+            frappe.throw(_("Journal Entry Reference is missing. Please save the document again."))
+
+        response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+        status = response.get("status")
+
+        if status == "SUCCESS":
+            tran_id = response.get("trn_id")
+            self.finacle_tran_id = tran_id
+            self.finacle_tran_date = nowdate()
+            frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+        else:
+            error_msg = response.get("message", "Unknown Finacle Error")
+            frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", f"FAILED: {error_msg}")
+            frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
 
     def create_journal_entry(self):
         """
