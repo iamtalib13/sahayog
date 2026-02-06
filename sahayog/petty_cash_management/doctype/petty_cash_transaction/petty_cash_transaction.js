@@ -1,7 +1,21 @@
 
 frappe.ui.form.on('Petty Cash Transaction', {
 
+
+    setup: function(frm) {
+    // Add Download Report button to List View
+    // This will be available in the list view toolbar
+},
+
     refresh: function(frm) {
+
+        // Add Download Report button in Form View (optional)
+    if (!frm.is_new()) {
+        frm.add_custom_button(__('Download as Excel'), function() {
+            download_current_record(frm);
+        }, __('Reports'));
+    }
+    
 
         // Define the fields you want to check
         const hide_fields = [
@@ -282,4 +296,54 @@ function check_limit_warning(frm, cdt, cdn) {
             }, 3);
         }
     }
+}
+
+
+// Helper function to download current record (at the end of the file, OUTSIDE the main frappe.ui.form.on block)
+function download_current_record(frm) {
+    let filters = {
+        name: frm.doc.name
+    };
+    
+    frappe.show_alert({
+        message: __('Generating Excel report...'),
+        indicator: 'blue'
+    }, 3);
+    
+    frappe.call({
+        method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_report',
+        args: {
+            filters: filters
+        },
+        callback: function(r) {
+            if (r.message) {
+                // Decode base64 and trigger download
+                let file_data = r.message.filecontent;
+                let filename = r.message.filename;
+                
+                // Convert base64 to blob
+                let binary = atob(file_data);
+                let array = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    array[i] = binary.charCodeAt(i);
+                }
+                let blob = new Blob([array], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                
+                // Create download link
+                let url = window.URL.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                frappe.show_alert({
+                    message: __('Report downloaded successfully!'),
+                    indicator: 'green'
+                }, 3);
+            }
+        }
+    });
 }
