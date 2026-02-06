@@ -57,6 +57,99 @@ class PettyCashTransaction(Document):
         if self.transaction_type == "Fund Allocation":
             self.set_default_source_account()
 
+
+            # [NEW] Sync Updates to Journal Entry
+            # Only if Draft (docstatus 0) and JE already exists
+            if self.docstatus == 0 and self.journal_entry_ref:
+                self.sync_journal_entry_changes()
+
+
+    def sync_journal_entry_changes(self):
+        """
+        [NEW] Updates the existing Journal Entry instead of deleting it.
+        """
+        # 1. Check if critical fields changed
+        db_doc = frappe.db.get_value("Petty Cash Transaction", self.name, 
+            ["amount", "is_bulk_allocation", "target_scope", "source_bank_account", "branch"], as_dict=True)
+            
+        if not db_doc: return 
+
+        has_changed = (
+            flt(self.amount) != flt(db_doc.amount) or
+            self.is_bulk_allocation != db_doc.is_bulk_allocation or
+            self.target_scope != db_doc.target_scope or
+            self.source_bank_account != db_doc.source_bank_account or
+            self.branch != db_doc.branch
+        )
+
+        if has_changed and self.journal_entry_ref:
+            # Switch to Admin to edit JE
+            original_user = frappe.session.user
+            frappe.set_user("Administrator")
+            
+            try:
+                # 2. Load Existing JE
+                je = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+                
+                # 3. Clear existing Accounts table
+                je.accounts = []
+                
+                # 4. Re-calculate Accounts (Same logic as create_ho_fund_allocation_je)
+                # --- LOGIC REUSE START ---
+                target_wallets = []
+                if self.is_bulk_allocation:
+                    filters = {"status": "Active", "is_fund_source": 0} 
+                    if self.target_scope == "Metro Branches Only":
+                        filters["branch_type"] = "Metro"
+                    elif self.target_scope == "Non-Metro Branches Only":
+                        filters["branch_type"] = "Non Metro"
+                    target_wallets = frappe.get_all("Branch Petty Cash Account", filters=filters, fields=["name", "branch", "gl_sub_code"])
+                else:
+                    target_wallets = frappe.get_all("Branch Petty Cash Account", filters={"branch": self.branch}, fields=["name", "branch", "gl_sub_code"])
+
+                total_amount = 0.0
+                cost_center = frappe.get_cached_value('Company', je.company, 'cost_center')
+
+                for wallet in target_wallets:
+                    if not wallet.gl_sub_code: continue
+                    acc_name = frappe.db.sql("SELECT name FROM `tabAccount` WHERE account_number=%s", wallet.gl_sub_code)
+                    if not acc_name: continue
+                    acc_name = acc_name[0][0]
+                    
+                    je.append("accounts", {
+                        "account": acc_name,
+                        "debit_in_account_currency": 0,
+                        "credit_in_account_currency": self.amount,
+                        "cost_center": cost_center,
+                        "user_remark": f"Allocation to {wallet.branch}"
+                    })
+                    total_amount += self.amount
+
+                # Debit Line
+                je.append("accounts", {
+                    "account": self.source_bank_account,
+                    "debit_in_account_currency": total_amount,
+                    "credit_in_account_currency": 0,
+                    "cost_center": cost_center,
+                    "user_remark": f"Total Fund Allocation for {len(target_wallets)} branches"
+                })
+                # --- LOGIC REUSE END ---
+
+                # 5. Save the JE
+                je.flags.ignore_permissions = True
+                je.save(ignore_permissions=True)
+                
+                frappe.msgprint(_("Linked Journal Entry updated successfully."))
+
+            except Exception as e:
+                frappe.log_error(title="JE Sync Error", message=frappe.get_traceback())
+                frappe.msgprint(_("Could not sync Journal Entry changes. Please check error log."))
+            
+            finally:
+                frappe.set_user(original_user)
+
+
+
     def generate_item_gl_codes(self):
         if not self.branch or not self.items:
             return
