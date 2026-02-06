@@ -175,54 +175,89 @@ class StockIOPage {
     <div class="stockio-toolbar">
 
     <!-- LEFT: TABS -->
-  <div class="stockio-tabs">
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'all' }"
-    @click="setTab('all')"
-    >
-    All <b>{{ counts.all }}</b>
-    </span>
+  <div class="stockio-tabs" v-if="pageMode !== 'reports'">
+    <template v-if="pageMode === 'requests'">
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'all' }"
+      @click="setTab('all')"
+      >
+      All <b>{{ counts.all }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'today' }"
-    @click="setTab('today')"
-    >
-    To Day <b class="green">{{ counts.today }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'today' }"
+      @click="setTab('today')"
+      >
+      To Day <b class="green">{{ counts.today }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'draft' }"
-    @click="setTab('draft')"
-    >
-    Draft <b class="grey">{{ counts.draft }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'draft' }"
+      @click="setTab('draft')"
+      >
+      Draft <b class="grey">{{ counts.draft }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'pending' }"
-    @click="setTab('pending')"
-    >
-    Pending <b class="orange">{{ counts.pending }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'pending' }"
+      @click="setTab('pending')"
+      >
+      Pending <b class="orange">{{ counts.pending }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'approved' }"
-    @click="setTab('approved')"
-    >
-    Approved <b class="purple">{{ counts.approved }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'approved' }"
+      @click="setTab('approved')"
+      >
+      Approved <b class="purple">{{ counts.approved }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'cancelled' }"
-    @click="setTab('cancelled')"
-    >
-    Cancelled <b class="red">{{ counts.cancelled }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'cancelled' }"
+      @click="setTab('cancelled')"
+      >
+      Cancelled <b class="red">{{ counts.cancelled }}</b>
+      </span>
+    </template>
+    <template v-else-if="pageMode === 'stock' || pageMode === 'asset'">
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'all' }"
+      @click="setTab('all')"
+      >
+      All <b>{{ counts.all }}</b>
+      </span>
+
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'draft' }"
+      @click="setTab('draft')"
+      >
+      Draft <b class="grey">{{ counts.draft }}</b>
+      </span>
+
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'submitted' }"
+      @click="setTab('submitted')"
+      >
+      Submitted <b class="green">{{ counts.submitted }}</b>
+      </span>
+
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'other' }"
+      @click="setTab('other')"
+      >
+      Other <b class="orange">{{ counts.other }}</b>
+      </span>
+    </template>
   </div>
 
       <div class="stockio-search">
@@ -770,6 +805,8 @@ class StockIOPage {
         pending: 0,
         approved: 0,
         cancelled: 0,
+        submitted: 0,
+        other: 0,
       },
 
       // ===== GETTERS =====
@@ -800,10 +837,10 @@ class StockIOPage {
       get hasAssetMovementSelection() { return this.selectedAssetMovements.length > 0; },
 
       get canLoadMore() { return this.visibleRequests.length < this.getFilteredList().length; },
-      get canLoadMoreInward() { return this.inwardVisible.length < this.inward.length; },
-      get canLoadMoreOutward() { return this.outwardVisible.length < this.outward.length; },
-      get canLoadMoreAssets() { return this.assetsVisible.length < this.assets.length; },
-      get canLoadMoreAssetMovements() { return this.assetMovementsVisible.length < this.assetMovements.length; },
+      get canLoadMoreInward() { return this.inwardVisible.length < this.getFilteredList().length; },
+      get canLoadMoreOutward() { return this.outwardVisible.length < this.getFilteredList().length; },
+      get canLoadMoreAssets() { return this.assetsVisible.length < this.getFilteredList().length; },
+      get canLoadMoreAssetMovements() { return this.assetMovementsVisible.length < this.getFilteredList().length; },
 
       // ===== METHODS =====
       setMode(mode, sub = null) {
@@ -826,6 +863,7 @@ class StockIOPage {
 
         this.searchText = "";
         this.activeTab = "all";
+        this.computeCounts();
 
         if (mode === "requests") {
           if (!this.requests.length) this.loadRequests();
@@ -880,35 +918,11 @@ class StockIOPage {
           if (this.sidebarCollapsed) this.sidebarCollapsed = false;
         }
       },
-      setTab(tab) { this.activeTab = tab; this.offset = 0; this.visibleRequests = []; this.loadMore(); },
+      setTab(tab) {
+        this.activeTab = tab;
+        this.performSearch();
+      },
 
-      // REQUESTS
-      loadRequests() {
-        frappe.call({
-          method: "frappe.client.get_list",
-          args: {
-            doctype: "Employee Material Request",
-            fields: ["name", "status", "creation", "owner", "reporting_person_status", "ho_officer_status"],
-            limit_page_length: 1000,
-          },
-          callback: (r) => {
-            if (!r.message) return;
-            this.requests = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
-            this.offset = 0;
-            this.visibleRequests = [];
-            this.computeCounts();
-            this.loadMore();
-            this.requests.forEach(doc => this.loadItems(doc));
-          }
-        });
-      },
-      loadItems(doc) {
-        frappe.call({
-          method: "frappe.client.get",
-          args: { doctype: "Employee Material Request", name: doc.name },
-          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
-        });
-      },
       // SEARCH & FILTERING
       performSearch() {
         this.offset = 0;
@@ -952,29 +966,21 @@ class StockIOPage {
           return list;
         }
 
-        if (this.pageMode === "stock") {
-          let list = this.subMode === "inward" ? this.inward : this.outward;
+        if (this.pageMode === "stock" || this.pageMode === "asset") {
+          let list = this.activeList;
+          if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
+          else if (this.activeTab === "submitted") list = list.filter(d => d.status === "Submitted");
+          else if (this.activeTab === "other") list = list.filter(d => d.status !== "Draft" && d.status !== "Submitted");
+
           if (q) {
             list = list.filter(d => 
               d.name?.toLowerCase().includes(q) || 
               (d.supplier?.toLowerCase().includes(q)) || 
-              (d.purpose?.toLowerCase().includes(q)) ||
-              d.status?.toLowerCase().includes(q) ||
-              d.items?.some(i => i.item_code?.toLowerCase().includes(q))
-            );
-          }
-          return list;
-        }
-
-        if (this.pageMode === "asset") {
-          let list = this.subMode === "item" ? this.assets : this.assetMovements;
-          if (q) {
-            list = list.filter(d => 
-              d.name?.toLowerCase().includes(q) || 
-              (d.asset_name?.toLowerCase().includes(q)) || 
+              (d.asset_name?.toLowerCase().includes(q)) ||
               (d.custom_reference_name?.toLowerCase().includes(q)) ||
               (d.purpose?.toLowerCase().includes(q)) ||
-              d.status?.toLowerCase().includes(q)
+              d.status?.toLowerCase().includes(q) ||
+              d.items?.some(i => (i.item_code || i.asset || i.asset_name)?.toLowerCase().includes(q))
             );
           }
           return list;
@@ -1020,16 +1026,26 @@ class StockIOPage {
 
       // COUNTS
       computeCounts() {
-        const today = frappe.datetime.get_today();
-        this.counts = { all: this.requests.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0 };
-        this.requests.forEach(doc => {
-          const docDate = doc.creation?.split(" ")[0];
-          if (docDate === today) this.counts.today++;
-          if (doc.status === "Draft") this.counts.draft++;
-          else if (["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(doc.status)) this.counts.pending++;
-          else if (["Approved", "Submitted"].includes(doc.status)) this.counts.approved++;
-          else if (doc.status === "Cancelled") this.counts.cancelled++;
-        });
+        if (this.pageMode === "requests") {
+          const today = frappe.datetime.get_today();
+          this.counts = { all: this.requests.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0, submitted: 0, other: 0 };
+          this.requests.forEach(doc => {
+            const docDate = doc.creation?.split(" ")[0];
+            if (docDate === today) this.counts.today++;
+            if (doc.status === "Draft") this.counts.draft++;
+            else if (["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(doc.status)) this.counts.pending++;
+            else if (["Approved", "Submitted"].includes(doc.status)) this.counts.approved++;
+            else if (doc.status === "Cancelled") this.counts.cancelled++;
+          });
+        } else {
+          const list = this.activeList;
+          this.counts = { all: list.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0, submitted: 0, other: 0 };
+          list.forEach(doc => {
+            if (doc.status === "Draft") this.counts.draft++;
+            else if (doc.status === "Submitted") this.counts.submitted++;
+            else this.counts.other++;
+          });
+        }
       },
 
       // REQUESTS
@@ -1044,9 +1060,9 @@ class StockIOPage {
           callback: (r) => {
             if (!r.message) return;
             this.requests = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
+            this.computeCounts();
             this.offset = 0;
             this.visibleRequests = [];
-            this.computeCounts();
             this.loadMore();
             this.requests.forEach(doc => this.loadItems(doc));
           }
@@ -1067,7 +1083,11 @@ class StockIOPage {
           args: { doctype: "Purchase Receipt", fields: ["name", "posting_date", "supplier", "status"], order_by: "posting_date desc", limit_page_length: 1000 },
           callback: (r) => {
             if (!r.message) return;
-            this.inward = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
+            this.inward = r.message.map(d => {
+              let status = d.status === "Completed" ? "Submitted" : d.status;
+              return { ...d, status, items: [], showAllItems: false };
+            });
+            this.computeCounts();
             this.inwardOffset = 0;
             this.inwardVisible = [];
             this.loadMoreInward();
@@ -1094,6 +1114,7 @@ class StockIOPage {
               let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
+            this.computeCounts();
             this.outwardOffset = 0;
             this.outwardVisible = [];
             this.loadMoreOutward();
@@ -1120,6 +1141,7 @@ class StockIOPage {
               let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
+            this.computeCounts();
             this.assetsOffset = 0;
             this.assetsVisible = [];
             this.loadMoreAssets();
@@ -1138,6 +1160,7 @@ class StockIOPage {
               let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
+            this.computeCounts();
             this.assetMovementsOffset = 0;
             this.assetMovementsVisible = [];
             this.loadMoreAssetMovements();
