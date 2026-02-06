@@ -271,7 +271,7 @@ class StockIOPage {
     </div>
 
     <!-- ================= REQUESTS VIEW ================= -->
-    <div class="stockio-body" v-if="pageMode === 'requests'">
+    <div v-if="pageMode === 'requests'" class="stockio-view-container">
 
       <div class="order-toolbar">
       <label>
@@ -281,10 +281,11 @@ class StockIOPage {
 
       <div class="toolbar-actions" v-if="hasSelection">
         <button class="btn ghost">Print</button>
-        <button class="btn success">Approve Request</button>
+        <button class="btn success" v-if="canBulkApprove">Approve Request</button>
       </div>
       </div>
 
+      <div class="stockio-body">
       <div
       class="order-card"
       v-for="doc in visibleRequests"
@@ -398,7 +399,8 @@ class StockIOPage {
       <button class="btn ghost" @click="loadMore">Load More</button>
       </div>
 
-    </div>
+      </div> <!-- end stockio-body -->
+    </div> <!-- end stockio-view-container -->
 
     <!-- ================= REPORTS VIEW ================= -->
     <div class="stockio-body" v-if="pageMode === 'reports'">
@@ -416,11 +418,9 @@ class StockIOPage {
       </div>
 
     </div>
-    <div v-if="pageMode === 'stock'" class="stockio-body">
- 
+    <div v-if="pageMode === 'stock'" class="stockio-view-container">
 
-
-  <div v-if="subMode === 'inward'" class="stockio-body">
+  <div v-if="subMode === 'inward'" class="stockio-view-container">
      <div class="order-toolbar">
       <label>
         <input
@@ -433,10 +433,11 @@ class StockIOPage {
 
       <div class="toolbar-actions" v-if="hasInwardSelection">
         <button class="btn ghost">Print</button>
-        <button class="btn success">Post Receipt</button>
+        <button class="btn success" v-if="canBulkPostInward">Post Receipt</button>
       </div>
   </div>
 
+  <div class="stockio-body">
   <div class="order-card"
        v-for="doc in inwardVisible"
        :key="doc.name">
@@ -513,11 +514,12 @@ class StockIOPage {
       Load More
     </button>
   </div>
+  </div> <!-- end stockio-body -->
 
 </div>
 
 
-    <div v-if="subMode === 'outward'" class="stockio-body">
+    <div v-if="subMode === 'outward'" class="stockio-view-container">
     <div class="order-toolbar">
       <label>
         <input type="checkbox" v-model="selectAllOutward" @change="toggleSelectAllOutward" />
@@ -526,10 +528,11 @@ class StockIOPage {
 
       <div class="toolbar-actions" v-if="hasOutwardSelection">
         <button class="btn ghost">Print</button>
-        <button class="btn success">Submit</button>
+        <button class="btn success" v-if="canBulkSubmitOutward">Submit</button>
       </div>
     </div>
 
+    <div class="stockio-body">
     <div class="order-card" v-for="doc in outwardVisible" :key="doc.name">
       <div class="order-left">
         <input type="checkbox" v-model="selectedOutward" :value="doc.name" @change="syncSelectAllOutward" />
@@ -587,12 +590,13 @@ class StockIOPage {
         Load More
       </button>
     </div>
+    </div> <!-- end stockio-body -->
   </div>
 
   </div>
-    <div v-if="pageMode === 'asset'" class="stockio-body">
+    <div v-if="pageMode === 'asset'" class="stockio-view-container">
 
-    <div v-if="subMode === 'movement'">
+    <div v-if="subMode === 'movement'" class="stockio-view-container">
     <div class="order-toolbar">
       <label>
         <input type="checkbox" v-model="selectAllAssetMovements" @change="toggleSelectAllAssetMovements" />
@@ -601,10 +605,11 @@ class StockIOPage {
 
       <div class="toolbar-actions" v-if="hasAssetMovementSelection">
         <button class="btn ghost">Print</button>
-        <button class="btn success">Submit</button>
+        <button class="btn success" v-if="canBulkSubmitAssetMovement">Submit</button>
       </div>
     </div>
 
+<div class="stockio-body">
 <div class="order-card" v-for="doc in assetMovementsVisible" :key="doc.name">
 
   <div class="order-left">
@@ -693,9 +698,10 @@ class StockIOPage {
         Load More
       </button>
     </div>
+    </div> <!-- end stockio-body -->
     </div>
 
-    <div v-if="subMode === 'item'">
+    <div v-if="subMode === 'item'" class="stockio-view-container">
     <div class="order-toolbar">
       <label>
         <input type="checkbox" v-model="selectAllAssets" @change="toggleSelectAllAssets" />
@@ -704,10 +710,11 @@ class StockIOPage {
 
       <div class="toolbar-actions" v-if="hasAssetSelection">
         <button class="btn ghost">Print</button>
-        <button class="btn success">Transfer</button>
+        <button class="btn success" v-if="canBulkTransferAsset">Transfer</button>
       </div>
     </div>
 
+    <div class="stockio-body">
     <div class="order-card" v-for="doc in assetsVisible" :key="doc.name">
       <div class="order-left">
         <input type="checkbox" v-model="selectedAssets" :value="doc.name" @change="syncSelectAllAssets" />
@@ -738,6 +745,7 @@ class StockIOPage {
         Load More
       </button>
     </div>
+  </div> <!-- end stockio-body -->
   </div>
 
   </div>
@@ -831,10 +839,38 @@ class StockIOPage {
       },
 
       get hasSelection() { return this.selectedDocs.length > 0; },
+      get canBulkApprove() {
+        if (this.selectedDocs.length === 0) return false;
+        const selectedStatuses = this.requests
+          .filter(d => this.selectedDocs.includes(d.name))
+          .map(d => d.status);
+        const uniqueStatuses = [...new Set(selectedStatuses)];
+        return uniqueStatuses.length === 1;
+      },
       get hasInwardSelection() { return this.selectedInward.length > 0; },
+      get canBulkPostInward() {
+        if (this.selectedInward.length === 0) return false;
+        const statuses = this.inward.filter(d => this.selectedInward.includes(d.name)).map(d => d.status);
+        return [...new Set(statuses)].length === 1;
+      },
       get hasOutwardSelection() { return this.selectedOutward.length > 0; },
+      get canBulkSubmitOutward() {
+        if (this.selectedOutward.length === 0) return false;
+        const statuses = this.outward.filter(d => this.selectedOutward.includes(d.name)).map(d => d.status);
+        return [...new Set(statuses)].length === 1;
+      },
       get hasAssetSelection() { return this.selectedAssets.length > 0; },
+      get canBulkTransferAsset() {
+        if (this.selectedAssets.length === 0) return false;
+        const statuses = this.assets.filter(d => this.selectedAssets.includes(d.name)).map(d => d.status);
+        return [...new Set(statuses)].length === 1;
+      },
       get hasAssetMovementSelection() { return this.selectedAssetMovements.length > 0; },
+      get canBulkSubmitAssetMovement() {
+        if (this.selectedAssetMovements.length === 0) return false;
+        const statuses = this.assetMovements.filter(d => this.selectedAssetMovements.includes(d.name)).map(d => d.status);
+        return [...new Set(statuses)].length === 1;
+      },
 
       get canLoadMore() { return this.visibleRequests.length < this.getFilteredList().length; },
       get canLoadMoreInward() { return this.inwardVisible.length < this.getFilteredList().length; },
@@ -1055,6 +1091,7 @@ class StockIOPage {
           args: {
             doctype: "Employee Material Request",
             fields: ["name", "status", "creation", "owner", "reporting_person_status", "ho_officer_status"],
+            order_by: "creation desc",
             limit_page_length: 1000,
           },
           callback: (r) => {
