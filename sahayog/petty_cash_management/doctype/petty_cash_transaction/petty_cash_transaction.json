@@ -232,7 +232,9 @@
    "fieldtype": "Link",
    "label": "Source Bank Account (HO)",
    "mandatory_depends_on": "eval:doc.is_bulk_allocation == 1",
-   "options": "Account"
+   "options": "Account",
+   "read_only": 1,
+   "read_only_depends_on": "eval:doc.transaction_type == 'Fund Allocation'"
   },
   {
    "depends_on": "eval:doc.is_bulk_allocation == 1",
@@ -247,7 +249,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-06 11:26:38.237211",
+ "modified": "2026-02-06 12:49:04.230742",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
