@@ -11,6 +11,13 @@ from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
 # Import the API function
 from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
 
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+import io
+from datetime import datetime
+
 class PettyCashTransaction(Document):
 
     def before_insert(self):
@@ -1204,3 +1211,179 @@ def mark_submission_attempt(docname):
     # Use update_modified=False to prevent timestamp change
     frappe.db.set_value("Petty Cash Transaction", docname, "submission_attempted", 1, update_modified=False)
     frappe.db.commit()
+
+
+
+@frappe.whitelist()
+def download_transaction_report(filters=None):
+    """
+    Generate Excel report for Petty Cash Transactions with applied filters.
+    Uses frappe.get_all to automatically handle List View filters.
+    """
+    import json
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from frappe.utils.file_manager import save_file
+    import tempfile
+    import os
+    import base64
+    from datetime import datetime
+    
+    # 1. Parse filters if passed as JSON string
+    if filters and isinstance(filters, str):
+        filters = json.loads(filters)
+    
+    # 2. Fetch Data using frappe.get_all (Handles standard List View filters automatically)
+    # We explicitly list the fields to ensure we get the data we need
+    fields = [
+        "name",
+        "transaction_type",
+        "transaction_date",
+        "branch",
+        "branch_name",
+        "amount",
+        "current_branch_balance",
+        "current_unsettled_cash",
+        "approval_status",
+        "amount_within_limit",
+        "amount_exceeding_limit",
+        "amount_deducted",
+        "approved_by",
+        "finacle_tran_id",
+        "finacle_tran_date",
+        "remarks",
+        "docstatus",
+        "creation",
+        "modified",
+        "owner",
+        "modified_by"
+    ]
+
+    # Note: frappe.get_all automatically respects permissions and filters
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters=filters,
+        fields=fields,
+        order_by="transaction_date desc, creation desc"
+    )
+    
+    if not transactions:
+        frappe.throw(_("No records found matching the filters."))
+    
+    # 3. Create Excel workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Petty Cash Transactions"
+    
+    # Define styles
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Headers
+    headers = [
+        "Transaction ID", "Transaction Type", "Date", "Branch Code", "Branch Name",
+        "Amount (₹)", "Balance (₹)", "Cash in Hand (₹)", "Approval Status",
+        "Within Limit (₹)", "Exceeding Limit (₹)", "Amount Deducted (₹)",
+        "Approved By", "Finacle Txn ID", "Finacle Date", "Remarks",
+        "Status", "Created On", "Modified On", "Created By", "Modified By"
+    ]
+    
+    # Write headers
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+    
+    # 4. Write data
+    for row_num, txn in enumerate(transactions, 2):
+        # Map docstatus to readable text
+        status_map = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
+        
+        row_data = [
+            txn.get('name'),
+            txn.get('transaction_type'),
+            txn.get('transaction_date').strftime('%d-%m-%Y') if txn.get('transaction_date') else '',
+            txn.get('branch'),
+            txn.get('branch_name'),
+            txn.get('amount', 0),
+            txn.get('current_branch_balance', 0),
+            txn.get('current_unsettled_cash', 0),
+            txn.get('approval_status'),
+            txn.get('amount_within_limit', 0),
+            txn.get('amount_exceeding_limit', 0),
+            txn.get('amount_deducted', 0),
+            txn.get('approved_by'),
+            txn.get('finacle_tran_id'),
+            txn.get('finacle_tran_date').strftime('%d-%m-%Y') if txn.get('finacle_tran_date') else '',
+            txn.get('remarks'),
+            status_map.get(txn.get('docstatus'), 'Unknown'),
+            txn.get('creation').strftime('%d-%m-%Y %H:%M') if txn.get('creation') else '',
+            txn.get('modified').strftime('%d-%m-%Y %H:%M') if txn.get('modified') else '',
+            txn.get('owner'),
+            txn.get('modified_by')
+        ]
+        
+        for col_num, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_num, column=col_num)
+            cell.value = value
+            cell.border = border
+            
+            # Format currency columns
+            if col_num in [6, 7, 8, 10, 11, 12]:  # Amount columns
+                cell.number_format = '#,##0.00'
+                cell.alignment = Alignment(horizontal='right')
+    
+    # Auto-adjust column widths
+    for col_num in range(1, len(headers) + 1):
+        column_letter = get_column_letter(col_num)
+        max_length = 0
+        for cell in ws[column_letter]:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Freeze header row
+    ws.freeze_panes = "A2"
+    
+    # 5. Handle File Output
+    # Create temp file
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
+    wb.save(temp_file.name)
+    temp_file.close()
+    
+    # Read file content
+    with open(temp_file.name, 'rb') as f:
+        content = f.read()
+    
+    # Delete temp file
+    os.unlink(temp_file.name)
+    
+    # Generate filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"Petty_Cash_Transactions_{timestamp}.xlsx"
+    
+    # Return as base64 encoded string
+    file_data = base64.b64encode(content).decode('utf-8')
+    
+    return {
+        'filename': filename,
+        'filecontent': file_data,
+        'record_count': len(transactions)
+    }
+
+
+
