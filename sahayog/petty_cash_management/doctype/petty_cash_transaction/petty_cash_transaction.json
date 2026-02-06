@@ -53,6 +53,8 @@
    "in_list_view": 1,
    "label": "Transaction Type",
    "options": "Fund Allocation\nExpense\nCash Withdrawal",
+   "read_only": 1,
+   "read_only_depends_on": "eval: !(frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator')\n",
    "reqd": 1
   },
   {
@@ -256,7 +258,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-06 13:58:02.405071",
+ "modified": "2026-02-06 17:35:38.639449",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
