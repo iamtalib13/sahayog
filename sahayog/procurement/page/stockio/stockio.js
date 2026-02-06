@@ -175,65 +175,96 @@ class StockIOPage {
     <div class="stockio-toolbar">
 
     <!-- LEFT: TABS -->
-  <div class="stockio-tabs">
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'all' }"
-    @click="setTab('all')"
-    >
-    All <b>{{ counts.all }}</b>
-    </span>
+  <div class="stockio-tabs" v-if="pageMode !== 'reports'">
+    <template v-if="pageMode === 'requests'">
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'all' }"
+      @click="setTab('all')"
+      >
+      All <b>{{ counts.all }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'today' }"
-    @click="setTab('today')"
-    >
-    To Day <b class="green">{{ counts.today }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'today' }"
+      @click="setTab('today')"
+      >
+      To Day <b class="green">{{ counts.today }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'draft' }"
-    @click="setTab('draft')"
-    >
-    Draft <b class="grey">{{ counts.draft }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'draft' }"
+      @click="setTab('draft')"
+      >
+      Draft <b class="grey">{{ counts.draft }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'pending' }"
-    @click="setTab('pending')"
-    >
-    Pending <b class="orange">{{ counts.pending }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'pending' }"
+      @click="setTab('pending')"
+      >
+      Pending <b class="orange">{{ counts.pending }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'approved' }"
-    @click="setTab('approved')"
-    >
-    Approved <b class="purple">{{ counts.approved }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'approved' }"
+      @click="setTab('approved')"
+      >
+      Approved <b class="purple">{{ counts.approved }}</b>
+      </span>
 
-    <span
-    class="tab"
-    :class="{ active: activeTab === 'cancelled' }"
-    @click="setTab('cancelled')"
-    >
-    Cancelled <b class="red">{{ counts.cancelled }}</b>
-    </span>
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'cancelled' }"
+      @click="setTab('cancelled')"
+      >
+      Cancelled <b class="red">{{ counts.cancelled }}</b>
+      </span>
+    </template>
+    <template v-else-if="pageMode === 'stock' || pageMode === 'asset'">
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'all' }"
+      @click="setTab('all')"
+      >
+      All <b>{{ counts.all }}</b>
+      </span>
+
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'draft' }"
+      @click="setTab('draft')"
+      >
+      Draft <b class="grey">{{ counts.draft }}</b>
+      </span>
+
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'submitted' }"
+      @click="setTab('submitted')"
+      >
+      Submitted <b class="green">{{ counts.submitted }}</b>
+      </span>
+
+      <span
+      class="tab"
+      :class="{ active: activeTab === 'other' }"
+      @click="setTab('other')"
+      >
+      Other <b class="orange">{{ counts.other }}</b>
+      </span>
+    </template>
   </div>
 
       <div class="stockio-search">
       <input
-        placeholder="Search requests..."
+        :placeholder="'Search ' + pageTitle.toLowerCase() + '...'"
         v-model="searchText"
-        @input="
-        offset = 0;
-        visibleRequests = [];
-        loadMore();
-        "
+        @input="performSearch()"
       />
       </div>
 
@@ -774,6 +805,8 @@ class StockIOPage {
         pending: 0,
         approved: 0,
         cancelled: 0,
+        submitted: 0,
+        other: 0,
       },
 
       // ===== GETTERS =====
@@ -804,10 +837,10 @@ class StockIOPage {
       get hasAssetMovementSelection() { return this.selectedAssetMovements.length > 0; },
 
       get canLoadMore() { return this.visibleRequests.length < this.getFilteredList().length; },
-      get canLoadMoreInward() { return this.inwardVisible.length < this.inward.length; },
-      get canLoadMoreOutward() { return this.outwardVisible.length < this.outward.length; },
-      get canLoadMoreAssets() { return this.assetsVisible.length < this.assets.length; },
-      get canLoadMoreAssetMovements() { return this.assetMovementsVisible.length < this.assetMovements.length; },
+      get canLoadMoreInward() { return this.inwardVisible.length < this.getFilteredList().length; },
+      get canLoadMoreOutward() { return this.outwardVisible.length < this.getFilteredList().length; },
+      get canLoadMoreAssets() { return this.assetsVisible.length < this.getFilteredList().length; },
+      get canLoadMoreAssetMovements() { return this.assetMovementsVisible.length < this.getFilteredList().length; },
 
       // ===== METHODS =====
       setMode(mode, sub = null) {
@@ -830,6 +863,7 @@ class StockIOPage {
 
         this.searchText = "";
         this.activeTab = "all";
+        this.computeCounts();
 
         if (mode === "requests") {
           if (!this.requests.length) this.loadRequests();
@@ -884,7 +918,135 @@ class StockIOPage {
           if (this.sidebarCollapsed) this.sidebarCollapsed = false;
         }
       },
-      setTab(tab) { this.activeTab = tab; this.offset = 0; this.visibleRequests = []; this.loadMore(); },
+      setTab(tab) {
+        this.activeTab = tab;
+        this.performSearch();
+      },
+
+      // SEARCH & FILTERING
+      performSearch() {
+        this.offset = 0;
+        this.visibleRequests = [];
+        this.inwardOffset = 0;
+        this.inwardVisible = [];
+        this.outwardOffset = 0;
+        this.outwardVisible = [];
+        this.assetsOffset = 0;
+        this.assetsVisible = [];
+        this.assetMovementsOffset = 0;
+        this.assetMovementsVisible = [];
+
+        if (this.pageMode === "requests") this.loadMore();
+        else if (this.pageMode === "stock" && this.subMode === "inward") this.loadMoreInward();
+        else if (this.pageMode === "stock" && this.subMode === "outward") this.loadMoreOutward();
+        else if (this.pageMode === "asset" && this.subMode === "item") this.loadMoreAssets();
+        else if (this.pageMode === "asset" && this.subMode === "movement") this.loadMoreAssetMovements();
+      },
+
+      getFilteredList() {
+        const q = this.searchText.toLowerCase();
+        
+        if (this.pageMode === "requests") {
+          const today = frappe.datetime.get_today();
+          let list = this.requests;
+          if (this.activeTab === "today") list = list.filter(d => d.creation?.split(" ")[0] === today);
+          else if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
+          else if (this.activeTab === "pending") list = list.filter(d => ["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(d.status));
+          else if (this.activeTab === "approved") list = list.filter(d => ["Approved", "Submitted"].includes(d.status));
+          else if (this.activeTab === "cancelled") list = list.filter(d => d.status === "Cancelled");
+
+          if (q) {
+            list = list.filter(d => 
+              d.name?.toLowerCase().includes(q) || 
+              d.owner?.toLowerCase().includes(q) || 
+              d.status?.toLowerCase().includes(q) || 
+              d.items?.some(i => i.item_code?.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        }
+
+        if (this.pageMode === "stock" || this.pageMode === "asset") {
+          let list = this.activeList;
+          if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
+          else if (this.activeTab === "submitted") list = list.filter(d => d.status === "Submitted");
+          else if (this.activeTab === "other") list = list.filter(d => d.status !== "Draft" && d.status !== "Submitted");
+
+          if (q) {
+            list = list.filter(d => 
+              d.name?.toLowerCase().includes(q) || 
+              (d.supplier?.toLowerCase().includes(q)) || 
+              (d.asset_name?.toLowerCase().includes(q)) ||
+              (d.custom_reference_name?.toLowerCase().includes(q)) ||
+              (d.purpose?.toLowerCase().includes(q)) ||
+              d.status?.toLowerCase().includes(q) ||
+              d.items?.some(i => (i.item_code || i.asset || i.asset_name)?.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        }
+
+        return [];
+      },
+
+      loadMore() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.offset, this.offset + this.pageSize);
+        this.visibleRequests.push(...next);
+        this.offset += this.pageSize;
+      },
+
+      loadMoreInward() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.inwardOffset, this.inwardOffset + this.inwardPageSize);
+        this.inwardVisible.push(...next);
+        this.inwardOffset += this.inwardPageSize;
+      },
+
+      loadMoreOutward() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.outwardOffset, this.outwardOffset + this.outwardPageSize);
+        this.outwardVisible.push(...next);
+        this.outwardOffset += this.outwardPageSize;
+      },
+
+      loadMoreAssets() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.assetsOffset, this.assetsOffset + this.assetsPageSize);
+        this.assetsVisible.push(...next);
+        this.assetsOffset += this.assetsPageSize;
+      },
+
+      loadMoreAssetMovements() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.assetMovementsOffset, this.assetMovementsOffset + this.assetMovementsPageSize);
+        this.assetMovementsVisible.push(...next);
+        this.assetMovementsOffset += this.assetMovementsPageSize;
+      },
+
+      // COUNTS
+      computeCounts() {
+        if (this.pageMode === "requests") {
+          const today = frappe.datetime.get_today();
+          this.counts = { all: this.requests.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0, submitted: 0, other: 0 };
+          this.requests.forEach(doc => {
+            const docDate = doc.creation?.split(" ")[0];
+            if (docDate === today) this.counts.today++;
+            if (doc.status === "Draft") this.counts.draft++;
+            else if (["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(doc.status)) this.counts.pending++;
+            else if (["Approved", "Submitted"].includes(doc.status)) this.counts.approved++;
+            else if (doc.status === "Cancelled") this.counts.cancelled++;
+          });
+        } else {
+          const list = this.activeList;
+          this.counts = { all: list.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0, submitted: 0, other: 0 };
+          list.forEach(doc => {
+            if (doc.status === "Draft") this.counts.draft++;
+            else if (doc.status === "Submitted") this.counts.submitted++;
+            else this.counts.other++;
+          });
+        }
+      },
 
       // REQUESTS
       loadRequests() {
@@ -898,9 +1060,9 @@ class StockIOPage {
           callback: (r) => {
             if (!r.message) return;
             this.requests = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
+            this.computeCounts();
             this.offset = 0;
             this.visibleRequests = [];
-            this.computeCounts();
             this.loadMore();
             this.requests.forEach(doc => this.loadItems(doc));
           }
@@ -913,41 +1075,6 @@ class StockIOPage {
           callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
-      loadMore() {
-        const source = this.getFilteredList();
-        const next = source.slice(this.offset, this.offset + this.pageSize);
-        this.visibleRequests.push(...next);
-        this.offset += this.pageSize;
-      },
-      getFilteredList() {
-        const today = frappe.datetime.get_today();
-        let list = this.requests;
-        if (this.activeTab === "today") list = list.filter(d => d.creation?.split(" ")[0] === today);
-        else if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
-        else if (this.activeTab === "pending") list = list.filter(d => ["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(d.status));
-        else if (this.activeTab === "approved") list = list.filter(d => ["Approved", "Submitted"].includes(d.status));
-        else if (this.activeTab === "cancelled") list = list.filter(d => d.status === "Cancelled");
-
-        if (this.searchText) {
-          const q = this.searchText.toLowerCase();
-          list = list.filter(d => d.name?.toLowerCase().includes(q) || d.owner?.toLowerCase().includes(q) || d.status?.toLowerCase().includes(q) || d.items?.some(i => i.item_code?.toLowerCase().includes(q)));
-        }
-        return list;
-      },
-
-      // COUNTS
-      computeCounts() {
-        const today = frappe.datetime.get_today();
-        this.counts = { all: this.requests.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0 };
-        this.requests.forEach(doc => {
-          const docDate = doc.creation?.split(" ")[0];
-          if (docDate === today) this.counts.today++;
-          if (doc.status === "Draft") this.counts.draft++;
-          else if (["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(doc.status)) this.counts.pending++;
-          else if (["Approved", "Submitted"].includes(doc.status)) this.counts.approved++;
-          else if (doc.status === "Cancelled") this.counts.cancelled++;
-        });
-      },
 
       // INWARD
       loadInward() {
@@ -956,7 +1083,11 @@ class StockIOPage {
           args: { doctype: "Purchase Receipt", fields: ["name", "posting_date", "supplier", "status"], order_by: "posting_date desc", limit_page_length: 1000 },
           callback: (r) => {
             if (!r.message) return;
-            this.inward = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
+            this.inward = r.message.map(d => {
+              let status = d.status === "Completed" ? "Submitted" : d.status;
+              return { ...d, status, items: [], showAllItems: false };
+            });
+            this.computeCounts();
             this.inwardOffset = 0;
             this.inwardVisible = [];
             this.loadMoreInward();
@@ -971,11 +1102,6 @@ class StockIOPage {
           callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
-      loadMoreInward() {
-        const next = this.inward.slice(this.inwardOffset, this.inwardOffset + this.inwardPageSize);
-        this.inwardVisible.push(...next);
-        this.inwardOffset += this.inwardPageSize;
-      },
 
       // OUTWARD
       loadOutward() {
@@ -988,6 +1114,7 @@ class StockIOPage {
               let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
+            this.computeCounts();
             this.outwardOffset = 0;
             this.outwardVisible = [];
             this.loadMoreOutward();
@@ -1002,11 +1129,6 @@ class StockIOPage {
           callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
-      loadMoreOutward() {
-        const next = this.outward.slice(this.outwardOffset, this.outwardOffset + this.outwardPageSize);
-        this.outwardVisible.push(...next);
-        this.outwardOffset += this.outwardPageSize;
-      },
 
       // ASSETS
       loadAssets() {
@@ -1019,16 +1141,12 @@ class StockIOPage {
               let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
+            this.computeCounts();
             this.assetsOffset = 0;
             this.assetsVisible = [];
             this.loadMoreAssets();
           }
         });
-      },
-      loadMoreAssets() {
-        const next = this.assets.slice(this.assetsOffset, this.assetsOffset + this.assetsPageSize);
-        this.assetsVisible.push(...next);
-        this.assetsOffset += this.assetsPageSize;
       },
 
       // ASSET MOVEMENTS
@@ -1042,6 +1160,7 @@ class StockIOPage {
               let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
+            this.computeCounts();
             this.assetMovementsOffset = 0;
             this.assetMovementsVisible = [];
             this.loadMoreAssetMovements();
@@ -1055,11 +1174,6 @@ class StockIOPage {
           args: { doctype: "Asset Movement", name: doc.name },
           callback: (r) => { if (r.message) doc.items = r.message.assets || []; }
         });
-      },
-      loadMoreAssetMovements() {
-        const next = this.assetMovements.slice(this.assetMovementsOffset, this.assetMovementsOffset + this.assetMovementsPageSize);
-        this.assetMovementsVisible.push(...next);
-        this.assetMovementsOffset += this.assetMovementsPageSize;
       },
 
       // HELPERS
