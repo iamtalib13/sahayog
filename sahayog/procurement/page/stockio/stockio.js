@@ -77,6 +77,7 @@ class StockIOPage {
       class="menu-item"
       :class="{ active: pageMode === 'requests' }"
       @click="openRequests(); setMode('requests')"
+      title="Requests"
       >
       <span class="icon">🏠</span>
       <span v-if="!sidebarCollapsed">Requests</span>
@@ -86,9 +87,12 @@ class StockIOPage {
       <div class="menu-group">
       <div class="menu-item"
          :class="{ active: pageMode === 'stock' }"
-         @click="toggleStock(); setMode('stock', 'inward')"
+         @click="toggleStock(); setMode('stock', subMode || 'inward')"
+         :title="pageMode === 'stock' ? (subMode === 'inward' ? 'Stock Inward' : 'Stock Outward') : 'Stock'"
          >
-        <span class="icon">🛒</span>
+        <span class="icon">
+          {{ pageMode === 'stock' ? (subMode === 'outward' ? '📤' : '📥') : '🛒' }}
+        </span>
         <span v-if="!sidebarCollapsed">Stock</span>
         <span v-if="!sidebarCollapsed" class="chevron">▾</span>
       </div>
@@ -111,8 +115,12 @@ class StockIOPage {
       <div class="menu-group">
       <div class="menu-item"
          :class="{ active: pageMode === 'asset' }"
-         @click="toggleAsset(); setMode('asset', 'item')">
-        <span class="icon">📦</span>
+         @click="toggleAsset(); setMode('asset', subMode || 'item')"
+         :title="pageMode === 'asset' ? (subMode === 'item' ? 'Asset Items' : 'Asset Movements') : 'Asset'"
+         >
+        <span class="icon">
+          {{ pageMode === 'asset' ? (subMode === 'movement' ? '🚛' : '🏷️') : '📦' }}
+        </span>
         <span v-if="!sidebarCollapsed">Asset</span>
         <span v-if="!sidebarCollapsed" class="chevron">▾</span>
       </div>
@@ -136,6 +144,7 @@ class StockIOPage {
       class="menu-item"
       :class="{ active: pageMode === 'reports' }"
       @click="openReports(); setMode('reports')"
+      title="Reports"
       >
       <span class="icon">📊</span>
       <span v-if="!sidebarCollapsed">Reports</span>
@@ -809,6 +818,10 @@ class StockIOPage {
         localStorage.setItem("stockio_page_mode", mode);
         localStorage.setItem("stockio_sub_mode", sub || "");
 
+        // Auto-expand submenus
+        if (mode === "stock") this.stockOpen = true;
+        if (mode === "asset") this.assetOpen = true;
+
         this.searchText = "";
         this.activeTab = "all";
 
@@ -851,8 +864,20 @@ class StockIOPage {
       },
 
       toggleSidebar() { this.sidebarCollapsed = !this.sidebarCollapsed; },
-      toggleStock() { if (!this.sidebarCollapsed) { this.stockOpen = !this.stockOpen; this.assetOpen = false; } },
-      toggleAsset() { if (!this.sidebarCollapsed) { this.assetOpen = !this.assetOpen; this.stockOpen = false; } },
+      toggleStock() {
+        this.stockOpen = !this.stockOpen;
+        if (this.stockOpen) {
+          this.assetOpen = false;
+          if (this.sidebarCollapsed) this.sidebarCollapsed = false;
+        }
+      },
+      toggleAsset() {
+        this.assetOpen = !this.assetOpen;
+        if (this.assetOpen) {
+          this.stockOpen = false;
+          if (this.sidebarCollapsed) this.sidebarCollapsed = false;
+        }
+      },
       setTab(tab) { this.activeTab = tab; this.offset = 0; this.visibleRequests = []; this.loadMore(); },
 
       // REQUESTS
@@ -1034,7 +1059,17 @@ class StockIOPage {
       // HELPERS
       formatDate(date) { return frappe.datetime.str_to_user(date); },
       toggleItems(doc) { doc.showAllItems = !doc.showAllItems; },
-      createRequest() { frappe.set_route("Form", "Employee Material Request", "new-employee-material-request"); },
+      createRequest() {
+        if (this.pageMode === "stock") {
+          if (this.subMode === "inward") return frappe.set_route("Form", "Purchase Receipt", "new-purchase-receipt-1");
+          if (this.subMode === "outward") return frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
+        }
+        if (this.pageMode === "asset") {
+          if (this.subMode === "item") return frappe.set_route("Form", "Asset", "new-asset-1");
+          if (this.subMode === "movement") return frappe.set_route("Form", "Asset Movement", "new-asset-movement-1");
+        }
+        frappe.set_route("Form", "Employee Material Request", "new-employee-material-request");
+      },
       openRequest(name) { frappe.set_route("Form", "Employee Material Request", name); },
       openPurchaseReceipt(name) { frappe.set_route("Form", "Purchase Receipt", name); },
       openStockEntry(name) { frappe.set_route("Form", "Stock Entry", name); },
