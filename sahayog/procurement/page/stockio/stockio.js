@@ -227,13 +227,9 @@ class StockIOPage {
 
       <div class="stockio-search">
       <input
-        placeholder="Search requests..."
+        :placeholder="'Search ' + pageTitle.toLowerCase() + '...'"
         v-model="searchText"
-        @input="
-        offset = 0;
-        visibleRequests = [];
-        loadMore();
-        "
+        @input="performSearch()"
       />
       </div>
 
@@ -913,26 +909,113 @@ class StockIOPage {
           callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
+      // SEARCH & FILTERING
+      performSearch() {
+        this.offset = 0;
+        this.visibleRequests = [];
+        this.inwardOffset = 0;
+        this.inwardVisible = [];
+        this.outwardOffset = 0;
+        this.outwardVisible = [];
+        this.assetsOffset = 0;
+        this.assetsVisible = [];
+        this.assetMovementsOffset = 0;
+        this.assetMovementsVisible = [];
+
+        if (this.pageMode === "requests") this.loadMore();
+        else if (this.pageMode === "stock" && this.subMode === "inward") this.loadMoreInward();
+        else if (this.pageMode === "stock" && this.subMode === "outward") this.loadMoreOutward();
+        else if (this.pageMode === "asset" && this.subMode === "item") this.loadMoreAssets();
+        else if (this.pageMode === "asset" && this.subMode === "movement") this.loadMoreAssetMovements();
+      },
+
+      getFilteredList() {
+        const q = this.searchText.toLowerCase();
+        
+        if (this.pageMode === "requests") {
+          const today = frappe.datetime.get_today();
+          let list = this.requests;
+          if (this.activeTab === "today") list = list.filter(d => d.creation?.split(" ")[0] === today);
+          else if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
+          else if (this.activeTab === "pending") list = list.filter(d => ["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(d.status));
+          else if (this.activeTab === "approved") list = list.filter(d => ["Approved", "Submitted"].includes(d.status));
+          else if (this.activeTab === "cancelled") list = list.filter(d => d.status === "Cancelled");
+
+          if (q) {
+            list = list.filter(d => 
+              d.name?.toLowerCase().includes(q) || 
+              d.owner?.toLowerCase().includes(q) || 
+              d.status?.toLowerCase().includes(q) || 
+              d.items?.some(i => i.item_code?.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        }
+
+        if (this.pageMode === "stock") {
+          let list = this.subMode === "inward" ? this.inward : this.outward;
+          if (q) {
+            list = list.filter(d => 
+              d.name?.toLowerCase().includes(q) || 
+              (d.supplier?.toLowerCase().includes(q)) || 
+              (d.purpose?.toLowerCase().includes(q)) ||
+              d.status?.toLowerCase().includes(q) ||
+              d.items?.some(i => i.item_code?.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        }
+
+        if (this.pageMode === "asset") {
+          let list = this.subMode === "item" ? this.assets : this.assetMovements;
+          if (q) {
+            list = list.filter(d => 
+              d.name?.toLowerCase().includes(q) || 
+              (d.asset_name?.toLowerCase().includes(q)) || 
+              (d.custom_reference_name?.toLowerCase().includes(q)) ||
+              (d.purpose?.toLowerCase().includes(q)) ||
+              d.status?.toLowerCase().includes(q)
+            );
+          }
+          return list;
+        }
+
+        return [];
+      },
+
       loadMore() {
         const source = this.getFilteredList();
         const next = source.slice(this.offset, this.offset + this.pageSize);
         this.visibleRequests.push(...next);
         this.offset += this.pageSize;
       },
-      getFilteredList() {
-        const today = frappe.datetime.get_today();
-        let list = this.requests;
-        if (this.activeTab === "today") list = list.filter(d => d.creation?.split(" ")[0] === today);
-        else if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
-        else if (this.activeTab === "pending") list = list.filter(d => ["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(d.status));
-        else if (this.activeTab === "approved") list = list.filter(d => ["Approved", "Submitted"].includes(d.status));
-        else if (this.activeTab === "cancelled") list = list.filter(d => d.status === "Cancelled");
 
-        if (this.searchText) {
-          const q = this.searchText.toLowerCase();
-          list = list.filter(d => d.name?.toLowerCase().includes(q) || d.owner?.toLowerCase().includes(q) || d.status?.toLowerCase().includes(q) || d.items?.some(i => i.item_code?.toLowerCase().includes(q)));
-        }
-        return list;
+      loadMoreInward() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.inwardOffset, this.inwardOffset + this.inwardPageSize);
+        this.inwardVisible.push(...next);
+        this.inwardOffset += this.inwardPageSize;
+      },
+
+      loadMoreOutward() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.outwardOffset, this.outwardOffset + this.outwardPageSize);
+        this.outwardVisible.push(...next);
+        this.outwardOffset += this.outwardPageSize;
+      },
+
+      loadMoreAssets() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.assetsOffset, this.assetsOffset + this.assetsPageSize);
+        this.assetsVisible.push(...next);
+        this.assetsOffset += this.assetsPageSize;
+      },
+
+      loadMoreAssetMovements() {
+        const source = this.getFilteredList();
+        const next = source.slice(this.assetMovementsOffset, this.assetMovementsOffset + this.assetMovementsPageSize);
+        this.assetMovementsVisible.push(...next);
+        this.assetMovementsOffset += this.assetMovementsPageSize;
       },
 
       // COUNTS
@@ -946,6 +1029,34 @@ class StockIOPage {
           else if (["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(doc.status)) this.counts.pending++;
           else if (["Approved", "Submitted"].includes(doc.status)) this.counts.approved++;
           else if (doc.status === "Cancelled") this.counts.cancelled++;
+        });
+      },
+
+      // REQUESTS
+      loadRequests() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Employee Material Request",
+            fields: ["name", "status", "creation", "owner", "reporting_person_status", "ho_officer_status"],
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+            this.requests = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
+            this.offset = 0;
+            this.visibleRequests = [];
+            this.computeCounts();
+            this.loadMore();
+            this.requests.forEach(doc => this.loadItems(doc));
+          }
+        });
+      },
+      loadItems(doc) {
+        frappe.call({
+          method: "frappe.client.get",
+          args: { doctype: "Employee Material Request", name: doc.name },
+          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
 
@@ -970,11 +1081,6 @@ class StockIOPage {
           args: { doctype: "Purchase Receipt", name: doc.name },
           callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
-      },
-      loadMoreInward() {
-        const next = this.inward.slice(this.inwardOffset, this.inwardOffset + this.inwardPageSize);
-        this.inwardVisible.push(...next);
-        this.inwardOffset += this.inwardPageSize;
       },
 
       // OUTWARD
@@ -1002,11 +1108,6 @@ class StockIOPage {
           callback: (r) => { if (r.message) doc.items = r.message.items || []; }
         });
       },
-      loadMoreOutward() {
-        const next = this.outward.slice(this.outwardOffset, this.outwardOffset + this.outwardPageSize);
-        this.outwardVisible.push(...next);
-        this.outwardOffset += this.outwardPageSize;
-      },
 
       // ASSETS
       loadAssets() {
@@ -1024,11 +1125,6 @@ class StockIOPage {
             this.loadMoreAssets();
           }
         });
-      },
-      loadMoreAssets() {
-        const next = this.assets.slice(this.assetsOffset, this.assetsOffset + this.assetsPageSize);
-        this.assetsVisible.push(...next);
-        this.assetsOffset += this.assetsPageSize;
       },
 
       // ASSET MOVEMENTS
@@ -1055,11 +1151,6 @@ class StockIOPage {
           args: { doctype: "Asset Movement", name: doc.name },
           callback: (r) => { if (r.message) doc.items = r.message.assets || []; }
         });
-      },
-      loadMoreAssetMovements() {
-        const next = this.assetMovements.slice(this.assetMovementsOffset, this.assetMovementsOffset + this.assetMovementsPageSize);
-        this.assetMovementsVisible.push(...next);
-        this.assetMovementsOffset += this.assetMovementsPageSize;
       },
 
       // HELPERS
