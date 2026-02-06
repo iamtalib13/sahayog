@@ -47,6 +47,16 @@ class PettyCashTransaction(Document):
 
             self.calculate_limit_breakdown()
 
+            # if self.transaction_type == "Expense":
+            #     total_expense = sum(flt(item.amount) for item in self.items)
+            #     self.amount = total_expense
+            #     self.generate_item_gl_codes()
+            #     self.calculate_limit_breakdown()
+
+        # [NEW ADDITION] Auto-set Source Account for Fund Allocation
+        if self.transaction_type == "Fund Allocation":
+            self.set_default_source_account()
+
     def generate_item_gl_codes(self):
         if not self.branch or not self.items:
             return
@@ -78,8 +88,48 @@ class PettyCashTransaction(Document):
             else:
                 item.finacle_gl_code = ""
 
-   
+    def set_default_source_account(self):
+        """
+        [NEW] Automatically finds the HO Branch (is_fund_source=1) and sets its GL Account 
+        into the 'source_bank_account' field.
+        """
+        if self.source_bank_account:
+            return # Already set manually, skipping auto-set
+            
+        # Find the Wallet marked as Source
+        ho_wallet = frappe.db.get_value("Branch Petty Cash Account", 
+            {"is_fund_source": 1, "status": "Active"}, 
+            ["name", "gl_sub_code"], 
+            as_dict=True
+        )
+        
+        if not ho_wallet:
+            # Optional: You can choose to throw an error or just let validation fail later
+            # frappe.throw(_("No Active Branch Account found with 'Is Fund Source' checked."))
+            return
+            
+        # Find the Chart of Accounts Name for this GL Code
+        # We use SQL to bypass permission checks
+        account_name = frappe.db.sql("""SELECT name FROM `tabAccount` WHERE account_number=%s""", ho_wallet.gl_sub_code)
+        
+        if account_name:
+            self.source_bank_account = account_name[0][0]
+
+
+
     def validate(self):
+         # REQUIREMENT 1: On Save, create Draft Journal Entry if Fund Allocation
+        # if self.transaction_type == "Fund Allocation" and not self.journal_entry_ref:
+        #     self.create_ho_fund_allocation_je()
+
+        if self.transaction_type == "Fund Allocation":
+            if not self.amount or self.amount <= 0:
+                frappe.throw(_("Amount is required for Fund Allocation"))
+            
+            if not self.journal_entry_ref:
+                self.create_ho_fund_allocation_je()
+
+
         # 1. Check Account Existence
         if not frappe.db.exists("Branch Petty Cash Account", {"branch": self.branch}):
             frappe.throw(_("Branch Petty Cash Account for branch '{0}' not found!").format(self.branch))
@@ -270,6 +320,12 @@ class PettyCashTransaction(Document):
 
 
     def on_submit(self):
+
+         # On Submit, Trigger Finacle API
+        if self.transaction_type == "Fund Allocation":
+            self.db_set('approval_status', 'Posted') # Set status to Posted
+            self.process_finacle_transfer()
+
         # 1. Update Unsettled Cash if this is an Expense
         if self.transaction_type == "Expense":
             wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
@@ -302,7 +358,97 @@ class PettyCashTransaction(Document):
 
         self.update_wallet()
 
-    
+
+    def create_ho_fund_allocation_je(self):
+        """
+        Creates Draft Journal Entry for Single or Bulk Allocation.
+        """
+        original_user = frappe.session.user
+        frappe.set_user("Administrator")
+        
+        try:
+            # 1. Identify Target Branches (Logic remains same)
+            target_wallets = []
+            if self.is_bulk_allocation:
+                filters = {"status": "Active", "is_fund_source": 0} 
+                if self.target_scope == "Metro Branches Only":
+                    filters["branch_type"] = "Metro"
+                elif self.target_scope == "Non-Metro Branches Only":
+                    filters["branch_type"] = "Non Metro"
+                target_wallets = frappe.get_all("Branch Petty Cash Account", filters=filters, fields=["name", "branch", "gl_sub_code"])
+                if not target_wallets:
+                    frappe.throw(_("No branches found matching the selected Scope."))
+            else:
+                if not self.branch:
+                    frappe.throw(_("Branch is required for Single Allocation."))
+                target_wallets = frappe.get_all("Branch Petty Cash Account", filters={"branch": self.branch}, fields=["name", "branch", "gl_sub_code"])
+
+            # 2. Prepare JE Accounts List
+            je_accounts = []
+            total_amount = 0.0
+            company = frappe.defaults.get_user_default("Company") or frappe.db.get_single_value("Global Defaults", "default_company")
+            cost_center = frappe.get_cached_value('Company', company, 'cost_center')
+
+            # Loop through targets (Credits)
+            for wallet in target_wallets:
+                if not wallet.gl_sub_code: continue
+                acc_name = frappe.db.sql("SELECT name FROM `tabAccount` WHERE account_number=%s", wallet.gl_sub_code)
+                if not acc_name: continue
+                acc_name = acc_name[0][0]
+                
+                je_accounts.append({
+                    "account": acc_name,
+                    "debit_in_account_currency": 0,
+                    "credit_in_account_currency": self.amount,
+                    "cost_center": cost_center,
+                    "user_remark": f"Allocation to {wallet.branch}"
+                })
+                total_amount += self.amount
+
+            if not je_accounts:
+                frappe.throw(_("No valid Accounts found for the selected branches."))
+
+            # 3. Add Debit Line (Source HO)
+            if not self.source_bank_account:
+                self.set_default_source_account() 
+            if not self.source_bank_account:
+                 frappe.throw(_("Source Bank Account (HO) is missing."))
+
+            je_accounts.append({
+                "account": self.source_bank_account,
+                "debit_in_account_currency": total_amount,
+                "credit_in_account_currency": 0,
+                "cost_center": cost_center,
+                "user_remark": f"Total Fund Allocation for {len(target_wallets)} branches"
+            })
+
+            # 4. Create JE [FIXED METHOD]
+            # Use frappe.get_doc() instead of new_doc() when passing a full dict structure
+            je = frappe.get_doc({
+                "doctype": "Journal Entry",
+                "voucher_type": "Journal Entry",
+                "posting_date": self.transaction_date,
+                "company": company,
+                "user_remark": f"Fund Allocation Ref: {self.name}",
+                "accounts": je_accounts  # Passing list of dicts works with get_doc
+            })
+            
+            # Flags
+            je.flags.ignore_permissions = True
+            je.insert(ignore_permissions=True)
+            
+            self.journal_entry_ref = je.name
+            
+            # Important: Update the current doc with the ref without saving again (avoid recursion)
+            self.db_set("journal_entry_ref", je.name)
+
+            if self.is_bulk_allocation:
+                frappe.msgprint(_("Draft Journal Entry created for {0} branches. Total: ₹{1}").format(len(target_wallets), total_amount))
+
+        finally:
+            frappe.set_user(original_user)
+
+
 
     def create_journal_entry(self):
         """
@@ -738,3 +884,24 @@ def get_branch_balance(branch):
 
 
 
+@frappe.whitelist()
+def get_ho_source_account():
+    """
+    Returns the Account Name (ID) for the branch marked as 'Is Fund Source'.
+    Used by Client Script to auto-populate the field.
+    """
+    # 1. Find the Wallet
+    ho_wallet = frappe.db.get_value("Branch Petty Cash Account", 
+        {"is_fund_source": 1, "status": "Active"}, 
+        ["gl_sub_code"], 
+        as_dict=True
+    )
+    
+    if not ho_wallet or not ho_wallet.gl_sub_code:
+        return None
+        
+    # 2. Find the Account
+    # Use SQL for speed/permission bypass
+    account = frappe.db.sql("""SELECT name FROM `tabAccount` WHERE account_number=%s""", ho_wallet.gl_sub_code)
+    
+    return account[0][0] if account else None
