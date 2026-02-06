@@ -24,6 +24,7 @@ frappe.pages["stockio"].on_page_load = function (wrapper) {
 
 frappe.pages["stockio"].on_page_show = function (wrapper) {
   $("body").addClass("stockio-active");
+  frappe.set_title("StockIO");
 };
 
 // Clean up when leaving the page via any navigation
@@ -87,7 +88,7 @@ class StockIOPage {
       <div class="menu-group">
       <div class="menu-item"
          :class="{ active: pageMode === 'stock' }"
-         @click="toggleStock(); setMode('stock', subMode || 'inward')"
+         @click="toggleStock(); setMode('stock')"
          :title="pageMode === 'stock' ? (subMode === 'inward' ? 'Stock Inward' : 'Stock Outward') : 'Stock'"
          >
         <span class="icon">
@@ -115,7 +116,7 @@ class StockIOPage {
       <div class="menu-group">
       <div class="menu-item"
          :class="{ active: pageMode === 'asset' }"
-         @click="toggleAsset(); setMode('asset', subMode || 'item')"
+         @click="toggleAsset(); setMode('asset')"
          :title="pageMode === 'asset' ? (subMode === 'item' ? 'Asset Items' : 'Asset Movements') : 'Asset'"
          >
         <span class="icon">
@@ -558,13 +559,9 @@ class StockIOPage {
   </div>
 
   </div>
-  <div v-if="pageMode === 'asset'" class="stockio-body">
+    <div v-if="pageMode === 'asset'" class="stockio-body">
 
-    <div v-if="subMode === 'item'">
-    <!-- ASSET ITEM CONTENT -->
-    </div>
-
-    <div v-if="subMode === 'movement'" class="stockio-body">
+    <div v-if="subMode === 'movement'">
     <div class="order-toolbar">
       <label>
         <input type="checkbox" v-model="selectAllAssetMovements" @change="toggleSelectAllAssetMovements" />
@@ -665,8 +662,9 @@ class StockIOPage {
         Load More
       </button>
     </div>
-  </div>
-    <div v-if="pageMode === 'asset' && subMode === 'item'" class="stockio-body">
+    </div>
+
+    <div v-if="subMode === 'item'">
     <div class="order-toolbar">
       <label>
         <input type="checkbox" v-model="selectAllAssets" @change="toggleSelectAllAssets" />
@@ -813,6 +811,14 @@ class StockIOPage {
 
       // ===== METHODS =====
       setMode(mode, sub = null) {
+        // Validate sub-mode for the category
+        if (mode === "stock" && !["inward", "outward"].includes(sub)) {
+          sub = this.subMode && ["inward", "outward"].includes(this.subMode) ? this.subMode : "inward";
+        }
+        if (mode === "asset" && !["item", "movement"].includes(sub)) {
+          sub = this.subMode && ["item", "movement"].includes(this.subMode) ? this.subMode : "item";
+        }
+
         this.pageMode = mode;
         this.subMode = sub;
         localStorage.setItem("stockio_page_mode", mode);
