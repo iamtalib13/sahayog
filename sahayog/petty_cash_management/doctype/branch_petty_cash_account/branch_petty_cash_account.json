@@ -12,6 +12,7 @@
   "branch_name",
   "branch_type",
   "zone",
+  "is_fund_source",
   "column_break_zpzt",
   "monthly_limit",
   "current_balance",
@@ -137,12 +138,19 @@
    "hidden": 1,
    "label": " Last Synced Fund Date",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Check this if this branch account is used to allocate funds to others.",
+   "fieldname": "is_fund_source",
+   "fieldtype": "Check",
+   "label": "Is Fund Source (HO)"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-04 12:41:38.953357",
+ "modified": "2026-02-05 11:56:06.160026",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
