@@ -319,45 +319,65 @@ class PettyCashTransaction(Document):
 
 
 
-    def on_submit(self):
+    # def on_submit(self):
 
-         # On Submit, Trigger Finacle API
+    #      # On Submit, Trigger Finacle API
+    #     if self.transaction_type == "Fund Allocation":
+    #         # self.db_set('approval_status', 'Posted') # Set status to Posted
+    #         self.process_finacle_transfer()
+
+    #     # 1. Update Unsettled Cash if this is an Expense
+    #     if self.transaction_type == "Expense":
+    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+            
+    #         # Deduct the total amount from their "Cash in Hand" bucket (Liability)
+    #         # This is the ONLY place where money "leaves" the wallet in our portal
+    #         wallet.update_unsettled_cash(self.amount, "Expense")
+
+    #         # 2. Handle Status & Limits
+    #         if self.amount_exceeding_limit > 0:
+    #             # Scenario 2: Exceeding Limit
+    #             self.db_set('amount_deducted', self.amount_within_limit)
+    #             self.db_set('approval_status', 'Pending Approval')
+    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
+    #         else:
+    #             # Scenario 1: Within Limit
+    #             self.db_set('amount_deducted', self.amount)
+    #             self.db_set('approval_status', 'Approved') 
+        
+    #     elif self.transaction_type == "Fund Allocation":
+    #         self.db_set('amount_deducted', 0)
+    #         self.db_set('approval_status', 'Posted')
+
+    #     self.update_wallet()
+
+
+    # # [NEW] Create Draft Journal Entry
+    #     if self.transaction_type == "Expense":
+    #         self.create_journal_entry()
+
+    #     self.update_wallet()
+
+    def on_submit(self):
+        # 1. Fund Allocation Logic
         if self.transaction_type == "Fund Allocation":
-            self.db_set('approval_status', 'Posted') # Set status to Posted
+            # We do NOT set 'Posted' here yet. We let the process function decide.
             self.process_finacle_transfer()
 
-        # 1. Update Unsettled Cash if this is an Expense
-        if self.transaction_type == "Expense":
+        # 2. Expense Logic (Existing)
+        elif self.transaction_type == "Expense":
             wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-            
-            # Deduct the total amount from their "Cash in Hand" bucket (Liability)
-            # This is the ONLY place where money "leaves" the wallet in our portal
             wallet.update_unsettled_cash(self.amount, "Expense")
 
-            # 2. Handle Status & Limits
             if self.amount_exceeding_limit > 0:
-                # Scenario 2: Exceeding Limit
                 self.db_set('amount_deducted', self.amount_within_limit)
                 self.db_set('approval_status', 'Pending Approval')
-                frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
             else:
-                # Scenario 1: Within Limit
                 self.db_set('amount_deducted', self.amount)
                 self.db_set('approval_status', 'Approved') 
-        
-        elif self.transaction_type == "Fund Allocation":
-            self.db_set('amount_deducted', 0)
-            self.db_set('approval_status', 'Posted')
-
-        self.update_wallet()
-
-
-    # [NEW] Create Draft Journal Entry
-        if self.transaction_type == "Expense":
+            
             self.create_journal_entry()
-
-        self.update_wallet()
-
+            self.update_wallet()
 
     def create_ho_fund_allocation_je(self):
         """
@@ -449,22 +469,73 @@ class PettyCashTransaction(Document):
             frappe.set_user(original_user)
 
 
+    # def process_finacle_transfer(self):
+    #     if not self.journal_entry_ref:
+    #         frappe.throw(_("Journal Entry Reference is missing. Please save the document again."))
+
+    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+    #     status = response.get("status")
+
+    #     if status == "SUCCESS":
+    #         tran_id = response.get("trn_id")
+    #         self.finacle_tran_id = tran_id
+    #         self.finacle_tran_date = nowdate()
+    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+    #     else:
+    #         error_msg = response.get("message", "Unknown Finacle Error")
+    #         frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", f"FAILED: {error_msg}")
+    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
     def process_finacle_transfer(self):
         if not self.journal_entry_ref:
             frappe.throw(_("Journal Entry Reference is missing. Please save the document again."))
 
+        # 1. Call API
         response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
         status = response.get("status")
+        
+        # 2. Fetch the Linked Journal Entry Document
+        je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
 
         if status == "SUCCESS":
+            # --- SUCCESS PATH ---
             tran_id = response.get("trn_id")
-            self.finacle_tran_id = tran_id
-            self.finacle_tran_date = nowdate()
+            
+            # A. Submit the Journal Entry (Change status from Draft -> Submitted/Journal Entry)
+            if je_doc.docstatus == 0:
+                je_doc.flags.ignore_permissions = True
+                je_doc.submit()
+            
+            # B. Update Fields on Current Doc
+            self.db_set('finacle_tran_id', tran_id)
+            self.db_set('finacle_tran_date', nowdate())
+            self.db_set('approval_status', 'Posted') # NOW we mark it Posted
+            
             frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+            
+            # Since this is inside on_submit, returning normally allows the 
+            # Petty Cash Transaction to finalize its submission (docstatus=1).
+
         else:
+            # --- FAILURE PATH ---
             error_msg = response.get("message", "Unknown Finacle Error")
-            frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", f"FAILED: {error_msg}")
+            
+            # A. Log Error details to fields (using db.set_value to persist despite rollback)
+            # We update 'finacle_tran_particular' and 'finacle_tran_date'
+            frappe.db.set_value(self.doctype, self.name, {
+                "finacle_tran_particular": f"FAILED: {error_msg}",
+                "finacle_tran_date": nowdate()
+            })
+            
+            # B. Ensure Journal Entry stays Draft (It already is, just ensuring we don't submit it)
+            # (No action needed, just don't call .submit())
+
+            # C. STOP Submission of Petty Cash Transaction
+            # Throwing an error rolls back the "Submit" action for THIS document.
+            # The User will see the error popup, and the document stays Draft (docstatus=0).
+            # The "Submit" button will remain available.
             frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
 
     def create_journal_entry(self):
         """
