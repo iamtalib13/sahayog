@@ -78,6 +78,16 @@ frappe.ui.form.on('Petty Cash Transaction', {
                 console.log(">> User does not have permission for Verification");
             }
         }
+
+
+        // Lock if Attempted (flag is set) OR Submitted
+        // We fetch the value from DB to be sure, or trust frm.doc
+        let is_locked = frm.doc.submission_attempted == 1 || frm.doc.docstatus == 1;
+
+        const fields_to_lock = ['is_bulk_allocation', 'target_scope', 'source_bank_account', 'amount', 'transaction_type', 'branch'];
+        fields_to_lock.forEach(field => {
+            frm.set_df_property(field, 'read_only', is_locked ? 1 : 0);
+        });
     },
 
 
@@ -199,7 +209,21 @@ frappe.ui.form.on('Petty Cash Transaction', {
                 console.log(`Updated Balances -> Bank: ₹${balance}, Cash: ₹${cash_in_hand}`);
             }
         });
-    }
+    },
+
+    before_submit: function(frm) {
+        // Mark attempted via direct call BEFORE the actual submit proceeds
+        // We use a verified Promise to ensure it completes
+        return new Promise((resolve, reject) => {
+             frappe.call({
+                method: "sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.mark_submission_attempt",
+                args: { docname: frm.doc.name },
+                callback: function(r) {
+                    resolve();
+                }
+            });
+        });
+    },
 
 });
 

@@ -64,6 +64,16 @@ class PettyCashTransaction(Document):
                 self.sync_journal_entry_changes()
 
 
+        # [NEW] Prevent modification if attempt was made
+        if self.submission_attempted:
+             # Check if critical fields changed using db_doc comparison
+             db_doc = frappe.db.get_value("Petty Cash Transaction", self.name, 
+                ["amount", "target_scope"], as_dict=True)
+             
+             if db_doc and (flt(self.amount) != flt(db_doc.amount) or self.target_scope != db_doc.target_scope):
+                 frappe.throw(_("Cannot modify Amount or Scope after a submission attempt has been made."))
+
+
     def sync_journal_entry_changes(self):
         """
         [NEW] Updates the existing Journal Entry instead of deleting it.
@@ -566,68 +576,170 @@ class PettyCashTransaction(Document):
     #     if not self.journal_entry_ref:
     #         frappe.throw(_("Journal Entry Reference is missing. Please save the document again."))
 
+    #     # 1. Call API
     #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
     #     status = response.get("status")
+        
+    #     # 2. Fetch the Linked Journal Entry Document
+    #     je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+
+    #     if status == "SUCCESS":
+    #         # --- SUCCESS PATH ---
+    #         tran_id = response.get("trn_id")
+            
+    #         # A. Submit the Journal Entry (Change status from Draft -> Submitted/Journal Entry)
+    #         if je_doc.docstatus == 0:
+    #             je_doc.flags.ignore_permissions = True
+    #             je_doc.submit()
+            
+    #         # B. Update Fields on Current Doc
+    #         self.db_set('finacle_tran_id', tran_id)
+    #         self.db_set('finacle_tran_date', nowdate())
+    #         self.db_set('approval_status', 'Posted') # NOW we mark it Posted
+            
+    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+            
+    #         # Since this is inside on_submit, returning normally allows the 
+    #         # Petty Cash Transaction to finalize its submission (docstatus=1).
+
+    #     else:
+    #         # --- FAILURE PATH ---
+    #         error_msg = response.get("message", "Unknown Finacle Error")
+            
+    #         # A. Log Error details to fields (using db.set_value to persist despite rollback)
+    #         # We update 'finacle_tran_particular' and 'finacle_tran_date'
+    #         frappe.db.set_value(self.doctype, self.name, {
+    #             "finacle_tran_particular": f"FAILED: {error_msg}",
+    #             "finacle_tran_date": nowdate()
+    #         })
+            
+    #         # B. Ensure Journal Entry stays Draft (It already is, just ensuring we don't submit it)
+    #         # (No action needed, just don't call .submit())
+
+    #         # C. STOP Submission of Petty Cash Transaction
+    #         # Throwing an error rolls back the "Submit" action for THIS document.
+    #         # The User will see the error popup, and the document stays Draft (docstatus=0).
+    #         # The "Submit" button will remain available.
+    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
+
+    # def process_finacle_transfer(self):
+    #     if not self.journal_entry_ref:
+    #         frappe.throw(_("Journal Entry Reference is missing."))
+
+    #     # Mark that we tried submitting
+    #     frappe.db.set_value(self.doctype, self.name, "submission_attempted", 1)
+    #     frappe.db.commit() # Save this flag immediately!
+
+    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+    #     status = response.get("status")
+        
+    #     # Load JE to check status
+    #     je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
 
     #     if status == "SUCCESS":
     #         tran_id = response.get("trn_id")
-    #         self.finacle_tran_id = tran_id
-    #         self.finacle_tran_date = nowdate()
+            
+    #         # Submit JE if not already
+    #         if je_doc.docstatus == 0:
+    #             je_doc.flags.ignore_permissions = True
+    #             je_doc.submit()
+            
+    #         self.db_set('finacle_tran_id', tran_id)
+    #         self.db_set('finacle_tran_date', nowdate())
+    #         self.db_set('approval_status', 'Posted') 
     #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+
+    #     elif status == "SKIPPED" and je_doc.docstatus == 1:
+    #         # Special Case: It was already done!
+    #         # Just ensure our record reflects it
+    #         self.db_set('approval_status', 'Posted')
+    #         frappe.msgprint(_("Transaction was already processed successfully."), indicator='green')
+
     #     else:
+    #         # FAILURE
     #         error_msg = response.get("message", "Unknown Finacle Error")
-    #         frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", f"FAILED: {error_msg}")
+            
+    #         # Save Error Log & Force Commit
+    #         frappe.db.set_value(self.doctype, self.name, {
+    #             "finacle_tran_particular": f"FAILED: {error_msg}",
+    #             "finacle_tran_date": nowdate()
+    #         })
+    #         frappe.db.commit() # <--- CRITICAL FIX
+            
     #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
+
+    # def process_finacle_transfer(self):
+    #     if not self.journal_entry_ref:
+    #         frappe.throw(_("Journal Entry Reference is missing."))
+            
+    #     # 1. Mark Attempted (Locks fields in UI)
+    #     frappe.db.set_value(self.doctype, self.name, "submission_attempted", 1)
+    #     frappe.db.commit()
+
+    #     # 2. Call API
+    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+    #     status = response.get("status")
+        
+    #     # 3. Handle Response
+    #     if status == "SUCCESS":
+    #         # --- SUCCESS ---
+    #         tran_id = response.get("trn_id")
+            
+    #         # Submit Linked Journal Entry
+    #         je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
+    #         if je_doc.docstatus == 0:
+    #             je_doc.flags.ignore_permissions = True
+    #             je_doc.submit()
+            
+    #         # Update Success Fields
+    #         self.db_set('finacle_tran_id', tran_id)
+    #         self.db_set('finacle_tran_date', nowdate())
+    #         self.db_set('approval_status', 'Posted') 
+            
+    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+
+    #     else:
+    #         # --- FAILURE ---
+    #         error_msg = response.get("message", "Unknown Finacle Error")
+            
+    #         # We do NOT update 'finacle_tran_particular'. We keep it empty.
+            
+    #         # Just Throw Error
+    #         # This shows the popup message to the user
+    #         # And rolls back the main transaction (keeping Doc in Draft)
+    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
 
     def process_finacle_transfer(self):
         if not self.journal_entry_ref:
-            frappe.throw(_("Journal Entry Reference is missing. Please save the document again."))
+            frappe.throw(_("Journal Entry Reference is missing."))
 
-        # 1. Call API
+        # Call API
         response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
         status = response.get("status")
-        
-        # 2. Fetch the Linked Journal Entry Document
-        je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
 
         if status == "SUCCESS":
-            # --- SUCCESS PATH ---
             tran_id = response.get("trn_id")
-            
-            # A. Submit the Journal Entry (Change status from Draft -> Submitted/Journal Entry)
+            je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
             if je_doc.docstatus == 0:
                 je_doc.flags.ignore_permissions = True
                 je_doc.submit()
             
-            # B. Update Fields on Current Doc
             self.db_set('finacle_tran_id', tran_id)
             self.db_set('finacle_tran_date', nowdate())
-            self.db_set('approval_status', 'Posted') # NOW we mark it Posted
-            
+            self.db_set('approval_status', 'Posted') 
             frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
-            
-            # Since this is inside on_submit, returning normally allows the 
-            # Petty Cash Transaction to finalize its submission (docstatus=1).
 
         else:
-            # --- FAILURE PATH ---
             error_msg = response.get("message", "Unknown Finacle Error")
-            
-            # A. Log Error details to fields (using db.set_value to persist despite rollback)
-            # We update 'finacle_tran_particular' and 'finacle_tran_date'
-            frappe.db.set_value(self.doctype, self.name, {
-                "finacle_tran_particular": f"FAILED: {error_msg}",
-                "finacle_tran_date": nowdate()
-            })
-            
-            # B. Ensure Journal Entry stays Draft (It already is, just ensuring we don't submit it)
-            # (No action needed, just don't call .submit())
-
-            # C. STOP Submission of Petty Cash Transaction
-            # Throwing an error rolls back the "Submit" action for THIS document.
-            # The User will see the error popup, and the document stays Draft (docstatus=0).
-            # The "Submit" button will remain available.
+            # Just Throw. Doc stays Draft. 
+            # BUT 'submission_attempted' will remain 1 because JS set it separately!
             frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+
+
+
 
 
     def create_journal_entry(self):
@@ -1085,3 +1197,10 @@ def get_ho_source_account():
     account = frappe.db.sql("""SELECT name FROM `tabAccount` WHERE account_number=%s""", ho_wallet.gl_sub_code)
     
     return account[0][0] if account else None
+
+
+@frappe.whitelist()
+def mark_submission_attempt(docname):
+    # Use update_modified=False to prevent timestamp change
+    frappe.db.set_value("Petty Cash Transaction", docname, "submission_attempted", 1, update_modified=False)
+    frappe.db.commit()
