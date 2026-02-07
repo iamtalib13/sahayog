@@ -219,7 +219,7 @@ def send_scn_email(docname):
         reference_doctype="Disciplinary Case",
         reference_name=docname,
         attachments=[{
-            "print_format": "Disciplinary Case Notice",
+            "print_format": "Disciplinary-SCN",
             "doctype": "Disciplinary Case",
             "name": docname,
             "file_name": f"{docname}.pdf"
