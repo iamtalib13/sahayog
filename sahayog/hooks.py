@@ -646,7 +646,7 @@ fixtures = [
     # Print Format fixture
 {
     "dt": "Print Format",
-    "filters": [["name", "in", ["Reminder Unauthorized absence", "Domestic Enquiry"]]]
+    "filters": [["name", "in", ["Reminder Unauthorized absence", "Domestic Enquiry", "Disciplinary-SCN"]]]
 },
 
 # Notification fixtures
