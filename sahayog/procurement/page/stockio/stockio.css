@@ -18,41 +18,37 @@
 }
 
 /* ==================================================
-   🔴 REMOVE ALL FRAPPE GUTTERS (STOCKIO ONLY)
+   🔴 STOCKIO LAYOUT OVERRIDES (ONLY WHEN ACTIVE)
 ================================================== */
 
-/* Top navbar offset */
-body:has(.stockio-app) .main-section {
+body.stockio-active .main-section {
   margin-top: 0 !important;
   padding-top: 0 !important;
 }
 
-/* Page container */
-body:has(.stockio-app) .page-container {
+body.stockio-active .page-container {
   margin: 0 !important;
   padding: 0 !important;
   max-width: 100% !important;
+  width: 100% !important;
+  background: transparent !important;
 }
 
-/* Layout main */
-body:has(.stockio-app) .layout-main-section {
+body.stockio-active .layout-main-section {
   margin: 0 !important;
   padding: 0 !important;
-  max-width: 100% !important;
+  width: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
-/* Page body */
-body:has(.stockio-app) .page-body {
+body.stockio-active .page-body,
+body.stockio-active .page-content,
+body.stockio-active [data-page-route="stockio"] {
   margin: 0 !important;
   padding: 0 !important;
-  max-width: 100% !important;
-}
-
-/* Page content */
-body:has(.stockio-app) .page-content {
-  margin: 0 !important;
-  padding: 0 !important;
-  max-width: 100% !important;
+  width: 100% !important;
 }
 
 /* ==================================================
@@ -260,8 +256,8 @@ body:has(.stockio-app) .page-content {
 ================================================== */
 
 /* Completely kill page-head */
-body:has(.stockio-app) .page-head,
-body:has(.stockio-app) .page-head.flex {
+body.stockio-active .page-head,
+body.stockio-active .page-head.flex {
   height: 0 !important;
   min-height: 0 !important;
   padding: 0 !important;
@@ -271,12 +267,12 @@ body:has(.stockio-app) .page-head.flex {
 }
 
 /* Remove navbar offset applied via top */
-body:has(.stockio-app) .page-head {
+body.stockio-active .page-head {
   top: 0 !important;
 }
 
 /* Safety: remove sticky behavior */
-body:has(.stockio-app) .page-head {
+body.stockio-active .page-head {
   position: relative !important;
 }
 
@@ -285,17 +281,16 @@ body:has(.stockio-app) .page-head {
 ================================================== */
 
 /* Stop page scrolling */
-body:has(.stockio-app),
-html:has(.stockio-app) {
+body.stockio-active {
   overflow: hidden !important;
   height: 100vh !important;
 }
 
 /* Prevent internal wrappers from scrolling */
-body:has(.stockio-app) .main-section,
-body:has(.stockio-app) .page-container,
-body:has(.stockio-app) .layout-main-section,
-body:has(.stockio-app) .page-content {
+body.stockio-active .main-section,
+body.stockio-active .page-container,
+body.stockio-active .layout-main-section,
+body.stockio-active .page-content {
   overflow: hidden !important;
   height: 100vh !important;
 }
@@ -551,10 +546,40 @@ body:has(.stockio-app) .page-content {
   padding-right: 6px; /* prevent scrollbar overlap */
 }
 
+.stockio-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Smooth scroll */
 .stockio-body {
   scrollbar-width: thin;
 }
+/* ==================================================
+   GLOWING ACTIVE STATES
+================================================== */
+
+@keyframes active-glow {
+  0% { box-shadow: 0 0 8px rgba(79, 110, 247, 0.4); }
+  50% { box-shadow: 0 0 16px rgba(79, 110, 247, 0.7); }
+  100% { box-shadow: 0 0 8px rgba(79, 110, 247, 0.4); }
+}
+
+.menu-item.active,
+.submenu-item.active {
+  background: var(--sidebar-active) !important;
+  color: #ffffff !important;
+  animation: active-glow 2s infinite alternate;
+  position: relative;
+  z-index: 1;
+}
+
+.submenu-item.active {
+  font-weight: 600;
+}
+
 /* ==================================================
    SIDEBAR MENU
 ================================================== */

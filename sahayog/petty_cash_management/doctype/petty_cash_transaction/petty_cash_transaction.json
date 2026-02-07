@@ -12,11 +12,16 @@
   "column_break_1",
   "branch",
   "branch_name",
+  "is_bulk_allocation",
+  "target_scope",
+  "source_bank_account",
+  "generated_journal_entry",
   "amount_section",
   "amount",
   "current_branch_balance",
   "current_unsettled_cash",
   "journal_entry_ref",
+  "submission_attempted",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -48,6 +53,8 @@
    "in_list_view": 1,
    "label": "Transaction Type",
    "options": "Fund Allocation\nExpense\nCash Withdrawal",
+   "read_only": 1,
+   "read_only_depends_on": "eval: !(frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator')\n",
    "reqd": 1
   },
   {
@@ -203,14 +210,55 @@
    "fieldname": "journal_entry_ref",
    "fieldtype": "Link",
    "label": "Journal Entry Ref",
-   "options": "Journal Entry"
+   "options": "Journal Entry",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.transaction_type == 'Fund Allocation'",
+   "fieldname": "is_bulk_allocation",
+   "fieldtype": "Check",
+   "label": "Bulk Allocation Mode"
+  },
+  {
+   "depends_on": "eval:doc.is_bulk_allocation == 1",
+   "fieldname": "target_scope",
+   "fieldtype": "Select",
+   "label": "Target Scope",
+   "mandatory_depends_on": "eval:doc.is_bulk_allocation == 1",
+   "options": "All Active Branches\nMetro Branches Only\nNon-Metro Branches Only"
+  },
+  {
+   "depends_on": "eval:doc.transaction_type == 'Fund Allocation'",
+   "description": "The GL Account to debit funds from.",
+   "fieldname": "source_bank_account",
+   "fieldtype": "Link",
+   "label": "Source Bank Account (HO)",
+   "mandatory_depends_on": "eval:doc.is_bulk_allocation == 1",
+   "options": "Account",
+   "read_only": 1,
+   "read_only_depends_on": "eval:doc.transaction_type == 'Fund Allocation'"
+  },
+  {
+   "depends_on": "eval:doc.is_bulk_allocation == 1",
+   "fieldname": "generated_journal_entry",
+   "fieldtype": "Link",
+   "label": "Generated Journal Entry",
+   "options": "Journal Entry",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "submission_attempted",
+   "fieldtype": "Check",
+   "label": "Submission Attempted"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-29 17:15:25.736560",
+ "modified": "2026-02-06 17:35:38.639449",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

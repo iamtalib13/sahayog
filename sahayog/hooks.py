@@ -357,14 +357,15 @@ scheduler_events = {
     "cron": {
 
         # Run daily at 12:00 PM — Branch Petty Cash Account Balance Sync
-        "00 12 * * *": [
-            "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
-        ],
+        # "30 13 * * *": [
+        #     "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
+        # ],
 
           # Run every 30 minute — Auto Fund Allocation AND Auto Cash Withdrawal
         "*/30 * * * *": [
-            # "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle",
-            "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals"
+            "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle",
+            "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
+            "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
         ],
 
     #     "* * * * *": [
@@ -647,5 +648,11 @@ fixtures = [
     "dt": "Print Format",
     "filters": [["name", "in", ["Reminder Unauthorized absence", "Domestic Enquiry"]]]
 },
+
+# Notification fixtures
+    {
+        "dt": "Notification",
+        "filters": [["name", "in", ["Show Cause Notice"]]]
+    },
 
 ]

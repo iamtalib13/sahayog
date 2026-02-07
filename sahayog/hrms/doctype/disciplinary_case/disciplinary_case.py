@@ -28,7 +28,7 @@ class DisciplinaryCase(Document):
                 return
 
             # Send SCN email
-            send_scn_email(self.name)
+            send_scn_email(docname=self.name)
 
             frappe.msgprint(
                 "Case submitted successfully and SCN email sent to employee.",
@@ -198,35 +198,48 @@ def save_and_send_email(employee, email, docname):
 
 # send SCN email with attachment
 # send SCN email function ko optimize kiya gaya hai
+# @frappe.whitelist()
+# def send_scn_email(docname):
+#     doc = frappe.get_doc("Disciplinary Case", docname)
+#     recipient = frappe.db.get_value("Employee", doc.employee_id, "company_email")
+
+#     if not recipient:
+#         frappe.throw("Employee email missing.")
+
+#     # Render Template
+#     template = frappe.get_doc("Email Template", "Disciplinary - SCN")
+#     doc_dict = doc.as_dict()
+#     # Date formatting logic here...
+
+#     # Production Fix: Attachments as a list of dict for Queue compatibility
+#     frappe.sendmail(
+#         recipients=[recipient],
+#         subject=frappe.render_template(template.subject, doc_dict),
+#         message=frappe.render_template(template.response_html, doc_dict),
+#         reference_doctype="Disciplinary Case",
+#         reference_name=docname,
+#         attachments=[{
+#             "print_format": "Disciplinary Case Notice",
+#             "doctype": "Disciplinary Case",
+#             "name": docname,
+#             "file_name": f"{docname}.pdf"
+#         }],
+#         now=False 
+#     )
+#     return "Queued"
+
 @frappe.whitelist()
 def send_scn_email(docname):
-    doc = frappe.get_doc("Disciplinary Case", docname)
-    recipient = frappe.db.get_value("Employee", doc.employee_id, "company_email")
-
-    if not recipient:
-        frappe.throw("Employee email missing.")
-
-    # Render Template
-    template = frappe.get_doc("Email Template", "Disciplinary - SCN")
-    doc_dict = doc.as_dict()
-    # Date formatting logic here...
-
-    # Production Fix: Attachments as a list of dict for Queue compatibility
-    frappe.sendmail(
-        recipients=[recipient],
-        subject=frappe.render_template(template.subject, doc_dict),
-        message=frappe.render_template(template.response_html, doc_dict),
-        reference_doctype="Disciplinary Case",
-        reference_name=docname,
-        attachments=[{
-            "print_format": "Disciplinary-SCN",
-            "doctype": "Disciplinary Case",
-            "name": docname,
-            "file_name": f"{docname}.pdf"
-        }],
-        now=False 
-    )
-    return "Queued"
+        """Send welcome notification for first time membership"""
+        try:
+            notification = frappe.get_doc("Notification", "Show Cause Notice")
+            doc = frappe.get_doc("Disciplinary Case", docname)
+            notification.send(doc=doc)
+            frappe.logger().info(f"Show Cause Notice notification sent to employee: {doc.employee_id}")
+        except frappe.DoesNotExistError:
+            frappe.log_error("Notification 'Show Cause Notice' not found")
+        except Exception as e:
+            frappe.log_error(f"Failed to send show cause notice notification: {str(e)}")
 
 
 # save employee email only
