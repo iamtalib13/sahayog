@@ -1227,6 +1227,30 @@ class PettyCashTransaction(Document):
         return new_cc.name
 
 
+    def download_transaction_excel(self):
+        data = []
+        # Header
+        data.append(["Branch Code", "Branch Name", "Date", "Total Amount", "Expense Category", "Vendor", "Bill No", "Amount", "Description"])
+        
+        for row in self.items:
+            data.append([
+                self.branch,
+                self.branch_name,
+                self.transaction_date,
+                self.amount,
+                row.expense_category,
+                row.vendor_name,
+                row.bill_number,
+                row.amount,
+                row.description
+            ])
+
+        xlsx_file = make_xlsx(data, "Petty Cash Report")
+        
+        frappe.response['filename'] = f"{self.name}.xlsx"
+        # [FIX] Add .getvalue() here to convert BytesIO to bytes
+        frappe.response['filecontent'] = xlsx_file.getvalue()
+        frappe.response['type'] = 'binary'
 
 
 # @frappe.whitelist()
