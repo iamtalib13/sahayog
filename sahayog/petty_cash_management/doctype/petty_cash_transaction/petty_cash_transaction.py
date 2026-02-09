@@ -1595,3 +1595,12 @@ def download_transaction_report(filters=None):
 
 
 
+@frappe.whitelist()
+def download_excel_api(name):   # <--- Renamed
+    doc = frappe.get_doc("Petty Cash Transaction", name)
+    doc.download_transaction_excel()
+
+@frappe.whitelist()
+def download_txt_api(name):     # <--- Renamed
+    doc = frappe.get_doc("Petty Cash Transaction", name)
+    doc.download_transaction_txt()
