@@ -2,6 +2,33 @@
 // STOCKIO – FULL WIDTH + SIDEBAR (PETITE-VUE)
 // ==================================================
 
+// Robust Polyfill for crypto.randomUUID and getRandomValues
+// Fixes crashes in insecure (HTTP) contexts for extensions like Grammarly
+(function () {
+  try {
+    var g = typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {};
+    if (!g.crypto) g.crypto = {};
+    if (!g.crypto.getRandomValues) {
+      g.crypto.getRandomValues = function (array) {
+        for (var i = 0; i < array.length; i++) {
+          array[i] = Math.floor(Math.random() * 256);
+        }
+        return array;
+      };
+    }
+    if (!g.crypto.randomUUID) {
+      g.crypto.randomUUID = function () {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+          var r = (Math.random() * 16) | 0, v = c == "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+      };
+    }
+  } catch (e) {
+    console.error("StockIO: Crypto polyfill failed", e);
+  }
+})();
+
 frappe.pages["stockio"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({
     parent: wrapper,
@@ -24,7 +51,7 @@ frappe.pages["stockio"].on_page_load = function (wrapper) {
 
 frappe.pages["stockio"].on_page_show = function (wrapper) {
   $("body").addClass("stockio-active");
-  frappe.set_title("StockIO");
+  frappe.utils.set_title("StockIO");
 };
 
 // Clean up when leaving the page via any navigation
@@ -281,7 +308,27 @@ class StockIOPage {
 
       <div class="toolbar-actions" v-if="hasSelection">
         <button class="btn ghost">Print</button>
-        <button class="btn success" v-if="canBulkApprove">Approve Request</button>
+        
+        <!-- Draft status -->
+        <button class="btn success" v-if="selectionStatus === 'Draft'" @click="handleBulkAction('Submit')">Submit</button>
+        
+        <!-- Pending Reporting Person status -->
+        <template v-if="selectionStatus === 'Pending Reporting Person'">
+          <button class="btn success" @click="handleBulkAction('Approve')">Approve</button>
+          <button class="btn danger" @click="handleBulkAction('Reject')">Reject</button>
+          <button class="btn primary" @click="handleBulkAction('Self Approve')">Self Approve</button>
+        </template>
+
+        <!-- Pending HO Approval status -->
+        <template v-if="selectionStatus === 'Pending HO Approval'">
+          <button class="btn success" @click="handleBulkAction('Approve')">Approve</button>
+          <button class="btn danger" @click="handleBulkAction('Reject')">Reject</button>
+        </template>
+
+        <!-- Other single status -->
+        <button class="btn success" 
+          v-if="selectionStatus && !['Draft', 'Pending Reporting Person', 'Pending HO Approval', 'mixed'].includes(selectionStatus)" 
+          @click="handleBulkAction('Approve')">Approve Request</button>
       </div>
       </div>
 
@@ -348,13 +395,15 @@ class StockIOPage {
 
 
         <!-- FIRST ITEM -->
-        <div class="order-product" v-if="doc.items.length">
+        <div class="order-product" v-if="doc.items && doc.items.length > 0">
           <div>
           <div class="product-name">
-            {{ doc.items[0].item_code }}
+            {{ doc.items?.[0]?.item_code || "" }}
+
           </div>
           <div class="product-meta">
-            SKU: {{ doc.items[0].item_code }} · Qty: {{ doc.items[0].quantity }}
+            SKU: {{ doc.items?.[0]?.item_code || "" }}
+ · Qty: {{ doc.items?.[0]?.quantity || 0 }}
           </div>
           </div>
         </div>
@@ -465,13 +514,14 @@ class StockIOPage {
         </div>
 
         <!-- FIRST ITEM -->
-        <div class="order-product" v-if="doc.items.length">
+        <div class="order-product" v-if="doc.items && doc.items.length > 0">
           <div>
             <div class="product-name">
-              {{ doc.items[0].item_code }}
+              {{ doc.items?.[0]?.item_code || "" }}
+
             </div>
             <div class="product-meta">
-              Qty: {{ doc.items[0].qty }}
+              Qty: {{ doc.items?.[0]?.qty || 0 }}
             </div>
           </div>
         </div>
@@ -549,13 +599,14 @@ class StockIOPage {
           </div>
 
           <!-- FIRST ITEM -->
-          <div class="order-product" v-if="doc.items.length">
+          <div class="order-product" v-if="doc.items && doc.items.length > 0">
             <div>
               <div class="product-name">
-                {{ doc.items[0].item_code }}
+                {{ doc.items?.[0]?.item_code || "" }}
+
               </div>
               <div class="product-meta">
-                Qty: {{ doc.items[0].qty }}
+                Qty: {{ doc.items?.[0]?.qty || 0 }}
               </div>
             </div>
           </div>
@@ -636,15 +687,15 @@ class StockIOPage {
       </div>
 
       <!-- FIRST ASSET -->
-      <div class="order-product" v-if="doc.items.length">
+      <div class="order-product" v-if="doc.items && doc.items.length > 0">
         <div>
           <div class="product-name">
-            {{ doc.items[0].asset_name || doc.items[0].asset }}
+            {{ doc.items?.[0]?.asset_name || doc.items?.[0]?.asset || "" }}
           </div>
           <div class="product-meta">
-            From: {{ doc.items[0].source_location }}
-            <span v-if="doc.items[0].to_employee">
-              · To: {{ doc.items[0].to_employee }}
+            From: {{ doc.items?.[0]?.source_location || "" }}
+            <span v-if="doc.items?.[0]?.to_employee">
+              · To: {{ doc.items?.[0]?.to_employee }}
             </span>
           </div>
         </div>
@@ -831,61 +882,104 @@ class StockIOPage {
       },
 
       get activeList() {
-        if (this.pageMode === "stock" && this.subMode === "inward") return this.inward;
-        if (this.pageMode === "stock" && this.subMode === "outward") return this.outward;
-        if (this.pageMode === "asset" && this.subMode === "movement") return this.assetMovements;
-        if (this.pageMode === "asset" && this.subMode === "item") return this.assets;
+        if (this.pageMode === "stock" && this.subMode === "inward")
+          return this.inward;
+        if (this.pageMode === "stock" && this.subMode === "outward")
+          return this.outward;
+        if (this.pageMode === "asset" && this.subMode === "movement")
+          return this.assetMovements;
+        if (this.pageMode === "asset" && this.subMode === "item")
+          return this.assets;
         return this.requests;
       },
 
-      get hasSelection() { return this.selectedDocs.length > 0; },
-      get canBulkApprove() {
-        if (this.selectedDocs.length === 0) return false;
-        const selectedStatuses = this.requests
-          .filter(d => this.selectedDocs.includes(d.name))
-          .map(d => d.status);
-        const uniqueStatuses = [...new Set(selectedStatuses)];
-        return uniqueStatuses.length === 1;
+      get hasSelection() {
+        return this.selectedDocs.length > 0;
       },
-      get hasInwardSelection() { return this.selectedInward.length > 0; },
+      get selectionStatus() {
+        if (this.selectedDocs.length === 0) return null;
+        const selectedStatuses = this.requests
+          .filter((d) => this.selectedDocs.includes(d.name))
+          .map((d) => d.status);
+        const uniqueStatuses = [...new Set(selectedStatuses)];
+        return uniqueStatuses.length === 1 ? uniqueStatuses[0] : "mixed";
+      },
+      get canBulkApprove() {
+        return this.selectionStatus && this.selectionStatus !== "mixed";
+      },
+      get hasInwardSelection() {
+        return this.selectedInward.length > 0;
+      },
       get canBulkPostInward() {
         if (this.selectedInward.length === 0) return false;
-        const statuses = this.inward.filter(d => this.selectedInward.includes(d.name)).map(d => d.status);
+        const statuses = this.inward
+          .filter((d) => this.selectedInward.includes(d.name))
+          .map((d) => d.status);
         return [...new Set(statuses)].length === 1;
       },
-      get hasOutwardSelection() { return this.selectedOutward.length > 0; },
+      get hasOutwardSelection() {
+        return this.selectedOutward.length > 0;
+      },
       get canBulkSubmitOutward() {
         if (this.selectedOutward.length === 0) return false;
-        const statuses = this.outward.filter(d => this.selectedOutward.includes(d.name)).map(d => d.status);
+        const statuses = this.outward
+          .filter((d) => this.selectedOutward.includes(d.name))
+          .map((d) => d.status);
         return [...new Set(statuses)].length === 1;
       },
-      get hasAssetSelection() { return this.selectedAssets.length > 0; },
+      get hasAssetSelection() {
+        return this.selectedAssets.length > 0;
+      },
       get canBulkTransferAsset() {
         if (this.selectedAssets.length === 0) return false;
-        const statuses = this.assets.filter(d => this.selectedAssets.includes(d.name)).map(d => d.status);
+        const statuses = this.assets
+          .filter((d) => this.selectedAssets.includes(d.name))
+          .map((d) => d.status);
         return [...new Set(statuses)].length === 1;
       },
-      get hasAssetMovementSelection() { return this.selectedAssetMovements.length > 0; },
+      get hasAssetMovementSelection() {
+        return this.selectedAssetMovements.length > 0;
+      },
       get canBulkSubmitAssetMovement() {
         if (this.selectedAssetMovements.length === 0) return false;
-        const statuses = this.assetMovements.filter(d => this.selectedAssetMovements.includes(d.name)).map(d => d.status);
+        const statuses = this.assetMovements
+          .filter((d) => this.selectedAssetMovements.includes(d.name))
+          .map((d) => d.status);
         return [...new Set(statuses)].length === 1;
       },
 
-      get canLoadMore() { return this.visibleRequests.length < this.getFilteredList().length; },
-      get canLoadMoreInward() { return this.inwardVisible.length < this.getFilteredList().length; },
-      get canLoadMoreOutward() { return this.outwardVisible.length < this.getFilteredList().length; },
-      get canLoadMoreAssets() { return this.assetsVisible.length < this.getFilteredList().length; },
-      get canLoadMoreAssetMovements() { return this.assetMovementsVisible.length < this.getFilteredList().length; },
+      get canLoadMore() {
+        return this.visibleRequests.length < this.getFilteredList().length;
+      },
+      get canLoadMoreInward() {
+        return this.inwardVisible.length < this.getFilteredList().length;
+      },
+      get canLoadMoreOutward() {
+        return this.outwardVisible.length < this.getFilteredList().length;
+      },
+      get canLoadMoreAssets() {
+        return this.assetsVisible.length < this.getFilteredList().length;
+      },
+      get canLoadMoreAssetMovements() {
+        return (
+          this.assetMovementsVisible.length < this.getFilteredList().length
+        );
+      },
 
       // ===== METHODS =====
       setMode(mode, sub = null) {
         // Validate sub-mode for the category
         if (mode === "stock" && !["inward", "outward"].includes(sub)) {
-          sub = this.subMode && ["inward", "outward"].includes(this.subMode) ? this.subMode : "inward";
+          sub =
+            this.subMode && ["inward", "outward"].includes(this.subMode)
+              ? this.subMode
+              : "inward";
         }
         if (mode === "asset" && !["item", "movement"].includes(sub)) {
-          sub = this.subMode && ["item", "movement"].includes(this.subMode) ? this.subMode : "item";
+          sub =
+            this.subMode && ["item", "movement"].includes(this.subMode)
+              ? this.subMode
+              : "item";
         }
 
         this.pageMode = mode;
@@ -939,7 +1033,9 @@ class StockIOPage {
         }
       },
 
-      toggleSidebar() { this.sidebarCollapsed = !this.sidebarCollapsed; },
+      toggleSidebar() {
+        this.sidebarCollapsed = !this.sidebarCollapsed;
+      },
       toggleStock() {
         this.stockOpen = !this.stockOpen;
         if (this.stockOpen) {
@@ -973,30 +1069,48 @@ class StockIOPage {
         this.assetMovementsVisible = [];
 
         if (this.pageMode === "requests") this.loadMore();
-        else if (this.pageMode === "stock" && this.subMode === "inward") this.loadMoreInward();
-        else if (this.pageMode === "stock" && this.subMode === "outward") this.loadMoreOutward();
-        else if (this.pageMode === "asset" && this.subMode === "item") this.loadMoreAssets();
-        else if (this.pageMode === "asset" && this.subMode === "movement") this.loadMoreAssetMovements();
+        else if (this.pageMode === "stock" && this.subMode === "inward")
+          this.loadMoreInward();
+        else if (this.pageMode === "stock" && this.subMode === "outward")
+          this.loadMoreOutward();
+        else if (this.pageMode === "asset" && this.subMode === "item")
+          this.loadMoreAssets();
+        else if (this.pageMode === "asset" && this.subMode === "movement")
+          this.loadMoreAssetMovements();
       },
 
       getFilteredList() {
         const q = this.searchText.toLowerCase();
-        
+
         if (this.pageMode === "requests") {
           const today = frappe.datetime.get_today();
           let list = this.requests;
-          if (this.activeTab === "today") list = list.filter(d => d.creation?.split(" ")[0] === today);
-          else if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
-          else if (this.activeTab === "pending") list = list.filter(d => ["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(d.status));
-          else if (this.activeTab === "approved") list = list.filter(d => ["Approved", "Submitted"].includes(d.status));
-          else if (this.activeTab === "cancelled") list = list.filter(d => d.status === "Cancelled");
+          if (this.activeTab === "today")
+            list = list.filter((d) => d.creation?.split(" ")[0] === today);
+          else if (this.activeTab === "draft")
+            list = list.filter((d) => d.status === "Draft");
+          else if (this.activeTab === "pending")
+            list = list.filter((d) =>
+              [
+                "Pending HO Approval",
+                "Pending Reporting Person",
+                "To Receive",
+              ].includes(d.status),
+            );
+          else if (this.activeTab === "approved")
+            list = list.filter((d) =>
+              ["Approved", "Submitted"].includes(d.status),
+            );
+          else if (this.activeTab === "cancelled")
+            list = list.filter((d) => d.status === "Cancelled");
 
           if (q) {
-            list = list.filter(d => 
-              d.name?.toLowerCase().includes(q) || 
-              d.owner?.toLowerCase().includes(q) || 
-              d.status?.toLowerCase().includes(q) || 
-              d.items?.some(i => i.item_code?.toLowerCase().includes(q))
+            list = list.filter(
+              (d) =>
+                d.name?.toLowerCase().includes(q) ||
+                d.owner?.toLowerCase().includes(q) ||
+                d.status?.toLowerCase().includes(q) ||
+                d.items?.some((i) => i.item_code?.toLowerCase().includes(q)),
             );
           }
           return list;
@@ -1004,19 +1118,29 @@ class StockIOPage {
 
         if (this.pageMode === "stock" || this.pageMode === "asset") {
           let list = this.activeList;
-          if (this.activeTab === "draft") list = list.filter(d => d.status === "Draft");
-          else if (this.activeTab === "submitted") list = list.filter(d => d.status === "Submitted");
-          else if (this.activeTab === "other") list = list.filter(d => d.status !== "Draft" && d.status !== "Submitted");
+          if (this.activeTab === "draft")
+            list = list.filter((d) => d.status === "Draft");
+          else if (this.activeTab === "submitted")
+            list = list.filter((d) => d.status === "Submitted");
+          else if (this.activeTab === "other")
+            list = list.filter(
+              (d) => d.status !== "Draft" && d.status !== "Submitted",
+            );
 
           if (q) {
-            list = list.filter(d => 
-              d.name?.toLowerCase().includes(q) || 
-              (d.supplier?.toLowerCase().includes(q)) || 
-              (d.asset_name?.toLowerCase().includes(q)) ||
-              (d.custom_reference_name?.toLowerCase().includes(q)) ||
-              (d.purpose?.toLowerCase().includes(q)) ||
-              d.status?.toLowerCase().includes(q) ||
-              d.items?.some(i => (i.item_code || i.asset || i.asset_name)?.toLowerCase().includes(q))
+            list = list.filter(
+              (d) =>
+                d.name?.toLowerCase().includes(q) ||
+                d.supplier?.toLowerCase().includes(q) ||
+                d.asset_name?.toLowerCase().includes(q) ||
+                d.custom_reference_name?.toLowerCase().includes(q) ||
+                d.purpose?.toLowerCase().includes(q) ||
+                d.status?.toLowerCase().includes(q) ||
+                d.items?.some((i) =>
+                  (i.item_code || i.asset || i.asset_name)
+                    ?.toLowerCase()
+                    .includes(q),
+                ),
             );
           }
           return list;
@@ -1034,28 +1158,40 @@ class StockIOPage {
 
       loadMoreInward() {
         const source = this.getFilteredList();
-        const next = source.slice(this.inwardOffset, this.inwardOffset + this.inwardPageSize);
+        const next = source.slice(
+          this.inwardOffset,
+          this.inwardOffset + this.inwardPageSize,
+        );
         this.inwardVisible.push(...next);
         this.inwardOffset += this.inwardPageSize;
       },
 
       loadMoreOutward() {
         const source = this.getFilteredList();
-        const next = source.slice(this.outwardOffset, this.outwardOffset + this.outwardPageSize);
+        const next = source.slice(
+          this.outwardOffset,
+          this.outwardOffset + this.outwardPageSize,
+        );
         this.outwardVisible.push(...next);
         this.outwardOffset += this.outwardPageSize;
       },
 
       loadMoreAssets() {
         const source = this.getFilteredList();
-        const next = source.slice(this.assetsOffset, this.assetsOffset + this.assetsPageSize);
+        const next = source.slice(
+          this.assetsOffset,
+          this.assetsOffset + this.assetsPageSize,
+        );
         this.assetsVisible.push(...next);
         this.assetsOffset += this.assetsPageSize;
       },
 
       loadMoreAssetMovements() {
         const source = this.getFilteredList();
-        const next = source.slice(this.assetMovementsOffset, this.assetMovementsOffset + this.assetMovementsPageSize);
+        const next = source.slice(
+          this.assetMovementsOffset,
+          this.assetMovementsOffset + this.assetMovementsPageSize,
+        );
         this.assetMovementsVisible.push(...next);
         this.assetMovementsOffset += this.assetMovementsPageSize;
       },
@@ -1064,19 +1200,45 @@ class StockIOPage {
       computeCounts() {
         if (this.pageMode === "requests") {
           const today = frappe.datetime.get_today();
-          this.counts = { all: this.requests.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0, submitted: 0, other: 0 };
-          this.requests.forEach(doc => {
+          this.counts = {
+            all: this.requests.length,
+            today: 0,
+            draft: 0,
+            pending: 0,
+            approved: 0,
+            cancelled: 0,
+            submitted: 0,
+            other: 0,
+          };
+          this.requests.forEach((doc) => {
             const docDate = doc.creation?.split(" ")[0];
             if (docDate === today) this.counts.today++;
             if (doc.status === "Draft") this.counts.draft++;
-            else if (["Pending HO Approval", "Pending Reporting Person", "To Receive"].includes(doc.status)) this.counts.pending++;
-            else if (["Approved", "Submitted"].includes(doc.status)) this.counts.approved++;
+            else if (
+              [
+                "Pending HO Approval",
+                "Pending Reporting Person",
+                "To Receive",
+              ].includes(doc.status)
+            )
+              this.counts.pending++;
+            else if (["Approved", "Submitted"].includes(doc.status))
+              this.counts.approved++;
             else if (doc.status === "Cancelled") this.counts.cancelled++;
           });
         } else {
           const list = this.activeList;
-          this.counts = { all: list.length, today: 0, draft: 0, pending: 0, approved: 0, cancelled: 0, submitted: 0, other: 0 };
-          list.forEach(doc => {
+          this.counts = {
+            all: list.length,
+            today: 0,
+            draft: 0,
+            pending: 0,
+            approved: 0,
+            cancelled: 0,
+            submitted: 0,
+            other: 0,
+          };
+          list.forEach((doc) => {
             if (doc.status === "Draft") this.counts.draft++;
             else if (doc.status === "Submitted") this.counts.submitted++;
             else this.counts.other++;
@@ -1090,26 +1252,39 @@ class StockIOPage {
           method: "frappe.client.get_list",
           args: {
             doctype: "Employee Material Request",
-            fields: ["name", "status", "creation", "owner", "reporting_person_status", "ho_officer_status"],
+            fields: [
+              "name",
+              "status",
+              "creation",
+              "owner",
+              "reporting_person_status",
+              "ho_officer_status",
+            ],
             order_by: "creation desc",
             limit_page_length: 1000,
           },
           callback: (r) => {
             if (!r.message) return;
-            this.requests = r.message.map(d => ({ ...d, items: [], showAllItems: false }));
+            this.requests = r.message.map((d) => ({
+              ...d,
+              items: [],
+              showAllItems: false,
+            }));
             this.computeCounts();
             this.offset = 0;
             this.visibleRequests = [];
             this.loadMore();
-            this.requests.forEach(doc => this.loadItems(doc));
-          }
+            this.requests.forEach((doc) => this.loadItems(doc));
+          },
         });
       },
       loadItems(doc) {
         frappe.call({
           method: "frappe.client.get",
           args: { doctype: "Employee Material Request", name: doc.name },
-          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
+          callback: (r) => {
+            if (r.message) doc.items = r.message.items || [];
+          },
         });
       },
 
@@ -1117,10 +1292,15 @@ class StockIOPage {
       loadInward() {
         frappe.call({
           method: "frappe.client.get_list",
-          args: { doctype: "Purchase Receipt", fields: ["name", "posting_date", "supplier", "status"], order_by: "posting_date desc", limit_page_length: 1000 },
+          args: {
+            doctype: "Purchase Receipt",
+            fields: ["name", "posting_date", "supplier", "status"],
+            order_by: "posting_date desc",
+            limit_page_length: 1000,
+          },
           callback: (r) => {
             if (!r.message) return;
-            this.inward = r.message.map(d => {
+            this.inward = r.message.map((d) => {
               let status = d.status === "Completed" ? "Submitted" : d.status;
               return { ...d, status, items: [], showAllItems: false };
             });
@@ -1128,15 +1308,17 @@ class StockIOPage {
             this.inwardOffset = 0;
             this.inwardVisible = [];
             this.loadMoreInward();
-            this.inward.forEach(doc => this.loadInwardItems(doc));
-          }
+            this.inward.forEach((doc) => this.loadInwardItems(doc));
+          },
         });
       },
       loadInwardItems(doc) {
         frappe.call({
           method: "frappe.client.get",
           args: { doctype: "Purchase Receipt", name: doc.name },
-          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
+          callback: (r) => {
+            if (r.message) doc.items = r.message.items || [];
+          },
         });
       },
 
@@ -1144,26 +1326,41 @@ class StockIOPage {
       loadOutward() {
         frappe.call({
           method: "frappe.client.get_list",
-          args: { doctype: "Stock Entry", fields: ["name", "posting_date", "purpose", "docstatus"], filters: { purpose: ["in", ["Material Issue", "Material Transfer"]] }, order_by: "posting_date desc", limit_page_length: 1000 },
+          args: {
+            doctype: "Stock Entry",
+            fields: ["name", "posting_date", "purpose", "docstatus"],
+            filters: {
+              purpose: ["in", ["Material Issue", "Material Transfer"]],
+            },
+            order_by: "posting_date desc",
+            limit_page_length: 1000,
+          },
           callback: (r) => {
             if (!r.message) return;
-            this.outward = r.message.map(d => {
-              let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
+            this.outward = r.message.map((d) => {
+              let status =
+                d.docstatus === 0
+                  ? "Draft"
+                  : d.docstatus === 1
+                    ? "Submitted"
+                    : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
             this.computeCounts();
             this.outwardOffset = 0;
             this.outwardVisible = [];
             this.loadMoreOutward();
-            this.outward.forEach(doc => this.loadOutwardItems(doc));
-          }
+            this.outward.forEach((doc) => this.loadOutwardItems(doc));
+          },
         });
       },
       loadOutwardItems(doc) {
         frappe.call({
           method: "frappe.client.get",
           args: { doctype: "Stock Entry", name: doc.name },
-          callback: (r) => { if (r.message) doc.items = r.message.items || []; }
+          callback: (r) => {
+            if (r.message) doc.items = r.message.items || [];
+          },
         });
       },
 
@@ -1171,18 +1368,28 @@ class StockIOPage {
       loadAssets() {
         frappe.call({
           method: "frappe.client.get_list",
-          args: { doctype: "Asset", fields: ["name", "asset_name", "docstatus", "owner"], order_by: "creation desc", limit_page_length: 1000 },
+          args: {
+            doctype: "Asset",
+            fields: ["name", "asset_name", "docstatus", "owner"],
+            order_by: "creation desc",
+            limit_page_length: 1000,
+          },
           callback: (r) => {
             if (!r.message) return;
-            this.assets = r.message.map(d => {
-              let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
+            this.assets = r.message.map((d) => {
+              let status =
+                d.docstatus === 0
+                  ? "Draft"
+                  : d.docstatus === 1
+                    ? "Submitted"
+                    : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
             this.computeCounts();
             this.assetsOffset = 0;
             this.assetsVisible = [];
             this.loadMoreAssets();
-          }
+          },
         });
       },
 
@@ -1190,86 +1397,407 @@ class StockIOPage {
       loadAssetMovements() {
         frappe.call({
           method: "frappe.client.get_list",
-          args: { doctype: "Asset Movement", fields: ["name", "custom_reference_name", "purpose", "transaction_date", "docstatus"], order_by: "transaction_date desc", limit_page_length: 1000 },
+          args: {
+            doctype: "Asset Movement",
+            fields: [
+              "name",
+              "custom_reference_name",
+              "purpose",
+              "transaction_date",
+              "docstatus",
+            ],
+            order_by: "transaction_date desc",
+            limit_page_length: 1000,
+          },
           callback: (r) => {
             if (!r.message) return;
-            this.assetMovements = r.message.map(d => {
-              let status = d.docstatus === 0 ? "Draft" : d.docstatus === 1 ? "Submitted" : "Cancelled";
+            this.assetMovements = r.message.map((d) => {
+              let status =
+                d.docstatus === 0
+                  ? "Draft"
+                  : d.docstatus === 1
+                    ? "Submitted"
+                    : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
             this.computeCounts();
             this.assetMovementsOffset = 0;
             this.assetMovementsVisible = [];
             this.loadMoreAssetMovements();
-            this.assetMovements.forEach(doc => this.loadAssetMovementItems(doc));
-          }
+            this.assetMovements.forEach((doc) =>
+              this.loadAssetMovementItems(doc),
+            );
+          },
         });
       },
       loadAssetMovementItems(doc) {
         frappe.call({
           method: "frappe.client.get",
           args: { doctype: "Asset Movement", name: doc.name },
-          callback: (r) => { if (r.message) doc.items = r.message.assets || []; }
+          callback: (r) => {
+            if (r.message) doc.items = r.message.assets || [];
+          },
         });
       },
 
       // HELPERS
-      formatDate(date) { return frappe.datetime.str_to_user(date); },
-      toggleItems(doc) { doc.showAllItems = !doc.showAllItems; },
+      formatDate(date) {
+        return frappe.datetime.str_to_user(date);
+      },
+      toggleItems(doc) {
+        doc.showAllItems = !doc.showAllItems;
+      },
       createRequest() {
         if (this.pageMode === "stock") {
-          if (this.subMode === "inward") return frappe.set_route("Form", "Purchase Receipt", "new-purchase-receipt-1");
-          if (this.subMode === "outward") return frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
+          if (this.subMode === "inward")
+            return frappe.set_route(
+              "Form",
+              "Purchase Receipt",
+              "new-purchase-receipt-1",
+            );
+          if (this.subMode === "outward")
+            return frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
         }
         if (this.pageMode === "asset") {
-          if (this.subMode === "item") return frappe.set_route("Form", "Asset", "new-asset-1");
-          if (this.subMode === "movement") return frappe.set_route("Form", "Asset Movement", "new-asset-movement-1");
+          if (this.subMode === "item")
+            return frappe.set_route("Form", "Asset", "new-asset-1");
+          if (this.subMode === "movement")
+            return frappe.set_route(
+              "Form",
+              "Asset Movement",
+              "new-asset-movement-1",
+            );
         }
-        frappe.set_route("Form", "Employee Material Request", "new-employee-material-request");
+        frappe.set_route(
+          "Form",
+          "Employee Material Request",
+          "new-employee-material-request",
+        );
       },
-      openRequest(name) { frappe.set_route("Form", "Employee Material Request", name); },
-      openPurchaseReceipt(name) { frappe.set_route("Form", "Purchase Receipt", name); },
-      openStockEntry(name) { frappe.set_route("Form", "Stock Entry", name); },
-      openAsset(name) { frappe.set_route("Form", "Asset", name); },
-      openAssetMovement(name) { frappe.set_route("Form", "Asset Movement", name); },
-      openReports() { this.pageMode = "reports"; },
-      openRequests() { this.pageMode = "requests"; },
-      openReport(route) { this.setMode("reports"); frappe.set_route(route); },
+      openRequest(name) {
+        frappe.set_route("Form", "Employee Material Request", name);
+      },
+      openPurchaseReceipt(name) {
+        frappe.set_route("Form", "Purchase Receipt", name);
+      },
+      openStockEntry(name) {
+        frappe.set_route("Form", "Stock Entry", name);
+      },
+      openAsset(name) {
+        frappe.set_route("Form", "Asset", name);
+      },
+      openAssetMovement(name) {
+        frappe.set_route("Form", "Asset Movement", name);
+      },
+      openReports() {
+        this.pageMode = "reports";
+      },
+      openRequests() {
+        this.pageMode = "requests";
+      },
+      openReport(route) {
+        this.setMode("reports");
+        frappe.set_route(route);
+      },
+
+      handleBulkAction(action) {
+        if (!this.selectedDocs.length) return;
+
+        const actionLabel = action;
+
+        const executeWithRemark = (remark = "") => {
+          if (action === "Submit") {
+            // Use specialized bulk submit method
+            frappe.call({
+              method:
+                "sahayog.procurement.page.stockio.stockio.bulk_submit_requests",
+              args: { docnames: this.selectedDocs },
+              freeze: true,
+              callback: (r) => {
+                const { completed, errors } = r.message;
+                if (errors && errors.length) {
+                  frappe.msgprint({
+                    title: "Bulk Submission Completed with Errors",
+                    indicator: "orange",
+                    message: `Successfully submitted ${completed} requests. ${errors.length} failed.`,
+                  });
+                } else {
+                  frappe.show_alert({
+                    message: `Successfully submitted ${completed} requests`,
+                    indicator: "green",
+                  });
+                }
+                this.selectedDocs = [];
+                this.selectAll = false;
+                this.loadRequests();
+              },
+            });
+          } else {
+            // Sequential workflow or custom action
+            frappe.show_progress(
+              `${actionLabel}ing Requests`,
+              0,
+              this.selectedDocs.length,
+            );
+            let completed = 0;
+            let errors = [];
+
+            const processNext = (index) => {
+              if (index >= this.selectedDocs.length) {
+                frappe.hide_progress();
+                if (errors.length) {
+                  frappe.msgprint({
+                    title: "Bulk Action Completed with Errors",
+                    indicator: "orange",
+                    message: `Successfully processed ${completed} requests. ${errors.length} failed.`,
+                  });
+                } else {
+                  frappe.show_alert({
+                    message: `Successfully ${actionLabel}ed ${completed} requests`,
+                    indicator: "green",
+                  });
+                }
+                this.selectedDocs = [];
+                this.selectAll = false;
+                this.loadRequests();
+                return;
+              }
+
+              const docname = this.selectedDocs[index];
+
+              if (action === "Self Approve") {
+                frappe.call({
+                  method:
+                    "sahayog.procurement.doctype.employee_material_request.employee_material_request.self_approve_request",
+                  args: { docname: docname },
+                  callback: (r) => {
+                    if (r.message && r.message.success) completed++;
+                    else errors.push(docname);
+                    frappe.show_progress(
+                      `${actionLabel}ing Requests`,
+                      index + 1,
+                      this.selectedDocs.length,
+                    );
+                    processNext(index + 1);
+                  },
+                  error: () => {
+                    errors.push(docname);
+                    frappe.show_progress(
+                      `${actionLabel}ing Requests`,
+                      index + 1,
+                      this.selectedDocs.length,
+                    );
+                    processNext(index + 1);
+                  },
+                });
+              } else {
+                // Unified call to avoid "Document has been modified" errors
+                frappe.call({
+                  method:
+                    "sahayog.procurement.doctype.employee_material_request.employee_material_request.workflow_action_update_status",
+                  args: { docname: docname, action: action, remark: remark },
+                  callback: (r) => {
+                    completed++;
+                    frappe.show_progress(
+                      `${actionLabel}ing Requests`,
+                      index + 1,
+                      this.selectedDocs.length,
+                    );
+                    processNext(index + 1);
+                  },
+                  error: () => {
+                    errors.push(docname);
+                    frappe.show_progress(
+                      `${actionLabel}ing Requests`,
+                      index + 1,
+                      this.selectedDocs.length,
+                    );
+                    processNext(index + 1);
+                  },
+                });
+              }
+            };
+            processNext(0);
+          }
+        };
+
+        if (["Approve", "Reject", "Self Approve"].includes(action)) {
+          const dialog = frappe.prompt(
+            [
+              {
+                label: "Remark",
+                fieldname: "remark",
+                fieldtype: "Small Text",
+                reqd: 1,
+                description: `Enter reason for bulk ${action.toLowerCase()}ing`,
+              },
+            ],
+            (values) => {
+              executeWithRemark(values.remark);
+            },
+            `Enter Remark for Bulk ${action}`,
+            "Submit",
+          );
+
+          // Workaround: Disable Grammarly on the remark field to prevent 'crypto.randomUUID' crashes
+          if (dialog && dialog.fields_dict.remark) {
+            const $input = $(dialog.fields_dict.remark.input);
+            $input.attr("data-gramm", "false");
+            $input.attr("data-gramm_editor", "false");
+            $input.attr("spellcheck", "false");
+          }
+        } else {
+          frappe.confirm(
+            `Are you sure you want to bulk ${actionLabel} ${this.selectedDocs.length} requests?`,
+            () => {
+              executeWithRemark();
+            },
+          );
+        }
+      },
 
       // SELECTION HANDLERS
-      toggleSelectAll() { this.selectedDocs = this.selectAll ? this.requests.map(d => d.name) : []; },
-      syncSelectAll() { this.selectAll = this.selectedDocs.length === this.requests.length; },
-      toggleSelectAllInward() { this.selectedInward = this.selectAllInward ? this.inward.map(d => d.name) : []; },
-      syncSelectAllInward() { this.selectAllInward = this.selectedInward.length === this.inward.length; },
-      toggleSelectAllOutward() { this.selectedOutward = this.selectAllOutward ? this.outward.map(d => d.name) : []; },
-      syncSelectAllOutward() { this.selectAllOutward = this.selectedOutward.length === this.outward.length; },
-      toggleSelectAllAssets() { this.selectedAssets = this.selectAllAssets ? this.assets.map(d => d.name) : []; },
-      syncSelectAllAssets() { this.selectAllAssets = this.selectedAssets.length === this.assets.length; },
-      toggleSelectAllAssetMovements() { this.selectedAssetMovements = this.selectAllAssetMovements ? this.assetMovements.map(d => d.name) : []; },
-      syncSelectAllAssetMovements() { this.selectAllAssetMovements = this.selectedAssetMovements.length === this.assetMovements.length; },
+      toggleSelectAll() {
+        this.selectedDocs = this.selectAll
+          ? this.requests.map((d) => d.name)
+          : [];
+      },
+      syncSelectAll() {
+        this.selectAll = this.selectedDocs.length === this.requests.length;
+      },
+      toggleSelectAllInward() {
+        this.selectedInward = this.selectAllInward
+          ? this.inward.map((d) => d.name)
+          : [];
+      },
+      syncSelectAllInward() {
+        this.selectAllInward =
+          this.selectedInward.length === this.inward.length;
+      },
+      toggleSelectAllOutward() {
+        this.selectedOutward = this.selectAllOutward
+          ? this.outward.map((d) => d.name)
+          : [];
+      },
+      syncSelectAllOutward() {
+        this.selectAllOutward =
+          this.selectedOutward.length === this.outward.length;
+      },
+      toggleSelectAllAssets() {
+        this.selectedAssets = this.selectAllAssets
+          ? this.assets.map((d) => d.name)
+          : [];
+      },
+      syncSelectAllAssets() {
+        this.selectAllAssets =
+          this.selectedAssets.length === this.assets.length;
+      },
+      toggleSelectAllAssetMovements() {
+        this.selectedAssetMovements = this.selectAllAssetMovements
+          ? this.assetMovements.map((d) => d.name)
+          : [];
+      },
+      syncSelectAllAssetMovements() {
+        this.selectAllAssetMovements =
+          this.selectedAssetMovements.length === this.assetMovements.length;
+      },
 
       reports: [
-        { label: "Stock and Asset Reports", route: "/app/query-report/My%20Material%20Requests" },
-        { label: "My Material Requests", route: "/app/query-report/My%20Material%20Requests" },
-        { label: "Store Asset Master", route: "/app/query-report/Store%20Asset%20Master" },
-        { label: "Store Material Request", route: "/app/query-report/Store%20material%20request" },
-        { label: "My Pending Approvals", route: "/app/query-report/My%20Pending%20Approvals" },
-        { label: "Asset Transfer", route: "/app/query-report/Asset%20Transfer" },
-        { label: "Consumed Items", route: "/app/query-report/Consumed%20Items" },
+        {
+          label: "Stock and Asset Reports",
+          route: "/app/query-report/My%20Material%20Requests",
+        },
+        {
+          label: "My Material Requests",
+          route: "/app/query-report/My%20Material%20Requests",
+        },
+        {
+          label: "Store Asset Master",
+          route: "/app/query-report/Store%20Asset%20Master",
+        },
+        {
+          label: "Store Material Request",
+          route: "/app/query-report/Store%20material%20request",
+        },
+        {
+          label: "My Pending Approvals",
+          route: "/app/query-report/My%20Pending%20Approvals",
+        },
+        {
+          label: "Asset Transfer",
+          route: "/app/query-report/Asset%20Transfer",
+        },
+        {
+          label: "Consumed Items",
+          route: "/app/query-report/Consumed%20Items",
+        },
         { label: "Branch Stock", route: "/app/query-report/Branch%20Stock" },
         { label: "My Assets", route: "/app/query-report/My%20Assets" },
       ],
 
       getProgressFlow(doc) {
         const status = doc.status;
-        let step1 = { state: status === "Draft" ? "pending" : "done", label: status === "Draft" ? "Draft" : "Submitted" };
-        let step2 = { visible: status !== "Cancelled", state: status === "Pending Reporting Person" ? "pending" : (["Pending HO Approval", "Approved"].includes(status) ? "done" : "disabled") };
-        let step3 = { state: status === "Pending HO Approval" ? "pending" : (status === "Approved" ? "done" : (status === "Cancelled" ? "cancelled" : "disabled")), label: status === "Cancelled" ? "Cancelled" : "HO Approval" };
+        let step1 = {
+          state: status === "Draft" ? "pending" : "done",
+          label: status === "Draft" ? "Draft" : "Submitted",
+        };
+
+        // Step 2: Reporting
+        let step2State = "disabled";
+        let step2Label = "Reporting";
+
+        if (status === "Pending Reporting Person") {
+          step2State = "pending";
+        } else if (
+          ["Pending HO Approval", "Approved", "Self Approved"].includes(status)
+        ) {
+          step2State = "done";
+        } else if (status === "Rejected") {
+          // Check if it was rejected at reporting stage
+          if (doc.reporting_person_status === "Rejected") {
+            step2State = "rejected";
+            step2Label = "Rejected";
+          } else {
+            step2State = "done";
+          }
+        }
+
+        let step2 = { visible: true, state: step2State, label: step2Label };
+
+        // Step 3: HO Approval
+        let step3State = "disabled";
+        let step3Label = "HO Approval";
+        let step3Visible = status !== "Self Approved";
+
+        if (status === "Pending HO Approval") {
+          step3State = "pending";
+        } else if (status === "Approved") {
+          step3State = "done";
+        } else if (status === "Cancelled") {
+          step3State = "cancelled";
+          step3Label = "Cancelled";
+        } else if (status === "Rejected") {
+          if (doc.ho_officer_status === "Rejected") {
+            step3State = "rejected";
+            step3Label = "Rejected";
+          }
+        } else if (status === "Self Approved") {
+          step3Visible = false; // Hide or show as skipped
+        }
+
+        let step3 = {
+          visible: step3Visible,
+          state: step3State,
+          label: step3Label,
+        };
+
         return { step1, step2, step3 };
       },
     };
 
     PetiteVue.createApp(app).mount(this.wrapper[0]);
-    setTimeout(() => { app.setMode(app.pageMode, app.subMode); }, 100);
+    setTimeout(() => {
+      app.setMode(app.pageMode, app.subMode);
+    }, 100);
   }
 }

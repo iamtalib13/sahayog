@@ -399,6 +399,11 @@ body.stockio-active .page-content {
   color: #fff;
 }
 
+.btn.danger {
+  background: #ef4444;
+  color: #fff;
+}
+
 /* CARD */
 .order-card {
   background: #ffffff;
