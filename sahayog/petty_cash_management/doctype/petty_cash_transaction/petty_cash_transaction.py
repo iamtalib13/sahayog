@@ -235,9 +235,23 @@ class PettyCashTransaction(Document):
         if self.transaction_type == "Fund Allocation":
             if not self.amount or self.amount <= 0:
                 frappe.throw(_("Amount is required for Fund Allocation"))
+
+
+            # ADD THIS BLOCK:
+    # If this is coming from the Finacle Sync, DO NOT create the Journal Entry
+            # if self.posted_to_finacle:
+            #     return 
             
-            if not self.journal_entry_ref:
+            # if not self.journal_entry_ref:
+            #     self.create_ho_fund_allocation_je()
+
+           # [FIXED LOGIC HERE]
+            # We check two things:
+            # 1. Is it NOT posted to finacle? (If posted=1, we skip this)
+            # 2. Is journal_entry_ref empty? (If yes, we need to create one)
+            if not self.posted_to_finacle and not self.journal_entry_ref:
                 self.create_ho_fund_allocation_je()
+
 
 
         # 1. Check Account Existence
@@ -469,10 +483,19 @@ class PettyCashTransaction(Document):
     #     self.update_wallet()
 
     def on_submit(self):
-        # 1. Fund Allocation Logic
-        if self.transaction_type == "Fund Allocation":
-            # We do NOT set 'Posted' here yet. We let the process function decide.
+        # # 1. Fund Allocation Logic
+        # if self.transaction_type == "Fund Allocation":
+        #     # We do NOT set 'Posted' here yet. We let the process function decide.
+        #     self.process_finacle_transfer()
+
+        # [FIX] Only trigger the Finacle API call if this is a MANUAL entry.
+        # If posted_to_finacle is 1, the money is already there, so we skip this.
+        if self.transaction_type == "Fund Allocation" and not self.posted_to_finacle:
             self.process_finacle_transfer()
+            
+        # If it IS a synced entry, we might just want to update the status to "Success" locally
+        elif self.transaction_type == "Fund Allocation" and self.posted_to_finacle:
+             frappe.msgprint(_("Fund Allocation Synced from Finacle successfully."))
 
         # 2. Expense Logic (Existing)
         elif self.transaction_type == "Expense":
