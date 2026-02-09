@@ -2,29 +2,30 @@
 // STOCKIO – FULL WIDTH + SIDEBAR (PETITE-VUE)
 // ==================================================
 
-// Polyfill for crypto.randomUUID and getRandomValues
-// Fixes errors in insecure (HTTP) contexts for extensions like Grammarly
+// Robust Polyfill for crypto.randomUUID and getRandomValues
+// Fixes crashes in insecure (HTTP) contexts for extensions like Grammarly
 (function () {
-  if (!window.crypto) window.crypto = {};
-  if (!window.crypto.getRandomValues) {
-    window.crypto.getRandomValues = function (array) {
-      for (var i = 0; i < array.length; i++) {
-        array[i] = Math.floor(Math.random() * 256);
-      }
-      return array;
-    };
-  }
-  if (!window.crypto.randomUUID) {
-    window.crypto.randomUUID = function () {
-      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-        /[xy]/g,
-        function (c) {
-          var r = (Math.random() * 16) | 0,
-            v = c == "x" ? r : (r & 0x3) | 0x8;
+  try {
+    var g = typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {};
+    if (!g.crypto) g.crypto = {};
+    if (!g.crypto.getRandomValues) {
+      g.crypto.getRandomValues = function (array) {
+        for (var i = 0; i < array.length; i++) {
+          array[i] = Math.floor(Math.random() * 256);
+        }
+        return array;
+      };
+    }
+    if (!g.crypto.randomUUID) {
+      g.crypto.randomUUID = function () {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+          var r = (Math.random() * 16) | 0, v = c == "x" ? r : (r & 0x3) | 0x8;
           return v.toString(16);
-        },
-      );
-    };
+        });
+      };
+    }
+  } catch (e) {
+    console.error("StockIO: Crypto polyfill failed", e);
   }
 })();
 
@@ -402,7 +403,7 @@ class StockIOPage {
           </div>
           <div class="product-meta">
             SKU: {{ doc.items?.[0]?.item_code || "" }}
- · Qty: {{ doc.items[0].quantity }}
+ · Qty: {{ doc.items?.[0]?.quantity || 0 }}
           </div>
           </div>
         </div>
@@ -520,7 +521,7 @@ class StockIOPage {
 
             </div>
             <div class="product-meta">
-              Qty: {{ doc.items[0].qty }}
+              Qty: {{ doc.items?.[0]?.qty || 0 }}
             </div>
           </div>
         </div>
@@ -605,7 +606,7 @@ class StockIOPage {
 
               </div>
               <div class="product-meta">
-                Qty: {{ doc.items[0].qty }}
+                Qty: {{ doc.items?.[0]?.qty || 0 }}
               </div>
             </div>
           </div>
@@ -689,12 +690,12 @@ class StockIOPage {
       <div class="order-product" v-if="doc.items && doc.items.length > 0">
         <div>
           <div class="product-name">
-            {{ doc.items[0].asset_name || doc.items[0].asset }}
+            {{ doc.items?.[0]?.asset_name || doc.items?.[0]?.asset || "" }}
           </div>
           <div class="product-meta">
-            From: {{ doc.items[0].source_location }}
-            <span v-if="doc.items[0].to_employee">
-              · To: {{ doc.items[0].to_employee }}
+            From: {{ doc.items?.[0]?.source_location || "" }}
+            <span v-if="doc.items?.[0]?.to_employee">
+              · To: {{ doc.items?.[0]?.to_employee }}
             </span>
           </div>
         </div>
@@ -1621,7 +1622,7 @@ class StockIOPage {
         };
 
         if (["Approve", "Reject", "Self Approve"].includes(action)) {
-          frappe.prompt(
+          const dialog = frappe.prompt(
             [
               {
                 label: "Remark",
@@ -1637,6 +1638,14 @@ class StockIOPage {
             `Enter Remark for Bulk ${action}`,
             "Submit",
           );
+
+          // Workaround: Disable Grammarly on the remark field to prevent 'crypto.randomUUID' crashes
+          if (dialog && dialog.fields_dict.remark) {
+            const $input = $(dialog.fields_dict.remark.input);
+            $input.attr("data-gramm", "false");
+            $input.attr("data-gramm_editor", "false");
+            $input.attr("spellcheck", "false");
+          }
         } else {
           frappe.confirm(
             `Are you sure you want to bulk ${actionLabel} ${this.selectedDocs.length} requests?`,
