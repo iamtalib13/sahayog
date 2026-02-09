@@ -102,6 +102,74 @@ frappe.ui.form.on('Petty Cash Transaction', {
         fields_to_lock.forEach(field => {
             frm.set_df_property(field, 'read_only', is_locked ? 1 : 0);
         });
+
+
+        // --- NEW LOGIC: DOWNLOAD BUTTONS ---
+        
+        // 1. Check Permissions (Admin or HO Petty Cash Manager)
+        // if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+            
+        //     // 2. Check Status (Must be Verified)
+        //     if (frm.doc.approval_status === 'Verified') {
+                
+        //         // Add a Group Button "Download TTUM"
+        //         frm.add_custom_button(__('Excel Report'), function() {
+        //             window.open(
+        //                 frappe.request.url + 
+        //                 '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_excel' +
+        //                 '&name=' + frm.doc.name
+        //             );
+        //         }, __("Download TTUM"));
+
+        //         frm.add_custom_button(__('TXT File (Finacle)'), function() {
+        //            window.open(
+        //                 frappe.request.url + 
+        //                 '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_txt' +
+        //                 '&name=' + frm.doc.name
+        //             );
+        //         }, __("Download TTUM"));
+        //     }
+        // }
+
+
+        // --- NEW LOGIC: DOWNLOAD BUTTONS ---
+        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+            if (frm.doc.approval_status === 'Verified') {
+                
+                // Add Group Button
+                // frm.add_custom_button(__('Excel Report'), function() {
+                //     let url = frappe.urllib.get_full_url(
+                //         "/api/method/sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_excel?" +
+                //         "name=" + encodeURIComponent(frm.doc.name)
+                //     );
+                //     window.open(url);
+                // }, __("Download Files"));
+
+                // frm.add_custom_button(__('TXT File (Finacle)'), function() {
+                //     let url = frappe.urllib.get_full_url(
+                //         "/api/method/sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_txt?" +
+                //         "name=" + encodeURIComponent(frm.doc.name)
+                //     );
+                //     window.open(url);
+                // }, __("Download Files"));
+                frm.add_custom_button(__('Excel Report'), function() {
+                    window.open(
+                        frappe.request.url + 
+                        '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_excel_api' + // <--- Updated Name
+                        '&name=' + frm.doc.name
+                    );
+                }, __("Download Files"));
+
+                // TXT Button
+                frm.add_custom_button(__('TXT File (Finacle)'), function() {
+                   window.open(
+                        frappe.request.url + 
+                        '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_txt_api' + // <--- Updated Name
+                        '&name=' + frm.doc.name
+                    );
+                }, __("Download Files"));
+            }
+        }
     },
 
 
