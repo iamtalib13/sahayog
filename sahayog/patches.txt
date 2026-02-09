@@ -9,10 +9,12 @@ sahayog.patches.set_lead_status_options
 sahayog.patches.create_sahayog_letter_head
 sahayog.patches.custom_fields.add_custom_fields_for_item
 sahayog.patches.property_setter_item
+sahayog.patches.property_setter_appointment
 sahayog.patches.set_purchase_order_item_listview_columns
 sahayog.patches.add_role_in_workspace
  
 sahayog.patches.set_employee_create_user_permission_default
 sahayog.patches.set_ignore_user_permission_in_lead
+sahayog.patches.set_sahayog_branch_from_sol_id  
 sahayog.patches.fixtures.create_comment_email_sent_custom_field
 sahayog.patches.remove_test_company_email

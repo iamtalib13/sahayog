@@ -66,8 +66,7 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "reqd": 1
+   "label": "Remarks"
   },
   {
    "fieldname": "document_upload",
@@ -208,7 +207,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-12-20 12:51:57.412217",
+ "modified": "2026-01-30 11:59:33.455791",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Reminder Of Unauthorized Absence",

@@ -10,6 +10,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "insert_after": "department",
                 "label": "Branch Details",
+                "depends_on": "eval:doc.project_template"
                
                 
             },
@@ -18,12 +19,14 @@ def execute():
                 "fieldtype": "Select",
                 "insert_after": "custom_branch_details_section",
                 "label": "Branch Status",
-                "reqd": 1,
+                "reqd": 0,
                 "options": "\n".join([
+                    "",
                     "Not Started",
                     "Under Development",
                     "Live"
-                ])  
+                ]),
+                "mandatory_depends_on": "eval:doc.project_template"
             },
               {
                 "fieldname": "custom_branch_col_1",
@@ -38,7 +41,8 @@ def execute():
                 "insert_after": "custom_branch_status",
                 "label": "Zone",
                 "options":"Zone",
-                "reqd":1,
+                "reqd": 0,
+                "mandatory_depends_on": "eval:doc.project_template",
                
             },
             {
@@ -54,7 +58,8 @@ def execute():
                 "insert_after": "custom_branch_col_2",
                 "label": "Region",
                 "options":"Region",
-                "reqd":1,
+                "reqd": 0,
+                "mandatory_depends_on": "eval:doc.project_template",
                
             },
               {
@@ -70,8 +75,8 @@ def execute():
                 "insert_after": "custom_branch_col_3",
                 "label": "Division",
                 "options":"Division",
-                "reqd":1,  
-            },
+                "reqd": 0,
+                "mandatory_depends_on": "eval:doc.project_template",            },
             {
                 "fieldname": "custom_project_warehouse",
                 "fieldtype": "Link",

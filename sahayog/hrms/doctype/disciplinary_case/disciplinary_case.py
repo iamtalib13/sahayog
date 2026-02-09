@@ -28,7 +28,7 @@ class DisciplinaryCase(Document):
                 return
 
             # Send SCN email
-            send_scn_email(self.name)
+            send_scn_email(docname=self.name)
 
             frappe.msgprint(
                 "Case submitted successfully and SCN email sent to employee.",
@@ -197,55 +197,50 @@ def save_and_send_email(employee, email, docname):
     return "OK"
 
 # send SCN email with attachment
+# send SCN email function ko optimize kiya gaya hai
+# @frappe.whitelist()
+# def send_scn_email(docname):
+#     doc = frappe.get_doc("Disciplinary Case", docname)
+#     recipient = frappe.db.get_value("Employee", doc.employee_id, "company_email")
+
+#     if not recipient:
+#         frappe.throw("Employee email missing.")
+
+#     # Render Template
+#     template = frappe.get_doc("Email Template", "Disciplinary - SCN")
+#     doc_dict = doc.as_dict()
+#     # Date formatting logic here...
+
+#     # Production Fix: Attachments as a list of dict for Queue compatibility
+#     frappe.sendmail(
+#         recipients=[recipient],
+#         subject=frappe.render_template(template.subject, doc_dict),
+#         message=frappe.render_template(template.response_html, doc_dict),
+#         reference_doctype="Disciplinary Case",
+#         reference_name=docname,
+#         attachments=[{
+#             "print_format": "Disciplinary Case Notice",
+#             "doctype": "Disciplinary Case",
+#             "name": docname,
+#             "file_name": f"{docname}.pdf"
+#         }],
+#         now=False 
+#     )
+#     return "Queued"
+
 @frappe.whitelist()
 def send_scn_email(docname):
-    """
-    Send SCN email with attachment:
-    Print Format → "Disciplinary Case Notice"
-    """
-    doc = frappe.get_doc("Disciplinary Case", docname)
-    
-    # Employee email
-    emp = frappe.get_doc("Employee", doc.employee_id)
-    final_email = emp.company_email
+        """Send welcome notification for first time membership"""
+        try:
+            notification = frappe.get_doc("Notification", "Show Cause Notice")
+            doc = frappe.get_doc("Disciplinary Case", docname)
+            notification.send(doc=doc)
+            frappe.logger().info(f"Show Cause Notice notification sent to employee: {doc.employee_id}")
+        except frappe.DoesNotExistError:
+            frappe.log_error("Notification 'Show Cause Notice' not found")
+        except Exception as e:
+            frappe.log_error(f"Failed to send show cause notice notification: {str(e)}")
 
-    if not final_email:
-        frappe.throw("No email found for this employee.")
-
-    # Prepare doc_dict and apply formatted dates
-    doc_dict = doc.as_dict()
-    if doc.issue_occurrence_date:
-        doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
-    if doc.issue_report_to_hr:
-        doc_dict["issue_report_to_hr"] = formatdate(doc.issue_report_to_hr)
-
-    # Load email template
-    template = frappe.get_doc("Email Template", "Disciplinary - SCN")
-    message = frappe.render_template(template.response_html, doc_dict)
-    subject = frappe.render_template(template.subject, doc_dict)
-
-    # Attach Print Format → **Disciplinary Case Notice**
-    attachments = [
-        frappe.attach_print(
-            doctype="Disciplinary Case",
-            name=docname,
-            print_format="Disciplinary Case Notice",
-            file_name=f"{docname}"
-        )
-    ]
-
-    # Send email
-    frappe.sendmail(
-        recipients=[final_email],
-        subject=subject,
-        message=message,
-        attachments=attachments,
-        reference_doctype="Disciplinary Case",
-        reference_name=docname,
-        now=True
-    )
-
-    return "Email Sent"
 
 # save employee email only
 @frappe.whitelist()
@@ -254,3 +249,11 @@ def save_employee_email(employee, email):
     emp.company_email = email
     emp.db_update()
     return "OK"
+# -------------------
+# excluded higher authority employees from employee selection
+# -------------------
+def validate(self):
+    if self.employee_id:
+        cxo = frappe.db.get_value("Employee", self.employee_id, "cxo_level")
+        if cxo:
+            frappe.throw("CXO / Higher Management employees cannot be added in Disciplinary Case")

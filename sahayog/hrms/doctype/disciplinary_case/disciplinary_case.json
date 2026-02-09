@@ -9,6 +9,7 @@
   "case_information_section",
   "employee_id",
   "employee_name",
+  "employee_email",
   "branch_id",
   "zone",
   "description",
@@ -92,7 +93,7 @@
    "fieldname": "level",
    "fieldtype": "Select",
    "label": "Level",
-   "options": "\n1\n2\n3\n4",
+   "options": "\nC0\nC1\nC2\nC3\nC4\nC5",
    "reqd": 1
   },
   {
@@ -103,8 +104,7 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "reqd": 1
+   "label": "Remarks"
   },
   {
    "allow_on_submit": 1,
@@ -212,6 +212,13 @@
    "fieldtype": "Data",
    "label": "Region",
    "read_only": 1
+  },
+  {
+   "fetch_from": "employee_id.company_email",
+   "fieldname": "employee_email",
+   "fieldtype": "Data",
+   "label": "Employee Email",
+   "options": "Email"
   }
  ],
  "grid_page_length": 50,
@@ -234,11 +241,11 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2025-12-17 13:43:39.362133",
+ "modified": "2026-02-05 17:02:55.885490",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

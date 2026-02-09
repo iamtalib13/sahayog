@@ -41,6 +41,13 @@ def execute():
                 "label": "Division",
                 "options":"Division",
             },
+            {
+                "fieldname": "cxo_level",
+                "fieldtype": "Check",
+                "insert_after": "employee_number",
+                "label": "CXO Level",
+                "default": 0
+            },
 
             {
                 "fieldname": "custom_skip_auto_creation",
@@ -69,6 +76,14 @@ def execute():
                 "options": "Sahayog Branch",
                 "insert_after": "reports_to",
                 "label": "Sahayog Branch"
+            },
+            {
+                "fieldname": "pip_status",
+                "fieldtype": "Check",
+                "insert_after": "status",
+                "label": "PIP Status",
+                "default": 0
+            
             },
         ]
     }

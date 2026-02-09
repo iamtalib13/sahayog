@@ -28,7 +28,7 @@ frappe.ui.form.on("Disciplinary Case", {
                       frappe.msgprint(__("SCN Email sent successfully!"));
                     },
                   });
-                }
+                },
               );
             }
             // CASE 2: No email
@@ -83,7 +83,7 @@ frappe.ui.form.on("Disciplinary Case", {
 
                         callback() {
                           frappe.msgprint(
-                            __("Email saved and SCN Email sent successfully!")
+                            __("Email saved and SCN Email sent successfully!"),
                           );
                           d.hide();
                         },
@@ -136,7 +136,7 @@ frappe.ui.form.on("Disciplinary Case", {
           if (!/[0-9.]/.test(char)) {
             e.preventDefault();
           }
-        }
+        },
       );
     }
 
@@ -183,7 +183,7 @@ frappe.ui.form.on("Disciplinary Case", {
           frappe.msgprint({
             title: __("Not Allowed"),
             message: __(
-              "Suspension Process cannot be created when Case Type is 'Unauthorized Absence'."
+              "Suspension Process cannot be created when Case Type is 'Unauthorized Absence'.",
             ),
             indicator: "red",
           });
@@ -197,7 +197,7 @@ frappe.ui.form.on("Disciplinary Case", {
           frappe.msgprint({
             title: __("Not Allowed"),
             message: __(
-              "Suspension Process cannot be created because 'Suspension Required' is set to 'No'."
+              "Suspension Process cannot be created because 'Suspension Required' is set to 'No'.",
             ),
             indicator: "red",
           });
@@ -215,7 +215,7 @@ frappe.ui.form.on("Disciplinary Case", {
           frappe.msgprint({
             title: __("Not Allowed"),
             message: __(
-              "Response to SCN cannot be created when Case Type is 'Unauthorized Absence'."
+              "Response to SCN cannot be created when Case Type is 'Unauthorized Absence'.",
             ),
             indicator: "red",
           });
@@ -229,7 +229,7 @@ frappe.ui.form.on("Disciplinary Case", {
           frappe.msgprint({
             title: __("Not Allowed"),
             message: __(
-              "Response to SCN cannot be created because 'Suspension Required' is set to 'Yes'."
+              "Response to SCN cannot be created because 'Suspension Required' is set to 'Yes'.",
             ),
             indicator: "red",
           });
@@ -246,7 +246,7 @@ frappe.ui.form.on("Disciplinary Case", {
           frappe.msgprint({
             title: __("Not Allowed"),
             message: __(
-              "Unauthorized Absence record can only be created when Case Type is 'Unauthorized Absence'."
+              "Unauthorized Absence record can only be created when Case Type is 'Unauthorized Absence'.",
             ),
             indicator: "red",
           });
@@ -311,7 +311,7 @@ frappe.ui.form.on("Disciplinary Case", {
       frm.doc.issue_occurrence_date > today
     ) {
       frappe.msgprint(
-        "You cannot select a future date for Issue Occurrence Date."
+        "You cannot select a future date for Issue Occurrence Date.",
       );
       frm.set_value("issue_occurrence_date", "");
     }
@@ -321,7 +321,7 @@ frappe.ui.form.on("Disciplinary Case", {
     let today = frappe.datetime.now_date();
     if (frm.doc.issue_report_to_hr && frm.doc.issue_report_to_hr > today) {
       frappe.msgprint(
-        "You cannot select a future date for Issue Reported to HR."
+        "You cannot select a future date for Issue Reported to HR.",
       );
       frm.set_value("issue_report_to_hr", "");
     }
@@ -333,7 +333,7 @@ frappe.ui.form.on("Disciplinary Case", {
       frappe.msgprint({
         title: __("Invalid Input"),
         message: __(
-          "Please enter a valid numeric amount in 'Amount of Fraud'."
+          "Please enter a valid numeric amount in 'Amount of Fraud'.",
         ),
         indicator: "red",
       });
@@ -384,7 +384,7 @@ frappe.ui.form.on("Disciplinary Case", {
           iframe.src = frappe.urllib.get_full_url(
             `/printview?doctype=${encodeURIComponent(frm.doc.doctype)}` +
               `&name=${encodeURIComponent(frm.doc.name)}` +
-              `&format=${encodeURIComponent("Disciplinary Case Notice")}`
+              `&format=${encodeURIComponent("Disciplinary-Case-SCN")}`,
           );
           document.body.appendChild(iframe);
 
@@ -453,6 +453,19 @@ frappe.ui.form.on("Disciplinary Case", {
         .addClass("btn-primary");
     }
   },
+  // -------------------
+  // excluded higher authority employees from employee selection
+  // -------------------
+  setup(frm) {
+    frm.set_query("employee_id", function () {
+      return {
+        filters: {
+          status: "Active",
+          cxo_level: 0,
+        },
+      };
+    });
+  },
 });
 
 // -------------------
@@ -472,7 +485,7 @@ function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
     "render_timeline payload:",
-    data && data.timeline ? data.timeline : data
+    data && data.timeline ? data.timeline : data,
   );
 
   const wrap = $(frm.wrapper).find(".case-timeline-box");
@@ -587,7 +600,7 @@ function timeline_badge(stage_obj) {
         const optsDate = { day: "2-digit", month: "short", year: "numeric" };
         formatted = `${d.toLocaleTimeString(
           [],
-          optsTime
+          optsTime,
         )}, ${d.toLocaleDateString([], optsDate)}`;
       }
     } catch (e) {
@@ -699,12 +712,12 @@ function timeline_badge(stage_obj) {
       }
 
       show_tooltip(this, html);
-    }
+    },
   );
 
   $(document).on(
     "mouseleave",
     ".case-timeline-box div[style*='border-radius:14px']",
-    hide_tooltip
+    hide_tooltip,
   );
 })();

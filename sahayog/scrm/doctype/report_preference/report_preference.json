@@ -11,6 +11,7 @@
   "report_type",
   "section_break_yzaw",
   "zone",
+  "all_regions",
   "state",
   "column_break_aagm",
   "region",
@@ -107,13 +108,19 @@
   {
    "fieldname": "column_break_aagm",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "all_regions",
+   "fieldtype": "Check",
+   "label": "All Regions"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-13 11:01:54.776831",
- "modified_by": "9517@sahayog.com",
+ "modified": "2026-01-28 16:38:35.904622",
+ "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
  "owner": "Administrator",
