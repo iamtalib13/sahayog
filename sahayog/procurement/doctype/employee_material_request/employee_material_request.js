@@ -462,7 +462,7 @@ frappe.ui.form.on("Employee Material Request", {
     // ) {
     //   return; // do not show the button
     // }
-    if (frm.doc.docstatus !== 1) return;
+    if (frm.doc.docstatus !== 1 && frm.doc.status !== "Self Approved") return;
 
     frm.add_custom_button("Create Asset Movement", async () => {
       let asset_list = {};
@@ -2131,7 +2131,7 @@ function toggle_dashboard_by_status(frm) {
   if (!frm.dashboard) return;
 
   // Only show connections when status == "Approved"
-  if (frm.doc.status === "Approved") {
+  if (['Approved', 'Self Approved'].includes(frm.doc.status)) {
     frm.dashboard.show();
   } else {
     frm.dashboard.hide();
