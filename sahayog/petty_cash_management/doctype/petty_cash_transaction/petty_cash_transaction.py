@@ -11,6 +11,16 @@ from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
 # Import the API function
 from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
 
+import frappe
+from frappe import _
+from frappe.utils import flt, nowdate, getdate, fmt_money
+import io
+import csv
+# from frappe.utils.xlsx import make_xlsx
+from frappe.utils.xlsxutils import make_xlsx  # <--- CORRECT IMPORT
+
+
+
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -482,26 +492,68 @@ class PettyCashTransaction(Document):
 
     #     self.update_wallet()
 
-    def on_submit(self):
-        # # 1. Fund Allocation Logic
-        # if self.transaction_type == "Fund Allocation":
-        #     # We do NOT set 'Posted' here yet. We let the process function decide.
-        #     self.process_finacle_transfer()
 
-        # [FIX] Only trigger the Finacle API call if this is a MANUAL entry.
-        # If posted_to_finacle is 1, the money is already there, so we skip this.
-        if self.transaction_type == "Fund Allocation" and not self.posted_to_finacle:
-            self.process_finacle_transfer()
+
+#old
+    # def on_submit(self):
+    #     # 1. Check the Global Control Switch
+    #     enable_integration = frappe.db.get_single_value("Finacle Settings", "enable_finacle_integration")
+
+    #     if enable_integration:
+    #         # --- OLD LOGIC (Finacle Mode) ---
+    #         # Create Journal Entry only if integration is enabled
+    #         self.create_journal_entry() 
+    #     else:
+    #         # --- NEW LOGIC (Manual Mode) ---
+    #         # Do nothing. Just let it submit.
+    #         # No Journal Entry is created.
+    #         pass
+    #     # # 1. Fund Allocation Logic
+    #     # if self.transaction_type == "Fund Allocation":
+    #     #     # We do NOT set 'Posted' here yet. We let the process function decide.
+    #     #     self.process_finacle_transfer()
+
+    #     # [FIX] Only trigger the Finacle API call if this is a MANUAL entry.
+    #     # If posted_to_finacle is 1, the money is already there, so we skip this.
+    #     if self.transaction_type == "Fund Allocation" and not self.posted_to_finacle:
+    #         self.process_finacle_transfer()
             
-        # If it IS a synced entry, we might just want to update the status to "Success" locally
-        elif self.transaction_type == "Fund Allocation" and self.posted_to_finacle:
-             frappe.msgprint(_("Fund Allocation Synced from Finacle successfully."))
+    #     # If it IS a synced entry, we might just want to update the status to "Success" locally
+    #     elif self.transaction_type == "Fund Allocation" and self.posted_to_finacle:
+    #          frappe.msgprint(_("Fund Allocation Synced from Finacle successfully."))
 
-        # 2. Expense Logic (Existing)
+    #     # 2. Expense Logic (Existing)
+    #     elif self.transaction_type == "Expense":
+    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
+    #         wallet.update_unsettled_cash(self.amount, "Expense")
+
+    #         if self.amount_exceeding_limit > 0:
+    #             self.db_set('amount_deducted', self.amount_within_limit)
+    #             self.db_set('approval_status', 'Pending Approval')
+    #         else:
+    #             self.db_set('amount_deducted', self.amount)
+    #             self.db_set('approval_status', 'Approved') 
+            
+    #         self.create_journal_entry()
+    #         self.update_wallet()
+
+
+    def on_submit(self):
+        # --- 1. Fund Allocation Logic (unchanged) ---
+        if self.transaction_type == "Fund Allocation":
+            if not self.posted_to_finacle:
+                # Only process if not already synced from Finacle
+                self.process_finacle_transfer()
+            else:
+                 frappe.msgprint(_("Fund Allocation Synced from Finacle successfully."))
+
+        # --- 2. Expense Logic (Modified for Switch) ---
         elif self.transaction_type == "Expense":
+            # A. Always update wallet tracking (This is internal Frappe logic, independent of Finacle)
             wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
             wallet.update_unsettled_cash(self.amount, "Expense")
 
+            # B. Handle Limits (Internal Approval Logic)
             if self.amount_exceeding_limit > 0:
                 self.db_set('amount_deducted', self.amount_within_limit)
                 self.db_set('approval_status', 'Pending Approval')
@@ -509,8 +561,21 @@ class PettyCashTransaction(Document):
                 self.db_set('amount_deducted', self.amount)
                 self.db_set('approval_status', 'Approved') 
             
-            self.create_journal_entry()
+            # C. CONTROL SWITCH: Journal Entry Creation
+            # [UPDATE] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
+            enable_integration = frappe.db.get_single_value("Sahayog Settings", "enable_finacle_integration")
+            
+            if enable_integration:
+                # OLD FLOW: Create JE -> Update Wallet -> Wait for Verification API
+                self.create_journal_entry()
+            else:
+                # NEW FLOW: Skip JE -> Just Update Wallet -> Wait for Manual Verification
+                pass
+
+            # D. Update Wallet Balance (Internal)
             self.update_wallet()
+
+
 
     def create_ho_fund_allocation_je(self):
         """
@@ -985,60 +1050,115 @@ class PettyCashTransaction(Document):
     
     
 
+    # @frappe.whitelist()
+    # def ho_verify_bill(self):
+    #     """
+    #     Scenario 1 & 2 Final Step: HO Manager verifies bills.
+    #     Uses frappe.db.set_value to update submitted document fields directly.
+    #     """
+        
+    #     # 1. Permission Check
+    #     if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
+    #         frappe.throw(_("Only HO Petty Cash Manager can verify."))
+
+    #     # 2. Status Check
+    #     if self.approval_status != "Approved":
+    #         frappe.throw(_("Document must be in 'Approved' status before Verification."))
+
+
+
+    #     # 3. Validate Journal Entry Reference
+    #     if not self.journal_entry_ref:
+    #         frappe.throw(_("Journal Entry Reference is missing."))
+            
+    #     if not frappe.db.exists("Journal Entry", self.journal_entry_ref):
+    #          frappe.throw(_("Linked Journal Entry {0} not found.").format(self.journal_entry_ref))
+
+    #     # 4. Trigger Finacle API
+    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+
+    #     # 5. Handle Response
+    #     if response.get("status") == "SUCCESS":
+    #         # --- SUCCESS SCENARIO ---
+    #         # We use set_value with a dictionary to update multiple fields at once on the DB level
+    #         frappe.db.set_value(self.doctype, self.name, {
+    #             "finacle_tran_id": response.get("trn_id"),
+    #             "finacle_tran_date": nowdate(),
+    #             "approval_status": "Verified",
+    #             "approved_by": frappe.session.user
+    #         })
+            
+    #         frappe.msgprint(
+    #             msg=f"Bills Verified & Processed in Finacle successfully.<br>Transaction ID: <b>{response.get('trn_id')}</b>",
+    #             title="Verification Complete",
+    #             indicator='green'
+    #         )
+
+    #     else:
+    #         # --- FAILURE SCENARIO ---
+    #         error_msg = response.get("message", "Unknown Finacle Error")
+            
+    #         # Update only the error field directly in DB
+    #         frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", error_msg)
+            
+    #         frappe.msgprint(
+    #             msg=f"Finacle Transaction Failed.<br>Reason: {error_msg}",
+    #             title="Verification Stopped",
+    #             indicator='red'
+    #         )
+
+
     @frappe.whitelist()
     def ho_verify_bill(self):
         """
-        Scenario 1 & 2 Final Step: HO Manager verifies bills.
-        Uses frappe.db.set_value to update submitted document fields directly.
+        Modified to support Manual Mode (File Download)
         """
-        
-        # 1. Permission Check
+        # Permission Check (Same as before)
         if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
             frappe.throw(_("Only HO Petty Cash Manager can verify."))
 
-        # 2. Status Check
         if self.approval_status != "Approved":
-            frappe.throw(_("Document must be in 'Approved' status before Verification."))
+            frappe.throw(_("Document must be Approved before Verification."))
 
-        # 3. Validate Journal Entry Reference
-        if not self.journal_entry_ref:
-            frappe.throw(_("Journal Entry Reference is missing."))
+        # [FIX] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
+        enable_integration = frappe.db.get_single_value("Sahayog Settings", "enable_finacle_integration")
+
+        if enable_integration:
+            # --- OLD LOGIC (Finacle Mode) ---
+            if not self.journal_entry_ref:
+                frappe.throw(_("Journal Entry Reference is missing."))
             
-        if not frappe.db.exists("Journal Entry", self.journal_entry_ref):
-             frappe.throw(_("Linked Journal Entry {0} not found.").format(self.journal_entry_ref))
+            # Call your existing API function
+            from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
+            response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
 
-        # 4. Trigger Finacle API
-        response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
+            if response.get("status") == "SUCCESS":
+                frappe.db.set_value(self.doctype, self.name, {
+                    "finacle_tran_id": response.get("trn_id"),
+                    "finacle_tran_date": nowdate(),
+                    "approval_status": "Verified",
+                    "approved_by": frappe.session.user
+                })
+                frappe.msgprint(f"Finacle Success: {response.get('trn_id')}")
+            else:
+                frappe.msgprint(f"Finacle Failed: {response.get('message')}")
 
-        # 5. Handle Response
-        if response.get("status") == "SUCCESS":
-            # --- SUCCESS SCENARIO ---
-            # We use set_value with a dictionary to update multiple fields at once on the DB level
+        else:
+            # --- NEW LOGIC (Manual/Excel Mode) ---
+            # Just mark it as Verified so the download buttons appear
             frappe.db.set_value(self.doctype, self.name, {
-                "finacle_tran_id": response.get("trn_id"),
-                "finacle_tran_date": nowdate(),
                 "approval_status": "Verified",
-                "approved_by": frappe.session.user
+                "approved_by": frappe.session.user,
+                "finacle_tran_date": nowdate(), # Log when it was manually verified
+                "finacle_tran_particular": "Manual Verification (TTUM Mode)"
             })
             
             frappe.msgprint(
-                msg=f"Bills Verified & Processed in Finacle successfully.<br>Transaction ID: <b>{response.get('trn_id')}</b>",
-                title="Verification Complete",
+                msg="Record Verified Manually. Please download the TTUM/Excel files now.",
+                title="Verified (Offline Mode)",
                 indicator='green'
             )
 
-        else:
-            # --- FAILURE SCENARIO ---
-            error_msg = response.get("message", "Unknown Finacle Error")
-            
-            # Update only the error field directly in DB
-            frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", error_msg)
-            
-            frappe.msgprint(
-                msg=f"Finacle Transaction Failed.<br>Reason: {error_msg}",
-                title="Verification Stopped",
-                indicator='red'
-            )
 
     def has_permission(self, permtype="read"):
         """
@@ -1407,6 +1527,7 @@ def download_transaction_report(filters=None):
         'filecontent': file_data,
         'record_count': len(transactions)
     }
+
 
 
 
