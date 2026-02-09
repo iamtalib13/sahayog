@@ -22,6 +22,7 @@
   "current_unsettled_cash",
   "journal_entry_ref",
   "submission_attempted",
+  "custom_ttum_remarks",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -252,13 +253,18 @@
    "fieldname": "submission_attempted",
    "fieldtype": "Check",
    "label": "Submission Attempted"
+  },
+  {
+   "fieldname": "custom_ttum_remarks",
+   "fieldtype": "Data",
+   "label": "TTUM Remarks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-06 17:35:38.639449",
+ "modified": "2026-02-09 16:52:53.261946",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
