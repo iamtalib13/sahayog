@@ -18,7 +18,9 @@
   "create_agents",
   "column_break_wzyr",
   "email_tab",
-  "send"
+  "send",
+  "petty_cash_management_tab",
+  "enable_finacle_integration"
  ],
  "fields": [
   {
@@ -93,13 +95,24 @@
    "fieldname": "send",
    "fieldtype": "Check",
    "label": "Send Email"
+  },
+  {
+   "fieldname": "petty_cash_management_tab",
+   "fieldtype": "Tab Break",
+   "label": "Petty Cash Management"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_finacle_integration",
+   "fieldtype": "Check",
+   "label": "Enable Finacle Integration"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-29 13:18:33.147711",
+ "modified": "2026-02-09 16:51:47.132440",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
