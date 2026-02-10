@@ -1784,11 +1784,226 @@ class StockIOPage {
         frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
       },
 
-      handleAssetMovementAction() {
+      async handleAssetMovementAction() {
         if (!this.selectedDocs.length) return;
 
-        // Navigate to Asset Movement form
-        frappe.set_route("Form", "Asset Movement", "new-asset-movement-1");
+        // If multiple docs selected, we process them one by one or pick the first
+        // For matching the original form logic, we pick the first selected doc
+        const docname = this.selectedDocs[0];
+
+        frappe.dom.freeze("Loading Asset Data...");
+
+        try {
+          // Fetch the full document to get items
+          const res_doc = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Employee Material Request", name: docname },
+          });
+
+          const doc = res_doc.message;
+          if (!doc) {
+            frappe.dom.unfreeze();
+            return;
+          }
+
+          let asset_list = {};
+          let employees = [];
+
+          // --------------------------------------------------
+          // Fetch Employees (Company specific)
+          // --------------------------------------------------
+          employees = await frappe.db.get_list("Employee", {
+            fields: ["name", "employee_name"],
+            filters: {
+              company: "Sahayog Multistate Credit Co-op Society Ltd",
+              status: "Active",
+            },
+            limit: 500,
+          });
+
+          // --------------------------------------------------
+          // Fetch available assets
+          // --------------------------------------------------
+          const res_assets = await frappe.call({
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_asset_combine_data",
+            args: {},
+          });
+
+          if (res_assets.message?.assets) {
+            res_assets.message.assets.forEach((a) => {
+              if (!asset_list[a.item_code]) asset_list[a.item_code] = [];
+              asset_list[a.item_code].push({
+                asset: a.name,
+                asset_name: a.asset_name,
+                location: a.location,
+                custodian: a.custodian,
+              });
+            });
+          }
+
+          frappe.dom.unfreeze();
+
+          // --------------------------------------------------
+          // Build popup table (MINIMAL UI)
+          // --------------------------------------------------
+          let html = `
+            <style>
+              .emmr-table { font-size: 13px; border-collapse: collapse; width: 100%; }
+              .emmr-table thead th { position: sticky; top: 0; background: #4a6fa5; border-bottom: 2px solid #e5e7eb; padding: 10px 8px; font-weight: 600; color: #ffffff; }
+              .emmr-table tbody tr { border-bottom: 1px solid #e5e7eb; }
+              .emmr-table tbody tr:hover { background: #f9fafb; }
+              .emmr-table td { padding: 10px 8px; vertical-align: middle; }
+              .emmr-asset-code { font-weight: 500; }
+              .emmr-muted { font-size: 12px; color: #6b7280; margin-top: 2px; }
+              .emmr-checkbox { cursor: pointer; }
+            </style>
+
+            <table class="table emmr-table">
+              <thead>
+                <tr>
+                  <th style="width:50px">#</th>
+                  <th style="width:60px">Select</th>
+                  <th>Item</th>
+                  <th>Asset</th>
+                  <th style="width:280px">Employee</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          let sr = 1;
+          let has_assets = false;
+
+          (doc.items || []).forEach((row) => {
+            if (row.item_category !== "Asset") return;
+            has_assets = true;
+
+            let assets = asset_list[row.item_code] || [];
+
+            for (let i = 0; i < row.quantity; i++) {
+              let a = assets[i];
+              if (!a) continue;
+
+              html += `
+                <tr>
+                  <td>${sr++}</td>
+                  <td>
+                    <input type="checkbox" class="emmr-checkbox emmr-asset"
+                      data-asset="${a.asset}"
+                      data-location="${a.location || ""}"
+                      data-custodian="${a.custodian || ""}">
+                  </td>
+                  <td>
+                    <div class="emmr-asset-code">${row.item_code}</div>
+                    <div class="emmr-muted">${row.description || ""}</div>
+                  </td>
+                  <td>
+                    <div class="emmr-asset-code">${a.asset}</div>
+                    <div class="emmr-muted">${a.asset_name}</div>
+                  </td>
+                  <td>
+                    <div class="emmr-employee-link"></div>
+                  </td>
+                </tr>
+              `;
+            }
+          });
+
+          if (!has_assets) {
+            frappe.msgprint("No asset items found in this request.");
+            return;
+          }
+
+          html += "</tbody></table>";
+
+          const row_controls = []; // Store control instances for reliable value retrieval
+
+          let d = new frappe.ui.Dialog({
+            title: __("Select Assets & Employee - {0}", [docname]),
+            size: "large",
+            fields: [{ fieldname: "html", fieldtype: "HTML" }],
+            primary_action_label: "Create Asset Movement",
+            primary_action() {
+              let selected = [];
+
+              d.$wrapper.find("tbody tr").each(function (idx) {
+                let checkbox = $(this).find(".emmr-asset");
+                if (!checkbox.is(":checked")) return;
+
+                // Get employee value directly from the control instance
+                let employee = row_controls[idx] ? row_controls[idx].get_value() : null;
+
+                if (!employee) {
+                  frappe.msgprint("Employee is mandatory for row " + (idx + 1));
+                  selected = [];
+                  return false;
+                }
+
+                selected.push({
+                  asset: checkbox.data("asset"),
+                  employee: employee,
+                  location: checkbox.data("location"),
+                  custodian: checkbox.data("custodian"),
+                });
+              });
+
+              if (!selected.length) return;
+
+              frappe.call({
+                method:
+                  "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
+                args: {
+                  emmr: docname,
+                  assets: selected,
+                },
+                freeze: true,
+                freeze_message: "Creating Asset Movement...",
+                callback: (r) => {
+                  if (r.message) {
+                    frappe.set_route("Form", "Asset Movement", r.message);
+                    d.hide();
+                  }
+                },
+              });
+            },
+          });
+
+          d.fields_dict.html.$wrapper.html(html);
+          d.show();
+
+          d.$wrapper.find("tbody tr").each(function (idx) {
+            const row = this;
+            const wrapper = $(row).find(".emmr-employee-link")[0];
+
+            const control = frappe.ui.form.make_control({
+              parent: wrapper,
+              df: {
+                fieldtype: "Link",
+                fieldname: "employee",
+                options: "Employee",
+                placeholder: "Search Employee",
+                reqd: 1,
+                get_query() {
+                  return {
+                    filters: {
+                      company: "Sahayog Multistate Credit Co-op Society Ltd",
+                      status: "Active",
+                    },
+                  };
+                },
+              },
+              render_input: true,
+            });
+
+            control.make();
+            row_controls[idx] = control; // Store the control instance
+          });
+        } catch (e) {
+          frappe.dom.unfreeze();
+          console.error(e);
+          frappe.msgprint("An error occurred while loading asset data.");
+        }
       },
 
       reports: [
