@@ -520,3 +520,208 @@ def test_disburse_loan():
         disbursement_date="2026-01-19",
         remarks="Test Disbursement from test api"
     )
+
+
+
+@frappe.whitelist()
+def get_account_statement_with_pagination(
+    acid=None,
+    branch_id=None,
+    from_date=None,
+    to_date=None,
+    last_balance_value=None,
+    last_balance_currency="INR",
+    last_pstd_date=None,
+    last_txn_date=None,
+    last_txn_id=None,
+    last_txn_srl_no=None
+):
+    try:
+        # Fetch Finacle Settings
+        finacle_settings = frappe.get_single("Finacle Settings")
+        
+        # URL Handling (Fallback included)
+        mig_url = None
+        if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
+            mig_url = finacle_settings.mig_url
+        elif hasattr(finacle_settings, 'url') and finacle_settings.url:
+            mig_url = finacle_settings.url
+        elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
+            mig_url = finacle_settings.finacle_url
+        else:
+            # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+
+            frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
+
+        if not mig_url:
+            return {"status": "ERROR", "message": "No Finacle URL found."}
+
+        # Get Access Token
+        access_token = ""
+        if hasattr(finacle_settings, 'access_token') and finacle_settings.access_token:
+            access_token = finacle_settings.access_token
+
+        # Generate Request UUID
+        request_uuid = str(uuid.uuid4())
+        
+        # Transaction Date (MIG Compatibility)
+        if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
+            message_date = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
+        else:
+            message_date = datetime.now()
+        
+        formatted_message_date = message_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+        
+        # Build pagination details XML section
+        pagination_xml = ""
+        if last_balance_value or last_pstd_date or last_txn_date or last_txn_id or last_txn_srl_no:
+            pagination_xml = "<paginationDetails>"
+            
+            if last_balance_value:
+                pagination_xml += f"""
+                    <lastBalance>
+                        <amountValue>{last_balance_value}</amountValue>
+                        <currencyCode>{last_balance_currency}</currencyCode>
+                    </lastBalance>"""
+            
+            if last_pstd_date:
+                pagination_xml += f"<lastPstdDate>{last_pstd_date}</lastPstdDate>"
+            
+            if last_txn_date:
+                pagination_xml += f"<lastTxnDate>{last_txn_date}</lastTxnDate>"
+            
+            if last_txn_id:
+                pagination_xml += f"<lastTxnId>{last_txn_id}</lastTxnId>"
+            
+            if last_txn_srl_no:
+                pagination_xml += f"<lastTxnSrlNo>{last_txn_srl_no}</lastTxnSrlNo>"
+            
+            pagination_xml += "</paginationDetails>"
+        
+        # EXACT XML REQUEST
+        xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
+<FIXML xsi:schemaLocation="http://www.finacle.com/fixml getFullAccountStatementWithPagination.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Header>
+        <RequestHeader>
+            <MessageKey>
+                <RequestUUID>{request_uuid}</RequestUUID>
+                <ServiceRequestId>getFullAccountStatementWithPagination</ServiceRequestId>
+                <ServiceRequestVersion>10.2</ServiceRequestVersion>
+                <ChannelId>COR</ChannelId>
+                <AccessToken>{access_token}</AccessToken>
+            </MessageKey>
+            <RequestMessageInfo>
+                <BankId>01</BankId>
+                <MessageDateTime>{formatted_message_date}</MessageDateTime>
+            </RequestMessageInfo>
+        </RequestHeader>
+    </Header>
+    <Body>
+        <getFullAccountStatementWithPaginationRequest>
+            <PaginatedAccountTransactionCriteria>
+                <acid>{acid}</acid>
+                <branchId>{branch_id}</branchId>
+                <fromDate>{from_date}</fromDate>
+                {pagination_xml}
+                <toDate>{to_date}</toDate>
+            </PaginatedAccountTransactionCriteria>
+        </getFullAccountStatementWithPaginationRequest>
+    </Body>
+</FIXML>'''
+
+        # Log Request
+        frappe.log_error(title=f"Finacle Statement Request {request_uuid}", message=xml_request)
+
+        # Send Request
+        headers = {'Content-Type': 'application/xml'}
+        response = requests.post(
+            mig_url,
+            data=xml_request,
+            headers=headers,
+            verify=False,
+            timeout=30
+        )
+
+        # Log Response
+        frappe.log_error(title=f"Finacle Statement Response {response.status_code}", message=response.text)
+
+        if response.status_code == 200:
+            try:
+                response_dict = xmltodict.parse(response.text)
+                fixml = get_xml_dict(response_dict.get('FIXML'))
+                body = get_xml_dict(fixml.get('Body'))
+                
+                # CHECK FOR ERROR (Handle both List and Dict cases)
+                if 'Error' in body:
+                    error_node = get_xml_dict(body['Error'])
+                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
+                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
+                    
+                    return {
+                        "status": "FAILED",
+                        "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+                
+                # CHECK SUCCESS
+                header = get_xml_dict(fixml.get('Header'))
+                response_header = get_xml_dict(header.get('ResponseHeader'))
+                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
+                
+                if host_transaction.get('Status') == 'SUCCESS':
+                    statement_response = get_xml_dict(body.get('getFullAccountStatementWithPaginationResponse'))
+                    
+                    return {
+                        "status": "SUCCESS",
+                        "message": "Account Statement Retrieved Successfully",
+                        "data": statement_response,
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+                else:
+                    return {
+                        "status": "FAILED", 
+                        "message": "Host Transaction Failed (Unknown Error)", 
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+
+            except Exception as e:
+                return {
+                    "status": "ERROR", 
+                    "message": f"Parsing Logic Error: {str(e)}", 
+                    "full_response": response.text,
+                    "request_sent": xml_request
+                }
+        else:
+            return {
+                "status": "ERROR", 
+                "message": f"HTTP {response.status_code}", 
+                "full_response": response.text
+            }
+
+    except Exception as e:
+        frappe.log_error(title="Finacle Statement Code Error", message=frappe.get_traceback())
+        return {"status": "ERROR", "message": str(e)}
+
+
+# Wrapper for Postman testing
+@frappe.whitelist()
+def test_get_account_statement():
+    """
+    Test function with sample values
+    """
+    return get_account_statement_with_pagination(
+        acid="100144590010976",
+        branch_id="1001",
+        from_date="2025-10-09T12:00:00.000",
+        to_date="2026-01-07T12:00:00.000",
+        last_balance_value="124686.6",
+        last_balance_currency="INR",
+        last_pstd_date="2026-01-01T09:47:14.000",
+        last_txn_date="2026-01-01T00:00:00.000",
+        last_txn_id="Y708961",
+        last_txn_srl_no="56"
+    )
