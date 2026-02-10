@@ -322,14 +322,14 @@ class StockIOPage {
         <button class="btn success" v-if="selectionStatus === 'Draft'" @click="handleBulkAction('Submit')">Submit</button>
 
         <!-- Pending Reporting Person status -->
-        <template v-if="selectionStatus === 'Pending Reporting Person'">
+        <template v-if="selectionStatus === 'Pending Reporting Person' && canActionSelection">
           <button class="btn success" @click="handleBulkAction('Approve')">Approve</button>
           <button class="btn danger" @click="handleBulkAction('Reject')">Reject</button>
           <button class="btn primary" @click="handleBulkAction('Self Approve')">Self Approve</button>
         </template>
 
         <!-- Pending HO Approval status -->
-        <template v-if="selectionStatus === 'Pending HO Approval'">
+        <template v-if="selectionStatus === 'Pending HO Approval' && canActionSelection">
           <button class="btn success" @click="handleBulkAction('Approve')">Approve</button>
           <button class="btn danger" @click="handleBulkAction('Reject')">Reject</button>
         </template>
@@ -341,12 +341,14 @@ class StockIOPage {
         
         <!-- Display buttons when status is Approved -->
         <template v-if="selectionStatus === 'Approved'">
+          <!-- 
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
                   @click="handleInwardAction">Inward</button>
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
                   @click="handleOutwardAction">Outward</button>
+          -->
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('asset'))" 
                   @click="handleAssetMovementAction">Asset Movement</button>
@@ -959,6 +961,40 @@ class StockIOPage {
         // console.log("StockIO Debug - Categories:", result); // Keep it quiet unless needed
         return result;
       },
+      get canActionSelection() {
+        if (!this.selectedDocs.length) return false;
+
+        // Administrator or Store Manager can always see and action
+        if (
+          frappe.session.user === "Administrator" ||
+          frappe.user.has_role("Store Manager")
+        ) {
+          return true;
+        }
+
+        const selectedDocsData = this.requests.filter((d) =>
+          this.selectedDocs.includes(d.name)
+        );
+
+        if (this.selectionStatus === "Pending Reporting Person") {
+          // Current user must be the reporting_person for ALL selected docs
+          return selectedDocsData.every(
+            (d) => d.reporting_person === frappe.session.user
+          );
+        }
+
+        if (this.selectionStatus === "Pending HO Approval") {
+          // Current user must be the head_office_officer for ALL selected docs
+          // OR have the Head Office Officer role
+          return (
+            selectedDocsData.every(
+              (d) => d.head_office_officer === frappe.session.user
+            ) || frappe.user.has_role("Head Office Officer")
+          );
+        }
+
+        return false;
+      },
       get canBulkApprove() {
         return this.selectionStatus && this.selectionStatus !== "mixed";
       },
@@ -1317,6 +1353,8 @@ class StockIOPage {
               "status",
               "creation",
               "owner",
+              "reporting_person",
+              "head_office_officer",
               "reporting_person_status",
               "ho_officer_status",
             ],
@@ -1770,6 +1808,7 @@ class StockIOPage {
           this.selectedAssetMovements.length === this.assetMovements.length;
       },
 
+      /*
       handleInwardAction() {
         if (!this.selectedDocs.length) return;
 
@@ -1780,9 +1819,15 @@ class StockIOPage {
       handleOutwardAction() {
         if (!this.selectedDocs.length) return;
 
+        // Pass EMR name to Stock Entry
+        frappe.route_options = {
+          "custom_material_request": this.selectedDocs[0]
+        };
+
         // Navigate to Stock Entry form for outward movement
         frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
       },
+      */
 
       async handleAssetMovementAction() {
         if (!this.selectedDocs.length) return;

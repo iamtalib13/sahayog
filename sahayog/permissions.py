@@ -194,3 +194,13 @@ def get_share_transfer_permission(user, doctype=None):
     # No access otherwise
     frappe.msgprint("You don't have access")
     return "1=0"
+def get_employee_material_request_permission(user, doctype=None):
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+
+    if "Administrator" in user_roles or "Store Manager" in user_roles:
+        return ""
+
+    return f"(`tabEmployee Material Request`.owner = '{user}' OR `tabEmployee Material Request`.reporting_person = '{user}' OR `tabEmployee Material Request`.head_office_officer = '{user}')"

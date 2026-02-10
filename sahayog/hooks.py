@@ -221,6 +221,7 @@ permission_query_conditions = {
     "Branch Petty Cash Account": "sahayog.petty_cash_management.permission_queries.get_account_permission_query_conditions",
     # You can even restrict the Branch Master itself if you want:
     # "Sahayog Branch": "sahayog.petty_cash_management.permissions.get_branch_permission_query"
+    "Employee Material Request": "sahayog.permissions.get_employee_material_request_permission",
 }
 #
 # has_permission = {
