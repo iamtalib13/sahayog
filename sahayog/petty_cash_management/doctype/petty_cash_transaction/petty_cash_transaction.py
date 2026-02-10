@@ -1300,7 +1300,7 @@ class PettyCashTransaction(Document):
         currency_str = f"INR{self.branch}" 
         
         narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} STRYEX {self.name}"
-        
+        debitDescription = ""
         total_debit = 0.0
         
         # --- 1. DEBIT ROWS (Expenses) ---
@@ -1310,7 +1310,7 @@ class PettyCashTransaction(Document):
             
             amount_str = "{:.2f}".format(row.amount)
             total_debit += row.amount
-            
+            debitDescription = f"{row.description}" if row.description else narrative_suffix
             # --- SPACING LOGIC ---
             # Standard Finacle width is 17. 
             # Logic: Calculate space for 17 width. If < 10, force 10.
@@ -1322,7 +1322,7 @@ class PettyCashTransaction(Document):
             # ---------------------
             
             # Format: GL <1sp> CURR <4sp> D <padding> AMOUNT REMARKS
-            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{narrative_suffix}"
+            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
             content.append(line)
 
         # --- 2. CREDIT ROW (Branch Wallet) ---
@@ -1340,7 +1340,7 @@ class PettyCashTransaction(Document):
         space_str = " " * padding_count
         # ---------------------------------------
         
-        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}PETTYCASH REIM STRYEX"
+        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{narrative_suffix}"
         content.append(credit_line)
 
         final_txt = "\n".join(content)
