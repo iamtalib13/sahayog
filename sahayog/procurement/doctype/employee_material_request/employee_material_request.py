@@ -23,50 +23,29 @@ class EmployeeMaterialRequest(Document):
             self.db_set("ho_officer_remarks", "")
             frappe.db.commit()
 
-        # Always set fields at correct workflow stages
-        if self.status == "Pending Reporting Person":
-            self.reporting_person_status = "Pending"
-        elif self.status == "Pending HO Approval":
-            if self.reporting_person_status not in ["Approved", "Skip"]:
-                self.reporting_person_status = "Approved"
-        elif self.status == "Rejected" and not self.ho_officer_status:
-            self.reporting_person_status = "Rejected"
-
-        if self.status == "Pending HO Approval":
-            if self.ho_officer_status not in ["Approved", "Skip"]:
-                self.ho_officer_status = "Pending"
-        elif self.status == "Approved":
-            self.ho_officer_status = "Approved"
-        elif self.status == "Rejected" and (self.reporting_person_status == "Approved" or self.reporting_person_status == "Skip"):
-            self.ho_officer_status = "Rejected"
-
+        # Metadata management - keep secondary status fields in sync
         if self.status == "Pending Reporting Person":
             self.reporting_person_status = "Pending"
             self.ho_officer_status = ""
-
-        if self.ho_officer_status == "Skip" and self.status == "Pending HO Approval":
-            self.status = "Approved"
+        elif self.status == "Pending HO Approval":
+            self.ho_officer_status = "Pending"
+        elif self.status == "Approved":
+            self.reporting_person_status = "Approved"
+            self.ho_officer_status = "Approved"
+        elif self.status == "Rejected":
+            # Determine who rejected it based on current stage
+            pass 
 
     def set_request_datetime_once(self):        
         if self.status == "Pending Reporting Person" and not self.request_datetime:
             if self.is_new() or self.docstatus == 0:
                 self.request_datetime = now()
-        
 
     def before_submit(self):
         """Validate before document submission"""
         self.validate_final_approval()
         self.check_stock_availability()
         self.validate_dates()
-
-        if self.get_db_value("status") == "Rejected" and self.status == "Pending Reporting Person":
-            self.flags.is_resubmitting = True
-
-        if self.status == "Pending HO Approval" and self.reporting_person_status == "Pending":
-            self.reporting_person_status = "Approved"
-        
-        if self.status == "Approved" and not self.ho_officer_status:
-            self.ho_officer_status = "Approved"
 
     def on_submit(self):
         """Actions after successful submission"""
@@ -143,10 +122,15 @@ class EmployeeMaterialRequest(Document):
             self.db_set("ho_officer_status", self.ho_officer_status)
 
     def validate_final_approval(self):
+        # Skip validation if it's already marked as Self Approved or Approved
+        if self.status in ["Self Approved", "Approved"]:
+            return
+
         if self.reporting_person_status not in ["Approved", "Skip"]:
-            frappe.throw(_("Reporting Person approval is required"), title=_("Approval Required"))
+            frappe.throw(_("Reporting Person approval is required before submission."), title=_("Approval Required"))
+        
         if self.ho_officer_status not in ["Approved", "Skip"]:
-            frappe.throw(_("Head Office Officer approval is required"), title=_("Approval Required"))
+            frappe.throw(_("Head Office Officer approval is required before submission."), title=_("Approval Required"))
 
     def check_stock_availability(self):
         if self.request_type in ["New", "Issue"]:
