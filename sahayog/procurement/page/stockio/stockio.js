@@ -339,10 +339,17 @@ class StockIOPage {
           v-if="selectionStatus && !['Draft', 'Pending Reporting Person', 'Pending HO Approval', 'mixed'].includes(selectionStatus) && selectionStatus !== 'Approved'"
           @click="handleBulkAction('Approve')">Approve Request</button>
         
-        <!-- Display Inward and Outward buttons when status is Approved -->
-        <template v-if="selectionStatus && !['Draft', 'Pending Reporting Person', 'Pending HO Approval', 'mixed'].includes(selectionStatus) && selectionStatus === 'Approved'">
-          <button class="btn primary" @click="handleInwardAction">Inward</button>
-          <button class="btn primary" @click="handleOutwardAction">Outward</button>
+        <!-- Display buttons when status is Approved -->
+        <template v-if="selectionStatus === 'Approved'">
+          <button class="btn primary" 
+                  v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
+                  @click="handleInwardAction">Inward</button>
+          <button class="btn primary" 
+                  v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
+                  @click="handleOutwardAction">Outward</button>
+          <button class="btn primary" 
+                  v-show="selectionCategories.some(c => c.toLowerCase().includes('asset'))" 
+                  @click="handleAssetMovementAction">Asset Movement</button>
         </template>
       </div>
       </div>
@@ -412,9 +419,13 @@ class StockIOPage {
         <!-- FIRST ITEM -->
         <div class="order-product" v-if="doc.items && doc.items.length > 0">
           <div>
-          <div class="product-name">
+          <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
             {{ doc.items?.[0]?.item_code || "" }}
-
+            <span class="badge" 
+                  v-if="doc.items?.[0]?.item_category"
+                  :class="doc.items?.[0]?.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
+              {{ doc.items?.[0]?.item_category }}
+            </span>
           </div>
           <div class="product-meta">
             SKU: {{ doc.items?.[0]?.item_code || "" }}
@@ -431,7 +442,14 @@ class StockIOPage {
           :key="item.name"
           >
           <div>
-            <div class="product-name">{{ item.item_code }}</div>
+            <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
+              {{ item.item_code }}
+              <span class="badge" 
+                    v-if="item.item_category"
+                    :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
+                {{ item.item_category }}
+              </span>
+            </div>
             <div class="product-meta">
             SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
             </div>
@@ -919,6 +937,28 @@ class StockIOPage {
         const uniqueStatuses = [...new Set(selectedStatuses)];
         return uniqueStatuses.length === 1 ? uniqueStatuses[0] : "mixed";
       },
+      get selectionCategories() {
+        if (!this.selectedDocs || this.selectedDocs.length === 0) return [];
+        const cats = new Set();
+        
+        if (!this.requests || !Array.isArray(this.requests)) return [];
+
+        const selectedDocsList = this.requests.filter((d) => this.selectedDocs.includes(d.name));
+        
+        selectedDocsList.forEach((d) => {
+          if (d && d.items && Array.isArray(d.items)) {
+            d.items.forEach((i) => {
+              if (i && i.item_category) {
+                cats.add(String(i.item_category));
+              }
+            });
+          }
+        });
+        
+        const result = Array.from(cats);
+        // console.log("StockIO Debug - Categories:", result); // Keep it quiet unless needed
+        return result;
+      },
       get canBulkApprove() {
         return this.selectionStatus && this.selectionStatus !== "mixed";
       },
@@ -1228,18 +1268,22 @@ class StockIOPage {
           this.requests.forEach((doc) => {
             const docDate = doc.creation?.split(" ")[0];
             if (docDate === today) this.counts.today++;
-            if (doc.status === "Draft") this.counts.draft++;
+            
+            // Normalize status for counting
+            const status = (doc.status || "").trim();
+            
+            if (status === "Draft") this.counts.draft++;
             else if (
               [
                 "Pending HO Approval",
                 "Pending Reporting Person",
                 "To Receive",
-              ].includes(doc.status)
+              ].includes(status)
             )
               this.counts.pending++;
-            else if (["Approved", "Submitted"].includes(doc.status))
+            else if (["Approved", "Submitted", "Completed"].includes(status))
               this.counts.approved++;
-            else if (doc.status === "Cancelled") this.counts.cancelled++;
+            else if (status === "Cancelled") this.counts.cancelled++;
           });
         } else {
           const list = this.activeList;
@@ -1263,6 +1307,7 @@ class StockIOPage {
 
       // REQUESTS
       loadRequests() {
+        console.log("StockIO Debug: Fetching Employee Material Requests...");
         frappe.call({
           method: "frappe.client.get_list",
           args: {
@@ -1279,7 +1324,11 @@ class StockIOPage {
             limit_page_length: 1000,
           },
           callback: (r) => {
-            if (!r.message) return;
+            if (!r.message) {
+                console.warn("StockIO Debug: No messages returned from get_list");
+                return;
+            }
+            console.log("StockIO Debug: Fetched " + r.message.length + " requests");
             this.requests = r.message.map((d) => ({
               ...d,
               items: [],
@@ -1291,6 +1340,10 @@ class StockIOPage {
             this.loadMore();
             this.requests.forEach((doc) => this.loadItems(doc));
           },
+          error: (r) => {
+             console.error("StockIO Debug: Failed to fetch requests", r);
+             frappe.msgprint("Failed to load requests. Check console for details.");
+          }
         });
       },
       loadItems(doc) {
@@ -1729,6 +1782,13 @@ class StockIOPage {
 
         // Navigate to Stock Entry form for outward movement
         frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
+      },
+
+      handleAssetMovementAction() {
+        if (!this.selectedDocs.length) return;
+
+        // Navigate to Asset Movement form
+        frappe.set_route("Form", "Asset Movement", "new-asset-movement-1");
       },
 
       reports: [
