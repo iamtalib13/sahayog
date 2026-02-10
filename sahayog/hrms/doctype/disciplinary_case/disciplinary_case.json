@@ -218,7 +218,8 @@
    "fieldname": "employee_email",
    "fieldtype": "Data",
    "label": "Employee Email",
-   "options": "Email"
+   "options": "Email",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -241,7 +242,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-02-05 17:02:55.885490",
+ "modified": "2026-02-10 11:33:56.816239",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
