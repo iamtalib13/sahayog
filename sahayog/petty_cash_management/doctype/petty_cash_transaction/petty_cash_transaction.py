@@ -19,6 +19,12 @@ import csv
 # from frappe.utils.xlsx import make_xlsx
 from frappe.utils.xlsxutils import make_xlsx  # <--- CORRECT IMPORT
 
+import frappe
+import csv
+from frappe import _
+from frappe.utils import flt, format_datetime, getdate, now
+import io
+
 
 
 
@@ -1227,30 +1233,136 @@ class PettyCashTransaction(Document):
         return new_cc.name
 
 
-    def download_transaction_excel(self):
-        data = []
-        # Header
-        data.append(["Branch Code", "Branch Name", "Date", "Total Amount", "Expense Category", "Vendor", "Bill No", "Amount", "Description"])
+    # def download_transaction_excel(self):
+    #     data = []
+    #     # Header
+    #     data.append(["Branch Code", "Branch Name", "Date", "Total Amount", "Expense Category", "Vendor", "Bill No", "Amount", "Description"])
         
+    #     for row in self.items:
+    #         data.append([
+    #             self.branch,
+    #             self.branch_name,
+    #             self.transaction_date,
+    #             self.amount,
+    #             row.expense_category,
+    #             row.vendor_name,
+    #             row.bill_number,
+    #             row.amount,
+    #             row.description
+    #         ])
+
+    #     xlsx_file = make_xlsx(data, "Petty Cash Report")
+        
+    #     frappe.response['filename'] = f"{self.name}.xlsx"
+    #     # [FIX] Add .getvalue() here to convert BytesIO to bytes
+    #     frappe.response['filecontent'] = xlsx_file.getvalue()
+    #     frappe.response['type'] = 'binary'
+
+    def download_transaction_excel(self):
+        """
+        Generates a detailed CSV report for this specific transaction.
+        Includes resolved names for Categories and GL Codes.
+        """
+        import csv
+        import io
+
+        # 1. Fetch Related Data (Optimized)
+        # Fetch Wallet GL Code (Single fetch for the parent)
+        wallet_gl_code = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "gl_sub_code") or ""
+
+        # Fetch Category Names Map (Fetch all used categories in one query)
+        # This prevents N+1 queries inside the loop
+        category_ids = [row.expense_category for row in self.items if row.expense_category]
+        category_map = {}
+        if category_ids:
+            # Fetch name where name in list
+            categories = frappe.get_all("Expense Category", filters={"name": ["in", category_ids]}, fields=["name", "category_name"])
+            for cat in categories:
+                category_map[cat.name] = cat.category_name
+
+        # 2. Define CSV Headers
+        headers = [
+            "Transaction ID", "Branch Code", "Branch Name", "Date", "Type", 
+            "Total Amount", "Wallet Balance", "Cash in Hand", 
+            "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
+            "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account", 
+            # Child Item Fields
+            "Expense Category", "Vendor", "Bill No", "Item Amount", "Description", "Expense GL Code"
+        ]
+
+        # 3. Prepare Data Rows
+        rows = []
+        
+        # Helper to format amounts safely
+        def fmt(val):
+            return flt(val) if val else 0.0
+
         for row in self.items:
-            data.append([
+            # Resolve Category Name
+            cat_name = category_map.get(row.expense_category, row.expense_category)
+            
+            rows.append([
+                self.name,
                 self.branch,
                 self.branch_name,
                 self.transaction_date,
-                self.amount,
-                row.expense_category,
+                self.transaction_type,
+                fmt(self.amount),
+                fmt(self.current_branch_balance),
+                fmt(self.current_unsettled_cash),
+                self.approval_status,
+                fmt(self.amount_within_limit),
+                fmt(self.amount_exceeding_limit),
+                fmt(self.amount_deducted),
+                self.approved_by,
+                self.custom_ttum_remarks,
+                self.finacle_tran_particular,
+                wallet_gl_code,
+                # Child Data
+                cat_name,
                 row.vendor_name,
                 row.bill_number,
-                row.amount,
-                row.description
+                fmt(row.amount),
+                row.description,
+                row.finacle_gl_code
             ])
 
-        xlsx_file = make_xlsx(data, "Petty Cash Report")
+        # 4. Generate CSV using Python's built-in csv module
+        # We use StringIO to write to memory first
+        output = io.StringIO()
+        writer = csv.writer(output)
         
-        frappe.response['filename'] = f"{self.name}.xlsx"
-        # [FIX] Add .getvalue() here to convert BytesIO to bytes
-        frappe.response['filecontent'] = xlsx_file.getvalue()
+        # Write BOM for Excel compatibility (optional but recommended for UTF-8)
+        output.write('\ufeff') 
+        
+        writer.writerow(headers)
+        writer.writerows(rows)
+
+        # # 5. Set Response
+        # # Move to start of stream
+        # output.seek(0)
+        # csv_content = output.getvalue()
+        # output.close()
+
+        # frappe.response['filename'] = f"{self.name}.csv"
+        # frappe.response['filecontent'] = csv_content
+        # frappe.response['type'] = 'csv'
+
+
+          # 5. Set Response
+        output.seek(0)
+        csv_content = output.getvalue()
+        output.close()
+
+        frappe.response['filename'] = f"{self.name}.csv"
+        frappe.response['filecontent'] = csv_content
+        
+        # [FIX] Use 'binary' instead of 'csv' to bypass Frappe's auto-CSV logic
+        # We manually created the CSV content, so we treat it as a file download.
         frappe.response['type'] = 'binary'
+
+
+
 
 
     # def download_transaction_txt(self):
