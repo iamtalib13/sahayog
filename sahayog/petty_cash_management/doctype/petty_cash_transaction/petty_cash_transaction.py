@@ -1253,6 +1253,46 @@ class PettyCashTransaction(Document):
         frappe.response['type'] = 'binary'
 
 
+    # def download_transaction_txt(self):
+    #     content = []
+    #     date_obj = getdate(self.transaction_date)
+    #     ttum_date = date_obj.strftime("%b%y").upper() # JAN26
+    #     currency_str = f"INR{self.branch}" 
+        
+    #     narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} STRYEX {self.name}"
+        
+    #     total_debit = 0.0
+        
+    #     # [FIX] Use self.items
+    #     for row in self.items:
+    #         if not row.finacle_gl_code:
+    #             frappe.throw(f"Row #{row.idx} is missing Finacle GL Code")
+            
+    #         amount_str = "{:.2f}".format(row.amount)
+    #         total_debit += row.amount
+            
+    #         # Format: GL <space> CURR <4 spaces> D <10 spaces> AMOUNT REMARKS
+    #         line = f"{row.finacle_gl_code} {currency_str}    D          {amount_str}{narrative_suffix}"
+    #         content.append(line)
+
+    #     # Credit Row
+    #     wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "gl_sub_code")
+    #     if not wallet_gl:
+    #          frappe.throw(f"GL Sub Code not found for Branch {self.branch}")
+
+    #     total_amount_str = "{:.2f}".format(total_debit)
+        
+    #     # Format: GL <space> CURR <4 spaces> C <10 spaces> AMOUNT REMARKS
+    #     credit_line = f"{wallet_gl} {currency_str}    C          {total_amount_str}PETTYCASH REIM STRYEX"
+    #     content.append(credit_line)
+
+    #     final_txt = "\n".join(content)
+        
+    #     frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
+    #     frappe.response['filecontent'] = final_txt
+    #     frappe.response['type'] = 'download'
+
+
     def download_transaction_txt(self):
         content = []
         date_obj = getdate(self.transaction_date)
@@ -1263,7 +1303,7 @@ class PettyCashTransaction(Document):
         
         total_debit = 0.0
         
-        # [FIX] Use self.items
+        # --- 1. DEBIT ROWS (Expenses) ---
         for row in self.items:
             if not row.finacle_gl_code:
                 frappe.throw(f"Row #{row.idx} is missing Finacle GL Code")
@@ -1271,19 +1311,36 @@ class PettyCashTransaction(Document):
             amount_str = "{:.2f}".format(row.amount)
             total_debit += row.amount
             
-            # Format: GL <space> CURR <4 spaces> D <10 spaces> AMOUNT REMARKS
-            line = f"{row.finacle_gl_code} {currency_str}    D          {amount_str}{narrative_suffix}"
+            # --- SPACING LOGIC ---
+            # Standard Finacle width is 17. 
+            # Logic: Calculate space for 17 width. If < 10, force 10.
+            padding_count = 17 - len(amount_str)
+            if padding_count < 10:
+                padding_count = 10
+            
+            space_str = " " * padding_count
+            # ---------------------
+            
+            # Format: GL <1sp> CURR <4sp> D <padding> AMOUNT REMARKS
+            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{narrative_suffix}"
             content.append(line)
 
-        # Credit Row
+        # --- 2. CREDIT ROW (Branch Wallet) ---
         wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "gl_sub_code")
         if not wallet_gl:
              frappe.throw(f"GL Sub Code not found for Branch {self.branch}")
 
         total_amount_str = "{:.2f}".format(total_debit)
         
-        # Format: GL <space> CURR <4 spaces> C <10 spaces> AMOUNT REMARKS
-        credit_line = f"{wallet_gl} {currency_str}    C          {total_amount_str}PETTYCASH REIM STRYEX"
+        # --- SPACING LOGIC (Same for Credit) ---
+        padding_count = 17 - len(total_amount_str)
+        if padding_count < 10:
+            padding_count = 10
+            
+        space_str = " " * padding_count
+        # ---------------------------------------
+        
+        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}PETTYCASH REIM STRYEX"
         content.append(credit_line)
 
         final_txt = "\n".join(content)
@@ -1291,6 +1348,8 @@ class PettyCashTransaction(Document):
         frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
         frappe.response['filecontent'] = final_txt
         frappe.response['type'] = 'download'
+
+
 
 
 # @frappe.whitelist()
