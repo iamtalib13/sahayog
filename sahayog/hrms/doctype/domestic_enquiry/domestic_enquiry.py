@@ -91,20 +91,20 @@ def send_domestic_enquiry_email(docname):
     subject = frappe.render_template(template.subject, doc_dict)
 
   # Attach Print Format → **Domestic Enquiry Notice**
-    # attachments = [
-    #     frappe.attach_print(
-    #         doctype="Domestic Enquiry",
-    #         name=docname,
-    #         print_format="Domestic Enquiry",
-    #         file_name=f"{docname}"
-    #     )
-    # ]
+    attachments = [
+        frappe.attach_print(
+            doctype="Domestic Enquiry",
+            name=docname,
+            print_format="Domestic Enquiry",
+            file_name=f"{docname}"
+        )
+    ]
     # Send Email
     frappe.sendmail(
         recipients=[final_email],
         subject=subject,
         message=message,
-        # attachments=attachments,
+        attachments=attachments,
         reference_doctype="Domestic Enquiry",
         reference_name=docname,
         now=False
