@@ -4,7 +4,7 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2026-01-08 15:56:08.866245",
+ "modified": "2026-02-10 17:23:07.149463",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "customer-360",
@@ -13,6 +13,9 @@
  "roles": [
   {
    "role": "Administrator"
+  },
+  {
+   "role": "Customer 360"
   }
  ],
  "script": null,

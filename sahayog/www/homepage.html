@@ -1,977 +1,899 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1" name="viewport" />
-    <meta content="#2563eb" name="theme-color" />
-    <meta name="csrf-token" content="{{ csrf_token }}" />
-    <meta content="Sahayog Support System Dashboard" name="description" />
-    <title>Support System</title>
-    <link href="manifest.json" rel="manifest" />
-    <link href="https://fonts.googleapis.com" rel="preconnect" />
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* Custom properties for colors and shadows */
-      :root {
-        --primary: #2563eb;
-        --primary-light: #dbeafe;
-        --secondary: #4f46e5;
-        --text: #1f2937;
-        --text-light: #6b7280;
-        --background: #f9fafb;
-        --card-bg: #ffffff;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-          0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --radius: 16px;
-        --radius-sm: 12px;
-      }
 
-      html,
-      body {
-        height: 100%;
-        overflow: auto;
-        scrollbar-width: none;
-        /* Firefox */
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <meta content="#2563eb" name="theme-color" />
+  <meta name="csrf-token" content="{{ csrf_token }}" />
+  <meta content="Sahayog Support System Dashboard" name="description" />
+  <title>Support System</title>
+  <link href="manifest.json" rel="manifest" />
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+    rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom properties for colors and shadows */
+    :root {
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --secondary: #4f46e5;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --background: #f9fafb;
+      --card-bg: #ffffff;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --radius: 16px;
+      --radius-sm: 12px;
+    }
 
-      /* Chrome, Safari, Edge (Webkit) */
-      body::-webkit-scrollbar {
-        display: none;
-      }
+    html,
+    body {
+      height: 100%;
+      overflow: auto;
+      scrollbar-width: none;
+      /* Firefox */
+    }
 
-      body {
-        background-color: var(--background);
-        color: var(--text);
-        font-family: "Inter", sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        line-height: 1.5;
-        min-height: 100vh;
-        margin: 0;
-        display: flex;
-        justify-content: center;
-      }
+    /* Chrome, Safari, Edge (Webkit) */
+    body::-webkit-scrollbar {
+      display: none;
+    }
 
+    body {
+      background-color: var(--background);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1200px;
+      background-color: white;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    @media (max-width: 480px) {
       .app-container {
-        width: 100%;
-        max-width: 1200px;
-        background-color: white;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        position: relative;
+        max-width: 480px;
+        padding-left: 1rem;
+        padding-right: 1rem;
       }
+    }
 
-      @media (max-width: 480px) {
-        .app-container {
-          max-width: 480px;
-          padding-left: 1rem;
-          padding-right: 1rem;
-        }
-      }
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem;
+    }
 
+    @media (max-width: 480px) {
       .app-header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background-color: white;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.25rem 2rem;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
       }
+    }
 
-      @media (max-width: 480px) {
-        .app-header {
-          padding-left: 1rem !important;
-          padding-right: 1rem !important;
-        }
-      }
+    .profile-section {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
 
-      .profile-section {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-      }
+    .avatar {
+      width: 70px;
+      height: 70px;
+      min-width: 70px;
+      min-height: 70px;
+      border-radius: 50%;
+      background-color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      color: white;
+      font-weight: bold;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
 
+    .avatar-initial {
+      user-select: none;
+      line-height: 1;
+    }
+
+    @media (max-width: 480px) {
       .avatar {
-        width: 70px;
-        height: 70px;
-        min-width: 70px;
-        min-height: 70px;
-        border-radius: 50%;
-        background-color: #2563eb;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 36px;
-        color: white;
-        font-weight: bold;
-        box-sizing: border-box;
-        flex-shrink: 0;
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        min-height: 64px;
+        font-size: 28px;
       }
+    }
 
-      .avatar-initial {
-        user-select: none;
-        line-height: 1;
-      }
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+    }
 
-      @media (max-width: 480px) {
-        .avatar {
-          width: 64px;
-          height: 64px;
-          min-width: 64px;
-          min-height: 64px;
-          font-size: 28px;
-        }
-      }
+    .profile-name {
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+      letter-spacing: 0.02em;
+    }
 
-      .profile-info {
-        display: flex;
-        flex-direction: column;
-      }
+    .profile-role {
+      font-size: 0.875rem;
+      color: var(--text-light);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
 
-      .profile-name {
-        font-weight: 700;
-        color: var(--text);
-        margin: 0;
-        letter-spacing: 0.02em;
-      }
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
 
-      .profile-role {
-        font-size: 0.875rem;
-        color: var(--text-light);
-        font-weight: 500;
-        letter-spacing: 0.01em;
-      }
+    .icon-button {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 9999px;
+      border: none;
+      background-color: transparent;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.25s, color 0.25s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
 
-      .header-actions {
-        display: flex;
-        gap: 0.75rem;
-      }
+    .icon-button:hover {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }
 
-      .icon-button {
-        width: 2.75rem;
-        height: 2.75rem;
-        border-radius: 9999px;
-        border: none;
-        background-color: transparent;
-        color: var(--text-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background-color 0.25s, color 0.25s;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      }
+    main.app-main {
+      flex: 1;
+      padding: 2rem 2rem 6rem;
+      max-width: 100%;
+    }
 
-      .icon-button:hover {
-        background-color: var(--primary-light);
-        color: var(--primary);
-        box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-      }
-
+    @media (max-width: 480px) {
       main.app-main {
-        flex: 1;
-        padding: 2rem 2rem 6rem;
-        max-width: 100%;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-bottom: 5rem !important;
       }
+    }
 
-      @media (max-width: 480px) {
-        main.app-main {
-          padding-left: 1rem !important;
-          padding-right: 1rem !important;
-          padding-bottom: 5rem !important;
-        }
-      }
+    /* Icon-based grid layout - NO CARDS */
+    .quick-actions .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+      gap: 2rem 1.5rem;
+      justify-items: center;
+    }
 
-      /* Icon-based grid layout - NO CARDS */
+    @media (max-width: 480px) {
       .quick-actions .icon-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-        gap: 2rem 1.5rem;
-        justify-items: center;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 1.5rem 1rem;
       }
+    }
 
-      @media (max-width: 480px) {
-        .quick-actions .icon-grid {
-          grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-          gap: 1.5rem 1rem;
-        }
-      }
+    /* Icon item - minimal style */
+    .icon-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      position: relative;
+    }
 
-      /* Icon item - minimal style */
-      .icon-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        color: inherit;
-        cursor: pointer;
-        transition: transform 0.2s ease, opacity 0.2s ease;
-        position: relative;
-      }
+    .icon-item:hover {
+      transform: translateY(-5px);
+    }
 
-      .icon-item:hover {
-        transform: translateY(-5px);
-      }
+    .icon-item:hover .icon-circle {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
 
-      .icon-item:hover .icon-circle {
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-      }
+    /* Icon circle container */
+    .icon-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
 
-      /* Icon circle container */
+    @media (max-width: 480px) {
       .icon-circle {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
-        transition: box-shadow 0.2s ease, transform 0.2s ease;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
       }
+    }
 
-      @media (max-width: 480px) {
-        .icon-circle {
-          width: 50px;
-          height: 50px;
-          font-size: 1.25rem;
-        }
-      }
+    /* Icon label */
+    .icon-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+      color: var(--text);
+      max-width: 85px;
+    }
 
-      /* Icon label */
+    @media (max-width: 480px) {
       .icon-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-align: center;
-        line-height: 1.2;
-        letter-spacing: 0.01em;
-        color: var(--text);
-        max-width: 85px;
+        font-size: 0.65rem;
+        max-width: 70px;
+      }
+    }
+
+    /* Count badge for task notification */
+    .count-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: #ef4444;
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      border: 2px solid white;
+    }
+
+    @keyframes ping {
+      0% {
+        transform: scale(1);
+        opacity: 1;
       }
 
-      @media (max-width: 480px) {
-        .icon-label {
-          font-size: 0.65rem;
-          max-width: 70px;
-        }
+      75%,
+      100% {
+        transform: scale(2);
+        opacity: 0;
       }
+    }
 
-      /* Count badge for task notification */
-      .count-badge {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        background-color: #ef4444;
-        color: white;
-        border-radius: 50%;
-        width: 22px;
-        height: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: bold;
-        border: 2px solid white;
-      }
+    .animate-ping {
+      animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+  </style>
+</head>
 
-      @keyframes ping {
-        0% {
-          transform: scale(1);
-          opacity: 1;
-        }
+<body>
+  <div class="app-container" role="main">
+    <header class="app-header">
+      <div class="profile-section">
+        <div class="avatar relative group" id="avatar-placeholder">
+          <div id="avatar-initial" class="avatar-initial">A</div>
 
-        75%,
-        100% {
-          transform: scale(2);
-          opacity: 0;
-        }
-      }
+          <!-- Lock icon attached button -->
+          <div id="random-gesture"
+            class="absolute -bottom-1 -right-1 z-50 w-5 h-5 rounded-full bg-blue-500 shadow-inner cursor-pointer flex items-center justify-center text-white text-[10px]">
+            <!-- White tick inside -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="white"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
 
-      .animate-ping {
-        animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="app-container" role="main">
-      <header class="app-header">
-        <div class="profile-section">
-          <div class="avatar relative group" id="avatar-placeholder">
-            <div id="avatar-initial" class="avatar-initial">A</div>
-
-            <!-- Lock icon attached button -->
-            <div
-              id="random-gesture"
-              class="absolute -bottom-1 -right-1 z-50 w-5 h-5 rounded-full bg-blue-500 shadow-inner cursor-pointer flex items-center justify-center text-white text-[10px]"
-            >
-              <!-- White tick inside -->
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-3 w-3"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-
-              <!-- Tooltip that appears automatically -->
-              <div
-                id="gesture-tooltip"
-                class="absolute bottom-full mb-1 px-2 py-[2px] text-[10px] leading-tight bg-black text-white rounded shadow opacity-0 pointer-events-none transition-opacity duration-500 whitespace-nowrap"
-              >
-                Don't click this
-              </div>
+            <!-- Tooltip that appears automatically -->
+            <div id="gesture-tooltip"
+              class="absolute bottom-full mb-1 px-2 py-[2px] text-[10px] leading-tight bg-black text-white rounded shadow opacity-0 pointer-events-none transition-opacity duration-500 whitespace-nowrap">
+              Don't click this
             </div>
           </div>
-
-          <div class="profile-info">
-            <p class="profile-greeting" id="greeting-message"></p>
-            <p class="profile-name" id="emp_name">Admin</p>
-            <span class="profile-role" id="emp_designation">Admin</span>
-            <span class="profile-role" id="emp_branch_sol"></span>
-          </div>
         </div>
-      </header>
-      <main class="app-main">
-        <section class="quick-actions" aria-label="Quick action icons">
-          <div class="icon-grid">
-            <!-- Tickets -->
-            <a
-              class="icon-item"
-              href="/app/my-tickets"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#e5def0] text-[#7e3af2]">
-                <i class="fas fa-ticket-alt"></i>
-              </div>
-              <span class="icon-label">Tickets</span>
-            </a>
 
-            <!-- Assets -->
-            <a
-              class="icon-item"
-              href="/app/asset-requisition"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#d6edd9] text-[#16a34a]">
-                <i class="fas fa-laptop"></i>
-              </div>
-              <span class="icon-label">Assets</span>
-            </a>
+        <div class="profile-info">
+          <p class="profile-greeting" id="greeting-message"></p>
+          <p class="profile-name" id="emp_name">Admin</p>
+          <span class="profile-role" id="emp_designation">Admin</span>
+          <span class="profile-role" id="emp_branch_sol"></span>
+        </div>
+      </div>
+    </header>
+    <main class="app-main">
+      <section class="quick-actions" aria-label="Quick action icons">
+        <div class="icon-grid">
+          <!-- Tickets -->
+          <a class="icon-item" href="/app/my-tickets" role="link" tabindex="0">
+            <div class="icon-circle bg-[#e5def0] text-[#7e3af2]">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span class="icon-label">Tickets</span>
+          </a>
 
-            <!-- CRM -->
-            <a class="icon-item" href="/app/my-crm/" role="link" tabindex="0">
-              <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
-                <i class="fas fa-users"></i>
-              </div>
-              <span class="icon-label">CRM</span>
-            </a>
+          <!-- Assets -->
+          <a class="icon-item" href="/app/asset-requisition" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d6edd9] text-[#16a34a]">
+              <i class="fas fa-laptop"></i>
+            </div>
+            <span class="icon-label">Assets</span>
+          </a>
 
-            <!-- PMS -->
-            <a
-              class="icon-item"
-              href="http://182.19.71.132:81/pms-login"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#f6f0d8] text-[#d97706]">
-                <i class="fas fa-chart-line"></i>
-              </div>
-              <span class="icon-label">PMS</span>
-            </a>
+          <!-- CRM -->
+          <a class="icon-item" href="/app/my-crm/" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
+              <i class="fas fa-users"></i>
+            </div>
+            <span class="icon-label">CRM</span>
+          </a>
 
-            <!-- Operations -->
-            <a class="icon-item" href="/policies" role="link" tabindex="0">
-              <div class="icon-circle bg-[#d2fbf1] text-[#0d9488]">
-                <i class="fas fa-cog"></i>
-              </div>
-              <span class="icon-label">Operations</span>
-            </a>
+          <!-- PMS -->
+          <a class="icon-item" href="http://182.19.71.132:81/pms-login" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f6f0d8] text-[#d97706]">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <span class="icon-label">PMS</span>
+          </a>
 
-            <!-- Audit -->
-            <a
-              class="icon-item"
-              href="/app/audit-management"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#e1e5f2] text-[#4f46e5]">
-                <i class="fas fa-clipboard-check"></i>
-              </div>
-              <span class="icon-label">Audit</span>
-            </a>
+          <!-- Operations -->
+          <a class="icon-item" href="/policies" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d2fbf1] text-[#0d9488]">
+              <i class="fas fa-cog"></i>
+            </div>
+            <span class="icon-label">Operations</span>
+          </a>
 
-            <!-- Praman -->
-            <a class="icon-item" href="/app/praman" role="link" tabindex="0">
-              <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-                <i class="fas fa-chart-pie"></i>
-              </div>
-              <span class="icon-label">Praman</span>
-            </a>
+          <!-- Audit -->
+          <a class="icon-item" href="/app/audit-management" role="link" tabindex="0">
+            <div class="icon-circle bg-[#e1e5f2] text-[#4f46e5]">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <span class="icon-label">Audit</span>
+          </a>
 
-            <!-- My Agents -->
-            <a
-              class="icon-item"
-              href="/app/agent-management"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
-                <i class="fas fa-user-tie"></i>
-              </div>
-              <span class="icon-label">My Agents</span>
-            </a>
+          <!-- Praman -->
+          <a class="icon-item" href="/app/praman" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fas fa-chart-pie"></i>
+            </div>
+            <span class="icon-label">Praman</span>
+          </a>
 
-            <!-- Branch Proposal -->
-            <a
-              class="icon-item"
-              href="/app/branch-proposal"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#fef3c7] text-[#f59e0b]">
-                <i class="fas fa-building"></i>
-              </div>
-              <span class="icon-label">Branch Proposal</span>
-            </a>
+          <!-- My Agents -->
+          <a class="icon-item" href="/app/agent-management" role="link" tabindex="0">
+            <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <span class="icon-label">My Agents</span>
+          </a>
 
-            <!-- Tasks -->
-            <a
-              class="icon-item task-icon"
-              href="/app/task"
-              role="link"
-              tabindex="0"
-              onclick="handleTaskCardClick(event)"
-            >
-              <div class="icon-circle bg-[#dbeafe] text-[#1d4ed8]">
-                <i class="fas fa-tasks"></i>
-              </div>
-              <span class="icon-label">Tasks</span>
-            </a>
+          <!-- Branch Proposal -->
+          <a class="icon-item" href="/app/branch-proposal" role="link" tabindex="0">
+            <div class="icon-circle bg-[#fef3c7] text-[#f59e0b]">
+              <i class="fas fa-building"></i>
+            </div>
+            <span class="icon-label">Branch Proposal</span>
+          </a>
 
-            <!-- User Unlock -->
-            <a
-              class="icon-item"
-              href="/app/user-unlock"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
-                <i class="fas fa-unlock"></i>
-              </div>
-              <span class="icon-label">Finacle User Unlock</span>
-            </a>
+          <!-- Tasks -->
+          <a class="icon-item task-icon" href="/app/task" role="link" tabindex="0" onclick="handleTaskCardClick(event)">
+            <div class="icon-circle bg-[#dbeafe] text-[#1d4ed8]">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <span class="icon-label">Tasks</span>
+          </a>
 
-            <!-- MVCD Tracker -->
-            <a
-              class="icon-item"
-              href="/app/mvcd-status"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#e0e7ff] text-[#4338ca]">
-                <i class="fas fa-university"></i>
-              </div>
-              <span class="icon-label">MVCD Tracker</span>
-            </a>
+          <!-- User Unlock -->
+          <a class="icon-item" href="/app/user-unlock" role="link" tabindex="0">
+            <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
+              <i class="fas fa-unlock"></i>
+            </div>
+            <span class="icon-label">Finacle User Unlock</span>
+          </a>
 
-            <!-- Finacle CBS Reports -->
-            <a
-              class="icon-item"
-              href="/app/finacle-report-portal"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#f3e8ff] text-[#7c3aed]">
-                <i class="fas fa-laptop-code"></i>
-              </div>
-              <span class="icon-label">Finacle CBS Reports</span>
-            </a>
+          <!-- MVCD Tracker -->
+          <a class="icon-item" href="/app/mvcd-status" role="link" tabindex="0">
+            <div class="icon-circle bg-[#e0e7ff] text-[#4338ca]">
+              <i class="fas fa-university"></i>
+            </div>
+            <span class="icon-label">MVCD Tracker</span>
+          </a>
 
-            <!-- SS Trainer -->
-            <a class="icon-item" href="/app/trainer" role="link" tabindex="0">
-              <div class="icon-circle bg-[#dcfce7] text-[#15803d]">
-                <i class="fas fa-chalkboard-teacher"></i>
-              </div>
-              <span class="icon-label">SS Trainer</span>
-            </a>
+          <!-- Finacle CBS Reports -->
+          <a class="icon-item" href="/app/finacle-report-portal" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f3e8ff] text-[#7c3aed]">
+              <i class="fas fa-laptop-code"></i>
+            </div>
+            <span class="icon-label">Finacle CBS Reports</span>
+          </a>
 
-            <!-- Drishti -->
-            <a
-              class="icon-item"
-              href="/app/sahayog_dashboard/"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-                <i class="fas fa-eye"></i>
-              </div>
-              <span class="icon-label">Drishti</span>
-            </a>
+          <!-- SS Trainer -->
+          <a class="icon-item" href="/app/trainer" role="link" tabindex="0">
+            <div class="icon-circle bg-[#dcfce7] text-[#15803d]">
+              <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <span class="icon-label">SS Trainer</span>
+          </a>
 
-            <!-- TTUM Maker -->
-            <a
-              class="icon-item"
-              href="/app/ttum-maker/"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-                <i class="fas fa-file-excel"></i>
-                <i class="fas fa-exchange-alt"></i>
-              </div>
-              <span class="icon-label">TTUM Maker</span>
-            </a>
+          <!-- Drishti -->
+          <a class="icon-item" href="/app/sahayog_dashboard/" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-eye"></i>
+            </div>
+            <span class="icon-label">Drishti</span>
+          </a>
 
-            <!-- Branch Master -->
-            <a
-              class="icon-item"
-              href="/app/query-report/Branch%20Master"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-                <!-- Updated icon for Branch Master: Hierarchy Icon (Sitemap) -->
-                <i class="fas fa-sitemap"></i>
-              </div>
-              <span class="icon-label">Branch Master</span>
-            </a>
+          <!-- TTUM Maker -->
+          <a class="icon-item" href="/app/ttum-maker/" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-file-excel"></i>
+              <i class="fas fa-exchange-alt"></i>
+            </div>
+            <span class="icon-label">TTUM Maker</span>
+          </a>
 
-            <a
-              class="icon-item"
-              href="app/cash-management-system"
-              role="link"
-              tabindex="0"
-            >
-              <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-                <!-- Updated icon for Branch Master: Hierarchy Icon (Sitemap) -->
-                <i class="fas fa-money-bill-wave"></i>
-              </div>
-              <span class="icon-label">CMS</span>
-            </a>
-          </div>
-        </section>
-      </main>
-    </div>
-    <script>
-      // Function to handle Task card click with custom filtering
-      function handleTaskCardClick(event, taskCount) {
-        event.preventDefault();
+          <!-- Branch Master -->
+          <a class="icon-item" href="/app/query-report/Branch%20Master" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <!-- Updated icon for Branch Master: Hierarchy Icon (Sitemap) -->
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <span class="icon-label">Branch Master</span>
+          </a>
 
-        if (!taskCount || taskCount === 0) {
-          alert("No tasks assigned to you");
-          return; // Stop navigation
+          <a class="icon-item" href="app/cash-management-system" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <!-- Updated icon for Branch Master: Hierarchy Icon (Sitemap) -->
+              <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <span class="icon-label">CMS</span>
+          </a>
+          <!-- Customer  360 -->
+          <a class="icon-item" href="/app/customer-360" role="link" tabindex="0">
+            <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
+              <i class="fas fa-user-circle"></i>
+              <i class="fas fa-search"></i>
+            </div>
+            <span class="icon-label">Customer 360</span>
+          </a>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    // Function to handle Task card click with custom filtering
+    function handleTaskCardClick(event, taskCount) {
+      event.preventDefault();
+
+      if (!taskCount || taskCount === 0) {
+        alert("No tasks assigned to you");
+        return; // Stop navigation
+      }
+
+      const url = "/app/task";
+      if (window.top) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    // Function to fetch and display assigned task count
+    async function fetchAssignedTaskCount() {
+      const taskIcon = document.querySelector(".task-icon");
+      if (!taskIcon) return;
+
+      try {
+        const userRes = await fetch(
+          "/api/method/frappe.auth.get_logged_user"
+        );
+        const userData = await userRes.json();
+        const userId = userData.message;
+
+        if (!userId || userId === "Administrator") return;
+
+        // Use API to get assigned task count
+        const countRes = await fetch(
+          `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
+        );
+        const countData = await countRes.json();
+        const taskCount = countData.message || 0;
+
+        // Badge update
+        const existingBadge = taskIcon.querySelector(".count-badge");
+        if (existingBadge) existingBadge.remove();
+
+        if (taskCount > 0) {
+          const countBadge = document.createElement("div");
+          countBadge.className = "count-badge";
+          countBadge.textContent = taskCount;
+          taskIcon.appendChild(countBadge);
+
+          taskIcon.style.pointerEvents = "auto";
+          taskIcon.style.opacity = "1";
+        } else {
+          taskIcon.style.pointerEvents = "none";
+          taskIcon.style.opacity = "0.5";
         }
 
-        const url = "/app/task";
+        taskIcon.onclick = async function (e) {
+          e.preventDefault();
+          try {
+            await fetch(
+              `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
+            );
+            window.location.href = "/app/task";
+          } catch (err) {
+            frappe.msgprint(err?.message || "No tasks assigned to you");
+          }
+        };
+      } catch (error) {
+        console.error("Failed to fetch task count:", error);
+        taskIcon.style.pointerEvents = "none";
+        taskIcon.style.opacity = "0.5";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      fetchAssignedTaskCount();
+    });
+
+    async function fetchEmployeeDetails() {
+      try {
+        const userRes = await fetch(
+          "/api/method/frappe.auth.get_logged_user"
+        );
+        const userData = await userRes.json();
+        const userId = userData.message;
+
+        if (!userId) return;
+
+        const greeting = getTimeBasedGreeting();
+
+        if (userId === "Administrator") {
+          document.getElementById("emp_name").textContent = "Administrator";
+          document.getElementById("emp_designation").textContent = "-";
+          document.getElementById("emp_branch_sol").textContent = "-";
+          document.getElementById("avatar-initial").textContent = "A";
+          document.getElementById(
+            "greeting-message"
+          ).textContent = `${greeting}, Administrator`;
+          return;
+        }
+
+        const filters = encodeURIComponent(
+          JSON.stringify([["user_id", "=", userId]])
+        );
+        const fields = encodeURIComponent(
+          JSON.stringify(["employee_name", "designation", "branch", "sol_id"])
+        );
+        const empRes = await fetch(
+          `/api/resource/Employee?filters=${filters}&fields=${fields}`
+        );
+        const empData = await empRes.json();
+
+        if (empData.data && empData.data.length > 0) {
+          const emp = empData.data[0];
+          const employeeName = emp.employee_name || "N/A";
+          document.getElementById("emp_name").textContent = employeeName;
+          document.getElementById("emp_designation").textContent =
+            emp.designation || "N/A";
+
+          const branch = emp.branch || "N/A";
+          const solId =
+            emp.sol_id && emp.sol_id.trim() !== ""
+              ? emp.sol_id
+              : '<span style="color: red;">Please update your details for SOL ID</span>';
+
+          const branchSol = `Branch : ${branch} | SOL ID : ${solId}`;
+          document.getElementById("emp_branch_sol").innerHTML = branchSol;
+
+          const initial = employeeName.trim().charAt(0).toUpperCase();
+          document.getElementById("avatar-initial").textContent = initial;
+
+          document.getElementById(
+            "greeting-message"
+          ).textContent = `${greeting},`;
+        } else {
+          document.getElementById("emp_name").textContent = "Not Found";
+          document.getElementById("emp_designation").textContent = "-";
+          document.getElementById("avatar-initial").textContent = "?";
+          document.getElementById(
+            "greeting-message"
+          ).textContent = `${greeting},`;
+        }
+      } catch (error) {
+        console.error("Failed to load employee details:", error);
+      }
+    }
+
+    function getTimeBasedGreeting() {
+      const hour = new Date().getHours();
+      if (hour < 12) return "Good Morning";
+      if (hour < 17) return "Good Afternoon";
+      if (hour < 21) return "Good Evening";
+      return "Good Night";
+    }
+
+    fetchEmployeeDetails();
+
+    function handleLinkClick(event) {
+      event.preventDefault();
+      const url = event.currentTarget.getAttribute("href");
+      if (url) {
         if (window.top) {
           window.top.location.href = url;
         } else {
           window.location.href = url;
         }
       }
+    }
 
-      // Function to fetch and display assigned task count
-      async function fetchAssignedTaskCount() {
-        const taskIcon = document.querySelector(".task-icon");
-        if (!taskIcon) return;
-
-        try {
-          const userRes = await fetch(
-            "/api/method/frappe.auth.get_logged_user"
-          );
-          const userData = await userRes.json();
-          const userId = userData.message;
-
-          if (!userId || userId === "Administrator") return;
-
-          // Use API to get assigned task count
-          const countRes = await fetch(
-            `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
-          );
-          const countData = await countRes.json();
-          const taskCount = countData.message || 0;
-
-          // Badge update
-          const existingBadge = taskIcon.querySelector(".count-badge");
-          if (existingBadge) existingBadge.remove();
-
-          if (taskCount > 0) {
-            const countBadge = document.createElement("div");
-            countBadge.className = "count-badge";
-            countBadge.textContent = taskCount;
-            taskIcon.appendChild(countBadge);
-
-            taskIcon.style.pointerEvents = "auto";
-            taskIcon.style.opacity = "1";
-          } else {
-            taskIcon.style.pointerEvents = "none";
-            taskIcon.style.opacity = "0.5";
-          }
-
-          taskIcon.onclick = async function (e) {
-            e.preventDefault();
-            try {
-              await fetch(
-                `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`
-              );
-              window.location.href = "/app/task";
-            } catch (err) {
-              frappe.msgprint(err?.message || "No tasks assigned to you");
-            }
-          };
-        } catch (error) {
-          console.error("Failed to fetch task count:", error);
-          taskIcon.style.pointerEvents = "none";
-          taskIcon.style.opacity = "0.5";
-        }
-      }
-
-      document.addEventListener("DOMContentLoaded", function () {
-        fetchAssignedTaskCount();
+    document.addEventListener("DOMContentLoaded", function () {
+      const iconItems = document.querySelectorAll(".icon-item");
+      iconItems.forEach((item) => {
+        item.addEventListener("click", handleLinkClick);
       });
 
-      async function fetchEmployeeDetails() {
-        try {
-          const userRes = await fetch(
-            "/api/method/frappe.auth.get_logged_user"
-          );
-          const userData = await userRes.json();
-          const userId = userData.message;
-
-          if (!userId) return;
-
-          const greeting = getTimeBasedGreeting();
-
-          if (userId === "Administrator") {
-            document.getElementById("emp_name").textContent = "Administrator";
-            document.getElementById("emp_designation").textContent = "-";
-            document.getElementById("emp_branch_sol").textContent = "-";
-            document.getElementById("avatar-initial").textContent = "A";
-            document.getElementById(
-              "greeting-message"
-            ).textContent = `${greeting}, Administrator`;
-            return;
-          }
-
-          const filters = encodeURIComponent(
-            JSON.stringify([["user_id", "=", userId]])
-          );
-          const fields = encodeURIComponent(
-            JSON.stringify(["employee_name", "designation", "branch", "sol_id"])
-          );
-          const empRes = await fetch(
-            `/api/resource/Employee?filters=${filters}&fields=${fields}`
-          );
-          const empData = await empRes.json();
-
-          if (empData.data && empData.data.length > 0) {
-            const emp = empData.data[0];
-            const employeeName = emp.employee_name || "N/A";
-            document.getElementById("emp_name").textContent = employeeName;
-            document.getElementById("emp_designation").textContent =
-              emp.designation || "N/A";
-
-            const branch = emp.branch || "N/A";
-            const solId =
-              emp.sol_id && emp.sol_id.trim() !== ""
-                ? emp.sol_id
-                : '<span style="color: red;">Please update your details for SOL ID</span>';
-
-            const branchSol = `Branch : ${branch} | SOL ID : ${solId}`;
-            document.getElementById("emp_branch_sol").innerHTML = branchSol;
-
-            const initial = employeeName.trim().charAt(0).toUpperCase();
-            document.getElementById("avatar-initial").textContent = initial;
-
-            document.getElementById(
-              "greeting-message"
-            ).textContent = `${greeting},`;
-          } else {
-            document.getElementById("emp_name").textContent = "Not Found";
-            document.getElementById("emp_designation").textContent = "-";
-            document.getElementById("avatar-initial").textContent = "?";
-            document.getElementById(
-              "greeting-message"
-            ).textContent = `${greeting},`;
-          }
-        } catch (error) {
-          console.error("Failed to load employee details:", error);
-        }
-      }
-
-      function getTimeBasedGreeting() {
-        const hour = new Date().getHours();
-        if (hour < 12) return "Good Morning";
-        if (hour < 17) return "Good Afternoon";
-        if (hour < 21) return "Good Evening";
-        return "Good Night";
-      }
-
-      fetchEmployeeDetails();
-
-      function handleLinkClick(event) {
-        event.preventDefault();
-        const url = event.currentTarget.getAttribute("href");
-        if (url) {
-          if (window.top) {
-            window.top.location.href = url;
-          } else {
-            window.location.href = url;
-          }
-        }
-      }
-
-      document.addEventListener("DOMContentLoaded", function () {
-        const iconItems = document.querySelectorAll(".icon-item");
-        iconItems.forEach((item) => {
-          item.addEventListener("click", handleLinkClick);
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              console.log("ServiceWorker registration successful");
+            })
+            .catch((err) => {
+              console.log("ServiceWorker registration failed: ", err);
+            });
         });
+      }
+    });
 
-        if ("serviceWorker" in navigator) {
-          window.addEventListener("load", () => {
-            navigator.serviceWorker
-              .register("/sw.js")
-              .then((registration) => {
-                console.log("ServiceWorker registration successful");
-              })
-              .catch((err) => {
-                console.log("ServiceWorker registration failed: ", err);
-              });
-          });
-        }
-      });
+    ("use strict");
 
-      ("use strict");
+    function launchConfetti() {
+      if (document.getElementById("confetti-container")) return;
 
-      function launchConfetti() {
-        if (document.getElementById("confetti-container")) return;
+      var random = Math.random,
+        cos = Math.cos,
+        sin = Math.sin,
+        PI = Math.PI,
+        PI2 = PI * 2,
+        confetti = [];
 
-        var random = Math.random,
-          cos = Math.cos,
-          sin = Math.sin,
-          PI = Math.PI,
-          PI2 = PI * 2,
-          confetti = [];
+      var particles = 10,
+        spread = 40,
+        sizeMin = 3,
+        sizeMax = 12 - sizeMin,
+        eccentricity = 10,
+        deviation = 100,
+        dxThetaMin = -0.1,
+        dxThetaMax = -dxThetaMin - dxThetaMin,
+        dyMin = 0.13,
+        dyMax = 0.18,
+        dThetaMin = 0.4,
+        dThetaMax = 0.7 - dThetaMin;
 
-        var particles = 10,
-          spread = 40,
-          sizeMin = 3,
-          sizeMax = 12 - sizeMin,
-          eccentricity = 10,
-          deviation = 100,
-          dxThetaMin = -0.1,
-          dxThetaMax = -dxThetaMin - dxThetaMin,
-          dyMin = 0.13,
-          dyMax = 0.18,
-          dThetaMin = 0.4,
-          dThetaMax = 0.7 - dThetaMin;
+      var colorThemes = [
+        function () {
+          return color(
+            (200 * random()) | 0,
+            (200 * random()) | 0,
+            (200 * random()) | 0
+          );
+        },
+      ];
 
-        var colorThemes = [
-          function () {
-            return color(
-              (200 * random()) | 0,
-              (200 * random()) | 0,
-              (200 * random()) | 0
-            );
-          },
-        ];
+      function color(r, g, b) {
+        return "rgb(" + r + "," + g + "," + b + ")";
+      }
 
-        function color(r, g, b) {
-          return "rgb(" + r + "," + g + "," + b + ")";
-        }
+      function interpolation(a, b, t) {
+        return ((1 - cos(PI * t)) / 2) * (b - a) + a;
+      }
 
-        function interpolation(a, b, t) {
-          return ((1 - cos(PI * t)) / 2) * (b - a) + a;
-        }
+      var radius = 1 / eccentricity,
+        radius2 = radius + radius;
 
-        var radius = 1 / eccentricity,
-          radius2 = radius + radius;
-
-        function createPoisson() {
-          var domain = [radius, 1 - radius],
-            measure = 1 - radius2,
-            spline = [0, 1];
-          while (measure) {
-            var dart = measure * random(),
-              i,
-              l,
-              interval,
-              a,
-              b,
-              c,
-              d;
-            for (i = 0, l = domain.length, measure = 0; i < l; i += 2) {
-              (a = domain[i]), (b = domain[i + 1]), (interval = b - a);
-              if (dart < measure + interval) {
-                spline.push((dart += a - measure));
-                break;
-              }
-              measure += interval;
+      function createPoisson() {
+        var domain = [radius, 1 - radius],
+          measure = 1 - radius2,
+          spline = [0, 1];
+        while (measure) {
+          var dart = measure * random(),
+            i,
+            l,
+            interval,
+            a,
+            b,
+            c,
+            d;
+          for (i = 0, l = domain.length, measure = 0; i < l; i += 2) {
+            (a = domain[i]), (b = domain[i + 1]), (interval = b - a);
+            if (dart < measure + interval) {
+              spline.push((dart += a - measure));
+              break;
             }
-            (c = dart - radius), (d = dart + radius);
-            for (i = domain.length - 1; i > 0; i -= 2) {
-              (l = i - 1), (a = domain[l]), (b = domain[i]);
-              if (a >= c && a < d)
-                if (b > d) domain[l] = d;
-                else domain.splice(l, 2);
-              else if (a < c && b > c)
-                if (b <= d) domain[i] = c;
-                else domain.splice(i, 0, c, d);
-            }
-            for (i = 0, l = domain.length, measure = 0; i < l; i += 2)
-              measure += domain[i + 1] - domain[i];
+            measure += interval;
           }
-          return spline.sort();
+          (c = dart - radius), (d = dart + radius);
+          for (i = domain.length - 1; i > 0; i -= 2) {
+            (l = i - 1), (a = domain[l]), (b = domain[i]);
+            if (a >= c && a < d)
+              if (b > d) domain[l] = d;
+              else domain.splice(l, 2);
+            else if (a < c && b > c)
+              if (b <= d) domain[i] = c;
+              else domain.splice(i, 0, c, d);
+          }
+          for (i = 0, l = domain.length, measure = 0; i < l; i += 2)
+            measure += domain[i + 1] - domain[i];
         }
+        return spline.sort();
+      }
 
-        var container = document.createElement("div");
-        container.id = "confetti-container";
-        container.style.position = "fixed";
-        container.style.top = "0";
-        container.style.left = "0";
-        container.style.width = "100%";
-        container.style.height = "0";
-        container.style.overflow = "visible";
-        container.style.zIndex = "9999";
-        document.body.appendChild(container);
+      var container = document.createElement("div");
+      container.id = "confetti-container";
+      container.style.position = "fixed";
+      container.style.top = "0";
+      container.style.left = "0";
+      container.style.width = "100%";
+      container.style.height = "0";
+      container.style.overflow = "visible";
+      container.style.zIndex = "9999";
+      document.body.appendChild(container);
 
-        function Confetto(theme) {
-          this.frame = 0;
-          this.outer = document.createElement("div");
-          this.inner = document.createElement("div");
-          this.outer.appendChild(this.inner);
+      function Confetto(theme) {
+        this.frame = 0;
+        this.outer = document.createElement("div");
+        this.inner = document.createElement("div");
+        this.outer.appendChild(this.inner);
 
-          var outerStyle = this.outer.style,
-            innerStyle = this.inner.style;
-          outerStyle.position = "absolute";
-          outerStyle.width = sizeMin + sizeMax * random() + "px";
-          outerStyle.height = sizeMin + sizeMax * random() + "px";
-          innerStyle.width = "100%";
-          innerStyle.height = "100%";
-          innerStyle.backgroundColor = theme();
+        var outerStyle = this.outer.style,
+          innerStyle = this.inner.style;
+        outerStyle.position = "absolute";
+        outerStyle.width = sizeMin + sizeMax * random() + "px";
+        outerStyle.height = sizeMin + sizeMax * random() + "px";
+        innerStyle.width = "100%";
+        innerStyle.height = "100%";
+        innerStyle.backgroundColor = theme();
 
-          outerStyle.perspective = "50px";
-          outerStyle.transform = "rotate(" + 360 * random() + "deg)";
-          this.axis =
-            "rotate3D(" +
-            cos(360 * random()) +
-            "," +
-            cos(360 * random()) +
-            ",0,";
-          this.theta = 360 * random();
-          this.dTheta = dThetaMin + dThetaMax * random();
+        outerStyle.perspective = "50px";
+        outerStyle.transform = "rotate(" + 360 * random() + "deg)";
+        this.axis =
+          "rotate3D(" +
+          cos(360 * random()) +
+          "," +
+          cos(360 * random()) +
+          ",0,";
+        this.theta = 360 * random();
+        this.dTheta = dThetaMin + dThetaMax * random();
+        innerStyle.transform = this.axis + this.theta + "deg)";
+
+        this.x = window.innerWidth * random();
+        this.y = -deviation;
+        this.dx = sin(dxThetaMin + dxThetaMax * random());
+        this.dy = dyMin + dyMax * random();
+        outerStyle.left = this.x + "px";
+        outerStyle.top = this.y + "px";
+
+        this.splineX = createPoisson();
+        this.splineY = [];
+        for (var i = 1, l = this.splineX.length - 1; i < l; ++i)
+          this.splineY[i] = deviation * random();
+        this.splineY[0] = this.splineY[l] = deviation * random();
+
+        this.update = function (height, delta) {
+          this.frame += delta;
+          this.x += this.dx * delta;
+          this.y += this.dy * delta;
+          this.theta += this.dTheta * delta;
+
+          var phi = (this.frame % 7777) / 7777,
+            i = 0,
+            j = 1;
+          while (phi >= this.splineX[j]) i = j++;
+          var rho = interpolation(
+            this.splineY[i],
+            this.splineY[j],
+            (phi - this.splineX[i]) / (this.splineX[j] - this.splineX[i])
+          );
+          phi *= PI2;
+
+          outerStyle.left = this.x + rho * cos(phi) + "px";
+          outerStyle.top = this.y + rho * sin(phi) + "px";
           innerStyle.transform = this.axis + this.theta + "deg)";
-
-          this.x = window.innerWidth * random();
-          this.y = -deviation;
-          this.dx = sin(dxThetaMin + dxThetaMax * random());
-          this.dy = dyMin + dyMax * random();
-          outerStyle.left = this.x + "px";
-          outerStyle.top = this.y + "px";
-
-          this.splineX = createPoisson();
-          this.splineY = [];
-          for (var i = 1, l = this.splineX.length - 1; i < l; ++i)
-            this.splineY[i] = deviation * random();
-          this.splineY[0] = this.splineY[l] = deviation * random();
-
-          this.update = function (height, delta) {
-            this.frame += delta;
-            this.x += this.dx * delta;
-            this.y += this.dy * delta;
-            this.theta += this.dTheta * delta;
-
-            var phi = (this.frame % 7777) / 7777,
-              i = 0,
-              j = 1;
-            while (phi >= this.splineX[j]) i = j++;
-            var rho = interpolation(
-              this.splineY[i],
-              this.splineY[j],
-              (phi - this.splineX[i]) / (this.splineX[j] - this.splineX[i])
-            );
-            phi *= PI2;
-
-            outerStyle.left = this.x + rho * cos(phi) + "px";
-            outerStyle.top = this.y + rho * sin(phi) + "px";
-            innerStyle.transform = this.axis + this.theta + "deg)";
-            return this.y > height + deviation;
-          };
-        }
-
-        var frame, timer;
-        var theme = colorThemes[0];
-        (function addConfetto() {
-          var confetto = new Confetto(theme);
-          confetti.push(confetto);
-          container.appendChild(confetto.outer);
-          timer = setTimeout(addConfetto, spread * random());
-        })(0);
-
-        var prev;
-        requestAnimationFrame(function loop(timestamp) {
-          var delta = prev ? timestamp - prev : 0;
-          prev = timestamp;
-          var height = window.innerHeight;
-
-          for (var i = confetti.length - 1; i >= 0; --i) {
-            if (confetti[i].update(height, delta)) {
-              container.removeChild(confetti[i].outer);
-              confetti.splice(i, 1);
-            }
-          }
-
-          if (timer || confetti.length)
-            return (frame = requestAnimationFrame(loop));
-
-          document.body.removeChild(container);
-        });
-
-        setTimeout(() => {
-          clearTimeout(timer);
-          timer = null;
-        }, 5000);
+          return this.y > height + deviation;
+        };
       }
 
-      document.addEventListener("DOMContentLoaded", function () {
-        document
-          .getElementById("random-gesture")
-          .addEventListener("click", function () {
-            launchConfetti();
-          });
+      var frame, timer;
+      var theme = colorThemes[0];
+      (function addConfetto() {
+        var confetto = new Confetto(theme);
+        confetti.push(confetto);
+        container.appendChild(confetto.outer);
+        timer = setTimeout(addConfetto, spread * random());
+      })(0);
+
+      var prev;
+      requestAnimationFrame(function loop(timestamp) {
+        var delta = prev ? timestamp - prev : 0;
+        prev = timestamp;
+        var height = window.innerHeight;
+
+        for (var i = confetti.length - 1; i >= 0; --i) {
+          if (confetti[i].update(height, delta)) {
+            container.removeChild(confetti[i].outer);
+            confetti.splice(i, 1);
+          }
+        }
+
+        if (timer || confetti.length)
+          return (frame = requestAnimationFrame(loop));
+
+        document.body.removeChild(container);
       });
 
-      document.addEventListener("DOMContentLoaded", function () {
-        const tooltip = document.getElementById("gesture-tooltip");
-        tooltip.classList.add("opacity-100");
+      setTimeout(() => {
+        clearTimeout(timer);
+        timer = null;
+      }, 5000);
+    }
 
-        setTimeout(() => {
-          tooltip.classList.remove("opacity-100");
-        }, 2000);
-      });
-    </script>
-  </body>
+    document.addEventListener("DOMContentLoaded", function () {
+      document
+        .getElementById("random-gesture")
+        .addEventListener("click", function () {
+          launchConfetti();
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const tooltip = document.getElementById("gesture-tooltip");
+      tooltip.classList.add("opacity-100");
+
+      setTimeout(() => {
+        tooltip.classList.remove("opacity-100");
+      }, 2000);
+    });
+  </script>
+</body>
+
 </html>
