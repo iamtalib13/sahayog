@@ -567,9 +567,15 @@ body.stockio-active .page-content {
 ================================================== */
 
 @keyframes active-glow {
-  0% { box-shadow: 0 0 8px rgba(79, 110, 247, 0.4); }
-  50% { box-shadow: 0 0 16px rgba(79, 110, 247, 0.7); }
-  100% { box-shadow: 0 0 8px rgba(79, 110, 247, 0.4); }
+  0% {
+    box-shadow: 0 0 8px rgba(79, 110, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(79, 110, 247, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(79, 110, 247, 0.4);
+  }
 }
 
 .menu-item.active,

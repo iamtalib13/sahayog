@@ -6,7 +6,12 @@
 // Fixes crashes in insecure (HTTP) contexts for extensions like Grammarly
 (function () {
   try {
-    var g = typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {};
+    var g =
+      typeof window !== "undefined"
+        ? window
+        : typeof self !== "undefined"
+          ? self
+          : {};
     if (!g.crypto) g.crypto = {};
     if (!g.crypto.getRandomValues) {
       g.crypto.getRandomValues = function (array) {
@@ -18,10 +23,14 @@
     }
     if (!g.crypto.randomUUID) {
       g.crypto.randomUUID = function () {
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-          var r = (Math.random() * 16) | 0, v = c == "x" ? r : (r & 0x3) | 0x8;
-          return v.toString(16);
-        });
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+          /[xy]/g,
+          function (c) {
+            var r = (Math.random() * 16) | 0,
+              v = c == "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          },
+        );
       };
     }
   } catch (e) {
@@ -311,7 +320,7 @@ class StockIOPage {
         
         <!-- Draft status -->
         <button class="btn success" v-if="selectionStatus === 'Draft'" @click="handleBulkAction('Submit')">Submit</button>
-        
+
         <!-- Pending Reporting Person status -->
         <template v-if="selectionStatus === 'Pending Reporting Person'">
           <button class="btn success" @click="handleBulkAction('Approve')">Approve</button>
@@ -326,9 +335,15 @@ class StockIOPage {
         </template>
 
         <!-- Other single status -->
-        <button class="btn success" 
-          v-if="selectionStatus && !['Draft', 'Pending Reporting Person', 'Pending HO Approval', 'mixed'].includes(selectionStatus)" 
+        <button class="btn success"
+          v-if="selectionStatus && !['Draft', 'Pending Reporting Person', 'Pending HO Approval', 'mixed'].includes(selectionStatus) && selectionStatus !== 'Approved'"
           @click="handleBulkAction('Approve')">Approve Request</button>
+        
+        <!-- Display Inward and Outward buttons when status is Approved -->
+        <template v-if="selectionStatus && !['Draft', 'Pending Reporting Person', 'Pending HO Approval', 'mixed'].includes(selectionStatus) && selectionStatus === 'Approved'">
+          <button class="btn primary" @click="handleInwardAction">Inward</button>
+          <button class="btn primary" @click="handleOutwardAction">Outward</button>
+        </template>
       </div>
       </div>
 
@@ -1700,6 +1715,20 @@ class StockIOPage {
       syncSelectAllAssetMovements() {
         this.selectAllAssetMovements =
           this.selectedAssetMovements.length === this.assetMovements.length;
+      },
+
+      handleInwardAction() {
+        if (!this.selectedDocs.length) return;
+
+        // Navigate to Purchase Receipt form for inward movement
+        frappe.set_route("Form", "Purchase Receipt", "new-purchase-receipt-1");
+      },
+
+      handleOutwardAction() {
+        if (!this.selectedDocs.length) return;
+
+        // Navigate to Stock Entry form for outward movement
+        frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
       },
 
       reports: [
