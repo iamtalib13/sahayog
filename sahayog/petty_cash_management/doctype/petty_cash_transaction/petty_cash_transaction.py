@@ -1,38 +1,29 @@
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
-from sahayog.petty_cash_management.permissions import get_user_allowed_branches # [NEW IMPORT]
-
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import get_first_day, get_last_day, nowdate, flt, getdate
-# Import the API function
-from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
-
-import frappe
-from frappe import _
-from frappe.utils import flt, nowdate, getdate, fmt_money
-import io
 import csv
-# from frappe.utils.xlsx import make_xlsx
-from frappe.utils.xlsxutils import make_xlsx  # <--- CORRECT IMPORT
-
-import frappe
-import csv
-from frappe import _
-from frappe.utils import flt, format_datetime, getdate, now
-import io
-
-
-
-
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 import io
 from datetime import datetime
+
+import frappe
+import openpyxl
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import (
+    flt,
+    fmt_money,
+    format_datetime,
+    get_first_day,
+    get_last_day,
+    getdate,
+    now,
+    nowdate
+)
+from frappe.utils.xlsxutils import make_xlsx
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+
+# Custom App Imports
+from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
+from sahayog.petty_cash_management.permissions import get_user_allowed_branches
+
 
 class PettyCashTransaction(Document):
 
