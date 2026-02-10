@@ -19,7 +19,7 @@
   "modified": "2026-02-09 11:51:06.569344",
   "module": null,
   "name": "Show Cause Notice",
-  "print_format": "Disciplinary-Case-SCN",
+  "print_format": "Disciplinary-SCN",
   "property_value": null,
   "recipients": [
    {

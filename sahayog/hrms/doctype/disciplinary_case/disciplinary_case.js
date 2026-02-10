@@ -384,7 +384,7 @@ frappe.ui.form.on("Disciplinary Case", {
           iframe.src = frappe.urllib.get_full_url(
             `/printview?doctype=${encodeURIComponent(frm.doc.doctype)}` +
               `&name=${encodeURIComponent(frm.doc.name)}` +
-              `&format=${encodeURIComponent("Disciplinary-Case-SCN")}`,
+              `&format=${encodeURIComponent("Disciplinary-SCN")}`,
           );
           document.body.appendChild(iframe);
 
