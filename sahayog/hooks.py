@@ -65,7 +65,7 @@ doctype_js = {
     "Asset Movement": "public/js/asset_movement.js",
 }
 doctype_list_js = {
-    "Purchase Receipt": "public/js/purchase_receipt_list.js",
+    # "Purchase Receipt": "public/js/purchase_receipt_list.js",
     "Stock Entry": "public/js/stock_entry_list.js",
     "Material Request": "public/js/material_request_list.js",
     "Shareholder": "public/js/shareholder_list.js",
@@ -206,7 +206,7 @@ permission_query_conditions = {
     "Appointment": "sahayog.permissions.get_appointment_permission",
     "Task": "sahayog.permissions.get_task_permission",
     "Agent": "sahayog.agent_and_bdo.doctype.agent.permissions.get_agents_sol_wise",
-    "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission_for_warehouse",
+    # "Purchase Receipt": "sahayog.permissions.get_purchase_receipt_permission_for_warehouse",
     "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",
     "Shareholder": "sahayog.permissions.get_shareholder_permission",
     "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
@@ -317,11 +317,11 @@ doc_events = {
         "before_save": "sahayog.doc_events.purchase_order.fetch_terms_conditions",
         "validate": "sahayog.doc_events.purchase_order.validate_store_incharge_po",
     },
-    "Purchase Receipt": {
-        # "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname",
-        # "before_save": "sahayog.doc_events.purchase_order.sync_project_field",
-        # "validate": "sahayog.doc_events.purchase_receipt.validate_store_incharge",
-    },
+    # "Purchase Receipt": {
+    #     # "autoname": "sahayog.doc_events.purchase_receipt.purchase_receipt_autoname",
+    #     # "before_save": "sahayog.doc_events.purchase_order.sync_project_field",
+    #     # "validate": "sahayog.doc_events.purchase_receipt.validate_store_incharge",
+    # },
     "Department": {"autoname": "sahayog.doc_events.department.department_name"},
     "Lead": {
         "before_insert": [
@@ -621,7 +621,7 @@ fixtures = [
                 "in",
                 [
                     "Material Request-schedule_date-reqd",
-                    "Purchase Receipt-main-field_order",
+                    # "Purchase Receipt-main-field_order",
                     "Stock Entry-section_break_jwgn-collapsible",
                 ],
             ]
