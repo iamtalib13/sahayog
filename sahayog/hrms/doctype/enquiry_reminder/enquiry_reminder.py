@@ -95,20 +95,20 @@ def send_reminder_enquiry_email(docname, print_format):
     message = frappe.render_template(template.response_html, doc_dict)
     subject = frappe.render_template(template.subject, doc_dict)
 
-    # attachments = [
-    #     frappe.attach_print(
-    #         doctype="Enquiry Reminder",
-    #         name=docname,
-    #         print_format=print_format,
-    #         file_name=f"{docname}"
-    #     )
-    # ]
+    attachments = [
+        frappe.attach_print(
+            doctype="Enquiry Reminder",
+            name=docname,
+            print_format=print_format,
+            file_name=f"{docname}"
+        )
+    ]
 
     frappe.sendmail(
         recipients=[emp.company_email],
         subject=subject,
         message=message,
-        # attachments=attachments,
+        attachments=attachments,
         reference_doctype="Enquiry Reminder",
         reference_name=docname,
         now=False
