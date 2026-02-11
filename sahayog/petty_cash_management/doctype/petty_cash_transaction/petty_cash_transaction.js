@@ -191,7 +191,11 @@ frappe.ui.form.on('Petty Cash Transaction', {
                 }, __("Download Files"));
             }
         }
-
+        
+        // Hide the Menu Button (3 dots) for everyone
+        if (!frm.is_new()) {
+            frm.page.menu_btn_group.hide();
+        }
         
 
          // Hide Cancel button if status is Verified
