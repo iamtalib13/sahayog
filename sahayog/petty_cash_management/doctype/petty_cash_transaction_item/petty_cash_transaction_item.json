@@ -9,6 +9,7 @@
   "available_limit",
   "vendor_name",
   "description",
+  "column_break_uytt",
   "amount",
   "bill_number",
   "bill_date",
@@ -72,13 +73,17 @@
    "fieldtype": "Data",
    "label": "Finacle GL Code",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uytt",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-22 12:36:30.618518",
+ "modified": "2026-02-11 11:28:02.610889",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction Item",
