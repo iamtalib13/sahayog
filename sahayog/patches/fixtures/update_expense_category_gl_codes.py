@@ -12,7 +12,8 @@ def execute():
         "Cleaning and House Keeping": "01850020001",
         "Minor Repairs & Maintenance": "01850080001",
         "Courier, Postage, Photocopying": "01830010001",
-        "Safety": "01840400001"
+        "Safety": "01840400001",
+        "Other Expenses": "00000000000"
     }
 
     for cat_name, suffix in category_map.items():
