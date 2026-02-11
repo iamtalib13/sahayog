@@ -822,13 +822,26 @@ class PettyCashTransaction(Document):
             self.db_set('finacle_tran_id', tran_id)
             self.db_set('finacle_tran_date', nowdate())
             self.db_set('approval_status', 'Posted') 
-            frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+            # frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
+            frappe.msgprint(
+                msg="Finacle Transfer Successful! ID: {tran_id}",
+                title="Success",
+                indicator='green',
+                alert=True  # <--- Added this to make it a floating alert
+            )
+
 
         else:
             error_msg = response.get("message", "Unknown Finacle Error")
             # Just Throw. Doc stays Draft. 
             # BUT 'submission_attempted' will remain 1 because JS set it separately!
-            frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+            # frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
+            frappe.msgprint(
+                msg="Finacle Transaction Failed: {error_msg}",
+                title="Error",
+                indicator='red',
+                alert=True  # <--- Added this to make it a floating alert
+            )
 
 
 
@@ -919,7 +932,14 @@ class PettyCashTransaction(Document):
         # Link JE back to this doc
         self.db_set("journal_entry_ref", je.name)
         
-        frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
+        # frappe.msgprint(_("Journal Entry created: {0}").format(je.name))
+        frappe.msgprint(
+            msg=(_("Journal Entry created: {0}").format(je.name)),
+            title="Message",
+            indicator='blue',
+            alert=True  # <--- Added this to make it a floating alert
+        )
+
 
 
    
@@ -1018,7 +1038,14 @@ class PettyCashTransaction(Document):
         # Update Wallet Balance
         self.update_wallet()
         
-        frappe.msgprint(_("Limit Exceedance Approved. Full amount deducted from wallet."))
+        # frappe.msgprint(_("Limit Exceedance Approved. Full amount deducted from wallet."))
+        frappe.msgprint(
+            msg="Limit Exceedance Approved. Full amount deducted from wallet.",
+            title="Message",
+            indicator='blue',
+            alert=True  # <--- Added this to make it a floating alert
+        )
+
 
     # @frappe.whitelist()
     # def ho_verify_bill(self):
@@ -1136,9 +1163,24 @@ class PettyCashTransaction(Document):
                     "approval_status": "Verified",
                     "approved_by": frappe.session.user
                 })
-                frappe.msgprint(f"Finacle Success: {response.get('trn_id')}")
+
+                frappe.msgprint(
+                    msg=f"Finacle Success: {response.get('message')}",
+                    title="Success",
+                    indicator='green',
+                    alert=True  # <--- Added this to make it a floating alert
+                )
+                
+                # frappe.msgprint(f"Finacle Success: {response.get('trn_id')}")
             else:
-                frappe.msgprint(f"Finacle Failed: {response.get('message')}")
+                frappe.msgprint(
+                    msg=f"Finacle Failed: {response.get('message')}",
+                    title="Error",
+                    indicator='red',
+                    alert=True  # <--- Added this to make it a floating alert
+                )
+
+                # frappe.msgprint(f"Finacle Failed: {response.get('message')}")
 
         else:
             # --- NEW LOGIC (Manual/Excel Mode) ---
@@ -1150,11 +1192,19 @@ class PettyCashTransaction(Document):
                 "finacle_tran_particular": "Manual Verification (TTUM Mode)"
             })
             
+            # frappe.msgprint(
+            #     msg="Record Verified Manually. Please download the TTUM/Excel files now.",
+            #     title="Verified (Offline Mode)",
+            #     indicator='green'
+            # )
+
             frappe.msgprint(
                 msg="Record Verified Manually. Please download the TTUM/Excel files now.",
                 title="Verified (Offline Mode)",
-                indicator='green'
+                indicator='green',
+                alert=True  # <--- Added this to make it a floating alert
             )
+
 
 
     def has_permission(self, permtype="read"):
