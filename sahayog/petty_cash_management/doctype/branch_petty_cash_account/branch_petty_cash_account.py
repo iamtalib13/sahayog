@@ -96,10 +96,30 @@ from frappe import _
 from frappe.model.document import Document
 from sahayog.petty_cash_management.permissions import get_user_allowed_branches 
 from frappe.utils import flt
+from frappe.utils import cint
 
 class BranchPettyCashAccount(Document):
     
     def validate(self):
+
+        # [NEW] SECURITY CHECK
+        # if not self.name:
+        #     return
+
+        # old = frappe.db.get_value(self.doctype, self.name, "is_fund_source")
+        # if cint(old) != cint(self.is_fund_source) and not frappe.has_role("HO Petty Cash Manager"):
+        #     frappe.throw(_("You are not allowed to change Fund Source."))
+
+
+        if not self.name:
+            return
+
+        old = frappe.db.get_value(self.doctype, self.name, "is_fund_source")
+        if cint(old) != cint(self.is_fund_source):
+            if not frappe.utils.has_common(["HO Petty Cash Manager"], frappe.get_roles()):
+                frappe.throw(_("You are not allowed to change Fund Source."))
+
+        # [NEW] Validation
         actual_branch_type = frappe.db.get_value("Sahayog Branch", self.branch, "branch_type")
         
         if not self.monthly_limit:
