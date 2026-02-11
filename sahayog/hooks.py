@@ -58,7 +58,7 @@ doctype_js = {
     "Appointment": "scrm/controller/appointment/appointment.js",
     "Product Bundle": "public/js/product_bundle.js",
     "BOM": "public/js/bom.js",
-    "Purchase Receipt": "public/js/purchase_receipt.js",
+    # "Purchase Receipt": "public/js/purchase_receipt.js",
     "Stock Entry": "public/js/stock_entry.js",
     "Shareholder": "public/js/shareholder.js",
     "Share Transfer": "public/js/share_transfer.js",
