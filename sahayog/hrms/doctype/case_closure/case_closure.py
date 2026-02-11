@@ -428,20 +428,20 @@ def send_case_closure_email(docname, print_format):
     subject = frappe.render_template(template.subject, doc_dict)
 
     # Attach selected print format
-    # attachments = [
-    #     frappe.attach_print(
-    #         doctype="Case Closure",
-    #         name=docname,
-    #         print_format=print_format,
-    #         file_name=f"{docname}.pdf"
-    #     )
-    # ]
+    attachments = [
+        frappe.attach_print(
+            doctype="Case Closure",
+            name=docname,
+            print_format=print_format,
+            file_name=f"{docname}.pdf"
+        )
+    ]
 
     frappe.sendmail(
         recipients=[emp.company_email],
         subject=subject,
         message=message,
-        # attachments=attachments,
+        attachments=attachments,
         reference_doctype="Case Closure",
         reference_name=docname,
         now=False
