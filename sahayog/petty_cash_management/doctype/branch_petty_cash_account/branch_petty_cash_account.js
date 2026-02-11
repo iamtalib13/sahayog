@@ -1,5 +1,11 @@
 frappe.ui.form.on('Branch Petty Cash Account', {
     refresh: function(frm) {
+
+        // [NEW] Permission Logic for is_fund_source
+        const can_edit = (frappe.user_roles || []).includes('HO Petty Cash Manager');
+        frm.set_df_property('is_fund_source', 'read_only', can_edit ? 0 : 1);
+        frm.toggle_enable('is_fund_source', can_edit);
+
         // [NEW] Permission Logic for Monthly Limit
         // Only Administrator or HO Petty Cash Manager can edit the limit
         if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
