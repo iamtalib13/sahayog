@@ -630,7 +630,8 @@ fixtures = [
 # email templates fixtures
 {
     "dt": "Email Template",
-    "filters": [["name", "in", ["Response to SCN",
+    "filters": [["name", "in", ["Disciplinary Case Update",
+                                "Response to SCN",
                                 "Suspension Process",
                                 "Domestic Enquiry Notice",
                                 "Reminder Notice of Enquiry",
