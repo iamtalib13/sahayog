@@ -43,13 +43,30 @@ frappe.ui.form.on('Petty Cash Transaction', {
         console.log("Is Manager?", frappe.user.has_role('HO Petty Cash Manager'));
         // ---------------------
 
-        // Standard Read-Only Logic
-        if (!frappe.user.has_role('HO Petty Cash Manager')) {
-            frm.set_df_property('transaction_type', 'read_only', 1);
-            frm.set_df_property('branch', 'read_only', 1);
-        } else {
+        // // Standard Read-Only Logic
+        // if (!frappe.user.has_role('HO Petty Cash Manager')) {
+        //     frm.set_df_property('transaction_type', 'read_only', 1);
+        //     frm.set_df_property('branch', 'read_only', 1);
+        // } else {
+        //     frm.set_df_property('transaction_type', 'read_only', 0);
+        //     frm.set_df_property('branch', 'read_only', 0);
+        // }
+
+        // Lock if Attempted (flag is set) OR Submitted
+        // We fetch the value from DB to be sure, or trust frm.doc
+        let is_locked = frm.doc.submission_attempted == 1 || frm.doc.docstatus == 1;
+
+        // NEW LOGIC: Editable only if (Admin OR Manager) AND (Not Locked)
+        let is_admin_or_manager = frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager');
+        
+        if (is_admin_or_manager && !is_locked) {
             frm.set_df_property('transaction_type', 'read_only', 0);
             frm.set_df_property('branch', 'read_only', 0);
+            frm.set_df_property('transaction_date', 'read_only', 0);
+        } else {
+            frm.set_df_property('transaction_type', 'read_only', 1);
+            frm.set_df_property('branch', 'read_only', 1);
+            frm.set_df_property('transaction_date', 'read_only', 1);
         }
 
         // --- BUTTON LOGIC ---
@@ -94,11 +111,15 @@ frappe.ui.form.on('Petty Cash Transaction', {
         }
 
 
-        // Lock if Attempted (flag is set) OR Submitted
-        // We fetch the value from DB to be sure, or trust frm.doc
-        let is_locked = frm.doc.submission_attempted == 1 || frm.doc.docstatus == 1;
+        
 
-        const fields_to_lock = ['is_bulk_allocation', 'target_scope', 'source_bank_account', 'amount', 'transaction_type', 'branch'];
+        // const fields_to_lock = ['is_bulk_allocation', 'target_scope', 'source_bank_account', 'amount', 'transaction_type', 'branch'];
+        // fields_to_lock.forEach(field => {
+        //     frm.set_df_property(field, 'read_only', is_locked ? 1 : 0);
+        // });
+
+         const fields_to_lock = ['is_bulk_allocation', 'target_scope', 'source_bank_account', 'amount']; // Removed 'transaction_type', 'branch'
+        
         fields_to_lock.forEach(field => {
             frm.set_df_property(field, 'read_only', is_locked ? 1 : 0);
         });

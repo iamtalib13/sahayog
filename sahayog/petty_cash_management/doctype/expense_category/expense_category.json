@@ -52,7 +52,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-14 11:47:04.122275",
+ "modified": "2026-02-11 13:05:56.114856",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
@@ -79,6 +79,16 @@
    "report": 1,
    "role": "All",
    "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HO Petty Cash Manager",
+   "share": 1,
+   "write": 1
   }
  ],
  "row_format": "Dynamic",
