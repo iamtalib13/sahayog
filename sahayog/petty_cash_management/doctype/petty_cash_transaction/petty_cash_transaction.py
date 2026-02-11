@@ -1165,7 +1165,8 @@ class PettyCashTransaction(Document):
                 })
 
                 frappe.msgprint(
-                    msg=f"Finacle Success: {response.get('message')}",
+                    # msg=f"Finacle Success: {response.get('message')}",
+                    msg=(f"Finacle Success: {response.get('trn_id')}"),
                     title="Success",
                     indicator='green',
                     alert=True  # <--- Added this to make it a floating alert
@@ -1174,7 +1175,8 @@ class PettyCashTransaction(Document):
                 # frappe.msgprint(f"Finacle Success: {response.get('trn_id')}")
             else:
                 frappe.msgprint(
-                    msg=f"Finacle Failed: {response.get('message')}",
+                    # msg=f"Finacle Failed: {response.get('message')}",
+                    msg=(f"Finacle Failed: {response.get('message')}"),
                     title="Error",
                     indicator='red',
                     alert=True  # <--- Added this to make it a floating alert
