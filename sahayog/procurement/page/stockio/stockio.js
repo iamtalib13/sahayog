@@ -942,11 +942,13 @@ class StockIOPage {
       get selectionCategories() {
         if (!this.selectedDocs || this.selectedDocs.length === 0) return [];
         const cats = new Set();
-        
+
         if (!this.requests || !Array.isArray(this.requests)) return [];
 
-        const selectedDocsList = this.requests.filter((d) => this.selectedDocs.includes(d.name));
-        
+        const selectedDocsList = this.requests.filter((d) =>
+          this.selectedDocs.includes(d.name),
+        );
+
         selectedDocsList.forEach((d) => {
           if (d && d.items && Array.isArray(d.items)) {
             d.items.forEach((i) => {
@@ -956,7 +958,7 @@ class StockIOPage {
             });
           }
         });
-        
+
         const result = Array.from(cats);
         // console.log("StockIO Debug - Categories:", result); // Keep it quiet unless needed
         return result;
@@ -973,13 +975,13 @@ class StockIOPage {
         }
 
         const selectedDocsData = this.requests.filter((d) =>
-          this.selectedDocs.includes(d.name)
+          this.selectedDocs.includes(d.name),
         );
 
         if (this.selectionStatus === "Pending Reporting Person") {
           // Current user must be the reporting_person for ALL selected docs
           return selectedDocsData.every(
-            (d) => d.reporting_person === frappe.session.user
+            (d) => d.reporting_person === frappe.session.user,
           );
         }
 
@@ -988,7 +990,7 @@ class StockIOPage {
           // OR have the Head Office Officer role
           return (
             selectedDocsData.every(
-              (d) => d.head_office_officer === frappe.session.user
+              (d) => d.head_office_officer === frappe.session.user,
             ) || frappe.user.has_role("Head Office Officer")
           );
         }
@@ -1304,10 +1306,10 @@ class StockIOPage {
           this.requests.forEach((doc) => {
             const docDate = doc.creation?.split(" ")[0];
             if (docDate === today) this.counts.today++;
-            
+
             // Normalize status for counting
             const status = (doc.status || "").trim();
-            
+
             if (status === "Draft") this.counts.draft++;
             else if (
               [
@@ -1363,10 +1365,12 @@ class StockIOPage {
           },
           callback: (r) => {
             if (!r.message) {
-                console.warn("StockIO Debug: No messages returned from get_list");
-                return;
+              console.warn("StockIO Debug: No messages returned from get_list");
+              return;
             }
-            console.log("StockIO Debug: Fetched " + r.message.length + " requests");
+            console.log(
+              "StockIO Debug: Fetched " + r.message.length + " requests",
+            );
             this.requests = r.message.map((d) => ({
               ...d,
               items: [],
@@ -1379,9 +1383,11 @@ class StockIOPage {
             this.requests.forEach((doc) => this.loadItems(doc));
           },
           error: (r) => {
-             console.error("StockIO Debug: Failed to fetch requests", r);
-             frappe.msgprint("Failed to load requests. Check console for details.");
-          }
+            console.error("StockIO Debug: Failed to fetch requests", r);
+            frappe.msgprint(
+              "Failed to load requests. Check console for details.",
+            );
+          },
         });
       },
       loadItems(doc) {
@@ -1977,7 +1983,9 @@ class StockIOPage {
                 if (!checkbox.is(":checked")) return;
 
                 // Get employee value directly from the control instance
-                let employee = row_controls[idx] ? row_controls[idx].get_value() : null;
+                let employee = row_controls[idx]
+                  ? row_controls[idx].get_value()
+                  : null;
 
                 if (!employee) {
                   frappe.msgprint("Employee is mandatory for row " + (idx + 1));
@@ -2052,10 +2060,10 @@ class StockIOPage {
       },
 
       reports: [
-        {
-          label: "Stock and Asset Reports",
-          route: "/app/query-report/My%20Material%20Requests",
-        },
+        // {
+        //   label: "Stock and Asset Reports",
+        //   route: "/app/query-report/My%20Material%20Requests",
+        // },
         {
           label: "My Material Requests",
           route: "/app/query-report/My%20Material%20Requests",
