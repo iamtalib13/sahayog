@@ -191,6 +191,15 @@ frappe.ui.form.on('Petty Cash Transaction', {
                 }, __("Download Files"));
             }
         }
+
+        
+
+         // Hide Cancel button if status is Verified
+        if (frm.doc.approval_status === 'Verified') {
+            frm.page.clear_secondary_action();  // Removes Cancel button
+            // Or use this more specific approach:
+            // frm.page.btn_secondary.hide();
+        }
     },
 
 
