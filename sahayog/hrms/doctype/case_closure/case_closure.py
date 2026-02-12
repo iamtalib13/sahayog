@@ -3,6 +3,7 @@ import json
 from frappe.model.document import Document
 from frappe.utils import now_datetime
 from frappe.utils import getdate
+# from urllib.parse import urlencode # <--- URL encoding ke liye zaroori import
 
 # Decorator to check whether email notifications are enabled from HR settings
 from sahayog.hrms.doctype.reminder_of_unauthorized_absence.reminder_of_unauthorized_absence import send_reminder_unauthorized_absence_email
@@ -354,13 +355,14 @@ def send_email_for_review(case_id=None, approvers=None):
         "region": disc_case.region,
         "zone": disc_case.zone,
         "case_type": disc_case.case_type,
-        "stage": disc_case.workflow_state,
+        # FIX: Agar workflow_state nahi hai, toh status use karein ya ise khali chodein
+        "stage": disc_case.get("workflow_state") or disc_case.get("status") or "N/A",
         "hr_name": disc_case.hr_name,
         "hr_employee_id": disc_case.hr_employee_id,
 
         # From Case Closure (REQUIRED AS PER YOUR REQUEST)
         "remarks": closure_doc.remarks,
-        "attachment": closure_doc.enquiry_report_upload or "No attachment found",
+        # "attachment": closure_doc.enquiry_report_upload or "No attachment found",
 
         # CASE HISTORY REPORT LINK (CORRECT)
         "case_history_link": f"{get_url()}/app/query-report/Case History?case_id={disc_case.name}"
@@ -395,9 +397,116 @@ def send_email_for_review(case_id=None, approvers=None):
     "msg": "Verification email sent successfully."
 }
 
+# @frappe.whitelist()
+# @email_notification_enabled
+# def send_email_for_review(case_id=None, approvers=None):
+#     import json
+#     from frappe.utils import get_url
 
-from frappe.utils import formatdate
+#     # Validate Case ID
+#     if not case_id:
+#         return {"message": {"status": "error", "msg": "Missing Case ID"}}
 
+#     # Load Case Closure
+#     closure_doc = frappe.get_doc("Case Closure", case_id)
+
+#     # Load linked Disciplinary Case
+#     disc_case = frappe.get_doc("Disciplinary Case", closure_doc.case_id)
+
+#     # -----------------------------
+#     # Parse Approvers
+#     # -----------------------------
+#     if isinstance(approvers, str):
+#         approvers = json.loads(approvers)
+
+#     if not approvers:
+#         return {"message": {"status": "error", "msg": "No approvers selected"}}
+
+#     email_list = [a.get("company_email") for a in approvers if a.get("company_email")]
+
+#     if not email_list:
+#         return {"message": {"status": "error", "msg": "No valid approver email found"}}
+
+#     # -----------------------------
+#     # Load Email Template
+#     # -----------------------------
+#     try:
+#         template = frappe.get_doc("Email Template", "Disciplinary Case Update")
+#     except:
+#         return {"message": {"status": "error", "msg": "Email Template Not Found"}}
+
+#     template_html = template.response_html or template.response or ""
+#     template_subject = template.subject or "Case Review Started"
+
+#     # ---------------------------------------------------------
+#     # ✅ DYNAMIC URL GENERATION (Optimized & Reliable)
+#     # ---------------------------------------------------------
+#     # Report ke filters ko dictionary mein define kiya hai
+#     report_filters = {
+#         "case_id": disc_case.name,
+#         "doctype_filter": "All",
+#         "sort_by": "Creation Date",
+#         "show_versions": 1
+#     }
+    
+#     # urlencode use karne se "Case History" aur "Case ID" ke spaces automatically handle ho jayenge
+#     base_url = f"{get_url()}/app/query-report/Case%20History"
+#     case_history_link = f"{base_url}?{urlencode(report_filters)}"
+
+#     # -----------------------------
+#     # CONTEXT for template
+#     # -----------------------------
+#     context = {
+#         # From Disciplinary Case
+#         "case_id": disc_case.name,
+#         "employee_name": disc_case.employee_name,
+#         "employee_id": disc_case.employee_id,
+#         "region": disc_case.region,
+#         "zone": disc_case.zone,
+#         "case_type": disc_case.case_type,
+#         "stage": disc_case.workflow_state,
+#         "hr_name": disc_case.hr_name,
+#         "hr_employee_id": disc_case.hr_employee_id,
+
+#         # From Case Closure
+#         "remarks": closure_doc.remarks,
+#         "attachment": closure_doc.enquiry_report_upload or "No attachment found",
+
+#         # Optimized Link
+#         "case_history_link": case_history_link
+#     }
+
+#     # -----------------------------
+#     # Render Template
+#     # -----------------------------
+#     rendered_subject = frappe.render_template(template_subject, context)
+#     rendered_message = frappe.render_template(template_html, context)
+
+#     # -----------------------------
+#     # SEND EMAIL
+#     # -----------------------------
+#     try:
+#         frappe.sendmail(
+#             recipients=email_list,
+#             subject=rendered_subject,
+#             message=rendered_message,
+#             now=True,
+#         )
+#     except Exception as e:
+#         return {
+#             "message": {
+#                 "status": "error",
+#                 "msg": "Email sending failed: " + frappe.get_traceback(),
+#             }
+#         }
+
+#     # Success message
+#     return {
+#         "status": "ok",
+#         "msg": "Verification email sent successfully."
+#     }
+    
+    
 # ---------------------------------------------------------
 # Get Employee Email of Case against Employee
 # ---------------------------------------------------------
