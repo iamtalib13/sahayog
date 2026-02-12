@@ -234,14 +234,22 @@ def create_asset_movement_from_emmr(emmr, assets):
     am.custom_reference_doctype = "Employee Material Request"
     am.custom_reference_name = emmr_doc.name
 
-    # Child table (MANDATORY employee)
-    for row in assets:am.append(
-        "assets", {
-    "asset": row["asset"],
-    "source_location": row["location"],
-    "from_employee": row["custodian"],
-    "to_employee": row["employee"],
-})
+# Child table (MANDATORY employee)
+    for row in assets:
+        am.append(
+            "assets", {
+                "asset": row["asset"],
+                "source_location": row["location"],
+                "from_employee": row["custodian"],
+                "to_employee": row["employee"],
+            })
+        
+        # Update Asset Workflow State to 'Assign'
+        try:
+            frappe.db.set_value("Asset", row["asset"], "workflow_state", "Assign")
+        except Exception:
+            pass
+
     am.insert(ignore_permissions=True)
     am.submit()
 

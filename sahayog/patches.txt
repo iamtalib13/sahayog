@@ -16,3 +16,4 @@ sahayog.patches.set_employee_create_user_permission_default
 sahayog.patches.set_ignore_user_permission_in_lead
 sahayog.patches.fixtures.create_comment_email_sent_custom_field
 sahayog.patches.remove_test_company_email
+sahayog.patches.fixtures.create_asset_state_workflow

@@ -1492,7 +1492,6 @@ class StockIOPage {
         doc.showAllItems = !doc.showAllItems;
       },
       createRequest() {
-        console.log("createRequest called. pageMode:", this.pageMode);
         if (this.pageMode === "item") {
           const dialog = new frappe.ui.Dialog({
             title: __("Create New Item"),
