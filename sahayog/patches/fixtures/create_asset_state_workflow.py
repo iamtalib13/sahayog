@@ -32,7 +32,7 @@ def create_asset_workflow():
                 },
                 {
                     "state": "Assign",
-                    "doc_status": "1",
+                    "doc_status": "0",
                     "allow_edit": "System Manager",
                     "update_field": "workflow_state",
                     "update_value": "Assign",

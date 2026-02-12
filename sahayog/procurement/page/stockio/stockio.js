@@ -94,7 +94,7 @@ class StockIOPage {
 
   render() {
     this.wrapper.html(`
-  <div class="stockio-app" v-scope="app">
+  <div class="stockio-app" v-scope>
 
     <!-- ================= SIDEBAR ================= -->
     <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
@@ -187,6 +187,17 @@ class StockIOPage {
       <span v-if="!sidebarCollapsed">Reports</span>
       </div>
 
+      <!-- ITEMS -->
+      <div
+      class="menu-item"
+      :class="{ active: pageMode === 'item' }"
+      @click="setMode('item')"
+      title="Items"
+      >
+      <span class="icon">🏷️</span>
+      <span v-if="!sidebarCollapsed">Items</span>
+      </div>
+
       <div class="menu-item">
       <span class="icon">⚙️</span>
       <span v-if="!sidebarCollapsed">Settings</span>
@@ -211,7 +222,7 @@ class StockIOPage {
     <div class="stockio-toolbar">
 
     <!-- LEFT: TABS -->
-  <div class="stockio-tabs" v-if="pageMode !== 'reports'">
+  <div class="stockio-tabs" v-if="pageMode !== 'reports' && pageMode !== 'item'">
     <template v-if="pageMode === 'requests'">
       <span
       class="tab"
@@ -502,340 +513,217 @@ class StockIOPage {
       </div>
 
     </div>
-    <div v-if="pageMode === 'stock'" class="stockio-view-container">
 
-  <div v-if="subMode === 'inward'" class="stockio-view-container">
-     <div class="order-toolbar">
-      <label>
-        <input
-          type="checkbox"
-          v-model="selectAllInward"
-          @change="toggleSelectAllInward"
-        />
-        Select All
-      </label>
-
-      <div class="toolbar-actions" v-if="hasInwardSelection">
-        <button class="btn ghost">Print</button>
-        <button class="btn success" v-if="canBulkPostInward">Post Receipt</button>
-      </div>
-  </div>
-
-  <div class="stockio-body">
-  <div class="order-card"
-       v-for="doc in inwardVisible"
-       :key="doc.name">
-
-       <div class="order-left">
-
-      <input
-        type="checkbox"
-        v-model="selectedInward"
-        :value="doc.name"
-        @change="syncSelectAllInward"
-      />
-
-
-
-      <div class="order-info">
-        <div class="order-title">
-          <strong>{{ doc.name }}</strong>
-          <span class="badge paid">{{ doc.status }}</span>
-        </div>
-
-        <div class="order-meta">
-          {{ formatDate(doc.posting_date) }} · Supplier:
-          <b>{{ doc.supplier }}</b>
-        </div>
-
-        <!-- FIRST ITEM -->
-        <div class="order-product" v-if="doc.items && doc.items.length > 0">
-          <div>
-            <div class="product-name">
-              {{ doc.items?.[0]?.item_code || "" }}
-
-            </div>
-            <div class="product-meta">
-              Qty: {{ doc.items?.[0]?.qty || 0 }}
-            </div>
-          </div>
-        </div>
-
-        <!-- MORE ITEMS -->
-        <div v-if="doc.showAllItems">
-          <div class="order-product"
-               v-for="item in doc.items.slice(1)"
-               :key="item.name">
-            <div>
-              <div class="product-name">{{ item.item_code }}</div>
-              <div class="product-meta">Qty: {{ item.qty }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="more-items"
-             v-if="doc.items.length > 1"
-             @click="doc.showAllItems = !doc.showAllItems">
-          {{ doc.showAllItems
-            ? 'Hide items'
-            : '+' + (doc.items.length - 1) + ' more items' }}
-        </div>
-
-      </div>
-    </div>
-
-    <div class="order-right">
-      <button class="btn ghost"
-              @click="openPurchaseReceipt(doc.name)">
-        View
-      </button>
-    </div>
-
-  </div>
-
-  <div v-if="canLoadMoreInward"
-       style="text-align:center;margin:16px">
-    <button class="btn ghost" @click="loadMoreInward">
-      Load More
-    </button>
-  </div>
-  </div> <!-- end stockio-body -->
-
-</div>
-
-
-    <div v-if="subMode === 'outward'" class="stockio-view-container">
-    <div class="order-toolbar">
-      <label>
-        <input type="checkbox" v-model="selectAllOutward" @change="toggleSelectAllOutward" />
-        Select All
-      </label>
-
-      <div class="toolbar-actions" v-if="hasOutwardSelection">
-        <button class="btn ghost">Print</button>
-        <button class="btn success" v-if="canBulkSubmitOutward">Submit</button>
-      </div>
-    </div>
-
-    <div class="stockio-body">
-    <div class="order-card" v-for="doc in outwardVisible" :key="doc.name">
-      <div class="order-left">
-        <input type="checkbox" v-model="selectedOutward" :value="doc.name" @change="syncSelectAllOutward" />
-
-        <div class="order-info">
-          <div class="order-title">
-            <strong>{{ doc.name }}</strong>
-            <span class="badge paid">{{ doc.status }}</span>
-          </div>
-
-          <div class="order-meta">
-            {{ formatDate(doc.posting_date) }} · Purpose:
-            <b>{{ doc.purpose }}</b>
-          </div>
-
-          <!-- FIRST ITEM -->
-          <div class="order-product" v-if="doc.items && doc.items.length > 0">
-            <div>
-              <div class="product-name">
-                {{ doc.items?.[0]?.item_code || "" }}
-
+    <!-- ================= STOCK VIEWS ================= -->
+    <div v-if="pageMode === 'stock' && subMode === 'inward'" class="stockio-view-container">
+      <div class="stockio-body">
+        <div class="order-card" v-for="doc in inwardVisible" :key="doc.name">
+          <div class="order-left">
+            <input type="checkbox" v-model="selectedInward" :value="doc.name" @change="syncSelectAllInward" />
+            <div class="order-info">
+              <div class="order-title">
+                <strong>{{ doc.name }}</strong>
+                <span class="badge paid">{{ doc.status }}</span>
               </div>
-              <div class="product-meta">
-                Qty: {{ doc.items?.[0]?.qty || 0 }}
+              <div class="order-meta">
+                {{ formatDate(doc.posting_date) }} · Supplier:
+                <b>{{ doc.supplier }}</b>
+              </div>
+
+              <!-- ITEMS -->
+              <div class="order-product" v-if="doc.items && doc.items.length > 0">
+                <div>
+                  <div class="product-name">{{ doc.items?.[0]?.item_code || "" }}</div>
+                  <div class="product-meta">
+                    Qty: {{ doc.items?.[0]?.qty || 0 }} {{ doc.items?.[0]?.uom || "" }}
+                  </div>
+                </div>
+              </div>
+              <div v-if="doc.showAllItems">
+                <div class="order-product" v-for="item in doc.items.slice(1)" :key="item.name">
+                  <div>
+                    <div class="product-name">{{ item.item_code }}</div>
+                    <div class="product-meta">
+                      Qty: {{ item.qty }} {{ item.uom }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="more-items" v-if="doc.items.length > 1" @click="toggleItems(doc)">
+                {{ doc.showAllItems ? 'Hide items' : '+' + (doc.items.length - 1) + ' more items' }}
               </div>
             </div>
           </div>
+          <div class="order-right">
+            <button class="btn ghost" @click="openPurchaseReceipt(doc.name)">
+              View
+            </button>
+          </div>
+        </div>
+        <div v-if="canLoadMoreInward" style="text-align:center;margin:16px">
+          <button class="btn ghost" @click="loadMoreInward">Load More</button>
+        </div>
+      </div>
+    </div>
 
-          <!-- MORE ITEMS -->
-          <div v-if="doc.showAllItems">
-            <div class="order-product" v-for="item in doc.items.slice(1)" :key="item.name">
-              <div>
-                <div class="product-name">{{ item.item_code }}</div>
-                <div class="product-meta">Qty: {{ item.qty }}</div>
+    <div v-if="pageMode === 'stock' && subMode === 'outward'" class="stockio-view-container">
+      <div class="stockio-body">
+        <div class="order-card" v-for="doc in outwardVisible" :key="doc.name">
+          <div class="order-left">
+            <input type="checkbox" v-model="selectedOutward" :value="doc.name" @change="syncSelectAllOutward" />
+            <div class="order-info">
+              <div class="order-title">
+                <strong>{{ doc.name }}</strong>
+                <span class="badge paid">{{ doc.status }}</span>
+              </div>
+              <div class="order-meta">
+                {{ formatDate(doc.posting_date) }} · Purpose:
+                <b>{{ doc.purpose }}</b>
+              </div>
+
+              <!-- ITEMS -->
+              <div class="order-product" v-if="doc.items && doc.items.length > 0">
+                <div>
+                  <div class="product-name">{{ doc.items?.[0]?.item_code || "" }}</div>
+                  <div class="product-meta">
+                    Qty: {{ doc.items?.[0]?.qty || 0 }} {{ doc.items?.[0]?.uom || "" }}
+                  </div>
+                </div>
+              </div>
+              <div v-if="doc.showAllItems">
+                <div class="order-product" v-for="item in doc.items.slice(1)" :key="item.name">
+                  <div>
+                    <div class="product-name">{{ item.item_code }}</div>
+                    <div class="product-meta">
+                      Qty: {{ item.qty }} {{ item.uom }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="more-items" v-if="doc.items.length > 1" @click="toggleItems(doc)">
+                {{ doc.showAllItems ? 'Hide items' : '+' + (doc.items.length - 1) + ' more items' }}
               </div>
             </div>
           </div>
-
-          <div class="more-items" v-if="doc.items.length > 1" @click="doc.showAllItems = !doc.showAllItems">
-            {{ doc.showAllItems
-              ? 'Hide items'
-              : '+' + (doc.items.length - 1) + ' more items' }}
+          <div class="order-right">
+            <button class="btn ghost" @click="openStockEntry(doc.name)">
+              View
+            </button>
           </div>
         </div>
-      </div>
-
-      <div class="order-right">
-        <button class="btn ghost" @click="openStockEntry(doc.name)">
-          View
-        </button>
-      </div>
-    </div>
-
-    <div v-if="canLoadMoreOutward" style="text-align:center;margin:16px">
-      <button class="btn ghost" @click="loadMoreOutward">
-        Load More
-      </button>
-    </div>
-    </div> <!-- end stockio-body -->
-  </div>
-
-  </div>
-    <div v-if="pageMode === 'asset'" class="stockio-view-container">
-
-    <div v-if="subMode === 'movement'" class="stockio-view-container">
-    <div class="order-toolbar">
-      <label>
-        <input type="checkbox" v-model="selectAllAssetMovements" @change="toggleSelectAllAssetMovements" />
-        Select All
-      </label>
-
-      <div class="toolbar-actions" v-if="hasAssetMovementSelection">
-        <button class="btn ghost">Print</button>
-        <button class="btn success" v-if="canBulkSubmitAssetMovement">Submit</button>
-      </div>
-    </div>
-
-<div class="stockio-body">
-<div class="order-card" v-for="doc in assetMovementsVisible" :key="doc.name">
-
-  <div class="order-left">
-    <input
-      type="checkbox"
-      v-model="selectedAssetMovements"
-      :value="doc.name"
-      @change="syncSelectAllAssetMovements"
-    />
-
-    <div class="order-info">
-      <div class="order-title">
-        <strong>{{ doc.name }}</strong>
-    </div>
-      <div class="order-title">
-        <strong>Reference Name:</strong>
-        <strong>{{doc.custom_reference_name}}</strong>
-        <span class="badge paid">{{ doc.status }}</span>
-      </div>
-
-      <div class="order-meta">
-        {{ formatDate(doc.transaction_date) }} · Purpose:
-        <b>{{ doc.purpose }}</b>
-      </div>
-
-      <!-- FIRST ASSET -->
-      <div class="order-product" v-if="doc.items && doc.items.length > 0">
-        <div>
-          <div class="product-name">
-            {{ doc.items?.[0]?.asset_name || doc.items?.[0]?.asset || "" }}
-          </div>
-          <div class="product-meta">
-            From: {{ doc.items?.[0]?.source_location || "" }}
-            <span v-if="doc.items?.[0]?.to_employee">
-              · To: {{ doc.items?.[0]?.to_employee }}
-            </span>
-          </div>
+        <div v-if="canLoadMoreOutward" style="text-align:center;margin:16px">
+          <button class="btn ghost" @click="loadMoreOutward">Load More</button>
         </div>
       </div>
+    </div>
 
-      <!-- MORE ASSETS -->
-      <div v-if="doc.showAllItems">
-        <div
-          class="order-product"
-          v-for="item in doc.items.slice(1)"
-          :key="item.asset"
-        >
-          <div>
-            <div class="product-name">
-              {{ item.asset_name || item.asset }}
-            </div>
-            <div class="product-meta">
-              From: {{ item.source_location }}
-              <span v-if="item.to_employee">
-                · To: {{ item.to_employee }}
-              </span>
+    <!-- ================= ASSET VIEWS ================= -->
+    <div v-if="pageMode === 'asset' && subMode === 'movement'" class="stockio-view-container">
+      <div class="stockio-body">
+        <div class="order-card" v-for="doc in assetMovementsVisible" :key="doc.name">
+          <div class="order-left">
+            <input type="checkbox" v-model="selectedAssetMovements" :value="doc.name" @change="syncSelectAllAssetMovements" />
+            <div class="order-info">
+              <div class="order-title">
+                <strong>{{ doc.name }}</strong>
+                <span class="badge paid">{{ doc.status }}</span>
+              </div>
+              <div class="order-meta">
+                {{ formatDate(doc.transaction_date) }} · Purpose:
+                <b>{{ doc.purpose }}</b><br>
+                Ref: <b>{{ doc.custom_reference_name }}</b>
+              </div>
+
+              <!-- ITEMS (ASSETS) -->
+              <div class="order-product" v-if="doc.items && doc.items.length > 0">
+                <div>
+                  <div class="product-name">{{ doc.items?.[0]?.asset || "" }}</div>
+                  <div class="product-meta">
+                    {{ doc.items?.[0]?.asset_name || "" }}
+                  </div>
+                </div>
+              </div>
+              <div v-if="doc.showAllItems">
+                <div class="order-product" v-for="item in doc.items.slice(1)" :key="item.name">
+                  <div>
+                    <div class="product-name">{{ item.asset }}</div>
+                    <div class="product-meta">
+                      {{ item.asset_name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="more-items" v-if="doc.items.length > 1" @click="toggleItems(doc)">
+                {{ doc.showAllItems ? 'Hide items' : '+' + (doc.items.length - 1) + ' more items' }}
+              </div>
             </div>
           </div>
+          <div class="order-right">
+            <button class="btn ghost" @click="openAssetMovement(doc.name)">
+              View
+            </button>
+          </div>
+        </div>
+        <div v-if="canLoadMoreAssetMovements" style="text-align:center;margin:16px">
+          <button class="btn ghost" @click="loadMoreAssetMovements">Load More</button>
         </div>
       </div>
-
-      <div
-        class="more-items"
-        v-if="doc.items.length > 1"
-        @click="doc.showAllItems = !doc.showAllItems"
-      >
-        {{ doc.showAllItems
-          ? 'Hide assets'
-          : '+' + (doc.items.length - 1) + ' more assets' }}
-      </div>
-
-    </div>
-  </div>
-
-  <div class="order-right">
-    <button class="btn ghost" @click="openAssetMovement(doc.name)">
-      View
-    </button>
-  </div>
-
-</div>
-
-
-    <div v-if="canLoadMoreAssetMovements" style="text-align:center;margin:16px">
-      <button class="btn ghost" @click="loadMoreAssetMovements">
-        Load More
-      </button>
-    </div>
-    </div> <!-- end stockio-body -->
     </div>
 
-    <div v-if="subMode === 'item'" class="stockio-view-container">
-    <div class="order-toolbar">
-      <label>
-        <input type="checkbox" v-model="selectAllAssets" @change="toggleSelectAllAssets" />
-        Select All
-      </label>
-
-      <div class="toolbar-actions" v-if="hasAssetSelection">
-        <button class="btn ghost">Print</button>
-        <button class="btn success" v-if="canBulkTransferAsset">Transfer</button>
-      </div>
-    </div>
-
-    <div class="stockio-body">
-    <div class="order-card" v-for="doc in assetsVisible" :key="doc.name">
-      <div class="order-left">
-        <input type="checkbox" v-model="selectedAssets" :value="doc.name" @change="syncSelectAllAssets" />
-
-        <div class="order-info">
-          <div class="order-title">
-            <strong>{{ doc.asset_name }}</strong>
-            <span class="badge paid">{{ doc.status }}</span>
+    <div v-if="pageMode === 'asset' && subMode === 'item'" class="stockio-view-container">
+      <div class="stockio-body">
+        <div class="order-card" v-for="doc in assetsVisible" :key="doc.name">
+          <div class="order-left">
+            <input type="checkbox" v-model="selectedAssets" :value="doc.name" @change="syncSelectAllAssets" />
+            <div class="order-info">
+              <div class="order-title">
+                <strong>{{ doc.asset_name }}</strong>
+                <span class="badge paid">{{ doc.status }}</span>
+              </div>
+              <div class="order-meta">
+                {{ doc.name }} · Owner:
+                <b>{{ doc.owner }}</b>
+              </div>
+            </div>
           </div>
-
-          <div class="order-meta">
-            {{ doc.name }} · Owner:
-            <b>{{ doc.owner }}</b>
+          <div class="order-right">
+            <button class="btn ghost" @click="openAsset(doc.name)">
+              View
+            </button>
           </div>
-
+        </div>
+        <div v-if="canLoadMoreAssets" style="text-align:center;margin:16px">
+          <button class="btn ghost" @click="loadMoreAssets">Load More</button>
         </div>
       </div>
+    </div>
 
-      <div class="order-right">
-        <button class="btn ghost" @click="openAsset(doc.name)">
-          View
-        </button>
+    <!-- ================= ITEMS VIEW ================= -->
+    <div v-if="pageMode === 'item'" class="stockio-view-container">
+      <div class="stockio-body">
+        <div class="order-card" v-for="doc in itemsVisible" :key="doc.name">
+          <div class="order-left">
+            <div class="order-info">
+              <div class="order-title">
+                <strong>{{ doc.item_name }}</strong>
+                <span class="badge grey">{{ doc.item_group }}</span>
+              </div>
+              <div class="order-meta">
+                Code: <b>{{ doc.item_code }}</b> · UOM: <b>{{ doc.stock_uom }}</b>
+              </div>
+            </div>
+          </div>
+          <div class="order-right">
+            <button class="btn ghost" @click="frappe.set_route('Form', 'Item', doc.name)">
+              View
+            </button>
+          </div>
+        </div>
+        <div v-if="canLoadMoreItems" style="text-align:center;margin:16px">
+          <button class="btn ghost" @click="loadMoreItems">Load More</button>
+        </div>
       </div>
     </div>
-
-    <div v-if="canLoadMoreAssets" style="text-align:center;margin:16px">
-      <button class="btn ghost" @click="loadMoreAssets">
-        Load More
-      </button>
-    </div>
-  </div> <!-- end stockio-body -->
-  </div>
-
-  </div>
-
 
     </main>
   </div>
@@ -880,6 +768,11 @@ class StockIOPage {
       assetMovementsOffset: 0,
       assetMovementsPageSize: 5,
 
+      itemsList: [],
+      itemsVisible: [],
+      itemsOffset: 0,
+      itemsPageSize: 10,
+
       // SELECTION
       selectAll: false,
       selectedDocs: [],
@@ -913,6 +806,7 @@ class StockIOPage {
           return this.subMode === "item" ? "Asset-Item" : "Asset-Movement";
         }
         if (this.pageMode === "reports") return "Reports";
+        if (this.pageMode === "item") return "Items";
         return "StockIO";
       },
 
@@ -925,6 +819,7 @@ class StockIOPage {
           return this.assetMovements;
         if (this.pageMode === "asset" && this.subMode === "item")
           return this.assets;
+        if (this.pageMode === "item") return this.itemsList;
         return this.requests;
       },
 
@@ -960,13 +855,11 @@ class StockIOPage {
         });
 
         const result = Array.from(cats);
-        // console.log("StockIO Debug - Categories:", result); // Keep it quiet unless needed
         return result;
       },
       get canActionSelection() {
         if (!this.selectedDocs.length) return false;
 
-        // Administrator or Store Manager can always see and action
         if (
           frappe.session.user === "Administrator" ||
           frappe.user.has_role("Store Manager")
@@ -979,15 +872,12 @@ class StockIOPage {
         );
 
         if (this.selectionStatus === "Pending Reporting Person") {
-          // Current user must be the reporting_person for ALL selected docs
           return selectedDocsData.every(
             (d) => d.reporting_person === frappe.session.user,
           );
         }
 
         if (this.selectionStatus === "Pending HO Approval") {
-          // Current user must be the head_office_officer for ALL selected docs
-          // OR have the Head Office Officer role
           return (
             selectedDocsData.every(
               (d) => d.head_office_officer === frappe.session.user,
@@ -1058,10 +948,12 @@ class StockIOPage {
           this.assetMovementsVisible.length < this.getFilteredList().length
         );
       },
+      get canLoadMoreItems() {
+        return this.itemsVisible.length < this.getFilteredList().length;
+      },
 
       // ===== METHODS =====
       setMode(mode, sub = null) {
-        // Validate sub-mode for the category
         if (mode === "stock" && !["inward", "outward"].includes(sub)) {
           sub =
             this.subMode && ["inward", "outward"].includes(this.subMode)
@@ -1080,7 +972,6 @@ class StockIOPage {
         localStorage.setItem("stockio_page_mode", mode);
         localStorage.setItem("stockio_sub_mode", sub || "");
 
-        // Auto-expand submenus
         if (mode === "stock") this.stockOpen = true;
         if (mode === "asset") this.assetOpen = true;
 
@@ -1123,6 +1014,13 @@ class StockIOPage {
             this.assetMovementsVisible = [];
             this.loadMoreAssetMovements();
           }
+        } else if (mode === "item") {
+          if (!this.itemsList.length) this.loadItemsList();
+          else {
+            this.itemsOffset = 0;
+            this.itemsVisible = [];
+            this.loadMoreItems();
+          }
         }
       },
 
@@ -1148,7 +1046,6 @@ class StockIOPage {
         this.performSearch();
       },
 
-      // SEARCH & FILTERING
       performSearch() {
         this.offset = 0;
         this.visibleRequests = [];
@@ -1160,6 +1057,8 @@ class StockIOPage {
         this.assetsVisible = [];
         this.assetMovementsOffset = 0;
         this.assetMovementsVisible = [];
+        this.itemsOffset = 0;
+        this.itemsVisible = [];
 
         if (this.pageMode === "requests") this.loadMore();
         else if (this.pageMode === "stock" && this.subMode === "inward")
@@ -1170,6 +1069,7 @@ class StockIOPage {
           this.loadMoreAssets();
         else if (this.pageMode === "asset" && this.subMode === "movement")
           this.loadMoreAssetMovements();
+        else if (this.pageMode === "item") this.loadMoreItems();
       },
 
       getFilteredList() {
@@ -1239,6 +1139,19 @@ class StockIOPage {
           return list;
         }
 
+        if (this.pageMode === "item") {
+          let list = this.itemsList;
+          if (q) {
+            list = list.filter(
+              (d) =>
+                d.item_code?.toLowerCase().includes(q) ||
+                d.item_name?.toLowerCase().includes(q) ||
+                d.item_group?.toLowerCase().includes(q),
+            );
+          }
+          return list;
+        }
+
         return [];
       },
 
@@ -1289,6 +1202,16 @@ class StockIOPage {
         this.assetMovementsOffset += this.assetMovementsPageSize;
       },
 
+      loadMoreItems() {
+        const source = this.getFilteredList();
+        const next = source.slice(
+          this.itemsOffset,
+          this.itemsOffset + this.itemsPageSize,
+        );
+        this.itemsVisible.push(...next);
+        this.itemsOffset += this.itemsPageSize;
+      },
+
       // COUNTS
       computeCounts() {
         if (this.pageMode === "requests") {
@@ -1307,7 +1230,6 @@ class StockIOPage {
             const docDate = doc.creation?.split(" ")[0];
             if (docDate === today) this.counts.today++;
 
-            // Normalize status for counting
             const status = (doc.status || "").trim();
 
             if (status === "Draft") this.counts.draft++;
@@ -1323,6 +1245,8 @@ class StockIOPage {
               this.counts.approved++;
             else if (status === "Cancelled") this.counts.cancelled++;
           });
+        } else if (this.pageMode === "item") {
+          this.counts = { all: this.itemsList.length };
         } else {
           const list = this.activeList;
           this.counts = {
@@ -1345,7 +1269,6 @@ class StockIOPage {
 
       // REQUESTS
       loadRequests() {
-        console.log("StockIO Debug: Fetching Employee Material Requests...");
         frappe.call({
           method: "frappe.client.get_list",
           args: {
@@ -1364,13 +1287,7 @@ class StockIOPage {
             limit_page_length: 1000,
           },
           callback: (r) => {
-            if (!r.message) {
-              console.warn("StockIO Debug: No messages returned from get_list");
-              return;
-            }
-            console.log(
-              "StockIO Debug: Fetched " + r.message.length + " requests",
-            );
+            if (!r.message) return;
             this.requests = r.message.map((d) => ({
               ...d,
               items: [],
@@ -1381,12 +1298,6 @@ class StockIOPage {
             this.visibleRequests = [];
             this.loadMore();
             this.requests.forEach((doc) => this.loadItems(doc));
-          },
-          error: (r) => {
-            console.error("StockIO Debug: Failed to fetch requests", r);
-            frappe.msgprint(
-              "Failed to load requests. Check console for details.",
-            );
           },
         });
       },
@@ -1552,6 +1463,27 @@ class StockIOPage {
         });
       },
 
+      // ITEMS LIST
+      loadItemsList() {
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Item",
+            fields: ["name", "item_code", "item_name", "item_group", "stock_uom"],
+            order_by: "item_name asc",
+            limit_page_length: 1000,
+          },
+          callback: (r) => {
+            if (!r.message) return;
+            this.itemsList = r.message;
+            this.computeCounts();
+            this.itemsOffset = 0;
+            this.itemsVisible = [];
+            this.loadMoreItems();
+          },
+        });
+      },
+
       // HELPERS
       formatDate(date) {
         return frappe.datetime.str_to_user(date);
@@ -1560,6 +1492,123 @@ class StockIOPage {
         doc.showAllItems = !doc.showAllItems;
       },
       createRequest() {
+        if (this.pageMode === "item") {
+          const dialog = new frappe.ui.Dialog({
+            title: __("Create New Item"),
+            fields: [
+              {
+                label: "Item Code",
+                fieldname: "item_code",
+                fieldtype: "Data",
+                reqd: 1,
+              },
+              {
+                label: "Item Name",
+                fieldname: "item_name",
+                fieldtype: "Data",
+                reqd: 1,
+              },
+              {
+                label: "Default Unit of Measure",
+                fieldname: "stock_uom",
+                fieldtype: "Link",
+                options: "UOM",
+                reqd: 1,
+              },
+              {
+                label: "Item Department",
+                fieldname: "custom_item_department",
+                fieldtype: "Link",
+                options: "Item Department",
+                reqd: 1,
+              },
+              {
+                label: "Item Group",
+                fieldname: "item_group",
+                fieldtype: "Link",
+                options: "Item Group",
+                reqd: 1,
+              },
+              {
+                label: "HSN/SAC",
+                fieldname: "gst_hsn_code",
+                fieldtype: "Link",
+                options: "GST HSN Code",
+              },
+              {
+                label: "Is Stock Item",
+                fieldname: "is_stock_item",
+                fieldtype: "Check",
+                default: 1,
+              },
+              {
+                label: "Opening Stock",
+                fieldname: "opening_stock",
+                fieldtype: "Float",
+                depends_on: "eval:doc.is_stock_item == 1",
+              },
+              {
+                label: "Valuation Rate",
+                fieldname: "valuation_rate",
+                fieldtype: "Currency",
+                depends_on: "eval:doc.is_stock_item == 1",
+              },
+              {
+                label: "Standard Rate",
+                fieldname: "standard_rate",
+                fieldtype: "Currency",
+                depends_on: "eval:doc.is_stock_item == 1",
+              },
+              {
+                label: "Is Fixed Asset",
+                fieldname: "is_fixed_asset",
+                fieldtype: "Check",
+                default: 0,
+              },
+              {
+                label: "Asset Category",
+                fieldname: "asset_category",
+                fieldtype: "Link",
+                options: "Asset Category",
+                depends_on: "eval:doc.is_fixed_asset == 1",
+              },
+            ],
+            primary_action_label: __("Create"),
+            primary_action: (values) => {
+              frappe.call({
+                method: "frappe.client.insert",
+                args: {
+                  doc: {
+                    doctype: "Item",
+                    ...values,
+                  },
+                },
+                callback: (r) => {
+                  if (!r.exc) {
+                    frappe.show_alert({
+                      message: __("Item {0} created", [r.message.name || r.message.item_code]),
+                      indicator: "green",
+                    });
+                    dialog.hide();
+                    this.loadItemsList(); // Refresh the list
+                    frappe.set_route("Form", "Item", r.message.name);
+                  }
+                },
+              });
+            },
+          });
+
+          if (dialog.fields_dict.gst_hsn_code) {
+            dialog.fields_dict.gst_hsn_code.get_query = () => {
+              return {
+                filters: {},
+              };
+            };
+          }
+
+          dialog.show();
+          return;
+        }
         if (this.pageMode === "stock") {
           if (this.subMode === "inward")
             return frappe.set_route(
@@ -1619,7 +1668,6 @@ class StockIOPage {
 
         const executeWithRemark = (remark = "") => {
           if (action === "Submit") {
-            // Use specialized bulk submit method
             frappe.call({
               method:
                 "sahayog.procurement.page.stockio.stockio.bulk_submit_requests",
@@ -1645,7 +1693,6 @@ class StockIOPage {
               },
             });
           } else {
-            // Sequential workflow or custom action
             frappe.show_progress(
               `${actionLabel}ing Requests`,
               0,
@@ -1703,7 +1750,6 @@ class StockIOPage {
                   },
                 });
               } else {
-                // Unified call to avoid "Document has been modified" errors
                 frappe.call({
                   method:
                     "sahayog.procurement.doctype.employee_material_request.employee_material_request.workflow_action_update_status",
@@ -1751,7 +1797,6 @@ class StockIOPage {
             "Submit",
           );
 
-          // Workaround: Disable Grammarly on the remark field to prevent 'crypto.randomUUID' crashes
           if (dialog && dialog.fields_dict.remark) {
             const $input = $(dialog.fields_dict.remark.input);
             $input.attr("data-gramm", "false");
@@ -1768,7 +1813,6 @@ class StockIOPage {
         }
       },
 
-      // SELECTION HANDLERS
       toggleSelectAll() {
         this.selectedDocs = this.selectAll
           ? this.requests.map((d) => d.name)
@@ -1814,38 +1858,12 @@ class StockIOPage {
           this.selectedAssetMovements.length === this.assetMovements.length;
       },
 
-      /*
-      handleInwardAction() {
-        if (!this.selectedDocs.length) return;
-
-        // Navigate to Purchase Receipt form for inward movement
-        frappe.set_route("Form", "Purchase Receipt", "new-purchase-receipt-1");
-      },
-
-      handleOutwardAction() {
-        if (!this.selectedDocs.length) return;
-
-        // Pass EMR name to Stock Entry
-        frappe.route_options = {
-          "custom_material_request": this.selectedDocs[0]
-        };
-
-        // Navigate to Stock Entry form for outward movement
-        frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
-      },
-      */
-
       async handleAssetMovementAction() {
         if (!this.selectedDocs.length) return;
-
-        // If multiple docs selected, we process them one by one or pick the first
-        // For matching the original form logic, we pick the first selected doc
         const docname = this.selectedDocs[0];
-
         frappe.dom.freeze("Loading Asset Data...");
 
         try {
-          // Fetch the full document to get items
           const res_doc = await frappe.call({
             method: "frappe.client.get",
             args: { doctype: "Employee Material Request", name: docname },
@@ -1858,23 +1876,6 @@ class StockIOPage {
           }
 
           let asset_list = {};
-          let employees = [];
-
-          // --------------------------------------------------
-          // Fetch Employees (Company specific)
-          // --------------------------------------------------
-          employees = await frappe.db.get_list("Employee", {
-            fields: ["name", "employee_name"],
-            filters: {
-              company: "Sahayog Multistate Credit Co-op Society Ltd",
-              status: "Active",
-            },
-            limit: 500,
-          });
-
-          // --------------------------------------------------
-          // Fetch available assets
-          // --------------------------------------------------
           const res_assets = await frappe.call({
             method:
               "sahayog.procurement.api.stock_balance_ledger.get_asset_combine_data",
@@ -1895,9 +1896,6 @@ class StockIOPage {
 
           frappe.dom.unfreeze();
 
-          // --------------------------------------------------
-          // Build popup table (MINIMAL UI)
-          // --------------------------------------------------
           let html = `
             <style>
               .emmr-table { font-size: 13px; border-collapse: collapse; width: 100%; }
@@ -1929,13 +1927,10 @@ class StockIOPage {
           (doc.items || []).forEach((row) => {
             if (row.item_category !== "Asset") return;
             has_assets = true;
-
             let assets = asset_list[row.item_code] || [];
-
             for (let i = 0; i < row.quantity; i++) {
               let a = assets[i];
               if (!a) continue;
-
               html += `
                 <tr>
                   <td>${sr++}</td>
@@ -1967,8 +1962,7 @@ class StockIOPage {
           }
 
           html += "</tbody></table>";
-
-          const row_controls = []; // Store control instances for reliable value retrieval
+          const row_controls = [];
 
           let d = new frappe.ui.Dialog({
             title: __("Select Assets & Employee - {0}", [docname]),
@@ -1977,22 +1971,15 @@ class StockIOPage {
             primary_action_label: "Create Asset Movement",
             primary_action() {
               let selected = [];
-
               d.$wrapper.find("tbody tr").each(function (idx) {
                 let checkbox = $(this).find(".emmr-asset");
                 if (!checkbox.is(":checked")) return;
-
-                // Get employee value directly from the control instance
-                let employee = row_controls[idx]
-                  ? row_controls[idx].get_value()
-                  : null;
-
+                let employee = row_controls[idx] ? row_controls[idx].get_value() : null;
                 if (!employee) {
                   frappe.msgprint("Employee is mandatory for row " + (idx + 1));
                   selected = [];
                   return false;
                 }
-
                 selected.push({
                   asset: checkbox.data("asset"),
                   employee: employee,
@@ -2002,14 +1989,9 @@ class StockIOPage {
               });
 
               if (!selected.length) return;
-
               frappe.call({
-                method:
-                  "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
-                args: {
-                  emmr: docname,
-                  assets: selected,
-                },
+                method: "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
+                args: { emmr: docname, assets: selected },
                 freeze: true,
                 freeze_message: "Creating Asset Movement...",
                 callback: (r) => {
@@ -2028,7 +2010,6 @@ class StockIOPage {
           d.$wrapper.find("tbody tr").each(function (idx) {
             const row = this;
             const wrapper = $(row).find(".emmr-employee-link")[0];
-
             const control = frappe.ui.form.make_control({
               parent: wrapper,
               df: {
@@ -2048,9 +2029,8 @@ class StockIOPage {
               },
               render_input: true,
             });
-
             control.make();
-            row_controls[idx] = control; // Store the control instance
+            row_controls[idx] = control;
           });
         } catch (e) {
           frappe.dom.unfreeze();
@@ -2060,10 +2040,6 @@ class StockIOPage {
       },
 
       reports: [
-        // {
-        //   label: "Stock and Asset Reports",
-        //   route: "/app/query-report/My%20Material%20Requests",
-        // },
         {
           label: "My Material Requests",
           route: "/app/query-report/My%20Material%20Requests",
@@ -2099,38 +2075,24 @@ class StockIOPage {
           label: status === "Draft" ? "Draft" : "Submitted",
         };
 
-        // Step 2: Reporting
         let step2State = "disabled";
         let step2Label = "Reporting";
-
-        if (status === "Pending Reporting Person") {
-          step2State = "pending";
-        } else if (
-          ["Pending HO Approval", "Approved", "Self Approved"].includes(status)
-        ) {
-          step2State = "done";
-        } else if (status === "Rejected") {
-          // Check if it was rejected at reporting stage
+        if (status === "Pending Reporting Person") step2State = "pending";
+        else if (["Pending HO Approval", "Approved", "Self Approved"].includes(status)) step2State = "done";
+        else if (status === "Rejected") {
           if (doc.reporting_person_status === "Rejected") {
             step2State = "rejected";
             step2Label = "Rejected";
-          } else {
-            step2State = "done";
-          }
+          } else step2State = "done";
         }
-
         let step2 = { visible: true, state: step2State, label: step2Label };
 
-        // Step 3: HO Approval
         let step3State = "disabled";
         let step3Label = "HO Approval";
         let step3Visible = status !== "Self Approved";
-
-        if (status === "Pending HO Approval") {
-          step3State = "pending";
-        } else if (status === "Approved") {
-          step3State = "done";
-        } else if (status === "Cancelled") {
+        if (status === "Pending HO Approval") step3State = "pending";
+        else if (status === "Approved") step3State = "done";
+        else if (status === "Cancelled") {
           step3State = "cancelled";
           step3Label = "Cancelled";
         } else if (status === "Rejected") {
@@ -2138,16 +2100,9 @@ class StockIOPage {
             step3State = "rejected";
             step3Label = "Rejected";
           }
-        } else if (status === "Self Approved") {
-          step3Visible = false; // Hide or show as skipped
-        }
+        } else if (status === "Self Approved") step3Visible = false;
 
-        let step3 = {
-          visible: step3Visible,
-          state: step3State,
-          label: step3Label,
-        };
-
+        let step3 = { visible: step3Visible, state: step3State, label: step3Label };
         return { step1, step2, step3 };
       },
     };
