@@ -1,10 +1,50 @@
 frappe.query_reports["Branch Stock"] = {
-  filters: [],
+  filters: [
+    {
+      fieldname: "warehouse",
+      label: __("Warehouse"),
+      fieldtype: "Link",
+      options: "Warehouse",
+      reqd: 0,
+    },
+  ],
 
-  // ✅ GLOBAL STATE (this is the key fix)
+  // ✅ GLOBAL STATE
   selected_items: {}, // { item_code: warehouse }
 
   onload: function (report) {
+    // 🔹 Permission logic for Warehouse filter
+    if (frappe.session.user !== "Administrator") {
+      frappe.db
+        .get_value("Employee", { user_id: frappe.session.user }, [
+          "designation",
+          "branch",
+        ])
+        .then((r) => {
+          const emp = r.message;
+          if (emp) {
+            const is_manager =
+              emp.designation && emp.designation.toLowerCase().includes("manager");
+            
+            if (emp.branch) {
+              report.set_filter_value("warehouse", emp.branch);
+            }
+
+            if (!is_manager && emp.branch) {
+              const filter = report.get_filter("warehouse");
+              if (filter) {
+                filter.df.get_query = () => {
+                  return {
+                    filters: { name: emp.branch },
+                  };
+                };
+                filter.refresh();
+              }
+            }
+          }
+        });
+    }
+
     report.page.add_inner_button("Create EMMR", () => {
       bulk_action("emmr");
     });
@@ -29,8 +69,30 @@ frappe.query_reports["Branch Stock"] = {
 
       const fields = [];
 
-      // EMMR header fields
-      if (type === "emmr") {
+      // Unified fields for dialog
+      if (type === "inward") {
+        fields.push(
+          {
+            fieldtype: "Link",
+            fieldname: "supplier",
+            label: "Supplier",
+            options: "Supplier",
+            reqd: 1,
+          },
+          {
+            fieldtype: "Link",
+            fieldname: "target_warehouse",
+            label: "Target Warehouse",
+            options: "Warehouse",
+            reqd: 1,
+            default: report.get_filter_value("warehouse"),
+            get_query: () => ({
+              filters: { custom_warehouse_category: ["like", "Store%"] },
+            }),
+          },
+          { fieldtype: "Section Break" }
+        );
+      } else if (type === "emmr") {
         fields.push(
           {
             fieldtype: "Link",
@@ -45,6 +107,7 @@ frappe.query_reports["Branch Stock"] = {
             label: "Warehouse",
             options: "Warehouse",
             reqd: 1,
+            default: report.get_filter_value("warehouse"),
             get_query: () => ({
               filters: { custom_warehouse_category: ["like", "Store%"] },
             }),
@@ -78,142 +141,74 @@ frappe.query_reports["Branch Stock"] = {
             });
           });
 
-          // 🔹 ROUTING (THIS MATCHES YOUR WORKING CODE STYLE)
+          // 🔹 ROUTING
           if (type === "issue") {
             frappe.route_options = {
               stock_entry_type: "Material Issue",
               items: items.map((i) => ({
                 item_code: i.item_code,
                 qty: i.qty,
-                s_warehouse: i.from_warehouse, // ✅ SET PER ROW
+                s_warehouse: i.from_warehouse,
               })),
             };
             frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
           }
 
           if (type === "inward") {
-            fields.unshift(
-              {
-                fieldtype: "Link",
-                fieldname: "supplier",
-                label: "Supplier",
-                options: "Supplier",
-                reqd: 1,
-              },
-              {
-                fieldtype: "Link",
-                fieldname: "target_warehouse",
-                label: "Target Warehouse",
-                options: "Warehouse",
-                reqd: 1,
-                default: "Stores - S",
-                get_query: () => ({
-                  filters: { custom_warehouse_category: ["like", "Store%"] },
-                }),
-              },
-              { fieldtype: "Section Break" }
-            );
-
-            frappe.prompt(
-              fields,
-              (values) => {
-                const selected_items =
-                  frappe.query_reports["Branch Stock"].selected_items;
-                const item_codes = Object.keys(selected_items);
-
-                frappe.db
-                  .get_list("Item", {
-                    filters: { name: ["in", item_codes] },
-                    fields: ["name", "item_name", "stock_uom"],
-                  })
-                  .then((item_list) => {
-                    const doc = {
-                      doctype: "Purchase Receipt",
-                      supplier: values.supplier,
-                      posting_date: frappe.datetime.nowdate(),
-                      posting_time: frappe.datetime.now_time(),
-                      items: item_codes.map((item_code) => {
-                        const item =
-                          item_list.find((i) => i.name === item_code) || {};
-                        return {
-                          item_code: item_code,
-                          item_name: item.item_name || item_code,
-                          description: item_code,
-                          qty: values[`qty_${item_code}`],
-                          stock_uom: item.stock_uom || "Nos",
-                          warehouse: values.target_warehouse,
-                          rate: 0,
-                          amount: 0,
-                          cost_center: "",
-                        };
-                      }),
+            frappe.db
+              .get_list("Item", {
+                filters: { name: ["in", item_codes] },
+                fields: ["name", "item_name", "stock_uom"],
+              })
+              .then((item_list) => {
+                const doc = {
+                  doctype: "Purchase Receipt",
+                  supplier: values.supplier,
+                  posting_date: frappe.datetime.nowdate(),
+                  posting_time: frappe.datetime.now_time(),
+                  items: item_codes.map((item_code) => {
+                    const item =
+                      item_list.find((i) => i.name === item_code) || {};
+                    return {
+                      item_code: item_code,
+                      item_name: item.item_name || item_code,
+                      description: item_code,
+                      qty: values[`qty_${item_code}`],
+                      stock_uom: item.stock_uom || "Nos",
+                      warehouse: values.target_warehouse,
+                      rate: 0,
+                      amount: 0,
+                      cost_center: "",
                     };
+                  }),
+                };
 
-                    // ✅ FIXED: Correct args format for frappe.client.insert
-                    frappe.call({
-                      method: "frappe.client.insert",
-                      args: { doc: doc },
-                      callback: (r) => {
-                        if (!r.exc && r.message) {
-                          // Store PR name for submit
-                          let pr_name = r.message.name;
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: { doc: doc },
+                  callback: (r) => {
+                    if (!r.exc && r.message) {
+                      let pr_name = r.message.name;
 
-                          frappe.msgprint({
-                            title: "Purchase Receipt Created!",
-                            message: `PR <b>${pr_name}</b> saved successfully!<br><br>
-                  <button class="btn btn-primary btn-sm" onclick="submit_pr('${pr_name}')">
+                      frappe.msgprint({
+                        title: "Purchase Receipt Created!",
+                        message: `PR <b>${pr_name}</b> saved successfully!<br><br>
+                  <button class="btn btn-primary btn-sm" onclick="window.submit_pr('${pr_name}')">
                     <i class="fa fa-check"></i> Submit Now
                   </button>`,
-                            indicator: "green",
-                            wide: true,
-                          });
-
-                          // Clear selection
-                          frappe.query_reports["Branch Stock"].selected_items =
-                            {};
-                          frappe.query_report.refresh();
-                        }
-                      },
-                      error: (r) =>
-                        frappe.msgprint("Error: " + (r.message || "Unknown")),
-                    });
-
-                    // ✅ Global function for Submit button
-                    function submit_pr(pr_name) {
-                      frappe.call({
-                        method: "frappe.client.set_value",
-                        args: {
-                          doctype: "Purchase Receipt",
-                          name: pr_name,
-                          fieldname: "docstatus",
-                          value: 1, // Submit = docstatus 1
-                        },
-                        callback: (r) => {
-                          if (!r.exc) {
-                            frappe.msgprint({
-                              title: "Submitted!",
-                              message: `Purchase Receipt <b>${pr_name}</b> submitted successfully!`,
-                              indicator: "green",
-                            });
-                            frappe.query_report.refresh(); // Refresh stock levels
-                          }
-                        },
-                        error: (r) =>
-                          frappe.msgprint(
-                            "Submit Error: " + (r.message || "Unknown")
-                          ),
+                        indicator: "green",
+                        wide: true,
                       });
+
+                      frappe.query_reports["Branch Stock"].selected_items = {};
+                      frappe.query_report.refresh();
                     }
-                  });
-              },
-              "Enter Details",
-              "Create"
-            );
+                  },
+                });
+              });
           }
 
           if (type === "emmr") {
-            const item_codes = items.map((i) => i.item_code);
-
             frappe.db
               .get_list("Item", {
                 filters: { name: ["in", item_codes] },
@@ -235,8 +230,8 @@ frappe.query_reports["Branch Stock"] = {
                     item_code: i.item_code,
                     item_name: item_data.find((d) => d.name === i.item_code)
                       .item_name,
-                    quantity: i.qty, // keeping your field as-is
-                    item_category: category_map[i.item_code], // ✅ derived from is_fixed_asset
+                    quantity: i.qty,
+                    item_category: category_map[i.item_code],
                   })),
                 };
 
@@ -256,8 +251,13 @@ frappe.query_reports["Branch Stock"] = {
 
   formatter: function (value, row, column, data, default_formatter) {
     if (column.fieldname === "select_row") {
+      const is_checked = frappe.query_reports["Branch Stock"].selected_items[
+        data.item_code
+      ]
+        ? "checked"
+        : "";
       return `
-        <input type="checkbox"
+        <input type="checkbox" ${is_checked}
           onchange="
             const s = frappe.query_reports['Branch Stock'].selected_items;
             this.checked
@@ -271,6 +271,7 @@ frappe.query_reports["Branch Stock"] = {
     return default_formatter(value, row, column, data);
   },
 };
+
 window.submit_pr = function (pr_name) {
   frappe.call({
     method: "frappe.client.get",
