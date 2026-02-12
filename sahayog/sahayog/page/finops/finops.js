@@ -23,7 +23,7 @@ frappe.pages['finops'].on_page_load = function(wrapper) {
                     </div>
 
                     <div class="card-header">
-                        <h1 class="app-title">FinOps Converter</h1>
+                        <h1 class="app-title">FinOps</h1>
                         <p class="app-subtitle">Securely process Excel files for Finacle banking operations</p>
                     </div>
 
@@ -143,7 +143,7 @@ frappe.pages['finops'].on_page_load = function(wrapper) {
 
             // Methods
             init() {
-                console.log('FinOps Converter Loaded');
+                console.log('FinOps Loaded');
             },
 
             handleFile(e) {
