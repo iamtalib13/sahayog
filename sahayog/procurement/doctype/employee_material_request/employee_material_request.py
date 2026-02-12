@@ -65,7 +65,10 @@ class EmployeeMaterialRequest(Document):
         if not self.required_by_date:
             frappe.throw(_("Required By Date is mandatory"), title=_("Missing Required Field"))
         
-        if getdate(self.required_by_date) < getdate(today()):
+                # Only check if date is in the past during initial submission
+        old_status = self.get_db_value("status")
+        is_submitting = (self.status == "Pending Reporting Person" and old_status in ["Draft", "Rejected", None])
+        if (self.status in ["Draft", "Rejected"] or is_submitting) and getdate(self.required_by_date) < getdate(today()):
             frappe.throw(_("Required By Date cannot be in the past."), title=_("Invalid Date"))
         
         if getdate(self.required_by_date) < getdate(self.request_date):
