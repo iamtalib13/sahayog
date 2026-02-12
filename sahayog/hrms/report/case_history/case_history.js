@@ -341,7 +341,7 @@ function toggle_add_review_button(report) {
   }
 
   // ✅ System Manager always allowed
-  if (frappe.user.has_role("System Manager")) {
+  if (frappe.user.has_role("System Manager") || frappe.user.has_role("Employee")) {
     btn.show();
     return;
   }
