@@ -247,8 +247,15 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
         loan_sol_id = loan_account_id[:4] 
         oper_sol_id = operative_account_id[:4]
 
+        # if disbursement_date:
+        #     val_date_obj = datetime.strptime(str(disbursement_date), '%Y-%m-%d')
+        # else:
+        #     val_date_obj = datetime.now()
+
         if disbursement_date:
-            val_date_obj = datetime.strptime(str(disbursement_date), '%Y-%m-%d')
+            # CLEAN THE DATE STRING: Remove time part " 00:00:00" if present
+            clean_date_str = str(disbursement_date).split(" ")[0].strip()
+            val_date_obj = datetime.strptime(clean_date_str, '%Y-%m-%d')
         else:
             val_date_obj = datetime.now()
         
