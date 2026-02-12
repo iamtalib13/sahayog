@@ -1,7 +1,7 @@
 frappe.pages['finops'].on_page_load = function(wrapper) {
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: 'None',
+		title: 'FinOps - Finacle Operations',
 		single_column: true
 	});
 	
