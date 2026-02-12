@@ -94,7 +94,7 @@ class StockIOPage {
 
   render() {
     this.wrapper.html(`
-  <div class="stockio-app" v-scope="app">
+  <div class="stockio-app" v-scope>
 
     <!-- ================= SIDEBAR ================= -->
     <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
@@ -1492,14 +1492,28 @@ class StockIOPage {
         doc.showAllItems = !doc.showAllItems;
       },
       createRequest() {
+        console.log("createRequest called. pageMode:", this.pageMode);
         if (this.pageMode === "item") {
           const dialog = new frappe.ui.Dialog({
             title: __("Create New Item"),
             fields: [
               {
+                label: "Item Code",
+                fieldname: "item_code",
+                fieldtype: "Data",
+                reqd: 1,
+              },
+              {
                 label: "Item Name",
                 fieldname: "item_name",
                 fieldtype: "Data",
+                reqd: 1,
+              },
+              {
+                label: "Default Unit of Measure",
+                fieldname: "stock_uom",
+                fieldtype: "Link",
+                options: "UOM",
                 reqd: 1,
               },
               {
@@ -1573,10 +1587,11 @@ class StockIOPage {
                 callback: (r) => {
                   if (!r.exc) {
                     frappe.show_alert({
-                      message: __("Item {0} created", [r.message.name]),
+                      message: __("Item {0} created", [r.message.name || r.message.item_code]),
                       indicator: "green",
                     });
                     dialog.hide();
+                    this.loadItemsList(); // Refresh the list
                     frappe.set_route("Form", "Item", r.message.name);
                   }
                 },
@@ -1584,11 +1599,13 @@ class StockIOPage {
             },
           });
 
-          dialog.set_query("gst_hsn_code", () => {
-            return {
-              filters: {},
+          if (dialog.fields_dict.gst_hsn_code) {
+            dialog.fields_dict.gst_hsn_code.get_query = () => {
+              return {
+                filters: {},
+              };
             };
-          });
+          }
 
           dialog.show();
           return;
