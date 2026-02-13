@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "autoincrement",
  "creation": "2026-01-09 13:57:57.793203",
  "doctype": "DocType",
@@ -52,7 +53,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-11 13:05:56.114856",
+ "modified": "2026-02-13 11:43:58.518884",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
