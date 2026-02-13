@@ -7,13 +7,12 @@ class ReportPreference(Document):
     def autoname(self):
         """
         Naming format:
-        <Report Type>-<User>
-        Example: Lead-8751@sahayog.com
+        <User Email>
         """
-        if not self.report_type or not self.user:
-            frappe.throw(_("Report Type and User are required"))
+        if not self.user:
+            frappe.throw(_("User is required"))
 
-        self.name = f"{self.report_type}-{self.user}"
+        self.name = self.user
 
     def before_insert(self):
         # Naya record banate waqt check
@@ -23,17 +22,16 @@ class ReportPreference(Document):
         # Har bar save/edit karte waqt check
         self.check_admin_access()
         self.validate_unique_preference()
+        self.validate_regional_requirements()
 
     def check_admin_access(self):
         """
         Manager's requirement: Only Administrator and System Manager allowed.
-        Additional changes: None (keeping logic restricted but existing code intact).
         """
         user = frappe.session.user
         allowed_roles = {"Administrator", "System Manager"}
         user_roles = set(frappe.get_roles(user))
 
-        # Agar user Administrator nahi hai aur uske paas System Manager role bhi nahi hai
         if user != "Administrator" and not allowed_roles.intersection(user_roles):
             frappe.throw(
                 _("Access Denied: Currently, only Administrators and System Managers are allowed to create or manage Report Preferences.")
@@ -44,12 +42,22 @@ class ReportPreference(Document):
             "Report Preference",
             {
                 "user": self.user,
-                "report_type": self.report_type,
                 "name": ["!=", self.name],
             }
         )
 
         if existing:
             frappe.throw(
-                _("Report Preference already exists for this user and report type.")
+                _("Report Preference already exists for this user.")
             )
+
+    def validate_regional_requirements(self):
+        """
+        If Zone is selected, user must provide either 'All Regions' check or specific 'Regions'.
+        """
+        if self.zone and len(self.zone) > 0:
+            if not self.all_regions and (not self.region or len(self.region) == 0):
+                frappe.throw(
+                    _("If Zones are selected, you must either check 'All Regions' or select specific Regions."),
+                    title=_("Mandatory Requirement")
+                )

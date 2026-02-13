@@ -1,19 +1,25 @@
-// Copyright (c) 2025, Developer Team and contributors
-// For license information, please see license.txt
-
-// frappe.ui.form.on("Report Preference", {
-// 	refresh(frm) {
-
-// 	},
-// });
-// Report Preference Client Script
 frappe.ui.form.on("Report Preference", {
   refresh: function (frm) {
-    frm.trigger("all_regions");
+    frm.trigger("toggle_region_mandatory");
   },
   all_regions: function (frm) {
-    // Agar "All Regions" checked hai (1), to region field hide/disabled karein
-    // Yahan 'region' aapka table field name hona chahiye
-    frm.set_df_property("region", "hidden", frm.doc.all_regions);
+    frm.trigger("toggle_region_mandatory");
   },
+  zone_add: function (frm) {
+    frm.trigger("toggle_region_mandatory");
+  },
+  zone_remove: function (frm) {
+    frm.trigger("toggle_region_mandatory");
+  },
+  toggle_region_mandatory: function (frm) {
+    // If all_regions is NOT checked, and zone is selected, then region is mandatory
+    let is_mandatory = (frm.doc.zone && frm.doc.zone.length > 0 && !frm.doc.all_regions);
+    frm.set_df_property("region", "reqd", is_mandatory);
+  },
+  region_add: function (frm) {
+    frm.trigger("toggle_region_mandatory");
+  },
+  region_remove: function (frm) {
+    frm.trigger("toggle_region_mandatory");
+  }
 });
