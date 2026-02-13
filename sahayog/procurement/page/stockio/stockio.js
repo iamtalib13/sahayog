@@ -380,50 +380,44 @@ class StockIOPage {
         />
 
         <div class="order-info">
-        <div class="order-title">
-          <strong>{{ doc.name }}</strong>
-          <span class="badge paid">{{ doc.status }}</span>
-        </div>
+          <!-- HEADER AND PROGRESS IN ONE ROW -->
+          <div class="order-header-row">
+            <div class="order-meta-info">
+              <div class="order-title">
+                <strong>{{ doc.name }}</strong>
+                <span class="badge paid">{{ doc.status }}</span>
+              </div>
+              <div class="order-meta">
+                {{ formatDate(doc.creation) }} · Created By:
+                <b>{{ doc.owner }}</b>
+              </div>
+            </div>
 
-        <div class="order-meta">
-          {{ formatDate(doc.creation) }} · Created By:
-          <b>{{ doc.owner }}</b>
-                 <!-- APPROVAL PROGRESS -->
-<div class="approval-progress compact">
+            <!-- APPROVAL PROGRESS -->
+            <div class="approval-progress compact">
+              <!-- STEP 1 : Draft / Submitted -->
+              <div class="step" :class="getProgressFlow(doc).step1.state">
+                <span class="dot"></span>
+                <span class="label">{{ getProgressFlow(doc).step1.label }}</span>
+              </div>
 
-  <!-- STEP 1 : Draft / Submitted -->
-<div class="step" :class="getProgressFlow(doc).step1.state">
-    <span class="dot"></span>
-    <span class="label">{{ getProgressFlow(doc).step1.label }}</span>
-  </div>
+              <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
 
-  <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
+              <!-- STEP 2 : Reporting -->
+              <div class="step" v-if="getProgressFlow(doc).step2.visible" :class="getProgressFlow(doc).step2.state">
+                <span class="dot"></span>
+                <span class="label">Reporting</span>
+              </div>
 
-  <!-- STEP 2 : Reporting -->
-<div
-  class="step"
-  v-if="getProgressFlow(doc).step2.visible"
-  :class="getProgressFlow(doc).step2.state"
->
-    <span class="dot"></span>
-    <span class="label">Reporting</span>
-  </div>
+              <div class="line"></div>
 
-  <div class="line"></div>
-
-  <!-- STEP 3 : HO Approval / Cancelled -->
-<div
-  class="step"
-  :class="getProgressFlow(doc).step3.state"
->
-
-    <span class="dot"></span>
-    <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
-  </div>
-
-</div>
-
-        </div>
+              <!-- STEP 3 : HO Approval / Cancelled -->
+              <div class="step" :class="getProgressFlow(doc).step3.state">
+                <span class="dot"></span>
+                <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
+              </div>
+            </div>
+          </div>
  
 
 
