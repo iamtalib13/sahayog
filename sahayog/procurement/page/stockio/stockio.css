@@ -440,9 +440,45 @@ body.stockio-active .page-content {
 .order-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start; /* Align to top to handle multi-line items if needed */
   width: 100%;
-  gap: 16px;
+  gap: 20px;
+}
+
+.order-items-horizontal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1; /* Take up middle space */
+  padding: 0 10px;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  margin: 0 10px;
+}
+
+.item-compact-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.item-compact-card .item-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.item-compact-card .item-meta-row {
+  font-size: 10px;
+  color: var(--muted);
 }
 
 .order-toggle-row {

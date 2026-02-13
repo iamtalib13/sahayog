@@ -393,6 +393,23 @@ class StockIOPage {
               </div>
             </div>
 
+            <!-- COLLAPSIBLE ITEMS (HORIZONTAL IN FIRST ROW) -->
+            <div class="order-items-horizontal" v-if="doc.showAllItems">
+              <div class="item-compact-card" v-for="item in doc.items" :key="item.name">
+                <div class="item-name-row">
+                  <span>{{ item.item_code }}</span>
+                  <span class="badge" 
+                        v-if="item.item_category"
+                        :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
+                    {{ item.item_category[0] }}
+                  </span>
+                </div>
+                <div class="item-meta-row">
+                  Qty: {{ item.quantity }}
+                </div>
+              </div>
+            </div>
+
             <!-- APPROVAL PROGRESS -->
             <div class="approval-progress compact">
               <!-- STEP 1 : Draft / Submitted -->
@@ -424,25 +441,6 @@ class StockIOPage {
             <button class="order-items-toggle" @click="toggleItems(doc)">
               {{ doc.showAllItems ? 'Hide Items' : 'Show Items (' + doc.items.length + ')' }}
             </button>
-          </div>
-
-          <!-- COLLAPSIBLE ITEMS SECTION -->
-          <div class="order-items-section" v-if="doc.showAllItems">
-            <div class="order-product" v-for="item in doc.items" :key="item.name">
-              <div>
-                <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
-                  {{ item.item_code }}
-                  <span class="badge" 
-                        v-if="item.item_category"
-                        :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
-                    {{ item.item_category }}
-                  </span>
-                </div>
-                <div class="product-meta">
-                  SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
