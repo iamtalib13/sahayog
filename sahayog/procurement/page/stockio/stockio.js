@@ -352,14 +352,12 @@ class StockIOPage {
         
         <!-- Display buttons when status is Approved -->
         <template v-if="selectionStatus === 'Approved'">
-          <!-- 
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
                   @click="handleInwardAction">Inward</button>
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
                   @click="handleOutwardAction">Outward</button>
-          -->
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('asset'))" 
                   @click="handleAssetMovementAction">Asset Movement</button>
@@ -1856,6 +1854,18 @@ class StockIOPage {
       syncSelectAllAssetMovements() {
         this.selectAllAssetMovements =
           this.selectedAssetMovements.length === this.assetMovements.length;
+      },
+
+      handleInwardAction() {
+        if (!this.selectedDocs.length) return;
+        const docnames = this.selectedDocs.join(", ");
+        frappe.msgprint(__("Inward action triggered for: {0}", [docnames]));
+      },
+
+      handleOutwardAction() {
+        if (!this.selectedDocs.length) return;
+        const docnames = this.selectedDocs.join(", ");
+        frappe.msgprint(__("Outward action triggered for: {0}", [docnames]));
       },
 
       async handleAssetMovementAction() {
