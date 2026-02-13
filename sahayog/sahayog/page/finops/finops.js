@@ -340,7 +340,13 @@ frappe.pages['finops'].on_page_load = function(wrapper) {
     transition: transform 0.2s;
 }
 
-.download-link:hover { transform: translateY(-2px); }
+.download-link:hover { 
+    transform: translateY(-2px); 
+    transition: transform 0.2s;
+    background: none;
+    color: var(--text-main);
+    border: 2px solid var(--text-main);
+    }
 
 .page-head {
     display: none;
@@ -483,9 +489,9 @@ document.head.appendChild(style);
 
             // Data
             operations: [
+                { id: 'cif_creation', label: 'CIF Creation' },
                 { id: 'loan_account', label: 'Loan Account' },
                 { id: 'loan_disbursement', label: 'Disbursement' },
-                { id: 'cif_creation', label: 'CIF Creation' }
             ],
 
             // Computed
