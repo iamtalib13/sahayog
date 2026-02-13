@@ -1992,32 +1992,31 @@ class StockIOPage {
               (values) => {
                 const purpose = doc.target_warehouse ? "Material Transfer" : "Material Issue";
                 
-                frappe.new_doc("Stock Entry", {
-                  stock_entry_type: purpose,
-                  company: doc.company || frappe.defaults.get_user_default("company"),
-                  custom_material_request: doc.name,
-                  custom_material_request_doctype: "Employee Material Request",
-                  from_warehouse: doc.source_warehouse,
-                  to_warehouse: doc.target_warehouse,
-                });
+                frappe.model.with_doctype("Stock Entry", () => {
+                  const new_doc = frappe.model.get_new_doc("Stock Entry");
+                  
+                  // Set header fields
+                  new_doc.stock_entry_type = purpose;
+                  new_doc.company = doc.company || frappe.defaults.get_user_default("company");
+                  new_doc.custom_material_request = doc.name;
+                  new_doc.custom_material_request_doctype = "Employee Material Request";
+                  new_doc.from_warehouse = doc.source_warehouse;
+                  new_doc.to_warehouse = doc.target_warehouse;
 
-                // Add items after the form is initialized to prevent GridRow errors
-                frappe.ui.form.on("Stock Entry", {
-                  onload: function(frm) {
-                    if (frm.doc.custom_material_request === doc.name && (!frm.doc.items || frm.doc.items.length === 0)) {
-                      stock_items.forEach((item) => {
-                        let row = frappe.model.add_child(frm.doc, "items");
-                        row.item_code = item.item_code;
-                        row.qty = values[`qty_${item.name}`];
-                        row.uom = item.stock_uom || "Nos";
-                        row.stock_uom = item.stock_uom || "Nos";
-                        row.conversion_factor = 1;
-                        row.s_warehouse = doc.source_warehouse;
-                        row.t_warehouse = purpose === "Material Transfer" ? doc.target_warehouse : "";
-                      });
-                      frm.refresh_field("items");
-                    }
-                  }
+                  // Add items
+                  stock_items.forEach((item) => {
+                    let row = frappe.model.add_child(new_doc, "items");
+                    row.item_code = item.item_code;
+                    row.qty = values[`qty_${item.name}`];
+                    row.uom = item.stock_uom || "Nos";
+                    row.stock_uom = item.stock_uom || "Nos";
+                    row.conversion_factor = 1;
+                    row.s_warehouse = doc.source_warehouse;
+                    row.t_warehouse = purpose === "Material Transfer" ? doc.target_warehouse : "";
+                  });
+
+                  // Route to the new document
+                  frappe.set_route("Form", "Stock Entry", new_doc.name);
                 });
               },
               "Enter Quantities for Outward",
