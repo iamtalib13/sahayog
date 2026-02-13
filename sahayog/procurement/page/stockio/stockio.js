@@ -382,15 +382,22 @@ class StockIOPage {
         <div class="order-info">
           <!-- HEADER AND PROGRESS IN ONE ROW -->
           <div class="order-header-row">
-            <div class="order-meta-info">
-              <div class="order-title">
-                <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+            <div class="order-header-left">
+              <div class="order-meta-info">
+                <div class="order-title">
+                  <strong>{{ doc.name }}</strong>
+                  <span class="badge paid">{{ doc.status }}</span>
+                </div>
+                <div class="order-meta">
+                  {{ formatDate(doc.creation) }} · Created By:
+                  <b>{{ doc.owner }}</b>
+                </div>
               </div>
-              <div class="order-meta">
-                {{ formatDate(doc.creation) }} · Created By:
-                <b>{{ doc.owner }}</b>
-              </div>
+
+              <!-- SHOW ITEMS BUTTON -->
+              <button class="order-items-toggle" @click="toggleItems(doc)">
+                {{ doc.showAllItems ? 'Hide Items' : 'Show Items (' + doc.items.length + ')' }}
+              </button>
             </div>
 
             <!-- APPROVAL PROGRESS -->
@@ -418,60 +425,25 @@ class StockIOPage {
               </div>
             </div>
           </div>
- 
 
-
-        <!-- FIRST ITEM -->
-        <div class="order-product" v-if="doc.items && doc.items.length > 0">
-          <div>
-          <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
-            {{ doc.items?.[0]?.item_code || "" }}
-            <span class="badge" 
-                  v-if="doc.items?.[0]?.item_category"
-                  :class="doc.items?.[0]?.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
-              {{ doc.items?.[0]?.item_category }}
-            </span>
-          </div>
-          <div class="product-meta">
-            SKU: {{ doc.items?.[0]?.item_code || "" }}
- · Qty: {{ doc.items?.[0]?.quantity || 0 }}
-          </div>
-          </div>
-        </div>
-
-        <!-- MORE ITEMS -->
-        <div v-if="doc.showAllItems">
-          <div
-          class="order-product"
-          v-for="item in doc.items.slice(1)"
-          :key="item.name"
-          >
-          <div>
-            <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
-              {{ item.item_code }}
-              <span class="badge" 
-                    v-if="item.item_category"
-                    :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
-                {{ item.item_category }}
-              </span>
-            </div>
-            <div class="product-meta">
-            SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
+          <!-- COLLAPSIBLE ITEMS SECTION -->
+          <div class="order-items-section" v-if="doc.showAllItems">
+            <div class="order-product" v-for="item in doc.items" :key="item.name">
+              <div>
+                <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
+                  {{ item.item_code }}
+                  <span class="badge" 
+                        v-if="item.item_category"
+                        :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
+                    {{ item.item_category }}
+                  </span>
+                </div>
+                <div class="product-meta">
+                  SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
+                </div>
+              </div>
             </div>
           </div>
-          </div>
-        </div>
-
-        <div
-          class="more-items"
-          v-if="doc.items.length > 1"
-          @click="toggleItems(doc)"
-        >
-          {{ doc.showAllItems
-          ? 'Hide items'
-          : '+' + (doc.items.length - 1) + ' more items' }}
-        </div>
-
         </div>
       </div>
 
