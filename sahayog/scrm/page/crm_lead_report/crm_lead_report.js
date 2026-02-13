@@ -98,7 +98,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     let res = await frappe.call({
       method:
         "sahayog.scrm.api.report_access.get_user_report_preference_record",
-      args: { user: user, report_type: "Lead" },
+      args: { user: user },
     });
 
     const pref = (res.message || [])[0];
