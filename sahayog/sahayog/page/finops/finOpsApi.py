@@ -409,6 +409,7 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
         frappe.log_error(title="Finacle Disbursement Error", message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
 
+
 @frappe.whitelist()
 def create_finacle_retail_customer(
     first_name="Palash", last_name="Shende", date_of_birth="1990-01-01", gender="M",
@@ -710,5 +711,4 @@ def create_finacle_retail_customer(
     except Exception as e:
         frappe.log_error(title="Finacle RetCust Creation Error", message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
-
 
