@@ -1858,14 +1858,153 @@ class StockIOPage {
 
       handleInwardAction() {
         if (!this.selectedDocs.length) return;
-        const docnames = this.selectedDocs.join(", ");
-        frappe.msgprint(__("Inward action triggered for: {0}", [docnames]));
+        const docname = this.selectedDocs[0];
+        
+        frappe.dom.freeze("Loading Request Data...");
+
+        frappe.call({
+          method: "frappe.client.get",
+          args: { doctype: "Employee Material Request", name: docname },
+          callback: (r) => {
+            frappe.dom.unfreeze();
+            const doc = r.message;
+            if (!doc) return;
+
+            const stock_items = (doc.items || []).filter(i => i.item_category === "Stock Item");
+            if (!stock_items.length) {
+              frappe.msgprint("No stock items found in this request.");
+              return;
+            }
+
+            const fields = [
+              {
+                fieldtype: "Link",
+                fieldname: "supplier",
+                label: "Supplier",
+                options: "Supplier",
+                reqd: 1,
+              },
+              {
+                fieldtype: "Link",
+                fieldname: "target_warehouse",
+                label: "Target Warehouse",
+                options: "Warehouse",
+                reqd: 1,
+                get_query: () => ({
+                  filters: { custom_warehouse_category: ["like", "Store%"] },
+                }),
+              },
+              { fieldtype: "Section Break" }
+            ];
+
+            stock_items.forEach((item) => {
+              fields.push({
+                fieldtype: "Float",
+                fieldname: `qty_${item.name}`,
+                label: `Qty for ${item.item_code}`,
+                reqd: 1,
+                default: item.quantity,
+              });
+            });
+
+            frappe.prompt(
+              fields,
+              (values) => {
+                const pr_doc = {
+                  doctype: "Purchase Receipt",
+                  supplier: values.supplier,
+                  posting_date: frappe.datetime.nowdate(),
+                  posting_time: frappe.datetime.now_time(),
+                  items: stock_items.map((item) => ({
+                    item_code: item.item_code,
+                    item_name: item.item_name,
+                    description: item.description || item.item_code,
+                    qty: values[`qty_${item.name}`],
+                    stock_uom: item.stock_uom || "Nos",
+                    warehouse: values.target_warehouse,
+                    rate: 0,
+                    amount: 0,
+                  })),
+                };
+
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: { doc: pr_doc },
+                  callback: (r2) => {
+                    if (!r2.exc && r2.message) {
+                      const pr_name = r2.message.name;
+                      frappe.msgprint({
+                        title: "Purchase Receipt Created!",
+                        message: `PR <b>${pr_name}</b> saved successfully!<br><br>
+                          <button class="btn btn-primary btn-sm" onclick="window.submit_pr('${pr_name}')">
+                            <i class="fa fa-check"></i> Submit Now
+                          </button>`,
+                        indicator: "green",
+                        wide: true,
+                      });
+                      this.selectedDocs = [];
+                      this.selectAll = false;
+                      this.loadRequests();
+                    }
+                  },
+                });
+              },
+              "Enter Details for Inward",
+              "Create"
+            );
+          }
+        });
       },
 
       handleOutwardAction() {
         if (!this.selectedDocs.length) return;
-        const docnames = this.selectedDocs.join(", ");
-        frappe.msgprint(__("Outward action triggered for: {0}", [docnames]));
+        const docname = this.selectedDocs[0];
+
+        frappe.dom.freeze("Loading Request Data...");
+
+        frappe.call({
+          method: "frappe.client.get",
+          args: { doctype: "Employee Material Request", name: docname },
+          callback: (r) => {
+            frappe.dom.unfreeze();
+            const doc = r.message;
+            if (!doc) return;
+
+            const stock_items = (doc.items || []).filter(i => i.item_category === "Stock Item");
+            if (!stock_items.length) {
+              frappe.msgprint("No stock items found in this request.");
+              return;
+            }
+
+            const fields = [];
+            stock_items.forEach((item) => {
+              fields.push({
+                fieldtype: "Float",
+                fieldname: `qty_${item.name}`,
+                label: `Qty for ${item.item_code}`,
+                reqd: 1,
+                default: item.quantity,
+              });
+            });
+
+            frappe.prompt(
+              fields,
+              (values) => {
+                frappe.route_options = {
+                  stock_entry_type: "Material Issue",
+                  items: stock_items.map((item) => ({
+                    item_code: item.item_code,
+                    qty: values[`qty_${item.name}`],
+                    s_warehouse: doc.source_warehouse,
+                  })),
+                };
+                frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
+              },
+              "Enter Quantities for Outward",
+              "Create"
+            );
+          }
+        });
       },
 
       async handleAssetMovementAction() {
@@ -2123,3 +2262,27 @@ class StockIOPage {
     }, 100);
   }
 }
+
+window.submit_pr = function (pr_name) {
+  frappe.call({
+    method: "frappe.client.get",
+    args: { doctype: "Purchase Receipt", name: pr_name },
+    callback: (r) => {
+      if (!r.exc) {
+        frappe.call({
+          method: "frappe.client.submit",
+          args: { doc: r.message },
+          callback: (r2) => {
+            if (!r2.exc) {
+              frappe.msgprint({
+                title: "Submitted!",
+                message: `Purchase Receipt <b>${pr_name}</b> submitted!`,
+                indicator: "green",
+              });
+            }
+          },
+        });
+      }
+    },
+  });
+};
