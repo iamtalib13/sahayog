@@ -1992,32 +1992,46 @@ class StockIOPage {
               (values) => {
                 const purpose = doc.target_warehouse ? "Material Transfer" : "Material Issue";
                 
-                frappe.model.with_doctype("Stock Entry", () => {
-                  const new_doc = frappe.model.get_new_doc("Stock Entry");
-                  
-                  // Set header fields
-                  new_doc.stock_entry_type = purpose;
-                  new_doc.company = doc.company || frappe.defaults.get_user_default("company");
-                  new_doc.custom_material_request = doc.name;
-                  new_doc.custom_material_request_doctype = "Employee Material Request";
-                  new_doc.from_warehouse = doc.source_warehouse;
-                  new_doc.to_warehouse = doc.target_warehouse;
+                const se_doc = {
+                  doctype: "Stock Entry",
+                  stock_entry_type: purpose,
+                  company: doc.company || frappe.defaults.get_user_default("company"),
+                  custom_material_request: doc.name,
+                  custom_material_request_doctype: "Employee Material Request",
+                  from_warehouse: doc.source_warehouse,
+                  to_warehouse: doc.target_warehouse,
+                  items: stock_items.map((item) => ({
+                    item_code: item.item_code,
+                    qty: values[`qty_${item.name}`],
+                    uom: item.stock_uom || "Nos",
+                    stock_uom: item.stock_uom || "Nos",
+                    conversion_factor: 1,
+                    transfer_qty: values[`qty_${item.name}`],
+                    s_warehouse: doc.source_warehouse,
+                    t_warehouse: purpose === "Material Transfer" ? doc.target_warehouse : "",
+                  })),
+                };
 
-                  // Add items
-                  stock_items.forEach((item) => {
-                    let row = frappe.model.add_child(new_doc, "items");
-                    row.item_code = item.item_code;
-                    row.qty = values[`qty_${item.name}`];
-                    row.uom = item.stock_uom || "Nos";
-                    row.stock_uom = item.stock_uom || "Nos";
-                    row.conversion_factor = 1;
-                    row.transfer_qty = values[`qty_${item.name}`]; // Map 'Qty as per Stock UOM' in Stock Entry
-                    row.s_warehouse = doc.source_warehouse;
-                    row.t_warehouse = purpose === "Material Transfer" ? doc.target_warehouse : "";
-                  });
-
-                  // Route to the new document
-                  frappe.set_route("Form", "Stock Entry", new_doc.name);
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: { doc: se_doc },
+                  callback: (r2) => {
+                    if (!r2.exc && r2.message) {
+                      const se_name = r2.message.name;
+                      frappe.msgprint({
+                        title: "Stock Entry Created!",
+                        message: `Stock Entry <b>${se_name}</b> saved successfully!<br><br>
+                          <button class="btn btn-primary btn-sm" onclick="window.submit_se('${se_name}')">
+                            <i class="fa fa-check"></i> Submit Now
+                          </button>`,
+                        indicator: "green",
+                        wide: true,
+                      });
+                      this.selectedDocs = [];
+                      this.selectAll = false;
+                      this.loadRequests();
+                    }
+                  },
                 });
               },
               "Enter Quantities for Outward",
@@ -2297,6 +2311,30 @@ window.submit_pr = function (pr_name) {
               frappe.msgprint({
                 title: "Submitted!",
                 message: `Purchase Receipt <b>${pr_name}</b> submitted!`,
+                indicator: "green",
+              });
+            }
+          },
+        });
+      }
+    },
+  });
+};
+
+window.submit_se = function (se_name) {
+  frappe.call({
+    method: "frappe.client.get",
+    args: { doctype: "Stock Entry", name: se_name },
+    callback: (r) => {
+      if (!r.exc) {
+        frappe.call({
+          method: "frappe.client.submit",
+          args: { doc: r.message },
+          callback: (r2) => {
+            if (!r2.exc) {
+              frappe.msgprint({
+                title: "Submitted!",
+                message: `Stock Entry <b>${se_name}</b> submitted!`,
                 indicator: "green",
               });
             }
