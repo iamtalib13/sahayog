@@ -1994,6 +1994,7 @@ class StockIOPage {
                 
                 frappe.new_doc("Stock Entry", {
                   stock_entry_type: purpose,
+                  company: doc.company || frappe.defaults.get_user_default("company"),
                   custom_material_request: doc.name,
                   custom_material_request_doctype: "Employee Material Request",
                   from_warehouse: doc.source_warehouse,
@@ -2005,7 +2006,7 @@ class StockIOPage {
                     stock_uom: item.stock_uom || "Nos",
                     conversion_factor: 1,
                     s_warehouse: doc.source_warehouse,
-                    t_warehouse: purpose === "Material Transfer" ? doc.target_warehouse : null,
+                    t_warehouse: purpose === "Material Transfer" ? doc.target_warehouse : "",
                   })),
                 });
               },
