@@ -776,6 +776,8 @@ body.stockio-active .page-content {
   display: flex;
   align-items: center;
   margin: 10px 0 6px;
+  flex: 1; /* Allow it to take up space in the row */
+  justify-content: flex-end; /* Push to the right */
 }
 
 .approval-progress .step {
@@ -783,7 +785,9 @@ body.stockio-active .page-content {
   flex-direction: column;
   align-items: center;
   font-size: 11px;
-  min-width: 72px;
+  min-width: 60px; /* Slightly tighter for row layout */
+  position: relative;
+  z-index: 2;
 }
 
 .approval-progress .dot {
@@ -798,7 +802,11 @@ body.stockio-active .page-content {
   flex: 1;
   height: 2px;
   background: #e5e7eb;
-  margin: 0 6px;
+  margin: 0 -15px; /* Negative margin to pull dots and lines closer */
+  position: relative;
+  top: -7px; /* Align vertically with the center of the dots */
+  z-index: 1;
+  min-width: 30px;
 }
 
 /* STATES */
