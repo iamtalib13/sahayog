@@ -438,10 +438,9 @@ class StockIOPage {
 
           <!-- TOGGLE BUTTON IN NEXT ROW -->
           <div class="order-toggle-row">
-            <button class="order-items-toggle" @click="toggleItems(doc)">
-              {{ doc.showAllItems ? 'Hide Items' : 'Show Items (' + doc.items.length + ')' }}
-            </button>
-          </div>
+                          <button class="order-items-toggle" @click="toggleItems(doc)">
+                            {{ doc.showAllItems ? 'Hide Items' : (doc.items && doc.items.length > 0 ? 'Show Items (' + doc.items.length + ')' : 'Show Items') }}
+                          </button>          </div>
         </div>
       </div>
 
@@ -1259,16 +1258,19 @@ class StockIOPage {
             this.offset = 0;
             this.visibleRequests = [];
             this.loadMore();
-            this.requests.forEach((doc) => this.loadItems(doc));
+            // Removed automatic items loading
           },
         });
       },
-      loadItems(doc) {
+      loadItems(doc, callback) {
         frappe.call({
           method: "frappe.client.get",
           args: { doctype: "Employee Material Request", name: doc.name },
           callback: (r) => {
-            if (r.message) doc.items = r.message.items || [];
+            if (r.message) {
+              doc.items = r.message.items || [];
+              if (callback) callback();
+            }
           },
         });
       },
@@ -1451,7 +1453,13 @@ class StockIOPage {
         return frappe.datetime.str_to_user(date);
       },
       toggleItems(doc) {
-        doc.showAllItems = !doc.showAllItems;
+        if (!doc.showAllItems && (!doc.items || doc.items.length === 0)) {
+          this.loadItems(doc, () => {
+            doc.showAllItems = true;
+          });
+        } else {
+          doc.showAllItems = !doc.showAllItems;
+        }
       },
       createRequest() {
         if (this.pageMode === "item") {
