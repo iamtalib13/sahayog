@@ -445,11 +445,10 @@ body.stockio-active .page-content {
   gap: 16px;
 }
 
-.order-header-left {
+.order-toggle-row {
+  margin-top: 8px;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
+  justify-content: flex-start;
 }
 
 .order-items-toggle {

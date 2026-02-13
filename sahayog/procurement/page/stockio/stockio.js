@@ -382,22 +382,15 @@ class StockIOPage {
         <div class="order-info">
           <!-- HEADER AND PROGRESS IN ONE ROW -->
           <div class="order-header-row">
-            <div class="order-header-left">
-              <div class="order-meta-info">
-                <div class="order-title">
-                  <strong>{{ doc.name }}</strong>
-                  <span class="badge paid">{{ doc.status }}</span>
-                </div>
-                <div class="order-meta">
-                  {{ formatDate(doc.creation) }} · Created By:
-                  <b>{{ doc.owner }}</b>
-                </div>
+            <div class="order-meta-info">
+              <div class="order-title">
+                <strong>{{ doc.name }}</strong>
+                <span class="badge paid">{{ doc.status }}</span>
               </div>
-
-              <!-- SHOW ITEMS BUTTON -->
-              <button class="order-items-toggle" @click="toggleItems(doc)">
-                {{ doc.showAllItems ? 'Hide Items' : 'Show Items (' + doc.items.length + ')' }}
-              </button>
+              <div class="order-meta">
+                {{ formatDate(doc.creation) }} · Created By:
+                <b>{{ doc.owner }}</b>
+              </div>
             </div>
 
             <!-- APPROVAL PROGRESS -->
@@ -424,6 +417,13 @@ class StockIOPage {
                 <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
               </div>
             </div>
+          </div>
+
+          <!-- TOGGLE BUTTON IN NEXT ROW -->
+          <div class="order-toggle-row">
+            <button class="order-items-toggle" @click="toggleItems(doc)">
+              {{ doc.showAllItems ? 'Hide Items' : 'Show Items (' + doc.items.length + ')' }}
+            </button>
           </div>
 
           <!-- COLLAPSIBLE ITEMS SECTION -->
