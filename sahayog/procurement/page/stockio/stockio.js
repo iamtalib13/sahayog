@@ -2011,6 +2011,7 @@ class StockIOPage {
                     row.uom = item.stock_uom || "Nos";
                     row.stock_uom = item.stock_uom || "Nos";
                     row.conversion_factor = 1;
+                    row.transfer_qty = values[`qty_${item.name}`]; // Map 'Qty as per Stock UOM' in Stock Entry
                     row.s_warehouse = doc.source_warehouse;
                     row.t_warehouse = purpose === "Material Transfer" ? doc.target_warehouse : "";
                   });
