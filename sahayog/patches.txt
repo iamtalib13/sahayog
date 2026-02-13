@@ -19,3 +19,4 @@ sahayog.patches.set_sahayog_branch_from_sol_id
 sahayog.patches.fixtures.create_comment_email_sent_custom_field
 sahayog.patches.remove_test_company_email
 sahayog.patches.fixtures.create_asset_state_workflow
+sahayog.patches.rename_report_preference_records

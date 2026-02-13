@@ -18,13 +18,13 @@ def get_all_system_regions():
     return [r.region for r in regions if r.region]
 
 @frappe.whitelist()
-def get_user_report_preference_record(user, report_type="Lead"):
+def get_user_report_preference_record(user):
     frappe.log_error(f"CRM Preference Fetch", f"User: {user}")
     result = []
     if user == "Administrator":
         names = frappe.get_all("Report Preference", pluck="name")
     else:
-        names = frappe.get_all("Report Preference", filters={"user": user, "report_type": report_type}, pluck="name")
+        names = frappe.get_all("Report Preference", filters={"user": user}, pluck="name")
     
     if not names: return None
 
