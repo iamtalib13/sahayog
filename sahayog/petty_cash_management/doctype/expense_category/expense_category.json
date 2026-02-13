@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_import": 1,
- "autoname": "autoincrement",
+ "autoname": "field:unique_id",
  "creation": "2026-01-09 13:57:57.793203",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,7 +11,8 @@
   "metro_limit",
   "non_metro_limit",
   "finacle_gl_code",
-  "is_active"
+  "is_active",
+  "unique_id"
  ],
  "fields": [
   {
@@ -48,16 +49,22 @@
    "in_list_view": 1,
    "label": "Category Name",
    "unique": 1
+  },
+  {
+   "fieldname": "unique_id",
+   "fieldtype": "Data",
+   "label": "Unique ID",
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-13 11:43:58.518884",
+ "modified": "2026-02-13 13:14:22.183912",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
- "naming_rule": "Autoincrement",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
