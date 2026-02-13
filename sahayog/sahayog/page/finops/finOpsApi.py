@@ -425,17 +425,33 @@ def create_finacle_retail_customer(
         finacle_settings = frappe.get_single("Finacle Settings")
         mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
-        dob_obj = datetime.strptime(str(date_of_birth), '%Y-%m-%d')
+        # dob_obj = datetime.strptime(str(date_of_birth), '%Y-%m-%d')
+        # formatted_dob = dob_obj.strftime('%Y-%m-%dT00:00:00.000')
+        # birth_dt = dob_obj.strftime('%d')
+        # birth_month = dob_obj.strftime('%b').upper()
+        # birth_year = dob_obj.strftime('%Y')
+        
+        # if relationship_opening_date:
+        #     rel_open_obj = datetime.strptime(str(relationship_opening_date), '%Y-%m-%d')
+        # else:
+        #     rel_open_obj = datetime.now()
+        # formatted_rel_open = rel_open_obj.strftime('%Y-%m-%dT00:00:00.000')
+
+                # 1. CLEAN DATE STRINGS (Remove time part)
+        clean_dob = str(date_of_birth).split(" ")[0].strip()
+        dob_obj = datetime.strptime(clean_dob, '%Y-%m-%d')
         formatted_dob = dob_obj.strftime('%Y-%m-%dT00:00:00.000')
         birth_dt = dob_obj.strftime('%d')
         birth_month = dob_obj.strftime('%b').upper()
         birth_year = dob_obj.strftime('%Y')
         
         if relationship_opening_date:
-            rel_open_obj = datetime.strptime(str(relationship_opening_date), '%Y-%m-%d')
+            clean_rel_date = str(relationship_opening_date).split(" ")[0].strip()
+            rel_open_obj = datetime.strptime(clean_rel_date, '%Y-%m-%d')
         else:
             rel_open_obj = datetime.now()
         formatted_rel_open = rel_open_obj.strftime('%Y-%m-%dT00:00:00.000')
+
         
         msg_date_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
         addr_start_date = rel_open_obj.strftime('%Y-%m-%dT00:00:00.000')
@@ -694,3 +710,5 @@ def create_finacle_retail_customer(
     except Exception as e:
         frappe.log_error(title="Finacle RetCust Creation Error", message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
+
+
