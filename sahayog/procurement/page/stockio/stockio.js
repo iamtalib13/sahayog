@@ -2311,9 +2311,9 @@ window.submit_pr = function (pr_name) {
           args: { doc: r.message },
           callback: (r2) => {
             if (!r2.exc) {
-              frappe.msgprint({
-                title: "Submitted!",
-                message: `Purchase Receipt <b>${pr_name}</b> submitted!`,
+              if (cur_dialog) cur_dialog.hide();
+              frappe.show_alert({
+                message: `Purchase Receipt ${pr_name} submitted successfully`,
                 indicator: "green",
               });
             }
@@ -2338,9 +2338,9 @@ window.submit_se = function (se_name) {
           args: { doc: r.message },
           callback: (r2) => {
             if (!r2.exc) {
-              frappe.msgprint({
-                title: "Submitted!",
-                message: `Stock Entry <b>${se_name}</b> submitted!`,
+              if (cur_dialog) cur_dialog.hide();
+              frappe.show_alert({
+                message: `Stock Entry ${se_name} submitted successfully`,
                 indicator: "green",
               });
             }
