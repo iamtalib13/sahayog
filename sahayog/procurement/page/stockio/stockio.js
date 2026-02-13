@@ -1992,10 +1992,15 @@ class StockIOPage {
               (values) => {
                 frappe.route_options = {
                   stock_entry_type: "Material Issue",
+                  custom_material_request: doc.name,
+                  custom_material_request_doctype: "Employee Material Request",
+                  from_warehouse: doc.source_warehouse,
+                  to_warehouse: doc.target_warehouse,
                   items: stock_items.map((item) => ({
                     item_code: item.item_code,
                     qty: values[`qty_${item.name}`],
                     s_warehouse: doc.source_warehouse,
+                    t_warehouse: doc.target_warehouse,
                   })),
                 };
                 frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
