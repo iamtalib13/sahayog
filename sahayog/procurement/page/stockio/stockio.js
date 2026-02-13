@@ -352,14 +352,12 @@ class StockIOPage {
         
         <!-- Display buttons when status is Approved -->
         <template v-if="selectionStatus === 'Approved'">
-          <!-- 
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
                   @click="handleInwardAction">Inward</button>
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('stock'))" 
                   @click="handleOutwardAction">Outward</button>
-          -->
           <button class="btn primary" 
                   v-show="selectionCategories.some(c => c.toLowerCase().includes('asset'))" 
                   @click="handleAssetMovementAction">Asset Movement</button>
@@ -382,104 +380,67 @@ class StockIOPage {
         />
 
         <div class="order-info">
-        <div class="order-title">
-          <strong>{{ doc.name }}</strong>
-          <span class="badge paid">{{ doc.status }}</span>
-        </div>
-
-        <div class="order-meta">
-          {{ formatDate(doc.creation) }} · Created By:
-          <b>{{ doc.owner }}</b>
-                 <!-- APPROVAL PROGRESS -->
-<div class="approval-progress compact">
-
-  <!-- STEP 1 : Draft / Submitted -->
-<div class="step" :class="getProgressFlow(doc).step1.state">
-    <span class="dot"></span>
-    <span class="label">{{ getProgressFlow(doc).step1.label }}</span>
-  </div>
-
-  <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
-
-  <!-- STEP 2 : Reporting -->
-<div
-  class="step"
-  v-if="getProgressFlow(doc).step2.visible"
-  :class="getProgressFlow(doc).step2.state"
->
-    <span class="dot"></span>
-    <span class="label">Reporting</span>
-  </div>
-
-  <div class="line"></div>
-
-  <!-- STEP 3 : HO Approval / Cancelled -->
-<div
-  class="step"
-  :class="getProgressFlow(doc).step3.state"
->
-
-    <span class="dot"></span>
-    <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
-  </div>
-
-</div>
-
-        </div>
- 
-
-
-        <!-- FIRST ITEM -->
-        <div class="order-product" v-if="doc.items && doc.items.length > 0">
-          <div>
-          <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
-            {{ doc.items?.[0]?.item_code || "" }}
-            <span class="badge" 
-                  v-if="doc.items?.[0]?.item_category"
-                  :class="doc.items?.[0]?.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
-              {{ doc.items?.[0]?.item_category }}
-            </span>
-          </div>
-          <div class="product-meta">
-            SKU: {{ doc.items?.[0]?.item_code || "" }}
- · Qty: {{ doc.items?.[0]?.quantity || 0 }}
-          </div>
-          </div>
-        </div>
-
-        <!-- MORE ITEMS -->
-        <div v-if="doc.showAllItems">
-          <div
-          class="order-product"
-          v-for="item in doc.items.slice(1)"
-          :key="item.name"
-          >
-          <div>
-            <div class="product-name" style="display: flex; align-items: center; gap: 8px;">
-              {{ item.item_code }}
-              <span class="badge" 
-                    v-if="item.item_category"
-                    :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
-                {{ item.item_category }}
-              </span>
+          <!-- HEADER: SUMMARY, PROGRESS & ITEMS -->
+          <div class="order-header-row">
+            <!-- 1. SUMMARY -->
+            <div class="order-meta-info">
+              <div class="order-title">
+                <strong>{{ doc.name }}</strong>
+                <span class="badge paid">{{ doc.status }}</span>
+              </div>
+              <div class="order-meta">
+                {{ formatDate(doc.creation) }} · By: <b>{{ doc.owner }}</b>
+              </div>
             </div>
-            <div class="product-meta">
-            SKU: {{ item.item_code }} · Qty: {{ item.quantity }}
+
+            <!-- 2. PROGRESS -->
+            <div class="approval-progress compact">
+              <!-- STEP 1 : Draft / Submitted -->
+              <div class="step" :class="getProgressFlow(doc).step1.state">
+                <span class="dot"></span>
+                <span class="label">{{ getProgressFlow(doc).step1.label }}</span>
+              </div>
+
+              <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
+
+              <!-- STEP 2 : Reporting -->
+              <div class="step" v-if="getProgressFlow(doc).step2.visible" :class="getProgressFlow(doc).step2.state">
+                <span class="dot"></span>
+                <span class="label">Reporting</span>
+              </div>
+
+              <div class="line"></div>
+
+              <!-- STEP 3 : HO Approval / Cancelled -->
+              <div class="step" :class="getProgressFlow(doc).step3.state">
+                <span class="dot"></span>
+                <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
+              </div>
+            </div>
+
+            <!-- 3. ITEMS (When Expanded) -->
+            <div class="order-items-horizontal" v-if="doc.showAllItems">
+              <div class="item-compact-card" v-for="item in doc.items" :key="item.name">
+                <div class="item-name-row">
+                  <span>{{ item.item_code }}</span>
+                  <span class="badge" 
+                        v-if="item.item_category"
+                        :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
+                    {{ item.item_category[0] }}
+                  </span>
+                </div>
+                <div class="item-meta-row">
+                  Qty: {{ item.quantity }}
+                </div>
+              </div>
             </div>
           </div>
-          </div>
-        </div>
 
-        <div
-          class="more-items"
-          v-if="doc.items.length > 1"
-          @click="toggleItems(doc)"
-        >
-          {{ doc.showAllItems
-          ? 'Hide items'
-          : '+' + (doc.items.length - 1) + ' more items' }}
-        </div>
-
+          <!-- TOGGLE BUTTON IN NEXT ROW -->
+          <div class="order-toggle-row">
+                          <button class="order-items-toggle" @click="toggleItems(doc)">
+                            {{ doc.showAllItems ? 'Hide Items' : (doc.items && doc.items.length > 0 ? 'Show Items (' + doc.items.length + ')' : 'Show Items') }}
+                          </button>          </div>
         </div>
       </div>
 
@@ -1297,16 +1258,19 @@ class StockIOPage {
             this.offset = 0;
             this.visibleRequests = [];
             this.loadMore();
-            this.requests.forEach((doc) => this.loadItems(doc));
+            // Removed automatic items loading
           },
         });
       },
-      loadItems(doc) {
+      loadItems(doc, callback) {
         frappe.call({
           method: "frappe.client.get",
           args: { doctype: "Employee Material Request", name: doc.name },
           callback: (r) => {
-            if (r.message) doc.items = r.message.items || [];
+            if (r.message) {
+              doc.items = r.message.items || [];
+              if (callback) callback();
+            }
           },
         });
       },
@@ -1489,7 +1453,13 @@ class StockIOPage {
         return frappe.datetime.str_to_user(date);
       },
       toggleItems(doc) {
-        doc.showAllItems = !doc.showAllItems;
+        if (!doc.showAllItems && (!doc.items || doc.items.length === 0)) {
+          this.loadItems(doc, () => {
+            doc.showAllItems = true;
+          });
+        } else {
+          doc.showAllItems = !doc.showAllItems;
+        }
       },
       createRequest() {
         if (this.pageMode === "item") {
@@ -1858,6 +1828,191 @@ class StockIOPage {
           this.selectedAssetMovements.length === this.assetMovements.length;
       },
 
+      handleInwardAction() {
+        if (!this.selectedDocs.length) return;
+        const docname = this.selectedDocs[0];
+        
+        frappe.dom.freeze("Loading Request Data...");
+
+        frappe.call({
+          method: "frappe.client.get",
+          args: { doctype: "Employee Material Request", name: docname },
+          callback: (r) => {
+            frappe.dom.unfreeze();
+            const doc = r.message;
+            if (!doc) return;
+
+            const stock_items = (doc.items || []).filter(i => i.item_category === "Stock Item");
+            if (!stock_items.length) {
+              frappe.msgprint("No stock items found in this request.");
+              return;
+            }
+
+            const fields = [
+              {
+                fieldtype: "Link",
+                fieldname: "supplier",
+                label: "Supplier",
+                options: "Supplier",
+                reqd: 1,
+              },
+              {
+                fieldtype: "Link",
+                fieldname: "target_warehouse",
+                label: "Target Warehouse",
+                options: "Warehouse",
+                reqd: 1,
+                get_query: () => ({
+                  filters: { custom_warehouse_category: ["like", "Store%"] },
+                }),
+              },
+              { fieldtype: "Section Break" }
+            ];
+
+            stock_items.forEach((item) => {
+              fields.push({
+                fieldtype: "Float",
+                fieldname: `qty_${item.name}`,
+                label: `Qty for ${item.item_code}`,
+                reqd: 1,
+                default: item.quantity,
+              });
+            });
+
+            frappe.prompt(
+              fields,
+              (values) => {
+                const pr_doc = {
+                  doctype: "Purchase Receipt",
+                  supplier: values.supplier,
+                  posting_date: frappe.datetime.nowdate(),
+                  posting_time: frappe.datetime.now_time(),
+                  items: stock_items.map((item) => ({
+                    item_code: item.item_code,
+                    item_name: item.item_name,
+                    description: item.description || item.item_code,
+                    qty: values[`qty_${item.name}`],
+                    stock_uom: item.stock_uom || "Nos",
+                    warehouse: values.target_warehouse,
+                    rate: 0,
+                    amount: 0,
+                  })),
+                };
+
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: { doc: pr_doc },
+                  callback: (r2) => {
+                    if (!r2.exc && r2.message) {
+                      const pr_name = r2.message.name;
+                      frappe.msgprint({
+                        title: "Purchase Receipt Created!",
+                        message: `PR <b>${pr_name}</b> saved successfully!<br><br>
+                          <button class="btn btn-primary btn-sm" onclick="window.submit_pr('${pr_name}')">
+                            <i class="fa fa-check"></i> Submit Now
+                          </button>`,
+                        indicator: "green",
+                        wide: true,
+                      });
+                      this.selectedDocs = [];
+                      this.selectAll = false;
+                      this.loadRequests();
+                    }
+                  },
+                });
+              },
+              "Enter Details for Inward",
+              "Create"
+            );
+          }
+        });
+      },
+
+      handleOutwardAction() {
+        if (!this.selectedDocs.length) return;
+        const docname = this.selectedDocs[0];
+
+        frappe.dom.freeze("Loading Request Data...");
+
+        frappe.call({
+          method: "frappe.client.get",
+          args: { doctype: "Employee Material Request", name: docname },
+          callback: (r) => {
+            frappe.dom.unfreeze();
+            const doc = r.message;
+            if (!doc) return;
+
+            const stock_items = (doc.items || []).filter(i => i.item_category === "Stock Item");
+            if (!stock_items.length) {
+              frappe.msgprint("No stock items found in this request.");
+              return;
+            }
+
+            const fields = [];
+            stock_items.forEach((item) => {
+              fields.push({
+                fieldtype: "Float",
+                fieldname: `qty_${item.name}`,
+                label: `Qty for ${item.item_code}`,
+                reqd: 1,
+                default: item.quantity,
+              });
+            });
+
+            frappe.prompt(
+              fields,
+              (values) => {
+                const purpose = doc.target_warehouse ? "Material Transfer" : "Material Issue";
+                
+                const se_doc = {
+                  doctype: "Stock Entry",
+                  stock_entry_type: purpose,
+                  company: doc.company || frappe.defaults.get_user_default("company"),
+                  custom_material_request: doc.name,
+                  custom_material_request_doctype: "Employee Material Request",
+                  from_warehouse: doc.source_warehouse,
+                  to_warehouse: doc.target_warehouse,
+                  items: stock_items.map((item) => ({
+                    item_code: item.item_code,
+                    qty: values[`qty_${item.name}`],
+                    uom: item.stock_uom || "Nos",
+                    stock_uom: item.stock_uom || "Nos",
+                    conversion_factor: 1,
+                    transfer_qty: values[`qty_${item.name}`],
+                    s_warehouse: doc.source_warehouse,
+                    t_warehouse: purpose === "Material Transfer" ? doc.target_warehouse : "",
+                  })),
+                };
+
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: { doc: se_doc },
+                  callback: (r2) => {
+                    if (!r2.exc && r2.message) {
+                      const se_name = r2.message.name;
+                      frappe.msgprint({
+                        title: "Stock Entry Created!",
+                        message: `Stock Entry <b>${se_name}</b> saved successfully!<br><br>
+                          <button class="btn btn-primary btn-sm" onclick="window.submit_se('${se_name}')">
+                            <i class="fa fa-check"></i> Submit Now
+                          </button>`,
+                        indicator: "green",
+                        wide: true,
+                      });
+                      this.selectedDocs = [];
+                      this.selectAll = false;
+                      this.loadRequests();
+                    }
+                  },
+                });
+              },
+              "Enter Quantities for Outward",
+              "Create"
+            );
+          }
+        });
+      },
+
       async handleAssetMovementAction() {
         if (!this.selectedDocs.length) return;
         const docname = this.selectedDocs[0];
@@ -2113,3 +2268,57 @@ class StockIOPage {
     }, 100);
   }
 }
+
+window.submit_pr = function (pr_name) {
+  // Hide the button to prevent multiple clicks
+  $(event.target).hide();
+
+  frappe.call({
+    method: "frappe.client.get",
+    args: { doctype: "Purchase Receipt", name: pr_name },
+    callback: (r) => {
+      if (!r.exc) {
+        frappe.call({
+          method: "frappe.client.submit",
+          args: { doc: r.message },
+          callback: (r2) => {
+            if (!r2.exc) {
+              if (cur_dialog) cur_dialog.hide();
+              frappe.show_alert({
+                message: `Purchase Receipt ${pr_name} submitted successfully`,
+                indicator: "green",
+              });
+            }
+          },
+        });
+      }
+    },
+  });
+};
+
+window.submit_se = function (se_name) {
+  // Hide the button to prevent multiple clicks
+  $(event.target).hide();
+
+  frappe.call({
+    method: "frappe.client.get",
+    args: { doctype: "Stock Entry", name: se_name },
+    callback: (r) => {
+      if (!r.exc) {
+        frappe.call({
+          method: "frappe.client.submit",
+          args: { doc: r.message },
+          callback: (r2) => {
+            if (!r2.exc) {
+              if (cur_dialog) cur_dialog.hide();
+              frappe.show_alert({
+                message: `Stock Entry ${se_name} submitted successfully`,
+                indicator: "green",
+              });
+            }
+          },
+        });
+      }
+    },
+  });
+};
