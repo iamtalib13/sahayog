@@ -2298,6 +2298,9 @@ class StockIOPage {
 }
 
 window.submit_pr = function (pr_name) {
+  // Hide the button to prevent multiple clicks
+  $(event.target).hide();
+
   frappe.call({
     method: "frappe.client.get",
     args: { doctype: "Purchase Receipt", name: pr_name },
@@ -2322,6 +2325,9 @@ window.submit_pr = function (pr_name) {
 };
 
 window.submit_se = function (se_name) {
+  // Hide the button to prevent multiple clicks
+  $(event.target).hide();
+
   frappe.call({
     method: "frappe.client.get",
     args: { doctype: "Stock Entry", name: se_name },
