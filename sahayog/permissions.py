@@ -200,7 +200,7 @@ def get_employee_material_request_permission(user, doctype=None):
 
     user_roles = frappe.get_roles(user)
 
-    if "Administrator" in user_roles or "Store Manager" in user_roles:
+    if "Administrator" in user_roles or "Store Manager" in user_roles or "Head Office Officer" in user_roles:
         return ""
 
     return f"(`tabEmployee Material Request`.owner = '{user}' OR `tabEmployee Material Request`.reporting_person = '{user}' OR `tabEmployee Material Request`.head_office_officer = '{user}')"
