@@ -1999,15 +1999,25 @@ class StockIOPage {
                   custom_material_request_doctype: "Employee Material Request",
                   from_warehouse: doc.source_warehouse,
                   to_warehouse: doc.target_warehouse,
-                  items: stock_items.map((item) => ({
-                    item_code: item.item_code,
-                    qty: values[`qty_${item.name}`],
-                    uom: item.stock_uom || "Nos",
-                    stock_uom: item.stock_uom || "Nos",
-                    conversion_factor: 1,
-                    s_warehouse: doc.source_warehouse,
-                    t_warehouse: purpose === "Material Transfer" ? doc.target_warehouse : "",
-                  })),
+                });
+
+                // Add items after the form is initialized to prevent GridRow errors
+                frappe.ui.form.on("Stock Entry", {
+                  onload: function(frm) {
+                    if (frm.doc.custom_material_request === doc.name && (!frm.doc.items || frm.doc.items.length === 0)) {
+                      stock_items.forEach((item) => {
+                        let row = frappe.model.add_child(frm.doc, "items");
+                        row.item_code = item.item_code;
+                        row.qty = values[`qty_${item.name}`];
+                        row.uom = item.stock_uom || "Nos";
+                        row.stock_uom = item.stock_uom || "Nos";
+                        row.conversion_factor = 1;
+                        row.s_warehouse = doc.source_warehouse;
+                        row.t_warehouse = purpose === "Material Transfer" ? doc.target_warehouse : "";
+                      });
+                      frm.refresh_field("items");
+                    }
+                  }
                 });
               },
               "Enter Quantities for Outward",
