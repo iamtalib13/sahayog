@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "field:user",
  "creation": "2025-12-10 12:55:52.629871",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -38,7 +38,8 @@
    "label": "User",
    "options": "User",
    "reqd": 1,
-   "set_only_once": 1
+   "set_only_once": 1,
+   "unique": 1
   },
   {
    "description": "User Name",
@@ -135,10 +136,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-13 15:01:11.636593",
+ "modified": "2026-02-13 15:04:20.183957",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
