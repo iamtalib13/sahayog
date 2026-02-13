@@ -439,21 +439,33 @@ body.stockio-active .page-content {
 /* New layout for header and progress */
 .order-header-row {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start; /* Align to top to handle multi-line items if needed */
+  justify-content: flex-start;
+  align-items: center;
   width: 100%;
-  gap: 20px;
+  gap: 24px;
+}
+
+.order-meta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 160px;
+}
+
+.approval-progress.compact {
+  margin: 0;
+  flex: 0 0 auto; /* Fixed width for progress */
+  justify-content: center;
 }
 
 .order-items-horizontal {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  flex: 1; /* Take up middle space */
-  padding: 0 10px;
+  flex: 1; /* Take up remaining space on the right */
+  padding-left: 20px;
   border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  margin: 0 10px;
 }
 
 .item-compact-card {

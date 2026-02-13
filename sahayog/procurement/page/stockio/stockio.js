@@ -380,37 +380,20 @@ class StockIOPage {
         />
 
         <div class="order-info">
-          <!-- HEADER AND PROGRESS IN ONE ROW -->
+          <!-- HEADER: SUMMARY, PROGRESS & ITEMS -->
           <div class="order-header-row">
+            <!-- 1. SUMMARY -->
             <div class="order-meta-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
                 <span class="badge paid">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
-                {{ formatDate(doc.creation) }} · Created By:
-                <b>{{ doc.owner }}</b>
+                {{ formatDate(doc.creation) }} · By: <b>{{ doc.owner }}</b>
               </div>
             </div>
 
-            <!-- COLLAPSIBLE ITEMS (HORIZONTAL IN FIRST ROW) -->
-            <div class="order-items-horizontal" v-if="doc.showAllItems">
-              <div class="item-compact-card" v-for="item in doc.items" :key="item.name">
-                <div class="item-name-row">
-                  <span>{{ item.item_code }}</span>
-                  <span class="badge" 
-                        v-if="item.item_category"
-                        :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
-                    {{ item.item_category[0] }}
-                  </span>
-                </div>
-                <div class="item-meta-row">
-                  Qty: {{ item.quantity }}
-                </div>
-              </div>
-            </div>
-
-            <!-- APPROVAL PROGRESS -->
+            <!-- 2. PROGRESS -->
             <div class="approval-progress compact">
               <!-- STEP 1 : Draft / Submitted -->
               <div class="step" :class="getProgressFlow(doc).step1.state">
@@ -432,6 +415,23 @@ class StockIOPage {
               <div class="step" :class="getProgressFlow(doc).step3.state">
                 <span class="dot"></span>
                 <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
+              </div>
+            </div>
+
+            <!-- 3. ITEMS (When Expanded) -->
+            <div class="order-items-horizontal" v-if="doc.showAllItems">
+              <div class="item-compact-card" v-for="item in doc.items" :key="item.name">
+                <div class="item-name-row">
+                  <span>{{ item.item_code }}</span>
+                  <span class="badge" 
+                        v-if="item.item_category"
+                        :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
+                    {{ item.item_category[0] }}
+                  </span>
+                </div>
+                <div class="item-meta-row">
+                  Qty: {{ item.quantity }}
+                </div>
               </div>
             </div>
           </div>
