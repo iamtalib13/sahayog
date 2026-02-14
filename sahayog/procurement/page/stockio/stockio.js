@@ -1588,12 +1588,126 @@ class StockIOPage {
           return;
         }
         if (this.pageMode === "stock") {
-          if (this.subMode === "inward")
-            return frappe.set_route(
-              "Form",
-              "Purchase Receipt",
-              "new-purchase-receipt-1",
-            );
+          if (this.subMode === "inward") {
+            const dialog = new frappe.ui.Dialog({
+              title: __("Create Purchase Receipt (Inward)"),
+              fields: [
+                {
+                  label: "Supplier",
+                  fieldname: "supplier",
+                  fieldtype: "Link",
+                  options: "Supplier",
+                  reqd: 1,
+                },
+                {
+                  label: "Set Warehouse",
+                  fieldname: "set_warehouse",
+                  fieldtype: "Link",
+                  options: "Warehouse",
+                  reqd: 1,
+                },
+                {
+                  label: "Items",
+                  fieldname: "items",
+                  fieldtype: "Table",
+                  fields: [
+                    {
+                      label: "Item Code",
+                      fieldname: "item_code",
+                      fieldtype: "Link",
+                      options: "Item",
+                      in_list_view: 1,
+                      reqd: 1,
+                      onchange: function () {
+                        const row = this.grid_row;
+                        if (this.value) {
+                          frappe.db.get_value(
+                            "Item",
+                            this.value,
+                            "stock_uom",
+                            (r) => {
+                              if (r && r.stock_uom) {
+                                frappe.model.set_value(
+                                  row.doc.doctype,
+                                  row.doc.name,
+                                  "uom",
+                                  r.stock_uom,
+                                );
+                                frappe.model.set_value(
+                                  row.doc.doctype,
+                                  row.doc.name,
+                                  "stock_uom",
+                                  r.stock_uom,
+                                );
+                              }
+                            },
+                          );
+                        }
+                      },
+                    },
+                    {
+                      label: "Quantity",
+                      fieldname: "qty",
+                      fieldtype: "Float",
+                      in_list_view: 1,
+                      reqd: 1,
+                      default: 1,
+                    },
+                    {
+                      label: "UOM",
+                      fieldname: "uom",
+                      fieldtype: "Data",
+                      in_list_view: 1,
+                      read_only: 1,
+                    },
+                  ],
+                  reqd: 1,
+                },
+              ],
+              primary_action_label: __("Create"),
+              primary_action: (values) => {
+                const doc = {
+                  doctype: "Purchase Receipt",
+                  supplier: values.supplier,
+                  set_warehouse: values.set_warehouse,
+                  posting_date: frappe.datetime.now_date(),
+                  posting_time: frappe.datetime.now_time(),
+                  items: values.items,
+                };
+
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: { doc: doc },
+                  callback: (r) => {
+                    if (!r.exc) {
+                      frappe.show_alert({
+                        message: __("Purchase Receipt {0} created", [
+                          r.message.name,
+                        ]),
+                        indicator: "green",
+                      });
+                      dialog.hide();
+                      this.loadInward();
+                    }
+                  },
+                });
+              },
+            });
+
+            // Fetch default warehouse
+            frappe.call({
+              method:
+                "sahayog.procurement.api.stock_entry_report.get_user_warehouse",
+              callback: (r) => {
+                if (r.message && r.message.warehouse) {
+                  dialog.set_value("set_warehouse", r.message.warehouse);
+                }
+              },
+            });
+
+            dialog.show();
+            return;
+          }
           if (this.subMode === "outward")
             return frappe.set_route("Form", "Stock Entry", "new-stock-entry-1");
         }
