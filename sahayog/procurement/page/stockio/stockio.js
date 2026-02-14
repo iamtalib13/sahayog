@@ -1510,6 +1510,7 @@ class StockIOPage {
                 fieldname: "gst_hsn_code",
                 fieldtype: "Link",
                 options: "GST HSN Code",
+                description: __("Must be 6 or 8 digits long"),
               },
               {
                 label: "Is Stock Item",
@@ -1551,6 +1552,14 @@ class StockIOPage {
             ],
             primary_action_label: __("Create"),
             primary_action: (values) => {
+              if (values.gst_hsn_code && ![6, 8].includes(values.gst_hsn_code.length)) {
+                frappe.msgprint({
+                  title: __("Invalid HSN/SAC"),
+                  message: __("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code."),
+                  indicator: "orange",
+                });
+                return;
+              }
               frappe.call({
                 method: "frappe.client.insert",
                 args: {
