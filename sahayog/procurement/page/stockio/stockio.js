@@ -1938,6 +1938,40 @@ class StockIOPage {
                   reqd: 1,
                 },
                 {
+                  label: "Custodian",
+                  fieldname: "custodian",
+                  fieldtype: "Link",
+                  options: "Employee",
+                },
+                {
+                  label: "Asset Owner",
+                  fieldname: "asset_owner",
+                  fieldtype: "Link",
+                  options: "Employee",
+                },
+                {
+                  label: "Department",
+                  fieldname: "department",
+                  fieldtype: "Link",
+                  options: "Department",
+                },
+                {
+                  label: "Serial No",
+                  fieldname: "serial_no",
+                  fieldtype: "Link",
+                  options: "Serial No",
+                },
+                {
+                  label: "Windows Key",
+                  fieldname: "windows_key",
+                  fieldtype: "Data",
+                },
+                {
+                  label: "Office Key",
+                  fieldname: "office_key",
+                  fieldtype: "Data",
+                },
+                {
                   label: "Gross Purchase Amount",
                   fieldname: "gross_purchase_amount",
                   fieldtype: "Currency",
