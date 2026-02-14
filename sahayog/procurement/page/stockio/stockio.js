@@ -2010,8 +2010,12 @@ class StockIOPage {
                       const asset_name = r.message.name;
                       frappe.msgprint({
                         title: "Asset Created!",
-                        message: `Asset <b>${asset_name}</b> created successfully!`,
+                        message: `Asset <b>${asset_name}</b> created successfully!<br><br>
+                          <button class="btn btn-primary btn-sm" onclick="window.submit_asset('${asset_name}')">
+                            <i class="fa fa-check"></i> Submit Now
+                          </button>`,
                         indicator: "green",
+                        wide: true,
                       });
                       dialog.hide();
                       this.loadAssets();
@@ -3080,6 +3084,7 @@ class StockIOPage {
       },
     };
 
+    window.cur_stockio_app = app;
     PetiteVue.createApp(app).mount(this.wrapper[0]);
     setTimeout(() => {
       app.setMode(app.pageMode, app.subMode);
@@ -3133,6 +3138,36 @@ window.submit_se = function (se_name) {
                 message: `Stock Entry ${se_name} submitted successfully`,
                 indicator: "green",
               });
+            }
+          },
+        });
+      }
+    },
+  });
+};
+
+window.submit_asset = function (asset_name) {
+  // Hide the button to prevent multiple clicks
+  $(event.target).hide();
+
+  frappe.call({
+    method: "frappe.client.get",
+    args: { doctype: "Asset", name: asset_name },
+    callback: (r) => {
+      if (!r.exc) {
+        frappe.call({
+          method: "frappe.client.submit",
+          args: { doc: r.message },
+          callback: (r2) => {
+            if (!r2.exc) {
+              frappe.show_alert({
+                message: `Asset ${asset_name} submitted successfully`,
+                indicator: "green",
+              });
+              // Refresh StockIO lists if needed
+              if (window.cur_stockio_app) {
+                window.cur_stockio_app.loadAssets();
+              }
             }
           },
         });
