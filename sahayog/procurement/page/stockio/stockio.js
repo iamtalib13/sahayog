@@ -2200,7 +2200,7 @@ class StockIOPage {
               fieldtype: "Link",
               options: "Employee",
               reqd: 1,
-              onchange: function() {
+              onchange: function () {
                 const val = this.get_value();
                 if (val) {
                   frappe.call({
@@ -2217,17 +2217,22 @@ class StockIOPage {
 
                         // Fetch Reporting Person User ID from reports_to Employee
                         if (emp.reports_to) {
-                          frappe.db.get_value("Employee", emp.reports_to, "user_id", (r) => {
-                            if (r && r.user_id) {
-                              dialog.set_value("reporting_person", r.user_id);
-                            }
-                          });
+                          frappe.db.get_value(
+                            "Employee",
+                            emp.reports_to,
+                            "user_id",
+                            (r) => {
+                              if (r && r.user_id) {
+                                dialog.set_value("reporting_person", r.user_id);
+                              }
+                            },
+                          );
                         }
                       }
-                    }
+                    },
                   });
                 }
-              }
+              },
             },
             {
               label: "Reporting Person",
@@ -2235,7 +2240,7 @@ class StockIOPage {
               fieldtype: "Link",
               options: "User",
               read_only: 1,
-              reqd: 1
+              reqd: 1,
             },
             {
               label: "Target Warehouse",
@@ -2243,13 +2248,13 @@ class StockIOPage {
               fieldtype: "Link",
               options: "Warehouse",
               read_only: 1,
-              reqd: 1
+              reqd: 1,
             },
             {
               fieldname: "target_location",
               fieldtype: "Data",
               hidden: 1,
-              reqd: 1
+              reqd: 1,
             },
             {
               label: "Source Warehouse",
@@ -2288,19 +2293,38 @@ class StockIOPage {
                   label: "Item Code",
                   in_list_view: 1,
                   reqd: 1,
-                  onchange: function() {
+                  onchange: function () {
                     const row = this.grid_row;
                     if (this.value) {
-                      frappe.db.get_value("Item", this.value, ["is_fixed_asset", "stock_uom"], (r) => {
-                        if (r) {
-                          const is_fixed_asset = r.is_fixed_asset === 1 || r.is_fixed_asset === "1";
-                          const category = is_fixed_asset ? "Asset" : "Stock Item";
-                          frappe.model.set_value(row.doc.doctype, row.doc.name, "item_category", category);
-                          frappe.model.set_value(row.doc.doctype, row.doc.name, "uom", r.stock_uom);
-                        }
-                      });
+                      frappe.db.get_value(
+                        "Item",
+                        this.value,
+                        ["is_fixed_asset", "stock_uom"],
+                        (r) => {
+                          if (r) {
+                            const is_fixed_asset =
+                              r.is_fixed_asset === 1 ||
+                              r.is_fixed_asset === "1";
+                            const category = is_fixed_asset
+                              ? "Asset"
+                              : "Stock Item";
+                            frappe.model.set_value(
+                              row.doc.doctype,
+                              row.doc.name,
+                              "item_category",
+                              category,
+                            );
+                            frappe.model.set_value(
+                              row.doc.doctype,
+                              row.doc.name,
+                              "uom",
+                              r.stock_uom,
+                            );
+                          }
+                        },
+                      );
                     }
-                  }
+                  },
                 },
                 {
                   fieldname: "quantity",
@@ -2315,15 +2339,15 @@ class StockIOPage {
                   fieldtype: "Data",
                   label: "Category",
                   in_list_view: 1,
-                  read_only: 1
+                  read_only: 1,
                 },
                 {
                   fieldname: "uom",
                   fieldtype: "Data",
                   label: "UOM",
                   in_list_view: 1,
-                  read_only: 1
-                }
+                  read_only: 1,
+                },
               ],
               reqd: 1,
             },
@@ -2338,9 +2362,14 @@ class StockIOPage {
             // Re-verify item categories to ensure they match Item master
             if (values.items && values.items.length) {
               for (let item of values.items) {
-                const res = await frappe.db.get_value("Item", item.item_code, ["is_fixed_asset", "stock_uom"]);
+                const res = await frappe.db.get_value("Item", item.item_code, [
+                  "is_fixed_asset",
+                  "stock_uom",
+                ]);
                 if (res && res.message) {
-                  const is_fixed_asset = res.message.is_fixed_asset === 1 || res.message.is_fixed_asset === "1";
+                  const is_fixed_asset =
+                    res.message.is_fixed_asset === 1 ||
+                    res.message.is_fixed_asset === "1";
                   item.item_category = is_fixed_asset ? "Asset" : "Stock Item";
                   item.uom = res.message.stock_uom;
                 }
@@ -2359,7 +2388,9 @@ class StockIOPage {
               callback: (r) => {
                 if (!r.exc) {
                   frappe.show_alert({
-                    message: __("Material Request {0} created", [r.message.name]),
+                    message: __("Material Request {0} created", [
+                      r.message.name,
+                    ]),
                     indicator: "green",
                   });
                   dialog.hide();
