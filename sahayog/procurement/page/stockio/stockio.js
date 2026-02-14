@@ -2068,9 +2068,15 @@ class StockIOPage {
                           frappe.db.get_value(
                             "Asset",
                             this.value,
-                            ["location", "custodian"],
+                            ["asset_name", "location", "custodian"],
                             (r) => {
                               if (r) {
+                                frappe.model.set_value(
+                                  row.doc.doctype,
+                                  row.doc.name,
+                                  "asset_name",
+                                  r.asset_name || "",
+                                );
                                 frappe.model.set_value(
                                   row.doc.doctype,
                                   row.doc.name,
@@ -2090,6 +2096,12 @@ class StockIOPage {
                           frappe.model.set_value(
                             row.doc.doctype,
                             row.doc.name,
+                            "asset_name",
+                            "",
+                          );
+                          frappe.model.set_value(
+                            row.doc.doctype,
+                            row.doc.name,
                             "source_location",
                             "",
                           );
@@ -2101,6 +2113,13 @@ class StockIOPage {
                           );
                         }
                       },
+                    },
+                    {
+                      label: "Asset Name",
+                      fieldname: "asset_name",
+                      fieldtype: "Data",
+                      read_only: 1,
+                      in_list_view: 1,
                     },
                     {
                       label: "Target Location",
