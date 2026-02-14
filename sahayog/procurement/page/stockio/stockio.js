@@ -1679,12 +1679,16 @@ class StockIOPage {
                   method: "frappe.client.insert",
                   args: { doc: doc },
                   callback: (r) => {
-                    if (!r.exc) {
-                      frappe.show_alert({
-                        message: __("Purchase Receipt {0} created", [
-                          r.message.name,
-                        ]),
+                    if (!r.exc && r.message) {
+                      const pr_name = r.message.name;
+                      frappe.msgprint({
+                        title: "Purchase Receipt Created!",
+                        message: `PR <b>${pr_name}</b> saved successfully!<br><br>
+                          <button class="btn btn-primary btn-sm" onclick="window.submit_pr('${pr_name}')">
+                            <i class="fa fa-check"></i> Submit Now
+                          </button>`,
                         indicator: "green",
+                        wide: true,
                       });
                       dialog.hide();
                       this.loadInward();
