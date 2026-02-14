@@ -1946,8 +1946,9 @@ class StockIOPage {
                 {
                   label: "Asset Owner",
                   fieldname: "asset_owner",
-                  fieldtype: "Link",
-                  options: "Employee",
+                  fieldtype: "Select",
+                  options: "Company\nSupplier\nCustomer",
+                  default: "Company",
                 },
                 {
                   label: "Department",
