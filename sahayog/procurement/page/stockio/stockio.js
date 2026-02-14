@@ -2075,16 +2075,29 @@ class StockIOPage {
                                   row.doc.doctype,
                                   row.doc.name,
                                   "source_location",
-                                  r.location,
+                                  r.location || "",
                                 );
                                 frappe.model.set_value(
                                   row.doc.doctype,
                                   row.doc.name,
                                   "from_employee",
-                                  r.custodian,
+                                  r.custodian || "",
                                 );
                               }
                             },
+                          );
+                        } else {
+                          frappe.model.set_value(
+                            row.doc.doctype,
+                            row.doc.name,
+                            "source_location",
+                            "",
+                          );
+                          frappe.model.set_value(
+                            row.doc.doctype,
+                            row.doc.name,
+                            "from_employee",
+                            "",
                           );
                         }
                       },
