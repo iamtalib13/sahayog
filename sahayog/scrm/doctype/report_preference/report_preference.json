@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "field:user",
  "creation": "2025-12-10 12:55:52.629871",
  "doctype": "DocType",
@@ -135,7 +136,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-13 15:29:40.505036",
+ "modified": "2026-02-14 11:07:45.402844",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
