@@ -1876,8 +1876,102 @@ class StockIOPage {
           }
         }
         if (this.pageMode === "asset") {
-          if (this.subMode === "item")
-            return frappe.set_route("Form", "Asset", "new-asset-1");
+          if (this.subMode === "item") {
+            const dialog = new frappe.ui.Dialog({
+              title: __("Create New Asset"),
+              fields: [
+                {
+                  label: "Item Code",
+                  fieldname: "item_code",
+                  fieldtype: "Link",
+                  options: "Item",
+                  get_query: () => ({
+                    filters: { is_fixed_asset: 1 },
+                  }),
+                  reqd: 1,
+                  onchange: function () {
+                    if (this.value) {
+                      frappe.db.get_value(
+                        "Item",
+                        this.value,
+                        ["item_name", "asset_category"],
+                        (r) => {
+                          if (r) {
+                            dialog.set_value("asset_name", r.item_name);
+                            dialog.set_value(
+                              "asset_category",
+                              r.asset_category,
+                            );
+                          }
+                        },
+                      );
+                    }
+                  },
+                },
+                {
+                  label: "Asset Name",
+                  fieldname: "asset_name",
+                  fieldtype: "Data",
+                  read_only: 1,
+                },
+                {
+                  label: "Asset Category",
+                  fieldname: "asset_category",
+                  fieldtype: "Link",
+                  options: "Asset Category",
+                  read_only: 1,
+                  reqd: 1,
+                },
+                {
+                  label: "Location",
+                  fieldname: "location",
+                  fieldtype: "Link",
+                  options: "Location",
+                  reqd: 1,
+                },
+                {
+                  label: "Purchase Date",
+                  fieldname: "purchase_date",
+                  fieldtype: "Date",
+                  default: frappe.datetime.get_today(),
+                  reqd: 1,
+                },
+                {
+                  label: "Available-for-use Date",
+                  fieldname: "available_for_use_date",
+                  fieldtype: "Date",
+                  default: frappe.datetime.get_today(),
+                  reqd: 1,
+                },
+              ],
+              primary_action_label: __("Create"),
+              primary_action: (values) => {
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: {
+                    doc: {
+                      doctype: "Asset",
+                      ...values,
+                    },
+                  },
+                  callback: (r) => {
+                    if (!r.exc && r.message) {
+                      const asset_name = r.message.name;
+                      frappe.msgprint({
+                        title: "Asset Created!",
+                        message: `Asset <b>${asset_name}</b> created successfully!`,
+                        indicator: "green",
+                      });
+                      dialog.hide();
+                      this.loadAssets();
+                    }
+                  },
+                });
+              },
+            });
+            dialog.show();
+            return;
+          }
           if (this.subMode === "movement")
             return frappe.set_route(
               "Form",
