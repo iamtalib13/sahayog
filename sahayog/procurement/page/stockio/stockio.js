@@ -1578,11 +1578,7 @@ class StockIOPage {
           });
 
           if (dialog.fields_dict.gst_hsn_code) {
-            dialog.fields_dict.gst_hsn_code.get_query = () => {
-              return {
-                filters: [],
-              };
-            };
+            // Default search logic
           }
 
           dialog.show();
