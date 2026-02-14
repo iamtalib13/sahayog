@@ -1433,7 +1433,13 @@ class StockIOPage {
           method: "frappe.client.get_list",
           args: {
             doctype: "Item",
-            fields: ["name", "item_code", "item_name", "item_group", "stock_uom"],
+            fields: [
+              "name",
+              "item_code",
+              "item_name",
+              "item_group",
+              "stock_uom",
+            ],
             order_by: "item_name asc",
             limit_page_length: 1000,
           },
@@ -1556,7 +1562,9 @@ class StockIOPage {
                 callback: (r) => {
                   if (!r.exc) {
                     frappe.show_alert({
-                      message: __("Item {0} created", [r.message.name || r.message.item_code]),
+                      message: __("Item {0} created", [
+                        r.message.name || r.message.item_code,
+                      ]),
                       indicator: "green",
                     });
                     dialog.hide();
@@ -1599,11 +1607,195 @@ class StockIOPage {
               "new-asset-movement-1",
             );
         }
-        frappe.set_route(
-          "Form",
-          "Employee Material Request",
-          "new-employee-material-request",
-        );
+
+        const dialog = new frappe.ui.Dialog({
+          title: __("Create Employee Material Request"),
+          fields: [
+            {
+              label: "Series",
+              fieldname: "naming_series",
+              fieldtype: "Select",
+              options: "EMR-.YYYY.-",
+              reqd: 1,
+              default: "EMR-.YYYY.-",
+            },
+            {
+              label: "Employee",
+              fieldname: "employee",
+              fieldtype: "Link",
+              options: "Employee",
+              reqd: 1,
+              onchange: function() {
+                const val = this.get_value();
+                if (val) {
+                  frappe.call({
+                    method: "frappe.client.get",
+                    args: { doctype: "Employee", name: val },
+                    callback: (res) => {
+                      if (res.message) {
+                        const emp = res.message;
+                        // Set Target Warehouse/Location from sol_id
+                        if (emp.sol_id) {
+                          dialog.set_value("target_warehouse", emp.sol_id);
+                          dialog.set_value("target_location", emp.sol_id);
+                        }
+
+                        // Fetch Reporting Person User ID from reports_to Employee
+                        if (emp.reports_to) {
+                          frappe.db.get_value("Employee", emp.reports_to, "user_id", (r) => {
+                            if (r && r.user_id) {
+                              dialog.set_value("reporting_person", r.user_id);
+                            }
+                          });
+                        }
+                      }
+                    }
+                  });
+                }
+              }
+            },
+            {
+              label: "Reporting Person",
+              fieldname: "reporting_person",
+              fieldtype: "Link",
+              options: "User",
+              read_only: 1,
+              reqd: 1
+            },
+            {
+              label: "Target Warehouse",
+              fieldname: "target_warehouse",
+              fieldtype: "Link",
+              options: "Warehouse",
+              read_only: 1,
+              reqd: 1
+            },
+            {
+              fieldname: "target_location",
+              fieldtype: "Data",
+              hidden: 1,
+              reqd: 1
+            },
+            {
+              label: "Source Warehouse",
+              fieldname: "source_warehouse",
+              fieldtype: "Link",
+              options: "Warehouse",
+              get_query: () => ({
+                filters: { custom_warehouse_category: "Store" },
+              }),
+              reqd: 1,
+            },
+            {
+              label: "Required By Date",
+              fieldname: "required_by_date",
+              fieldtype: "Date",
+              default: frappe.datetime.get_today(),
+              reqd: 1,
+            },
+            {
+              label: "Request Type",
+              fieldname: "request_type",
+              fieldtype: "Select",
+              options: "New\nReturn\nIssue",
+              default: "New",
+              reqd: 1,
+            },
+            {
+              label: "Items",
+              fieldname: "items",
+              fieldtype: "Table",
+              fields: [
+                {
+                  fieldname: "item_code",
+                  fieldtype: "Link",
+                  options: "Item",
+                  label: "Item Code",
+                  in_list_view: 1,
+                  reqd: 1,
+                  onchange: function() {
+                    const row = this.grid_row;
+                    if (this.value) {
+                      frappe.db.get_value("Item", this.value, ["is_fixed_asset", "stock_uom"], (r) => {
+                        if (r) {
+                          const is_fixed_asset = r.is_fixed_asset === 1 || r.is_fixed_asset === "1";
+                          const category = is_fixed_asset ? "Asset" : "Stock Item";
+                          frappe.model.set_value(row.doc.doctype, row.doc.name, "item_category", category);
+                          frappe.model.set_value(row.doc.doctype, row.doc.name, "uom", r.stock_uom);
+                        }
+                      });
+                    }
+                  }
+                },
+                {
+                  fieldname: "quantity",
+                  fieldtype: "Float",
+                  label: "Quantity",
+                  default: 1,
+                  in_list_view: 1,
+                  reqd: 1,
+                },
+                {
+                  fieldname: "item_category",
+                  fieldtype: "Data",
+                  label: "Category",
+                  in_list_view: 1,
+                  read_only: 1
+                },
+                {
+                  fieldname: "uom",
+                  fieldtype: "Data",
+                  label: "UOM",
+                  in_list_view: 1,
+                  read_only: 1
+                }
+              ],
+              reqd: 1,
+            },
+            {
+              label: "Remark",
+              fieldname: "remark",
+              fieldtype: "Long Text",
+              reqd: 1,
+            },
+          ],
+          primary_action: async (values) => {
+            // Re-verify item categories to ensure they match Item master
+            if (values.items && values.items.length) {
+              for (let item of values.items) {
+                const res = await frappe.db.get_value("Item", item.item_code, ["is_fixed_asset", "stock_uom"]);
+                if (res && res.message) {
+                  const is_fixed_asset = res.message.is_fixed_asset === 1 || res.message.is_fixed_asset === "1";
+                  item.item_category = is_fixed_asset ? "Asset" : "Stock Item";
+                  item.uom = res.message.stock_uom;
+                }
+              }
+            }
+
+            frappe.call({
+              method: "frappe.client.insert",
+              args: {
+                doc: {
+                  doctype: "Employee Material Request",
+                  requested_by: frappe.session.user,
+                  ...values,
+                },
+              },
+              callback: (r) => {
+                if (!r.exc) {
+                  frappe.show_alert({
+                    message: __("Material Request {0} created", [r.message.name]),
+                    indicator: "green",
+                  });
+                  dialog.hide();
+                  this.loadRequests();
+                }
+              },
+            });
+          },
+        });
+
+        dialog.show();
       },
       openRequest(name) {
         frappe.set_route("Form", "Employee Material Request", name);
@@ -1831,7 +2023,7 @@ class StockIOPage {
       handleInwardAction() {
         if (!this.selectedDocs.length) return;
         const docname = this.selectedDocs[0];
-        
+
         frappe.dom.freeze("Loading Request Data...");
 
         frappe.call({
@@ -1842,7 +2034,9 @@ class StockIOPage {
             const doc = r.message;
             if (!doc) return;
 
-            const stock_items = (doc.items || []).filter(i => i.item_category === "Stock Item");
+            const stock_items = (doc.items || []).filter(
+              (i) => i.item_category === "Stock Item",
+            );
             if (!stock_items.length) {
               frappe.msgprint("No stock items found in this request.");
               return;
@@ -1866,7 +2060,7 @@ class StockIOPage {
                   filters: { custom_warehouse_category: ["like", "Store%"] },
                 }),
               },
-              { fieldtype: "Section Break" }
+              { fieldtype: "Section Break" },
             ];
 
             stock_items.forEach((item) => {
@@ -1922,9 +2116,9 @@ class StockIOPage {
                 });
               },
               "Enter Details for Inward",
-              "Create"
+              "Create",
             );
-          }
+          },
         });
       },
 
@@ -1942,7 +2136,9 @@ class StockIOPage {
             const doc = r.message;
             if (!doc) return;
 
-            const stock_items = (doc.items || []).filter(i => i.item_category === "Stock Item");
+            const stock_items = (doc.items || []).filter(
+              (i) => i.item_category === "Stock Item",
+            );
             if (!stock_items.length) {
               frappe.msgprint("No stock items found in this request.");
               return;
@@ -1962,12 +2158,15 @@ class StockIOPage {
             frappe.prompt(
               fields,
               (values) => {
-                const purpose = doc.target_warehouse ? "Material Transfer" : "Material Issue";
-                
+                const purpose = doc.target_warehouse
+                  ? "Material Transfer"
+                  : "Material Issue";
+
                 const se_doc = {
                   doctype: "Stock Entry",
                   stock_entry_type: purpose,
-                  company: doc.company || frappe.defaults.get_user_default("company"),
+                  company:
+                    doc.company || frappe.defaults.get_user_default("company"),
                   custom_material_request: doc.name,
                   custom_material_request_doctype: "Employee Material Request",
                   from_warehouse: doc.source_warehouse,
@@ -1980,7 +2179,10 @@ class StockIOPage {
                     conversion_factor: 1,
                     transfer_qty: values[`qty_${item.name}`],
                     s_warehouse: doc.source_warehouse,
-                    t_warehouse: purpose === "Material Transfer" ? doc.target_warehouse : "",
+                    t_warehouse:
+                      purpose === "Material Transfer"
+                        ? doc.target_warehouse
+                        : "",
                   })),
                 };
 
@@ -2007,9 +2209,9 @@ class StockIOPage {
                 });
               },
               "Enter Quantities for Outward",
-              "Create"
+              "Create",
             );
-          }
+          },
         });
       },
 
@@ -2129,7 +2331,9 @@ class StockIOPage {
               d.$wrapper.find("tbody tr").each(function (idx) {
                 let checkbox = $(this).find(".emmr-asset");
                 if (!checkbox.is(":checked")) return;
-                let employee = row_controls[idx] ? row_controls[idx].get_value() : null;
+                let employee = row_controls[idx]
+                  ? row_controls[idx].get_value()
+                  : null;
                 if (!employee) {
                   frappe.msgprint("Employee is mandatory for row " + (idx + 1));
                   selected = [];
@@ -2145,7 +2349,8 @@ class StockIOPage {
 
               if (!selected.length) return;
               frappe.call({
-                method: "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
+                method:
+                  "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
                 args: { emmr: docname, assets: selected },
                 freeze: true,
                 freeze_message: "Creating Asset Movement...",
@@ -2233,7 +2438,10 @@ class StockIOPage {
         let step2State = "disabled";
         let step2Label = "Reporting";
         if (status === "Pending Reporting Person") step2State = "pending";
-        else if (["Pending HO Approval", "Approved", "Self Approved"].includes(status)) step2State = "done";
+        else if (
+          ["Pending HO Approval", "Approved", "Self Approved"].includes(status)
+        )
+          step2State = "done";
         else if (status === "Rejected") {
           if (doc.reporting_person_status === "Rejected") {
             step2State = "rejected";
@@ -2257,7 +2465,11 @@ class StockIOPage {
           }
         } else if (status === "Self Approved") step3Visible = false;
 
-        let step3 = { visible: step3Visible, state: step3State, label: step3Label };
+        let step3 = {
+          visible: step3Visible,
+          state: step3State,
+          label: step3Label,
+        };
         return { step1, step2, step3 };
       },
     };
