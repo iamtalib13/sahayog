@@ -62,7 +62,8 @@ def update_employee_details(employee, data):
             "date_of_birth", "date_of_joining",
             "designation", "department", "branch",
             "custom_zone", "custom_region",
-            "cell_number", "company_email"
+            "cell_number", "company_email",
+            "current_address"
         ]
 
         for field in allowed_fields:

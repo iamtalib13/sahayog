@@ -18,19 +18,21 @@ def get_employee_vcard_qr():
         frappe.throw("Administrator has no Employee record")
 
     employee = frappe.get_value(
-        "Employee",
-        {"user_id": frappe.session.user},
-        [
-            "first_name",
-            "last_name",
-            "designation",
-            "department",
-            "branch",
-            "cell_number",
-            "company_email"
-        ],
-        as_dict=True
-    )
+    "Employee",
+    {"user_id": frappe.session.user},
+    [
+        "first_name",
+        "last_name",
+        "designation",
+        "department",
+        "branch",
+        "cell_number",
+        "company_email",
+        "current_address"   # 👈 ADD ONLY THIS
+    ],
+    as_dict=True
+)
+
 
     if not employee:
         frappe.throw("Employee record not found")
@@ -48,9 +50,11 @@ VERSION:3.0
 FN:{full_name}
 TEL;TYPE=CELL:{employee.cell_number or ""}
 EMAIL:{employee.company_email or ""}
+URL:https://www.sahayogmultistate.com/
 ORG:Sahayog Multistate
 TITLE:{employee.designation or ""}
 NOTE:Department - {employee.department or ""}, Branch - {employee.branch or ""}
+ADR;TYPE=WORK:;;{employee.current_address or ""};;;
 END:VCARD
 """
 
