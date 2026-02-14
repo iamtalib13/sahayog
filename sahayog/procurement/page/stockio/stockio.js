@@ -1923,10 +1923,25 @@ class StockIOPage {
                   reqd: 1,
                 },
                 {
+                  label: "Company",
+                  fieldname: "company",
+                  fieldtype: "Link",
+                  options: "Company",
+                  default: frappe.defaults.get_user_default("company"),
+                  reqd: 1,
+                },
+                {
                   label: "Location",
                   fieldname: "location",
                   fieldtype: "Link",
                   options: "Location",
+                  reqd: 1,
+                },
+                {
+                  label: "Gross Purchase Amount",
+                  fieldname: "gross_purchase_amount",
+                  fieldtype: "Currency",
+                  options: "company:default_currency",
                   reqd: 1,
                 },
                 {
@@ -1951,6 +1966,7 @@ class StockIOPage {
                   args: {
                     doc: {
                       doctype: "Asset",
+                      is_existing_asset: 1,
                       ...values,
                     },
                   },
