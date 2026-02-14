@@ -2010,8 +2010,12 @@ class StockIOPage {
                       const asset_name = r.message.name;
                       frappe.msgprint({
                         title: "Asset Created!",
-                        message: `Asset <b>${asset_name}</b> created successfully!`,
+                        message: `Asset <b>${asset_name}</b> created successfully!<br><br>
+                          <button class="btn btn-primary btn-sm" onclick="window.submit_asset('${asset_name}')">
+                            <i class="fa fa-check"></i> Submit Now
+                          </button>`,
                         indicator: "green",
+                        wide: true,
                       });
                       dialog.hide();
                       this.loadAssets();
@@ -2023,12 +2027,164 @@ class StockIOPage {
             dialog.show();
             return;
           }
-          if (this.subMode === "movement")
-            return frappe.set_route(
-              "Form",
-              "Asset Movement",
-              "new-asset-movement-1",
-            );
+          if (this.subMode === "movement") {
+            const dialog = new frappe.ui.Dialog({
+              title: __("Create Asset Movement"),
+              fields: [
+                {
+                  label: "Purpose",
+                  fieldname: "purpose",
+                  fieldtype: "Select",
+                  options: "Issue\nReceipt\nTransfer",
+                  default: "Issue",
+                  reqd: 1,
+                },
+                {
+                  label: "Company",
+                  fieldname: "company",
+                  fieldtype: "Link",
+                  options: "Company",
+                  default: frappe.defaults.get_user_default("company"),
+                  reqd: 1,
+                },
+                {
+                  label: "Transaction Date",
+                  fieldname: "transaction_date",
+                  fieldtype: "Date",
+                  default: frappe.datetime.get_today(),
+                  reqd: 1,
+                },
+                {
+                  label: "Assets",
+                  fieldname: "assets",
+                  fieldtype: "Table",
+                  fields: [
+                    {
+                      label: "Asset",
+                      fieldname: "asset",
+                      fieldtype: "Link",
+                      options: "Asset",
+                      in_list_view: 1,
+                      reqd: 1,
+                      onchange: function () {
+                        const row = this.grid_row;
+                        if (this.value) {
+                          frappe.db.get_value(
+                            "Asset",
+                            this.value,
+                            ["asset_name", "location", "custodian"],
+                            (r) => {
+                              if (r) {
+                                frappe.model.set_value(
+                                  row.doc.doctype,
+                                  row.doc.name,
+                                  "asset_name",
+                                  r.asset_name || "",
+                                );
+                                frappe.model.set_value(
+                                  row.doc.doctype,
+                                  row.doc.name,
+                                  "source_location",
+                                  r.location || "",
+                                );
+                                frappe.model.set_value(
+                                  row.doc.doctype,
+                                  row.doc.name,
+                                  "from_employee",
+                                  r.custodian || "",
+                                );
+                              }
+                            },
+                          );
+                        } else {
+                          frappe.model.set_value(
+                            row.doc.doctype,
+                            row.doc.name,
+                            "asset_name",
+                            "",
+                          );
+                          frappe.model.set_value(
+                            row.doc.doctype,
+                            row.doc.name,
+                            "source_location",
+                            "",
+                          );
+                          frappe.model.set_value(
+                            row.doc.doctype,
+                            row.doc.name,
+                            "from_employee",
+                            "",
+                          );
+                        }
+                      },
+                    },
+                    {
+                      label: "Asset Name",
+                      fieldname: "asset_name",
+                      fieldtype: "Data",
+                      read_only: 1,
+                      in_list_view: 1,
+                    },
+                    {
+                      label: "Target Location",
+                      fieldname: "target_location",
+                      fieldtype: "Link",
+                      options: "Location",
+                      in_list_view: 1,
+                    },
+                    {
+                      label: "To Employee",
+                      fieldname: "to_employee",
+                      fieldtype: "Link",
+                      options: "Employee",
+                      in_list_view: 1,
+                    },
+                    {
+                      label: "Source Location",
+                      fieldname: "source_location",
+                      fieldtype: "Link",
+                      options: "Location",
+                      read_only: 1,
+                    },
+                    {
+                      label: "From Employee",
+                      fieldname: "from_employee",
+                      fieldtype: "Link",
+                      options: "Employee",
+                      read_only: 1,
+                    },
+                  ],
+                  reqd: 1,
+                },
+              ],
+              primary_action_label: __("Create"),
+              primary_action: (values) => {
+                frappe.call({
+                  method: "frappe.client.insert",
+                  args: {
+                    doc: {
+                      doctype: "Asset Movement",
+                      ...values,
+                    },
+                  },
+                  callback: (r) => {
+                    if (!r.exc && r.message) {
+                      const am_name = r.message.name;
+                      frappe.msgprint({
+                        title: "Asset Movement Created!",
+                        message: `Asset Movement <b>${am_name}</b> saved successfully!`,
+                        indicator: "green",
+                      });
+                      dialog.hide();
+                      this.loadAssetMovements();
+                    }
+                  },
+                });
+              },
+            });
+            dialog.show();
+            return;
+          }
         }
 
         const dialog = new frappe.ui.Dialog({
@@ -2048,7 +2204,7 @@ class StockIOPage {
               fieldtype: "Link",
               options: "Employee",
               reqd: 1,
-              onchange: function() {
+              onchange: function () {
                 const val = this.get_value();
                 if (val) {
                   frappe.call({
@@ -2065,17 +2221,22 @@ class StockIOPage {
 
                         // Fetch Reporting Person User ID from reports_to Employee
                         if (emp.reports_to) {
-                          frappe.db.get_value("Employee", emp.reports_to, "user_id", (r) => {
-                            if (r && r.user_id) {
-                              dialog.set_value("reporting_person", r.user_id);
-                            }
-                          });
+                          frappe.db.get_value(
+                            "Employee",
+                            emp.reports_to,
+                            "user_id",
+                            (r) => {
+                              if (r && r.user_id) {
+                                dialog.set_value("reporting_person", r.user_id);
+                              }
+                            },
+                          );
                         }
                       }
-                    }
+                    },
                   });
                 }
-              }
+              },
             },
             {
               label: "Reporting Person",
@@ -2083,7 +2244,7 @@ class StockIOPage {
               fieldtype: "Link",
               options: "User",
               read_only: 1,
-              reqd: 1
+              reqd: 1,
             },
             {
               label: "Target Warehouse",
@@ -2091,13 +2252,13 @@ class StockIOPage {
               fieldtype: "Link",
               options: "Warehouse",
               read_only: 1,
-              reqd: 1
+              reqd: 1,
             },
             {
               fieldname: "target_location",
               fieldtype: "Data",
               hidden: 1,
-              reqd: 1
+              reqd: 1,
             },
             {
               label: "Source Warehouse",
@@ -2136,19 +2297,38 @@ class StockIOPage {
                   label: "Item Code",
                   in_list_view: 1,
                   reqd: 1,
-                  onchange: function() {
+                  onchange: function () {
                     const row = this.grid_row;
                     if (this.value) {
-                      frappe.db.get_value("Item", this.value, ["is_fixed_asset", "stock_uom"], (r) => {
-                        if (r) {
-                          const is_fixed_asset = r.is_fixed_asset === 1 || r.is_fixed_asset === "1";
-                          const category = is_fixed_asset ? "Asset" : "Stock Item";
-                          frappe.model.set_value(row.doc.doctype, row.doc.name, "item_category", category);
-                          frappe.model.set_value(row.doc.doctype, row.doc.name, "uom", r.stock_uom);
-                        }
-                      });
+                      frappe.db.get_value(
+                        "Item",
+                        this.value,
+                        ["is_fixed_asset", "stock_uom"],
+                        (r) => {
+                          if (r) {
+                            const is_fixed_asset =
+                              r.is_fixed_asset === 1 ||
+                              r.is_fixed_asset === "1";
+                            const category = is_fixed_asset
+                              ? "Asset"
+                              : "Stock Item";
+                            frappe.model.set_value(
+                              row.doc.doctype,
+                              row.doc.name,
+                              "item_category",
+                              category,
+                            );
+                            frappe.model.set_value(
+                              row.doc.doctype,
+                              row.doc.name,
+                              "uom",
+                              r.stock_uom,
+                            );
+                          }
+                        },
+                      );
                     }
-                  }
+                  },
                 },
                 {
                   fieldname: "quantity",
@@ -2163,15 +2343,15 @@ class StockIOPage {
                   fieldtype: "Data",
                   label: "Category",
                   in_list_view: 1,
-                  read_only: 1
+                  read_only: 1,
                 },
                 {
                   fieldname: "uom",
                   fieldtype: "Data",
                   label: "UOM",
                   in_list_view: 1,
-                  read_only: 1
-                }
+                  read_only: 1,
+                },
               ],
               reqd: 1,
             },
@@ -2186,9 +2366,14 @@ class StockIOPage {
             // Re-verify item categories to ensure they match Item master
             if (values.items && values.items.length) {
               for (let item of values.items) {
-                const res = await frappe.db.get_value("Item", item.item_code, ["is_fixed_asset", "stock_uom"]);
+                const res = await frappe.db.get_value("Item", item.item_code, [
+                  "is_fixed_asset",
+                  "stock_uom",
+                ]);
                 if (res && res.message) {
-                  const is_fixed_asset = res.message.is_fixed_asset === 1 || res.message.is_fixed_asset === "1";
+                  const is_fixed_asset =
+                    res.message.is_fixed_asset === 1 ||
+                    res.message.is_fixed_asset === "1";
                   item.item_category = is_fixed_asset ? "Asset" : "Stock Item";
                   item.uom = res.message.stock_uom;
                 }
@@ -2207,7 +2392,9 @@ class StockIOPage {
               callback: (r) => {
                 if (!r.exc) {
                   frappe.show_alert({
-                    message: __("Material Request {0} created", [r.message.name]),
+                    message: __("Material Request {0} created", [
+                      r.message.name,
+                    ]),
                     indicator: "green",
                   });
                   dialog.hide();
@@ -2897,6 +3084,7 @@ class StockIOPage {
       },
     };
 
+    window.cur_stockio_app = app;
     PetiteVue.createApp(app).mount(this.wrapper[0]);
     setTimeout(() => {
       app.setMode(app.pageMode, app.subMode);
@@ -2950,6 +3138,36 @@ window.submit_se = function (se_name) {
                 message: `Stock Entry ${se_name} submitted successfully`,
                 indicator: "green",
               });
+            }
+          },
+        });
+      }
+    },
+  });
+};
+
+window.submit_asset = function (asset_name) {
+  // Hide the button to prevent multiple clicks
+  $(event.target).hide();
+
+  frappe.call({
+    method: "frappe.client.get",
+    args: { doctype: "Asset", name: asset_name },
+    callback: (r) => {
+      if (!r.exc) {
+        frappe.call({
+          method: "frappe.client.submit",
+          args: { doc: r.message },
+          callback: (r2) => {
+            if (!r2.exc) {
+              frappe.show_alert({
+                message: `Asset ${asset_name} submitted successfully`,
+                indicator: "green",
+              });
+              // Refresh StockIO lists if needed
+              if (window.cur_stockio_app) {
+                window.cur_stockio_app.loadAssets();
+              }
             }
           },
         });
