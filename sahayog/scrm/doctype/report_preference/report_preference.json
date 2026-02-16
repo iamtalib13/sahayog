@@ -143,13 +143,13 @@
    "default": "1",
    "fieldname": "enable_preferences",
    "fieldtype": "Check",
-   "label": "Enable Preferences"
+   "label": "Enabled"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-16 12:57:08.872089",
+ "modified": "2026-02-16 15:34:16.072657",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",

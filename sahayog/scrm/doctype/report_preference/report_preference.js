@@ -69,4 +69,75 @@ frappe.ui.form.on("Report Preference", {
       frappe.throw("Select at least one preference before saving.");
     }
   },
+  refresh: function (frm) {
+    if (frm.is_new()) {
+      frm.add_custom_button("Search User", function () {
+        let d = new frappe.ui.Dialog({
+          title: "Search User",
+          fields: [
+            {
+              label: "Search User",
+              fieldname: "search_text",
+              fieldtype: "Data",
+              reqd: 1,
+            },
+            {
+              fieldname: "results",
+              fieldtype: "HTML",
+            },
+          ],
+        });
+
+        // ✅ Real-time search: Har keypress par update hoga
+        d.fields_dict.search_text.$input.on("input", function () {
+          let value = d.get_value("search_text");
+
+          if (!value || value.length < 1) {
+            d.fields_dict.results.$wrapper.html("");
+            return;
+          }
+
+          frappe.call({
+            method:
+              "sahayog.scrm.doctype.report_preference.report_preference.search_user",
+            args: { search_text: value },
+            callback: function (r) {
+              let results = r.message || [];
+              let html =
+                "<ul style='list-style:none; padding:0; margin-top:10px; border:1px solid #d1d8dd; border-radius:4px;'>";
+
+              // Highlight regex: Jo type kiya hai use mark karne ke liye
+              let regex = new RegExp(`(${value})`, "gi");
+
+              results.forEach((user) => {
+                let highlightedName = user.name.replace(
+                  regex,
+                  "<mark style='background:#fff2ac; padding:0;'>$1</mark>",
+                );
+                let fullName = user.full_name || "";
+                let highlightedFullName = fullName.replace(
+                  regex,
+                  "<mark style='background:#fff2ac; padding:0;'>$1</mark>",
+                );
+
+                html += `
+                <li style="padding:10px; border-bottom:1px solid #f0f0f0; cursor:pointer;"
+                    onmouseover="this.style.backgroundColor='#f9f9f9'"
+                    onmouseout="this.style.backgroundColor='transparent'"
+                    onclick="cur_frm.set_value('user', '${user.name}'); cur_dialog.hide();">
+                    <span style="font-weight:bold;">${highlightedName}</span> 
+                    <span style="color:#8d99a6; margin-left:10px;">- ${highlightedFullName}</span>
+                </li>`;
+              });
+
+              html += "</ul>";
+              d.fields_dict.results.$wrapper.html(html);
+            },
+          });
+        });
+
+        d.show();
+      });
+    }
+  },
 });
