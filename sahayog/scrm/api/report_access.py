@@ -147,13 +147,31 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     )
 
     # ---------- Fetch Leads (Unlimited within Date Range) ----------
-    leads = frappe.get_all(
-        "Lead",
-        filters=[["creation", ">=", f"{from_date} 00:00:00"], ["creation", "<=", f"{to_date} 23:59:59"]],
-        fields=["name", "status", "lead_name", "mobile_no", "phone", "source", "lead_owner", "sol_id", "creation"],
-        order_by="creation desc",
-        limit_page_length=0 # No limit, saara data uthayega
-    )
+    page_length = 20000
+    start = 0
+    leads = []
+
+    while True:
+        batch = frappe.get_all(
+            "Lead",
+            filters=[
+                ["creation", ">=", f"{from_date} 00:00:00"],
+                ["creation", "<=", f"{to_date} 23:59:59"]
+            ],
+            fields=[
+                "name", "status", "lead_name", "mobile_no",
+                "phone", "source", "lead_owner", "sol_id", "creation"
+            ],
+            order_by="creation desc",
+            start=start,
+            limit_page_length=page_length
+        )
+
+        if not batch:
+            break
+
+        leads.extend(batch)
+        start += page_length
 
     frappe.log_error("CRM DEBUG 1", f"Total Leads found in DB for range: {len(leads)}")
 
