@@ -1,0 +1,810 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Incentive Calculator{% endblock %}
+
+{% block page_content %}
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet" />
+
+<style>
+    :root {
+        --primary: #0f172a;
+        --accent: #417d81;
+        --warning: #f59e0b;
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --border: #e2e8f0;
+    }
+
+    [v-cloak] {
+        display: none !important;
+    }
+
+    body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+    }
+
+    .bg-dots {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+        background-size: 30px 30px;
+        mask-image: radial-gradient(ellipse at center, black, transparent 80%);
+        opacity: 0.4;
+        animation: moveBackground 60s linear infinite;
+    }
+
+    @keyframes moveBackground {
+        from {
+            background-position: 0 0;
+        }
+
+        to {
+            background-position: 1000px 1000px;
+        }
+    }
+
+    .app-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        z-index: 1;
+    }
+
+    .branding-header {
+        padding: 16px 40px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        border-radius: 16px;
+    }
+
+    .brand-text {
+        font-weight: 800;
+        font-size: 22px;
+        color: var(--primary);
+        letter-spacing: -0.5px;
+    }
+
+    .tagline {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .content-area {
+        padding: 40px;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .user-badge {
+        background: linear-gradient(135deg, var(--primary), #334155);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+    }
+
+    .user-info h2 {
+        margin: 0 0 5px 0;
+        font-size: 24px;
+        font-weight: 800;
+    }
+
+    .user-info p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 14px;
+    }
+
+    .designation-pill {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 700;
+        backdrop-filter: blur(10px);
+        font-size: 14px;
+    }
+
+    .capping-alert {
+        background: #dbeafe;
+        color: #1e40af;
+        border-left: 4px solid #3b82f6;
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+    }
+
+    .panel-card {
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .account-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .account-box {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s;
+    }
+
+    .account-box:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px -4px rgba(65, 125, 129, 0.15);
+    }
+
+    .account-box h4 {
+        color: var(--accent);
+        font-weight: 700;
+        margin: 0 0 5px 0;
+        font-size: 15px;
+    }
+
+    .account-box .rate {
+        color: #10b981;
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 12px;
+    }
+
+    .account-box input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary);
+        background: white;
+        transition: 0.2s;
+    }
+
+    .account-box input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(65, 125, 129, 0.1);
+    }
+
+    .mab-input-box {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+        margin-bottom: 20px;
+    }
+
+    .mab-input-box label {
+        display: block;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .mab-input-box input {
+        width: 100%;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary);
+        background: white;
+    }
+
+    .mab-input-box input:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .mab-info {
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-top: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-calculate {
+        width: 100%;
+        padding: 16px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+        box-shadow: 0 4px 12px rgba(65, 125, 129, 0.3);
+    }
+
+    .btn-calculate:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(65, 125, 129, 0.4);
+        background: #2d5a5d;
+    }
+
+    .btn-calculate:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .result-box {
+        background: #fff;
+        padding: 24px;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: 0.3s;
+    }
+
+    .result-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .result-box.success {
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        border-color: #10b981;
+    }
+
+    .result-box.warning {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border-color: #f59e0b;
+    }
+
+    .result-box.info {
+        background: linear-gradient(135deg, #e0f2f1, #b2dfdb);
+        border-color: var(--accent);
+    }
+
+    .result-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+    }
+
+    .result-amount {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--primary);
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 5px;
+    }
+
+    .result-box.success .result-amount {
+        color: #10b981;
+    }
+
+    .result-box.warning .result-amount {
+        color: #f59e0b;
+    }
+
+    .result-box.info .result-amount {
+        color: var(--accent);
+    }
+
+    .result-subtext {
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .breakdown-table {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 14px;
+        margin-top: 20px;
+    }
+
+    .breakdown-table h3 {
+        margin: 0 0 15px 0;
+        color: var(--primary);
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .breakdown-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+    }
+
+    .breakdown-row:last-child {
+        border-bottom: none;
+        font-weight: 800;
+        font-size: 16px;
+        color: var(--accent);
+        padding-top: 15px;
+        border-top: 2px dashed #cbd5e1;
+    }
+
+    .breakdown-row span:first-child {
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .breakdown-row span:last-child {
+        color: var(--primary);
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .warning-box {
+        background: #fef3c7;
+        color: #92400e;
+        border-left: 4px solid #f59e0b;
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-top: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .mono {
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    @media (max-width: 768px) {
+        .content-area {
+            padding: 20px;
+        }
+
+        .branding-header {
+            padding: 12px 20px;
+        }
+
+        .account-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .results-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .user-badge {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+    }
+
+    .user-badge.user-info {
+        color: #fff;
+    }
+
+    .web-footer {
+        display: none;
+    }
+</style>
+
+<div id="app" v-scope @vue:mounted="init()" v-cloak>
+    <div class="bg-dots"></div>
+    <div class="app-container">
+
+        <div class="branding-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="brand-text">SAHAYOG</span>
+                <span style="color: #cbd5e1; margin: 0 4px">|</span>
+                <span class="tagline">Incentive Calculator</span>
+            </div>
+        </div>
+
+        <div class="content-area">
+
+            <!-- User Info -->
+            <div class="user-badge">
+                <div class="user-info">
+                    <h2 style="color: white;">Welcome, [[ userName ]]</h2>
+                    <p class="mono">Employee ID: [[ employeeId ]]</p>
+                </div>
+                <div class="designation-pill">
+                    [[ designation ]]
+                </div>
+            </div>
+
+            <div v-if="cappingAmount > 0" class="capping-alert">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <div>
+                    <strong>Your Incentive Capping:</strong> ₹[[ cappingAmount.toLocaleString() ]]
+                </div>
+            </div>
+
+            <!-- Account Details -->
+            <div class="panel-card">
+                <div class="section-title">Account Details</div>
+
+                <div class="account-grid">
+                    <div class="account-box">
+                        <h4>💳 Saving Silver Account</h4>
+                        <p class="rate">₹75 per account</p>
+                        <input type="number" v-model="savingSilver" placeholder="0" min="0">
+                    </div>
+
+                    <div class="account-box">
+                        <h4>🏆 Gold Account</h4>
+                        <p class="rate">₹100 per account</p>
+                        <input type="number" v-model="goldAccount" placeholder="0" min="0">
+                    </div>
+
+                    <div class="account-box">
+                        <h4>💎 Wealth Account</h4>
+                        <p class="rate">₹150 per account</p>
+                        <input type="number" v-model="wealthAccount" placeholder="0" min="0">
+                    </div>
+                </div>
+
+                <div class="section-title">Total Monthly Funding (MAB)</div>
+
+                <div class="mab-input-box">
+                    <label>Enter Total Monthly Funding Amount</label>
+                    <input type="number" v-model="mabAmount" placeholder="e.g., 25000, 50000, 75000, 100000" min="0"
+                        step="1000">
+
+                    <div v-if="mabAmount > 0" class="mab-info">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        <div>
+                            <strong>MAB Slab:</strong> ₹[[ getMabSlab() ]]
+                            <span v-if="getMabIncentive() > 0"> | <strong>MAB Incentive:</strong> ₹[[ getMabIncentive()
+                                ]]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button @click="calculateIncentive()" class="btn-calculate">
+                    🧮 Calculate My Incentive
+                </button>
+
+                <!-- Results -->
+                <div v-if="showResults">
+                    <div class="results-grid">
+                        <div class="result-box success">
+                            <div class="result-label">Total Earned</div>
+                            <div class="result-amount">₹[[ totalEarned.toLocaleString() ]]</div>
+                            <p class="result-subtext">Before capping</p>
+                        </div>
+
+                        <div class="result-box info">
+                            <div class="result-label">Capping Limit</div>
+                            <div class="result-amount">₹[[ cappingAmount.toLocaleString() ]]</div>
+                            <p class="result-subtext">Maximum allowed</p>
+                        </div>
+
+                        <div class="result-box" :class="finalIncentive >= cappingAmount ? 'warning' : 'success'">
+                            <div class="result-label">You Will Receive</div>
+                            <div class="result-amount">₹[[ finalIncentive.toLocaleString() ]]</div>
+                            <p class="result-subtext" v-if="totalEarned > cappingAmount">⚠️ Capping applied</p>
+                            <p class="result-subtext" v-else>✅ Within limit</p>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown -->
+                    <div class="breakdown-table">
+                        <h3>📋 Incentive Breakdown</h3>
+
+                        <div class="breakdown-row" v-if="savingSilver > 0">
+                            <span>Saving Silver Account ([[ savingSilver ]] × ₹75)</span>
+                            <span>₹[[ (savingSilver * 75).toLocaleString() ]]</span>
+                        </div>
+
+                        <div class="breakdown-row" v-if="goldAccount > 0">
+                            <span>Gold Account ([[ goldAccount ]] × ₹100)</span>
+                            <span>₹[[ (goldAccount * 100).toLocaleString() ]]</span>
+                        </div>
+
+                        <div class="breakdown-row" v-if="wealthAccount > 0">
+                            <span>Wealth Account ([[ wealthAccount ]] × ₹150)</span>
+                            <span>₹[[ (wealthAccount * 150).toLocaleString() ]]</span>
+                        </div>
+
+                        <div class="breakdown-row" v-if="mabAmount > 0">
+                            <span>MAB Incentive (₹[[ getMabSlab() ]] slab)</span>
+                            <span>₹[[ getMabIncentive().toLocaleString() ]]</span>
+                        </div>
+
+                        <div class="breakdown-row">
+                            <span>FINAL INCENTIVE</span>
+                            <span>₹[[ finalIncentive.toLocaleString() ]]</span>
+                        </div>
+                    </div>
+
+                    <div v-if="totalEarned > cappingAmount" class="warning-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <div>
+                            You earned <strong>₹[[ totalEarned.toLocaleString() ]]</strong>, but your designation has a
+                            capping of <strong>₹[[ cappingAmount.toLocaleString() ]]</strong>. You will receive the
+                            capped amount.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+<script>
+    frappe.ready(function () {
+        PetiteVue.createApp({
+            $delimiters: ['[[', ']]'],
+
+            userName: 'Loading...',
+            employeeId: '',
+            designation: '',
+            designationGroup: '',
+
+            savingSilver: 0,
+            goldAccount: 0,
+            wealthAccount: 0,
+            mabAmount: 0,
+
+            showResults: false,
+            totalEarned: 0,
+            cappingAmount: 0,
+            finalIncentive: 0,
+
+            init() {
+                console.log('Incentive Calculator initialized');
+
+                const loggedInUser = frappe.session.user;
+                console.log("Logged in user:", loggedInUser);
+
+                if (loggedInUser === 'Guest') {
+                    this.userName = 'Please Login';
+                    this.designation = 'N/A';
+                    frappe.msgprint('Please login to use the Incentive Calculator');
+                    return;
+                }
+
+                frappe.call({
+                    method: 'frappe.client.get_list',
+                    args: {
+                        doctype: 'Employee',
+                        filters: {
+                            'user_id': loggedInUser
+                        },
+                        fields: ['name', 'employee_name', 'designation'],
+                        limit: 1
+                    },
+                    callback: (response) => {
+                        if (response.message && response.message.length > 0) {
+                            const employee = response.message[0];
+
+                            this.employeeId = employee.name;
+                            this.userName = employee.employee_name;
+                            this.designation = employee.designation;
+
+                            this.setCappingByDesignation(employee.designation);
+
+                            console.log("=== Employee Details ===");
+                            console.log("Employee ID:", this.employeeId);
+                            console.log("Employee Name:", this.userName);
+                            console.log("Designation:", this.designation);
+                            console.log("Incentive Capping:", this.cappingAmount);
+                            console.log("Designation Group:", this.designationGroup);
+                            console.log("======================");
+
+                            frappe.show_alert({
+                                message: `Welcome ${this.userName}!`,
+                                indicator: 'green'
+                            }, 3);
+                        } else {
+                            console.error("No employee found for user:", loggedInUser);
+                            this.userName = 'Employee Not Found';
+                            this.designation = 'N/A';
+
+                            frappe.show_alert({
+                                message: 'Employee record not found for your user',
+                                indicator: 'red'
+                            }, 5);
+                        }
+                    },
+                    error: (err) => {
+                        console.error("Error fetching employee:", err);
+                    }
+                });
+            },
+
+            setCappingByDesignation(designation) {
+                const des = designation.toUpperCase();
+
+                if (des.includes('BO') || des.includes('BRANCH OFFICER') ||
+                    des.includes('RO') || des.includes('RISK OFFICER') ||
+                    des.includes('MT') || des.includes('MANAGEMENT TRAINEE')) {
+                    this.cappingAmount = 5000;
+                    this.designationGroup = 'BO_RO_MT';
+                }
+                else if (des.includes('TL') || des.includes('TEAM LEADER') ||
+                    des.includes('BSM') || des.includes('BRANCH SALES MANAGER') ||
+                    des.includes('BM') || des.includes('BRANCH MANAGER') ||
+                    des.includes('ABM') || des.includes('ASST. BRANCH MANAGER') ||
+                    des.includes('ASSISTANT BRANCH MANAGER')) {
+                    this.cappingAmount = 10000;
+                    this.designationGroup = 'TL_BSM_BM_ABM';
+                }
+                else if (des.includes('SM') || des.includes('SALES MANAGER') ||
+                    des.includes('CSM') || des.includes('CLUSTER SALES MANAGER') ||
+                    des.includes('ADH') || des.includes('ASST. DISTRICT HEAD') ||
+                    des.includes('ASSISTANT DISTRICT HEAD') ||
+                    des.includes('DH') || des.includes('DISTRICT HEAD')) {
+                    this.cappingAmount = 15000;
+                    this.designationGroup = 'SM_CSM_ADH_DH';
+                }
+                else if (des.includes('ASM') || des.includes('ASSISTANT AREA SALES MANAGER') ||
+                    des.includes('ARM') || des.includes('ASSISTANT REGIONAL MANAGER') ||
+                    des.includes('RM') || des.includes('REGIONAL MANAGER')) {
+                    this.cappingAmount = 20000;
+                    this.designationGroup = 'ASM_ARM_RM';
+                }
+                else {
+                    this.cappingAmount = 0;
+                    this.designationGroup = 'UNKNOWN';
+                    console.warn("Unknown designation:", designation);
+                }
+
+                console.log("Designation Group:", this.designationGroup);
+            },
+
+            getMabSlab() {
+                const amount = parseInt(this.mabAmount);
+                if (amount >= 100000) return '100000';
+                if (amount >= 75000) return '75000';
+                if (amount >= 50000) return '50000';
+                if (amount >= 25000) return '25000';
+                return '0';
+            },
+
+            getMabIncentive() {
+                const amount = parseInt(this.mabAmount) || 0;
+
+                if (amount < 25000) return 0;
+
+                let incentive = 0;
+
+                if (this.designationGroup === 'BO_RO_MT') {
+                    if (amount >= 100000) incentive = 500;
+                    else if (amount >= 75000) incentive = 375;
+                    else if (amount >= 50000) incentive = 250;
+                    else if (amount >= 25000) incentive = 125;
+                }
+                else if (this.designationGroup === 'TL_BSM_BM_ABM') {
+                    if (amount >= 100000) incentive = 250;
+                    else if (amount >= 75000) incentive = 185;
+                    else if (amount >= 50000) incentive = 125;
+                    else if (amount >= 25000) incentive = 60;
+                }
+                else if (this.designationGroup === 'SM_CSM_ADH_DH') {
+                    if (amount >= 100000) incentive = 125;
+                    else if (amount >= 75000) incentive = 90;
+                    else if (amount >= 50000) incentive = 60;
+                    else if (amount >= 25000) incentive = 30;
+                }
+                else if (this.designationGroup === 'ASM_ARM_RM') {
+                    if (amount >= 100000) incentive = 60;
+                    else if (amount >= 75000) incentive = 45;
+                    else if (amount >= 50000) incentive = 30;
+                    else if (amount >= 25000) incentive = 15;
+                }
+
+                return incentive;
+            },
+
+            calculateIncentive() {
+                const accountIncentive =
+                    (parseInt(this.savingSilver) || 0) * 75 +
+                    (parseInt(this.goldAccount) || 0) * 100 +
+                    (parseInt(this.wealthAccount) || 0) * 150;
+
+                const mabIncentive = this.getMabIncentive();
+
+                this.totalEarned = accountIncentive + mabIncentive;
+                this.finalIncentive = Math.min(this.totalEarned, this.cappingAmount);
+                this.showResults = true;
+
+                setTimeout(() => {
+                    const resultsEl = document.querySelector('.results-grid');
+                    if (resultsEl) {
+                        resultsEl.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest'
+                        });
+                    }
+                }, 100);
+            }
+        }).mount('#app');
+    });
+</script>
+{% endblock %}
