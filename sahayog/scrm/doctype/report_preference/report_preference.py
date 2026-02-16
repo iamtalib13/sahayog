@@ -61,3 +61,30 @@ class ReportPreference(Document):
                     _("If Zones are selected, you must either check 'All Regions' or select specific Regions."),
                     title=_("Mandatory Requirement")
                 )
+@frappe.whitelist()
+def search_user(search_text=None):
+    if not search_text:
+        return []
+
+    # Hum sirf unhi users ko dhundenge jinka 'full_name' ya 'name' 
+    # search text se START hota ho.
+    search_query = f"{search_text}%"
+
+    return frappe.db.sql("""
+        SELECT name, full_name
+        FROM `tabUser`
+        WHERE (name LIKE %(starts)s OR full_name LIKE %(starts)s)
+        AND enabled = 1
+        ORDER BY
+            -- Pehle name ki priority phir full_name ki
+            CASE 
+                WHEN name LIKE %(starts)s THEN 0 
+                ELSE 1 
+            END,
+            -- Numeric sorting ke liye length aur alphabetical order
+            LENGTH(name) ASC,
+            name ASC
+        LIMIT 5
+    """, {
+        "starts": search_query
+    }, as_dict=True)
