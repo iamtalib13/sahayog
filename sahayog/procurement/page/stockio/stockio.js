@@ -1510,6 +1510,7 @@ class StockIOPage {
                 fieldname: "gst_hsn_code",
                 fieldtype: "Link",
                 options: "GST HSN Code",
+                description: __("Must be 6 or 8 digits long"),
               },
               {
                 label: "Is Stock Item",
@@ -1577,11 +1578,7 @@ class StockIOPage {
           });
 
           if (dialog.fields_dict.gst_hsn_code) {
-            dialog.fields_dict.gst_hsn_code.get_query = () => {
-              return {
-                filters: {},
-              };
-            };
+            // Default search logic
           }
 
           dialog.show();

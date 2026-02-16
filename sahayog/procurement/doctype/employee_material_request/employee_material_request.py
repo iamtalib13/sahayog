@@ -185,37 +185,60 @@ class EmployeeMaterialRequest(Document):
 
 @frappe.whitelist()
 def workflow_action_update_status(docname, action, remark=None):
+    from frappe.model.workflow import apply_workflow
+    
     doc = frappe.get_doc("Employee Material Request", docname)
-    action = action.lower()
+    action_lower = action.lower()
+    
     if remark:
         if doc.status == "Pending Reporting Person": doc.reporting_person_remarks = remark
         elif doc.status == "Pending HO Approval": doc.ho_officer_remarks = remark
+    
     is_admin = frappe.session.user == "Administrator" or ("Store Manager" in frappe.get_roles())
-    if doc.status == "Pending Reporting Person" and (frappe.session.user == doc.reporting_person or is_admin):
-        if action == "approve":
-            new_status = "Pending HO Approval"; reporting_status = "Approved"
-        elif action == "reject":
-            new_status = "Rejected"; reporting_status = "Rejected"
-        else:
-            new_status = "Pending HO Approval"; reporting_status = "Skip"
-        doc.reporting_person_status = reporting_status
-        doc.status = new_status
-        if new_status == "Approved":
-            doc.docstatus = 1
+    
+    # Permission checks
+    can_approve_rp = (doc.status == "Pending Reporting Person" and (frappe.session.user == doc.reporting_person or is_admin))
+    can_approve_ho = (doc.status == "Pending HO Approval" and (frappe.session.user == doc.head_office_officer or "Head Office Officer" in frappe.get_roles() or is_admin))
+    
+    if not (can_approve_rp or can_approve_ho):
+        frappe.throw(_("Not authorized to perform this action at the current stage."))
+
+    # Map generic 'action' to actual Workflow Action labels if necessary
+    # Usually the actions are 'Approve', 'Reject'
+    workflow_action = action.capitalize() 
+
+    # Update internal status fields before applying workflow action
+    if can_approve_rp:
+        if action_lower == "approve": doc.reporting_person_status = "Approved"
+        elif action_lower == "reject": doc.reporting_person_status = "Rejected"
+        else: doc.reporting_person_status = "Skip"
+        doc.save() # Save status fields
+    
+    elif can_approve_ho:
+        if action_lower == "approve": doc.ho_officer_status = "Approved"
+        elif action_lower == "reject": doc.ho_officer_status = "Rejected"
+        else: doc.ho_officer_status = "Skip"
+        doc.save() # Save status fields
+
+    # Apply Workflow Action
+    # This will handle status updates, docstatus changes, and validations defined in the Workflow
+    try:
+        apply_workflow(doc, workflow_action)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), _("Workflow Error"))
+        # Fallback for manual update if workflow fails or doesn't exist
+        if action_lower == "approve":
+            if doc.status == "Pending Reporting Person":
+                doc.status = "Pending HO Approval"
+            elif doc.status == "Pending HO Approval":
+                doc.status = "Approved"
+                doc.docstatus = 1
+        elif action_lower == "reject":
+            doc.status = "Rejected"
+        
         doc.save()
-    elif doc.status == "Pending HO Approval" and ("Head Office Officer" in frappe.get_roles()):
-        if action == "approve":
-            new_status = "Approved"; ho_status = "Approved"
-        elif action == "reject":
-            new_status = "Rejected"; ho_status = "Rejected"
-        else:
-            new_status = "Approved"; ho_status = "Skip"
-        doc.ho_officer_status = ho_status
-        doc.status = new_status
-        if new_status == "Approved":
-            doc.docstatus = 1
-        doc.save()
-    frappe.db.commit()
+        frappe.db.commit()
 
 @frappe.whitelist()
 def create_stock_entry_from_request(material_request):
