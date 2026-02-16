@@ -2,6 +2,7 @@
 
 {% block title %}Incentive Calculator{% endblock %}
 
+{# --- 1. Custom Header Override --- #}
 {% block navbar %}
 <header class="branding-header">
     <div style="display: flex; align-items: center; gap: 12px;">
@@ -22,6 +23,7 @@
 </header>
 {% endblock %}
 
+{# --- 2. Main Content & Logic --- #}
 {% block page_content %}
 <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
@@ -37,7 +39,7 @@
         --border: #e2e8f0;
     }
 
-    /* Hide default frappe elements */
+    /* Force Full Width & Remove Default Frappe Container Margins */
     .page-head,
     .page-title,
     .page-breadcrumbs,
@@ -50,6 +52,13 @@
         display: none !important;
     }
 
+    .container,
+    .container-fluid {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
     body {
         font-family: "Inter", sans-serif;
         background: var(--bg);
@@ -58,7 +67,6 @@
         min-height: 100vh;
     }
 
-    /* Animated Background */
     .bg-dots {
         position: fixed;
         top: 0;
@@ -70,22 +78,11 @@
         background-size: 30px 30px;
         mask-image: radial-gradient(ellipse at center, black, transparent 80%);
         opacity: 0.4;
-        animation: moveBackground 60s linear infinite;
     }
 
-    @keyframes moveBackground {
-        from {
-            background-position: 0 0;
-        }
-
-        to {
-            background-position: 1000px 1000px;
-        }
-    }
-
-    /* Custom Header Styles */
+    /* Header Styles */
     .branding-header {
-        padding: 14px 40px;
+        padding: 14px 24px;
         background: #fff;
         border-bottom: 1px solid var(--border);
         display: flex;
@@ -95,6 +92,8 @@
         position: sticky;
         top: 0;
         z-index: 100;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .home-btn {
@@ -116,7 +115,6 @@
         border-color: var(--accent);
         color: var(--accent);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(65, 125, 129, 0.1);
     }
 
     .brand-right {
@@ -140,98 +138,153 @@
         letter-spacing: 1px;
     }
 
-    /* Layout */
+    /* Layout Transitions */
     .content-area {
-        padding: 30px 40px;
-        max-width: 1600px;
-        margin: 0 auto;
+        padding: 24px;
         width: 100%;
         box-sizing: border-box;
+        transition: max-width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
+    /* INITIAL STATE: Side-by-side but centered/limited width */
+    .content-area.initial-view {
+        max-width: 1000px;
+        margin: 60px auto;
+        /* More top margin to center vertically */
+    }
+
+    /* RESULT STATE: Full dashboard width */
+    .content-area.result-view {
+        max-width: 1500px;
+        margin: 0 auto;
+    }
+
+    /* Grid Layouts - ALWAYS Side-by-Side on desktop */
     .dashboard-grid {
         display: grid;
-        grid-template-columns: 1.2fr 1fr;
-        /* Left panel slightly wider */
+        grid-template-columns: 320px 1fr;
+        /* Fixed Sidebar | Flexible Content */
         gap: 24px;
         align-items: flex-start;
+        transition: all 0.4s ease;
+    }
+
+    .col-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    /* Right Side Content Grid */
+    .col-content {
+        display: grid;
+        gap: 24px;
+        align-items: flex-start;
+        grid-template-columns: 1fr;
+        /* Initial: Single column */
+    }
+
+    /* Result view: Allow side-by-side if space permits */
+    .result-view .col-content {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     }
 
     .panel-card {
         background: #fff;
-        border-radius: 24px;
+        border-radius: 20px;
         border: 1px solid var(--border);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        padding: 30px;
+        padding: 24px;
         display: flex;
         flex-direction: column;
         gap: 20px;
+        transition: 0.3s ease;
+        height: fit-content;
     }
 
-    /* User Profile Section */
+    /* User Profile Styling */
     .user-profile-compact {
         display: flex;
-        justify-content: space-between;
+        gap: 16px;
         align-items: center;
-        padding-bottom: 20px;
-        border-bottom: 1px dashed var(--border);
-        margin-bottom: 10px;
+    }
+
+    /* Center the profile content ONLY in initial view */
+    .initial-view .user-profile-compact {
+        flex-direction: column;
+        text-align: center;
     }
 
     .user-avatar {
-        width: 48px;
-        height: 48px;
+        width: 56px;
+        height: 56px;
         background: linear-gradient(135deg, var(--primary), #334155);
         color: white;
-        border-radius: 12px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 800;
-        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.2);
+        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.2);
+    }
+
+    .designation-container {
+        display: flex;
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    /* Center the badge container in initial view */
+    .initial-view .designation-container {
+        justify-content: center;
     }
 
     .designation-badge {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 800;
         color: var(--accent);
         background: rgba(65, 125, 129, 0.1);
-        padding: 6px 12px;
+        padding: 5px 10px;
         border-radius: 20px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-top: 5px;
     }
 
     .card-heading {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 800;
         color: #64748b;
         text-transform: uppercase;
         letter-spacing: 1px;
-        margin-bottom: 15px;
+        margin-bottom: 5px;
         display: block;
     }
 
-    /* Input Styles */
-    .inputs-grid {
+    /* Inputs */
+    .inputs-row {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
+        grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .input-box {
         background: #f8fafc;
         border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 16px;
+        border-radius: 14px;
+        padding: 12px 14px;
         transition: 0.2s;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .input-box:focus-within {
         border-color: var(--accent);
         background: #fff;
-        box-shadow: 0 10px 25px -5px rgba(65, 125, 129, 0.1);
+        box-shadow: 0 8px 20px -5px rgba(65, 125, 129, 0.15);
         transform: translateY(-2px);
     }
 
@@ -240,48 +293,44 @@
         font-weight: 700;
         color: #64748b;
         text-transform: uppercase;
-        margin-bottom: 8px;
-        display: block;
     }
 
     .input-field {
-        width: 100%;
+        width: 80px;
         border: none;
         background: transparent;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
         color: var(--primary);
         outline: none;
         padding: 0;
+        text-align: right;
     }
 
     .input-rate {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 600;
         color: #10b981;
-        margin-top: 4px;
-    }
-
-    .mab-section {
-        background: linear-gradient(to right, #f8fafc, #f1f5f9);
-        border-radius: 16px;
-        padding: 20px;
-        border: 1px solid var(--border);
+        margin-left: 8px;
     }
 
     .btn-main {
-        padding: 18px;
+        padding: 16px;
         background: var(--primary);
         color: white;
         border: none;
-        border-radius: 16px;
+        border-radius: 14px;
         font-weight: 700;
-        font-size: 16px;
+        font-size: 15px;
         cursor: pointer;
         width: 100%;
         transition: 0.3s;
-        box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.2);
+        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.2);
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 10px;
     }
 
     .btn-main:hover {
@@ -289,7 +338,7 @@
         background: #000;
     }
 
-    /* Result Cards */
+    /* Results */
     .summary-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -298,8 +347,8 @@
 
     .summary-card {
         background: #f8fafc;
-        padding: 20px;
-        border-radius: 20px;
+        padding: 16px;
+        border-radius: 16px;
         border: 1px solid var(--border);
         text-align: center;
     }
@@ -307,77 +356,86 @@
     .summary-card.highlight {
         background: #fff;
         border-color: var(--accent);
-        box-shadow: 0 10px 30px -5px rgba(65, 125, 129, 0.15);
-        position: relative;
-        overflow: hidden;
+        box-shadow: 0 8px 20px -5px rgba(65, 125, 129, 0.15);
     }
 
-    .summary-label {
-        font-size: 11px;
-        font-weight: 800;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 6px;
-    }
-
-    .summary-value {
+    .summary-val {
         font-size: 24px;
         font-weight: 800;
         font-family: 'JetBrains Mono', monospace;
         color: var(--primary);
     }
 
-    .summary-card.highlight .summary-value {
+    .highlight .summary-val {
         color: var(--accent);
-        font-size: 32px;
-    }
-
-    /* Breakdown List */
-    .breakdown-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
+        font-size: 28px;
     }
 
     .breakdown-item {
         display: flex;
         justify-content: space-between;
-        padding: 12px 0;
+        padding: 10px 0;
         border-bottom: 1px dashed var(--border);
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .breakdown-item:last-child {
         border-bottom: none;
     }
 
-    .item-label {
-        color: #64748b;
-        font-weight: 600;
-    }
-
     .item-val {
-        color: var(--primary);
-        font-weight: 700;
         font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        color: var(--primary);
     }
 
-    .capping-notice {
-        margin-top: 15px;
-        background: #fff7ed;
-        border: 1px solid #ffedd5;
-        color: #c2410c;
-        padding: 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
+    /* Smart Suggestion Card */
+    .suggestion-card {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 1px solid #bbf7d0;
+    }
+
+    .suggestion-item {
         display: flex;
-        gap: 10px;
         align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 12px;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #166534;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        transition: 0.2s;
     }
 
-    /* Animations */
+    .suggestion-item:hover {
+        transform: translateX(2px);
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Mobile overrides */
+    @media (max-width: 850px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .content-area.initial-view {
+            max-width: 100%;
+            margin: 20px auto;
+        }
+
+        .col-content {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    .animate-enter {
+        animation: slideIn 0.4s ease-out;
+    }
+
     @keyframes slideIn {
         from {
             opacity: 0;
@@ -390,166 +448,219 @@
         }
     }
 
-    .animate-enter {
-        animation: slideIn 0.4s ease-out;
-    }
-
     .mono {
         font-family: 'JetBrains Mono', monospace;
-    }
-
-    @media (max-width: 1024px) {
-        .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .inputs-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .branding-header {
-            padding: 12px 20px;
-        }
-
-        .content-area {
-            padding: 20px;
-        }
     }
 </style>
 
 <div id="app" v-scope @vue:mounted="init()" v-cloak>
     <div class="bg-dots"></div>
 
-    <div class="content-area">
+    <div class="content-area" :class="showResults ? 'result-view' : 'initial-view'">
         <div class="dashboard-grid">
 
-            <!-- Left Panel: Inputs -->
-            <div class="panel-card">
-                <!-- User Profile -->
-                <div class="user-profile-compact">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <div class="user-avatar">
-                            [[ userName.charAt(0) ]]
-                        </div>
+            <!-- COLUMN 1: Sidebar (Profile & Suggestions) -->
+            <div class="col-sidebar">
+                <!-- Card 1: Employee Details -->
+                <div class="panel-card">
+                    <div class="user-profile-compact">
+                        <div class="user-avatar">[[ userName.charAt(0) ]]</div>
                         <div>
-                            <div style="font-size: 18px; font-weight: 800; color: var(--primary);">[[ userName ]]</div>
-                            <div class="mono" style="font-size: 12px; color: #64748b; margin-top: 2px;">[[ employeeId ]]
+                            <div style="font-size: 16px; font-weight: 800; color: var(--primary); line-height: 1.2;">[[
+                                userName ]]</div>
+                            <div class="mono" style="font-size: 11px; color: #64748b; margin-top: 4px;">[[ employeeId ]]
+                            </div>
+                            <div class="designation-container">
+                                <div class="designation-badge">[[ designation ]]</div>
                             </div>
                         </div>
                     </div>
-                    <div class="designation-badge">[[ designation ]]</div>
+
+                    <div
+                        style="background: #f1f5f9; padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Max Cap Limit</span>
+                        <span class="mono" style="font-size: 14px; color: var(--primary);">₹[[
+                            cappingAmount.toLocaleString() ]]</span>
+                    </div>
                 </div>
 
-                <!-- Inputs -->
-                <div>
-                    <span class="card-heading">Account Acquisitions</span>
-                    <div class="inputs-grid">
-                        <div class="input-box">
-                            <label class="input-label">Saving Silver</label>
-                            <input type="number" v-model="savingSilver" class="input-field" placeholder="0" min="0">
-                            <div class="input-rate">₹75 / acct</div>
+                <!-- Card 2: Smart Suggestion (Only shows after calc & if under limit) -->
+                <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned < cappingAmount">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <span style="font-size: 18px;">🚀</span>
+                        <div>
+                            <span class="card-heading" style="color: #15803d; margin:0;">Reach Your Cap Limit</span>
+                            <div style="font-size: 11px; color: #166534; opacity: 0.9;">Gap to fill: <strong>₹[[
+                                    (cappingAmount - totalEarned).toLocaleString() ]]</strong></div>
                         </div>
-                        <div class="input-box">
-                            <label class="input-label">Gold Account</label>
-                            <input type="number" v-model="goldAccount" class="input-field" placeholder="0" min="0">
-                            <div class="input-rate">₹100 / acct</div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #14532d; margin: 0 0 10px 0; line-height: 1.4;">
+                        To earn the full <strong>₹[[ cappingAmount.toLocaleString() ]]</strong>, you can add <u>ANY
+                            ONE</u> of these options:
+                    </p>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div class="suggestion-item">
+                            <div
+                                style="width: 24px; height: 24px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                                🥈</div>
+                            <div>
+                                <span style="font-weight: 800; color: #334155;">[[ Math.ceil((cappingAmount -
+                                    totalEarned) / 75) ]]</span>
+                                <span
+                                    style="font-weight: 600; color: #64748b; font-size: 11px; text-transform: uppercase;">Silver
+                                    Accts</span>
+                            </div>
                         </div>
-                        <div class="input-box">
-                            <label class="input-label">Wealth Account</label>
-                            <input type="number" v-model="wealthAccount" class="input-field" placeholder="0" min="0">
-                            <div class="input-rate">₹150 / acct</div>
+                        <div class="suggestion-item"
+                            style="background: rgba(254, 243, 199, 0.7); border-color: #fde68a;">
+                            <div
+                                style="width: 24px; height: 24px; background: #fefce8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #fcd34d;">
+                                🏆</div>
+                            <div>
+                                <span style="font-weight: 800; color: #b45309;">[[ Math.ceil((cappingAmount -
+                                    totalEarned) / 100) ]]</span>
+                                <span
+                                    style="font-weight: 600; color: #d97706; font-size: 11px; text-transform: uppercase;">Gold
+                                    Accts</span>
+                            </div>
+                        </div>
+                        <div class="suggestion-item"
+                            style="background: rgba(224, 242, 254, 0.7); border-color: #bae6fd;">
+                            <div
+                                style="width: 24px; height: 24px; background: #f0f9ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #7dd3fc;">
+                                💎</div>
+                            <div>
+                                <span style="font-weight: 800; color: #0369a1;">[[ Math.ceil((cappingAmount -
+                                    totalEarned) / 150) ]]</span>
+                                <span
+                                    style="font-weight: 600; color: #0284c7; font-size: 11px; text-transform: uppercase;">Wealth
+                                    Accts</span>
+                            </div>
+                        </div>
+                        <div v-if="getNextMabGap() > 0" class="suggestion-item"
+                            style="background: rgba(243, 232, 255, 0.7); border-color: #d8b4fe;">
+                            <div
+                                style="width: 24px; height: 24px; background: #faf5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #c084fc;">
+                                📈</div>
+                            <div>
+                                <span style="font-weight: 600; color: #7e22ce; font-size: 11px;">Increase Funding to
+                                </span>
+                                <span style="font-weight: 800; color: #6b21a8;">₹[[ getNextMabTarget().toLocaleString()
+                                    ]]</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div>
-                    <span class="card-heading">Funding Performance</span>
-                    <div class="mab-section">
-                        <label class="input-label" style="margin-bottom: 10px;">Total Monthly Funding (MAB)</label>
-                        <input type="number" v-model="mabAmount" class="input-field" placeholder="e.g. 50000"
-                            style="font-size: 28px; width: 100%;">
-
-                        <div v-if="mabAmount > 0"
-                            style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 12px; font-weight: 600; color: #64748b;">Applicable Slab</span>
-                            <span class="mono" style="font-weight: 700; color: var(--accent);">₹[[ getMabSlab()
-                                ]]</span>
-                        </div>
+                <!-- Limit Reached State -->
+                <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned >= cappingAmount"
+                    style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">🎉</span>
+                        <span class="card-heading" style="color: #1e40af; margin:0;">Limit Reached!</span>
                     </div>
+                    <p style="font-size: 12px; color: #1e40af; margin: 5px 0 0 0; line-height: 1.4;">
+                        Great job! You have hit the maximum incentive cap for your designation.
+                    </p>
                 </div>
-
-                <button @click="calculateIncentive()" class="btn-main">
-                    Calculate Incentive ➔
-                </button>
             </div>
 
-            <!-- Right Panel: Results -->
-            <div class="panel-card" v-if="showResults" style="background: #fdfdfd;">
-                <span class="card-heading">Incentive Summary</span>
-
-                <div class="summary-grid animate-enter">
-                    <div class="summary-card">
-                        <div class="summary-label">Total Earned</div>
-                        <div class="summary-value">₹[[ totalEarned.toLocaleString() ]]</div>
+            <!-- COLUMN 2: Content (Inputs & Results) -->
+            <div class="col-content">
+                <!-- Card 3: Inputs -->
+                <div class="panel-card">
+                    <div>
+                        <span class="card-heading">1. Enter Account Counts</span>
+                        <div class="inputs-row">
+                            <div class="input-box">
+                                <span class="input-label">Silver</span>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="number" v-model="savingSilver" class="input-field" placeholder="0"
+                                        min="0">
+                                    <span class="input-rate">@75</span>
+                                </div>
+                            </div>
+                            <div class="input-box">
+                                <span class="input-label">Gold</span>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="number" v-model="goldAccount" class="input-field" placeholder="0"
+                                        min="0">
+                                    <span class="input-rate">@100</span>
+                                </div>
+                            </div>
+                            <div class="input-box">
+                                <span class="input-label">Wealth</span>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="number" v-model="wealthAccount" class="input-field" placeholder="0"
+                                        min="0">
+                                    <span class="input-rate">@150</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="summary-card">
-                        <div class="summary-label">Capping Limit</div>
-                        <div class="summary-value">₹[[ cappingAmount.toLocaleString() ]]</div>
+
+                    <div>
+                        <span class="card-heading" style="margin-top: 10px;">2. Total Funding</span>
+                        <div class="input-box">
+                            <span class="input-label">MAB Amount</span>
+                            <div
+                                style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
+                                <input type="number" v-model="mabAmount" class="input-field" placeholder="e.g. 50000"
+                                    style="width: 120px;">
+                                <div v-if="mabAmount > 0" class="mono"
+                                    style="font-weight: 700; color: var(--accent); font-size: 12px; background: #e0f2f1; padding: 4px 8px; border-radius: 6px;">
+                                    + ₹[[ getMabIncentive() ]]
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <button @click="calculateIncentive()" class="btn-main">
+                        <span>Calculate Incentive</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="summary-card highlight animate-enter" style="margin-top: 5px;">
-                    <div class="summary-label" style="color: var(--accent);">Final Payout</div>
-                    <div class="summary-value">₹[[ finalIncentive.toLocaleString() ]]</div>
-                </div>
+                <!-- Card 4: Results (Shows side-by-side on wide screens) -->
+                <div class="panel-card animate-enter" v-if="showResults" style="background: #fdfdfd;">
+                    <span class="card-heading">3. Calculation Result</span>
 
-                <div v-if="totalEarned > cappingAmount" class="capping-notice animate-enter">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    Payout capped at ₹[[ cappingAmount.toLocaleString() ]] due to designation limits.
-                </div>
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="card-heading" style="margin:0;">Total Generated</div>
+                            <div class="summary-val">₹[[ totalEarned.toLocaleString() ]]</div>
+                        </div>
+                        <div class="summary-card highlight">
+                            <div class="card-heading" style="margin:0; color: var(--accent);">Final Payout</div>
+                            <div class="summary-val">₹[[ finalIncentive.toLocaleString() ]]</div>
+                        </div>
+                    </div>
 
-                <div style="margin-top: 20px;">
-                    <span class="card-heading">Detailed Breakdown</span>
-                    <div class="breakdown-list">
+                    <div style="margin-top: 10px;">
+                        <span class="card-heading" style="margin-bottom: 10px;">Breakdown</span>
                         <div class="breakdown-item" v-if="savingSilver > 0">
-                            <span class="item-label">Saving Silver ([[ savingSilver ]])</span>
+                            <span>Silver Accounts ([[ savingSilver ]])</span>
                             <span class="item-val">₹[[ (savingSilver * 75).toLocaleString() ]]</span>
                         </div>
                         <div class="breakdown-item" v-if="goldAccount > 0">
-                            <span class="item-label">Gold Account ([[ goldAccount ]])</span>
+                            <span>Gold Accounts ([[ goldAccount ]])</span>
                             <span class="item-val">₹[[ (goldAccount * 100).toLocaleString() ]]</span>
                         </div>
                         <div class="breakdown-item" v-if="wealthAccount > 0">
-                            <span class="item-label">Wealth Account ([[ wealthAccount ]])</span>
+                            <span>Wealth Accounts ([[ wealthAccount ]])</span>
                             <span class="item-val">₹[[ (wealthAccount * 150).toLocaleString() ]]</span>
                         </div>
                         <div class="breakdown-item" v-if="mabAmount > 0">
-                            <span class="item-label">MAB Incentive</span>
+                            <span>MAB Funding Incentive</span>
                             <span class="item-val">₹[[ getMabIncentive().toLocaleString() ]]</span>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Empty State for Right Panel -->
-            <div class="panel-card" v-else
-                style="align-items: center; justify-content: center; text-align: center; opacity: 0.6; min-height: 400px;">
-                <div
-                    style="width: 60px; height: 60px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                        <line x1="8" y1="21" x2="16" y2="21"></line>
-                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                    </svg>
-                </div>
-                <div style="font-weight: 700; color: #64748b;">Ready to Calculate</div>
-                <div style="font-size: 13px; color: #94a3b8; max-width: 200px; margin-top: 8px;">Enter account details
-                    and funding amount to see incentive breakdown.</div>
             </div>
 
         </div>
@@ -578,106 +689,64 @@
 
             init() {
                 const loggedInUser = frappe.session.user;
-                if (loggedInUser === 'Guest') {
-                    this.userName = 'Guest';
-                    return;
-                }
+                if (loggedInUser === 'Guest') { this.userName = 'Guest'; return; }
 
                 frappe.call({
                     method: 'frappe.client.get_list',
-                    args: {
-                        doctype: 'Employee',
-                        filters: { 'user_id': loggedInUser },
-                        fields: ['name', 'employee_name', 'designation'],
-                        limit: 1
-                    },
-                    callback: (response) => {
-                        if (response.message?.length > 0) {
-                            const emp = response.message[0];
-                            this.employeeId = emp.name;
-                            this.userName = emp.employee_name;
-                            this.designation = emp.designation;
-                            this.setCappingByDesignation(emp.designation);
+                    args: { doctype: 'Employee', filters: { 'user_id': loggedInUser }, fields: ['name', 'employee_name', 'designation'], limit: 1 },
+                    callback: (r) => {
+                        if (r.message?.length) {
+                            const e = r.message[0];
+                            this.employeeId = e.name;
+                            this.userName = e.employee_name;
+                            this.designation = e.designation;
+                            this.setCappingByDesignation(e.designation);
                         }
                     }
                 });
             },
 
-            setCappingByDesignation(designation) {
-                const des = designation ? designation.toUpperCase() : '';
-
-                if (des.match(/BO|BRANCH OFFICER|RO|RISK OFFICER|MT|MANAGEMENT TRAINEE/)) {
-                    this.cappingAmount = 5000;
-                    this.designationGroup = 'BO_RO_MT';
-                }
-                else if (des.match(/TL|TEAM LEADER|BSM|BRANCH SALES MANAGER|BM|BRANCH MANAGER|ABM|ASST. BRANCH MANAGER/)) {
-                    this.cappingAmount = 10000;
-                    this.designationGroup = 'TL_BSM_BM_ABM';
-                }
-                else if (des.match(/SM|SALES MANAGER|CSM|CLUSTER SALES MANAGER|ADH|ASST. DISTRICT HEAD|DH|DISTRICT HEAD/)) {
-                    this.cappingAmount = 15000;
-                    this.designationGroup = 'SM_CSM_ADH_DH';
-                }
-                else if (des.match(/ASM|ARM|RM|REGIONAL MANAGER/)) {
-                    this.cappingAmount = 20000;
-                    this.designationGroup = 'ASM_ARM_RM';
-                }
-                else {
-                    this.cappingAmount = 0;
-                    this.designationGroup = 'UNKNOWN';
-                }
+            setCappingByDesignation(d) {
+                const des = d ? d.toUpperCase() : '';
+                if (des.match(/BO|BRANCH OFFICER|RO|RISK OFFICER|MT|MANAGEMENT TRAINEE/)) this.cappingAmount = 5000, this.designationGroup = 'BO_RO_MT';
+                else if (des.match(/TL|TEAM LEADER|BSM|BRANCH SALES MANAGER|BM|BRANCH MANAGER|ABM|ASST. BRANCH MANAGER/)) this.cappingAmount = 10000, this.designationGroup = 'TL_BSM_BM_ABM';
+                else if (des.match(/SM|SALES MANAGER|CSM|CLUSTER SALES MANAGER|ADH|ASST. DISTRICT HEAD|DH|DISTRICT HEAD/)) this.cappingAmount = 15000, this.designationGroup = 'SM_CSM_ADH_DH';
+                else if (des.match(/ASM|ARM|RM|REGIONAL MANAGER/)) this.cappingAmount = 20000, this.designationGroup = 'ASM_ARM_RM';
+                else this.cappingAmount = 0;
             },
 
-            getMabSlab() {
-                const amount = parseInt(this.mabAmount) || 0;
-                if (amount >= 100000) return '1,00,000';
-                if (amount >= 75000) return '75,000';
-                if (amount >= 50000) return '50,000';
-                if (amount >= 25000) return '25,000';
-                return '0';
+            getMabIncentive(amt) {
+                const currentAmt = amt !== undefined ? amt : (parseInt(this.mabAmount) || 0);
+                if (currentAmt < 25000) return 0;
+                const getSlab = (v100k, v75k, v50k, v25k) => currentAmt >= 100000 ? v100k : currentAmt >= 75000 ? v75k : currentAmt >= 50000 ? v50k : v25k;
+
+                if (this.designationGroup === 'BO_RO_MT') return getSlab(500, 375, 250, 125);
+                else if (this.designationGroup === 'TL_BSM_BM_ABM') return getSlab(250, 185, 125, 60);
+                else if (this.designationGroup === 'SM_CSM_ADH_DH') return getSlab(125, 90, 60, 30);
+                else if (this.designationGroup === 'ASM_ARM_RM') return getSlab(60, 45, 30, 15);
+                return 0;
             },
 
-            getMabIncentive() {
-                const amount = parseInt(this.mabAmount) || 0;
-                if (amount < 25000) return 0;
+            getNextMabTarget() {
+                const current = parseInt(this.mabAmount) || 0;
+                if (current < 25000) return 25000;
+                if (current < 50000) return 50000;
+                if (current < 75000) return 75000;
+                if (current < 100000) return 100000;
+                return 0;
+            },
 
-                let incentive = 0;
-                if (this.designationGroup === 'BO_RO_MT') {
-                    if (amount >= 100000) incentive = 500;
-                    else if (amount >= 75000) incentive = 375;
-                    else if (amount >= 50000) incentive = 250;
-                    else if (amount >= 25000) incentive = 125;
-                }
-                else if (this.designationGroup === 'TL_BSM_BM_ABM') {
-                    if (amount >= 100000) incentive = 250;
-                    else if (amount >= 75000) incentive = 185;
-                    else if (amount >= 50000) incentive = 125;
-                    else if (amount >= 25000) incentive = 60;
-                }
-                else if (this.designationGroup === 'SM_CSM_ADH_DH') {
-                    if (amount >= 100000) incentive = 125;
-                    else if (amount >= 75000) incentive = 90;
-                    else if (amount >= 50000) incentive = 60;
-                    else if (amount >= 25000) incentive = 30;
-                }
-                else if (this.designationGroup === 'ASM_ARM_RM') {
-                    if (amount >= 100000) incentive = 60;
-                    else if (amount >= 75000) incentive = 45;
-                    else if (amount >= 50000) incentive = 30;
-                    else if (amount >= 25000) incentive = 15;
-                }
-                return incentive;
+            getNextMabGap() {
+                const target = this.getNextMabTarget();
+                if (target === 0) return 0;
+                const currentInc = this.getMabIncentive(parseInt(this.mabAmount) || 0);
+                const nextInc = this.getMabIncentive(target);
+                return nextInc - currentInc;
             },
 
             calculateIncentive() {
-                const acctInc =
-                    (parseInt(this.savingSilver) || 0) * 75 +
-                    (parseInt(this.goldAccount) || 0) * 100 +
-                    (parseInt(this.wealthAccount) || 0) * 150;
-
-                const mabInc = this.getMabIncentive();
-
-                this.totalEarned = acctInc + mabInc;
+                const acctInc = ((parseInt(this.savingSilver) || 0) * 75) + ((parseInt(this.goldAccount) || 0) * 100) + ((parseInt(this.wealthAccount) || 0) * 150);
+                this.totalEarned = acctInc + this.getMabIncentive();
                 this.finalIncentive = this.cappingAmount > 0 ? Math.min(this.totalEarned, this.cappingAmount) : this.totalEarned;
                 this.showResults = true;
             }
