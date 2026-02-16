@@ -10,6 +10,8 @@
   "user",
   "column_break_ckcs",
   "full_name",
+  "section_break_uvta",
+  "enable_preferences",
   "geographical_filters_section",
   "zone",
   "all_regions",
@@ -67,13 +69,14 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.zone && doc.zone.length > 0\n",
    "description": "If checked, the user will have access to all regions.",
    "fieldname": "all_regions",
    "fieldtype": "Check",
    "label": "All Regions"
   },
   {
-   "depends_on": "eval:!doc.all_regions",
+   "depends_on": "eval:doc.zone && doc.zone.length > 0 && !doc.all_regions\n",
    "description": "Select specific regions. Ignored if 'All Regions' is checked.",
    "fieldname": "region",
    "fieldtype": "Table MultiSelect",
@@ -131,12 +134,22 @@
    "fieldtype": "Table MultiSelect",
    "label": "Sources",
    "options": "Source Items"
+  },
+  {
+   "fieldname": "section_break_uvta",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_preferences",
+   "fieldtype": "Check",
+   "label": "Enable Preferences"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-14 11:07:45.402844",
+ "modified": "2026-02-16 12:57:08.872089",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
