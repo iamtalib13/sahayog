@@ -63,13 +63,21 @@ def empty_stats():
 def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
+    
+    # Tracking counters for debugging
+    skip_reason_sol_pref = 0
+    skip_reason_no_branch = 0
+    skip_reason_zone_region_mismatch = 0
+    skip_reason_source = 0
+    skip_reason_product = 0
+
     frappe.log_error(
             "CRM INPUT DEBUG",
             f"User:{user}, From:{from_date}, To:{to_date}, Filters:{filters}"
         )
     
     # ---------- Preferences ----------
-    is_all_regions = False # Default False
+    is_all_regions = False 
     products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
@@ -81,72 +89,47 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             zones_pref = {norm(x) for x in p.get("zone", [])}
             regions_pref = {norm(x) for x in p.get("region", [])}
             sol_ids_pref = {str(x) for x in p.get("sol_id", [])}
-    frappe.log_error("CRM DEBUG Prefs", f"Products: {products_pref}, Sources: {sources_pref}, Zones: {zones_pref}, Regions: {regions_pref}, SOLs: {sol_ids_pref}")
-    frappe.log_error(
-    "CRM PREF DEBUG",
-    f"all_regions:{is_all_regions} | Products:{products_pref} | "
-    f"Sources:{sources_pref} | Zones:{zones_pref} | "
-    f"Regions:{regions_pref} | SOLs:{sol_ids_pref}"
-)
 
     filters = frappe.parse_json(filters) if filters else {}
-
-    # ---------- UI Override (Checked Only) ----------
-    # Preference = upper boundary
-    # UI filters = runtime narrowing
 
     # PRODUCT
     if "product" in filters:
         ui_products = {norm(x) for x in filters.get("product", [])}
-        if not ui_products:
-            products_pref = set()
-        else:
-            products_pref = products_pref.intersection(ui_products)
+        if not ui_products: products_pref = set()
+        else: products_pref = products_pref.intersection(ui_products)
 
     # SOURCE
     if "source" in filters:
         ui_sources = {norm(x) for x in filters.get("source", [])}
-        if not ui_sources:
-            sources_pref = set()
-        else:
-            sources_pref = sources_pref.intersection(ui_sources)
+        if not ui_sources: sources_pref = set()
+        else: sources_pref = sources_pref.intersection(ui_sources)
 
     # ZONE
     if "zone" in filters:
         ui_zones = {norm(x) for x in filters.get("zone", [])}
-        if not ui_zones:
-            zones_pref = set()
-        else:
-            zones_pref = zones_pref.intersection(ui_zones)
+        if not ui_zones: zones_pref = set()
+        else: zones_pref = zones_pref.intersection(ui_zones)
 
-    # REGION (existing logic preserved)
+    # REGION
     if "region" in filters:
         ui_regions = {norm(x) for x in filters.get("region", [])}
-
-        if not ui_regions:
-            regions_pref = set()
+        if not ui_regions: regions_pref = set()
         else:
-            if not is_all_regions:
-                regions_pref = regions_pref.intersection(ui_regions)
-            else:
-                # all_regions = true → UI selection final
-                regions_pref = ui_regions
+            if not is_all_regions: regions_pref = regions_pref.intersection(ui_regions)
+            else: regions_pref = ui_regions
 
     # SOL ID
     if "sol_id" in filters:
         ui_sols = {str(x) for x in filters.get("sol_id", [])}
-        if not ui_sols:
-            sol_ids_pref = set()
-        else:
-            sol_ids_pref = sol_ids_pref.intersection(ui_sols)
+        if not ui_sols: sol_ids_pref = set()
+        else: sol_ids_pref = sol_ids_pref.intersection(ui_sols)
 
     frappe.log_error(
         "CRM FINAL FILTER STATE",
-        f"Products:{products_pref}, Sources:{sources_pref}, "
-        f"Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
+        f"Products:{products_pref}, Sources:{sources_pref}, Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
     )
 
-    # ---------- Fetch Leads (Unlimited within Date Range) ----------
+    # ---------- Fetch Leads ----------
     page_length = 20000
     start = 0
     leads = []
@@ -158,22 +141,16 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
                 ["creation", ">=", f"{from_date} 00:00:00"],
                 ["creation", "<=", f"{to_date} 23:59:59"]
             ],
-            fields=[
-                "name", "status", "lead_name", "mobile_no",
-                "phone", "source", "lead_owner", "sol_id", "creation"
-            ],
+            fields=["name", "status", "lead_name", "mobile_no", "phone", "source", "lead_owner", "sol_id", "creation"],
             order_by="creation desc",
             start=start,
             limit_page_length=page_length
         )
-
-        if not batch:
-            break
-
+        if not batch: break
         leads.extend(batch)
         start += page_length
 
-    frappe.log_error("CRM DEBUG 1", f"Total Leads found in DB for range: {len(leads)}")
+    frappe.log_error("CRM DEBUG 1", f"Total Raw Leads found in DB for range: {len(leads)}")
 
     if not leads:
         return {"leads": [], "stats": empty_stats()}
@@ -194,45 +171,54 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     for l in leads:
         curr_sol = str(l.sol_id) if l.sol_id else ""
         
-        # ✅ FIX: SOL Preference filter sirf tab chalega jab preference set ho
+        # 1. SOL Pref Filter Check
         if sol_ids_pref and curr_sol not in sol_ids_pref:
+            skip_reason_sol_pref += 1
             continue
 
         branch = branch_map.get(curr_sol) if curr_sol else None
         
-        # ✅ FIX: Zone/Region check (Sirf tab drop karein agar pref set ho aur match na kare)
+        # 2. Zone/Region Check
         if branch:
             lead_zone = norm(branch.zone)
             lead_region = norm(branch.region)
-            if zones_pref and lead_zone not in zones_pref: continue
+            
+            zone_match = not zones_pref or (lead_zone in zones_pref)
+            
+            region_match = True
             if regions_pref:
                 allowed = set(regions_pref)
-
-                # alias expansion
                 for r in list(regions_pref):
                     allowed |= REGION_ALIAS_MAP.get(r, set())
+                region_match = lead_region in allowed
 
-                if lead_region not in allowed:
-                  continue
-
+            if not zone_match or not region_match:
+                skip_reason_zone_region_mismatch += 1
+                continue
         else:
-            # Agar lead mein SOL nahi hai par user ne Zone select kiya hai, toh wo lead nahi dikhegi
+            # Case: Lead has SOL ID but SOL ID not found in Sahayog Branch Doctype
+            if curr_sol:
+                frappe.log_error("CRM DEBUG: Missing Branch Master", f"SOL ID {curr_sol} found in Lead {l.name} but NOT in Sahayog Branch")
+            
             if zones_pref or regions_pref:
+                skip_reason_no_branch += 1
                 continue
 
-        # Source Filter
+        # 3. Source Filter Check
         if sources_pref and norm(l.source) not in sources_pref:
+            skip_reason_source += 1
             continue
 
-        # ✅ FIX: Product Logic - Har product ki alag row
+        # 4. Product Logic
         l_products = product_map.get(l.name, [])
         matched_products = []
         
         if products_pref:
             matched_products = [p for p in l_products if norm(p.product) in products_pref]
-            if not matched_products: continue # Agar preference se match nahi hua toh skip
+            if not matched_products:
+                skip_reason_product += 1
+                continue 
         else:
-            # Agar preference nahi hai, toh saare products dikhao, ya default '-'
             matched_products = l_products if l_products else [{}]
 
         emp = employee_map.get(l.lead_owner)
@@ -251,7 +237,17 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             })
             final_leads.append(new_row)
 
-    frappe.log_error("CRM DEBUG 2", f"Final Filtered Leads: {len(final_leads)}")
+    # FINAL SUMMARY LOG
+    frappe.log_error(
+        "CRM FILTER SUMMARY", 
+        f"Total DB Leads: {len(leads)}\n"
+        f"Skipped (SOL Pref): {skip_reason_sol_pref}\n"
+        f"Skipped (No Branch/SOL in Master): {skip_reason_no_branch}\n"
+        f"Skipped (Zone/Region Mismatch): {skip_reason_zone_region_mismatch}\n"
+        f"Skipped (Source Filter): {skip_reason_source}\n"
+        f"Skipped (Product Filter): {skip_reason_product}\n"
+        f"Final List Count: {len(final_leads)}"
+    )
 
     return {
         "leads": final_leads,
