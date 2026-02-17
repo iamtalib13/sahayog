@@ -2363,6 +2363,8 @@ class StockIOPage {
             // Re-verify item categories to ensure they match Item master
             if (values.items && values.items.length) {
               for (let item of values.items) {
+                item.employee = values.employee;
+
                 const res = await frappe.db.get_value("Item", item.item_code, [
                   "is_fixed_asset",
                   "stock_uom",
@@ -2686,6 +2688,8 @@ class StockIOPage {
                 const pr_doc = {
                   doctype: "Purchase Receipt",
                   supplier: values.supplier,
+                  custom_type: "Employee",
+                  custom_request_for: doc.employee,
                   posting_date: frappe.datetime.nowdate(),
                   posting_time: frappe.datetime.now_time(),
                   items: stock_items.map((item) => ({
