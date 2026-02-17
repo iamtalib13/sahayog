@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-02-17 12:47:43.429795",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "account_settings_column",
+  "account_rates",
+  "mab_slabs"
+ ],
+ "fields": [
+  {
+   "fieldname": "account_settings_column",
+   "fieldtype": "Column Break",
+   "label": "Account Settings"
+  },
+  {
+   "fieldname": "account_rates",
+   "fieldtype": "Table",
+   "label": "Account Rates",
+   "options": "Incentive Account Rate Item"
+  },
+  {
+   "fieldname": "mab_slabs",
+   "fieldtype": "Table",
+   "label": "MAB Slab",
+   "options": "Incentive MAB Item"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-02-17 13:02:54.899375",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Incentive Config",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Incentive Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
