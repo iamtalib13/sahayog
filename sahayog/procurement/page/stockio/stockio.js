@@ -2688,6 +2688,8 @@ class StockIOPage {
                 const pr_doc = {
                   doctype: "Purchase Receipt",
                   supplier: values.supplier,
+                  custom_type: "Employee",
+                  custom_request_for: doc.employee,
                   posting_date: frappe.datetime.nowdate(),
                   posting_time: frappe.datetime.now_time(),
                   items: stock_items.map((item) => ({
