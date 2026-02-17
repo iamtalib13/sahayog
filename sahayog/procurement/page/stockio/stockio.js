@@ -2363,6 +2363,8 @@ class StockIOPage {
             // Re-verify item categories to ensure they match Item master
             if (values.items && values.items.length) {
               for (let item of values.items) {
+                item.employee = values.employee;
+
                 const res = await frappe.db.get_value("Item", item.item_code, [
                   "is_fixed_asset",
                   "stock_uom",
