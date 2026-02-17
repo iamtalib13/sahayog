@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-02-17 12:51:34.031414",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "account_type",
+  "incentive_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "account_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Account Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "incentive_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Incentive Amount",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-02-17 12:57:58.018411",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Incentive Account Rate Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
