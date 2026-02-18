@@ -1,4 +1,18 @@
 frappe.pages['finops'].on_page_load = function(wrapper) {
+    // 1. STRICT ROLE CHECK
+    if (!frappe.user.has_role(['System Manager', 'FinOps User'])) {
+        frappe.msgprint({
+            title: 'Access Denied',
+            message: 'You do not have permission to access the FinOps module.',
+            indicator: 'red'
+        });
+        
+        // Redirect to home/desk
+        frappe.set_route('app');
+        return;
+    }
+
+    // 2. CREATE PAGE
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: 'FinOps - Finacle Operations',
