@@ -10,6 +10,12 @@ from .finOpsApi import (
     create_finacle_retail_customer
 )
 
+# --- SECURITY HELPER ---
+def check_finops_permission():
+    """Ensures the user has System Manager or FinOps User role"""
+    if not (frappe.user.has_role("System Manager") or frappe.user.has_role("FinOps User")):
+        frappe.throw("You are not authorized to access FinOps operations.", frappe.PermissionError)
+
 def format_date_str(date_val):
     """ Converts Excel timestamps or messy strings to YYYY-MM-DD """
     if not date_val:
