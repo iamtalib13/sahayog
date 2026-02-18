@@ -705,6 +705,14 @@
                         }
                     }
                 });
+
+
+                // Load config from server
+                const serverData = window.SERVER_INCENTIVE_DATA;
+                if (serverData) {
+                    this.rates = serverData.rates;       // e.g. { Silver: 80, Gold: 120 }
+                    this.mabSlabs = serverData.mab_slabs; // e.g. [{min:0, max:5000, amount:0}...]
+                }
             },
 
             setCappingByDesignation(d) {
