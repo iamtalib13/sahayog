@@ -4,13 +4,23 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2026-02-12 12:37:14.270719",
+ "modified": "2026-02-18 10:42:41.584459",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "finops",
  "owner": "Administrator",
  "page_name": "finops",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Administrator"
+  },
+  {
+   "role": "FinOps User"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,
