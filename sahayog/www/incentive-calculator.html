@@ -565,6 +565,29 @@
                         this.isLoading = false;
                     }
                 });
+
+                // Inside your Calculator's init() or fetchConfig()
+
+                // 1. Load the JSON config
+                const ruleConfig = JSON.parse(serverConfig.designation_structure || '[]');
+
+                // 2. Find the user's group
+                const userDesig = this.designation.toUpperCase();
+                const activeRule = ruleConfig.find(rule => {
+                    // Check if user's designation is in the comma-separated list
+                    return rule.designations.toUpperCase().split(',').map(s => s.trim()).includes(userDesig);
+                });
+
+                if (activeRule) {
+                    this.cappingAmount = activeRule.capping_amount;
+
+                    // Override the getMabIncentive function logic dynamically
+                    this.mabSlabs = activeRule.slabs.map(s => ({
+                        min: "", // logic to map label to min/max
+                        amount: s.amount
+                    }));
+                }
+
             },
 
             calculateIncentive() {

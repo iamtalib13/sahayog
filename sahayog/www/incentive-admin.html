@@ -1,23 +1,11 @@
 {% extends "templates/web.html" %}
-
 {% block title %}Incentive Admin{% endblock %}
-
 {% block navbar %}
+<!-- (Keep your existing Header Code) -->
 <header class="branding-header">
     <div style="display: flex; align-items: center; gap: 12px;">
-        <a class="home-btn" href="/incentive-calculator" title="Back to Calculator">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 12H5"></path>
-                <path d="M12 19l-7-7 7-7"></path>
-            </svg>
-            <span class="home-text">Back</span>
-        </a>
-        <span style="color: #cbd5e1; margin: 0 4px">|</span>
-        <div class="brand-right">
-            <span class="brand-text">SAHAYOG</span>
-            <span class="tagline">Admin Dashboard</span>
-        </div>
+        <a class="home-btn" href="/incentive-calculator">Back</a>
+        <div class="brand-right"><span class="brand-text">SAHAYOG Admin</span></div>
     </div>
 </header>
 {% endblock %}
@@ -26,8 +14,9 @@
 <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
     rel="stylesheet" />
-
+<!-- (Keep your existing Styles) -->
 <style>
+    /* ... (Copy styles from previous answer) ... */
     :root {
         --primary: #0f172a;
         --accent: #417d81;
@@ -39,7 +28,7 @@
         --success: #10b981;
     }
 
-    /* Reset */
+    /* Layout Resets */
     .page-head,
     .page-title,
     .page-breadcrumbs,
@@ -123,7 +112,7 @@
         letter-spacing: 1px;
     }
 
-    /* Container */
+    /* Admin Container */
     .admin-container {
         max-width: 1100px;
         margin: 40px auto;
@@ -164,6 +153,11 @@
         transform: translateY(-2px);
     }
 
+    .save-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
     /* Cards */
     .admin-card {
         background: #fff;
@@ -201,7 +195,7 @@
         transform: translateY(-1px);
     }
 
-    /* List Rows */
+    /* Account Rows */
     .item-row {
         display: grid;
         gap: 12px;
@@ -210,7 +204,6 @@
         border-bottom: 1px solid var(--border);
         background: #fff;
         margin-bottom: 0;
-        transition: background 0.2s;
     }
 
     .item-row:last-child {
@@ -221,21 +214,8 @@
         background: #f8fafc;
     }
 
-    .item-row.inactive {
-        opacity: 0.6;
-        background: #f1f5f9;
-    }
-
-    /* Visual style for inactive items */
-
-    /* Grid Definitions */
     .account-row {
         grid-template-columns: 40px 1fr 140px 40px;
-    }
-
-    /* Added checkbox col */
-    .mab-row {
-        grid-template-columns: 40px 1fr 1fr 140px 40px;
     }
 
     input[type="text"],
@@ -257,7 +237,6 @@
         box-shadow: 0 0 0 3px rgba(65, 125, 129, 0.1);
     }
 
-    /* Toggle Checkbox */
     .toggle-check {
         width: 20px;
         height: 20px;
@@ -294,192 +273,206 @@
         display: block;
         letter-spacing: 0.5px;
     }
+
+    /* New Group Matrix Styling */
+    .group-block {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .group-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 12px;
+    }
+
+    .slab-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+
+    .slab-input-wrapper {
+        position: relative;
+    }
+
+    .currency-symbol {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    .slab-input {
+        padding-left: 24px !important;
+        text-align: right;
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    /* Add this specific style for Group Cards */
+    .group-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        position: relative;
+    }
+
+    .remove-group-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #ef4444;
+        background: none;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .slab-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 40px;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
 </style>
 
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
 
     <div class="section-header">
-        <div>
-            <h1 class="section-title">Incentive Configuration</h1>
-            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Manage accounts, rates, and slabs.</p>
-        </div>
-        <button @click="saveConfig" class="save-btn" :disabled="isSaving">
-            <span>[[ isSaving ? '⏳' : '💾' ]]</span>
-            [[ isSaving ? 'Saving...' : 'Save Changes' ]]
-        </button>
+        <h1 class="section-title">Incentive Rules Master</h1>
+        <button @click="saveConfig" class="save-btn" :disabled="isSaving">[[ isSaving ? 'Saving...' : '💾 Save Changes'
+            ]]</button>
     </div>
 
-    <!-- 1. Account Types -->
+    <!-- 1. Global Account Rates -->
+    <div class="admin-card">
+        <div class="card-title"><span>1. Account Rates</span> <button @click="addAccount" class="add-btn">+ Add</button>
+        </div>
+        <div class="item-row account-row" v-for="(item, index) in doc.account_rates" :key="index">
+            <div style="text-align: center;"><input type="checkbox" v-model="item.enabled" :true-value="1"
+                    :false-value="0"></div>
+            <div><input type="text" v-model="item.account_type" placeholder="Name"></div>
+            <div><input type="number" v-model="item.incentive_amount" placeholder="Rate"></div>
+            <div><button @click="removeAccount(index)" class="del-btn">✕</button></div>
+        </div>
+    </div>
+
+    <!-- 2. Designation Logic -->
     <div class="admin-card">
         <div class="card-title">
-            <span>Account Types</span>
-            <button @click="addAccount" class="add-btn">+ Add Account</button>
+            <span>2. Designation Groups & Rules</span>
+            <button @click="addGroup" class="add-btn">+ Add Group</button>
         </div>
 
-        <div class="item-row account-row" v-for="(item, index) in doc.account_rates" :key="index"
-            :class="{ 'inactive': item.enabled == 0 }">
-            <div style="text-align: center;">
-                <label class="label-text">Active</label>
-                <input type="checkbox" class="toggle-check" v-model="item.enabled" :true-value="1" :false-value="0">
-            </div>
-            <div>
-                <label class="label-text">Account Name</label>
-                <input type="text" v-model="item.account_type" placeholder="Account Name">
-            </div>
-            <div>
-                <label class="label-text">Incentive (₹)</label>
-                <input type="number" v-model="item.incentive_amount" placeholder="0">
-            </div>
-            <div style="display: flex; align-items: flex-end; height: 100%;">
-                <button @click="removeAccount(index)" class="del-btn" title="Remove">✕</button>
-            </div>
-        </div>
+        <div v-for="(group, gIndex) in designationRules" :key="gIndex" class="group-card">
+            <button @click="removeGroup(gIndex)" class="remove-group-btn">✕</button>
 
-        <div v-if="!doc.account_rates || doc.account_rates.length === 0"
-            style="text-align: center; padding: 30px; color: #cbd5e1;">
-            No accounts found. Add one to get started.
-        </div>
-    </div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <label class="label-text">Group Name & Designations</label>
+                    <input type="text" v-model="group.group_name" placeholder="Group Name (e.g. Officers)"
+                        style="font-weight: 700; margin-bottom: 4px;">
+                    <textarea v-model="group.designations"
+                        style="width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; font-size: 12px;"
+                        placeholder="BO, RO, MT (Comma separated)"></textarea>
+                </div>
+                <div>
+                    <label class="label-text">Max Cap (₹)</label>
+                    <input type="number" v-model="group.capping_amount" style="font-size: 18px; font-weight: 700;">
+                </div>
+            </div>
 
-    <!-- 2. MAB Slabs -->
-    <div class="admin-card">
-        <div class="card-title">
-            <span>MAB Slabs</span>
-            <button @click="addSlab" class="add-btn">+ Add Slab</button>
-        </div>
-
-        <div class="item-row mab-row" v-for="(slab, index) in doc.mab_slabs" :key="index"
-            :class="{ 'inactive': slab.enabled == 0 }">
-            <div style="text-align: center;">
-                <label class="label-text">Active</label>
-                <input type="checkbox" class="toggle-check" v-model="slab.enabled" :true-value="1" :false-value="0">
+            <label class="label-text">MAB Slabs (Min Balance -> Incentive)</label>
+            <div v-for="(slab, sIndex) in group.slabs" :key="sIndex" class="slab-row">
+                <input type="number" v-model="slab.min" placeholder="Min (e.g. 25000)">
+                <input type="number" v-model="slab.max" placeholder="Max (Optional)">
+                <input type="number" v-model="slab.amount" placeholder="Payout (e.g. 125)">
+                <button @click="group.slabs.splice(sIndex, 1)" class="del-btn" style="height: 38px;">-</button>
             </div>
-            <div>
-                <label class="label-text">Min Balance</label>
-                <input type="number" v-model="slab.min_balance" placeholder="0">
-            </div>
-            <div>
-                <label class="label-text">Max Balance</label>
-                <input type="number" v-model="slab.max_balance" placeholder="Empty = Unlimited">
-            </div>
-            <div>
-                <label class="label-text">Incentive (₹)</label>
-                <input type="number" v-model="slab.incentive_amount" placeholder="0">
-            </div>
-            <div style="display: flex; align-items: flex-end; height: 100%;">
-                <button @click="removeSlab(index)" class="del-btn" title="Remove">✕</button>
-            </div>
+            <button @click="group.slabs.push({min:0, max: null, amount:0})"
+                style="font-size: 11px; color: var(--accent); background: none; border: none; cursor: pointer; font-weight: 700;">+
+                Add Slab Rule</button>
         </div>
     </div>
-
 </div>
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
-
-
 <script>
     frappe.ready(function () {
         PetiteVue.createApp({
             $delimiters: ['[[', ']]'],
-
-            // State: Initialize with required keys to prevent errors
-            doc: {
-                doctype: 'Incentive Config', // FIX 1: Explicit Doctype
-                name: 'Incentive Config',
-                account_rates: [],
-                mab_slabs: []
-            },
+            doc: { doctype: 'Incentive Config', name: 'Incentive Config', account_rates: [], designation_structure: '' },
+            designationRules: [], // Parsed JSON
             isSaving: false,
 
-            // Lifecycle Hook
-            mounted() {
-                this.fetchConfig();
-            },
+            mounted() { this.fetchConfig(); },
 
             fetchConfig() {
                 frappe.call({
                     method: 'frappe.client.get',
-                    args: {
-                        doctype: 'Incentive Config',
-                        name: 'Incentive Config'
-                    },
+                    args: { doctype: 'Incentive Config', name: 'Incentive Config' },
                     callback: (r) => {
                         if (r.message) {
-                            console.log("Full Doc Loaded:", r.message);
                             this.doc = r.message;
-
-                            // Safety checks for arrays
                             if (!this.doc.account_rates) this.doc.account_rates = [];
-                            if (!this.doc.mab_slabs) this.doc.mab_slabs = [];
+
+                            // Load Rules
+                            try {
+                                this.designationRules = JSON.parse(this.doc.designation_structure || '[]');
+                                if (this.designationRules.length === 0) this.loadDefaults();
+                            } catch (e) { this.loadDefaults(); }
                         }
                     }
                 });
             },
 
-            addAccount() {
-                this.doc.account_rates.push({
-                    doctype: 'Incentive Account Rate Item', // Optional but good practice
-                    account_type: '',
-                    incentive_amount: 0,
-                    enabled: 1
-                });
+            loadDefaults() {
+                // Pre-fill with your hardcoded logic for first time setup
+                this.designationRules = [
+                    {
+                        group_name: 'Officers', designations: 'BO,RO,MT,BRANCH OFFICER,RISK OFFICER', capping_amount: 5000,
+                        slabs: [{ min: 25000, max: 50000, amount: 125 }, { min: 50000, max: 75000, amount: 250 }, { min: 75000, max: 100000, amount: 375 }, { min: 100000, max: null, amount: 500 }]
+                    },
+                    {
+                        group_name: 'Managers', designations: 'TL,BSM,BM,ABM', capping_amount: 10000,
+                        slabs: [{ min: 25000, max: 50000, amount: 60 }, { min: 50000, max: 75000, amount: 125 }, { min: 75000, max: 100000, amount: 185 }, { min: 100000, max: null, amount: 250 }]
+                    }
+                ];
             },
 
-            removeAccount(index) {
-                this.doc.account_rates.splice(index, 1);
-            },
+            addAccount() { this.doc.account_rates.push({ account_type: '', incentive_amount: 0, enabled: 1 }); },
+            removeAccount(i) { this.doc.account_rates.splice(i, 1); },
 
-            addSlab() {
-                this.doc.mab_slabs.push({
-                    doctype: 'Incentive MAB Item',
-                    min_balance: 0,
-                    max_balance: 0,
-                    incentive_amount: 0,
-                    enabled: 1
-                });
+            addGroup() {
+                this.designationRules.push({ group_name: 'New Group', designations: '', capping_amount: 0, slabs: [] });
             },
-
-            removeSlab(index) {
-                this.doc.mab_slabs.splice(index, 1);
-            },
+            removeGroup(i) { this.designationRules.splice(i, 1); },
 
             saveConfig() {
-                if (this.isSaving) return;
+                this.doc.designation_structure = JSON.stringify(this.designationRules);
+                if (!this.doc.doctype) this.doc.doctype = 'Incentive Config';
 
-                frappe.confirm('Are you sure you want to save changes?', () => {
-                    this.isSaving = true;
-
-                    // FIX 2: Ensure doc has doctype before sending
-                    if (!this.doc.doctype) this.doc.doctype = 'Incentive Config';
-
-                    frappe.call({
-                        method: 'frappe.client.save',
-                        args: {
-                            doc: this.doc
-                        },
-                        callback: (r) => {
-                            this.isSaving = false;
-                            if (!r.exc) {
-                                frappe.msgprint({ title: 'Success', message: 'Configuration Saved!', indicator: 'green' });
-                                // Update local doc with server response (new timestamp!)
-                                this.doc = r.message;
-                            }
-                        },
-                        error: (r) => {
-                            this.isSaving = false;
-                            // Handle timestamp conflict
-                            if (r.message && (r.message.includes("modified") || r.message.includes("Timestamp"))) {
-                                frappe.msgprint("Document was modified by someone else. Reloading...");
-                                this.fetchConfig();
-                            }
-                        }
-                    });
+                this.isSaving = true;
+                frappe.call({
+                    method: 'frappe.client.save',
+                    args: { doc: this.doc },
+                    callback: (r) => {
+                        this.isSaving = false;
+                        if (!r.exc) { frappe.msgprint("Saved!"); this.doc = r.message; }
+                    }
                 });
             }
         }).mount('#admin-app');
     });
 </script>
-
-
-
 {% endblock %}
