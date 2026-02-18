@@ -1,141 +1,585 @@
 {% extends "templates/web.html" %}
 
-{% block title %}Incentive Dashboard (HO){% endblock %}
+{% block title %}Incentive Admin{% endblock %}
+
+{% block navbar %}
+<header class="branding-header">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <a class="home-btn" href="/incentive-calculator" title="Back to Calculator">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+            </svg>
+            <span class="home-text">Back</span>
+        </a>
+        <span style="color: #cbd5e1; margin: 0 4px">|</span>
+        <div class="brand-right">
+            <span class="brand-text">SAHAYOG</span>
+            <span class="tagline">Admin Dashboard</span>
+        </div>
+    </div>
+</header>
+{% endblock %}
 
 {% block page_content %}
-<div id="admin-app" v-scope class="py-10 max-w-5xl mx-auto">
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet" />
 
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-8">
+<style>
+    :root {
+        --primary: #0f172a;
+        --accent: #417d81;
+        --warning: #f59e0b;
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --border: #e2e8f0;
+        --danger: #ef4444;
+        --success: #10b981;
+    }
+
+    /* Reset */
+    .page-head,
+    .page-title,
+    .page-breadcrumbs,
+    .breadcrumb,
+    footer {
+        display: none !important;
+    }
+
+    [v-cloak] {
+        display: none !important;
+    }
+
+    .container,
+    .container-fluid {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+    }
+
+    /* Header */
+    .branding-header {
+        padding: 14px 24px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .home-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 13px;
+        transition: 0.2s;
+    }
+
+    .home-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .brand-right {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+    }
+
+    .brand-text {
+        font-weight: 800;
+        font-size: 18px;
+        color: var(--primary);
+    }
+
+    .tagline {
+        font-size: 10px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Container */
+    .admin-container {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 24px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--primary);
+    }
+
+    .save-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .save-btn:hover {
+        background: #1e293b;
+        transform: translateY(-2px);
+    }
+
+    /* Cards */
+    .admin-card {
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .add-btn {
+        font-size: 12px;
+        background: #ecfdf5;
+        color: #059669;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid #d1fae5;
+        cursor: pointer;
+        font-weight: 700;
+        transition: 0.2s;
+    }
+
+    .add-btn:hover {
+        background: #d1fae5;
+        transform: translateY(-1px);
+    }
+
+    /* List Rows */
+    .item-row {
+        display: grid;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        background: #fff;
+        margin-bottom: 0;
+        transition: background 0.2s;
+    }
+
+    .item-row:last-child {
+        border-bottom: none;
+    }
+
+    .item-row:hover {
+        background: #f8fafc;
+    }
+
+    .item-row.inactive {
+        opacity: 0.6;
+        background: #f1f5f9;
+    }
+
+    /* Visual style for inactive items */
+
+    /* Grid Definitions */
+    .account-row {
+        grid-template-columns: 40px 1fr 140px 40px;
+    }
+
+    /* Added checkbox col */
+    .mab-row {
+        grid-template-columns: 40px 1fr 1fr 140px 40px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        outline: none;
+        transition: 0.2s;
+        background: #f8fafc;
+    }
+
+    input:focus {
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(65, 125, 129, 0.1);
+    }
+
+    /* Toggle Checkbox */
+    .toggle-check {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--success);
+        cursor: pointer;
+    }
+
+    .del-btn {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #fee2e2;
+        background: #fef2f2;
+        color: var(--danger);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .del-btn:hover {
+        background: var(--danger);
+        color: white;
+        border-color: var(--danger);
+    }
+
+    .label-text {
+        font-size: 10px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        display: block;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+<!-- <div id="admin-app" v-scope @vue:mounted="init()" v-cloak class="admin-container"> -->
+<div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
+
+    <div class="section-header">
         <div>
-            <h1 class="text-3xl font-bold text-slate-900">Incentive Configuration</h1>
-            <p class="text-slate-500">Manage rates, account types, and slabs.</p>
+            <h1 class="section-title">Incentive Configuration</h1>
+            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Manage accounts, rates, and slabs.</p>
         </div>
-        <button @click="saveConfig"
-            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold transition shadow-lg">
-            Save Changes
+        <button @click="saveConfig" class="save-btn" :disabled="isSaving">
+            <span>[[ isSaving ? '⏳' : '💾' ]]</span>
+            [[ isSaving ? 'Saving...' : 'Save Changes' ]]
         </button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- 1. Account Types -->
+    <div class="admin-card">
+        <div class="card-title">
+            <span>Account Types</span>
+            <button @click="addAccount" class="add-btn">+ Add Account</button>
+        </div>
 
-        <!-- 1. Account Types & Rates -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-slate-800">Account Rates</h2>
-                <button @click="addAccount"
-                    class="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded hover:bg-slate-200">+ Add Type</button>
+        <div class="item-row account-row" v-for="(item, index) in doc.account_rates" :key="index"
+            :class="{ 'inactive': item.enabled == 0 }">
+            <div style="text-align: center;">
+                <label class="label-text">Active</label>
+                <input type="checkbox" class="toggle-check" v-model="item.enabled" :true-value="1" :false-value="0">
             </div>
-
-            <div class="space-y-3">
-                <div v-for="(item, index) in config.account_rates" :key="index" class="flex gap-2 items-center">
-                    <input type="text" v-model="item.account_type" placeholder="Type (e.g. Platinum)"
-                        class="flex-1 p-2 border rounded text-sm font-medium">
-                    <input type="number" v-model="item.incentive_amount" placeholder="₹"
-                        class="w-24 p-2 border rounded text-sm text-right">
-                    <button @click="removeAccount(index)" class="text-red-400 hover:text-red-600 p-2">×</button>
-                </div>
-                <div v-if="config.account_rates.length === 0" class="text-center text-slate-400 py-4 text-sm">No account
-                    types defined</div>
+            <div>
+                <label class="label-text">Account Name</label>
+                <input type="text" v-model="item.account_type" placeholder="Account Name">
+            </div>
+            <div>
+                <label class="label-text">Incentive (₹)</label>
+                <input type="number" v-model="item.incentive_amount" placeholder="0">
+            </div>
+            <div style="display: flex; align-items: flex-end; height: 100%;">
+                <button @click="removeAccount(index)" class="del-btn" title="Remove">✕</button>
             </div>
         </div>
 
-        <!-- 2. MAB Slabs -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-slate-800">MAB Slabs</h2>
-                <button @click="addSlab"
-                    class="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded hover:bg-slate-200">+ Add Slab</button>
-            </div>
-
-            <div class="space-y-3">
-                <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    <div class="col-span-4">Min Bal</div>
-                    <div class="col-span-4">Max Bal</div>
-                    <div class="col-span-3 text-right">Incentive</div>
-                    <div class="col-span-1"></div>
-                </div>
-
-                <div v-for="(slab, index) in config.mab_slabs" :key="index"
-                    class="grid grid-cols-12 gap-2 items-center">
-                    <input type="number" v-model="slab.min_balance" class="col-span-4 p-2 border rounded text-sm">
-                    <input type="number" v-model="slab.max_balance" class="col-span-4 p-2 border rounded text-sm">
-                    <input type="number" v-model="slab.incentive_amount"
-                        class="col-span-3 p-2 border rounded text-sm text-right">
-                    <button @click="removeSlab(index)"
-                        class="col-span-1 text-red-400 hover:text-red-600 flex justify-center">×</button>
-                </div>
-            </div>
+        <div v-if="!doc.account_rates || doc.account_rates.length === 0"
+            style="text-align: center; padding: 30px; color: #cbd5e1;">
+            No accounts found. Add one to get started.
         </div>
-
     </div>
+
+    <!-- 2. MAB Slabs -->
+    <div class="admin-card">
+        <div class="card-title">
+            <span>MAB Slabs</span>
+            <button @click="addSlab" class="add-btn">+ Add Slab</button>
+        </div>
+
+        <div class="item-row mab-row" v-for="(slab, index) in doc.mab_slabs" :key="index"
+            :class="{ 'inactive': slab.enabled == 0 }">
+            <div style="text-align: center;">
+                <label class="label-text">Active</label>
+                <input type="checkbox" class="toggle-check" v-model="slab.enabled" :true-value="1" :false-value="0">
+            </div>
+            <div>
+                <label class="label-text">Min Balance</label>
+                <input type="number" v-model="slab.min_balance" placeholder="0">
+            </div>
+            <div>
+                <label class="label-text">Max Balance</label>
+                <input type="number" v-model="slab.max_balance" placeholder="Empty = Unlimited">
+            </div>
+            <div>
+                <label class="label-text">Incentive (₹)</label>
+                <input type="number" v-model="slab.incentive_amount" placeholder="0">
+            </div>
+            <div style="display: flex; align-items: flex-end; height: 100%;">
+                <button @click="removeSlab(index)" class="del-btn" title="Remove">✕</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- Load Petite Vue & Frappe JS -->
-<script src="/assets/sahayog/js/petite-vue.iife.js"></script>
-<script src="/assets/frappe/js/frappe-web.min.js"></script>
-
+<!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
 <script>
     frappe.ready(function () {
         PetiteVue.createApp({
-            config: {
-                account_rates: [], // Default empty
+            $delimiters: ['[[', ']]'],
+
+            // State: We store the ENTIRE document here
+            doc: {
+                account_rates: [],
                 mab_slabs: []
             },
+            isSaving: false,
 
             mounted() {
                 this.fetchConfig();
             },
 
             fetchConfig() {
+                // Fetch the full document metadata
                 frappe.call({
-                    method: 'frappe.client.get_doc',
-                    args: { doctype: 'Incentive Config' } // Fetches the Single DocType
-                }).then(r => {
-                    if (r.message) {
-                        // Ensure arrays exist even if empty
-                        this.config.account_rates = r.message.account_rates || [];
-                        this.config.mab_slabs = r.message.mab_slabs || [];
+                    method: 'frappe.client.get',
+                    args: {
+                        doctype: 'Incentive Config',
+                        name: 'Incentive Config' // Critical for Single DocTypes
+                    },
+                    callback: (r) => {
+                        if (r.message) {
+                            console.log("Full Doc Loaded:", r.message);
+                            this.doc = r.message;
+
+                            // Initialize arrays if they are null/undefined
+                            if (!this.doc.account_rates) this.doc.account_rates = [];
+                            if (!this.doc.mab_slabs) this.doc.mab_slabs = [];
+                        }
                     }
                 });
             },
 
             addAccount() {
-                this.config.account_rates.push({ account_type: 'New Account', incentive_amount: 0 });
+                // Add new row with enabled=1
+                this.doc.account_rates.push({
+                    account_type: '',
+                    incentive_amount: 0,
+                    enabled: 1
+                });
             },
 
             removeAccount(index) {
-                this.config.account_rates.splice(index, 1);
+                this.doc.account_rates.splice(index, 1);
             },
 
             addSlab() {
-                this.config.mab_slabs.push({ min_balance: 0, max_balance: 0, incentive_amount: 0 });
+                this.doc.mab_slabs.push({
+                    min_balance: 0,
+                    max_balance: 0,
+                    incentive_amount: 0,
+                    enabled: 1
+                });
             },
 
             removeSlab(index) {
-                this.config.mab_slabs.splice(index, 1);
+                this.doc.mab_slabs.splice(index, 1);
             },
 
             saveConfig() {
-                frappe.call({
-                    method: 'frappe.client.insert', // Use insert/save logic or custom method
-                    // For Single DocTypes, we usually use a custom python method or just save_doc
-                    // Here is a robust way using a custom method (defined below) or standard write
-                    method: 'frappe.desk.form.save.savedocs',
-                    args: {
-                        doc: {
-                            doctype: 'Incentive Config',
-                            account_rates: this.config.account_rates,
-                            mab_slabs: this.config.mab_slabs,
-                            __islocal: 0 // It's an update
+                if (this.isSaving) return;
+
+                frappe.confirm('Are you sure you want to save changes?', () => {
+                    this.isSaving = true;
+
+                    // We send back the THIS.DOC object.
+                    // This object contains the 'modified' timestamp from the GET request.
+                    // Frappe sees this timestamp, matches it with DB, and allows the save.
+
+                    frappe.call({
+                        method: 'frappe.client.save',
+                        args: {
+                            doc: this.doc
                         },
-                        action: 'Save'
+                        callback: (r) => {
+                            this.isSaving = false;
+                            if (!r.exc) {
+                                frappe.msgprint({ title: 'Success', message: 'Configuration Saved!', indicator: 'green' });
+
+                                // Update local doc with server response (new timestamp!)
+                                this.doc = r.message;
+                            }
+                        },
+                        error: (r) => {
+                            this.isSaving = false;
+                            // If timestamp error happens, we must reload
+                            if (r.message && r.message.includes("modified")) {
+                                frappe.msgprint("Document was modified by someone else. Reloading...");
+                                this.fetchConfig();
+                            }
+                        }
+                    });
+                });
+            }
+        }).mount('#admin-app');
+    });
+</script> -->
+
+<script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+<script>
+    frappe.ready(function () {
+        PetiteVue.createApp({
+            $delimiters: ['[[', ']]'],
+
+            // State: Initialize with required keys to prevent errors
+            doc: {
+                doctype: 'Incentive Config', // FIX 1: Explicit Doctype
+                name: 'Incentive Config',
+                account_rates: [],
+                mab_slabs: []
+            },
+            isSaving: false,
+
+            // Lifecycle Hook
+            mounted() {
+                this.fetchConfig();
+            },
+
+            fetchConfig() {
+                frappe.call({
+                    method: 'frappe.client.get',
+                    args: {
+                        doctype: 'Incentive Config',
+                        name: 'Incentive Config'
+                    },
+                    callback: (r) => {
+                        if (r.message) {
+                            console.log("Full Doc Loaded:", r.message);
+                            this.doc = r.message;
+
+                            // Safety checks for arrays
+                            if (!this.doc.account_rates) this.doc.account_rates = [];
+                            if (!this.doc.mab_slabs) this.doc.mab_slabs = [];
+                        }
                     }
-                }).then(r => {
-                    frappe.msgprint({ title: 'Success', message: 'Incentive Config Updated!', indicator: 'green' });
+                });
+            },
+
+            addAccount() {
+                this.doc.account_rates.push({
+                    doctype: 'Incentive Account Rate Item', // Optional but good practice
+                    account_type: '',
+                    incentive_amount: 0,
+                    enabled: 1
+                });
+            },
+
+            removeAccount(index) {
+                this.doc.account_rates.splice(index, 1);
+            },
+
+            addSlab() {
+                this.doc.mab_slabs.push({
+                    doctype: 'Incentive MAB Item',
+                    min_balance: 0,
+                    max_balance: 0,
+                    incentive_amount: 0,
+                    enabled: 1
+                });
+            },
+
+            removeSlab(index) {
+                this.doc.mab_slabs.splice(index, 1);
+            },
+
+            saveConfig() {
+                if (this.isSaving) return;
+
+                frappe.confirm('Are you sure you want to save changes?', () => {
+                    this.isSaving = true;
+
+                    // FIX 2: Ensure doc has doctype before sending
+                    if (!this.doc.doctype) this.doc.doctype = 'Incentive Config';
+
+                    frappe.call({
+                        method: 'frappe.client.save',
+                        args: {
+                            doc: this.doc
+                        },
+                        callback: (r) => {
+                            this.isSaving = false;
+                            if (!r.exc) {
+                                frappe.msgprint({ title: 'Success', message: 'Configuration Saved!', indicator: 'green' });
+                                // Update local doc with server response (new timestamp!)
+                                this.doc = r.message;
+                            }
+                        },
+                        error: (r) => {
+                            this.isSaving = false;
+                            // Handle timestamp conflict
+                            if (r.message && (r.message.includes("modified") || r.message.includes("Timestamp"))) {
+                                frappe.msgprint("Document was modified by someone else. Reloading...");
+                                this.fetchConfig();
+                            }
+                        }
+                    });
                 });
             }
         }).mount('#admin-app');
     });
 </script>
+
 {% endblock %}
