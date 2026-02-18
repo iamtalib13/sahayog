@@ -1,0 +1,141 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Incentive Dashboard (HO){% endblock %}
+
+{% block page_content %}
+<div id="admin-app" v-scope class="py-10 max-w-5xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Incentive Configuration</h1>
+            <p class="text-slate-500">Manage rates, account types, and slabs.</p>
+        </div>
+        <button @click="saveConfig"
+            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold transition shadow-lg">
+            Save Changes
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <!-- 1. Account Types & Rates -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-800">Account Rates</h2>
+                <button @click="addAccount"
+                    class="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded hover:bg-slate-200">+ Add Type</button>
+            </div>
+
+            <div class="space-y-3">
+                <div v-for="(item, index) in config.account_rates" :key="index" class="flex gap-2 items-center">
+                    <input type="text" v-model="item.account_type" placeholder="Type (e.g. Platinum)"
+                        class="flex-1 p-2 border rounded text-sm font-medium">
+                    <input type="number" v-model="item.incentive_amount" placeholder="₹"
+                        class="w-24 p-2 border rounded text-sm text-right">
+                    <button @click="removeAccount(index)" class="text-red-400 hover:text-red-600 p-2">×</button>
+                </div>
+                <div v-if="config.account_rates.length === 0" class="text-center text-slate-400 py-4 text-sm">No account
+                    types defined</div>
+            </div>
+        </div>
+
+        <!-- 2. MAB Slabs -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-800">MAB Slabs</h2>
+                <button @click="addSlab"
+                    class="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded hover:bg-slate-200">+ Add Slab</button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    <div class="col-span-4">Min Bal</div>
+                    <div class="col-span-4">Max Bal</div>
+                    <div class="col-span-3 text-right">Incentive</div>
+                    <div class="col-span-1"></div>
+                </div>
+
+                <div v-for="(slab, index) in config.mab_slabs" :key="index"
+                    class="grid grid-cols-12 gap-2 items-center">
+                    <input type="number" v-model="slab.min_balance" class="col-span-4 p-2 border rounded text-sm">
+                    <input type="number" v-model="slab.max_balance" class="col-span-4 p-2 border rounded text-sm">
+                    <input type="number" v-model="slab.incentive_amount"
+                        class="col-span-3 p-2 border rounded text-sm text-right">
+                    <button @click="removeSlab(index)"
+                        class="col-span-1 text-red-400 hover:text-red-600 flex justify-center">×</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Load Petite Vue & Frappe JS -->
+<script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+<script src="/assets/frappe/js/frappe-web.min.js"></script>
+
+<script>
+    frappe.ready(function () {
+        PetiteVue.createApp({
+            config: {
+                account_rates: [], // Default empty
+                mab_slabs: []
+            },
+
+            mounted() {
+                this.fetchConfig();
+            },
+
+            fetchConfig() {
+                frappe.call({
+                    method: 'frappe.client.get_doc',
+                    args: { doctype: 'Incentive Config' } // Fetches the Single DocType
+                }).then(r => {
+                    if (r.message) {
+                        // Ensure arrays exist even if empty
+                        this.config.account_rates = r.message.account_rates || [];
+                        this.config.mab_slabs = r.message.mab_slabs || [];
+                    }
+                });
+            },
+
+            addAccount() {
+                this.config.account_rates.push({ account_type: 'New Account', incentive_amount: 0 });
+            },
+
+            removeAccount(index) {
+                this.config.account_rates.splice(index, 1);
+            },
+
+            addSlab() {
+                this.config.mab_slabs.push({ min_balance: 0, max_balance: 0, incentive_amount: 0 });
+            },
+
+            removeSlab(index) {
+                this.config.mab_slabs.splice(index, 1);
+            },
+
+            saveConfig() {
+                frappe.call({
+                    method: 'frappe.client.insert', // Use insert/save logic or custom method
+                    // For Single DocTypes, we usually use a custom python method or just save_doc
+                    // Here is a robust way using a custom method (defined below) or standard write
+                    method: 'frappe.desk.form.save.savedocs',
+                    args: {
+                        doc: {
+                            doctype: 'Incentive Config',
+                            account_rates: this.config.account_rates,
+                            mab_slabs: this.config.mab_slabs,
+                            __islocal: 0 // It's an update
+                        },
+                        action: 'Save'
+                    }
+                }).then(r => {
+                    frappe.msgprint({ title: 'Success', message: 'Incentive Config Updated!', indicator: 'green' });
+                });
+            }
+        }).mount('#admin-app');
+    });
+</script>
+{% endblock %}
