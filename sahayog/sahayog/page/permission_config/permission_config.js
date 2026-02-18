@@ -7,198 +7,264 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     single_column: true,
   });
 
-  // Full width
+  // Full width layout
   $(wrapper).find(".page-content").css({ padding: "0", maxWidth: "none" });
   $(wrapper).find(".layout-main-section").css({ maxWidth: "none" });
 
   frappe.require("/assets/sahayog/js/petite-vue.iife.js", () => {
     page.main.html(`
       <style>
-        #permission-config-root { background: var(--bg-light); }
-        .pc-wrap { display: grid; grid-template-columns: 380px 1fr; gap: 16px; padding: 16px; min-height: calc(100vh - 140px); }
-        .pc-card { background: #fff; border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.06); }
-        .pc-card-h { padding: 14px 14px 0 14px; font-weight: 700; color: var(--text-color); }
-        .pc-card-b { padding: 14px; }
-        .pc-sticky { position: sticky; top: 16px; align-self: start; }
-        .pc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .pc-subtle { color: var(--text-muted); font-size: 12px; }
-        .pc-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 999px; font-size: 12px; }
-        .pc-divider { height: 1px; background: var(--border-color); margin: 12px 0; }
-        .pc-group { margin-top: 14px; }
-        .pc-glabel { display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px; font-size: 12px; font-weight: 700; color: #111827; text-transform: uppercase; letter-spacing: .04em; }
-        .pc-action { font-size: 12px; font-weight: 600; color: var(--primary); cursor: pointer; user-select:none; }
-        .pc-action:hover { text-decoration: underline; }
-        .pc-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-        .pc-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        .pc-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .pc-opt { display:flex; align-items:center; justify-content:center; gap: 8px; padding: 10px 8px; border-radius: 12px;
-                  background: #f8fafc; border: 1px solid #e5e7eb; cursor: pointer; user-select:none; }
-        .pc-opt:hover { background:#f1f5f9; }
-        .pc-opt.sel { background:#dbeafe; border-color:#3b82f6; }
-        .pc-opt input { margin: 0; }
-        .pc-opt span { font-size: 13px; color: #0f172a; font-weight: 600; }
-        .pc-main { padding: 16px; }
-        .pc-kv { display:grid; grid-template-columns: 160px 1fr; gap: 8px; font-size: 13px; }
-        .pc-kv b { color:#111827; }
-        .pc-skel { padding: 10px; border: 1px dashed var(--border-color); border-radius: 12px; background: #fafafa; color: var(--text-muted); }
-        @media (max-width: 1200px) { .pc-wrap { grid-template-columns: 1fr; } .pc-sticky { position: static; } }
+        * { box-sizing: border-box; }
+        #perm-root { background: #fafafa; min-height: calc(100vh - 100px); }
+        .perm-layout { display: grid; grid-template-columns: 1fr 400px; gap: 0; }
+        
+        /* Main container (left) */
+        .perm-main { padding: 20px; border-right: 1px solid #d1d5db; background: #fff; }
+        .perm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e5e7eb; }
+        .perm-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #111827; }
+        .perm-search { position: relative; width: 320px; }
+        .perm-search input { width: 100%; padding: 10px 14px 10px 38px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        .perm-search input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .perm-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+        
+        .perm-list { display: grid; gap: 12px; }
+        .perm-card { padding: 16px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; cursor: pointer; transition: all 0.2s; }
+        .perm-card:hover { border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15); }
+        .perm-card.active { border-color: #3b82f6; background: #eff6ff; }
+        .perm-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .perm-card-name { font-size: 15px; font-weight: 600; color: #111827; }
+        .perm-card-type { font-size: 12px; padding: 4px 10px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; color: #6b7280; }
+        .perm-card-email { font-size: 13px; color: #6b7280; margin-top: 4px; }
+        
+        .perm-btn { padding: 10px 18px; background: #3b82f6; color: #fff; border: 1px solid #3b82f6; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .perm-btn:hover { background: #2563eb; }
+        .perm-empty { padding: 40px; text-align: center; color: #9ca3af; border: 1px dashed #d1d5db; border-radius: 10px; }
+        
+        /* Sidebar (right) */
+        .perm-sidebar { padding: 20px; background: #fff; overflow-y: auto; max-height: calc(100vh - 100px); }
+        .perm-sidebar-empty { padding: 60px 20px; text-align: center; color: #9ca3af; border: 1px dashed #d1d5db; border-radius: 10px; }
+        .perm-sidebar-empty svg { width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.4; }
+        
+        .perm-side-header { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+        .perm-user-info { margin-bottom: 20px; padding: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .perm-user-info div { font-size: 13px; color: #374151; margin-bottom: 6px; }
+        .perm-user-info div:last-child { margin-bottom: 0; }
+        .perm-user-info strong { color: #111827; font-weight: 600; }
+        
+        .perm-section { margin-bottom: 24px; }
+        .perm-section-title { font-size: 13px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+        .perm-field { margin-bottom: 20px; }
+        .perm-flabel { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #111827; }
+        .perm-flink { font-size: 12px; font-weight: 600; color: #3b82f6; cursor: pointer; text-decoration: none; }
+        .perm-flink:hover { text-decoration: underline; }
+        
+        .perm-check-grid { display: grid; gap: 10px; }
+        .perm-check-grid-6 { grid-template-columns: repeat(3, 1fr); }
+        .perm-check-grid-4 { grid-template-columns: repeat(2, 1fr); }
+        .perm-check-grid-multi { grid-template-columns: 1fr; }
+        
+        .perm-check-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fafafa; cursor: pointer; transition: all 0.15s; }
+        .perm-check-item:hover { background: #f3f4f6; border-color: #9ca3af; }
+        .perm-check-item.selected { background: #dbeafe; border-color: #3b82f6; }
+        .perm-check-item input { margin: 0; cursor: pointer; }
+        .perm-check-item label { margin: 0; font-size: 13px; color: #111827; cursor: pointer; flex: 1; }
+        
+        .perm-control-wrap { margin-bottom: 16px; }
+        
+        @media (max-width: 1200px) { .perm-layout { grid-template-columns: 1fr; } }
       </style>
 
-      <div id="permission-config-root" v-scope @vue:mounted="init()">
-        <div class="pc-wrap">
-
-          <!-- Sidebar -->
-          <div class="pc-card pc-sticky">
-            <div class="pc-card-h">Context</div>
-            <div class="pc-card-b">
-              <div class="pc-row">
-                <div class="pc-subtle">User + report type drives all filters</div>
-                <div class="pc-chip">
-                  <span>[[ full_name || user || "No user" ]]</span>
-                  <span class="pc-subtle">[[ report_type || "No type" ]]</span>
+      <div id="perm-root" v-scope @vue:mounted="init()">
+        <div class="perm-layout">
+          
+          <!-- Main Container (Left) -->
+          <div class="perm-main">
+            <div class="perm-header">
+              <h3>Report Preferences</h3>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <div class="perm-search">
+                  <svg class="perm-search-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                  <input type="text" placeholder="Search by name or email..." v-model="searchQuery" @input="filterList">
                 </div>
+                <button class="perm-btn" @click="createNew">+ Create New</button>
               </div>
+            </div>
 
-              <div class="pc-divider"></div>
-
-              <div class="pc-group">
-                <div class="pc-glabel"><span>User</span></div>
-                <div class="pc-control-user"></div>
+            <div class="perm-list" v-if="filteredList.length">
+              <div v-for="item in filteredList" :key="item.name" 
+                   class="perm-card" 
+                   :class="{ active: selectedPref && selectedPref.name === item.name }"
+                   @click="selectPreference(item)">
+                <div class="perm-card-top">
+                  <div class="perm-card-name">[[ item.full_name || item.user ]]</div>
+                  <div class="perm-card-type">[[ item.report_type || 'No Type' ]]</div>
+                </div>
+                <div class="perm-card-email">[[ item.user ]]</div>
               </div>
+            </div>
 
-              <div class="pc-group">
-                <div class="pc-glabel"><span>Report Type</span></div>
-                <div class="pc-control-report-type"></div>
-              </div>
-
-              <div class="pc-divider"></div>
-
-              <div class="pc-group">
-                <div class="pc-glabel">
-                  <span>Zone</span>
-                  <span class="pc-action" @click="toggle_all('zone')">[[ is_all_selected('zone') ? "Deselect" : "Select" ]] all</span>
-                </div>
-                <div class="pc-grid">
-                  <div v-for="(o, idx) in options.zone" :key="o.value"
-                    class="pc-opt" :class="{sel: selected.zone.includes(o.value)}"
-                    @click="toggle('zone', o.value)">
-                    <input type="checkbox" :checked="selected.zone.includes(o.value)" @click.stop="toggle('zone', o.value)">
-                    <span>[[ zone_label(o, idx) ]]</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-group">
-                <div class="pc-glabel">
-                  <span>Region</span>
-                  <span class="pc-action" @click="toggle_all('region')">[[ is_all_selected('region') ? "Deselect" : "Select" ]] all</span>
-                </div>
-                <div class="pc-grid pc-grid-4">
-                  <div v-for="(o, idx) in options.region" :key="o.value"
-                    class="pc-opt" :class="{sel: selected.region.includes(o.value)}"
-                    @click="toggle('region', o.value)">
-                    <input type="checkbox" :checked="selected.region.includes(o.value)" @click.stop="toggle('region', o.value)">
-                    <span>[[ region_label(o, idx) ]]</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-group">
-                <div class="pc-glabel">
-                  <span>State</span>
-                  <span class="pc-action" @click="toggle_all('state')">[[ is_all_selected('state') ? "Deselect" : "Select" ]] all</span>
-                </div>
-                <div class="pc-grid pc-grid-3">
-                  <div v-for="o in options.state" :key="o.value"
-                    class="pc-opt" :class="{sel: selected.state.includes(o.value)}"
-                    @click="toggle('state', o.value)">
-                    <input type="checkbox" :checked="selected.state.includes(o.value)" @click.stop="toggle('state', o.value)">
-                    <span>[[ o.label ]]</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-group">
-                <div class="pc-glabel">
-                  <span>District</span>
-                  <span class="pc-action" @click="toggle_all('district')">[[ is_all_selected('district') ? "Deselect" : "Select" ]] all</span>
-                </div>
-                <div class="pc-grid pc-grid-3">
-                  <div v-for="o in options.district" :key="o.value"
-                    class="pc-opt" :class="{sel: selected.district.includes(o.value)}"
-                    @click="toggle('district', o.value)">
-                    <input type="checkbox" :checked="selected.district.includes(o.value)" @click.stop="toggle('district', o.value)">
-                    <span>[[ o.label ]]</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-group">
-                <div class="pc-glabel">
-                  <span>Sol ID</span>
-                  <span class="pc-action" @click="toggle_all('sol_id')">[[ is_all_selected('sol_id') ? "Deselect" : "Select" ]] all</span>
-                </div>
-                <div class="pc-grid pc-grid-3">
-                  <div v-for="o in options.sol_id" :key="o.value"
-                    class="pc-opt" :class="{sel: selected.sol_id.includes(o.value)}"
-                    @click="toggle('sol_id', o.value)">
-                    <input type="checkbox" :checked="selected.sol_id.includes(o.value)" @click.stop="toggle('sol_id', o.value)">
-                    <span>[[ o.label ]]</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-group">
-                <div class="pc-glabel">
-                  <span>Product</span>
-                  <span class="pc-action" @click="toggle_all('product')">[[ is_all_selected('product') ? "Deselect" : "Select" ]] all</span>
-                </div>
-                <div class="pc-grid pc-grid-3">
-                  <div v-for="o in options.product" :key="o.value"
-                    class="pc-opt" :class="{sel: selected.product.includes(o.value)}"
-                    @click="toggle('product', o.value)">
-                    <input type="checkbox" :checked="selected.product.includes(o.value)" @click.stop="toggle('product', o.value)">
-                    <span>[[ o.label ]]</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pc-group">
-                <div class="pc-glabel">
-                  <span>Source</span>
-                  <span class="pc-action" @click="toggle_all('source')">[[ is_all_selected('source') ? "Deselect" : "Select" ]] all</span>
-                </div>
-                <div class="pc-grid pc-grid-3">
-                  <div v-for="o in options.source" :key="o.value"
-                    class="pc-opt" :class="{sel: selected.source.includes(o.value)}"
-                    @click="toggle('source', o.value)">
-                    <input type="checkbox" :checked="selected.source.includes(o.value)" @click.stop="toggle('source', o.value)">
-                    <span>[[ o.label ]]</span>
-                  </div>
-                </div>
-              </div>
-
+            <div class="perm-empty" v-else>
+              No preferences found. Click "Create New" to add one.
             </div>
           </div>
 
-          <!-- Main -->
-          <div class="pc-card">
-            <div class="pc-card-h">Main content</div>
-            <div class="pc-main">
-              <div v-if="!user" class="pc-skel">Select a user to load associated options/preferences.</div>
+          <!-- Sidebar (Right) -->
+          <div class="perm-sidebar">
+            
+            <div v-if="!selectedPref" class="perm-sidebar-empty">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+              <div>Select a user from the list to view and edit their permission preferences</div>
+            </div>
 
-              <div v-else class="pc-card pc-card-b" style="border:none; box-shadow:none; padding:0;">
-                <div class="pc-kv">
-                  <b>User</b><div>[[ user ]]</div>
-                  <b>Full name</b><div>[[ full_name || "-" ]]</div>
-                  <b>Report type</b><div>[[ report_type || "-" ]]</div>
-                  <b>Zone</b><div>[[ selected.zone.length ? selected.zone.join(", ") : "-" ]]</div>
-                  <b>Region</b><div>[[ selected.region.length ? selected.region.join(", ") : "-" ]]</div>
-                  <b>State</b><div>[[ selected.state.length ? selected.state.join(", ") : "-" ]]</div>
-                  <b>District</b><div>[[ selected.district.length ? selected.district.join(", ") : "-" ]]</div>
-                  <b>Sol ID</b><div>[[ selected.sol_id.length ? selected.sol_id.join(", ") : "-" ]]</div>
-                  <b>Product</b><div>[[ selected.product.length ? selected.product.join(", ") : "-" ]]</div>
-                  <b>Source</b><div>[[ selected.source.length ? selected.source.join(", ") : "-" ]]</div>
+            <div v-else>
+              <div class="perm-side-header">Edit Permissions</div>
+
+              <div class="perm-user-info">
+                <div><strong>User:</strong> [[ selectedPref.user ]]</div>
+                <div><strong>Name:</strong> [[ selectedPref.full_name || '-' ]]</div>
+                <div><strong>Report Type:</strong> [[ selectedPref.report_type || '-' ]]</div>
+              </div>
+
+              <!-- User Control -->
+              <div class="perm-control-wrap">
+                <div class="perm-flabel"><span>User</span></div>
+                <div class="perm-control-user"></div>
+              </div>
+
+              <!-- Report Type Control -->
+              <div class="perm-control-wrap">
+                <div class="perm-flabel"><span>Report Type</span></div>
+                <div class="perm-control-report-type"></div>
+              </div>
+
+              <div class="perm-section">
+                <div class="perm-section-title">Geographic Filters</div>
+
+                <!-- Zone -->
+                <div class="perm-field">
+                  <div class="perm-flabel">
+                    <span>Zone</span>
+                    <a class="perm-flink" @click="toggleAll('zone')">[[ isAllSelected('zone') ? 'Deselect All' : 'Select All' ]]</a>
+                  </div>
+                  <div class="perm-check-grid perm-check-grid-6">
+                    <div v-for="(opt, idx) in allOptions.zone" :key="opt"
+                         class="perm-check-item"
+                         :class="{ selected: selectedPref.zone.includes(opt) }"
+                         @click="toggle('zone', opt)">
+                      <input type="checkbox" :checked="selectedPref.zone.includes(opt)" @click.stop="toggle('zone', opt)">
+                      <label>[[ zoneLabel(opt, idx) ]]</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Region -->
+                <div class="perm-field">
+                  <div class="perm-flabel">
+                    <span>Region</span>
+                    <a class="perm-flink" @click="toggleAll('region')">[[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]</a>
+                  </div>
+                  <div class="perm-check-grid perm-check-grid-4">
+                    <div v-for="(opt, idx) in allOptions.region" :key="opt"
+                         class="perm-check-item"
+                         :class="{ selected: selectedPref.region.includes(opt) }"
+                         @click="toggle('region', opt)">
+                      <input type="checkbox" :checked="selectedPref.region.includes(opt)" @click.stop="toggle('region', opt)">
+                      <label>[[ regionLabel(opt, idx) ]]</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- State -->
+                <div class="perm-field">
+                  <div class="perm-flabel">
+                    <span>State</span>
+                    <a class="perm-flink" @click="toggleAll('state')">[[ isAllSelected('state') ? 'Deselect All' : 'Select All' ]]</a>
+                  </div>
+                  <div class="perm-check-grid perm-check-grid-multi">
+                    <div v-for="opt in allOptions.state" :key="opt"
+                         class="perm-check-item"
+                         :class="{ selected: selectedPref.state.includes(opt) }"
+                         @click="toggle('state', opt)">
+                      <input type="checkbox" :checked="selectedPref.state.includes(opt)" @click.stop="toggle('state', opt)">
+                      <label>[[ opt ]]</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- District -->
+                <div class="perm-field">
+                  <div class="perm-flabel">
+                    <span>District</span>
+                    <a class="perm-flink" @click="toggleAll('district')">[[ isAllSelected('district') ? 'Deselect All' : 'Select All' ]]</a>
+                  </div>
+                  <div class="perm-check-grid perm-check-grid-multi">
+                    <div v-for="opt in allOptions.district" :key="opt"
+                         class="perm-check-item"
+                         :class="{ selected: selectedPref.district.includes(opt) }"
+                         @click="toggle('district', opt)">
+                      <input type="checkbox" :checked="selectedPref.district.includes(opt)" @click.stop="toggle('district', opt)">
+                      <label>[[ opt ]]</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sol ID -->
+                <div class="perm-field">
+                  <div class="perm-flabel">
+                    <span>Sol ID</span>
+                    <a class="perm-flink" @click="toggleAll('sol_id')">[[ isAllSelected('sol_id') ? 'Deselect All' : 'Select All' ]]</a>
+                  </div>
+                  <div class="perm-check-grid perm-check-grid-multi">
+                    <div v-for="opt in allOptions.sol_id" :key="opt"
+                         class="perm-check-item"
+                         :class="{ selected: selectedPref.sol_id.includes(opt) }"
+                         @click="toggle('sol_id', opt)">
+                      <input type="checkbox" :checked="selectedPref.sol_id.includes(opt)" @click.stop="toggle('sol_id', opt)">
+                      <label>[[ opt ]]</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="perm-section">
+                <div class="perm-section-title">Lead Specific Filters</div>
+
+                <!-- Product -->
+                <div class="perm-field">
+                  <div class="perm-flabel">
+                    <span>Product</span>
+                    <a class="perm-flink" @click="toggleAll('product')">[[ isAllSelected('product') ? 'Deselect All' : 'Select All' ]]</a>
+                  </div>
+                  <div class="perm-check-grid perm-check-grid-multi">
+                    <div v-for="opt in allOptions.product" :key="opt"
+                         class="perm-check-item"
+                         :class="{ selected: selectedPref.product.includes(opt) }"
+                         @click="toggle('product', opt)">
+                      <input type="checkbox" :checked="selectedPref.product.includes(opt)" @click.stop="toggle('product', opt)">
+                      <label>[[ opt ]]</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Source -->
+                <div class="perm-field">
+                  <div class="perm-flabel">
+                    <span>Source</span>
+                    <a class="perm-flink" @click="toggleAll('source')">[[ isAllSelected('source') ? 'Deselect All' : 'Select All' ]]</a>
+                  </div>
+                  <div class="perm-check-grid perm-check-grid-multi">
+                    <div v-for="opt in allOptions.source" :key="opt"
+                         class="perm-check-item"
+                         :class="{ selected: selectedPref.source.includes(opt) }"
+                         @click="toggle('source', opt)">
+                      <input type="checkbox" :checked="selectedPref.source.includes(opt)" @click.stop="toggle('source', opt)">
+                      <label>[[ opt ]]</label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -212,13 +278,12 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     PetiteVue.createApp({
       $delimiters: ["[[", "]]"],
 
-      // context
-      user: "",
-      full_name: "",
-      report_type: "",
+      prefList: [],
+      filteredList: [],
+      searchQuery: "",
 
-      // options
-      options: {
+      selectedPref: null,
+      allOptions: {
         zone: [],
         region: [],
         state: [],
@@ -228,156 +293,199 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         source: [],
       },
 
-      // selected values (store "value" tokens)
-      selected: {
-        zone: [],
-        region: [],
-        state: [],
-        district: [],
-        sol_id: [],
-        product: [],
-        source: [],
-      },
+      saveTimeout: null,
 
       init() {
-        this.make_controls(); // standard Frappe controls via make_control [web:28]
+        this.loadAllPreferences();
+        this.loadFieldOptions();
       },
 
-      make_controls() {
-        // User (Link)
-        const user_ctrl = frappe.ui.form.make_control({
-          parent: $(page.main).find(".pc-control-user"),
-          df: {
-            fieldtype: "Link",
-            fieldname: "user",
-            label: "User",
-            options: "User",
-            reqd: 1,
-            onchange: () => {
-              const v = user_ctrl.get_value();
-              this.on_user_change(v);
-            },
-          },
-          render_input: true,
-        });
-
-        // Report Type (Select)
-        const report_ctrl = frappe.ui.form.make_control({
-          parent: $(page.main).find(".pc-control-report-type"),
-          df: {
-            fieldtype: "Select",
-            fieldname: "report_type",
-            label: "Report Type",
-            options: ["", "Finacle", "Lead"].join("\n"),
-            onchange: () => {
-              const v = report_ctrl.get_value();
-              this.report_type = v || "";
-              this.load_bundle();
-            },
-          },
-          render_input: true,
-        });
-
-        // Keep references if you want later
-        this._user_ctrl = user_ctrl;
-        this._report_ctrl = report_ctrl;
-      },
-
-      on_user_change(user) {
-        this.user = user || "";
-        this.full_name = "";
-        this.clear_selected();
-        if (!this.user) return;
-
-        // Fetch full_name like Report Preference User link display expects [web:23]
+      loadAllPreferences() {
         frappe.call({
-          method: "frappe.client.get_value",
-          args: { doctype: "User", filters: { name: this.user }, fieldname: ["full_name"] },
+          method: "sahayog.sahayog.page.permission_config.permission_config.get_all_preferences",
           callback: (r) => {
-            this.full_name = r?.message?.full_name || "";
+            this.prefList = r.message || [];
+            this.filteredList = [...this.prefList];
           },
         });
-
-        this.load_bundle();
       },
 
-      load_bundle() {
-        if (!this.user) return;
-
+      loadFieldOptions() {
         frappe.call({
-          method: "sahayog.sahayog.page.permission_config.permission_config.get_user_bundle",
-          args: { user: this.user, report_type: this.report_type || null },
+          method: "sahayog.sahayog.page.permission_config.permission_config.get_field_options",
           callback: (r) => {
-            const msg = r.message || {};
-            const opt = msg.options || {};
-            this.options.zone = opt.zone || [];
-            this.options.region = opt.region || [];
-            this.options.state = opt.state || [];
-            this.options.district = opt.district || [];
-            this.options.sol_id = opt.sol_id || [];
-            this.options.product = opt.product || [];
-            this.options.source = opt.source || [];
-
-            // If preference doc exists, map it to selected arrays (best-effort; child row schema may vary)
-            if (msg.preference) this.apply_preference(msg.preference);
+            const opts = r.message || {};
+            this.allOptions.zone = opts.zone || [];
+            this.allOptions.region = opts.region || [];
+            this.allOptions.state = opts.state || [];
+            this.allOptions.district = opts.district || [];
+            this.allOptions.sol_id = opts.sol_id || [];
+            this.allOptions.product = opts.product || [];
+            this.allOptions.source = opts.source || [];
           },
         });
       },
 
-      apply_preference(pref) {
-        const pluck = (rows, keys) => {
-          if (!Array.isArray(rows)) return [];
-          for (const k of keys) {
-            const vals = rows.map(r => r?.[k]).filter(Boolean);
-            if (vals.length) return vals;
-          }
-          // fallback: if rows are just strings
-          const direct = rows.filter(v => typeof v === "string");
-          return direct;
-        };
-
-        // Table MultiSelect stores multiple values (link+table behavior) [page:1]
-        this.selected.zone = pluck(pref.zone, ["zone", "value", "name", "item", "link_name"]);
-        this.selected.region = pluck(pref.region, ["region", "value", "name", "item", "link_name"]);
-        this.selected.state = pluck(pref.state, ["state", "value", "name", "item", "link_name"]);
-        this.selected.district = pluck(pref.district, ["district", "value", "name", "item", "link_name"]);
-        this.selected.sol_id = pluck(pref.sol_id, ["sol_id", "value", "name", "item", "link_name"]);
-        this.selected.product = pluck(pref.product, ["product", "value", "name", "item", "link_name"]);
-        this.selected.source = pluck(pref.source, ["source", "value", "name", "item", "link_name"]);
+      filterList() {
+        const q = this.searchQuery.toLowerCase();
+        if (!q) {
+          this.filteredList = [...this.prefList];
+        } else {
+          this.filteredList = this.prefList.filter(
+            (p) =>
+              (p.full_name && p.full_name.toLowerCase().includes(q)) ||
+              (p.user && p.user.toLowerCase().includes(q))
+          );
+        }
       },
 
-      clear_selected() {
-        Object.keys(this.selected).forEach(k => (this.selected[k] = []));
+      selectPreference(item) {
+        frappe.call({
+          method: "sahayog.sahayog.page.permission_config.permission_config.get_preference_detail",
+          args: { user: item.user, report_type: item.report_type },
+          callback: (r) => {
+            this.selectedPref = r.message || null;
+            this.mountControls();
+          },
+        });
       },
 
-      toggle(group, value) {
-        const arr = this.selected[group] || (this.selected[group] = []);
-        const i = arr.indexOf(value);
-        if (i >= 0) arr.splice(i, 1);
+      mountControls() {
+        if (!this.selectedPref) return;
+
+        this.$nextTick(() => {
+          // User control [web:28]
+          const userCtrl = frappe.ui.form.make_control({
+            parent: $(page.main).find(".perm-control-user"),
+            df: {
+              fieldtype: "Link",
+              fieldname: "user",
+              options: "User",
+              onchange: () => {
+                const newUser = userCtrl.get_value();
+                if (newUser && newUser !== this.selectedPref.user) {
+                  this.selectedPref.user = newUser;
+                  frappe.call({
+                    method: "frappe.client.get_value",
+                    args: { doctype: "User", filters: { name: newUser }, fieldname: ["full_name"] },
+                    callback: (r) => {
+                      this.selectedPref.full_name = r?.message?.full_name || "";
+                      this.autoSave();
+                    },
+                  });
+                }
+              },
+            },
+            render_input: true,
+          });
+          userCtrl.set_value(this.selectedPref.user);
+
+          // Report Type control
+          const reportCtrl = frappe.ui.form.make_control({
+            parent: $(page.main).find(".perm-control-report-type"),
+            df: {
+              fieldtype: "Select",
+              fieldname: "report_type",
+              options: ["", "Finacle", "Lead"].join("\n"),
+              onchange: () => {
+                this.selectedPref.report_type = reportCtrl.get_value() || "";
+                this.autoSave();
+              },
+            },
+            render_input: true,
+          });
+          reportCtrl.set_value(this.selectedPref.report_type);
+        });
+      },
+
+      toggle(field, value) {
+        if (!this.selectedPref) return;
+        const arr = this.selectedPref[field];
+        const idx = arr.indexOf(value);
+        if (idx >= 0) arr.splice(idx, 1);
         else arr.push(value);
+        this.autoSave();
       },
 
-      is_all_selected(group) {
-        const all = this.options[group] || [];
-        const sel = this.selected[group] || [];
+      isAllSelected(field) {
+        if (!this.selectedPref) return false;
+        const all = this.allOptions[field] || [];
+        const sel = this.selectedPref[field] || [];
         return all.length > 0 && sel.length === all.length;
       },
 
-      toggle_all(group) {
-        const all = (this.options[group] || []).map(o => o.value);
-        this.selected[group] = this.is_all_selected(group) ? [] : all;
+      toggleAll(field) {
+        if (!this.selectedPref) return;
+        if (this.isAllSelected(field)) {
+          this.selectedPref[field] = [];
+        } else {
+          this.selectedPref[field] = [...this.allOptions[field]];
+        }
+        this.autoSave();
       },
 
-      zone_label(o, idx) {
-        // prefer "1..6" look; if label already numeric use it, else fallback to idx+1
-        const m = String(o.label || o.value || "").match(/(\d+)/);
+      autoSave() {
+        clearTimeout(this.saveTimeout);
+        this.saveTimeout = setTimeout(() => {
+          frappe.call({
+            method: "sahayog.sahayog.page.permission_config.permission_config.save_preference",
+            args: { data: this.selectedPref },
+            callback: (r) => {
+              if (r.message && r.message.success) {
+                frappe.show_alert({ message: "Saved", indicator: "green" }, 2);
+                this.loadAllPreferences();
+              }
+            },
+          });
+        }, 800);
+      },
+
+      createNew() {
+        const d = new frappe.ui.Dialog({
+          title: "Create New Preference",
+          fields: [
+            { fieldtype: "Link", fieldname: "user", label: "User", options: "User", reqd: 1 },
+            { fieldtype: "Select", fieldname: "report_type", label: "Report Type", options: "\nFinacle\nLead", reqd: 1 },
+          ],
+          primary_action_label: "Create",
+          primary_action: (values) => {
+            frappe.call({
+              method: "sahayog.sahayog.page.permission_config.permission_config.save_preference",
+              args: {
+                data: {
+                  user: values.user,
+                  report_type: values.report_type,
+                  zone: [],
+                  region: [],
+                  state: [],
+                  district: [],
+                  sol_id: [],
+                  product: [],
+                  source: [],
+                },
+              },
+              callback: (r) => {
+                if (r.message && r.message.success) {
+                  frappe.show_alert({ message: "Created successfully", indicator: "green" }, 3);
+                  this.loadAllPreferences();
+                  d.hide();
+                }
+              },
+            });
+          },
+        });
+        d.show();
+      },
+
+      zoneLabel(opt, idx) {
+        const m = String(opt).match(/(\d+)/);
         return m ? m[1] : String(idx + 1);
       },
 
-      region_label(o, idx) {
-        const m = String(o.label || o.value || "").match(/(\d+)/);
+      regionLabel(opt, idx) {
+        const m = String(opt).match(/(\d+)/);
         return m ? m[1] : String(idx + 1);
       },
-    }).mount("#permission-config-root");
+    }).mount("#perm-root");
   });
 };
