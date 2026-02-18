@@ -296,7 +296,6 @@
     }
 </style>
 
-<!-- <div id="admin-app" v-scope @vue:mounted="init()" v-cloak class="admin-container"> -->
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
 
     <div class="section-header">
@@ -375,110 +374,9 @@
 
 </div>
 
-<!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
-<script>
-    frappe.ready(function () {
-        PetiteVue.createApp({
-            $delimiters: ['[[', ']]'],
-
-            // State: We store the ENTIRE document here
-            doc: {
-                account_rates: [],
-                mab_slabs: []
-            },
-            isSaving: false,
-
-            mounted() {
-                this.fetchConfig();
-            },
-
-            fetchConfig() {
-                // Fetch the full document metadata
-                frappe.call({
-                    method: 'frappe.client.get',
-                    args: {
-                        doctype: 'Incentive Config',
-                        name: 'Incentive Config' // Critical for Single DocTypes
-                    },
-                    callback: (r) => {
-                        if (r.message) {
-                            console.log("Full Doc Loaded:", r.message);
-                            this.doc = r.message;
-
-                            // Initialize arrays if they are null/undefined
-                            if (!this.doc.account_rates) this.doc.account_rates = [];
-                            if (!this.doc.mab_slabs) this.doc.mab_slabs = [];
-                        }
-                    }
-                });
-            },
-
-            addAccount() {
-                // Add new row with enabled=1
-                this.doc.account_rates.push({
-                    account_type: '',
-                    incentive_amount: 0,
-                    enabled: 1
-                });
-            },
-
-            removeAccount(index) {
-                this.doc.account_rates.splice(index, 1);
-            },
-
-            addSlab() {
-                this.doc.mab_slabs.push({
-                    min_balance: 0,
-                    max_balance: 0,
-                    incentive_amount: 0,
-                    enabled: 1
-                });
-            },
-
-            removeSlab(index) {
-                this.doc.mab_slabs.splice(index, 1);
-            },
-
-            saveConfig() {
-                if (this.isSaving) return;
-
-                frappe.confirm('Are you sure you want to save changes?', () => {
-                    this.isSaving = true;
-
-                    // We send back the THIS.DOC object.
-                    // This object contains the 'modified' timestamp from the GET request.
-                    // Frappe sees this timestamp, matches it with DB, and allows the save.
-
-                    frappe.call({
-                        method: 'frappe.client.save',
-                        args: {
-                            doc: this.doc
-                        },
-                        callback: (r) => {
-                            this.isSaving = false;
-                            if (!r.exc) {
-                                frappe.msgprint({ title: 'Success', message: 'Configuration Saved!', indicator: 'green' });
-
-                                // Update local doc with server response (new timestamp!)
-                                this.doc = r.message;
-                            }
-                        },
-                        error: (r) => {
-                            this.isSaving = false;
-                            // If timestamp error happens, we must reload
-                            if (r.message && r.message.includes("modified")) {
-                                frappe.msgprint("Document was modified by someone else. Reloading...");
-                                this.fetchConfig();
-                            }
-                        }
-                    });
-                });
-            }
-        }).mount('#admin-app');
-    });
-</script> -->
-
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+
+
 <script>
     frappe.ready(function () {
         PetiteVue.createApp({
@@ -581,5 +479,7 @@
         }).mount('#admin-app');
     });
 </script>
+
+
 
 {% endblock %}
