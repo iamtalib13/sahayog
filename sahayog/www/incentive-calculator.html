@@ -29,6 +29,7 @@
     rel="stylesheet" />
 
 <style>
+    /* --- RESTORED ORIGINAL STYLING --- */
     :root {
         --primary: #0f172a;
         --accent: #417d81;
@@ -38,6 +39,7 @@
         --border: #e2e8f0;
     }
 
+    /* Layout Resets */
     .page-head,
     .page-title,
     .page-breadcrumbs,
@@ -77,7 +79,7 @@
         opacity: 0.4;
     }
 
-    /* Header & Layout */
+    /* Header */
     .branding-header {
         padding: 14px 24px;
         background: #fff;
@@ -133,7 +135,7 @@
         letter-spacing: 1px;
     }
 
-    /* Grid Layout */
+    /* Main Grid */
     .content-area {
         padding: 24px;
         width: 100%;
@@ -177,8 +179,20 @@
         border: 1px solid var(--border);
         padding: 24px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: 0.3s ease;
     }
 
+    .card-heading {
+        font-size: 12px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    /* Profile */
     .user-profile-compact {
         display: flex;
         gap: 16px;
@@ -215,14 +229,77 @@
         display: inline-block;
     }
 
-    .card-heading {
-        font-size: 12px;
-        font-weight: 800;
+    /* --- ORIGINAL INPUT STYLING --- */
+    .input-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
+    .input-box {
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        transition: 0.2s;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .input-box:focus-within {
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 8px 20px -5px rgba(65, 125, 129, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .input-label {
+        font-size: 11px;
+        font-weight: 700;
         color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 10px;
         display: block;
+        margin-bottom: 4px;
+    }
+
+    .input-rate {
+        font-size: 10px;
+        font-weight: 600;
+        color: #10b981;
+    }
+
+    .input-field {
+        width: 120px;
+        border: none;
+        background: transparent;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary);
+        outline: none;
+        padding: 0;
+        text-align: right;
+    }
+
+    /* MAB Input Special Style */
+    .mab-input {
+        width: 100%;
+        border: none;
+        border-bottom: 2px solid var(--border);
+        background: transparent;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary);
+        padding: 8px 0;
+        outline: none;
+        transition: 0.3s;
+    }
+
+    .mab-input:focus {
+        border-color: var(--accent);
     }
 
     /* Results */
@@ -243,6 +320,7 @@
     .summary-card.highlight {
         background: #fff;
         border-color: var(--accent);
+        box-shadow: 0 8px 20px -5px rgba(65, 125, 129, 0.15);
     }
 
     .summary-val {
@@ -385,42 +463,40 @@
                     <div style="font-size: 14px; font-weight: 600; color: #64748b;">Loading configuration...</div>
                 </div>
 
-                <!-- Inputs Grid -->
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style="display: grid;">
-                    <div v-for="(acc, index) in accountInputs" :key="index"
-                        class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                        <div class="flex justify-between items-start mb-2">
+                <!-- 1. Enter Account Counts (RESTORED STYLE) -->
+                <div v-else class="panel-card">
+                    <span class="card-heading">1. Enter Account Counts</span>
+
+                    <div class="input-grid">
+                        <!-- Dynamic Inputs using Old Styling -->
+                        <div v-for="(acc, index) in accountInputs" :key="index" class="input-box">
                             <div>
-                                <h3 class="font-bold text-slate-700 text-lg">[[ acc.name ]]</h3>
-                                <span
-                                    class="text-xs bg-teal-50 text-teal-700 px-2 py-1 rounded-full font-semibold border border-teal-100">₹[[
-                                    acc.rate ]]</span>
+                                <span class="input-label">[[ acc.name ]]</span>
+                                <span class="input-rate">₹[[ acc.rate ]] / acct</span>
                             </div>
-                        </div>
-                        <div class="mt-3">
-                            <label
-                                class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Count</label>
-                            <input type="number" v-model="acc.count" @input="calculateIncentive" min="0" placeholder="0"
-                                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-mono">
+                            <input type="number" v-model="acc.count" @input="calculateIncentive" class="input-field"
+                                placeholder="0" min="0">
                         </div>
                     </div>
                 </div>
 
-                <!-- MAB Input -->
-                <div v-if="!isLoading" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="font-bold text-slate-800 text-lg">Funding / MAB</h3>
-                    <input type="number" v-model="currentMab" @input="calculateIncentive"
-                        class="w-full text-2xl font-bold text-slate-800 border-b-2 border-slate-200 py-2 mt-2 outline-none"
-                        placeholder="₹ 0">
-                    <div class="mt-2 text-xs text-slate-400">
-                        Current Config: <span v-for="slab in mabSlabs" class="mr-2"> >[[ slab.min ]] = ₹[[ slab.amount
-                            ]]</span>
+                <!-- 2. Funding / MAB (RESTORED STYLE) -->
+                <div v-if="!isLoading" class="panel-card">
+                    <span class="card-heading">2. Funding / MAB</span>
+
+                    <div>
+                        <input type="number" v-model="currentMab" @input="calculateIncentive" class="mab-input"
+                            placeholder="₹ 0">
+                        <div class="mt-2 text-xs text-slate-400" style="margin-top: 8px;">
+                            Current Config: <span v-for="slab in mabSlabs" class="mr-2"> >[[ slab.min ]] = ₹[[
+                                slab.amount ]]</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Result Card -->
+                <!-- 3. Result Card -->
                 <div class="panel-card animate-enter" v-if="showResults" style="background: #fdfdfd;">
-                    <span class="card-heading">Calculation Result</span>
+                    <span class="card-heading">3. Calculation Result</span>
 
                     <div class="summary-grid">
                         <div class="summary-card">
