@@ -9,7 +9,7 @@ def get_all_preferences():
     """Return all Report Preference records with user details for list display."""
     prefs = frappe.get_all(
         "Report Preference",
-        fields=["name", "user", "report_type", "modified"],
+        fields=["name", "user", "modified"],
         order_by="modified desc",
         limit_page_length=0,
     )
@@ -22,65 +22,79 @@ def get_all_preferences():
 
 @frappe.whitelist()
 def get_field_options():
-    """Return all available options for Zone, Region, State, District, Sol, Product, Source from child DocTypes."""
+    """Return all available options for all fields - hardcoded Zone/Region, dynamic for others."""
     
-    def get_items(doctype, field_name=None):
-        """Helper to fetch all items from a child doctype."""
-        if not frappe.db.exists("DocType", doctype):
+    # Hardcoded Zone 1-6 and Region 1-4
+    zone_options = ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6"]
+    region_options = ["Region 1", "Region 2", "Region 3", "Region 4"]
+    
+    # Dynamic options from child doctypes
+    def get_child_values(child_doctype, field_name):
+        """Get distinct values from child table field."""
+        try:
+            if not frappe.db.exists("DocType", child_doctype):
+                return []
+            
+            values = frappe.db.sql(f"""
+                SELECT DISTINCT `{field_name}`
+                FROM `tab{child_doctype}`
+                WHERE `{field_name}` IS NOT NULL 
+                AND `{field_name}` != ''
+                ORDER BY `{field_name}`
+            """, as_dict=False)
+            
+            return [v[0] for v in values if v and v[0]]
+        except Exception as e:
+            frappe.log_error(f"Error getting {child_doctype}.{field_name}: {str(e)}")
             return []
-        items = frappe.get_all(doctype, fields=["name"], limit_page_length=0)
-        return [i["name"] for i in items]
 
-    # Get options from the child doctypes [web:3]
     options = {
-        "zone": get_items("Zone Items"),
-        "region": get_items("Region Items"),
-        "state": get_items("State Items"),
-        "district": get_items("District Items"),
-        "sol_id": get_items("Sol Items"),
-        "product": get_items("Product Items"),
-        "source": get_items("Source Items"),
+        "zone": zone_options,
+        "region": region_options,
+        "state": get_child_values("State Items", "state"),
+        "district": get_child_values("District Items", "district"),
+        "sol_id": get_child_values("Sol Items", "sol_id"),
+        "product": get_child_values("Product Items", "product"),
+        "source": get_child_values("Source Items", "source"),
     }
 
     return options
 
 
 @frappe.whitelist()
-def get_preference_detail(user, report_type=None):
-    """Get existing Report Preference for user + report_type, or return empty structure."""
+def get_preference_detail(user):
+    """Get existing Report Preference for specific user."""
     
     if not user:
         return None
 
     full_name = frappe.db.get_value("User", user, "full_name")
 
-    filters = {"user": user}
-    if report_type:
-        filters["report_type"] = report_type
-
-    pref_name = frappe.db.get_value("Report Preference", filters, "name")
+    # Find preference by user
+    pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
 
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
+        
+        # Extract values from child tables
         return {
             "name": doc.name,
             "user": doc.user,
             "full_name": full_name,
-            "report_type": doc.report_type,
-            "zone": [r.zone for r in doc.zone] if doc.zone else [],
-            "region": [r.region for r in doc.region] if doc.region else [],
-            "state": [r.state for r in doc.state] if doc.state else [],
-            "district": [r.district for r in doc.district] if doc.district else [],
-            "sol_id": [r.sol_id for r in doc.sol_id] if doc.sol_id else [],
-            "product": [r.product for r in doc.product] if doc.product else [],
-            "source": [r.source for r in doc.source] if doc.source else [],
+            "zone": [getattr(r, 'zone', None) for r in (doc.zone or [])],
+            "region": [getattr(r, 'region', None) for r in (doc.region or [])],
+            "state": [getattr(r, 'state', None) for r in (doc.state or [])],
+            "district": [getattr(r, 'district', None) for r in (doc.district or [])],
+            "sol_id": [getattr(r, 'sol_id', None) for r in (doc.sol_id or [])],
+            "product": [getattr(r, 'product', None) for r in (doc.product or [])],
+            "source": [getattr(r, 'source', None) for r in (doc.source or [])],
         }
 
+    # Return empty structure if no preference exists
     return {
         "name": None,
         "user": user,
         "full_name": full_name,
-        "report_type": report_type or "",
         "zone": [],
         "region": [],
         "state": [],
@@ -93,30 +107,26 @@ def get_preference_detail(user, report_type=None):
 
 @frappe.whitelist()
 def save_preference(data):
-    """Auto-save/update Report Preference when user changes selections."""
+    """Auto-save/update Report Preference for user."""
     import json
 
     if isinstance(data, str):
         data = json.loads(data)
 
     user = data.get("user")
-    report_type = data.get("report_type")
+    if not user:
+        frappe.throw(_("User is required"))
 
-    if not user or not report_type:
-        frappe.throw(_("User and Report Type are required"))
-
-    # Check if preference exists [web:37]
-    filters = {"user": user, "report_type": report_type}
-    pref_name = frappe.db.get_value("Report Preference", filters, "name")
+    # Find or create preference
+    pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
 
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
     else:
         doc = frappe.new_doc("Report Preference")
         doc.user = user
-        doc.report_type = report_type
 
-    # Clear existing child tables
+    # Clear all child tables
     doc.zone = []
     doc.region = []
     doc.state = []
@@ -125,21 +135,34 @@ def save_preference(data):
     doc.product = []
     doc.source = []
 
-    # Populate child tables from selections
+    # Populate from selections
     for z in data.get("zone", []):
-        doc.append("zone", {"zone": z})
+        if z:
+            doc.append("zone", {"zone": z})
+    
     for r in data.get("region", []):
-        doc.append("region", {"region": r})
+        if r:
+            doc.append("region", {"region": r})
+    
     for s in data.get("state", []):
-        doc.append("state", {"state": s})
+        if s:
+            doc.append("state", {"state": s})
+    
     for d in data.get("district", []):
-        doc.append("district", {"district": d})
+        if d:
+            doc.append("district", {"district": d})
+    
     for sol in data.get("sol_id", []):
-        doc.append("sol_id", {"sol_id": sol})
+        if sol:
+            doc.append("sol_id", {"sol_id": sol})
+    
     for p in data.get("product", []):
-        doc.append("product", {"product": p})
+        if p:
+            doc.append("product", {"product": p})
+    
     for src in data.get("source", []):
-        doc.append("source", {"source": src})
+        if src:
+            doc.append("source", {"source": src})
 
     doc.save(ignore_permissions=True)
     frappe.db.commit()
