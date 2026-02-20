@@ -143,7 +143,7 @@ frappe.ui.form.on("Disciplinary Case", {
     // -------------------
     // Conditional Mandatory + Hide for suspension_required
     // -------------------
-    handle_suspension_required(frm);
+    // handle_suspension_required(frm);
     // -------------------
     // Restrict linked records with save-check
     // -------------------
@@ -298,7 +298,7 @@ frappe.ui.form.on("Disciplinary Case", {
   // Case Type Change
   // -------------------
   case_type(frm) {
-    handle_suspension_required(frm);
+    // handle_suspension_required(frm);
   },
 
   // -------------------
@@ -471,16 +471,16 @@ frappe.ui.form.on("Disciplinary Case", {
 // -------------------
 // Helper Function
 // -------------------
-function handle_suspension_required(frm) {
-  if (frm.doc.case_type === "Unauthorized Absence") {
-    frm.set_df_property("suspension_required", "hidden", 1);
-    frm.set_df_property("suspension_required", "reqd", 0);
-    frm.set_value("suspension_required", ""); // clear previous value
-  } else {
-    frm.set_df_property("suspension_required", "hidden", 0);
-    frm.set_df_property("suspension_required", "reqd", 1);
-  }
-}
+// function handle_suspension_required(frm) {
+//   if (frm.doc.case_type === "Unauthorized Absence") {
+//     frm.set_df_property("suspension_required", "hidden", 1);
+//     frm.set_df_property("suspension_required", "reqd", 0);
+//     frm.set_value("suspension_required", ""); // clear previous value
+//   } else {
+//     frm.set_df_property("suspension_required", "hidden", 0);
+//     frm.set_df_property("suspension_required", "reqd", 1);
+//   }
+// }
 function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
