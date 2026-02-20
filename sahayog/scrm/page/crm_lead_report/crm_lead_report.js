@@ -67,6 +67,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     .export-progress-bar { width: 100%; height: 10px; background: #e0e6ed; border-radius: 5px; overflow: hidden; margin: 20px 0; }
     #export-fill { height: 100%; background: linear-gradient(90deg, #7775ce, #059669); width: 0%; transition: width 0.4s ease; }
     #export-perc { font-weight: bold; font-size: 18px; color: #7775ce; }
+    /*iframe style*/
+    #daily-sales-frame {
+    border-radius: 12px; min-height: 80vh; width: 100%; border: none; }
   `,
     )
     .appendTo("head");
@@ -160,22 +163,57 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       .join("");
     return `<div class="section-label">${label}</div><div class="chip-group">${chips}</div>`;
   }
+  function render_daily_sales_inline() {
+    const $view = $("#tab-content-area").empty();
 
+    // Yahan hum ek iframe ka use karenge jo usi report page ko embed kar dega
+    // 'target-page-only' query parameter se sidebar/header hide ho sakta hai (agar support ho)
+    const report_url = "/app/daily-sales-report?is_embedded=1";
+
+    $view.append(`
+        <div class="dashboard-card" style="padding: 0; overflow: hidden; height: 80vh;">
+            <iframe src="${report_url}" 
+                    style="width: 100%; height: 100%; border: none;" 
+                    id="daily-sales-frame">
+            </iframe>
+        </div>
+    `);
+  }
   // --- Step 4: Logic Handlers ---
 
   // Tab Switching
+  // --- Step 4: Logic Handlers (Updated for Lead Management) ---
+
   $(document).on("click", ".nav-tab", function () {
     $(".nav-tab").removeClass("active");
     $(this).addClass("active");
     const tab = $(this).data("tab");
-    if (tab === "preference") render_preference_view();
-    else if (tab === "daily_sales") frappe.set_route("daily-sales-report");
-    else if (tab === "lead_mgmt") frappe.set_route("crm-lead-management");
-    else
-      $("#tab-content-area").html(
-        `<div class="p-5 text-center text-muted">View for ${tab} is under development.</div>`,
-      );
+
+    if (tab === "preference") {
+      render_preference_view();
+    } else if (tab === "daily_sales") {
+      render_daily_sales_inline();
+    } else if (tab === "lead_mgmt") {
+      render_lead_mgmt_inline(); // Ab ye redirect nahi karega, inline load karega
+    }
   });
+
+  // Naya function: Lead Management ko inline dikhane ke liye
+  function render_lead_mgmt_inline() {
+    const $view = $("#tab-content-area").empty();
+
+    // Lead Management ka URL (aapki screenshot ke hisaab se)
+    const report_url = "/app/crm-lead-management?is_embedded=1";
+
+    $view.append(`
+        <div class="dashboard-card" style="padding: 0; overflow: hidden; height: 80vh;">
+            <iframe src="${report_url}" 
+                    style="width: 100%; height: 100%; border: none;" 
+                    id="lead-mgmt-frame">
+            </iframe>
+        </div>
+    `);
+  }
 
   // Chip Toggle
   $(document).on("click", ".filter-chip", function () {
