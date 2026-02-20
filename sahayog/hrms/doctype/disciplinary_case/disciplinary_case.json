@@ -40,7 +40,7 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Case Type",
-   "options": "\nViolation of Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nUnauthorized Absence\nOthers",
+   "options": "\nViolation of Code of Conduct\nFinancial Misappropriation\nProcess Lapses\nBehavioural Lapses\nNegligence in Work\nOthers",
    "reqd": 1
   },
   {
@@ -235,14 +235,9 @@
    "group": "Response SCN",
    "link_doctype": "Response to SCN",
    "link_fieldname": "case_id"
-  },
-  {
-   "group": "Unauthorized",
-   "link_doctype": "Unauthorized Absence",
-   "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-02-10 11:33:56.816239",
+ "modified": "2026-02-20 13:05:29.979132",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
