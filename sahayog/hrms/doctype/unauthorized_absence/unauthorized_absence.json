@@ -7,43 +7,37 @@
  "field_order": [
   "unauthorized_absence_details_section",
   "date_of_1st_letter",
-  "level",
-  "remarks",
   "column_break_fdtt",
-  "amount_of_fraud",
-  "hr_employee_id",
-  "document_upload",
-  "previous_record",
+  "level",
   "case_details_section",
   "case_id",
   "employee_id",
-  "employee_name",
-  "branch_id",
-  "zone_name",
-  "issue_in_details",
   "issue_occurrence_date",
-  "column_break_mqjo",
-  "designation",
-  "branch_name",
-  "case_type",
-  "category",
-  "issue_reported_to_hr",
+  "issue_in_details",
   "status",
-  "amended_from"
+  "hr_employee_id",
+  "column_break_mqjo",
+  "employee_details",
+  "amount_of_fraud",
+  "issue_reported_to_hr",
+  "amended_from",
+  "remarks",
+  "document_upload"
  ],
  "fields": [
   {
    "fetch_from": "case_id.employee_id",
    "fieldname": "employee_id",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Employee ID",
-   "read_only": 1
+   "options": "Employee",
+   "reqd": 1
   },
   {
    "fieldname": "case_id",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
+   "hidden": 1,
    "label": "Case ID",
-   "options": "Disciplinary Case",
    "set_only_once": 1
   },
   {
@@ -56,67 +50,18 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "case_id.designation",
-   "fieldname": "designation",
-   "fieldtype": "Data",
-   "label": "Designation",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.branch_name",
-   "fieldname": "branch_name",
-   "fieldtype": "Data",
-   "label": "Branch Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.employee_name",
-   "fieldname": "employee_name",
-   "fieldtype": "Data",
-   "label": "Employee Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.case_type",
-   "fieldname": "case_type",
-   "fieldtype": "Data",
-   "label": "Case Type",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.branch_id",
-   "fieldname": "branch_id",
-   "fieldtype": "Data",
-   "label": "Branch ID",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.category",
-   "fieldname": "category",
-   "fieldtype": "Data",
-   "label": "Category",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.zone",
-   "fieldname": "zone_name",
-   "fieldtype": "Data",
-   "label": "Zone Name",
-   "read_only": 1
-  },
-  {
    "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Date",
    "label": "Date of issue Reported to hr",
-   "read_only": 1
+   "reqd": 1
   },
   {
    "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Date",
    "label": "Issue Occurrence Date",
-   "read_only": 1
+   "reqd": 1
   },
   {
    "fieldname": "unauthorized_absence_details_section",
@@ -133,9 +78,10 @@
   {
    "fetch_from": "case_id.level",
    "fieldname": "level",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "level",
-   "read_only": 1
+   "options": "\nC0\nC1\nC2\nC3\nC4\nC5",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_fdtt",
@@ -163,19 +109,19 @@
    "fieldname": "issue_in_details",
    "fieldtype": "Small Text",
    "label": "Issue in Details",
-   "read_only": 1
+   "reqd": 1
   },
   {
    "fieldname": "amount_of_fraud",
-   "fieldtype": "Data",
+   "fieldtype": "Currency",
    "label": "Fraud amount"
   },
   {
    "fetch_from": "case_id.status",
    "fieldname": "status",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "Case Status",
-   "read_only": 1
+   "options": "\nDraft\nUnder Process\nClosed"
   },
   {
    "fieldname": "amended_from",
@@ -188,10 +134,11 @@
    "search_index": 1
   },
   {
-   "fieldname": "previous_record",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Previous Record"
+   "fetch_from": "case_id.employee_name",
+   "fieldname": "employee_details",
+   "fieldtype": "HTML",
+   "label": "Employee Details",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -209,7 +156,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-01-30 11:59:26.148802",
+ "modified": "2026-02-20 16:06:46.472603",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",
