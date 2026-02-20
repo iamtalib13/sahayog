@@ -2,6 +2,26 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Unauthorized Absence", {
+  employee_id: function (frm) {
+    if (frm.doc.employee_id) {
+      frappe.db.get_doc("Employee", frm.doc.employee_id).then((emp) => {
+        let html_content = `
+                        <div style="padding:10px; border:1px solid #d1d8dd; border-radius:8px;">
+                            <p><b>Employee Name:</b> ${emp.employee_name || ""}</p>
+                            <p><b>Designation:</b> ${emp.designation || ""}</p>
+                            <p><b>Branch Name:</b> ${emp.branch || ""}</p>
+                            <p><b>Branch ID:</b> ${emp.sol_id || ""}</p>
+                            <p><b>Zone Name:</b> ${emp.custom_zone || ""}</p>
+                            <p><b>Region:</b> ${emp.custom_region || ""}</p>
+                        </div>
+                    `;
+
+        frm.fields_dict.employee_details.$wrapper.html(html_content);
+      });
+    } else {
+      frm.fields_dict.employee_details.$wrapper.html("");
+    }
+  },
   refresh(frm) {
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
@@ -25,11 +45,11 @@ frappe.ui.form.on("Unauthorized Absence", {
                     freeze_message: __("Sending Unauthorized Absence Email..."),
                     callback() {
                       frappe.msgprint(
-                        __("Unauthorized Absence Email sent successfully!")
+                        __("Unauthorized Absence Email sent successfully!"),
                       );
                     },
                   });
-                }
+                },
               );
             }
 
@@ -39,7 +59,7 @@ frappe.ui.form.on("Unauthorized Absence", {
                 title: __("Email Not Found"),
                 indicator: "red",
                 message: __(
-                  "No email address is stored for this employee.<br>Please update the Employee record before sending this Unauthorized Absence Email."
+                  "No email address is stored for this employee.<br>Please update the Employee record before sending this Unauthorized Absence Email.",
                 ),
               });
             }
@@ -95,7 +115,7 @@ frappe.ui.form.on("Unauthorized Absence", {
       frappe.msgprint({
         title: __("Invalid Date"),
         message: __(
-          "You cannot select a past date for Date of Unauthorized Absence."
+          "You cannot select a past date for Date of Unauthorized Absence.",
         ),
         indicator: "red",
       });
@@ -148,10 +168,10 @@ frappe.ui.form.on("Unauthorized Absence", {
             iframe.style.display = "none";
             iframe.src = frappe.urllib.get_full_url(
               `/printview?doctype=${encodeURIComponent(
-                frm.doc.doctype
+                frm.doc.doctype,
               )}&name=${encodeURIComponent(
-                frm.doc.name
-              )}&format=${encodeURIComponent("Unauthorized Absence")}`
+                frm.doc.name,
+              )}&format=${encodeURIComponent("Unauthorized Absence")}`,
             );
             document.body.appendChild(iframe);
 
@@ -237,7 +257,7 @@ function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
     "render_timeline payload:",
-    data && data.timeline ? data.timeline : data
+    data && data.timeline ? data.timeline : data,
   );
 
   const wrap = $(frm.wrapper).find(".case-timeline-box");
@@ -352,7 +372,7 @@ function timeline_badge(stage_obj) {
         const optsDate = { day: "2-digit", month: "short", year: "numeric" };
         formatted = `${d.toLocaleTimeString(
           [],
-          optsTime
+          optsTime,
         )}, ${d.toLocaleDateString([], optsDate)}`;
       }
     } catch (e) {
@@ -450,17 +470,17 @@ function timeline_badge(stage_obj) {
       } else {
         html += `<br>Records created: ${info.count}`;
         html += `<br><span style="opacity:.8;">${info.names.join(
-          "<br>"
+          "<br>",
         )}</span>`;
       }
 
       show_tooltip(this, html);
-    }
+    },
   );
 
   $(document).on(
     "mouseleave",
     ".case-timeline-box div[style*='border-radius:14px']",
-    hide_tooltip
+    hide_tooltip,
   );
 })();

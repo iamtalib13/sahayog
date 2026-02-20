@@ -6,15 +6,13 @@ import frappe
 from frappe.utils import formatdate
 
 class UnauthorizedAbsence(Document):
-    def autoname(self):
-        """Generate structured name based on linked Disciplinary Case"""
-        if self.case_id:
-            count = frappe.db.count("Unauthorized Absence", {"case_id": self.case_id}) + 1
-            self.name = f"{self.case_id}-UA-{count:02d}"
-        else:
-            # fallback naming if no case linked
-            self.name = frappe.model.naming.make_autoname("UA-.#####")
+  def autoname(self):
+    from frappe.utils import getdate
 
+    today = getdate()
+    fy = today.year
+
+    self.name = frappe.model.naming.make_autoname(f"UA-FY-{fy}-.####")
     def on_submit(self):
         """
         Auto send Unauthorized Absence email on submit.
