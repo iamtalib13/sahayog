@@ -264,6 +264,23 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   box-shadow: 0 0 1px #2f9d58;
 }
 
+.perm-sidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;    /* Horizontal center */
+  justify-content: center; /* Vertical center */
+  text-align: center;      /* Text alignment center */
+  height: 100%;            /* Take full height of parent */
+  padding: 64px 32px;
+  color: #57606a;
+}
+
+.perm-sidebar-empty svg {
+  margin-bottom: 16px;
+  color: #d0d7de;
+}
+
+
 
     </style>
 
@@ -411,16 +428,22 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     </div>
 
     <!-- IF DISABLED: Show Message -->
-    <div v-else class="perm-sidebar-empty">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d0d7de" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <div style="font-size: 15px; font-weight: 600; color: #24292f; margin-top: 12px;">Configuration Disabled</div>
-        <div style="font-size: 13px; color: #57606a; margin-top: 6px; max-width: 280px; line-height: 1.5;">
-            Enable this user's preferences using the toggle above to configure report filters.
-        </div>
+    <!-- IF DISABLED: Show Centered Message -->
+<div v-else class="perm-sidebar-empty">
+    <!-- Lock Icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+    
+    <div style="font-size: 16px; font-weight: 600; color: #24292f;">
+        Configuration Disabled
     </div>
+    
+    <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
+        Enable this user's preferences using the toggle above to configure report filters.
+    </div>
+</div>
 
   </div>
 </div>
