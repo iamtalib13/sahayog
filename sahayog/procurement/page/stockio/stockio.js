@@ -391,7 +391,7 @@ class StockIOPage {
             <div class="order-meta-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.creation) }} · By: <b>{{ doc.owner }}</b>
@@ -489,7 +489,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.posting_date) }} · Supplier:
@@ -540,7 +540,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.posting_date) }} · Purpose:
@@ -592,7 +592,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.transaction_date) }} · Purpose:
@@ -644,7 +644,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.asset_name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ doc.name }} · Owner:
@@ -1751,6 +1751,15 @@ class StockIOPage {
       },
 
       // HELPERS
+      getStatusClass(status) {
+        if (!status) return "";
+        const s = status.toLowerCase();
+        if (s.includes("draft")) return "status-draft";
+        if (s.includes("pending") || s.includes("receive") || s.includes("to process")) return "status-pending";
+        if (s.includes("approved") || s.includes("submitted") || s.includes("complete") || s.includes("success")) return "status-success";
+        if (s.includes("cancel") || s.includes("reject") || s.includes("danger") || s.includes("failed")) return "status-danger";
+        return "status-info";
+      },
       formatDate(date) {
         return frappe.datetime.str_to_user(date);
       },
