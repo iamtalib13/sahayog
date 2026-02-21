@@ -21,6 +21,7 @@
   "district",
   "column_break_vlii",
   "sol_id",
+  "tag",
   "lead_filters_section",
   "product",
   "column_break_enpx",
@@ -144,12 +145,18 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "tag",
+   "fieldtype": "Select",
+   "label": "Tag",
+   "options": "COM\nROM\nRM\nAZM\nZM"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-20 16:43:27.602490",
+ "modified": "2026-02-21 12:04:08.899996",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",

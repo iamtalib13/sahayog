@@ -1,16 +1,13 @@
-# apps/sahayog/sahayog/sahayog/page/permission_config/permission_config.py
-
 import frappe
 import re
 from frappe import _
-
 
 @frappe.whitelist()
 def get_all_preferences():
     """Return all Report Preference records with user details for list display."""
     prefs = frappe.get_all(
         "Report Preference",
-        fields=["name", "user", "modified"],
+        fields=["name", "user", "modified", "tag"],
         order_by="modified desc",
         limit_page_length=0,
     )
@@ -20,22 +17,53 @@ def get_all_preferences():
 
     return prefs
 
-
 @frappe.whitelist()
 def get_field_options():
     """Return all available options for all fields - dynamic from DocTypes."""
     
-    def get_list_values(doctype, field_name="name"):
+    # Zone: numeric labels "1","2","3"... from names like "Zone -1"
+    def get_zone_numbers():
         try:
-            if not frappe.db.exists("DocType", doctype):
+            if not frappe.db.exists("DocType", "Zone"):
                 return []
-            return [d[field_name] for d in frappe.get_all(doctype, fields=[field_name], order_by=f"{field_name} asc")]
+            names = [d.name for d in frappe.get_all("Zone", fields=["name"], order_by="name asc")]
+            nums = []
+            for n in names:
+                match = re.findall(r'\d+', str(n))
+                if match:
+                    nums.append(match[0])
+            unique_nums = list(set(nums))
+            return sorted(unique_nums, key=lambda x: int(x) if x.isdigit() else x)
         except:
             return []
 
-    # Dynamic options from child doctypes
+    # Region: map "Region-1" -> "1", ..., "Region-4" -> "4", "Head Office" -> "HO"
+    def get_region_codes():
+        try:
+            if not frappe.db.exists("DocType", "Region"):
+                return []
+            names = [d.name for d in frappe.get_all("Region", fields=["name"], order_by="name asc")]
+            codes = []
+            for n in names:
+                s = str(n)
+                if s.lower().strip() == "head office":
+                    codes.append("HO")
+                else:
+                    match = re.findall(r'\d+', s)
+                    if match:
+                        codes.append(match[0])
+            # Deduplicate and keep stable order
+            seen = set()
+            ordered = []
+            for c in codes:
+                if c not in seen:
+                    seen.add(c)
+                    ordered.append(c)
+            return ordered
+        except:
+            return []
+
     def get_child_values(child_doctype, field_name):
-        """Get distinct values from child table field."""
         try:
             if not frappe.db.exists("DocType", child_doctype):
                 return []
@@ -53,18 +81,28 @@ def get_field_options():
             frappe.log_error(f"Error getting {child_doctype}.{field_name}: {str(e)}")
             return []
 
+    def get_doctype_options(doctype, fieldname):
+        try:
+            meta = frappe.get_meta(doctype)
+            field = meta.get_field(fieldname)
+            if field and field.options:
+                return [opt.strip() for opt in field.options.split('\n') if opt.strip()]
+            return []
+        except:
+            return []
+
     options = {
-        "zone": get_list_values("Zone"),
-        "region": get_list_values("Region"),
+        "zone": get_zone_numbers(),         # ["1","2",...]
+        "region": get_region_codes(),       # ["1","2","3","4","HO"]
         "state": get_child_values("State Items", "state"),
         "district": get_child_values("District Items", "district"),
         "sol_id": get_child_values("Sol Items", "sol_id"),
         "product": get_child_values("Product Items", "product"),
         "source": get_child_values("Source Items", "source"),
+        "tag": get_doctype_options("Report Preference", "tag")
     }
 
     return options
-
 
 @frappe.whitelist()
 def get_preference_detail(user):
@@ -74,36 +112,52 @@ def get_preference_detail(user):
         return None
 
     full_name = frappe.db.get_value("User", user, "full_name")
-
-    # Find preference by user
     pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
 
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
-        
-        # Extract values from child tables and normalize Zone/Region to numbers only
-        def to_num(val):
-            if not val: return None
-            return re.sub(r"\D", "", str(val))
+
+        # Zone: "Zone -1" -> "1"
+        def zone_to_code(val):
+            if not val:
+                return None
+            nums = re.findall(r'\d+', str(val))
+            if nums:
+                return nums[0]
+            return None
+
+        # Region: "Region-1" -> "1", "Region-2" -> "2", "Region-3" -> "3", "Region-4" -> "4", "Head Office" -> "HO"
+        def region_to_code(val):
+            if not val:
+                return None
+            s = str(val).strip()
+            if s.lower() == "head office":
+                return "HO"
+            nums = re.findall(r'\d+', s)
+            if nums:
+                return nums[0]
+            return None
 
         return {
             "name": doc.name,
             "user": doc.user,
             "full_name": full_name,
-            "zone": [to_num(getattr(r, 'zone', None)) for r in (doc.zone or [])],
-            "region": [to_num(getattr(r, 'region', None)) for r in (doc.region or [])],
-            "state": [getattr(r, 'state', None) for r in (doc.state or [])],
-            "district": [getattr(r, 'district', None) for r in (doc.district or [])],
-            "sol_id": [getattr(r, 'sol_id', None) for r in (doc.sol_id or [])],
-            "product": [getattr(r, 'product', None) for r in (doc.product or [])],
-            "source": [getattr(r, 'source', None) for r in (doc.source or [])],
+            "tag": doc.tag,
+            "zone": [z for z in (zone_to_code(row.zone) for row in (doc.zone or []) if row.zone) if z],
+            "region": [r for r in (region_to_code(row.region) for row in (doc.region or []) if row.region) if r],
+            "state": [row.state for row in (doc.state or []) if row.state],
+            "district": [row.district for row in (doc.district or []) if row.district],
+            "sol_id": [row.sol_id for row in (doc.sol_id or []) if row.sol_id],
+            "product": [row.product for row in (doc.product or []) if row.product],
+            "source": [row.source for row in (doc.source or []) if row.source],
+            "enabled": bool(doc.enabled),
         }
 
-    # Return empty structure if no preference exists
     return {
         "name": None,
         "user": user,
         "full_name": full_name,
+        "tag": "",
         "zone": [],
         "region": [],
         "state": [],
@@ -111,8 +165,9 @@ def get_preference_detail(user):
         "sol_id": [],
         "product": [],
         "source": [],
-    }
+        "enabled": True,
 
+    }
 
 @frappe.whitelist()
 def save_preference(data):
@@ -126,7 +181,6 @@ def save_preference(data):
     if not user:
         frappe.throw(_("User is required"))
 
-    # Find or create preference
     pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
 
     if pref_name:
@@ -135,7 +189,13 @@ def save_preference(data):
         doc = frappe.new_doc("Report Preference")
         doc.user = user
 
-    # Clear all child tables
+    # Save the tag
+    doc.tag = data.get("tag")
+
+    # Save enabled status
+    doc.enabled = 1 if data.get("enabled") else 0
+
+    # Clear child tables
     doc.zone = []
     doc.region = []
     doc.state = []
@@ -144,61 +204,71 @@ def save_preference(data):
     doc.product = []
     doc.source = []
 
-    # Populate from selections
+    # ZONE: UI sends "1","2","3" → store "Zone -1"
     for z in data.get("zone", []):
-        if z:
-            doc.append("zone", {"zone": z})
-    
+        if not z:
+            continue
+        zone_name = f"Zone -{z}"
+        if not frappe.db.exists("Zone", zone_name):
+            if frappe.db.exists("Zone", z):
+                zone_name = z
+            else:
+                continue
+        doc.append("zone", {"zone": zone_name})
+
+    # REGION: UI sends "1","2","3","4","HO"
+    # Map codes back to Region doc names:
+    #  "1" -> Region-1
+    #  "2" -> Region-2
+    #  "3" -> Region-3
+    #  "4" -> Region-4
+    #  "HO" -> Head Office
     for r in data.get("region", []):
-        if r:
-            doc.append("region", {"region": r})
-    
+        if not r:
+            continue
+
+        code = str(r).strip()
+        if code.upper() == "HO":
+            region_name = "Head Office"
+        else:
+            region_name = f"Region-{code}"
+
+        if not frappe.db.exists("Region", region_name):
+            # Try raw code as fallback
+            if frappe.db.exists("Region", code):
+                region_name = code
+            else:
+                continue
+
+        doc.append("region", {"region": region_name})
+
     for s in data.get("state", []):
-        if s:
-            doc.append("state", {"state": s})
+        if s: doc.append("state", {"state": s})
     
     for d in data.get("district", []):
-        if d:
-            doc.append("district", {"district": d})
+        if d: doc.append("district", {"district": d})
     
     for sol in data.get("sol_id", []):
-        if sol:
-            doc.append("sol_id", {"sol_id": sol})
+        if sol: doc.append("sol_id", {"sol_id": sol})
     
     for p in data.get("product", []):
-        if p:
-            doc.append("product", {"product": p})
+        if p: doc.append("product", {"product": p})
     
     for src in data.get("source", []):
-        if src:
-            doc.append("source", {"source": src})
+        if src: doc.append("source", {"source": src})
 
     doc.save(ignore_permissions=True)
     frappe.db.commit()
 
     return {"success": True, "name": doc.name}
 
-
 @frappe.whitelist()
 def search_user(search_text=None):
-    if not search_text:
-        return []
-
+    if not search_text: return []
     search_query = f"{search_text}%"
-
     return frappe.db.sql("""
-        SELECT name, full_name
-        FROM `tabUser`
-        WHERE (name LIKE %(starts)s OR full_name LIKE %(starts)s)
-        AND enabled = 1
-        ORDER BY
-            CASE 
-                WHEN name LIKE %(starts)s THEN 0 
-                ELSE 1 
-            END,
-            LENGTH(name) ASC,
-            name ASC
+        SELECT name, full_name FROM `tabUser`
+        WHERE (name LIKE %(starts)s OR full_name LIKE %(starts)s) AND enabled = 1
+        ORDER BY CASE WHEN name LIKE %(starts)s THEN 0 ELSE 1 END, LENGTH(name) ASC, name ASC
         LIMIT 10
-    """, {
-        "starts": search_query
-    }, as_dict=True)
+    """, {"starts": search_query}, as_dict=True)

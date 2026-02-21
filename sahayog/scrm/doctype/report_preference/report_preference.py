@@ -22,7 +22,7 @@ class ReportPreference(Document):
         # Har bar save/edit karte waqt check
         self.check_admin_access()
         self.validate_unique_preference()
-        self.validate_regional_requirements()
+        # self.validate_regional_requirements()
 
     def check_admin_access(self):
         """
@@ -51,16 +51,18 @@ class ReportPreference(Document):
                 _("Report Preference already exists for this user.")
             )
 
-    def validate_regional_requirements(self):
-        """
-        If Zone is selected, user must provide either 'All Regions' check or specific 'Regions'.
-        """
-        if self.zone and len(self.zone) > 0:
-            if not self.all_regions and (not self.region or len(self.region) == 0):
-                frappe.throw(
-                    _("If Zones are selected, you must either check 'All Regions' or select specific Regions."),
-                    title=_("Mandatory Requirement")
-                )
+    # def validate_regional_requirements(self):
+    #     """
+    #     If Zone is selected, user must provide either 'All Regions' check or specific 'Regions'.
+    #     """
+    #     if self.zone and len(self.zone) > 0:
+    #         if not self.all_regions and (not self.region or len(self.region) == 0):
+    #             frappe.throw(
+    #                 _("If Zones are selected, you must either check 'All Regions' or select specific Regions."),
+    #                 title=_("Mandatory Requirement")
+    #             )
+
+
 @frappe.whitelist()
 def search_user(search_text=None):
     if not search_text:
