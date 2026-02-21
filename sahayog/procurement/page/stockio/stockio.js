@@ -313,13 +313,14 @@ class StockIOPage {
         v-model="searchText"
         @input="performSearch()"
       />
-      <select v-if="pageMode === 'item'" 
-              v-model="itemSort" 
-              @change="loadItemsList()"
-              style="padding: 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; margin-left: 8px; cursor: pointer;">
-        <option value="creation desc">Latest</option>
-        <option value="item_name asc">Name</option>
-      </select>
+      <div class="item-filter-wrapper" v-if="pageMode === 'item'">
+        <select v-model="itemSort" 
+                @change="loadItemsList()" 
+                class="btn ghost item-sort-btn">
+          <option value="creation desc">🕒 Latest</option>
+          <option value="item_name asc">🔤 Name</option>
+        </select>
+      </div>
       </div>
 
     </div>

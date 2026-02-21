@@ -629,13 +629,30 @@ body.stockio-active .page-content {
 /* Search stays right */
 .stockio-toolbar .stockio-search {
   display: flex;
-  gap: 10px;
+  gap: 420px;
   align-items: center;
   min-width: 420px;
 }
 
 .stockio-toolbar .stockio-search input {
   width: 320px;
+}
+
+/* ITEM SORT BUTTON STYLING */
+.item-filter-wrapper {
+  margin-left: 8px;
+}
+
+.item-sort-btn {
+  height: 38px; /* Match search input height */
+  padding: 0 12px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+  padding-right: 32px;
 }
 /* ==================================================
    SCROLLABLE CARD AREA (ONLY)
