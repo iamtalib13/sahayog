@@ -52,23 +52,6 @@ frappe.ui.form.on("Report Preference", {
       frappe.msgprint("All preferences cleared.");
     }
   },
-  validate: function (frm) {
-    let has_preference = false;
-
-    if (
-      (frm.doc.zone && frm.doc.zone.length > 0) ||
-      (frm.doc.region && frm.doc.region.length > 0) ||
-      (frm.doc.product && frm.doc.product.length > 0) ||
-      (frm.doc.source && frm.doc.source.length > 0) ||
-      (frm.doc.sol_id && frm.doc.sol_id.length > 0)
-    ) {
-      has_preference = true;
-    }
-
-    if (!has_preference) {
-      frappe.throw("Select at least one preference before saving.");
-    }
-  },
   refresh: function (frm) {
     if (frm.is_new()) {
       frm.add_custom_button("Search User", function () {

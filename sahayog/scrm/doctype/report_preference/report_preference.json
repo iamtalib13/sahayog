@@ -11,7 +11,7 @@
   "column_break_ckcs",
   "full_name",
   "section_break_uvta",
-  "enable_preferences",
+  "enabled",
   "geographical_filters_section",
   "zone",
   "all_regions",
@@ -141,7 +141,7 @@
   },
   {
    "default": "1",
-   "fieldname": "enable_preferences",
+   "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
   }
@@ -149,7 +149,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-16 15:34:16.072657",
+ "modified": "2026-02-20 16:43:27.602490",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
