@@ -775,39 +775,7 @@ class StockIOPage {
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="form-group">
-              <label>HSN/SAC</label>
-              <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.hsn" 
-                       @focus="activeDropdown = 'hsn'; $event.target.select()" 
-                       @click="activeDropdown = 'hsn'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)"
-                       placeholder="Select HSN Code..." />
-                <div class="dropdown-list" v-show="activeDropdown === 'hsn'">
-                  <div class="dropdown-item" 
-                       v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
-                       @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
-                    {{ h.name }} - {{ h.description }}
-                  </div>
-                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
-                    No results
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="form-group full-width checkbox-group">
-              <label>
-                <input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" />
-                Is Stock Item
-              </label>
-              <label>
-                <input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" />
-                Is Fixed Asset
-              </label>
-            </div>
-                          <div class="form-group" v-if="newItem.is_fixed_asset">
+                            <div class="form-group" v-if="newItem.is_fixed_asset">
               <label>Asset Category *</label>
               <div class="searchable-select">
                 <input type="text" 
@@ -829,6 +797,39 @@ class StockIOPage {
               </div>
             </div>
             </div>
+            <div class="form-group">
+              <label>HSN/SAC</label>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.hsn" 
+                       @focus="activeDropdown = 'hsn'; $event.target.select()" 
+                       @click="activeDropdown = 'hsn'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)"
+                       placeholder="Select HSN Code..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'hsn'">
+                  <div class="dropdown-item" 
+                       v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
+                       @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
+                    {{ h.name }} - {{ h.description }}
+                  </div>
+                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            <div class="form-group full-width checkbox-group">
+              <label>
+                <input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" />
+                Is Stock Item
+              </label>
+              <label>
+                <input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" />
+                Is Fixed Asset
+              </label>
+            </div>
+                          
 
           </div>
         </div>
