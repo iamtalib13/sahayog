@@ -707,31 +707,83 @@ class StockIOPage {
             </div>
             <div class="form-group">
               <label>Default UOM *</label>
-              <select v-model="newItem.stock_uom">
-                <option value="">Select UOM</option>
-                <option v-for="u in masterData.uoms" :value="u.name">{{ u.name }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.uom" 
+                       @focus="activeDropdown = 'uom'" 
+                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       placeholder="Select UOM..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'uom'">
+                  <div class="dropdown-item" 
+                       v-for="u in masterData.uoms.filter(x => x.name.toLowerCase().includes(search.uom.toLowerCase()))" 
+                       @click="newItem.stock_uom = u.name; search.uom = u.name; activeDropdown = null">
+                    {{ u.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.uoms.filter(x => x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>Item Department *</label>
-              <select v-model="newItem.custom_item_department">
-                <option value="">Select Department</option>
-                <option v-for="d in masterData.departments" :value="d.name">{{ d.name }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.dept" 
+                       @focus="activeDropdown = 'dept'" 
+                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       placeholder="Select Department..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'dept'">
+                  <div class="dropdown-item" 
+                       v-for="d in masterData.departments.filter(x => x.name.toLowerCase().includes(search.dept.toLowerCase()))" 
+                       @click="newItem.custom_item_department = d.name; search.dept = d.name; activeDropdown = null">
+                    {{ d.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.departments.filter(x => x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>Item Group *</label>
-              <select v-model="newItem.item_group">
-                <option value="">Select Group</option>
-                <option v-for="g in masterData.item_groups" :value="g.name">{{ g.name }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.group" 
+                       @focus="activeDropdown = 'group'" 
+                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       placeholder="Select Group..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'group'">
+                  <div class="dropdown-item" 
+                       v-for="g in masterData.item_groups.filter(x => x.name.toLowerCase().includes(search.group.toLowerCase()))" 
+                       @click="newItem.item_group = g.name; search.group = g.name; activeDropdown = null">
+                    {{ g.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.item_groups.filter(x => x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>HSN/SAC</label>
-              <select v-model="newItem.gst_hsn_code">
-                <option value="">Select HSN Code</option>
-                <option v-for="h in masterData.hsn_codes" :value="h.name">{{ h.name }} - {{ h.description }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.hsn" 
+                       @focus="activeDropdown = 'hsn'" 
+                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       placeholder="Select HSN Code..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'hsn'">
+                  <div class="dropdown-item" 
+                       v-for="h in masterData.hsn_codes.filter(x => (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
+                       @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
+                    {{ h.name }} - {{ h.description }}
+                  </div>
+                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group full-width checkbox-group">
               <label>
@@ -745,10 +797,23 @@ class StockIOPage {
             </div>
             <div class="form-group" v-if="newItem.is_fixed_asset">
               <label>Asset Category *</label>
-              <select v-model="newItem.asset_category">
-                <option value="">Select Asset Category</option>
-                <option v-for="c in masterData.asset_categories" :value="c.name">{{ c.name }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.asset" 
+                       @focus="activeDropdown = 'asset'" 
+                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       placeholder="Select Asset Category..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'asset'">
+                  <div class="dropdown-item" 
+                       v-for="c in masterData.asset_categories.filter(x => x.name.toLowerCase().includes(search.asset.toLowerCase()))" 
+                       @click="newItem.asset_category = c.name; search.asset = c.name; activeDropdown = null">
+                    {{ c.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.asset_categories.filter(x => x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -811,6 +876,14 @@ class StockIOPage {
       // MODALS & FORM STATE
       showCreateItemModal: false,
       isSubmitting: false,
+      activeDropdown: null,
+      search: {
+        uom: "",
+        dept: "",
+        group: "",
+        hsn: "",
+        asset: ""
+      },
       newItem: {
         item_code: "",
         item_name: "",
@@ -1581,6 +1654,14 @@ class StockIOPage {
 
       closeCreateItemModal() {
         this.showCreateItemModal = false;
+        this.activeDropdown = null;
+        this.search = {
+          uom: "",
+          dept: "",
+          group: "",
+          hsn: "",
+          asset: ""
+        };
         // Reset form
         this.newItem = {
           item_code: "",
