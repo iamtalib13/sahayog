@@ -1614,7 +1614,7 @@ class StockIOPage {
               "item_group",
               "stock_uom",
             ],
-            order_by: "item_name asc",
+            order_by: "creation desc",
             limit_page_length: 1000,
           },
           callback: (r) => {
