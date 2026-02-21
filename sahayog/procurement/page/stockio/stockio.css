@@ -874,6 +874,8 @@ body.stockio-active .page-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .form-group {
