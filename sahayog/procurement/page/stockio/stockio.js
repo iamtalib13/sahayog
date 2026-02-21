@@ -687,6 +687,80 @@ class StockIOPage {
     </div>
 
     </main>
+
+    <!-- ================= CUSTOM MODALS ================= -->
+    <div class="stockio-modal-overlay" v-if="showCreateItemModal" @click.self="closeCreateItemModal">
+      <div class="stockio-modal">
+        <div class="modal-header">
+          <h3>Create New Item</h3>
+          <button class="close-btn" @click="closeCreateItemModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Item Code *</label>
+              <input type="text" v-model="newItem.item_code" placeholder="Enter Item Code" />
+            </div>
+            <div class="form-group">
+              <label>Item Name *</label>
+              <input type="text" v-model="newItem.item_name" placeholder="Enter Item Name" />
+            </div>
+            <div class="form-group">
+              <label>Default UOM *</label>
+              <select v-model="newItem.stock_uom">
+                <option value="">Select UOM</option>
+                <option v-for="u in masterData.uoms" :value="u.name">{{ u.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Item Department *</label>
+              <select v-model="newItem.custom_item_department">
+                <option value="">Select Department</option>
+                <option v-for="d in masterData.departments" :value="d.name">{{ d.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Item Group *</label>
+              <select v-model="newItem.item_group">
+                <option value="">Select Group</option>
+                <option v-for="g in masterData.item_groups" :value="g.name">{{ g.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>HSN/SAC</label>
+              <select v-model="newItem.gst_hsn_code">
+                <option value="">Select HSN Code</option>
+                <option v-for="h in masterData.hsn_codes" :value="h.name">{{ h.name }} - {{ h.description }}</option>
+              </select>
+            </div>
+            <div class="form-group full-width checkbox-group">
+              <label>
+                <input type="checkbox" v-model="newItem.is_stock_item" />
+                Is Stock Item
+              </label>
+              <label>
+                <input type="checkbox" v-model="newItem.is_fixed_asset" />
+                Is Fixed Asset
+              </label>
+            </div>
+            <div class="form-group" v-if="newItem.is_fixed_asset">
+              <label>Asset Category *</label>
+              <select v-model="newItem.asset_category">
+                <option value="">Select Asset Category</option>
+                <option v-for="c in masterData.asset_categories" :value="c.name">{{ c.name }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn ghost" @click="closeCreateItemModal">Cancel</button>
+          <button class="btn primary" @click="submitCreateItem" :disabled="isSubmitting">
+            {{ isSubmitting ? 'Creating...' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
     `);
@@ -733,6 +807,28 @@ class StockIOPage {
       itemsVisible: [],
       itemsOffset: 0,
       itemsPageSize: 10,
+
+      // MODALS & FORM STATE
+      showCreateItemModal: false,
+      isSubmitting: false,
+      newItem: {
+        item_code: "",
+        item_name: "",
+        stock_uom: "",
+        custom_item_department: "",
+        item_group: "",
+        gst_hsn_code: "",
+        is_stock_item: true,
+        is_fixed_asset: false,
+        asset_category: ""
+      },
+      masterData: {
+        uoms: [],
+        departments: [],
+        item_groups: [],
+        hsn_codes: [],
+        asset_categories: []
+      },
 
       // SELECTION
       selectAll: false,
@@ -1454,6 +1550,93 @@ class StockIOPage {
         });
       },
 
+      // CUSTOM ITEM MODAL METHODS
+      fetchMasterData() {
+        const doctypes = ["UOM", "Item Department", "Item Group", "GST HSN Code", "Asset Category"];
+        const field_map = {
+          "UOM": "uoms",
+          "Item Department": "departments",
+          "Item Group": "item_groups",
+          "GST HSN Code": "hsn_codes",
+          "Asset Category": "asset_categories"
+        };
+        
+        doctypes.forEach(dt => {
+          frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: dt,
+              fields: ["name", dt === "GST HSN Code" ? "description" : "name"],
+              limit_page_length: 5000,
+              order_by: "name asc"
+            },
+            callback: (r) => {
+              if (r.message) {
+                this.masterData[field_map[dt]] = r.message;
+              }
+            }
+          });
+        });
+      },
+
+      closeCreateItemModal() {
+        this.showCreateItemModal = false;
+        // Reset form
+        this.newItem = {
+          item_code: "",
+          item_name: "",
+          stock_uom: "",
+          custom_item_department: "",
+          item_group: "",
+          gst_hsn_code: "",
+          is_stock_item: true,
+          is_fixed_asset: false,
+          asset_category: ""
+        };
+      },
+
+      submitCreateItem() {
+        // Validation
+        const required = ["item_code", "item_name", "stock_uom", "custom_item_department", "item_group"];
+        if (this.newItem.is_fixed_asset) required.push("asset_category");
+
+        for (let field of required) {
+          if (!this.newItem[field]) {
+            frappe.msgprint({
+              message: __("Please fill all mandatory fields: {0}", [frappe.model.unhide_column(field)]),
+              indicator: "orange"
+            });
+            return;
+          }
+        }
+
+        this.isSubmitting = true;
+        frappe.call({
+          method: "frappe.client.insert",
+          args: {
+            doc: {
+              doctype: "Item",
+              ...this.newItem
+            }
+          },
+          callback: (r) => {
+            this.isSubmitting = false;
+            if (!r.exc) {
+              frappe.show_alert({
+                message: __("Item {0} created", [r.message.name || r.message.item_code]),
+                indicator: "green"
+              });
+              this.closeCreateItemModal();
+              this.loadItemsList();
+              frappe.set_route("Form", "Item", r.message.name);
+            }
+          },
+          error: () => {
+            this.isSubmitting = false;
+          }
+        });
+      },
+
       // HELPERS
       formatDate(date) {
         return frappe.datetime.str_to_user(date);
@@ -1469,119 +1652,8 @@ class StockIOPage {
       },
       createRequest() {
         if (this.pageMode === "item") {
-          const dialog = new frappe.ui.Dialog({
-            title: __("Create New Item"),
-            fields: [
-              {
-                label: "Item Code",
-                fieldname: "item_code",
-                fieldtype: "Data",
-                reqd: 1,
-              },
-              {
-                label: "Item Name",
-                fieldname: "item_name",
-                fieldtype: "Data",
-                reqd: 1,
-              },
-              {
-                label: "Default Unit of Measure",
-                fieldname: "stock_uom",
-                fieldtype: "Link",
-                options: "UOM",
-                reqd: 1,
-              },
-              {
-                label: "Item Department",
-                fieldname: "custom_item_department",
-                fieldtype: "Link",
-                options: "Item Department",
-                reqd: 1,
-              },
-              {
-                label: "Item Group",
-                fieldname: "item_group",
-                fieldtype: "Link",
-                options: "Item Group",
-                reqd: 1,
-              },
-              {
-                label: "HSN/SAC",
-                fieldname: "gst_hsn_code",
-                fieldtype: "Link",
-                options: "GST HSN Code",
-                description: __("Must be 6 or 8 digits long"),
-              },
-              {
-                label: "Is Stock Item",
-                fieldname: "is_stock_item",
-                fieldtype: "Check",
-                default: 1,
-              },
-              {
-                label: "Opening Stock",
-                fieldname: "opening_stock",
-                fieldtype: "Float",
-                depends_on: "eval:doc.is_stock_item == 1",
-              },
-              {
-                label: "Valuation Rate",
-                fieldname: "valuation_rate",
-                fieldtype: "Currency",
-                depends_on: "eval:doc.is_stock_item == 1",
-              },
-              {
-                label: "Standard Rate",
-                fieldname: "standard_rate",
-                fieldtype: "Currency",
-                depends_on: "eval:doc.is_stock_item == 1",
-              },
-              {
-                label: "Is Fixed Asset",
-                fieldname: "is_fixed_asset",
-                fieldtype: "Check",
-                default: 0,
-              },
-              {
-                label: "Asset Category",
-                fieldname: "asset_category",
-                fieldtype: "Link",
-                options: "Asset Category",
-                depends_on: "eval:doc.is_fixed_asset == 1",
-              },
-            ],
-            primary_action_label: __("Create"),
-            primary_action: (values) => {
-              frappe.call({
-                method: "frappe.client.insert",
-                args: {
-                  doc: {
-                    doctype: "Item",
-                    ...values,
-                  },
-                },
-                callback: (r) => {
-                  if (!r.exc) {
-                    frappe.show_alert({
-                      message: __("Item {0} created", [
-                        r.message.name || r.message.item_code,
-                      ]),
-                      indicator: "green",
-                    });
-                    dialog.hide();
-                    this.loadItemsList(); // Refresh the list
-                    frappe.set_route("Form", "Item", r.message.name);
-                  }
-                },
-              });
-            },
-          });
-
-          if (dialog.fields_dict.gst_hsn_code) {
-            // Default search logic
-          }
-
-          dialog.show();
+          this.fetchMasterData();
+          this.showCreateItemModal = true;
           return;
         }
         if (this.pageMode === "stock") {
