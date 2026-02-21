@@ -7,7 +7,7 @@ def get_all_preferences():
     """Return all Report Preference records with user details for list display."""
     prefs = frappe.get_all(
         "Report Preference",
-        fields=["name", "user", "modified", "tag"], 
+        fields=["name", "user", "modified", "tag"],
         order_by="modified desc",
         limit_page_length=0,
     )
@@ -21,27 +21,48 @@ def get_all_preferences():
 def get_field_options():
     """Return all available options for all fields - dynamic from DocTypes."""
     
-    # Helper: Get options as simple numbers (strings "1", "2") for Zone/Region
-    def get_list_values_as_numbers(doctype):
+    # Zone: numeric labels "1","2","3"... from names like "Zone -1"
+    def get_zone_numbers():
         try:
-            if not frappe.db.exists("DocType", doctype): return []
-            names = [d.name for d in frappe.get_all(doctype, fields=["name"], order_by="name asc")]
-            
-            # Convert "Zone -1" -> "1"
+            if not frappe.db.exists("DocType", "Zone"):
+                return []
+            names = [d.name for d in frappe.get_all("Zone", fields=["name"], order_by="name asc")]
             nums = []
             for n in names:
-                # Find all digits in the name
                 match = re.findall(r'\d+', str(n))
                 if match:
                     nums.append(match[0])
-            
-            # Remove duplicates and sort numerically
             unique_nums = list(set(nums))
             return sorted(unique_nums, key=lambda x: int(x) if x.isdigit() else x)
         except:
             return []
 
-    # Dynamic options from child doctypes
+    # Region: map "Region-1" -> "1", ..., "Region-4" -> "4", "Head Office" -> "HO"
+    def get_region_codes():
+        try:
+            if not frappe.db.exists("DocType", "Region"):
+                return []
+            names = [d.name for d in frappe.get_all("Region", fields=["name"], order_by="name asc")]
+            codes = []
+            for n in names:
+                s = str(n)
+                if s.lower().strip() == "head office":
+                    codes.append("HO")
+                else:
+                    match = re.findall(r'\d+', s)
+                    if match:
+                        codes.append(match[0])
+            # Deduplicate and keep stable order
+            seen = set()
+            ordered = []
+            for c in codes:
+                if c not in seen:
+                    seen.add(c)
+                    ordered.append(c)
+            return ordered
+        except:
+            return []
+
     def get_child_values(child_doctype, field_name):
         try:
             if not frappe.db.exists("DocType", child_doctype):
@@ -60,7 +81,6 @@ def get_field_options():
             frappe.log_error(f"Error getting {child_doctype}.{field_name}: {str(e)}")
             return []
 
-    # Fetch options specifically for the Tag Select field from DocType metadata
     def get_doctype_options(doctype, fieldname):
         try:
             meta = frappe.get_meta(doctype)
@@ -72,8 +92,8 @@ def get_field_options():
             return []
 
     options = {
-        "zone": get_list_values_as_numbers("Zone"),     # Returns ["1", "2", ...]
-        "region": get_list_values_as_numbers("Region"), # Returns ["1", "2", ...]
+        "zone": get_zone_numbers(),         # ["1","2",...]
+        "region": get_region_codes(),       # ["1","2","3","4","HO"]
         "state": get_child_values("State Items", "state"),
         "district": get_child_values("District Items", "district"),
         "sol_id": get_child_values("Sol Items", "sol_id"),
@@ -97,10 +117,23 @@ def get_preference_detail(user):
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
 
-        # Robust converter: "Zone -1" -> "1" (as string)
-        def to_num_str(val):
-            if not val: return None
+        # Zone: "Zone -1" -> "1"
+        def zone_to_code(val):
+            if not val:
+                return None
             nums = re.findall(r'\d+', str(val))
+            if nums:
+                return nums[0]
+            return None
+
+        # Region: "Region-1" -> "1", "Region-2" -> "2", "Region-3" -> "3", "Region-4" -> "4", "Head Office" -> "HO"
+        def region_to_code(val):
+            if not val:
+                return None
+            s = str(val).strip()
+            if s.lower() == "head office":
+                return "HO"
+            nums = re.findall(r'\d+', s)
             if nums:
                 return nums[0]
             return None
@@ -110,9 +143,8 @@ def get_preference_detail(user):
             "user": doc.user,
             "full_name": full_name,
             "tag": doc.tag,
-            # Ensure we return strings to match frontend options
-            "zone": [to_num_str(row.zone) for row in (doc.zone or []) if row.zone],
-            "region": [to_num_str(row.region) for row in (doc.region or []) if row.region],
+            "zone": [z for z in (zone_to_code(row.zone) for row in (doc.zone or []) if row.zone) if z],
+            "region": [r for r in (region_to_code(row.region) for row in (doc.region or []) if row.region) if r],
             "state": [row.state for row in (doc.state or []) if row.state],
             "district": [row.district for row in (doc.district or []) if row.district],
             "sol_id": [row.sol_id for row in (doc.sol_id or []) if row.sol_id],
@@ -166,37 +198,44 @@ def save_preference(data):
     doc.product = []
     doc.source = []
 
-    # Populate ZONE: UI sends "1" -> Backend stores "Zone -1"
+    # ZONE: UI sends "1","2","3" → store "Zone -1"
     for z in data.get("zone", []):
-        if not z: continue
-        
-        # Try primary format "Zone -1"
+        if not z:
+            continue
         zone_name = f"Zone -{z}"
-        
         if not frappe.db.exists("Zone", zone_name):
-            # Fallback: maybe name is just "1"
             if frappe.db.exists("Zone", z):
                 zone_name = z
             else:
-                continue # Skip invalid
-        
+                continue
         doc.append("zone", {"zone": zone_name})
 
-    # Populate REGION: UI sends "1" -> Backend stores "Region -1"
+    # REGION: UI sends "1","2","3","4","HO"
+    # Map codes back to Region doc names:
+    #  "1" -> Region-1
+    #  "2" -> Region-2
+    #  "3" -> Region-3
+    #  "4" -> Region-4
+    #  "HO" -> Head Office
     for r in data.get("region", []):
-        if not r: continue
-        
-        region_name = f"Region -{r}"
-        
+        if not r:
+            continue
+
+        code = str(r).strip()
+        if code.upper() == "HO":
+            region_name = "Head Office"
+        else:
+            region_name = f"Region-{code}"
+
         if not frappe.db.exists("Region", region_name):
-            if frappe.db.exists("Region", r):
-                region_name = r
+            # Try raw code as fallback
+            if frappe.db.exists("Region", code):
+                region_name = code
             else:
                 continue
-        
+
         doc.append("region", {"region": region_name})
 
-    # Other simple text fields
     for s in data.get("state", []):
         if s: doc.append("state", {"state": s})
     
@@ -212,8 +251,6 @@ def save_preference(data):
     for src in data.get("source", []):
         if src: doc.append("source", {"source": src})
 
-    # Save with relaxed validation for SPA experience
-    # (Relies on DocType validation method being commented out or tolerating missing fields)
     doc.save(ignore_permissions=True)
     frappe.db.commit()
 
