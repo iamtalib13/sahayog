@@ -150,6 +150,7 @@ def get_preference_detail(user):
             "sol_id": [row.sol_id for row in (doc.sol_id or []) if row.sol_id],
             "product": [row.product for row in (doc.product or []) if row.product],
             "source": [row.source for row in (doc.source or []) if row.source],
+            "enabled": doc.enabled,
         }
 
     return {
@@ -188,6 +189,9 @@ def save_preference(data):
 
     # Save the tag
     doc.tag = data.get("tag")
+
+    # Save enabled status
+    doc.enabled = 1 if data.get("enabled") else 0 
 
     # Clear child tables
     doc.zone = []
