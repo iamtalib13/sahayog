@@ -648,7 +648,9 @@ class StockIOPage {
               </div>
               <div class="order-meta">
                 {{ doc.name }} · Owner:
-                <b>{{ doc.custodian || 'Available' }}</b>
+                <b :style="{ color: doc.custodian ? 'inherit' : '#15803d' }">
+                  {{ doc.custodian || 'Available' }}
+                </b>
               </div>
             </div>
           </div>
