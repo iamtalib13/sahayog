@@ -977,12 +977,6 @@ body.stockio-active .page-content {
   cursor: pointer;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
 /* ===============================
    REPORTS GRID (COMPACT)
 ================================ */
