@@ -629,13 +629,15 @@ body.stockio-active .page-content {
 /* Search stays right */
 .stockio-toolbar .stockio-search {
   display: flex;
-  gap: 650px;
+  gap: 10px;
   align-items: center;
-  min-width: 420px;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .stockio-toolbar .stockio-search input {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
 }
 
 /* ITEM SORT BUTTON STYLING */
