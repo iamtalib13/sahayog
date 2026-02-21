@@ -194,6 +194,17 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   margin: 0 8px;
 }
 
+.perm-pane-header {
+  display: flex; /* Enable flexbox */
+  justify-content: space-between; /* Push items to edges */
+  align-items: flex-start; /* Align top */
+  padding: 12px 16px;
+  background: transparent;
+  border-bottom: 1px solid #d0d7de;
+  flex-shrink: 0;
+}
+
+
     </style>
 
       <div id="perm-root" v-scope @vue:mounted="init()">
@@ -235,7 +246,12 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
           <div class="perm-sidebar perm-pane">
             <div class="perm-pane-header">
-              <div v-if="!selectedPref"><h3>Permission Details</h3></div>
+  
+              <!-- LEFT SIDE: Title and Details -->
+              <div v-if="!selectedPref">
+                <h3>Permission Details</h3>
+              </div>
+              
               <div v-else style="display: flex; flex-direction: column; gap: 4px;">
                 <h3 style="margin: 0;">Permission Details</h3>
                 <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
@@ -244,7 +260,13 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                   <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
                 </div>
               </div>
+
+              <!-- RIGHT SIDE: Tag Badge -->
+              <div v-if="selectedPref && selectedPref.tag">
+                <span class="perm-tag-badge" style="font-size: 12px; padding: 4px 8px;">[[ selectedPref.tag ]]</span>
+              </div>
             </div>
+
             <div class="perm-pane-content">
               
               <div v-if="!selectedPref" class="perm-sidebar-empty">
