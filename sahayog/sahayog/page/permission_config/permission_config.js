@@ -226,21 +226,27 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                   </div>
 
                   <div class="perm-field">
-                    <div class="perm-flabel">
-                      <span>Region</span>
-                      <a class="perm-flink" @click="toggleAll('region')">[[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]</a>
-                    </div>
-                    <div v-if="allOptions.region.length" class="perm-check-grid perm-check-grid-region">
-                      <div v-for="opt in allOptions.region" :key="opt"
-                           class="perm-check-item"
-                           :class="{ selected: selectedPref.region.includes(opt) }"
-                           @click="toggle('region', opt)">
-                        <input type="checkbox" :checked="selectedPref.region.includes(opt)" @click.stop="toggle('region', opt)">
-                        <label>[[ getLabel(opt) ]]</label>
-                      </div>
-                    </div>
-                    <div v-else class="perm-no-options">No options available</div>
-                  </div>
+  <div class="perm-flabel">
+    <span>Region</span>
+    <a class="perm-flink" @click="toggleAll('region')">
+      [[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]
+    </a>
+  </div>
+  <div v-if="allOptions.region.length" class="perm-check-grid perm-check-grid-region">
+    <div v-for="opt in allOptions.region" :key="opt"
+         class="perm-check-item"
+         :class="{ selected: selectedPref.region.includes(opt) }"
+         @click="toggle('region', opt)">
+      <input type="checkbox"
+             :checked="selectedPref.region.includes(opt)"
+             @click.stop="toggle('region', opt)">
+      <!-- Show numeric codes and HO as-is -->
+      <label>[[ opt ]]</label>
+    </div>
+  </div>
+  <div v-else class="perm-no-options">No options available</div>
+</div>
+
 
                   <!-- State, District, Sol ID sections (same as before) -->
                   <div class="perm-field">
