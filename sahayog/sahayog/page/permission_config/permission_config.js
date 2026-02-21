@@ -205,6 +205,66 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 }
 
 
+/* Toggle Switch Container */
+.perm-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  margin-right: 8px; /* Space between toggle and badge */
+  vertical-align: middle;
+}
+
+/* Hide default checkbox */
+.perm-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The Slider */
+.perm-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d1d8dd; /* Default Grey (Disabled) */
+  transition: .4s;
+  border-radius: 20px;
+}
+
+/* The Circle inside slider */
+.perm-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Checked State (Enabled - Green) */
+.perm-toggle input:checked + .perm-slider {
+  background-color: #2f9d58; /* Frappe Green */
+}
+
+/* Move Circle when checked */
+.perm-toggle input:checked + .perm-slider:before {
+  transform: translateX(16px);
+}
+
+/* Focused State */
+.perm-toggle input:focus + .perm-slider {
+  box-shadow: 0 0 1px #2f9d58;
+}
+
+
     </style>
 
       <div id="perm-root" v-scope @vue:mounted="init()">
@@ -247,25 +307,35 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           <div class="perm-sidebar perm-pane">
             <div class="perm-pane-header">
   
-              <!-- LEFT SIDE: Title and Details -->
-              <div v-if="!selectedPref">
-                <h3>Permission Details</h3>
-              </div>
-              
-              <div v-else style="display: flex; flex-direction: column; gap: 4px;">
-                <h3 style="margin: 0;">Permission Details</h3>
-                <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
-                  <span><strong>Employee Name:</strong> [[ selectedPref.full_name || '-' ]]</span>
-                  <span style="color: #d0d7de;">|</span>
-                  <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
-                </div>
-              </div>
+  <!-- LEFT SIDE: Title and Details -->
+  <div v-if="!selectedPref">
+    <h3>Permission Details</h3>
+  </div>
+  
+  <div v-else style="display: flex; flex-direction: column; gap: 4px;">
+    <h3 style="margin: 0;">Permission Details</h3>
+    <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
+      <span><strong>Employee Name:</strong> [[ selectedPref.full_name || '-' ]]</span>
+      <span style="color: #d0d7de;">|</span>
+      <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
+    </div>
+  </div>
 
-              <!-- RIGHT SIDE: Tag Badge -->
-              <div v-if="selectedPref && selectedPref.tag">
-                <span class="perm-tag-badge" style="font-size: 12px; padding: 4px 8px;">[[ selectedPref.tag ]]</span>
-              </div>
-            </div>
+  <!-- RIGHT SIDE: Toggle + Tag Badge -->
+  <div v-if="selectedPref" style="display: flex; align-items: center;">
+    
+    <!-- ENABLED TOGGLE -->
+    <label class="perm-toggle" title="Enable/Disable">
+      <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
+      <span class="perm-slider"></span>
+    </label>
+
+    <!-- TAG BADGE -->
+    <span v-if="selectedPref.tag" class="perm-tag-badge" style="font-size: 12px; padding: 4px 8px;">[[ selectedPref.tag ]]</span>
+  </div>
+
+</div>
+
 
             <div class="perm-pane-content">
               
