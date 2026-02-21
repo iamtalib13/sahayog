@@ -919,35 +919,38 @@ body.stockio-active .page-content {
   position: absolute;
   top: 100%;
   left: 0;
-  width: 100%;
-  max-height: 200px;
+  min-width: 100%;
+  width: max-content;
+  max-width: 400px;
+  max-height: 250px;
   overflow-y: auto;
   background: #fff;
   border: 1px solid var(--border);
   border-top: none;
   border-radius: 0 0 6px 6px;
-  z-index: 1100;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 2000;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .searchable-select .dropdown-item {
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 13px;
   cursor: pointer;
   border-bottom: 1px solid #f3f4f6;
-}
-
-.searchable-select .dropdown-item:last-child {
-  border-bottom: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .searchable-select .dropdown-item:hover {
   background: #f0f4ff;
   color: var(--primary);
+  white-space: normal; /* Show full text on hover if needed */
+  overflow: visible;
 }
 
 .searchable-select .no-result {
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 13px;
   color: var(--muted);
   font-style: italic;
@@ -970,6 +973,13 @@ body.stockio-active .page-content {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-bottom: 100px; /* Space for the last dropdowns */
 }
 
 /* ===============================
