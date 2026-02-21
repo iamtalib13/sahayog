@@ -1844,6 +1844,7 @@ class StockIOPage {
                       read_only: 1,
                     },
                   ],
+                  in_place_edit: 1,
                   reqd: 1,
                 },
               ],
@@ -1995,6 +1996,7 @@ class StockIOPage {
                       read_only: 1,
                     },
                   ],
+                  in_place_edit: 1,
                   reqd: 1,
                 },
               ],
@@ -2536,6 +2538,7 @@ class StockIOPage {
                   read_only: 1,
                 },
               ],
+              in_place_edit: 1,
               reqd: 1,
             },
             {
