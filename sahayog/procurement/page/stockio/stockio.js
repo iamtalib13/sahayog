@@ -799,15 +799,15 @@ class StockIOPage {
             </div>
             <div class="form-group full-width checkbox-group">
               <label>
-                <input type="checkbox" v-model="newItem.is_stock_item" />
+                <input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" />
                 Is Stock Item
               </label>
               <label>
-                <input type="checkbox" v-model="newItem.is_fixed_asset" />
+                <input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" />
                 Is Fixed Asset
               </label>
             </div>
-            <div class="form-group" v-if="newItem.is_fixed_asset">
+                          <div class="form-group" v-if="newItem.is_fixed_asset">
               <label>Asset Category *</label>
               <div class="searchable-select">
                 <input type="text" 
@@ -828,6 +828,8 @@ class StockIOPage {
                 </div>
               </div>
             </div>
+            </div>
+
           </div>
         </div>
         <div class="modal-footer">
@@ -896,7 +898,7 @@ class StockIOPage {
         dept: "",
         group: "",
         hsn: "",
-        asset: ""
+        asset: "",
       },
       newItem: {
         item_code: "",
@@ -907,14 +909,14 @@ class StockIOPage {
         gst_hsn_code: "",
         is_stock_item: true,
         is_fixed_asset: false,
-        asset_category: ""
+        asset_category: "",
       },
       masterData: {
         uoms: [],
         departments: [],
         item_groups: [],
         hsn_codes: [],
-        asset_categories: []
+        asset_categories: [],
       },
 
       // SELECTION
@@ -1639,29 +1641,35 @@ class StockIOPage {
 
       // CUSTOM ITEM MODAL METHODS
       fetchMasterData() {
-        const doctypes = ["UOM", "Item Department", "Item Group", "GST HSN Code", "Asset Category"];
+        const doctypes = [
+          "UOM",
+          "Item Department",
+          "Item Group",
+          "GST HSN Code",
+          "Asset Category",
+        ];
         const field_map = {
-          "UOM": "uoms",
+          UOM: "uoms",
           "Item Department": "departments",
           "Item Group": "item_groups",
           "GST HSN Code": "hsn_codes",
-          "Asset Category": "asset_categories"
+          "Asset Category": "asset_categories",
         };
-        
-        doctypes.forEach(dt => {
+
+        doctypes.forEach((dt) => {
           frappe.call({
             method: "frappe.client.get_list",
             args: {
               doctype: dt,
               fields: ["name", dt === "GST HSN Code" ? "description" : "name"],
               limit_page_length: 5000,
-              order_by: "name asc"
+              order_by: "name asc",
             },
             callback: (r) => {
               if (r.message) {
                 this.masterData[field_map[dt]] = r.message;
               }
-            }
+            },
           });
         });
       },
@@ -1674,7 +1682,7 @@ class StockIOPage {
           dept: "",
           group: "",
           hsn: "",
-          asset: ""
+          asset: "",
         };
         // Reset form
         this.newItem = {
@@ -1686,20 +1694,28 @@ class StockIOPage {
           gst_hsn_code: "",
           is_stock_item: true,
           is_fixed_asset: false,
-          asset_category: ""
+          asset_category: "",
         };
       },
 
       submitCreateItem() {
         // Validation
-        const required = ["item_code", "item_name", "stock_uom", "custom_item_department", "item_group"];
+        const required = [
+          "item_code",
+          "item_name",
+          "stock_uom",
+          "custom_item_department",
+          "item_group",
+        ];
         if (this.newItem.is_fixed_asset) required.push("asset_category");
 
         for (let field of required) {
           if (!this.newItem[field]) {
             frappe.msgprint({
-              message: __("Please fill all mandatory fields: {0}", [frappe.model.unhide_column(field)]),
-              indicator: "orange"
+              message: __("Please fill all mandatory fields: {0}", [
+                frappe.model.unhide_column(field),
+              ]),
+              indicator: "orange",
             });
             return;
           }
@@ -1711,15 +1727,17 @@ class StockIOPage {
           args: {
             doc: {
               doctype: "Item",
-              ...this.newItem
-            }
+              ...this.newItem,
+            },
           },
           callback: (r) => {
             this.isSubmitting = false;
             if (!r.exc) {
               frappe.show_alert({
-                message: __("Item {0} created", [r.message.name || r.message.item_code]),
-                indicator: "green"
+                message: __("Item {0} created", [
+                  r.message.name || r.message.item_code,
+                ]),
+                indicator: "green",
               });
               this.closeCreateItemModal();
               this.loadItemsList();
@@ -1728,7 +1746,7 @@ class StockIOPage {
           },
           error: () => {
             this.isSubmitting = false;
-          }
+          },
         });
       },
 
