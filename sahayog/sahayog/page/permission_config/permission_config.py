@@ -83,40 +83,85 @@ def get_preference_detail(user):
     full_name = frappe.db.get_value("User", user, "full_name")
     pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
 
+    # if pref_name:
+    #     doc = frappe.get_doc("Report Preference", pref_name)
+        
+    #     def to_num(val):
+    #         if not val: return None
+    #         return re.sub(r"\D", "", str(val))
+
+    #     return {
+    #         "name": doc.name,
+    #         "user": doc.user,
+    #         "full_name": full_name,
+    #         "tag": doc.tag, # Return the saved tag
+    #         "zone": [to_num(getattr(r, 'zone', None)) for r in (doc.zone or [])],
+    #         "region": [to_num(getattr(r, 'region', None)) for r in (doc.region or [])],
+    #         "state": [getattr(r, 'state', None) for r in (doc.state or [])],
+    #         "district": [getattr(r, 'district', None) for r in (doc.district or [])],
+    #         "sol_id": [getattr(r, 'sol_id', None) for r in (doc.sol_id or [])],
+    #         "product": [getattr(r, 'product', None) for r in (doc.product or [])],
+    #         "source": [getattr(r, 'source', None) for r in (doc.source or [])],
+    #     }
+
+    # return {
+    #     "name": None,
+    #     "user": user,
+    #     "full_name": full_name,
+    #     "tag": "", # Default empty
+    #     "zone": [],
+    #     "region": [],
+    #     "state": [],
+    #     "district": [],
+    #     "sol_id": [],
+    #     "product": [],
+    #     "source": [],
+    # }
+
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
-        
-        def to_num(val):
-            if not val: return None
-            return re.sub(r"\D", "", str(val))
+
+        # def to_zone_number(val):
+        #     if not val:
+        #         return None
+        #     # Expecting names like "Zone - 1"
+        #     num = re.sub(r"\D", "", str(val))
+        #     return num or None
+
+        # def to_region_number(val):
+        #     if not val:
+        #         return None
+        #     # Expecting names like "Region - 1"
+        #     num = re.sub(r"\D", "", str(val))
+        #     return num or None
+
+        def to_zone_number(val):
+            if not val:
+                return None
+            # From "Zone -1" → "1"
+            num = re.sub(r"\D", "", str(val))
+            return num or None
+
+        def to_region_number(val):
+            if not val:
+                return None
+            # From "Region -1" → "1"
+            num = re.sub(r"\D", "", str(val))
+            return num or None
 
         return {
             "name": doc.name,
             "user": doc.user,
             "full_name": full_name,
-            "tag": doc.tag, # Return the saved tag
-            "zone": [to_num(getattr(r, 'zone', None)) for r in (doc.zone or [])],
-            "region": [to_num(getattr(r, 'region', None)) for r in (doc.region or [])],
+            "tag": doc.tag,
+            "zone": [to_zone_number(getattr(r, 'zone', None)) for r in (doc.zone or [])],
+            "region": [to_region_number(getattr(r, 'region', None)) for r in (doc.region or [])],
             "state": [getattr(r, 'state', None) for r in (doc.state or [])],
             "district": [getattr(r, 'district', None) for r in (doc.district or [])],
             "sol_id": [getattr(r, 'sol_id', None) for r in (doc.sol_id or [])],
             "product": [getattr(r, 'product', None) for r in (doc.product or [])],
             "source": [getattr(r, 'source', None) for r in (doc.source or [])],
         }
-
-    return {
-        "name": None,
-        "user": user,
-        "full_name": full_name,
-        "tag": "", # Default empty
-        "zone": [],
-        "region": [],
-        "state": [],
-        "district": [],
-        "sol_id": [],
-        "product": [],
-        "source": [],
-    }
 
 @frappe.whitelist()
 def save_preference(data):
@@ -151,11 +196,43 @@ def save_preference(data):
     doc.source = []
 
     # Populate from selections
-    for z in data.get("zone", []):
-        if z: doc.append("zone", {"zone": z})
+    # for z in data.get("zone", []):
+    #     if z: doc.append("zone", {"zone": z})
     
+    # for r in data.get("region", []):
+    #     if r: doc.append("region", {"region": r})
+
+    # ZONE: UI sends "1","2","3" → store proper Link name like "Zone -1"
+    for z in data.get("zone", []):
+        if not z:
+            continue
+
+        # Try "Zone -1"
+        zone_name = f"Zone -{z}"
+        # If your Zone DocType uses plain numeric names (e.g. "1"), fallback:
+        if not frappe.db.exists("Zone", zone_name):
+            if frappe.db.exists("Zone", z):
+                zone_name = z
+            else:
+                # If nothing matches, skip silently (or frappe.log_error)
+                continue
+
+        doc.append("zone", {"zone": zone_name})
+
+    # REGION: same logic, names like "Region -1"
     for r in data.get("region", []):
-        if r: doc.append("region", {"region": r})
+        if not r:
+            continue
+
+        region_name = f"Region -{r}"
+        if not frappe.db.exists("Region", region_name):
+            if frappe.db.exists("Region", r):
+                region_name = r
+            else:
+                continue
+
+        doc.append("region", {"region": region_name})
+
     
     for s in data.get("state", []):
         if s: doc.append("state", {"state": s})
