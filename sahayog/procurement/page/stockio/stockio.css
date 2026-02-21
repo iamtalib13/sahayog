@@ -626,21 +626,22 @@ body.stockio-active .page-content {
   align-items: center;
 }
 
-/* Search stays right */
+/* Search group expands to fill remaining space */
 .stockio-toolbar .stockio-search {
   display: flex;
-  gap: 650px;
+  gap: 10px;
   align-items: center;
-  min-width: 420px;
+  flex: 1;
 }
 
 .stockio-toolbar .stockio-search input {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
 }
 
-/* ITEM SORT BUTTON STYLING */
+/* ITEM SORT BUTTON STYLING - Pushed to the far right */
 .item-filter-wrapper {
-  margin-left: 8px;
+  margin-left: auto;
 }
 
 .item-sort-btn {
