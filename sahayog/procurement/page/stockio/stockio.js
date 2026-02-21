@@ -710,16 +710,17 @@ class StockIOPage {
               <div class="searchable-select">
                 <input type="text" 
                        v-model="search.uom" 
-                       @focus="activeDropdown = 'uom'" 
-                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       @focus="activeDropdown = 'uom'; $event.target.select()" 
+                       @click="activeDropdown = 'uom'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'uom') activeDropdown = null }, 300)"
                        placeholder="Select UOM..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'uom'">
                   <div class="dropdown-item" 
-                       v-for="u in masterData.uoms.filter(x => x.name.toLowerCase().includes(search.uom.toLowerCase()))" 
+                       v-for="u in masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase()))" 
                        @click="newItem.stock_uom = u.name; search.uom = u.name; activeDropdown = null">
                     {{ u.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.uoms.filter(x => x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">
+                  <div class="no-result" v-if="masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">
                     No results
                   </div>
                 </div>
@@ -730,16 +731,17 @@ class StockIOPage {
               <div class="searchable-select">
                 <input type="text" 
                        v-model="search.dept" 
-                       @focus="activeDropdown = 'dept'" 
-                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       @focus="activeDropdown = 'dept'; $event.target.select()" 
+                       @click="activeDropdown = 'dept'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'dept') activeDropdown = null }, 300)"
                        placeholder="Select Department..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'dept'">
                   <div class="dropdown-item" 
-                       v-for="d in masterData.departments.filter(x => x.name.toLowerCase().includes(search.dept.toLowerCase()))" 
+                       v-for="d in masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase()))" 
                        @click="newItem.custom_item_department = d.name; search.dept = d.name; activeDropdown = null">
                     {{ d.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.departments.filter(x => x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">
+                  <div class="no-result" v-if="masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">
                     No results
                   </div>
                 </div>
@@ -750,16 +752,17 @@ class StockIOPage {
               <div class="searchable-select">
                 <input type="text" 
                        v-model="search.group" 
-                       @focus="activeDropdown = 'group'" 
-                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       @focus="activeDropdown = 'group'; $event.target.select()" 
+                       @click="activeDropdown = 'group'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'group') activeDropdown = null }, 300)"
                        placeholder="Select Group..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'group'">
                   <div class="dropdown-item" 
-                       v-for="g in masterData.item_groups.filter(x => x.name.toLowerCase().includes(search.group.toLowerCase()))" 
+                       v-for="g in masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase()))" 
                        @click="newItem.item_group = g.name; search.group = g.name; activeDropdown = null">
                     {{ g.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.item_groups.filter(x => x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">
+                  <div class="no-result" v-if="masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">
                     No results
                   </div>
                 </div>
@@ -770,16 +773,17 @@ class StockIOPage {
               <div class="searchable-select">
                 <input type="text" 
                        v-model="search.hsn" 
-                       @focus="activeDropdown = 'hsn'" 
-                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       @focus="activeDropdown = 'hsn'; $event.target.select()" 
+                       @click="activeDropdown = 'hsn'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)"
                        placeholder="Select HSN Code..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'hsn'">
                   <div class="dropdown-item" 
-                       v-for="h in masterData.hsn_codes.filter(x => (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
+                       v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
                        @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
                     {{ h.name }} - {{ h.description }}
                   </div>
-                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
+                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
                     No results
                   </div>
                 </div>
@@ -800,16 +804,17 @@ class StockIOPage {
               <div class="searchable-select">
                 <input type="text" 
                        v-model="search.asset" 
-                       @focus="activeDropdown = 'asset'" 
-                       @blur="setTimeout(() => activeDropdown = null, 250)"
+                       @focus="activeDropdown = 'asset'; $event.target.select()" 
+                       @click="activeDropdown = 'asset'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'asset') activeDropdown = null }, 300)"
                        placeholder="Select Asset Category..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'asset'">
                   <div class="dropdown-item" 
-                       v-for="c in masterData.asset_categories.filter(x => x.name.toLowerCase().includes(search.asset.toLowerCase()))" 
+                       v-for="c in masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase()))" 
                        @click="newItem.asset_category = c.name; search.asset = c.name; activeDropdown = null">
                     {{ c.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.asset_categories.filter(x => x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">
+                  <div class="no-result" v-if="masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">
                     No results
                   </div>
                 </div>
