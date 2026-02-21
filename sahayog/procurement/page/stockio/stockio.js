@@ -2155,11 +2155,41 @@ class StockIOPage {
                   label: "Windows Key",
                   fieldname: "windows_key",
                   fieldtype: "Data",
+                  onchange: function() {
+                    const val = this.get_value();
+                    if (val) {
+                      frappe.db.get_value("Asset", {"windows_key": val}, "name", (r) => {
+                        if (r && r.name) {
+                          frappe.msgprint({
+                            title: __("Duplicate Windows Key"),
+                            indicator: "red",
+                            message: __("Windows Key <b>{0}</b> is already used in Asset <b>{1}</b>", [val, r.name])
+                          });
+                          this.set_value("");
+                        }
+                      });
+                    }
+                  }
                 },
                 {
                   label: "Office Key",
                   fieldname: "office_key",
                   fieldtype: "Data",
+                  onchange: function() {
+                    const val = this.get_value();
+                    if (val) {
+                      frappe.db.get_value("Asset", {"office_key": val}, "name", (r) => {
+                        if (r && r.name) {
+                          frappe.msgprint({
+                            title: __("Duplicate Office Key"),
+                            indicator: "red",
+                            message: __("Office Key <b>{0}</b> is already used in Asset <b>{1}</b>", [val, r.name])
+                          });
+                          this.set_value("");
+                        }
+                      });
+                    }
+                  }
                 },
                 {
                   label: "Gross Purchase Amount",
