@@ -1,6 +1,7 @@
 # apps/sahayog/sahayog/sahayog/page/permission_config/permission_config.py
 
 import frappe
+import re
 from frappe import _
 
 
@@ -22,12 +23,16 @@ def get_all_preferences():
 
 @frappe.whitelist()
 def get_field_options():
-    """Return all available options for all fields - hardcoded Zone/Region, dynamic for others."""
+    """Return all available options for all fields - dynamic from DocTypes."""
     
-    # Hardcoded Zone 1-6 and Region 1-4
-    zone_options = ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6"]
-    region_options = ["Region 1", "Region 2", "Region 3", "Region 4"]
-    
+    def get_list_values(doctype, field_name="name"):
+        try:
+            if not frappe.db.exists("DocType", doctype):
+                return []
+            return [d[field_name] for d in frappe.get_all(doctype, fields=[field_name], order_by=f"{field_name} asc")]
+        except:
+            return []
+
     # Dynamic options from child doctypes
     def get_child_values(child_doctype, field_name):
         """Get distinct values from child table field."""
@@ -49,8 +54,8 @@ def get_field_options():
             return []
 
     options = {
-        "zone": zone_options,
-        "region": region_options,
+        "zone": get_list_values("Zone"),
+        "region": get_list_values("Region"),
         "state": get_child_values("State Items", "state"),
         "district": get_child_values("District Items", "district"),
         "sol_id": get_child_values("Sol Items", "sol_id"),
@@ -76,13 +81,17 @@ def get_preference_detail(user):
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
         
-        # Extract values from child tables
+        # Extract values from child tables and normalize Zone/Region to numbers only
+        def to_num(val):
+            if not val: return None
+            return re.sub(r"\D", "", str(val))
+
         return {
             "name": doc.name,
             "user": doc.user,
             "full_name": full_name,
-            "zone": [getattr(r, 'zone', None) for r in (doc.zone or [])],
-            "region": [getattr(r, 'region', None) for r in (doc.region or [])],
+            "zone": [to_num(getattr(r, 'zone', None)) for r in (doc.zone or [])],
+            "region": [to_num(getattr(r, 'region', None)) for r in (doc.region or [])],
             "state": [getattr(r, 'state', None) for r in (doc.state or [])],
             "district": [getattr(r, 'district', None) for r in (doc.district or [])],
             "sol_id": [getattr(r, 'sol_id', None) for r in (doc.sol_id or [])],
@@ -168,3 +177,28 @@ def save_preference(data):
     frappe.db.commit()
 
     return {"success": True, "name": doc.name}
+
+
+@frappe.whitelist()
+def search_user(search_text=None):
+    if not search_text:
+        return []
+
+    search_query = f"{search_text}%"
+
+    return frappe.db.sql("""
+        SELECT name, full_name
+        FROM `tabUser`
+        WHERE (name LIKE %(starts)s OR full_name LIKE %(starts)s)
+        AND enabled = 1
+        ORDER BY
+            CASE 
+                WHEN name LIKE %(starts)s THEN 0 
+                ELSE 1 
+            END,
+            LENGTH(name) ASC,
+            name ASC
+        LIMIT 10
+    """, {
+        "starts": search_query
+    }, as_dict=True)
