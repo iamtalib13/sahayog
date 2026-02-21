@@ -198,10 +198,7 @@ class StockIOPage {
       <span v-if="!sidebarCollapsed">Items</span>
       </div>
 
-      <div class="menu-item">
-      <span class="icon">⚙️</span>
-      <span v-if="!sidebarCollapsed">Settings</span>
-      </div>
+
 
     </nav>
     </aside>
@@ -2148,6 +2145,11 @@ class StockIOPage {
                   fieldname: "serial_no",
                   fieldtype: "Link",
                   options: "Serial No",
+                  get_query: () => {
+                    return {
+                      query: "sahayog.procurement.page.stockio.stockio.get_available_serial_nos",
+                    };
+                  }
                 },
                 {
                   label: "Windows Key",
