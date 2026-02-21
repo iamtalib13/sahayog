@@ -181,6 +181,19 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   display: none;
 }
 
+.perm-flabel-inline {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.perm-check-grid-chips-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 8px;
+}
+
     </style>
 
       <div id="perm-root" v-scope @vue:mounted="init()">
@@ -259,44 +272,65 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                 <div class="perm-section">
                   <div class="perm-section-title">Geographic Filters</div>
 
-                  <div class="perm-field">
-                    <div class="perm-flabel">
-                      <span>Zone</span>
-                      <a class="perm-flink" @click="toggleAll('zone')">[[ isAllSelected('zone') ? 'Deselect All' : 'Select All' ]]</a>
-                    </div>
-                    <div v-if="allOptions.zone.length" class="perm-check-grid perm-check-grid-zone">
-                      <div v-for="opt in allOptions.zone" :key="opt"
-                           class="perm-check-item"
-                           :class="{ selected: selectedPref.zone.includes(opt) }"
-                           @click="toggle('zone', opt)">
-                        <input type="checkbox" :checked="selectedPref.zone.includes(opt)" @click.stop="toggle('zone', opt)">
-                        <label>[[ getLabel(opt) ]]</label>
-                      </div>
-                    </div>
-                    <div v-else class="perm-no-options">No options available</div>
-                  </div>
+                  <div class="perm-field-row">
+  
+ <div class="perm-field-row">
+  <!-- ZONE -->
+  <div class="perm-field perm-field-half">
+    <div class="perm-flabel-inline">
+      <!-- Left: label -->
+      <span>Zone</span>
 
-                  <div class="perm-field">
-  <div class="perm-flabel">
-    <span>Region</span>
-    <a class="perm-flink" @click="toggleAll('region')">
-      [[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]
-    </a>
-  </div>
-  <div v-if="allOptions.region.length" class="perm-check-grid perm-check-grid-region">
-    <div v-for="opt in allOptions.region" :key="opt"
-         class="perm-check-item"
-         :class="{ selected: selectedPref.region.includes(opt) }"
-         @click="toggle('region', opt)">
-      <input type="checkbox"
-             :checked="selectedPref.region.includes(opt)"
-             @click.stop="toggle('region', opt)">
-      <!-- Show numeric codes and HO as-is -->
-      <label>[[ opt ]]</label>
+      <!-- Middle: chips, same line -->
+      <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
+        <div v-for="opt in allOptions.zone" :key="opt"
+             class="perm-chip"
+             :class="{ selected: selectedPref.zone.includes(opt) }"
+             @click="toggle('zone', opt)">
+          [[ opt ]]
+          <input type="checkbox" :checked="selectedPref.zone.includes(opt)">
+        </div>
+      </div>
+
+      <!-- Right: Select All -->
+      <a class="perm-flink" @click="toggleAll('zone')" style="margin-left:auto; white-space:nowrap;">
+        [[ isAllSelected('zone') ? 'Deselect All' : 'Select All' ]]
+      </a>
+    </div>
+
+    <div v-if="!allOptions.zone.length" class="perm-no-options" style="margin-top:4px;">
+      No options available
     </div>
   </div>
-  <div v-else class="perm-no-options">No options available</div>
+
+  <!-- REGION -->
+  <div class="perm-field perm-field-half">
+    <div class="perm-flabel-inline">
+      <span>Region</span>
+
+      <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
+        <div v-for="opt in allOptions.region" :key="opt"
+             class="perm-chip"
+             :class="{ selected: selectedPref.region.includes(opt) }"
+             @click="toggle('region', opt)">
+          [[ opt ]]
+          <input type="checkbox" :checked="selectedPref.region.includes(opt)">
+        </div>
+      </div>
+
+      <a class="perm-flink" @click="toggleAll('region')" style="margin-left:auto; white-space:nowrap;">
+        [[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]
+      </a>
+    </div>
+
+    <div v-if="!allOptions.region.length" class="perm-no-options" style="margin-top:4px;">
+      No options available
+    </div>
+  </div>
 </div>
+
+
+
 
 
                   <!-- State, District, Sol ID sections (same as before) -->
