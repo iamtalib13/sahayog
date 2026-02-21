@@ -391,7 +391,7 @@ class StockIOPage {
             <div class="order-meta-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.creation) }} · By: <b>{{ doc.owner }}</b>
@@ -489,7 +489,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.posting_date) }} · Supplier:
@@ -540,7 +540,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.posting_date) }} · Purpose:
@@ -592,7 +592,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
               </div>
               <div class="order-meta">
                 {{ formatDate(doc.transaction_date) }} · Purpose:
@@ -644,11 +644,15 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.asset_name }}</strong>
-                <span class="badge paid">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.custodian ? doc.status : 'Available')">
+                  {{ doc.custodian ? doc.status : 'Available' }}
+                </span>
               </div>
               <div class="order-meta">
                 {{ doc.name }} · Owner:
-                <b>{{ doc.owner }}</b>
+                <b :style="{ color: doc.custodian ? 'inherit' : '#15803d' }">
+                  {{ doc.custodian || 'Available' }}
+                </b>
               </div>
             </div>
           </div>
@@ -672,7 +676,7 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.item_name }}</strong>
-                <span class="badge grey">{{ doc.item_group }}</span>
+                <span class="badge status-draft">{{ doc.item_group }}</span>
               </div>
               <div class="order-meta">
                 Code: <b>{{ doc.item_code }}</b> · UOM: <b>{{ doc.stock_uom }}</b>
@@ -1542,7 +1546,7 @@ class StockIOPage {
           method: "frappe.client.get_list",
           args: {
             doctype: "Asset",
-            fields: ["name", "asset_name", "docstatus", "owner"],
+            fields: ["name", "asset_name", "docstatus", "owner", "custodian"],
             order_by: "creation desc",
             limit_page_length: 1000,
           },
@@ -1751,6 +1755,27 @@ class StockIOPage {
       },
 
       // HELPERS
+      getStatusClass(status) {
+        if (!status) return "";
+        const s = status.toLowerCase();
+        if (s.includes("draft")) return "status-draft";
+        if (
+          s.includes("pending") ||
+          s.includes("receive") ||
+          s.includes("to process")
+        )
+          return "status-pending";
+                if (s.includes("approved") || s.includes("submitted") || s.includes("complete") || s.includes("success") || s.includes("available")) return "status-success";
+        
+        if (
+          s.includes("cancel") ||
+          s.includes("reject") ||
+          s.includes("danger") ||
+          s.includes("failed")
+        )
+          return "status-danger";
+        return "status-info";
+      },
       formatDate(date) {
         return frappe.datetime.str_to_user(date);
       },
@@ -2147,49 +2172,66 @@ class StockIOPage {
                   options: "Serial No",
                   get_query: () => {
                     return {
-                      query: "sahayog.procurement.page.stockio.stockio.get_available_serial_nos",
+                      query:
+                        "sahayog.procurement.page.stockio.stockio.get_available_serial_nos",
                     };
-                  }
+                  },
                 },
                 {
                   label: "Windows Key",
                   fieldname: "windows_key",
                   fieldtype: "Data",
-                  onchange: function() {
+                  onchange: function () {
                     const val = this.get_value();
                     if (val) {
-                      frappe.db.get_value("Asset", {"windows_key": val}, "name", (r) => {
-                        if (r && r.name) {
-                          frappe.msgprint({
-                            title: __("Duplicate Windows Key"),
-                            indicator: "red",
-                            message: __("Windows Key <b>{0}</b> is already used in Asset <b>{1}</b>", [val, r.name])
-                          });
-                          this.set_value("");
-                        }
-                      });
+                      frappe.db.get_value(
+                        "Asset",
+                        { windows_key: val },
+                        "name",
+                        (r) => {
+                          if (r && r.name) {
+                            frappe.msgprint({
+                              title: __("Duplicate Windows Key"),
+                              indicator: "red",
+                              message: __(
+                                "Windows Key <b>{0}</b> is already used in Asset <b>{1}</b>",
+                                [val, r.name],
+                              ),
+                            });
+                            this.set_value("");
+                          }
+                        },
+                      );
                     }
-                  }
+                  },
                 },
                 {
                   label: "Office Key",
                   fieldname: "office_key",
                   fieldtype: "Data",
-                  onchange: function() {
+                  onchange: function () {
                     const val = this.get_value();
                     if (val) {
-                      frappe.db.get_value("Asset", {"office_key": val}, "name", (r) => {
-                        if (r && r.name) {
-                          frappe.msgprint({
-                            title: __("Duplicate Office Key"),
-                            indicator: "red",
-                            message: __("Office Key <b>{0}</b> is already used in Asset <b>{1}</b>", [val, r.name])
-                          });
-                          this.set_value("");
-                        }
-                      });
+                      frappe.db.get_value(
+                        "Asset",
+                        { office_key: val },
+                        "name",
+                        (r) => {
+                          if (r && r.name) {
+                            frappe.msgprint({
+                              title: __("Duplicate Office Key"),
+                              indicator: "red",
+                              message: __(
+                                "Office Key <b>{0}</b> is already used in Asset <b>{1}</b>",
+                                [val, r.name],
+                              ),
+                            });
+                            this.set_value("");
+                          }
+                        },
+                      );
                     }
-                  }
+                  },
                 },
                 {
                   label: "Gross Purchase Amount",

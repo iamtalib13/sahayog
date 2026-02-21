@@ -160,7 +160,8 @@ body.stockio-active [data-page-route="stockio"] {
    BUTTONS
 ================================================== */
 
-.stockio-app .btn, .stockio-modal .btn {
+.stockio-app .btn,
+.stockio-modal .btn {
   padding: 8px 14px;
   border-radius: 8px;
   font-weight: 500;
@@ -168,12 +169,14 @@ body.stockio-active [data-page-route="stockio"] {
   border: none;
 }
 
-.stockio-app .btn.primary, .stockio-modal .btn.primary {
+.stockio-app .btn.primary,
+.stockio-modal .btn.primary {
   background: var(--primary);
   color: #ffffff;
 }
 
-.stockio-app .btn.ghost, .stockio-modal .btn.ghost {
+.stockio-app .btn.ghost,
+.stockio-modal .btn.ghost {
   background: #ffffff;
   border: 1px solid var(--border);
   color: var(--text);
@@ -210,14 +213,28 @@ body.stockio-active [data-page-route="stockio"] {
 }
 
 /* Status colors */
-.green {
-  background: #dcfce7;
-  color: #15803d;
+.green,
+.status-success {
+  background: #dcfce7 !important;
+  color: #15803d !important;
 }
 
-.orange {
-  background: #ffedd5;
-  color: #c2410c;
+.orange,
+.status-pending {
+  background: #fef3c7 !important;
+  color: #ff6100 !important;
+}
+
+.grey,
+.status-draft {
+  background: #f3f4f6 !important;
+  color: #4b5563 !important;
+}
+
+.red,
+.status-danger {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
 }
 
 .purple {
@@ -536,21 +553,35 @@ body.stockio-active .page-content {
   flex-shrink: 0;
 }
 
-.stockio-app .badge, .stockio-modal .badge {
+.stockio-app .badge,
+.stockio-modal .badge {
   padding: 2px 8px;
   font-size: 12px;
   border-radius: 999px;
+  font-weight: 500;
 }
 
-.stockio-app .badge.paid {
+/* Status Specific Colors */
+.stockio-app .badge.status-draft {
+  background: #f3f4f6;
+  color: #4b5563;
+} /* Grey */
+.stockio-app .badge.status-pending {
+  background: #fef3c7;
+  color: #ff6100;
+} /* Orange */
+.stockio-app .badge.status-success {
   background: #dcfce7;
   color: #15803d;
-}
-
-.stockio-app .badge.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
+} /* Green */
+.stockio-app .badge.status-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+} /* Red */
+.stockio-app .badge.status-info {
+  background: #e0f2fe;
+  color: #0369a1;
+} /* Blue */
 
 .stockio-app .badge.category-asset {
   background: #ede9fe;
@@ -1083,36 +1114,29 @@ body.stockio-active .page-content {
 
 /* STATES */
 .step.done .dot {
-  background: #16a34a;
+  background: #15803d;
 }
 .step.pending .dot {
-  background: #f59e0b;
+  background: #ff6100;
 }
-.step.rejected .dot {
-  background: #dc2626;
+.step.rejected .dot,
+.step.cancelled .dot {
+  background: #b91c1c;
 }
 .step.disabled .dot {
   background: #d1d5db;
 }
 
 .step.done .label {
-  color: #16a34a;
+  color: #15803d;
 }
 .step.pending .label {
-  color: #f59e0b;
+  color: #ff6100;
 }
-.step.rejected .label {
-  color: #dc2626;
+.step.rejected .label,
+.step.cancelled .label {
+  color: #b91c1c;
 }
 .step.disabled .label {
   color: #9ca3af;
-}
-.approval-progress .step.cancelled .dot {
-  background: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
-}
-
-.approval-progress .step.cancelled .label {
-  color: #dc2626;
-  font-weight: 600;
 }
