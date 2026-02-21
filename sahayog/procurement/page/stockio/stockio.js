@@ -313,6 +313,13 @@ class StockIOPage {
         v-model="searchText"
         @input="performSearch()"
       />
+      <select v-if="pageMode === 'item'" 
+              v-model="itemSort" 
+              @change="loadItemsList()"
+              style="padding: 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; margin-left: 8px; cursor: pointer;">
+        <option value="creation desc">Latest</option>
+        <option value="item_name asc">Name</option>
+      </select>
       </div>
 
     </div>
@@ -846,6 +853,7 @@ class StockIOPage {
       assetOpen: false,
       activeTab: "all",
       searchText: "",
+      itemSort: "creation desc",
 
       // DATA LISTS
       requests: [],
@@ -1614,7 +1622,7 @@ class StockIOPage {
               "item_group",
               "stock_uom",
             ],
-            order_by: "creation desc",
+            order_by: this.itemSort,
             limit_page_length: 1000,
           },
           callback: (r) => {
