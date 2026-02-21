@@ -221,85 +221,40 @@ class StockIOPage {
     <!-- LEFT: TABS -->
   <div class="stockio-tabs" v-if="pageMode !== 'reports' && pageMode !== 'item'">
     <template v-if="pageMode === 'requests'">
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'all' }"
-      @click="setTab('all')"
-      >
-      All <b>{{ counts.all }}</b>
+      <span class="tab" :class="{ active: activeTab === 'all' }" @click="setTab('all')">
+        All <b>{{ counts.all }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'today' }"
-      @click="setTab('today')"
-      >
-      To Day <b class="green">{{ counts.today }}</b>
+      <span class="tab" :class="{ active: activeTab === 'today' }" @click="setTab('today')">
+        To Day <b class="status-success">{{ counts.today }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'draft' }"
-      @click="setTab('draft')"
-      >
-      Draft <b class="grey">{{ counts.draft }}</b>
+      <span class="tab" :class="{ active: activeTab === 'draft' }" @click="setTab('draft')">
+        Draft <b class="status-draft">{{ counts.draft }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'pending' }"
-      @click="setTab('pending')"
-      >
-      Pending <b class="orange">{{ counts.pending }}</b>
+      <span class="tab" :class="{ active: activeTab === 'pending' }" @click="setTab('pending')">
+        Pending <b class="status-pending">{{ counts.pending }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'approved' }"
-      @click="setTab('approved')"
-      >
-      Approved <b class="purple">{{ counts.approved }}</b>
+      <span class="tab" :class="{ active: activeTab === 'approved' }" @click="setTab('approved')">
+        Approved <b class="status-success">{{ counts.approved }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'cancelled' }"
-      @click="setTab('cancelled')"
-      >
-      Cancelled <b class="red">{{ counts.cancelled }}</b>
+      <span class="tab" :class="{ active: activeTab === 'cancelled' }" @click="setTab('cancelled')">
+        Cancelled <b class="status-danger">{{ counts.cancelled }}</b>
       </span>
     </template>
     <template v-else-if="pageMode === 'stock' || pageMode === 'asset'">
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'all' }"
-      @click="setTab('all')"
-      >
-      All <b>{{ counts.all }}</b>
+      <span class="tab" :class="{ active: activeTab === 'all' }" @click="setTab('all')">
+        All <b>{{ counts.all }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'draft' }"
-      @click="setTab('draft')"
-      >
-      Draft <b class="grey">{{ counts.draft }}</b>
+      <span class="tab" :class="{ active: activeTab === 'draft' }" @click="setTab('draft')">
+        Draft <b class="status-draft">{{ counts.draft }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'submitted' }"
-      @click="setTab('submitted')"
-      >
-      Submitted <b class="green">{{ counts.submitted }}</b>
+      <span class="tab" :class="{ active: activeTab === 'submitted' }" @click="setTab('submitted')">
+        Submitted <b class="status-success">{{ counts.submitted }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'other' }"
-      @click="setTab('other')"
-      >
-      Other <b class="orange">{{ counts.other }}</b>
+      <span class="tab" v-show="pageMode === 'asset' && subMode === 'item'" :class="{ active: activeTab === 'available' }" @click="setTab('available')">
+        Available <b class="status-success">{{ counts.available }}</b>
+      </span>
+      <span class="tab" :class="{ active: activeTab === 'other' }" @click="setTab('other')">
+        Other <b class="status-pending">{{ counts.other }}</b>
       </span>
     </template>
   </div>
@@ -717,129 +672,75 @@ class StockIOPage {
             <div class="form-group">
               <label>Default UOM *</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.uom" 
-                       @focus="activeDropdown = 'uom'; $event.target.select()" 
-                       @click="activeDropdown = 'uom'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'uom') activeDropdown = null }, 300)"
-                       placeholder="Select UOM..." />
+                <input type="text" v-model="search.uom" @focus="activeDropdown = 'uom'; $event.target.select()" @click="activeDropdown = 'uom'" @blur="setTimeout(() => { if(activeDropdown === 'uom') activeDropdown = null }, 300)" placeholder="Select UOM..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'uom'">
-                  <div class="dropdown-item" 
-                       v-for="u in masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase()))" 
-                       @click="newItem.stock_uom = u.name; search.uom = u.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="u in masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase()))" @click="newItem.stock_uom = u.name; search.uom = u.name; activeDropdown = null">
                     {{ u.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
             </div>
             <div class="form-group">
               <label>Item Department *</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.dept" 
-                       @focus="activeDropdown = 'dept'; $event.target.select()" 
-                       @click="activeDropdown = 'dept'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'dept') activeDropdown = null }, 300)"
-                       placeholder="Select Department..." />
+                <input type="text" v-model="search.dept" @focus="activeDropdown = 'dept'; $event.target.select()" @click="activeDropdown = 'dept'" @blur="setTimeout(() => { if(activeDropdown === 'dept') activeDropdown = null }, 300)" placeholder="Select Department..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'dept'">
-                  <div class="dropdown-item" 
-                       v-for="d in masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase()))" 
-                       @click="newItem.custom_item_department = d.name; search.dept = d.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="d in masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase()))" @click="newItem.custom_item_department = d.name; search.dept = d.name; activeDropdown = null">
                     {{ d.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
             </div>
             <div class="form-group">
               <label>Item Group *</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.group" 
-                       @focus="activeDropdown = 'group'; $event.target.select()" 
-                       @click="activeDropdown = 'group'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'group') activeDropdown = null }, 300)"
-                       placeholder="Select Group..." />
+                <input type="text" v-model="search.group" @focus="activeDropdown = 'group'; $event.target.select()" @click="activeDropdown = 'group'" @blur="setTimeout(() => { if(activeDropdown === 'group') activeDropdown = null }, 300)" placeholder="Select Group..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'group'">
-                  <div class="dropdown-item" 
-                       v-for="g in masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase()))" 
-                       @click="newItem.item_group = g.name; search.group = g.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="g in masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase()))" @click="newItem.item_group = g.name; search.group = g.name; activeDropdown = null">
                     {{ g.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
-                            <div class="form-group" v-if="newItem.is_fixed_asset">
-              <label>Asset Category *</label>
-              <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.asset" 
-                       @focus="activeDropdown = 'asset'; $event.target.select()" 
-                       @click="activeDropdown = 'asset'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'asset') activeDropdown = null }, 300)"
-                       placeholder="Select Asset Category..." />
-                <div class="dropdown-list" v-show="activeDropdown === 'asset'">
-                  <div class="dropdown-item" 
-                       v-for="c in masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase()))" 
-                       @click="newItem.asset_category = c.name; search.asset = c.name; activeDropdown = null">
-                    {{ c.name }}
-                  </div>
-                  <div class="no-result" v-if="masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">
-                    No results
-                  </div>
-                </div>
-              </div>
-            </div>
             </div>
             <div class="form-group">
               <label>HSN/SAC</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.hsn" 
-                       @focus="activeDropdown = 'hsn'; $event.target.select()" 
-                       @click="activeDropdown = 'hsn'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)"
-                       placeholder="Select HSN Code..." />
+                <input type="text" v-model="search.hsn" @focus="activeDropdown = 'hsn'; $event.target.select()" @click="activeDropdown = 'hsn'" @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)" placeholder="Select HSN Code..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'hsn'">
-                  <div class="dropdown-item" 
-                       v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
-                       @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
                     {{ h.name }} - {{ h.description }}
                   </div>
-                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
-
+            </div>
+            <div class="form-group" v-if="newItem.is_fixed_asset">
+              <label>Asset Category *</label>
+              <div class="searchable-select">
+                <input type="text" v-model="search.asset" @focus="activeDropdown = 'asset'; $event.target.select()" @click="activeDropdown = 'asset'" @blur="setTimeout(() => { if(activeDropdown === 'asset') activeDropdown = null }, 300)" placeholder="Select Asset Category..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'asset'">
+                  <div class="dropdown-item" v-for="c in masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase()))" @click="newItem.asset_category = c.name; search.asset = c.name; activeDropdown = null">
+                    {{ c.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">No results</div>
+                </div>
+              </div>
             </div>
             <div class="form-group full-width checkbox-group">
-              <label>
-                <input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" />
-                Is Stock Item
-              </label>
-              <label>
-                <input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" />
-                Is Fixed Asset
-              </label>
+              <label><input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" /> Is Stock Item</label>
+              <label><input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" /> Is Fixed Asset</label>
             </div>
-                          
-
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn ghost" @click="closeCreateItemModal">Cancel</button>
-          <button class="btn primary" @click="submitCreateItem" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Creating...' : 'Create' }}
-          </button>
+          <button class="btn primary" @click="submitCreateItem" :disabled="isSubmitting">{{ isSubmitting ? 'Creating...' : 'Create' }}</button>
         </div>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -941,6 +842,7 @@ class StockIOPage {
         approved: 0,
         cancelled: 0,
         submitted: 0,
+        available: 0,
         other: 0,
       },
 
@@ -1265,9 +1167,11 @@ class StockIOPage {
             list = list.filter((d) => d.status === "Draft");
           else if (this.activeTab === "submitted")
             list = list.filter((d) => d.status === "Submitted");
+          else if (this.activeTab === "available")
+            list = list.filter((d) => !d.custodian);
           else if (this.activeTab === "other")
             list = list.filter(
-              (d) => d.status !== "Draft" && d.status !== "Submitted",
+              (d) => d.status !== "Draft" && d.status !== "Submitted" && (this.pageMode !== 'asset' || this.subMode !== 'item' || d.custodian),
             );
 
           if (q) {
@@ -1407,9 +1311,14 @@ class StockIOPage {
             approved: 0,
             cancelled: 0,
             submitted: 0,
+            available: 0,
             other: 0,
           };
           list.forEach((doc) => {
+            if (this.pageMode === "asset" && this.subMode === "item" && !doc.custodian) {
+              this.counts.available++;
+            }
+
             if (doc.status === "Draft") this.counts.draft++;
             else if (doc.status === "Submitted") this.counts.submitted++;
             else this.counts.other++;
