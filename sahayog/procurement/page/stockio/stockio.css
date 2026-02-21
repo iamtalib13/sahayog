@@ -629,13 +629,30 @@ body.stockio-active .page-content {
 /* Search stays right */
 .stockio-toolbar .stockio-search {
   display: flex;
-  gap: 10px;
+  gap: 420px;
   align-items: center;
   min-width: 420px;
 }
 
 .stockio-toolbar .stockio-search input {
   width: 320px;
+}
+
+/* ITEM SORT BUTTON STYLING */
+.item-filter-wrapper {
+  margin-left: 8px;
+}
+
+.item-sort-btn {
+  height: 38px; /* Match search input height */
+  padding: 0 12px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+  padding-right: 32px;
 }
 /* ==================================================
    SCROLLABLE CARD AREA (ONLY)
@@ -874,6 +891,8 @@ body.stockio-active .page-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .form-group {
@@ -899,6 +918,63 @@ body.stockio-active .page-content {
   border: 1px solid var(--border);
   font-size: 14px;
   outline: none;
+}
+
+/* SEARCHABLE SELECT */
+.searchable-select {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.searchable-select .dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 400px;
+  max-height: 250px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  z-index: 2000;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.searchable-select .dropdown-item {
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchable-select .dropdown-item:hover {
+  background: #f0f4ff;
+  color: var(--primary);
+  white-space: normal; /* Show full text on hover if needed */
+  overflow: visible;
+}
+
+.searchable-select .no-result {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .form-group input:focus,

@@ -313,6 +313,14 @@ class StockIOPage {
         v-model="searchText"
         @input="performSearch()"
       />
+      <div class="item-filter-wrapper" v-if="pageMode === 'item'">
+        <select v-model="itemSort" 
+                @change="loadItemsList()" 
+                class="btn ghost item-sort-btn">
+          <option value="creation desc">🕒 Latest</option>
+          <option value="item_name asc">🔤 Name</option>
+        </select>
+      </div>
       </div>
 
     </div>
@@ -707,49 +715,122 @@ class StockIOPage {
             </div>
             <div class="form-group">
               <label>Default UOM *</label>
-              <select v-model="newItem.stock_uom">
-                <option value="">Select UOM</option>
-                <option v-for="u in masterData.uoms" :value="u.name">{{ u.name }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.uom" 
+                       @focus="activeDropdown = 'uom'; $event.target.select()" 
+                       @click="activeDropdown = 'uom'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'uom') activeDropdown = null }, 300)"
+                       placeholder="Select UOM..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'uom'">
+                  <div class="dropdown-item" 
+                       v-for="u in masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase()))" 
+                       @click="newItem.stock_uom = u.name; search.uom = u.name; activeDropdown = null">
+                    {{ u.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>Item Department *</label>
-              <select v-model="newItem.custom_item_department">
-                <option value="">Select Department</option>
-                <option v-for="d in masterData.departments" :value="d.name">{{ d.name }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.dept" 
+                       @focus="activeDropdown = 'dept'; $event.target.select()" 
+                       @click="activeDropdown = 'dept'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'dept') activeDropdown = null }, 300)"
+                       placeholder="Select Department..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'dept'">
+                  <div class="dropdown-item" 
+                       v-for="d in masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase()))" 
+                       @click="newItem.custom_item_department = d.name; search.dept = d.name; activeDropdown = null">
+                    {{ d.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>Item Group *</label>
-              <select v-model="newItem.item_group">
-                <option value="">Select Group</option>
-                <option v-for="g in masterData.item_groups" :value="g.name">{{ g.name }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.group" 
+                       @focus="activeDropdown = 'group'; $event.target.select()" 
+                       @click="activeDropdown = 'group'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'group') activeDropdown = null }, 300)"
+                       placeholder="Select Group..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'group'">
+                  <div class="dropdown-item" 
+                       v-for="g in masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase()))" 
+                       @click="newItem.item_group = g.name; search.group = g.name; activeDropdown = null">
+                    {{ g.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
+                            <div class="form-group" v-if="newItem.is_fixed_asset">
+              <label>Asset Category *</label>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.asset" 
+                       @focus="activeDropdown = 'asset'; $event.target.select()" 
+                       @click="activeDropdown = 'asset'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'asset') activeDropdown = null }, 300)"
+                       placeholder="Select Asset Category..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'asset'">
+                  <div class="dropdown-item" 
+                       v-for="c in masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase()))" 
+                       @click="newItem.asset_category = c.name; search.asset = c.name; activeDropdown = null">
+                    {{ c.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
+            </div>
             </div>
             <div class="form-group">
               <label>HSN/SAC</label>
-              <select v-model="newItem.gst_hsn_code">
-                <option value="">Select HSN Code</option>
-                <option v-for="h in masterData.hsn_codes" :value="h.name">{{ h.name }} - {{ h.description }}</option>
-              </select>
+              <div class="searchable-select">
+                <input type="text" 
+                       v-model="search.hsn" 
+                       @focus="activeDropdown = 'hsn'; $event.target.select()" 
+                       @click="activeDropdown = 'hsn'"
+                       @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)"
+                       placeholder="Select HSN Code..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'hsn'">
+                  <div class="dropdown-item" 
+                       v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
+                       @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
+                    {{ h.name }} - {{ h.description }}
+                  </div>
+                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
+                    No results
+                  </div>
+                </div>
+              </div>
+
             </div>
             <div class="form-group full-width checkbox-group">
               <label>
-                <input type="checkbox" v-model="newItem.is_stock_item" />
+                <input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" />
                 Is Stock Item
               </label>
               <label>
-                <input type="checkbox" v-model="newItem.is_fixed_asset" />
+                <input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" />
                 Is Fixed Asset
               </label>
             </div>
-            <div class="form-group" v-if="newItem.is_fixed_asset">
-              <label>Asset Category *</label>
-              <select v-model="newItem.asset_category">
-                <option value="">Select Asset Category</option>
-                <option v-for="c in masterData.asset_categories" :value="c.name">{{ c.name }}</option>
-              </select>
-            </div>
+                          
+
           </div>
         </div>
         <div class="modal-footer">
@@ -776,6 +857,7 @@ class StockIOPage {
       assetOpen: false,
       activeTab: "all",
       searchText: "",
+      itemSort: "creation desc",
 
       // DATA LISTS
       requests: [],
@@ -811,6 +893,14 @@ class StockIOPage {
       // MODALS & FORM STATE
       showCreateItemModal: false,
       isSubmitting: false,
+      activeDropdown: null,
+      search: {
+        uom: "",
+        dept: "",
+        group: "",
+        hsn: "",
+        asset: "",
+      },
       newItem: {
         item_code: "",
         item_name: "",
@@ -820,14 +910,14 @@ class StockIOPage {
         gst_hsn_code: "",
         is_stock_item: true,
         is_fixed_asset: false,
-        asset_category: ""
+        asset_category: "",
       },
       masterData: {
         uoms: [],
         departments: [],
         item_groups: [],
         hsn_codes: [],
-        asset_categories: []
+        asset_categories: [],
       },
 
       // SELECTION
@@ -1536,7 +1626,7 @@ class StockIOPage {
               "item_group",
               "stock_uom",
             ],
-            order_by: "item_name asc",
+            order_by: this.itemSort,
             limit_page_length: 1000,
           },
           callback: (r) => {
@@ -1552,35 +1642,49 @@ class StockIOPage {
 
       // CUSTOM ITEM MODAL METHODS
       fetchMasterData() {
-        const doctypes = ["UOM", "Item Department", "Item Group", "GST HSN Code", "Asset Category"];
+        const doctypes = [
+          "UOM",
+          "Item Department",
+          "Item Group",
+          "GST HSN Code",
+          "Asset Category",
+        ];
         const field_map = {
-          "UOM": "uoms",
+          UOM: "uoms",
           "Item Department": "departments",
           "Item Group": "item_groups",
           "GST HSN Code": "hsn_codes",
-          "Asset Category": "asset_categories"
+          "Asset Category": "asset_categories",
         };
-        
-        doctypes.forEach(dt => {
+
+        doctypes.forEach((dt) => {
           frappe.call({
             method: "frappe.client.get_list",
             args: {
               doctype: dt,
               fields: ["name", dt === "GST HSN Code" ? "description" : "name"],
               limit_page_length: 5000,
-              order_by: "name asc"
+              order_by: "name asc",
             },
             callback: (r) => {
               if (r.message) {
                 this.masterData[field_map[dt]] = r.message;
               }
-            }
+            },
           });
         });
       },
 
       closeCreateItemModal() {
         this.showCreateItemModal = false;
+        this.activeDropdown = null;
+        this.search = {
+          uom: "",
+          dept: "",
+          group: "",
+          hsn: "",
+          asset: "",
+        };
         // Reset form
         this.newItem = {
           item_code: "",
@@ -1591,20 +1695,28 @@ class StockIOPage {
           gst_hsn_code: "",
           is_stock_item: true,
           is_fixed_asset: false,
-          asset_category: ""
+          asset_category: "",
         };
       },
 
       submitCreateItem() {
         // Validation
-        const required = ["item_code", "item_name", "stock_uom", "custom_item_department", "item_group"];
+        const required = [
+          "item_code",
+          "item_name",
+          "stock_uom",
+          "custom_item_department",
+          "item_group",
+        ];
         if (this.newItem.is_fixed_asset) required.push("asset_category");
 
         for (let field of required) {
           if (!this.newItem[field]) {
             frappe.msgprint({
-              message: __("Please fill all mandatory fields: {0}", [frappe.model.unhide_column(field)]),
-              indicator: "orange"
+              message: __("Please fill all mandatory fields: {0}", [
+                frappe.model.unhide_column(field),
+              ]),
+              indicator: "orange",
             });
             return;
           }
@@ -1616,15 +1728,17 @@ class StockIOPage {
           args: {
             doc: {
               doctype: "Item",
-              ...this.newItem
-            }
+              ...this.newItem,
+            },
           },
           callback: (r) => {
             this.isSubmitting = false;
             if (!r.exc) {
               frappe.show_alert({
-                message: __("Item {0} created", [r.message.name || r.message.item_code]),
-                indicator: "green"
+                message: __("Item {0} created", [
+                  r.message.name || r.message.item_code,
+                ]),
+                indicator: "green",
               });
               this.closeCreateItemModal();
               this.loadItemsList();
@@ -1633,7 +1747,7 @@ class StockIOPage {
           },
           error: () => {
             this.isSubmitting = false;
-          }
+          },
         });
       },
 
