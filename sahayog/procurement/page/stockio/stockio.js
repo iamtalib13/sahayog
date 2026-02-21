@@ -166,12 +166,12 @@ class StockIOPage {
         <div class="submenu-item"
            :class="{ active: subMode === 'item' }"
            @click="setMode('asset', 'item')"
-        >Asset Item
+        >Asset Master
         </div>
         <div class="submenu-item"
            :class="{ active: subMode === 'movement' }"
            @click="setMode('asset', 'movement')"
-        >Asset Movement
+        >Asset Transactions
         </div>
       </div>
       </div>
@@ -950,7 +950,9 @@ class StockIOPage {
           return this.subMode === "inward" ? "Stock-Inward" : "Stock-Outward";
         }
         if (this.pageMode === "asset") {
-          return this.subMode === "item" ? "Asset-Item" : "Asset-Movement";
+          return this.subMode === "item"
+            ? "Asset Master"
+            : "Asset Transactions";
         }
         if (this.pageMode === "reports") return "Reports";
         if (this.pageMode === "item") return "Items";
