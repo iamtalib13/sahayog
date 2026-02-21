@@ -644,7 +644,9 @@ class StockIOPage {
             <div class="order-info">
               <div class="order-title">
                 <strong>{{ doc.asset_name }}</strong>
-                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
+                <span :class="'badge ' + getStatusClass(doc.custodian ? doc.status : 'Available')">
+                  {{ doc.custodian ? doc.status : 'Available' }}
+                </span>
               </div>
               <div class="order-meta">
                 {{ doc.name }} · Owner:
@@ -1763,13 +1765,8 @@ class StockIOPage {
           s.includes("to process")
         )
           return "status-pending";
-        if (
-          s.includes("approved") ||
-          s.includes("submitted") ||
-          s.includes("complete") ||
-          s.includes("success")
-        )
-          return "status-success";
+                if (s.includes("approved") || s.includes("submitted") || s.includes("complete") || s.includes("success") || s.includes("available")) return "status-success";
+        
         if (
           s.includes("cancel") ||
           s.includes("reject") ||
