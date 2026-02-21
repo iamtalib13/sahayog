@@ -130,6 +130,57 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         .perm-pane-content::-webkit-scrollbar { width: 6px; }
         .perm-pane-content::-webkit-scrollbar-track { background: transparent; }
         .perm-pane-content::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 10px; }
+
+        /* Container for the row of chips */
+.perm-check-grid-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px; /* Space between chips */
+  align-items: center;
+}
+
+/* The Chip Itself */
+.perm-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Size & Shape */
+  min-width: 32px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px; /* Pill shape */
+  
+  /* Default Style (Unselected - Grey) */
+  background-color: #f0f4f6; /* Frappe light grey */
+  color: #6c7680;           /* Frappe dark grey text */
+  border: 1px solid transparent;
+  
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+/* Hover State */
+.perm-chip:hover {
+  background-color: #e2e6ea;
+  color: #1b2024;
+}
+
+/* Selected State (Green like Frappe Status) */
+.perm-chip.selected {
+  background-color: #e8fdf0; /* Light green bg */
+  color: #2f9d58;           /* Dark green text */
+  border: 1px solid #2f9d58;
+}
+
+/* Hide the actual checkbox input completely */
+.perm-chip input {
+  display: none;
+}
+
     </style>
 
       <div id="perm-root" v-scope @vue:mounted="init()">
