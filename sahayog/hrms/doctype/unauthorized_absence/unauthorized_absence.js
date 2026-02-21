@@ -106,6 +106,21 @@ frappe.ui.form.on("Unauthorized Absence", {
         },
       });
     }
+    if (
+      frm.fields_dict.amount_of_fraud &&
+      frm.fields_dict.amount_of_fraud.$input
+    ) {
+      frm.fields_dict.amount_of_fraud.$input.off("keypress.amount_check");
+      frm.fields_dict.amount_of_fraud.$input.on(
+        "keypress.amount_check",
+        function (e) {
+          const char = String.fromCharCode(e.which || e.keyCode);
+          if (!/[0-9.]/.test(char)) {
+            e.preventDefault();
+          }
+        },
+      );
+    }
   },
   // Trigger when the field is changed
   date_of_1st_letter(frm) {
