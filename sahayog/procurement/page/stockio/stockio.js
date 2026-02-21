@@ -2330,16 +2330,16 @@ class StockIOPage {
               primary_action_label: __("Create"),
               primary_action: (values) => {
                 frappe.call({
-                  method: "frappe.client.insert",
+                  method: "sahayog.procurement.page.stockio.stockio.create_asset_movement_custom",
                   args: {
-                    doc: {
+                    doc_data: {
                       doctype: "Asset Movement",
                       ...values,
                     },
                   },
                   callback: (r) => {
                     if (!r.exc && r.message) {
-                      const am_name = r.message.name;
+                      const am_name = r.message;
                       frappe.msgprint({
                         title: "Asset Movement Created!",
                         message: `Asset Movement <b>${am_name}</b> saved successfully!`,
@@ -3135,7 +3135,7 @@ class StockIOPage {
               if (!selected.length) return;
               frappe.call({
                 method:
-                  "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
+                  "sahayog.procurement.page.stockio.stockio.create_asset_movement_from_emmr_custom",
                 args: { emmr: docname, assets: selected },
                 freeze: true,
                 freeze_message: "Creating Asset Movement...",
