@@ -160,7 +160,7 @@ body.stockio-active [data-page-route="stockio"] {
    BUTTONS
 ================================================== */
 
-.btn {
+.stockio-app .btn, .stockio-modal .btn {
   padding: 8px 14px;
   border-radius: 8px;
   font-weight: 500;
@@ -168,12 +168,12 @@ body.stockio-active [data-page-route="stockio"] {
   border: none;
 }
 
-.btn.primary {
+.stockio-app .btn.primary, .stockio-modal .btn.primary {
   background: var(--primary);
   color: #ffffff;
 }
 
-.btn.ghost {
+.stockio-app .btn.ghost, .stockio-modal .btn.ghost {
   background: #ffffff;
   border: 1px solid var(--border);
   color: var(--text);
@@ -536,28 +536,28 @@ body.stockio-active .page-content {
   flex-shrink: 0;
 }
 
-.badge {
+.stockio-app .badge, .stockio-modal .badge {
   padding: 2px 8px;
   font-size: 12px;
   border-radius: 999px;
 }
 
-.badge.paid {
+.stockio-app .badge.paid {
   background: #dcfce7;
   color: #15803d;
 }
 
-.badge.pending {
+.stockio-app .badge.pending {
   background: #fef3c7;
   color: #92400e;
 }
 
-.badge.category-asset {
+.stockio-app .badge.category-asset {
   background: #ede9fe;
   color: #6d28d9;
 }
 
-.badge.category-stock {
+.stockio-app .badge.category-stock {
   background: #e0f2fe;
   color: #0369a1;
 }
@@ -629,7 +629,7 @@ body.stockio-active .page-content {
 /* Search stays right */
 .stockio-toolbar .stockio-search {
   display: flex;
-  gap: 420px;
+  gap: 650px;
   align-items: center;
   min-width: 420px;
 }
@@ -887,7 +887,7 @@ body.stockio-active .page-content {
 }
 
 /* FORM GRID */
-.form-grid {
+.stockio-modal .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -895,24 +895,24 @@ body.stockio-active .page-content {
   box-shadow: none !important;
 }
 
-.form-group {
+.stockio-modal .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.form-group.full-width {
+.stockio-modal .form-group.full-width {
   grid-column: span 2;
 }
 
-.form-group label {
+.stockio-modal .form-group label {
   font-size: 13px;
   font-weight: 500;
   color: var(--text);
 }
 
-.form-group input[type="text"],
-.form-group select {
+.stockio-modal .form-group input[type="text"],
+.stockio-modal .form-group select {
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid var(--border);
