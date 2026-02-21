@@ -929,7 +929,9 @@ body.stockio-active .page-content {
   border-top: none;
   border-radius: 0 0 6px 6px;
   z-index: 2000;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .searchable-select .dropdown-item {
@@ -979,7 +981,6 @@ body.stockio-active .page-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  padding-bottom: 100px; /* Space for the last dropdowns */
 }
 
 /* ===============================
