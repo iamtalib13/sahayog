@@ -264,6 +264,23 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   box-shadow: 0 0 1px #2f9d58;
 }
 
+.perm-sidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;    /* Horizontal center */
+  justify-content: center; /* Vertical center */
+  text-align: center;      /* Text alignment center */
+  height: 100%;            /* Take full height of parent */
+  padding: 64px 32px;
+  color: #57606a;
+}
+
+.perm-sidebar-empty svg {
+  margin-bottom: 16px;
+  color: #d0d7de;
+}
+
+
 
     </style>
 
@@ -338,147 +355,99 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
 
             <div class="perm-pane-content">
-              
-              <div v-if="!selectedPref" class="perm-sidebar-empty">
-                <!-- Empty SVG -->
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                <div style="font-size: 14px; font-weight: 500;">No User Selected</div>
-                <div style="font-size: 13px; margin-top: 8px;">Select a user from the list to manage their permission preferences</div>
-              </div>
-
-              <div v-else>
-                
-                <!-- NEW SECTION: User Classification / Tag -->
-                <div class="perm-section">
-                   <div class="perm-section-title">User Classification</div>
-                   <div class="perm-field">
-                     <div class="perm-flabel"><span>Role Tag</span></div>
-                     <!-- Dropdown populated from DocType options -->
-                     <select class="perm-select" v-model="selectedPref.tag" @change="autoSave">
-                        <option value="">No Tag</option>
-                        <option v-for="opt in allOptions.tag" :value="opt">[[ opt ]]</option>
-                     </select>
-                   </div>
-                </div>
-
-                <div class="perm-section">
-                  <div class="perm-section-title">Geographic Filters</div>
-
-                  <div class="perm-field-row">
   
-                  <div class="perm-field-row">
-                    <!-- ZONE -->
-                    <div class="perm-field perm-field-half">
-                      <div class="perm-flabel-inline">
-                        <!-- Left: label -->
-                        <span>Zone</span>
+  <div v-if="!selectedPref" class="perm-sidebar-empty">
+    <!-- Empty SVG -->
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+    <div style="font-size: 14px; font-weight: 500;">No User Selected</div>
+    <div style="font-size: 13px; margin-top: 8px;">Select a user from the list to manage their permission preferences</div>
+  </div>
 
-                        <!-- Middle: chips, same line -->
-                        <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
-                          <div v-for="opt in allOptions.zone" :key="opt"
-                              class="perm-chip"
-                              :class="{ selected: selectedPref.zone.includes(opt) }"
-                              @click="toggle('zone', opt)">
-                            [[ opt ]]
-                            <input type="checkbox" :checked="selectedPref.zone.includes(opt)">
-                          </div>
-                        </div>
+  <div v-else>
+    
+    <!-- IF ENABLED: Show Settings -->
+    <div v-if="selectedPref.enabled">
+        
+        <!-- User Classification / Tag -->
+        <div class="perm-section">
+           <div class="perm-section-title">User Classification</div>
+           <div class="perm-field">
+             <div class="perm-flabel"><span>Role Tag</span></div>
+             <select class="perm-select" v-model="selectedPref.tag" @change="autoSave">
+                <option value="">No Tag</option>
+                <option v-for="opt in allOptions.tag" :value="opt">[[ opt ]]</option>
+             </select>
+           </div>
+        </div>
 
-                        <!-- Right: Select All -->
-                        <a class="perm-flink" @click="toggleAll('zone')" style="margin-left:auto; white-space:nowrap;">
-                          [[ isAllSelected('zone') ? 'Deselect All' : 'Select All' ]]
-                        </a>
-                      </div>
-
-                      <div v-if="!allOptions.zone.length" class="perm-no-options" style="margin-top:4px;">
-                        No options available
-                      </div>
-                    </div>
-
-                    <!-- REGION -->
-                    <div class="perm-field perm-field-half">
-                      <div class="perm-flabel-inline">
-                        <span>Region</span>
-
-                        <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
-                          <div v-for="opt in allOptions.region" :key="opt"
-                              class="perm-chip"
-                              :class="{ selected: selectedPref.region.includes(opt) }"
-                              @click="toggle('region', opt)">
-                            [[ opt ]]
-                            <input type="checkbox" :checked="selectedPref.region.includes(opt)">
-                          </div>
-                        </div>
-
-                        <a class="perm-flink" @click="toggleAll('region')" style="margin-left:auto; white-space:nowrap;">
-                          [[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]
-                        </a>
-                      </div>
-
-                      <div v-if="!allOptions.region.length" class="perm-no-options" style="margin-top:4px;">
-                        No options available
-                      </div>
+        <div class="perm-section">
+          <div class="perm-section-title">Geographic Filters</div>
+          
+          <!-- Zone & Region Row -->
+          <div class="perm-field-row">
+            <!-- Zone -->
+            <div class="perm-field perm-field-half">
+                <div class="perm-flabel-inline">
+                  <span>Zone</span>
+                  <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
+                    <div v-for="opt in allOptions.zone" :key="opt" class="perm-chip" :class="{ selected: selectedPref.zone.includes(opt) }" @click="toggle('zone', opt)">
+                      [[ opt ]] <input type="checkbox" :checked="selectedPref.zone.includes(opt)">
                     </div>
                   </div>
-
-                  <!-- State, District, Sol ID sections (same as before) -->
-                  <div class="perm-field">
-                    <div class="perm-flabel"><span>State</span></div>
-                    <div v-if="allOptions.state.length" class="perm-check-grid perm-check-grid-multi">
-                      <div v-for="opt in allOptions.state" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.state.includes(opt) }" @click="toggle('state', opt)">
-                        <input type="checkbox" :checked="selectedPref.state.includes(opt)" @click.stop="toggle('state', opt)"><label>[[ opt ]]</label>
-                      </div>
-                    </div>
-                    <div v-else class="perm-no-options">No options available</div>
-                  </div>
-
-                  <div class="perm-field">
-                    <div class="perm-flabel"><span>District</span></div>
-                    <div v-if="allOptions.district.length" class="perm-check-grid perm-check-grid-multi">
-                      <div v-for="opt in allOptions.district" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.district.includes(opt) }" @click="toggle('district', opt)">
-                        <input type="checkbox" :checked="selectedPref.district.includes(opt)" @click.stop="toggle('district', opt)"><label>[[ opt ]]</label>
-                      </div>
-                    </div>
-                    <div v-else class="perm-no-options">No options available</div>
-                  </div>
-
-                  <div class="perm-field">
-                    <div class="perm-flabel"><span>Sol ID</span></div>
-                    <div v-if="allOptions.sol_id.length" class="perm-check-grid perm-check-grid-multi">
-                      <div v-for="opt in allOptions.sol_id" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.sol_id.includes(opt) }" @click="toggle('sol_id', opt)">
-                        <input type="checkbox" :checked="selectedPref.sol_id.includes(opt)" @click.stop="toggle('sol_id', opt)"><label>[[ opt ]]</label>
-                      </div>
-                    </div>
-                    <div v-else class="perm-no-options">No options available</div>
-                  </div>
+                  <a class="perm-flink" @click="toggleAll('zone')" style="margin-left:auto;">[[ isAllSelected('zone') ? 'Deselect All' : 'Select All' ]]</a>
                 </div>
-
-                <div class="perm-section">
-                  <div class="perm-section-title">Lead Specific Filters</div>
-                  <!-- Product and Source sections (same as before) -->
-                  <div class="perm-field">
-                    <div class="perm-flabel"><span>Product</span></div>
-                    <div v-if="allOptions.product.length" class="perm-check-grid perm-check-grid-multi">
-                      <div v-for="opt in allOptions.product" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.product.includes(opt) }" @click="toggle('product', opt)">
-                        <input type="checkbox" :checked="selectedPref.product.includes(opt)" @click.stop="toggle('product', opt)"><label>[[ opt ]]</label>
-                      </div>
-                    </div>
-                    <div v-else class="perm-no-options">No options available</div>
-                  </div>
-
-                   <div class="perm-field">
-                    <div class="perm-flabel"><span>Source</span></div>
-                    <div v-if="allOptions.source.length" class="perm-check-grid perm-check-grid-multi">
-                      <div v-for="opt in allOptions.source" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.source.includes(opt) }" @click="toggle('source', opt)">
-                        <input type="checkbox" :checked="selectedPref.source.includes(opt)" @click.stop="toggle('source', opt)"><label>[[ opt ]]</label>
-                      </div>
-                    </div>
-                    <div v-else class="perm-no-options">No options available</div>
-                  </div>
-                </div>
-
-              </div>
             </div>
+
+            <!-- Region -->
+            <div class="perm-field perm-field-half">
+                <div class="perm-flabel-inline">
+                  <span>Region</span>
+                  <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
+                    <div v-for="opt in allOptions.region" :key="opt" class="perm-chip" :class="{ selected: selectedPref.region.includes(opt) }" @click="toggle('region', opt)">
+                      [[ opt ]] <input type="checkbox" :checked="selectedPref.region.includes(opt)">
+                    </div>
+                  </div>
+                  <a class="perm-flink" @click="toggleAll('region')" style="margin-left:auto;">[[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]</a>
+                </div>
+            </div>
+          </div>
+
+          <!-- Other Filters (State, District, SOL ID) -->
+          <div class="perm-field"><div class="perm-flabel"><span>State</span></div><div v-if="allOptions.state.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.state" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.state.includes(opt) }" @click="toggle('state', opt)"><input type="checkbox" :checked="selectedPref.state.includes(opt)" @click.stop="toggle('state', opt)"><label>[[ opt ]]</label></div></div></div>
+          <div class="perm-field"><div class="perm-flabel"><span>District</span></div><div v-if="allOptions.district.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.district" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.district.includes(opt) }" @click="toggle('district', opt)"><input type="checkbox" :checked="selectedPref.district.includes(opt)" @click.stop="toggle('district', opt)"><label>[[ opt ]]</label></div></div></div>
+          <div class="perm-field"><div class="perm-flabel"><span>Sol ID</span></div><div v-if="allOptions.sol_id.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.sol_id" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.sol_id.includes(opt) }" @click="toggle('sol_id', opt)"><input type="checkbox" :checked="selectedPref.sol_id.includes(opt)" @click.stop="toggle('sol_id', opt)"><label>[[ opt ]]</label></div></div></div>
+        </div>
+
+        <div class="perm-section">
+          <div class="perm-section-title">Lead Specific Filters</div>
+          <!-- Product & Source -->
+          <div class="perm-field"><div class="perm-flabel"><span>Product</span></div><div v-if="allOptions.product.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.product" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.product.includes(opt) }" @click="toggle('product', opt)"><input type="checkbox" :checked="selectedPref.product.includes(opt)" @click.stop="toggle('product', opt)"><label>[[ opt ]]</label></div></div></div>
+          <div class="perm-field"><div class="perm-flabel"><span>Source</span></div><div v-if="allOptions.source.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.source" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.source.includes(opt) }" @click="toggle('source', opt)"><input type="checkbox" :checked="selectedPref.source.includes(opt)" @click.stop="toggle('source', opt)"><label>[[ opt ]]</label></div></div></div>
+        </div>
+
+    </div>
+
+    <!-- IF DISABLED: Show Message -->
+    <!-- IF DISABLED: Show Centered Message -->
+<div v-else class="perm-sidebar-empty">
+    <!-- Lock Icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+    
+    <div style="font-size: 16px; font-weight: 600; color: #24292f;">
+        Configuration Disabled
+    </div>
+    
+    <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
+        Enable this user's preferences using the toggle above to configure report filters.
+    </div>
+</div>
+
+  </div>
+</div>
+
           </div>
         </div>
       </div>
