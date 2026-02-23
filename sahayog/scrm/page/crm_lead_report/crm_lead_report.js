@@ -53,6 +53,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .tab-item.active { background: #fff; color: #05a15d; border-top: 2px solid #05a15d; border-bottom: 1px solid transparent; }
         @keyframes blink-success { 0% { background-color: #dcfce7; } 50% { background-color: #ffffff; } 100% { background-color: #dcfce7; } }
         .blinking-success { animation: blink-success 1.5s infinite; border: 1px solid #22c55e !important; }
+        .dropdown-input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 12px;
+  background: transparent;
+  padding: 0;
+}
+
+.dropdown-select input::placeholder {
+  color: #374151;
+  opacity: 1;
+}
   `,
     )
     .appendTo("head");
@@ -94,14 +107,22 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         <div v-for="key in ['sol_id', 'product', 'source']" :key="key" class="filter-column">
                             <span class="filter-label">{{ key.replace('_', ' ') }}</span>
                             <div class="custom-dropdown">
-                                <div class="dropdown-select" @click.stop="toggleDropdown(key)">
-                                    <span>{{ getDisplayText(key) }}</span>
+                               <div class="dropdown-select">
+                                    <input type="text"
+                                    v-model="search_query[key]"
+                                    :placeholder="getDisplayText(key)"
+                                    class="dropdown-input"
+                                    @focus="active_dropdown = key"
+                                    @click.stop>
                                     <i class="fa fa-caret-down text-muted"></i>
                                 </div>
                                 <div :class="['dropdown-list', active_dropdown === key ? 'show' : '']">
-                                    <div class="dropdown-item" v-for="opt in filter_data[key]" @click.stop="toggleFilter(key, opt)">
-                                        <input type="checkbox" :checked="isSelected(key, opt)">
-                                        <span>{{ opt }}</span>
+                                    <div class="dropdown-item"v-for="opt in filter_data[key].filter(o => 
+                                          !search_query[key] || 
+                                          o.toLowerCase().includes(search_query[key].toLowerCase())
+                                      )"@click.stop="toggleFilter(key, opt)">
+                                                    <input type="checkbox" :checked="isSelected(key, opt)">
+                                     <span>{{ opt }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -152,6 +173,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     active_dropdown: null,
     filter_data: { zone: [], region: [], sol_id: [], product: [], source: [] },
     selected: { zone: [], region: [], sol_id: [], product: [], source: [] },
+    search_query: {
+      sol_id: "",
+      product: "",
+      source: "",
+    },
     tabs: [
       { id: "employee", label: "Employee Wise Performance" },
       { id: "daily_sales", label: "Daily Sales Report" },
@@ -205,6 +231,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
     toggleDropdown(key) {
       this.active_dropdown = this.active_dropdown === key ? null : key;
+      if (this.active_dropdown === null) {
+        this.search_query[key] = "";
+      }
     },
     isSelected(key, val) {
       return this.selected[key].includes(val);
@@ -215,21 +244,18 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       else this.selected[key].push(val);
     },
     getDisplayText(key) {
-      let count = this.selected[key].length;
-      let totalOptions = this.filter_data[key].length;
+      let selectedItems = this.selected[key] || [];
+      let count = selectedItems.length;
 
-      // 1. Agar kuch bhi select nahi hai
       if (count === 0) {
         return "Select Options";
       }
-      // 3. Pehla selected item aur baki ka count dikhane ke liye
-      let firstItem = this.selected[key][0];
 
-      if (count > 1) {
-        return `${firstItem}`;
-      } else {
-        return firstItem;
+      if (count === 1) {
+        return selectedItems[0];
       }
+
+      return `${selectedItems[0]} +${count - 1} more`;
     },
     getTabUrl() {
       if (this.active_tab === "daily_sales")
