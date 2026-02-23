@@ -32,7 +32,6 @@ def get_user_report_preference_record(user):
         doc = frappe.get_doc("Report Preference", name)
         result.append({
             "user": doc.user,
-            "all_regions": doc.all_regions,
             "product": [d.product for d in doc.product],
             "source": [d.source for d in doc.source],
             "zone": [d.zone for d in doc.zone],
@@ -77,18 +76,21 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         )
     
     # ---------- Preferences ----------
-    is_all_regions = False 
+    is_all_regions = False # Initialize is_all_regions
     products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
-        if pref_res:
-            p = pref_res[0]
-            is_all_regions = p.get("all_regions")
-            products_pref = {norm(x) for x in p.get("product", [])}
-            sources_pref = {norm(x) for x in p.get("source", [])}
-            zones_pref = {norm(x) for x in p.get("zone", [])}
-            regions_pref = {norm(x) for x in p.get("region", [])}
-            sol_ids_pref = {str(x) for x in p.get("sol_id", [])}
+        
+        # Enforce Report Preference record existence for non-Administrators
+        if not pref_res:
+            frappe.throw("You do not have a Report Preference record. Please contact your manager to set it up.")
+
+        p = pref_res[0]
+        products_pref = {norm(x) for x in p.get("product", [])}
+        sources_pref = {norm(x) for x in p.get("source", [])}
+        zones_pref = {norm(x) for x in p.get("zone", [])}
+        regions_pref = {norm(x) for x in p.get("region", [])}
+        sol_ids_pref = {str(x) for x in p.get("sol_id", [])}
 
     filters = frappe.parse_json(filters) if filters else {}
 
@@ -112,11 +114,11 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
 
     # REGION
     if "region" in filters:
-        ui_regions = {norm(x) for x in filters.get("region", [])}
-        if not ui_regions: regions_pref = set()
-        else:
-            if not is_all_regions: regions_pref = regions_pref.intersection(ui_regions)
-            else: regions_pref = ui_regions
+       ui_regions = {norm(x) for x in filters.get("region", [])}
+    if not ui_regions:
+        regions_pref = set()
+    else:
+        regions_pref = regions_pref.intersection(ui_regions)
 
     # SOL ID
     if "sol_id" in filters:
@@ -186,7 +188,10 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             zone_match = not zones_pref or (lead_zone in zones_pref)
             
             region_match = True
-            if regions_pref:
+            # If user preference is to include all regions, bypass specific region filtering
+            if is_all_regions: 
+                region_match = True
+            elif regions_pref:
                 allowed = set(regions_pref)
                 for r in list(regions_pref):
                     allowed |= REGION_ALIAS_MAP.get(r, set())
@@ -264,14 +269,28 @@ def validate_date_range(from_date, to_date):
     if f > t: frappe.throw("From Date cannot be after To Date")
     return f, t
 
+# sahayog/scrm/api/report_access.py (Ke andar changes)
+
 @frappe.whitelist()
 def queue_leads_export(from_date, to_date, filters=None):
+    # Ensure current user is passed to the job
+    user = frappe.session.user
+    
+    # Status ko 'processing' set karein taaki UI ko pata chale kaam shuru ho gaya hai
+    frappe.cache().set_value(f"export_status_{user}", {"status": "processing"}, expires_in_sec=600)
+    
     frappe.enqueue(
         method="sahayog.scrm.api.report_access.run_leads_export_job",
-        queue="long", timeout=3600, user=frappe.session.user,
-        from_date=str(from_date), to_date=str(to_date), filters=filters
+        queue="long", 
+        timeout=3600, 
+        user=user,
+        from_date=from_date, 
+        to_date=to_date, 
+        filters=filters
     )
     return {"status": "queued"}
+
+# Baaki Python logic (get_leads etc.) same rahega jo aapne diya hai.
 
 def run_leads_export_job(user, from_date, to_date, filters=None):
     frappe.set_user(user)

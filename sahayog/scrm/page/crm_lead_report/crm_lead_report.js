@@ -6,448 +6,371 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   });
 
   const $container = $(page.body).empty();
-  const user = frappe.session.user;
 
-  // --- Step 1: CSS (Original + Progress Bar Styles) ---
+  // Custom set_intro implementation for this page
+  page.set_intro = function (html) {
+    if (!this.$intro_area) {
+      this.$intro_area = $(
+        '<div class="page-intro" style="margin-bottom: 10px; min-height: 0;"></div>',
+      ).prependTo($container);
+    }
+    this.$intro_area.html(
+      html
+        ? `<div style="padding: 8px 12px; border-radius: 6px; font-size: 12px; border: 1px solid transparent;">${html}</div>`
+        : "",
+    );
+    if (!html) this.$intro_area.hide();
+    else this.$intro_area.show();
+  };
+  // Transparent UI aur Tab Styling
   $("<style>")
     .prop("type", "text/css")
     .html(
       `
-    .dashboard-tabs { display: flex; border-bottom: 1px solid #d1d8dd; margin-bottom: 20px; gap: 5px; }
-    .nav-tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 600; color: #6b7280; }
-    .nav-tab.active { color: #7775ce; border-bottom-color: #7775ce; background: #f9fafb; }
-    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-    .filter-chip { 
-        padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
-        border: 1px solid #d1d8dd; cursor: pointer; background: #fff;
-        display: flex; align-items: center; transition: all 0.2s;
-    }
-    .filter-chip.active { background: #7775ce; color: #fff; border-color: #7775ce; }
-    .chip-count { background: rgba(0,0,0,0.1); padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-size: 10px; }
-    .filter-chip.active .chip-count { background: rgba(255,255,255,0.2); }
-    .section-label { font-size: 12px; text-transform: uppercase; color: #000 !important; font-weight: 700; margin-bottom: 8px; margin-top: 10px;letter-spacing: 0.5px;}
-    /* Naya Button Color (Indigo) */
-    .btn-generate {
-        background: #5e5cc7 !important; /* Modern Indigo */
-        color: white !important;
-        font-weight: bold !important;
-        border: none !important;
-        height: 38px;
-        transition: all 0.2s ease;
-    }
-    .btn-generate:hover {
-        background: #4b49ac !important;
-        transform: translateY(-1px);
-    }
-    .dashboard-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .border-dashed { border: 2px dashed #d1d8dd !important; background: #fafbfc; border-radius: 12px; }
-    
-    .filters-wrapper { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; }
-    /* Isse har section sirf utni space lega jitni zaruri hai */
-    .filter-section { 
-        flex: 0 1 auto; /* Flex-grow ko 0 kiya taaki faltu space na khiche */
-        min-width: 150px; 
-        border-right: 1px solid #f0f0f0; 
-        padding-right: 15px; 
-        margin-bottom: 10px;
-    }
-    .filter-section:last-child { border-right: none; }
-    .date-action-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; gap: 15px; }
-
-    /* Progress Bar Modal */
-    #export-prog-modal {
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        background: white; padding: 30px; border-radius: 12px; z-index: 2000;
-        width: 90%; max-width: 450px; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center;
-    }
-    #export-prog-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.5); z-index: 1999; display: none; backdrop-filter: blur(3px);
-    }
-    .export-progress-bar { width: 100%; height: 10px; background: #e0e6ed; border-radius: 5px; overflow: hidden; margin: 20px 0; }
-    #export-fill { height: 100%; background: linear-gradient(90deg, #7775ce, #059669); width: 0%; transition: width 0.4s ease; }
-    #export-perc { font-weight: bold; font-size: 18px; color: #7775ce; }
-    /*iframe style*/
-    #daily-sales-frame {
-    border-radius: 12px; min-height: 80vh; width: 100%; border: none; }
+        #crm-app { padding: 10px; background-color: transparent; }
+        .ui-section-card { background: #fff; border: none !important; border-radius: 8px; margin-bottom: 20px; box-shadow: none !important; }
+        .section-header { background: #f8f9fa; padding: 10px 15px; border-bottom: 1px solid #d1d8dd; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
+        .header-title { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; }
+        .header-controls { display: flex; align-items: center; gap: 15px; }
+        .select-input { height: 32px; font-size: 13px; border: 1px solid #d1d8dd; border-radius: 4px; padding: 0 8px; margin-left: 5px; cursor: pointer; }
+        .btn-generate-sm { background: #1f2937; color: #fff; border: none; padding: 0 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; height: 32px; }
+        .filter-grid { display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; }
+        .filter-column { flex: 1; min-width: 160px; border-right: 1px solid #eee; padding-right: 15px; }
+        .filter-column:last-child { border-right: none; }
+        .filter-label { font-size: 10px; font-weight: 700; color: #1f2937; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .mini-chip-list { display: flex; flex-wrap: wrap; gap: 5px; }
+        .mini-chip { font-size: 11px; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: 1px solid #d1d8dd; cursor: pointer; background: #fff; }
+        .mini-chip.active { background: #05a15d !important; color: #fff !important; border-color: #05a15d !important; font-weight: bold; }
+        .custom-dropdown { position: relative; width: 100%; }
+        .dropdown-select { background: #fff; border: 1px solid #d1d8dd; border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-list { position: absolute; top: 100%; left: 0; width: 250px; max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #d1d8dd; border-radius: 4px; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; margin-top: 5px; }
+        .dropdown-list.show { display: block; }
+        .dropdown-item { padding: 8px 12px; font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer; border-bottom: 1px solid #f1f1f1; }
+        
+        /* Tab Styling */
+        .tab-nav { display: flex; background: #f8f9fa; border-bottom: 1px solid #d1d8dd; border-radius: 8px 8px 0 0; }
+        .tab-item { padding: 12px 20px; cursor: pointer; font-weight: 600; color: #6b7280; font-size: 13px; border-right: 1px solid #eee; }
+        .tab-item.active { background: #fff; color: #05a15d; border-top: 2px solid #05a15d; border-bottom: 1px solid transparent; }
+        @keyframes blink-success { 0% { background-color: #dcfce7; } 50% { background-color: #ffffff; } 100% { background-color: #dcfce7; } }
+        .blinking-success { animation: blink-success 1.5s infinite; border: 1px solid #22c55e !important; }
   `,
     )
     .appendTo("head");
 
-  // --- Step 2: Structure ---
   $container.append(`
-    <div id="export-prog-overlay"></div>
-    <div id="export-prog-modal">
-        <h4 style="margin:0;">Generating Report</h4>
-        <p class="text-muted" id="export-status-text">Processing records...</p>
-        <div class="export-progress-bar"><div id="export-fill"></div></div>
-        <div id="export-perc">0%</div>
-    </div>
+        <div id="crm-app" v-scope @vue:mounted="init()">
+            <div class="ui-section-card">
+                <div class="section-header">
+                    <div class="header-title">Lead Export Filters</div>
+                    <div class="header-controls">
+                        <div class="d-flex align-items-center">
+                            <span style="font-size:10px; font-weight:bold; color:#6b7280">PERIOD:</span>
+                            <select v-model="selected_year" class="select-input">
+                                <option v-for="y in years" :value="y">{{ y }}</option>
+                            </select>
+                            <select v-model="selected_month" class="select-input" style="min-width: 100px;">
+                                <option v-for="(m, index) in months" :value="index + 1">{{ m }}</option>
+                            </select>
+                        </div>
+                        <button class="btn-generate-sm" @click="applyFilters" :disabled="loading">
+                            <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i> EXPORT CSV
+                        </button>
+                    </div>
+                </div>
 
-    <div class="dashboard-tabs">
-        <div class="nav-tab active" data-tab="preference">Preference Wise</div>
-        <div class="nav-tab" data-tab="employee">Employee Wise</div>
-        <div class="nav-tab" data-tab="daily_sales">Daily Sales Report</div>
-        <div class="nav-tab" data-tab="lead_mgmt">Lead Management</div>
+                <div class="section-body">
+                    <div class="filter-grid">
+                        <div v-for="key in ['zone', 'region']" :key="key" class="filter-column">
+                            <span class="filter-label">{{ key }}</span>
+                           <div class="mini-chip-list">
+                           <div v-for="opt in filter_data[key]" 
+                            :class="['mini-chip', isSelected(key, opt) ? 'active' : '']"
+                            @click="toggleFilter(key, opt)">
+                            {{ formatDisplayText(key, opt) }}
+                        </div>
+                        </div>
+                        </div>
+
+                        <div v-for="key in ['sol_id', 'product', 'source']" :key="key" class="filter-column">
+                            <span class="filter-label">{{ key.replace('_', ' ') }}</span>
+                            <div class="custom-dropdown">
+                                <div class="dropdown-select" @click.stop="toggleDropdown(key)">
+                                    <span>{{ getDisplayText(key) }}</span>
+                                    <i class="fa fa-caret-down text-muted"></i>
+                                </div>
+                                <div :class="['dropdown-list', active_dropdown === key ? 'show' : '']">
+                                    <div class="dropdown-item" v-for="opt in filter_data[key]" @click.stop="toggleFilter(key, opt)">
+                                        <input type="checkbox" :checked="isSelected(key, opt)">
+                                        <span>{{ opt }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui-section-card"> 
+                <div class="tab-nav">
+                    <div v-for="t in tabs" :class="['tab-item', active_tab == t.id ? 'active' : '']" @click="active_tab = t.id">
+                        {{ t.label }}
+                    </div>
+                </div>
+                <div class="tab-content" style="padding:20px; min-height:300px;">
+                     <div v-if="active_tab === 'employee'">
+                        <div class="text-center p-5 text-muted">
+                            <i class="fa fa-table fa-2x mb-3" style="color:#d1d8dd"></i>
+                            <p>Select Month/Year and click <b>Export CSV</b> for raw data. Employee view coming soon.</p>
+                        </div>
+                     </div>
+                     <iframe v-else :src="getTabUrl()" style="width:100%; height:70vh; border:none;"></iframe>
+                </div>
+            </div>
+        </div>
+    `);
+
+  PetiteVue.createApp({
+    selected_year: new Date().getFullYear(),
+    selected_month: new Date().getMonth() + 1,
+    years: [2024, 2025, 2026],
+    months: [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ],
+    loading: false,
+    active_tab: "employee",
+    active_dropdown: null,
+    filter_data: { zone: [], region: [], sol_id: [], product: [], source: [] },
+    selected: { zone: [], region: [], sol_id: [], product: [], source: [] },
+    tabs: [
+      { id: "employee", label: "Employee Wise Performance" },
+      { id: "daily_sales", label: "Daily Sales Report" },
+      { id: "lead_mgmt", label: "Lead Management" },
+    ],
+
+    async init() {
+      let res = await frappe.call(
+        "sahayog.scrm.api.report_access.get_user_report_preference_record",
+        { user: frappe.session.user },
+      );
+      const pref = (res.message || [])[0];
+      if (pref) {
+        this.filter_data = {
+          zone: pref.zone || [],
+          region: pref.region || [],
+          sol_id: pref.sol_id || [],
+          product: pref.product || [],
+          source: pref.source || [],
+        };
+        // Preference ke basis par auto-select
+        this.selected = {
+          zone: [...this.filter_data.zone],
+          region: [...this.filter_data.region],
+          sol_id: [...this.filter_data.sol_id],
+          product: [...this.filter_data.product],
+          source: [...this.filter_data.source],
+        };
+      }
+      window.addEventListener("click", () => {
+        this.active_dropdown = null;
+      });
+    },
+
+    formatDisplayText(key, val) {
+      if (!val) return "";
+
+      // Specific check for Head Office
+      if (val.toLowerCase().replace(/\s/g, "") === "headoffice") {
+        return "HO";
+      }
+
+      // Zone aur Region ke liye number nikalne ka logic
+      if (key === "zone" || key === "region") {
+        let parts = val.split("-");
+        // Agar hyphen hai (Zone-1), to aakhri part lo, warna pura dikhao
+        return parts.length > 1 ? parts[parts.length - 1] : val;
+      }
+
+      return val;
+    },
+    toggleDropdown(key) {
+      this.active_dropdown = this.active_dropdown === key ? null : key;
+    },
+    isSelected(key, val) {
+      return this.selected[key].includes(val);
+    },
+    toggleFilter(key, val) {
+      const i = this.selected[key].indexOf(val);
+      if (i > -1) this.selected[key].splice(i, 1);
+      else this.selected[key].push(val);
+    },
+    getDisplayText(key) {
+      let count = this.selected[key].length;
+      let totalOptions = this.filter_data[key].length;
+
+      // 1. Agar kuch bhi select nahi hai
+      if (count === 0) {
+        return "Select Options";
+      }
+      // 3. Pehla selected item aur baki ka count dikhane ke liye
+      let firstItem = this.selected[key][0];
+
+      if (count > 1) {
+        return `${firstItem}`;
+      } else {
+        return firstItem;
+      }
+    },
+    getTabUrl() {
+      if (this.active_tab === "daily_sales")
+        return "/app/daily-sales-report?is_embedded=1";
+      if (this.active_tab === "lead_mgmt")
+        return "/app/crm-lead-management?is_embedded=1";
+      return "";
+    },
+    async applyFilters() {
+      this.loading = true;
+
+      // Update intro to show processing status (Compact)
+      page.set_intro(`
+        <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
+          <i class="fa fa-spinner fa-spin mr-2"></i> <b>Generating Report...</b> Please stay on this page for the download link.
+        </div>
+      `);
+
+      const fromDate = `${this.selected_year}-${String(this.selected_month).padStart(2, "0")}-01`;
+      const toDate = new Date(this.selected_year, this.selected_month, 0)
+        .toISOString()
+        .split("T")[0];
+
+      try {
+        let res = await frappe.call({
+          method: "sahayog.scrm.api.report_access.queue_leads_export",
+          args: {
+            from_date: fromDate,
+            to_date: toDate,
+            filters: this.selected,
+          },
+        });
+        if (res.message?.status === "queued") {
+          frappe.show_alert({
+            message: "Export started...",
+            indicator: "blue",
+          });
+          this.checkStatus();
+        }
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    checkStatus() {
+      let progress = 10;
+      let timer = setInterval(async () => {
+        let res = await frappe.call(
+          "sahayog.scrm.api.report_access.check_export_status",
+        );
+
+        // Update progress simulation (Compact)
+        if (progress < 90) progress += 10;
+        page.set_intro(`
+          <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
+            <i class="fa fa-spinner fa-spin mr-2"></i> <b>Processing (${progress}%)...</b> Fetching records.
+          </div>
+        `);
+        if (res.message?.status === "completed") {
+          clearInterval(timer);
+
+          const fileName = res.message.file_url.split("/").pop();
+          const monthName = this.months[this.selected_month - 1];
+
+          page.set_intro(`
+    <div class="p-2 blinking-success" 
+         style="background:#f0fdf4; border-left:4px solid #22c55e; border-radius:4px; font-size:12px; color:#166534;">
+      
+      <div style="display:flex; justify-content:space-between;">
+        <span><b>Export Complete</b></span>
+        <span>${res.message.row_count} rows</span>
+      </div>
+
+      <div style="margin-top:6px; font-size:11px;">
+        📁 <b>File:</b> ${fileName}
+      </div>
+
+      <div style="font-size:11px;">
+        📅 <b>Period:</b> ${monthName} ${this.selected_year}
+      </div>
     </div>
-    <div id="tab-content-area"></div>
   `);
 
-  // --- Step 3: Render Function ---
-  // --- Step 3: Render Function (Modified only to add SOL ID) ---
-  // --- Step 3: Render Function (Optimized for Dynamic Space) ---
-  async function render_preference_view() {
-    const $view = $("#tab-content-area").empty();
-    let res = await frappe.call({
-      method:
-        "sahayog.scrm.api.report_access.get_user_report_preference_record",
-      args: { user: user },
-    });
-
-    const pref = (res.message || [])[0];
-    if (!pref) {
-      $view.html(
-        `<div class="text-center p-5 text-muted">No preferences found.</div>`,
-      );
-      return;
-    }
-
-    let region_data = pref.all_regions
-      ? (
-          await frappe.call({
-            method: "sahayog.scrm.api.report_access.get_all_system_regions",
-          })
-        ).message
-      : pref.region || [];
-
-    // Naya helper function: sirf tabhi div banayega jab data array empty na ho
-    const render_section = (label, values, field_id) => {
-      if (!values || !values.length) return ""; // Blank string return karega
-      return `<div class="filter-section">${render_chip_group(label, values, field_id)}</div>`;
-    };
-
-    $view.append(`
-      <div class="dashboard-card">
-        <div class="filters-wrapper">
-            ${render_section("Zones", pref.zone, "zone")}
-            ${render_section("Regions", region_data, "region")}
-            ${render_section("SOL IDs", pref.sol_id, "sol_id")}
-            ${render_section("Products", pref.product, "product")}
-            ${render_section("Sources", pref.source, "source")}
-        </div>
-        <div class="date-action-row">
-            <div style="flex: 1;"><div class="section-label">From Date</div><input type="date" class="form-control" id="from_date" value="${frappe.datetime.get_today()}"></div>
-            <div style="flex: 1;"><div class="section-label">To Date</div><input type="date" class="form-control" id="to_date" value="${frappe.datetime.get_today()}"></div>
-            <div style="flex: 0.5;">
-              <button class="btn btn-primary w-100 btn-generate" id="apply_filters">
-                  <i class="fa fa-play-circle mr-2"></i> GENERATE REPORT
-              </button>
-        </div>
-        </div>
-      </div>
-      <div id="report-status-box" class="mt-4 text-center p-5 border-dashed">
-        <i class="fa fa-bar-chart fa-2x text-muted mb-2"></i>
-        <h7 class="text-muted">Click "Generate Report" to fetch data</h7>
-      </div>
-    `);
-  }
-  function render_chip_group(label, values, field_id) {
-    let chips = values
-      .map(
-        (val) => `
-        <div class="filter-chip active" data-field="${field_id}" data-value="${val}">
-            ${val} <span class="chip-count"><i class="fa fa-check"></i></span>
-        </div>
-    `,
-      )
-      .join("");
-    return `<div class="section-label">${label}</div><div class="chip-group">${chips}</div>`;
-  }
-  function render_daily_sales_inline() {
-    const $view = $("#tab-content-area").empty();
-
-    // Yahan hum ek iframe ka use karenge jo usi report page ko embed kar dega
-    // 'target-page-only' query parameter se sidebar/header hide ho sakta hai (agar support ho)
-    const report_url = "/app/daily-sales-report?is_embedded=1";
-
-    $view.append(`
-        <div class="dashboard-card" style="padding: 0; overflow: hidden; height: 80vh;">
-            <iframe src="${report_url}" 
-                    style="width: 100%; height: 100%; border: none;" 
-                    id="daily-sales-frame">
-            </iframe>
-        </div>
-    `);
-  }
-  // --- Step 4: Logic Handlers ---
-
-  // Tab Switching
-  // --- Step 4: Logic Handlers (Updated for Lead Management) ---
-
-  $(document).on("click", ".nav-tab", function () {
-    $(".nav-tab").removeClass("active");
-    $(this).addClass("active");
-    const tab = $(this).data("tab");
-
-    if (tab === "preference") {
-      render_preference_view();
-    } else if (tab === "daily_sales") {
-      render_daily_sales_inline();
-    } else if (tab === "lead_mgmt") {
-      render_lead_mgmt_inline(); // Ab ye redirect nahi karega, inline load karega
-    }
-  });
-
-  // Naya function: Lead Management ko inline dikhane ke liye
-  function render_lead_mgmt_inline() {
-    const $view = $("#tab-content-area").empty();
-
-    // Lead Management ka URL (aapki screenshot ke hisaab se)
-    const report_url = "/app/crm-lead-management?is_embedded=1";
-
-    $view.append(`
-        <div class="dashboard-card" style="padding: 0; overflow: hidden; height: 80vh;">
-            <iframe src="${report_url}" 
-                    style="width: 100%; height: 100%; border: none;" 
-                    id="lead-mgmt-frame">
-            </iframe>
-        </div>
-    `);
-  }
-
-  // Chip Toggle
-  $(document).on("click", ".filter-chip", function () {
-    $(this).toggleClass("active"); // Ye 'active' class add/remove karega
-
-    // Icon update karne ke liye (Check/Cross)
-    const isActive = $(this).hasClass("active");
-    $(this)
-      .find(".chip-count")
-      .html(
-        isActive
-          ? '<i class="fa fa-check"></i>'
-          : '<i class="fa fa-times"></i>',
-      );
-    // YEH CONSOLE ADD KAREIN
-    console.log("Chip Clicked:", $(this).data("value"));
-    console.log(
-      "Current State (Has Active Class?):",
-      $(this).hasClass("active"),
-    );
-  });
-
-  // Apply Filters (Fixing value gathering)
-  $(document).on("click", "#apply_filters", async () => {
-    const from = $("#from_date").val();
-    const to = $("#to_date").val();
-    let active_filters = {};
-
-    $(".filter-chip.active").each(function () {
-      let field = $(this).data("field");
-      let val = $(this).data("value");
-      if (!active_filters[field]) active_filters[field] = [];
-      active_filters[field].push(val);
-    });
-
-    // 🔥 YAHI ADD KARNA HAI (THIS IS THE FIX)
-    const all_fields = ["zone", "region", "sol_id", "product", "source"];
-
-    all_fields.forEach((field) => {
-      if (!active_filters[field]) {
-        active_filters[field] = [];
-      }
-    });
-
-    $("#report-status-box").html('<i class="fa fa-spinner fa-spin fa-2x"></i>');
-
-    let res = await frappe.call({
-      method: "sahayog.scrm.api.report_access.get_leads",
-      args: { from_date: from, to_date: to, filters: active_filters },
-    });
-
-    const stats = res.message.stats || { total: 0 };
-    $("#report-status-box").html(`
-        <h2 class="text-primary">${stats.total}</h2>
-        <p class="text-muted">Leads found for selected criteria</p>
-        <button class="btn btn-success btn-sm" id="export_leads_v2"><i class="fa fa-download"></i> Export CSV</button>
-    `);
-  });
-
-  // Initial Load
-  render_preference_view();
-
-  // Note: Export Modal HTML and Progress Logic remains same at the end of your script.
-
-  // --- Export Button Logic Update ---
-  // --- Export Button Logic (Fixed with Event Delegation) ---
-  // --- Updated Export Button Logic (Progress Bar + Detailed Success Message) ---
-  $container.on("click", "#export_leads_v2", async function () {
-    const from_date = $("#from_date").val();
-    const to_date = $("#to_date").val();
-
-    // --- UPDATE: Filter collection logic changed from checkbox to chips ---
-    let active_filters = {};
-    // Hum chips ki 'active' class check karenge
-    $(".filter-chip.active").each(function () {
-      let field = $(this).data("field"); // e.g., 'source'
-      let val = $(this).data("value"); // e.g., 'Campaign'
-
-      if (!active_filters[field]) active_filters[field] = [];
-      active_filters[field].push(val);
-
-      // 🔥 YAHI ADD KARNA HAI (THIS IS THE FIX)
-      const all_fields = ["zone", "region", "sol_id", "product", "source"];
-
-      all_fields.forEach((field) => {
-        if (!active_filters[field]) {
-          active_filters[field] = [];
-        }
-      });
-      // YEH CONSOLE ADD KAREIN
-      console.log("---------- DEBUG FILTERS ----------");
-      console.log("Is any chip found?", $(".filter-chip").length);
-      console.log("Is any ACTIVE chip found?", $(".filter-chip.active").length);
-      console.log("Final Filters JSON:", JSON.stringify(active_filters));
-      console.log("-----------------------------------");
-    });
-    // ---------------------------------------------------------------------
-
-    // 1. Show Progress Modal
-    $("#export-prog-overlay").show();
-    $("#export-prog-modal").show();
-    $("#export-fill").css("width", "10%");
-    $("#export-perc").text("10%");
-    $("#export-status-text").text("Requesting server to generate file...");
-
-    const $btn = $(this);
-    $btn
-      .prop("disabled", true)
-      .html('<i class="fa fa-spinner fa-spin"></i> Processing...');
-
-    let res = await frappe.call({
-      method: "sahayog.scrm.api.report_access.queue_leads_export",
-      args: { from_date, to_date, filters: active_filters },
-    });
-
-    if (res.message && res.message.status === "queued") {
-      $("#export-fill").css("width", "30%");
-      $("#export-perc").text("30%");
-      $("#export-status-text").text("Job queued. Waiting for server...");
-
-      let checkInterval = setInterval(async () => {
-        let statusRes = await frappe.call({
-          method: "sahayog.scrm.api.report_access.check_export_status",
-        });
-
-        // Simulate progress bar movement
-        let currentWidth = parseInt($("#export-fill").css("width"));
-        if (currentWidth < 90) {
-          let nextWidth = currentWidth + 7;
-          $("#export-fill").css("width", nextWidth + "%");
-          $("#export-perc").text(nextWidth + "%");
-          $("#export-status-text").text(
-            "Processing records and generating CSV...",
-          );
-        }
-
-        if (statusRes.message && statusRes.message.status === "completed") {
-          clearInterval(checkInterval);
-
-          // 2. Finalize Progress UI
-          $("#export-fill").css("width", "100%");
-          $("#export-perc").text("100%");
-          $("#export-status-text").text("Success! Preparing your download...");
-
-          setTimeout(() => {
-            $("#export-prog-overlay").fadeOut();
-            $("#export-prog-modal").fadeOut();
-          }, 800);
-
-          $btn
-            .prop("disabled", false)
-            .html('<i class="fa fa-download mr-2"></i> Download CSV Report');
-
-          const data = statusRes.message;
-
-          // 3. Trigger Silent Download
+          // Silent Download
           const a = document.createElement("a");
-          a.href = data.file_url;
-          a.download = data.file_url.split("/").pop();
+          a.href = res.message.file_url;
+          a.download = fileName;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-
-          // 4. Detailed Success Message
-          frappe.msgprint({
-            title: __(
-              '<div style="color: #059669; font-weight: bold;">🚀 Export Completed</div>',
-            ),
-            message: `
-              <div style="font-family: 'Inter', sans-serif; padding: 5px;">
-                <p style="font-size: 15px; margin-bottom: 15px;">Your report has been generated successfully.</p>
-                <div style="background: #f0fdf4; padding: 15px; border-radius: 10px; border: 1px solid #bbf7d0;">
-                  <div style="margin-bottom: 8px;">
-                    <span style="color: #166534; font-weight: 600;">📊 Row Count:</span> 
-                    <span style="float: right; background: #dcfce7; padding: 2px 8px; border-radius: 5px; font-weight: bold;">${data.row_count} rows</span>
-                  </div>
-                  <div style="margin-bottom: 8px; border-top: 1px dashed #bbf7d0; padding-top: 8px;">
-                    <span style="color: #166534; font-weight: 600;">📁 Filename:</span><br>
-                    <small style="word-break: break-all; color: #666;">${data.file_url.split("/").pop()}</small>
-                  </div>
-                </div>
-              </div>
-            `,
-            indicator: "green",
-          });
+        } else if (res.message?.status === "failed") {
+          clearInterval(timer);
+          page.set_intro(`
+            <div class="p-2" style="background-color: #fee2e2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
+              <i class="fa fa-exclamation-triangle mr-2"></i> <b>Export Failed</b> Please try again later.
+            </div>
+          `);
         }
-      }, 3000);
-    } else {
-      $("#export-prog-overlay").hide();
-      $("#export-prog-modal").hide();
-      $btn
-        .prop("disabled", false)
-        .html('<i class="fa fa-download mr-2"></i> Download CSV Report');
-    }
-  });
-  // Export button style
-  $("<style>")
-    .prop("type", "text/css")
-    .html(
-      `
-      #export_leads {
-        font-weight: 600;
-        box-shadow: 0 0 0 0.2rem rgba(25,135,84,.25);
-      }
-    `,
-    )
-    .appendTo("head");
+      }, 5000);
+    },
+  }).mount("#crm-app");
 
-  // Is block ko on_page_load ke andar rakhein
-  frappe.realtime.on("crm_leads_export_done", (data) => {
-    console.log("Realtime message received:", data); // Debugging ke liye
-    frappe.msgprint({
-      title: __("Export Ready"),
-      message: data.message,
-      indicator: "green",
-      primary_action: {
-        label: __("Close"),
-        action: () => frappe.msgprint.clear(),
+  // Global Export Logic (Using Set Intro for Status)
+  window.trigger_export = async () => {
+    const app = document.querySelector("#crm-app").__vue_app; // Petite vue instance link
+    page.set_intro(
+      '<div class="py-1 text-primary"><i class="fa fa-cog fa-spin mr-2"></i> Exporting records... Status: 10%</div>',
+    );
+
+    let res = await frappe.call({
+      method: "sahayog.scrm.api.report_access.queue_leads_export",
+      args: {
+        from_date: $('input[v-model="from_date"]').val(),
+        to_date: $('input[v-model="to_date"]').val(),
+        filters: {}, // Yahan Vue selected state pass karni hogi
       },
     });
-  });
-  $("<style>")
-    .prop("type", "text/css")
-    .html(
-      `
-      .filter-card { border-radius: 12px; border: none; }
-      .form-control:focus { box-shadow: none; border: 1px solid #4f46e5; }
-      .rounded-lg { border-radius: 15px !important; }
-      .border-dashed { border-style: dashed !important; border-width: 2px !important; }
-      .btn-primary { background-color: #4f46e5; border: none; transition: all 0.2s; }
-      .btn-primary:hover { background-color: #4338ca; transform: translateY(-1px); }
-      .btn-success { background-color: #059669; border: none; }
-      .uppercase { text-transform: uppercase; letter-spacing: 0.5px; }
-    `,
-    )
-    .appendTo("head");
+
+    if (res.message?.status === "queued") {
+      let check = setInterval(async () => {
+        let statusRes = await frappe.call(
+          "sahayog.scrm.api.report_access.check_export_status",
+        );
+        if (statusRes.message?.status === "completed") {
+          clearInterval(check);
+          page.set_intro(`
+                        <div class="d-flex align-items-center justify-content-between py-1">
+                            <div class="text-success"><i class="fa fa-check-circle mr-2"></i> Export Ready (${statusRes.message.row_count} rows)</div>
+                            <a href="${statusRes.message.file_url}" target="_blank" class="btn btn-xs btn-primary">Download File</a>
+                        </div>
+                    `);
+          frappe.show_alert({
+            message: "Report generated successfully!",
+            indicator: "green",
+          });
+        } else {
+          page.set_intro(
+            '<div class="py-1 text-primary"><i class="fa fa-cog fa-spin mr-2"></i> Processing... Please do not close the page.</div>',
+          );
+        }
+      }, 3000);
+    }
+  };
 };
