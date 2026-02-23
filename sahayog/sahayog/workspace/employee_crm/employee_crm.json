@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"GKmBJnSvxF\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Portal\",\"col\":12}}]",
+ "content": "[{\"id\":\"GKmBJnSvxF\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Portal\",\"col\":3}},{\"id\":\"3ioEAX_x-e\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Dashboard\",\"col\":3}}]",
  "creation": "2025-06-14 11:14:49.548141",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,7 +12,7 @@
  "is_hidden": 0,
  "label": "Employee CRM",
  "links": [],
- "modified": "2026-01-31 11:41:19.916481",
+ "modified": "2026-02-23 17:55:25.600671",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Employee CRM",
@@ -34,6 +34,13 @@
    "label": "CRM Portal",
    "type": "URL",
    "url": "/app/my-crm/"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "CRM Dashboard",
+   "link_to": "crm-lead-report",
+   "type": "Page"
   }
  ],
  "title": "Employee CRM"
