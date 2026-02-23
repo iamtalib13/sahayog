@@ -43,9 +43,41 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .mini-chip.active { background: #05a15d !important; color: #fff !important; border-color: #05a15d !important; font-weight: bold; }
         .custom-dropdown { position: relative; width: 100%; }
         .dropdown-select { background: #fff; border: 1px solid #d1d8dd; border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .dropdown-list { position: absolute; top: 100%; left: 0; width: 250px; max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #d1d8dd; border-radius: 4px; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; margin-top: 5px; }
-        .dropdown-list.show { display: block; }
-        .dropdown-item { padding: 8px 12px; font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer; border-bottom: 1px solid #f1f1f1; }
+      .dropdown-list { 
+    position: absolute; 
+    top: 100%; 
+    /* Center alignment logic */
+    left: 50%; 
+    transform: translateX(-50%); 
+    
+    width: 320px; 
+    max-height: 280px; 
+    overflow-y: auto; 
+    background: #fff; 
+    border: 1px solid #d1d8dd; 
+    border-radius: 6px; 
+    z-index: 2000; 
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15); 
+    display: none; 
+    margin-top: 5px; 
+}
+
+/* Jab dropdown khulega tab display block ke saath animation ya transform barakar rakhein */
+.dropdown-list.show { 
+    display: block; 
+}
+       .dropdown-item {
+    padding: 10px 14px; /* Spacing badhayi */
+    font-size: 11.5px;
+    display: flex !important;
+    align-items: flex-start !important; 
+    gap: 12px; /* Checkbox aur text ke beech barabar gap */
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    white-space: normal !important; 
+    line-height: 1.5;
+    transition: background 0.2s ease;
+}
         
         /* Tab Styling */
         .tab-nav { display: flex; background: #f8f9fa; border-bottom: 1px solid #d1d8dd; border-radius: 8px 8px 0 0; }
@@ -53,6 +85,40 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .tab-item.active { background: #fff; color: #05a15d; border-top: 2px solid #05a15d; border-bottom: 1px solid transparent; }
         @keyframes blink-success { 0% { background-color: #dcfce7; } 50% { background-color: #ffffff; } 100% { background-color: #dcfce7; } }
         .blinking-success { animation: blink-success 1.5s infinite; border: 1px solid #22c55e !important; }
+       .dropdown-item {
+    padding: 10px 12px;
+    font-size: 11px;
+    display: flex !important;
+    align-items: flex-start !important; /* Checkbox ko upar line se align rakhega */
+    gap: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f1f1;
+    white-space: normal !important; /* Text ko niche wrap hone dega */
+    line-height: 1.4;
+}
+
+.dropdown-item input[type="checkbox"] {
+    margin: 0;
+    margin-top: 3px; /* Exact center alignment with first line of text */
+    cursor: pointer;
+    min-width: 15px; 
+    height: 15px;
+    accent-color: #05a15d; /* Frappe Green theme ke liye */
+}
+    /* Text wrapping logic */
+.dropdown-item span {
+    flex: 1; 
+    word-break: break-word; 
+    color: #374151;
+    font-weight: 500;
+}
+  .dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: #f0fdf4; /* Light green hover */
+}
   `,
     )
     .appendTo("head");
@@ -94,14 +160,22 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         <div v-for="key in ['sol_id', 'product', 'source']" :key="key" class="filter-column">
                             <span class="filter-label">{{ key.replace('_', ' ') }}</span>
                             <div class="custom-dropdown">
-                                <div class="dropdown-select" @click.stop="toggleDropdown(key)">
-                                    <span>{{ getDisplayText(key) }}</span>
+                               <div class="dropdown-select">
+                                    <input type="text"
+                                    v-model="search_query[key]"
+                                    :placeholder="getDisplayText(key)"
+                                    class="dropdown-input"
+                                    @focus="active_dropdown = key"
+                                    @click.stop>
                                     <i class="fa fa-caret-down text-muted"></i>
                                 </div>
                                 <div :class="['dropdown-list', active_dropdown === key ? 'show' : '']">
-                                    <div class="dropdown-item" v-for="opt in filter_data[key]" @click.stop="toggleFilter(key, opt)">
-                                        <input type="checkbox" :checked="isSelected(key, opt)">
-                                        <span>{{ opt }}</span>
+                                    <div class="dropdown-item"v-for="opt in filter_data[key].filter(o => 
+                                          !search_query[key] || 
+                                          (o.label || o).toLowerCase().includes(search_query[key].toLowerCase())
+                                      )"@click.stop="toggleFilter(key, opt.value || opt)">
+                                                    <input type="checkbox" :checked="isSelected(key, opt.value || opt)">
+                                     <span>{{ opt.label || opt }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -118,9 +192,55 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 </div>
                 <div class="tab-content" style="padding:20px; min-height:300px;">
                      <div v-if="active_tab === 'employee'">
-                        <div class="text-center p-5 text-muted">
+                        <div class="employee-report-controls d-flex align-items-center mb-3 p-3" style="background:#f8f9fa; border-radius:8px;">
+                            <span class="mr-2" style="font-size:10px; font-weight:bold; color:#6b7280;">FROM:</span>
+                          <input type="date"
+                            v-model="employee_from_date"
+                            @change="onDateChange"
+                            class="form-control form-control-sm mr-3"
+                            style="width:150px;">
+
+                          <input type="date"
+                            v-model="employee_to_date"
+                            @change="onDateChange"
+                            class="form-control form-control-sm mr-3"
+                            style="width:150px;">
+                        </div>
+                        
+                        <div v-if="employee_report_loading" class="text-center p-5 text-muted">
+                            <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
+                            <p>Loading Employee Performance Data...</p>
+                        </div>
+                        <div v-else-if="employee_error_message" class="alert alert-danger text-center p-3">
+                            <i class="fa fa-exclamation-triangle mr-2"></i> {{ employee_error_message }}
+                        </div>
+                        <div v-else-if="employee_performance_data.length === 0" class="text-center p-5 text-muted">
                             <i class="fa fa-table fa-2x mb-3" style="color:#d1d8dd"></i>
-                            <p>Select Month/Year and click <b>Export CSV</b> for raw data. Employee view coming soon.</p>
+                            <p>No employee performance data found for the selected period.</p>
+                        </div>
+                        <div v-else class="table-responsive" style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+                            <table class="table table-bordered table-hover mb-0" style="font-size: 12px;">
+                                <thead style="position: sticky; top: 0; background-color: #f8f9fa; z-index: 1;">
+                                    <tr>
+                                        <th>Employee ID</th>
+                                        <th>Employee Name</th>
+                                        <th>SOL ID</th>
+                                        <th>Branch</th>
+                                        <th>Total Leads</th>
+                                        <th>Converted Leads</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="emp in employee_performance_data" :key="emp.employee_id">
+                                        <td>{{ emp.employee_id || 'N/A' }}</td>
+                                        <td>{{ emp.employee_name || 'N/A' }}</td>
+                                        <td>{{ emp.sol_id || 'N/A' }}</td>
+                                       <td>{{ emp.branch_info?.branch || 'N/A' }}</td>
+                                        <td>{{ emp.total_leads }}</td>
+                                        <td>{{ emp.total_converted_leads }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                      </div>
                      <iframe v-else :src="getTabUrl()" style="width:100%; height:70vh; border:none;"></iframe>
@@ -152,11 +272,27 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     active_dropdown: null,
     filter_data: { zone: [], region: [], sol_id: [], product: [], source: [] },
     selected: { zone: [], region: [], sol_id: [], product: [], source: [] },
+    search_query: {
+      sol_id: "",
+      product: "",
+      source: "",
+    },
     tabs: [
       { id: "employee", label: "Employee Wise Performance" },
       { id: "daily_sales", label: "Daily Sales Report" },
       { id: "lead_mgmt", label: "Lead Management" },
     ],
+    // New properties for Employee Wise Performance tab
+    employee_from_date: null,
+    employee_to_date: null,
+    employee_performance_data: [],
+    employee_report_loading: false,
+    employee_error_message: null,
+    onDateChange() {
+      if (this.employee_from_date && this.employee_to_date) {
+        this.fetchEmployeePerformance();
+      }
+    },
 
     async init() {
       let res = await frappe.call(
@@ -172,19 +308,35 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           product: pref.product || [],
           source: pref.source || [],
         };
-        // Preference ke basis par auto-select
+
         this.selected = {
           zone: [...this.filter_data.zone],
           region: [...this.filter_data.region],
-          sol_id: [...this.filter_data.sol_id],
-          product: [...this.filter_data.product],
+          sol_id: this.filter_data.sol_id.map((o) => o.value || o), // Map to value
+          product: this.filter_data.product.map((o) => o.value || o), // Map to value
           source: [...this.filter_data.source],
         };
+        // DEBUG LOGS
+        console.log("Filter Data (Product):", this.filter_data.product);
+        console.log("Selected Array (Product):", this.selected.product);
+        // Preference ke basis par auto-select
       }
       window.addEventListener("click", () => {
         this.active_dropdown = null;
       });
+
+      // Set default dates for Employee Performance tab to today's date
+      const today = frappe.datetime.nowdate();
+      this.employee_from_date = today;
+      this.employee_to_date = today;
+
+      // Fetch employee performance data by default on load for the active tab
+      if (this.active_tab === "employee") {
+        this.fetchEmployeePerformance();
+      }
     },
+
+    // Watch for active_tab changes to load data automatically
 
     formatDisplayText(key, val) {
       if (!val) return "";
@@ -205,31 +357,43 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
     toggleDropdown(key) {
       this.active_dropdown = this.active_dropdown === key ? null : key;
+      if (this.active_dropdown === null) {
+        this.search_query[key] = "";
+      }
     },
     isSelected(key, val) {
-      return this.selected[key].includes(val);
+      // .some use karo taaki == se compare ho sake (Number vs String)
+      return this.selected[key].some((item) => item == val);
     },
     toggleFilter(key, val) {
-      const i = this.selected[key].indexOf(val);
-      if (i > -1) this.selected[key].splice(i, 1);
-      else this.selected[key].push(val);
+      // Find index using loose equality
+      const i = this.selected[key].findIndex((item) => item == val);
+      if (i > -1) {
+        this.selected[key].splice(i, 1);
+      } else {
+        this.selected[key].push(val);
+      }
     },
     getDisplayText(key) {
-      let count = this.selected[key].length;
-      let totalOptions = this.filter_data[key].length;
+      let selectedItems = this.selected[key] || [];
+      let count = selectedItems.length;
 
-      // 1. Agar kuch bhi select nahi hai
       if (count === 0) {
         return "Select Options";
       }
-      // 3. Pehla selected item aur baki ka count dikhane ke liye
-      let firstItem = this.selected[key][0];
 
-      if (count > 1) {
-        return `${firstItem}`;
-      } else {
-        return firstItem;
+      // Find the label for the first selected value if it exists in filter_data
+      let firstVal = selectedItems[0];
+      let firstItem = this.filter_data[key].find(
+        (o) => (o.value || o) === firstVal,
+      );
+      let displayText = firstItem ? firstItem.label || firstItem : firstVal;
+
+      if (count === 1) {
+        return displayText;
       }
+
+      return `${displayText} +${count - 1} more`;
     },
     getTabUrl() {
       if (this.active_tab === "daily_sales")
@@ -238,6 +402,53 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         return "/app/crm-lead-management?is_embedded=1";
       return "";
     },
+
+    async fetchEmployeePerformance() {
+      this.employee_report_loading = true;
+      this.employee_error_message = null;
+      this.employee_performance_data = [];
+
+      if (!this.employee_from_date || !this.employee_to_date) {
+        this.employee_error_message =
+          "Please select both From Date and To Date.";
+        this.employee_report_loading = false;
+        return;
+      }
+
+      console.log(
+        "fetchEmployeePerformance called with dates:",
+        this.employee_from_date,
+        this.employee_to_date,
+      ); // Debug log
+
+      try {
+        let res = await frappe.call({
+          method:
+            "sahayog.scrm.api.report_access.get_employee_performance_data",
+          args: {
+            from_date: this.employee_from_date,
+            to_date: this.employee_to_date,
+          },
+        });
+        if (res.message) {
+          this.employee_performance_data = res.message;
+        } else {
+          this.employee_error_message =
+            "No data found for the selected date range.";
+        }
+      } catch (error) {
+        this.employee_error_message =
+          error.message || "An error occurred while fetching data.";
+        frappe.msgprint({
+          title: __("Error"),
+          message: this.employee_error_message,
+          indicator: "red",
+        });
+      } finally {
+        this.employee_report_loading = false;
+      }
+    },
+
     async applyFilters() {
       this.loading = true;
 
