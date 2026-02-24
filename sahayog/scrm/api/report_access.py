@@ -341,8 +341,19 @@ def notify_user(user, message):
     
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date):
+    user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
 
+    # --- Step 1: User ki Report Preference fetch karein ---
+    zones_pref, regions_pref = set(), set()
+    if user != "Administrator":
+        pref_res = get_user_report_preference_record(user)
+        if pref_res:
+            p = pref_res[0]
+            zones_pref = {norm(x) for x in p.get("zone", [])}
+            regions_pref = {norm(x) for x in p.get("region", [])}
+
+    # Leads fetch karein
     leads = frappe.get_all(
         "Lead",
         filters=[
@@ -352,10 +363,8 @@ def get_employee_performance_data(from_date, to_date):
         fields=["lead_owner", "sol_id", "status", "name"]
     )
 
-    if not leads:
-        return []
+    if not leads: return []
 
-    # Pre-fetch details for mapping
     sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
     branch_map = get_branch_map(list(sol_ids))
     employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
@@ -365,6 +374,29 @@ def get_employee_performance_data(from_date, to_date):
     for l in leads:
         emp = employee_map.get(l.lead_owner)
         if not emp: continue
+        
+        # Branch/Zone check karein pehle
+        curr_sol = str(l.sol_id) if l.sol_id else ""
+        branch = branch_map.get(curr_sol)
+        
+        # PREFERENCE FILTERING: Sirf wahi employees dikhao jo allowed zone/region mein hain
+            # Is line ko update karein (Inside the loop of get_employee_performance_data):
+        if branch:
+            emp_zone = norm(branch.zone)
+            emp_region = norm(branch.region)
+            
+            zone_match = not zones_pref or (emp_zone in zones_pref)
+            
+            # Check for Region with Alias Map
+            allowed_regions = set(regions_pref)
+            for r in list(regions_pref):
+                if r in REGION_ALIAS_MAP:
+                    allowed_regions |= REGION_ALIAS_MAP[r]
+                    
+            region_match = not regions_pref or (emp_region in allowed_regions)
+            
+            if not zone_match or not region_match:
+                continue
 
         key = emp.employee_number
         if key not in employee_stats:
@@ -372,27 +404,19 @@ def get_employee_performance_data(from_date, to_date):
                 "employee_id": emp.employee_number,
                 "employee_name": emp.employee_name,
                 "designation": emp.designation or "-",
-                "sol_id": l.sol_id or "-",
-                "branch": "-",
-                "region": "-",
-                "zone": "-",
+                "sol_id": curr_sol,
+                "branch": branch.branch if branch else "-",
+                "region": branch.region if branch else "-",
+                "zone": branch.zone if branch else "-",
                 "total_leads": 0,
                 "total_converted": 0,
-                "follow_ups": 0
+                "total_followups": 0 # JS mein variable name total_followups hai
             }
 
         employee_stats[key]["total_leads"] += 1
         if l.status == "Converted":
             employee_stats[key]["total_converted"] += 1
         if l.status == "Follow Up":
-            employee_stats[key]["follow_ups"] += 1
-
-        # Map Branch Details
-        curr_sol = str(l.sol_id) if l.sol_id else ""
-        branch = branch_map.get(curr_sol)
-        if branch:
-            employee_stats[key]["branch"] = branch.branch
-            employee_stats[key]["region"] = branch.region
-            employee_stats[key]["zone"] = branch.zone
+            employee_stats[key]["total_followups"] += 1
 
     return list(employee_stats.values())
