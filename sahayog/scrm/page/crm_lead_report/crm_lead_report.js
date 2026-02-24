@@ -487,25 +487,41 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                     <tr>
                                         <th>Employee ID</th>
                                         <th>Employee Name</th>
-                                        <th>SOL ID</th>
-                                        <th>Branch</th>
-                                        <th>Follow-ups</th> <th>Qualification</th> <th>Rating</th> </tr>
+                                        <th>Branch</th> 
+                                        <th>Follow-ups</th>
+                                        <th>Converted</th>
+                                        <th>Qualification</th>
+                                        <th>Rating</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                <tr v-for="emp in employee_performance_data" :key="emp.employee_id">
+                                 <tr v-for="emp in filteredEmployees" :key="emp.employee_id">
                                     <td><span style="font-weight:bold;">{{ emp.employee_id || 'N/A' }}</span></td>
                                     <td>
                                         <div style="font-weight: 600;">{{ emp.employee_name || 'N/A' }}</div>
                                         <span class="emp-info-sub">{{ emp.designation || 'N/A' }}</span>
                                     </td>
-                                    <td>{{ emp.sol_id || 'N/A' }}</td>
+                                  
                                     <td>
-                                        <div style="font-weight: 600;">{{ emp.branch || 'N/A' }}</div>
-                                        <span class="emp-info-sub">Region: {{ emp.region }} | Zone: {{ emp.zone }}</span>
+                                        <div style="font-weight: 600; color: #1f2937;">
+                                            {{ emp.sol_id }} - {{ emp.branch || 'N/A' }}
+                                        </div>
+                                        
+                                        <div class="status-cell-container" style="margin-top: 5px; gap: 5px;">
+                                            <span class="dsr-badge badge-pastel-green">
+                                                {{ emp.zone || 'N/A' }}
+                                            </span>
+                                            <span class="dsr-badge bg-qualified">
+                                                {{ emp.region || 'N/A' }}
+                                            </span>
+                                        </div>
                                     </td>
                                     
                                     <td>
                                         <span class="value-text">{{ emp.total_followups || 0 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="value-text">{{ emp.total_converted || 0 }}</span>
                                     </td>
 
                                    <td>
@@ -575,15 +591,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_report_loading: false,
     employee_error_message: null,
 
+    get filteredEmployees() {
+      return this.employee_performance_data || [];
+    },
     get totalLeadsInReport() {
-      return this.employee_performance_data.reduce(
+      return this.filteredEmployees.reduce(
         (sum, emp) => sum + (emp.total_leads || 0),
         0,
       );
     },
-
     get totalConvertedLeadsInReport() {
-      return this.employee_performance_data.reduce(
+      return this.filteredEmployees.reduce(
         (sum, emp) => sum + (emp.total_converted || 0),
         0,
       );
@@ -771,6 +789,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           },
         });
         if (res.message) {
+          console.log("Raw Data from Server:", res.message);
           this.employee_performance_data = res.message;
         } else {
           this.employee_error_message =
