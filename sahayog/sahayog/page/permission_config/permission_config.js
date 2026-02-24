@@ -849,14 +849,84 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         });
       },
 
+      // toggle(field, value) {
+      //   if (!this.selectedPref) return;
+      //   const arr = this.selectedPref[field];
+      //   const idx = arr.indexOf(value);
+      //   if (idx >= 0) arr.splice(idx, 1);
+      //   else arr.push(value);
+      //   this.autoSave();
+      // },
+
+      // toggleAll(field) {
+      //   if (!this.selectedPref) return;
+      //   if (this.isAllSelected(field)) {
+      //     this.selectedPref[field] = [];
+      //   } else {
+      //     this.selectedPref[field] = [...this.allOptions[field]];
+      //   }
+      //   this.autoSave();
+      // },
+
+
       toggle(field, value) {
         if (!this.selectedPref) return;
+        
+        // VALIDATION: If field is Region, check if at least one Zone is selected
+        if (field === 'region') {
+            const hasZone = this.selectedPref.zone && this.selectedPref.zone.length > 0;
+            
+            if (!hasZone) {
+                // Block the selection and show a message
+                frappe.show_alert({
+                    message: __('Please select at least one <strong>Zone</strong> before selecting a Region.'),
+                    indicator: 'orange'
+                }, 5); // Show for 5 seconds
+                
+                // Optional: Also focus the Zone area visually if you have a ref
+                return; // Exit function so Region isn't added
+            }
+        }
+
+        // NORMAL LOGIC: Add/Remove the selected value
         const arr = this.selectedPref[field];
         const idx = arr.indexOf(value);
-        if (idx >= 0) arr.splice(idx, 1);
-        else arr.push(value);
+        
+        if (idx >= 0) {
+            arr.splice(idx, 1);
+        } else {
+            arr.push(value);
+        }
+        
+        // Auto-save the changes to the database
         this.autoSave();
       },
+
+      toggleAll(field) {
+        if (!this.selectedPref) return;
+        
+        // VALIDATION for Region "ALL" button
+        if (field === 'region') {
+            const hasZone = this.selectedPref.zone && this.selectedPref.zone.length > 0;
+            if (!hasZone) {
+                frappe.show_alert({
+                    message: __('Please select at least one <strong>Zone</strong> before selecting Regions.'),
+                    indicator: 'orange'
+                }, 5);
+                return;
+            }
+        }
+
+        if (this.isAllSelected(field)) {
+            this.selectedPref[field] = [];
+        } else {
+            this.selectedPref[field] = [...this.allOptions[field]];
+        }
+        
+        this.autoSave();
+    },
+
+
 
       isAllSelected(field) {
         if (!this.selectedPref) return false;
@@ -865,15 +935,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         return all.length > 0 && sel.length === all.length;
       },
 
-      toggleAll(field) {
-        if (!this.selectedPref) return;
-        if (this.isAllSelected(field)) {
-          this.selectedPref[field] = [];
-        } else {
-          this.selectedPref[field] = [...this.allOptions[field]];
-        }
-        this.autoSave();
-      },
+      
 
       removeSolId(val) {
         if (!this.selectedPref || !this.selectedPref.sol_id) return;
