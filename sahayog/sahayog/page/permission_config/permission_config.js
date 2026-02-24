@@ -546,7 +546,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                   <!-- UPDATED: Display Tag Badge next to Name -->
                   <div class="perm-card-top">
                      <div class="perm-card-name" v-html="highlight(item.full_name || item.user, searchQuery)"></div>
-                     <span v-if="item.tag" class="perm-tag-badge" style="display: none">[[ item.tag ]]</span>
+                     <span v-if="item.tag" class="perm-tag-badge">[[ item.tag ]]</span>
                   </div>
                   
                   <div class="perm-card-email" v-html="highlight(item.user, searchQuery)"></div>
