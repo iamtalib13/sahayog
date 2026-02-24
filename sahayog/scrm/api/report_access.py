@@ -1,4 +1,3 @@
-
 import frappe
 from frappe.utils import now_datetime, getdate, date_diff, format_date
 
@@ -225,7 +224,7 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
                 skip_reason_product += 1
                 continue 
         else:
-            matched_products = l_products if l_products else [{}]
+            matched_products = l_products if l.l_products else [{}]
 
         emp = employee_map.get(l.lead_owner)
 
@@ -335,9 +334,9 @@ def notify_user(user, message):
     notification_doc.update({"for_user": user, "subject": "Lead Export Ready", "email_content": message, "type": "Alert", "document_type": "Lead"})
     notification_doc.insert(ignore_permissions=True)
     frappe.db.commit()
+    
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date):
-
     from_date, to_date = validate_date_range(from_date, to_date)
 
     leads = frappe.get_all(
@@ -346,51 +345,50 @@ def get_employee_performance_data(from_date, to_date):
             ["creation", ">=", f"{from_date} 00:00:00"],
             ["creation", "<=", f"{to_date} 23:59:59"]
         ],
-        fields=["lead_owner", "sol_id", "status"]
+        fields=["lead_owner", "sol_id", "status", "name"]
     )
 
     if not leads:
         return []
 
+    # Pre-fetch details for mapping
     sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
     branch_map = get_branch_map(list(sol_ids))
-
     employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
 
     employee_stats = {}
 
     for l in leads:
         emp = employee_map.get(l.lead_owner)
-        if not emp:
-            continue
+        if not emp: continue
 
         key = emp.employee_number
-
         if key not in employee_stats:
             employee_stats[key] = {
                 "employee_id": emp.employee_number,
                 "employee_name": emp.employee_name,
-                "sol_id": l.sol_id,
-                "branch_info": {},
+                "designation": emp.designation or "-",
+                "sol_id": l.sol_id or "-",
+                "branch": "-",
+                "region": "-",
+                "zone": "-",
                 "total_leads": 0,
-                "total_converted_leads": 0
+                "total_converted": 0,
+                "follow_ups": 0
             }
 
         employee_stats[key]["total_leads"] += 1
-
         if l.status == "Converted":
-            employee_stats[key]["total_converted_leads"] += 1
+            employee_stats[key]["total_converted"] += 1
+        if l.status == "Follow Up":
+            employee_stats[key]["follow_ups"] += 1
 
-        # 🔥 Branch resolve here
+        # Map Branch Details
         curr_sol = str(l.sol_id) if l.sol_id else ""
         branch = branch_map.get(curr_sol)
-
         if branch:
-            employee_stats[key]["branch_info"] = {
-                "branch": branch.branch,
-                "region": branch.region,
-                "zone": branch.zone,
-                "district": branch.district
-            }
+            employee_stats[key]["branch"] = branch.branch
+            employee_stats[key]["region"] = branch.region
+            employee_stats[key]["zone"] = branch.zone
 
     return list(employee_stats.values())
