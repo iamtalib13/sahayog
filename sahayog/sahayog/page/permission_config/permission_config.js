@@ -375,6 +375,26 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     gap: 6px;
 }
 
+/* Base badge style - consistent with your existing perm-tag-badge */
+.perm-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 11px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Color Mappings (Subtle Style) */
+.badge-green  { background-color: #e8fdf0; color: #2f9d58; border-color: #A6EFC0; } /* COM */
+.badge-blue   { background-color: #e7f5ff; color: #007be0; border-color: #A7D7FD; } /* ROM */
+.badge-orange { background-color: #fff8e6; color: #d09a0a; border-color: #FBDB73; } /* RM */
+.badge-purple { background-color: #f5f0ff; color: #6846e3; border-color: #D6C8FF; } /* AZM */
+.badge-cyan   { background-color: #e2f9ff; color: #008da6; border-color: #B2EBF2; } /* ZM */
+.badge-gray   { background-color: #f0f4f6; color: #6c7680; border-color: #d1d8dd; } /* Default / No Tag */
+
 
     </style>
 
@@ -440,6 +460,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             <!-- TAG BADGE -->
             <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
         <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
+<!-- RIGHT SIDE: Toggle + Clickable Dynamic Tag Badge -->
 <div v-if="selectedPref" style="display: flex; align-items: center;">
     
     <!-- ENABLED TOGGLE -->
@@ -450,15 +471,16 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     <!-- TAG BADGE CONTAINER -->
     <div class="perm-tag-container">
-        <!-- ADDED: Conditional Click Logic -->
+        <!-- UPDATED: Added :class binding for dynamic colors -->
         <span class="perm-tag-badge perm-tag-badge-btn" 
+              :class="getTagClass(selectedPref.tag)"
               style="font-size: 12px; padding: 4px 10px;"
               :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
               @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
             [[ selectedPref.tag || 'No Tag' ]]
         </span>
 
-        <!-- Floating Menu (Only reachable if enabled) -->
+        <!-- Floating Menu (Keep same as before) -->
         <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
             <div v-for="opt in allOptions.tag" :key="opt"
                  class="perm-tag-option"
@@ -470,6 +492,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         </div>
     </div>
 </div>
+
 
 
           </div>
@@ -738,6 +761,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
         this.autoSave();
       },
+
+      getTagClass(tag) {
+        const map = {
+            'COM': 'badge-green',
+            'ROM': 'badge-blue',
+            'RM':  'badge-orange',
+            'AZM': 'badge-purple',
+            'ZM':  'badge-cyan'
+        };
+        return map[tag] || 'badge-gray';
+      },
+
 
 
       toggleTagMenu() {
