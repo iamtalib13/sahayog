@@ -84,7 +84,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         
         .perm-section { margin-bottom: 32px; }
         .perm-section-title { font-size: 12px; font-weight: 600; color: #57606a; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #d0d7de; }
-        .perm-field { margin-bottom: 24px; }
+        .perm-field { margin-bottom: 24px; border: 1px dashed #d0d7de; padding: 12px; border-radius: 4px;}
         .perm-flabel { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #24292f; }
         .perm-flink { font-size: 12px; font-weight: 600; color: #0969da; cursor: pointer; text-decoration: none; }
         
@@ -350,6 +350,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     display: flex;
     align-items: center; /* Vertical center label and chips */
     min-width: 0;       /* Prevents overflow breaking flex */
+    border: 1px dashed #d0d7de;
+    padding: 12px;
+    border-radius: 4px;
 }
 
 /* Label and Chips Wrapper */
@@ -402,7 +405,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     font-weight: 600;
     font-size: 13px;
     margin-right: 12px;
