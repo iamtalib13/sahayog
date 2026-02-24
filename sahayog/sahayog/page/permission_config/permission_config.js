@@ -1,5 +1,3 @@
-// apps/sahayog/sahayog/sahayog/page/permission_config/permission_config.js
-
 frappe.pages["permission-config"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({
     parent: wrapper,
@@ -40,10 +38,11 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         /* ... existing pane header/content styles ... */
         .perm-pane-header { padding: 12px 16px; background: transparent; border-bottom: 1px solid #d0d7de; flex-shrink: 0; }
         .perm-pane-header h3 { margin: 0; font-size: 14px; font-weight: 600; color: #24292f; }
-        .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; }
+        .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 19px; }
 
         /* Internal Components */
-        .perm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #d0d7de; }
+        .perm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; 
+        padding-bottom: 12px; border-bottom: 1px solid #d0d7de; }
         .perm-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: #24292f; }
         
         .perm-search { position: relative; width: 100%; max-width: 320px; }
@@ -85,7 +84,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         
         .perm-section { margin-bottom: 32px; }
         .perm-section-title { font-size: 12px; font-weight: 600; color: #57606a; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #d0d7de; }
-        .perm-field { margin-bottom: 24px; }
+        .perm-field { margin-bottom: 24px; border: 1px dashed #d0d7de; padding: 12px; border-radius: 4px;}
         .perm-flabel { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #24292f; }
         .perm-flink { font-size: 12px; font-weight: 600; color: #0969da; cursor: pointer; text-decoration: none; }
         
@@ -281,6 +280,243 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 }
 
 
+/* Container for badge and menu */
+.perm-tag-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Make the badge look like a button */
+.perm-tag-badge-btn {
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.1s;
+}
+
+.perm-tag-badge-btn:active {
+    transform: scale(0.95);
+}
+
+/* Floating Menu Styling */
+.perm-tag-menu {
+    position: absolute;
+    top: 110%; /* Show below badge */
+    right: 0;
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.perm-tag-option {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #24292f;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.perm-tag-option:hover {
+    background-color: #f6f8fa;
+}
+
+.perm-tag-option.active {
+    font-weight: 600;
+    color: #0969da;
+    background-color: #f0f7ff;
+}
+
+.perm-tag-option-none {
+    border-top: 1px solid #f0f0f0;
+    color: #cf222e; /* Red color for "No Tag" */
+}
+
+/* Container for the whole row */
+.perm-field-row {
+    display: flex;
+    flex-direction: row; /* Force side-by-side */
+    gap: 24px;          /* Space between Zone block and Region block */
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* Individual field blocks (Zone/Region) */
+.perm-field-half {
+    flex: 1;            /* Each takes 50% width */
+    display: flex;
+    align-items: center; /* Vertical center label and chips */
+    min-width: 0;       /* Prevents overflow breaking flex */
+    border: 1px dashed #d0d7de;
+    padding: 12px;
+    border-radius: 4px;
+}
+
+/* Label and Chips Wrapper */
+.perm-flabel-inline {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+}
+
+/* Specific label styling to prevent shrinking */
+.perm-flabel-inline > span {
+    font-weight: 600;
+    font-size: 13px;
+    margin-right: 12px;
+    white-space: nowrap; /* Label won't break into 2 lines */
+}
+
+/* Chips container */
+.perm-check-grid-chips-inline {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap; /* Allows chips to wrap if too many, but stays in row */
+    gap: 6px;
+}
+
+/* Base badge style - consistent with your existing perm-tag-badge */
+.perm-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 11px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Color Mappings (Subtle Style) */
+.badge-green  { background-color: #e8fdf0; color: #2f9d58; border-color: #A6EFC0; } /* COM */
+.badge-blue   { background-color: #e7f5ff; color: #007be0; border-color: #A7D7FD; } /* ROM */
+.badge-orange { background-color: #fff8e6; color: #d09a0a; border-color: #FBDB73; } /* RM */
+.badge-purple { background-color: #f5f0ff; color: #6846e3; border-color: #D6C8FF; } /* AZM */
+.badge-cyan   { background-color: #e2f9ff; color: #008da6; border-color: #B2EBF2; } /* ZM */
+.badge-gray   { background-color: #f0f4f6; color: #6c7680; border-color: #d1d8dd; } /* Default / No Tag */
+
+
+/* Container for Label and Pencil */
+.perm-flabel-with-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 13px;
+    margin-right: 12px;
+    white-space: nowrap;
+}
+
+.perm-edit-btn {
+    cursor: pointer;
+    color: #6c7680;
+    padding: 2px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+    margin-bottom: 4px;
+}
+
+.perm-edit-btn:hover {
+   
+    color: #0969da;
+}
+
+/* Selected Pills Container */
+.selected-users-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fafbfc;
+    min-height: 40px;
+}
+
+.selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    background: #e8fdf0; /* Light green like your other selected items */
+    color: #2f9d58;
+    border: 1px solid #2f9d58;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.remove-user {
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.remove-user:hover {
+    opacity: 1;
+}
+
+.selected-empty-text {
+    font-size: 13px;
+    color: #8c99a6;
+    font-style: italic;
+}
+
+
+.selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Space between text and X */
+    padding: 4px 12px;
+    background-color: #e8fdf0;
+    color: #2f9d58;
+    border: 1px solid #2f9d58;
+    border-radius: 16px;
+    font-size: 12px;
+}
+
+.remove-user {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    transition: color 0.2s;
+}
+
+.remove-user:hover {
+    color: #cf222e; /* Red on hover to indicate deletion */
+}
+
+.perm-sidebar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;      /* Centers horizontally */
+    justify-content: center;   /* Centers vertically */
+    text-align: center;
+    height: 100%;             /* Ensures it spans the full sidebar height */
+    padding: 64px 32px;
+    color: #57606a;
+}
+    
+
+/* Ensure the SVG can rotate smoothly */
+.perm-tag-badge-btn svg {
+    transition: transform 0.2s ease; /* Smooth turning animation */
+    pointer-events: none; /* Let the click pass to the parent span */
+}
+
+/* When the menu is open, rotate the arrow 180 degrees */
+.perm-tag-badge.menu-open svg {
+    transform: rotate(180deg);
+}
+
 
     </style>
 
@@ -288,7 +524,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         <div class="perm-layout">
           
           <div class="perm-main perm-pane">
-            <div class="perm-pane-header"><h3>Users</h3></div>
+            <div class="perm-pane-header" style="display: none"><h3>Users</h3></div>
             <div class="perm-pane-content">
               <div class="perm-header">
                 <h3>Report Preferences</h3>
@@ -309,9 +545,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                   
                   <!-- UPDATED: Display Tag Badge next to Name -->
                   <div class="perm-card-top">
-                     <div class="perm-card-name" v-html="highlight(item.full_name || item.user, searchQuery)"></div>
-                     <span v-if="item.tag" class="perm-tag-badge" style="display: none">[[ item.tag ]]</span>
-                  </div>
+    <!-- User Name -->
+    <div class="perm-card-name" v-html="highlight(item.full_name || item.user, searchQuery)"></div>
+    
+    <!-- UPDATED: Added :class to sync colors -->
+    <span v-if="item.tag" 
+          class="perm-tag-badge" 
+          :class="getTagClass(item.tag)"
+          style="font-size: 10px; padding: 2px 6px;">
+        [[ item.tag ]]
+    </span>
+</div>
+
                   
                   <div class="perm-card-email" v-html="highlight(item.user, searchQuery)"></div>
                 </div>
@@ -324,129 +569,171 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           <div class="perm-sidebar perm-pane">
             <div class="perm-pane-header">
   
-  <!-- LEFT SIDE: Title and Details -->
-  <div v-if="!selectedPref">
-    <h3>Permission Details</h3>
-  </div>
-  
-  <div v-else style="display: flex; flex-direction: column; gap: 4px;">
-    <h3 style="margin: 0;">Permission Details</h3>
-    <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
-      <span><strong>Employee Name:</strong> [[ selectedPref.full_name || '-' ]]</span>
-      <span style="color: #d0d7de;">|</span>
-      <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
+          <!-- LEFT SIDE: Title and Details -->
+          <div v-if="!selectedPref">
+            <h3>Permission Details</h3>
+          </div>
+          
+          <div v-else style="display: flex; flex-direction: column; gap: 4px;">
+            <h3 style="margin: 0;">Permission Details</h3>
+            <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
+              <span><strong>Employee Name:</strong> [[ selectedPref.full_name || '-' ]]</span>
+              <span style="color: #d0d7de;">|</span>
+              <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
+            </div>
+          </div>
+
+          <!-- RIGHT SIDE: Toggle + Tag Badge -->
+          <div v-if="selectedPref" style="display: flex; align-items: center;">
+            
+          
+
+            <!-- TAG BADGE -->
+            <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
+        <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
+        <!-- RIGHT SIDE: Toggle + Clickable Dynamic Tag Badge -->
+        <div v-if="selectedPref" style="display: flex; align-items: center;">
+            
+            <!-- ENABLED TOGGLE -->
+            <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
+                <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
+                <span class="perm-slider"></span>
+            </label>
+
+            <!-- TAG BADGE CONTAINER -->
+            <div class="perm-tag-container">
+    <span class="perm-tag-badge perm-tag-badge-btn" 
+          :class="[getTagClass(selectedPref.tag), { 'menu-open': showTagMenu }]"
+          style="font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;"
+          :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
+          @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
+        
+        <!-- Tag Text -->
+        <span>[[ selectedPref.tag || 'No Tag' ]]</span>
+        
+        <!-- Down Arrow SVG (Now Rotates based on menu-open class) -->
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </svg>
+    </span>
+
+    <!-- Floating Menu (v-if="showTagMenu") -->
+    <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
+        <div v-for="opt in allOptions.tag" :key="opt" class="perm-tag-option" :class="{ active: selectedPref.tag === opt }" @click="setTag(opt)">
+            [[ opt ]]
+        </div>
+        <div class="perm-tag-option perm-tag-option-none" @click="setTag('')">No Tag</div>
     </div>
-  </div>
-
-  <!-- RIGHT SIDE: Toggle + Tag Badge -->
-  <div v-if="selectedPref" style="display: flex; align-items: center;">
-    
-    <!-- ENABLED TOGGLE -->
-    <label class="perm-toggle" title="Enable/Disable">
-      <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
-      <span class="perm-slider"></span>
-    </label>
-
-    <!-- TAG BADGE -->
-    <span v-if="selectedPref.tag" class="perm-tag-badge" style="font-size: 12px; padding: 4px 8px;">[[ selectedPref.tag ]]</span>
-  </div>
-
 </div>
 
 
-            <div class="perm-pane-content">
+        </div>
+
+
+
+          </div>
+
+        </div>
+
+
+        <div class="perm-pane-content">
   
+  <!-- CASE 1: No user is selected from the left list -->
   <div v-if="!selectedPref" class="perm-sidebar-empty">
-    <!-- Empty SVG -->
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
     <div style="font-size: 14px; font-weight: 500;">No User Selected</div>
     <div style="font-size: 13px; margin-top: 8px;">Select a user from the list to manage their permission preferences</div>
   </div>
 
+  <!-- CASE 2: A user is selected -->
   <div v-else>
     
-    <!-- IF ENABLED: Show Settings -->
+    <!-- IF ENABLED: Show all the configuration settings -->
     <div v-if="selectedPref.enabled">
         
-        <!-- User Classification / Tag -->
+        <!-- Geographic Filters Section -->
         <div class="perm-section">
-           <div class="perm-section-title">User Classification</div>
-           <div class="perm-field">
-             <div class="perm-flabel"><span>Role Tag</span></div>
-             <select class="perm-select" v-model="selectedPref.tag" @change="autoSave">
-                <option value="">No Tag</option>
-                <option v-for="opt in allOptions.tag" :value="opt">[[ opt ]]</option>
-             </select>
-           </div>
-        </div>
-
-        <div class="perm-section">
-          <div class="perm-section-title">Geographic Filters</div>
+          <div class="perm-section-title" style="display: none">Geographic Filters</div>
           
-          <!-- Zone & Region Row -->
           <div class="perm-field-row">
-            <!-- Zone -->
-            <div class="perm-field perm-field-half">
+            <!-- Zone & Region side-by-side -->
+            <div class="perm-field-half">
                 <div class="perm-flabel-inline">
                   <span>Zone</span>
-                  <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
-                    <div v-for="opt in allOptions.zone" :key="opt" class="perm-chip" :class="{ selected: selectedPref.zone.includes(opt) }" @click="toggle('zone', opt)">
-                      [[ opt ]] <input type="checkbox" :checked="selectedPref.zone.includes(opt)">
-                    </div>
+                  <div class="perm-check-grid-chips-inline">
+                    <div class="perm-chip" :class="{ selected: isAllSelected('zone') }" @click="toggleAll('zone')">ALL</div>
+                    <div v-for="opt in allOptions.zone" :key="opt" class="perm-chip" :class="{ selected: selectedPref.zone.includes(opt) }" @click="toggle('zone', opt)">[[ opt ]]</div>
                   </div>
-                  <a class="perm-flink" @click="toggleAll('zone')" style="margin-left:auto;">[[ isAllSelected('zone') ? 'Deselect All' : 'Select All' ]]</a>
                 </div>
             </div>
+            <div class="perm-field-half">
+    <div class="perm-flabel-inline">
+      <span>Region</span>
+      <!-- Ensure the v-if is ONLY on this container -->
+      <div v-if="allOptions.region && allOptions.region.length" class="perm-check-grid-chips-inline">
+        
+        <!-- ALL Chip -->
+        <div class="perm-chip" 
+             :class="{ selected: isAllSelected('region') }" 
+             @click="toggleAll('region')">
+          ALL
+        </div>
 
-            <!-- Region -->
-            <div class="perm-field perm-field-half">
-                <div class="perm-flabel-inline">
-                  <span>Region</span>
-                  <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
-                    <div v-for="opt in allOptions.region" :key="opt" class="perm-chip" :class="{ selected: selectedPref.region.includes(opt) }" @click="toggle('region', opt)">
-                      [[ opt ]] <input type="checkbox" :checked="selectedPref.region.includes(opt)">
-                    </div>
-                  </div>
-                  <a class="perm-flink" @click="toggleAll('region')" style="margin-left:auto;">[[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]</a>
-                </div>
-            </div>
+        <!-- Dynamic Chips -->
+        <div v-for="opt in allOptions.region" :key="opt" 
+             class="perm-chip" 
+             :class="{ selected: selectedPref.region.includes(opt) }" 
+             @click="toggle('region', opt)">
+          [[ opt ]]
+        </div>
+      </div>
+      
+      <!-- Show this if Region list is empty -->
+      <div v-else class="selected-empty-text" style="margin-left: 10px;">
+        No Regions available
+      </div>
+    </div>
+</div>
+
           </div>
 
-          <!-- Other Filters (State, District, SOL ID) -->
-          <div class="perm-field"><div class="perm-flabel"><span>State</span></div><div v-if="allOptions.state.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.state" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.state.includes(opt) }" @click="toggle('state', opt)"><input type="checkbox" :checked="selectedPref.state.includes(opt)" @click.stop="toggle('state', opt)"><label>[[ opt ]]</label></div></div></div>
-          <div class="perm-field"><div class="perm-flabel"><span>District</span></div><div v-if="allOptions.district.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.district" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.district.includes(opt) }" @click="toggle('district', opt)"><input type="checkbox" :checked="selectedPref.district.includes(opt)" @click.stop="toggle('district', opt)"><label>[[ opt ]]</label></div></div></div>
-          <div class="perm-field"><div class="perm-flabel"><span>Sol ID</span></div><div v-if="allOptions.sol_id.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.sol_id" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.sol_id.includes(opt) }" @click="toggle('sol_id', opt)"><input type="checkbox" :checked="selectedPref.sol_id.includes(opt)" @click.stop="toggle('sol_id', opt)"><label>[[ opt ]]</label></div></div></div>
+          <!-- SOL ID Section -->
+          <div class="perm-field">
+            <div class="perm-flabel-with-edit">
+                <span>SOL ID</span>
+                <div class="perm-edit-btn" @click="openSolIdDialog">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </div>
+            </div>
+            <div class="selected-users-wrapper">
+                <span v-if="!selectedPref.sol_id || selectedPref.sol_id.length === 0" class="selected-empty-text">No SOL IDs selected yet.</span>
+                <span v-for="sol in selectedPref.sol_id" :key="sol" class="selected-pill">[[ sol ]]<span class="remove-user" @click.stop="removeSolId(sol)">×</span></span>
+            </div>
+          </div>
         </div>
 
+        <!-- Lead Specific Filters Section -->
         <div class="perm-section">
           <div class="perm-section-title">Lead Specific Filters</div>
-          <!-- Product & Source -->
-          <div class="perm-field"><div class="perm-flabel"><span>Product</span></div><div v-if="allOptions.product.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.product" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.product.includes(opt) }" @click="toggle('product', opt)"><input type="checkbox" :checked="selectedPref.product.includes(opt)" @click.stop="toggle('product', opt)"><label>[[ opt ]]</label></div></div></div>
-          <div class="perm-field"><div class="perm-flabel"><span>Source</span></div><div v-if="allOptions.source.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.source" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.source.includes(opt) }" @click="toggle('source', opt)"><input type="checkbox" :checked="selectedPref.source.includes(opt)" @click.stop="toggle('source', opt)"><label>[[ opt ]]</label></div></div></div>
+          <!-- Product and Source code here... -->
         </div>
-
     </div>
 
-    <!-- IF DISABLED: Show Message -->
-    <!-- IF DISABLED: Show Centered Message -->
-<div v-else class="perm-sidebar-empty">
-    <!-- Lock Icon -->
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-    </svg>
-    
-    <div style="font-size: 16px; font-weight: 600; color: #24292f;">
-        Configuration Disabled
-    </div>
-    
-    <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
-        Enable this user's preferences using the toggle above to configure report filters.
-    </div>
-</div>
+      <!-- IF DISABLED: Show the "Configuration Disabled" Message -->
+      <div v-else class="perm-sidebar-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <div style="font-size: 16px; font-weight: 600; color: #24292f; margin-top: 12px;">Configuration Disabled</div>
+          <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
+              Enable this user's preferences using the toggle above to configure report filters.
+          </div>
+      </div>
 
+    </div>
   </div>
-</div>
+
 
           </div>
         </div>
@@ -455,6 +742,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     PetiteVue.createApp({
       $delimiters: ["[[", "]]"],
+      showTagMenu: false, // Tracks if the floating menu is open
+
 
       prefList: [],
       filteredList: [],
@@ -586,6 +875,58 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         this.autoSave();
       },
 
+      removeSolId(val) {
+        if (!this.selectedPref || !this.selectedPref.sol_id) return;
+        
+        // Filter out the clicked SOL ID
+        this.selectedPref.sol_id = this.selectedPref.sol_id.filter(s => s !== val);
+        
+        // Show a small feedback alert (optional)
+        frappe.show_alert({ message: `Removed ${val}`, indicator: 'orange' }, 2);
+        
+        // Sync changes to the Report Preference DocType
+        this.autoSave();
+      },
+
+
+      getTagClass(tag) {
+        const map = {
+            'COM': 'badge-green',
+            'ROM': 'badge-blue',
+            'RM':  'badge-orange',
+            'AZM': 'badge-purple',
+            'ZM':  'badge-cyan'
+        };
+        return map[tag] || 'badge-gray';
+      },
+
+
+
+      toggleTagMenu() {
+        this.showTagMenu = !this.showTagMenu;
+        
+        // Optional: Close menu when clicking anywhere else
+        if (this.showTagMenu) {
+            const close = () => {
+                this.showTagMenu = false;
+                window.removeEventListener('click', close);
+            };
+            setTimeout(() => window.addEventListener('click', close), 0);
+        }
+    },
+
+
+
+
+
+      setTag(val) {
+          if (!this.selectedPref) return;
+          this.selectedPref.tag = val;
+          this.showTagMenu = false; // Close menu after selection
+          this.autoSave(); // Save to Report Preference DocType
+      },
+
+
       autoSave() {
         clearTimeout(this.saveTimeout);
         this.saveTimeout = setTimeout(() => {
@@ -603,6 +944,123 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           });
         }, 800);
       },
+
+      openSolIdDialog() {
+    if (!this.selectedPref) return;
+    
+    // Initial state: load current selections from the record
+    this.tempSelectedSolIds = [...(this.selectedPref.sol_id || [])];
+
+    const d = new frappe.ui.Dialog({
+        title: "Select SOL IDs",
+        fields: [
+            { 
+                label: "Search Branch", 
+                fieldname: "search_text", 
+                fieldtype: "Data", 
+                placeholder: "Type branch name or SOL ID...", 
+                reqd: 0 
+            },
+            { fieldname: "selected_area", fieldtype: "HTML" },
+            { fieldname: "results", fieldtype: "HTML" }
+        ],
+        primary_action_label: "Save",
+        primary_action: () => {
+            // Apply temp selections to the real record
+            this.selectedPref.sol_id = this.tempSelectedSolIds;
+            this.autoSave(); 
+            d.hide();
+            frappe.show_alert({ message: "SOL IDs updated", indicator: "green" });
+        }
+    });
+
+    const renderSelectedSols = () => {
+        const $area = d.fields_dict.selected_area.$wrapper;
+        if (this.tempSelectedSolIds.length === 0) {
+            $area.html('<div class="selected-users-wrapper"><span class="selected-empty-text">No SOL IDs selected yet</span></div>');
+            return;
+        }
+        
+        let html = '<div class="selected-users-wrapper">';
+        this.tempSelectedSolIds.forEach(sol => {
+            html += `<span class="selected-pill">${sol}<span class="remove-user" data-val="${sol}">&times;</span></span>`;
+        });
+        html += '</div>';
+        $area.html(html);
+
+        // Click on pill to remove
+        $area.find('.selected-pill').on('click', (e) => {
+            const val = $(e.currentTarget).find('.remove-user').attr('data-val');
+            this.tempSelectedSolIds = this.tempSelectedSolIds.filter(s => s !== val);
+            renderSelectedSols();
+            // Uncheck in result list if visible
+            d.fields_dict.results.$wrapper.find(`.search-result-item[data-sol="${val}"]`).removeClass('selected').find('input').prop('checked', false);
+        });
+    };
+
+    d.fields_dict.search_text.$input.on("input", () => {
+        let value = d.get_value("search_text");
+        if (!value || value.length < 1) { 
+            d.fields_dict.results.$wrapper.html(""); 
+            return; 
+        }
+
+        // Call a specific search for branches (adjust method path if needed)
+        frappe.call({
+            method: "sahayog.sahayog.page.permission_config.permission_config.search_branch",
+            args: { search_text: value },
+            callback: (r) => {
+                let results = r.message || [];
+                let html = '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
+                
+                if (results.length === 0) {
+                    html += '<div style="padding:10px; color:#57606a; font-size:13px;">No branches found</div>';
+                } else {
+                   // Inside search_branch callback
+results.forEach((branch_doc) => {
+    let isChecked = this.tempSelectedSolIds.includes(branch_doc.name);
+    html += `
+        <div class="search-result-item ${isChecked ? 'selected' : ''}" data-sol="${branch_doc.name}">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} style="pointer-events:none;">
+            <div class="search-result-info">
+                <!-- branch_doc.branch is the descriptive name, branch_doc.name is the SOL ID -->
+                <div class="search-result-name">${branch_doc.branch || branch_doc.name}</div>
+                <div class="search-result-email">SOL ID: ${branch_doc.name}</div>
+            </div>
+        </div>`;
+});
+
+
+                }
+                html += "</div>";
+
+                const $wrapper = d.fields_dict.results.$wrapper;
+                $wrapper.html(html);
+
+                $wrapper.find('.search-result-item').on('click', (e) => {
+                    const $item = $(e.currentTarget);
+                    const sol = $item.attr('data-sol');
+                    const $checkbox = $item.find('input[type="checkbox"]');
+
+                    if (this.tempSelectedSolIds.includes(sol)) {
+                        this.tempSelectedSolIds = this.tempSelectedSolIds.filter(s => s !== sol);
+                        $item.removeClass('selected');
+                        $checkbox.prop('checked', false);
+                    } else {
+                        this.tempSelectedSolIds.push(sol);
+                        $item.addClass('selected');
+                        $checkbox.prop('checked', true);
+                    }
+                    renderSelectedSols();
+                });
+            }
+        });
+    });
+
+    d.show();
+    renderSelectedSols();
+},
+
 
       createNew() {
         // ... (create logic same as before, no changes needed for Tag unless you want to add tag selection in creation dialog too)

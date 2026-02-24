@@ -272,3 +272,20 @@ def search_user(search_text=None):
         ORDER BY CASE WHEN name LIKE %(starts)s THEN 0 ELSE 1 END, LENGTH(name) ASC, name ASC
         LIMIT 10
     """, {"starts": search_query}, as_dict=True)
+
+
+@frappe.whitelist()
+def search_branch(search_text=None):
+    if not search_text: return []
+    
+    # We remove 'enabled' filter because it doesn't exist in your DocType
+    return frappe.get_all(
+        "Sahayog Branch",
+        fields=["name", "branch"], 
+        filters=[],
+        or_filters=[
+            ["name", "like", f"%{search_text}%"],
+            ["branch", "like", f"%{search_text}%"]
+        ],
+        limit_page_length=20
+    )
