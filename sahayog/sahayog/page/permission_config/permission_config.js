@@ -460,38 +460,38 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             <!-- TAG BADGE -->
             <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
         <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
-<!-- RIGHT SIDE: Toggle + Clickable Dynamic Tag Badge -->
-<div v-if="selectedPref" style="display: flex; align-items: center;">
-    
-    <!-- ENABLED TOGGLE -->
-    <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
-        <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
-        <span class="perm-slider"></span>
-    </label>
+        <!-- RIGHT SIDE: Toggle + Clickable Dynamic Tag Badge -->
+        <div v-if="selectedPref" style="display: flex; align-items: center;">
+            
+            <!-- ENABLED TOGGLE -->
+            <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
+                <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
+                <span class="perm-slider"></span>
+            </label>
 
-    <!-- TAG BADGE CONTAINER -->
-    <div class="perm-tag-container">
-        <!-- UPDATED: Added :class binding for dynamic colors -->
-        <span class="perm-tag-badge perm-tag-badge-btn" 
-              :class="getTagClass(selectedPref.tag)"
-              style="font-size: 12px; padding: 4px 10px;"
-              :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
-              @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
-            [[ selectedPref.tag || 'No Tag' ]]
-        </span>
+            <!-- TAG BADGE CONTAINER -->
+            <div class="perm-tag-container">
+                <!-- UPDATED: Added :class binding for dynamic colors -->
+                <span class="perm-tag-badge perm-tag-badge-btn" 
+                      :class="getTagClass(selectedPref.tag)"
+                      style="font-size: 12px; padding: 4px 10px;"
+                      :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
+                      @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
+                    [[ selectedPref.tag || 'No Tag' ]]
+                </span>
 
-        <!-- Floating Menu (Keep same as before) -->
-        <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
-            <div v-for="opt in allOptions.tag" :key="opt"
-                 class="perm-tag-option"
-                 :class="{ active: selectedPref.tag === opt }"
-                 @click="setTag(opt)">
-                [[ opt ]]
+                <!-- Floating Menu (Keep same as before) -->
+                <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
+                    <div v-for="opt in allOptions.tag" :key="opt"
+                        class="perm-tag-option"
+                        :class="{ active: selectedPref.tag === opt }"
+                        @click="setTag(opt)">
+                        [[ opt ]]
+                    </div>
+                    <div class="perm-tag-option perm-tag-option-none" @click="setTag('')">No Tag</div>
+                </div>
             </div>
-            <div class="perm-tag-option perm-tag-option-none" @click="setTag('')">No Tag</div>
         </div>
-    </div>
-</div>
 
 
 
