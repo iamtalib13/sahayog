@@ -333,7 +333,47 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     color: #cf222e; /* Red color for "No Tag" */
 }
 
+/* Container for the whole row */
+.perm-field-row {
+    display: flex;
+    flex-direction: row; /* Force side-by-side */
+    gap: 24px;          /* Space between Zone block and Region block */
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+}
 
+/* Individual field blocks (Zone/Region) */
+.perm-field-half {
+    flex: 1;            /* Each takes 50% width */
+    display: flex;
+    align-items: center; /* Vertical center label and chips */
+    min-width: 0;       /* Prevents overflow breaking flex */
+}
+
+/* Label and Chips Wrapper */
+.perm-flabel-inline {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+}
+
+/* Specific label styling to prevent shrinking */
+.perm-flabel-inline > span {
+    font-weight: 600;
+    font-size: 13px;
+    margin-right: 12px;
+    white-space: nowrap; /* Label won't break into 2 lines */
+}
+
+/* Chips container */
+.perm-check-grid-chips-inline {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap; /* Allows chips to wrap if too many, but stays in row */
+    gap: 6px;
+}
 
 
     </style>
@@ -399,41 +439,38 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
             <!-- TAG BADGE -->
             <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
-        <div v-if="selectedPref" style="display: flex; align-items: center;">
-            
-            <!-- ENABLED TOGGLE -->
-            <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
-                <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
-                <span class="perm-slider"></span>
-            </label>
+        <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
+<div v-if="selectedPref" style="display: flex; align-items: center;">
+    
+    <!-- ENABLED TOGGLE -->
+    <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
+        <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
+        <span class="perm-slider"></span>
+    </label>
 
-            <!-- NEW: Clickable Tag Badge Container -->
-            <div class="perm-tag-container">
-                <!-- The Badge (Click to open menu) -->
-                <span class="perm-tag-badge perm-tag-badge-btn" 
-                      style="font-size: 12px; padding: 4px 10px;"
-                      @click.stop="toggleTagMenu">
-                    [[ selectedPref.tag || 'No Tag' ]]
-                </span>
+    <!-- TAG BADGE CONTAINER -->
+    <div class="perm-tag-container">
+        <!-- ADDED: Conditional Click Logic -->
+        <span class="perm-tag-badge perm-tag-badge-btn" 
+              style="font-size: 12px; padding: 4px 10px;"
+              :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
+              @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
+            [[ selectedPref.tag || 'No Tag' ]]
+        </span>
 
-                <!-- Floating Menu (Shows when showTagMenu is true) -->
-                <div v-if="showTagMenu" class="perm-tag-menu">
-                    <!-- Dynamic Options from DocType -->
-                    <div v-for="opt in allOptions.tag" :key="opt"
-                        class="perm-tag-option"
-                        :class="{ active: selectedPref.tag === opt }"
-                        @click="setTag(opt)">
-                        [[ opt ]]
-                    </div>
-                    
-                    <!-- Default "No Tag" option -->
-                    <div class="perm-tag-option perm-tag-option-none" 
-                        @click="setTag('')">
-                        No Tag
-                    </div>
-                </div>
+        <!-- Floating Menu (Only reachable if enabled) -->
+        <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
+            <div v-for="opt in allOptions.tag" :key="opt"
+                 class="perm-tag-option"
+                 :class="{ active: selectedPref.tag === opt }"
+                 @click="setTag(opt)">
+                [[ opt ]]
             </div>
+            <div class="perm-tag-option perm-tag-option-none" @click="setTag('')">No Tag</div>
         </div>
+    </div>
+</div>
+
 
           </div>
 
