@@ -378,140 +378,152 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           <div class="perm-sidebar perm-pane">
             <div class="perm-pane-header">
   
-  <!-- LEFT SIDE: Title and Details -->
-  <div v-if="!selectedPref">
-    <h3>Permission Details</h3>
-  </div>
-  
-  <div v-else style="display: flex; flex-direction: column; gap: 4px;">
-    <h3 style="margin: 0;">Permission Details</h3>
-    <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
-      <span><strong>Employee Name:</strong> [[ selectedPref.full_name || '-' ]]</span>
-      <span style="color: #d0d7de;">|</span>
-      <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
-    </div>
-  </div>
-
-  <!-- RIGHT SIDE: Toggle + Tag Badge -->
-  <div v-if="selectedPref" style="display: flex; align-items: center;">
-    
-   
-
-    <!-- TAG BADGE -->
-    <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
-<div v-if="selectedPref" style="display: flex; align-items: center;">
-    
-    <!-- ENABLED TOGGLE -->
-    <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
-        <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
-        <span class="perm-slider"></span>
-    </label>
-
-    <!-- NEW: Clickable Tag Badge Container -->
-    <div class="perm-tag-container">
-        <!-- The Badge (Click to open menu) -->
-        <span class="perm-tag-badge perm-tag-badge-btn" 
-              style="font-size: 12px; padding: 4px 10px;"
-              @click.stop="toggleTagMenu">
-            [[ selectedPref.tag || 'No Tag' ]]
-        </span>
-
-        <!-- Floating Menu (Shows when showTagMenu is true) -->
-        <div v-if="showTagMenu" class="perm-tag-menu">
-            <!-- Dynamic Options from DocType -->
-            <div v-for="opt in allOptions.tag" :key="opt"
-                 class="perm-tag-option"
-                 :class="{ active: selectedPref.tag === opt }"
-                 @click="setTag(opt)">
-                [[ opt ]]
+          <!-- LEFT SIDE: Title and Details -->
+          <div v-if="!selectedPref">
+            <h3>Permission Details</h3>
+          </div>
+          
+          <div v-else style="display: flex; flex-direction: column; gap: 4px;">
+            <h3 style="margin: 0;">Permission Details</h3>
+            <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
+              <span><strong>Employee Name:</strong> [[ selectedPref.full_name || '-' ]]</span>
+              <span style="color: #d0d7de;">|</span>
+              <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
             </div>
+          </div>
+
+          <!-- RIGHT SIDE: Toggle + Tag Badge -->
+          <div v-if="selectedPref" style="display: flex; align-items: center;">
             
-            <!-- Default "No Tag" option -->
-            <div class="perm-tag-option perm-tag-option-none" 
-                 @click="setTag('')">
-                No Tag
+          
+
+            <!-- TAG BADGE -->
+            <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
+        <div v-if="selectedPref" style="display: flex; align-items: center;">
+            
+            <!-- ENABLED TOGGLE -->
+            <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
+                <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
+                <span class="perm-slider"></span>
+            </label>
+
+            <!-- NEW: Clickable Tag Badge Container -->
+            <div class="perm-tag-container">
+                <!-- The Badge (Click to open menu) -->
+                <span class="perm-tag-badge perm-tag-badge-btn" 
+                      style="font-size: 12px; padding: 4px 10px;"
+                      @click.stop="toggleTagMenu">
+                    [[ selectedPref.tag || 'No Tag' ]]
+                </span>
+
+                <!-- Floating Menu (Shows when showTagMenu is true) -->
+                <div v-if="showTagMenu" class="perm-tag-menu">
+                    <!-- Dynamic Options from DocType -->
+                    <div v-for="opt in allOptions.tag" :key="opt"
+                        class="perm-tag-option"
+                        :class="{ active: selectedPref.tag === opt }"
+                        @click="setTag(opt)">
+                        [[ opt ]]
+                    </div>
+                    
+                    <!-- Default "No Tag" option -->
+                    <div class="perm-tag-option perm-tag-option-none" 
+                        @click="setTag('')">
+                        No Tag
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-  </div>
+          </div>
 
-</div>
+        </div>
 
 
-            <div class="perm-pane-content">
+        <div class="perm-pane-content">
   
-  <div v-if="!selectedPref" class="perm-sidebar-empty">
-    <!-- Empty SVG -->
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-    <div style="font-size: 14px; font-weight: 500;">No User Selected</div>
-    <div style="font-size: 13px; margin-top: 8px;">Select a user from the list to manage their permission preferences</div>
-  </div>
+        <div v-if="!selectedPref" class="perm-sidebar-empty">
+          <!-- Empty SVG -->
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          <div style="font-size: 14px; font-weight: 500;">No User Selected</div>
+          <div style="font-size: 13px; margin-top: 8px;">Select a user from the list to manage their permission preferences</div>
+        </div>
 
-  <div v-else>
+        <div v-else>
     
     <!-- IF ENABLED: Show Settings -->
     <div v-if="selectedPref.enabled">
+        
         <!-- User Classification / Tag -->
+        <div class="perm-section" style="display: none">
+           <div class="perm-section-title" style="display: none">User Classification</div>
+           <div class="perm-field" style="display: none">
+             <div class="perm-flabel" style="display: none"><span>Role Tag</span></div>
+             <select class="perm-select" v-model="selectedPref.tag" @change="autoSave" style="display: none">
+                <option value="">No Tag</option>
+                <option v-for="opt in allOptions.tag" :value="opt" style="display: none">[[ opt ]]</option>
+             </select>
+           </div>
+        </div>
+
         <div class="perm-section">
           <div class="perm-section-title">Geographic Filters</div>
           
           <!-- Zone & Region Row -->
           <div class="perm-field-row">
-            <!-- ZONE -->
-            <div class="perm-field perm-field-half">
-              <div class="perm-flabel-inline">
-                <span>Zone</span>
+          <!-- ZONE -->
+          <div class="perm-field perm-field-half">
+            <div class="perm-flabel-inline">
+              <span>Zone</span>
 
-                <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
-                  <!-- NEW: ALL Option -->
-                  <div class="perm-chip" 
-                      :class="{ selected: isAllSelected('zone') }"
-                      @click="toggleAll('zone')">
-                    ALL
-                  </div>
-
-                  <!-- Dynamic Zones -->
-                  <div v-for="opt in allOptions.zone" :key="opt"
-                      class="perm-chip"
-                      :class="{ selected: selectedPref.zone.includes(opt) }"
-                      @click="toggle('zone', opt)">
-                    [[ opt ]]
-                  </div>
+              <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
+                <!-- NEW: ALL Option -->
+                <div class="perm-chip" 
+                    :class="{ selected: isAllSelected('zone') }"
+                    @click="toggleAll('zone')">
+                  ALL
                 </div>
 
-                <!-- Hide "Select All" link if options exist -->
-                <a v-if="!allOptions.zone.length" class="perm-flink" style="margin-left:auto;">No options available</a>
-              </div>
-            </div>
-
-            <!-- REGION -->
-            <div class="perm-field perm-field-half">
-              <div class="perm-flabel-inline">
-                <span>Region</span>
-
-                <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
-                  <!-- NEW: ALL Option -->
-                  <div class="perm-chip" 
-                      :class="{ selected: isAllSelected('region') }"
-                      @click="toggleAll('region')">
-                    ALL
-                  </div>
-
-                  <!-- Dynamic Regions (HO, 1, 2, etc.) -->
-                  <div v-for="opt in allOptions.region" :key="opt"
-                      class="perm-chip"
-                      :class="{ selected: selectedPref.region.includes(opt) }"
-                      @click="toggle('region', opt)">
-                    [[ opt ]]
-                  </div>
+                <!-- Dynamic Zones -->
+                <div v-for="opt in allOptions.zone" :key="opt"
+                    class="perm-chip"
+                    :class="{ selected: selectedPref.zone.includes(opt) }"
+                    @click="toggle('zone', opt)">
+                  [[ opt ]]
                 </div>
-
-                <a v-if="!allOptions.region.length" class="perm-flink" style="margin-left:auto;">No options available</a>
               </div>
+
+              <!-- Hide "Select All" link if options exist -->
+              <a v-if="!allOptions.zone.length" class="perm-flink" style="margin-left:auto;">No options available</a>
             </div>
           </div>
+
+          <!-- REGION -->
+          <div class="perm-field perm-field-half">
+            <div class="perm-flabel-inline">
+              <span>Region</span>
+
+              <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
+                <!-- NEW: ALL Option -->
+                <div class="perm-chip" 
+                    :class="{ selected: isAllSelected('region') }"
+                    @click="toggleAll('region')">
+                  ALL
+                </div>
+
+                <!-- Dynamic Regions (HO, 1, 2, etc.) -->
+                <div v-for="opt in allOptions.region" :key="opt"
+                    class="perm-chip"
+                    :class="{ selected: selectedPref.region.includes(opt) }"
+                    @click="toggle('region', opt)">
+                  [[ opt ]]
+                </div>
+              </div>
+
+              <a v-if="!allOptions.region.length" class="perm-flink" style="margin-left:auto;">No options available</a>
+            </div>
+          </div>
+        </div>
 
 
           <!-- Other Filters (State, District, SOL ID) -->
@@ -531,21 +543,21 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     <!-- IF DISABLED: Show Message -->
     <!-- IF DISABLED: Show Centered Message -->
-<div v-else class="perm-sidebar-empty">
-    <!-- Lock Icon -->
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-    </svg>
-    
-    <div style="font-size: 16px; font-weight: 600; color: #24292f;">
-        Configuration Disabled
-    </div>
-    
-    <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
-        Enable this user's preferences using the toggle above to configure report filters.
-    </div>
-</div>
+      <div v-else class="perm-sidebar-empty">
+          <!-- Lock Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          
+          <div style="font-size: 16px; font-weight: 600; color: #24292f;">
+              Configuration Disabled
+          </div>
+          
+          <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
+              Enable this user's preferences using the toggle above to configure report filters.
+          </div>
+      </div>
 
   </div>
 </div>
