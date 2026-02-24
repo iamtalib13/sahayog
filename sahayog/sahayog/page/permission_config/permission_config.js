@@ -38,7 +38,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         /* ... existing pane header/content styles ... */
         .perm-pane-header { padding: 12px 16px; background: transparent; border-bottom: 1px solid #d0d7de; flex-shrink: 0; }
         .perm-pane-header h3 { margin: 0; font-size: 14px; font-weight: 600; color: #24292f; }
-        .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; }
+        .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 19px; }
 
         /* Internal Components */
         .perm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #d0d7de; }
@@ -441,7 +441,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     padding: 2px 10px;
     background: #e8fdf0; /* Light green like your other selected items */
     color: #2f9d58;
-    border: 1px solid #A6EFC0;
+    border: 1px solid #2f9d58;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 500;
@@ -470,9 +470,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     align-items: center;
     gap: 8px; /* Space between text and X */
     padding: 4px 12px;
-    background: #e8fdf0;
+    background-color: #e8fdf0;
     color: #2f9d58;
-    border: 1px solid #A6EFC0;
+    border: 1px solid #2f9d58;
     border-radius: 16px;
     font-size: 12px;
 }
@@ -500,6 +500,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     padding: 64px 32px;
     color: #57606a;
 }
+    
+
+/* Ensure the SVG can rotate smoothly */
+.perm-tag-badge-btn svg {
+    transition: transform 0.2s ease; /* Smooth turning animation */
+    pointer-events: none; /* Let the click pass to the parent span */
+}
+
+/* When the menu is open, rotate the arrow 180 degrees */
+.perm-tag-badge.menu-open svg {
+    transform: rotate(180deg);
+}
 
 
     </style>
@@ -508,7 +520,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         <div class="perm-layout">
           
           <div class="perm-main perm-pane">
-            <div class="perm-pane-header"><h3>Users</h3></div>
+            <div class="perm-pane-header" style="display: none"><h3>Users</h3></div>
             <div class="perm-pane-content">
               <div class="perm-header">
                 <h3>Report Preferences</h3>
@@ -577,26 +589,31 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
             <!-- TAG BADGE CONTAINER -->
             <div class="perm-tag-container">
-                <!-- UPDATED: Added :class binding for dynamic colors -->
-                <span class="perm-tag-badge perm-tag-badge-btn" 
-                      :class="getTagClass(selectedPref.tag)"
-                      style="font-size: 12px; padding: 4px 10px;"
-                      :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
-                      @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
-                    [[ selectedPref.tag || 'No Tag' ]]
-                </span>
+    <span class="perm-tag-badge perm-tag-badge-btn" 
+          :class="[getTagClass(selectedPref.tag), { 'menu-open': showTagMenu }]"
+          style="font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;"
+          :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
+          @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
+        
+        <!-- Tag Text -->
+        <span>[[ selectedPref.tag || 'No Tag' ]]</span>
+        
+        <!-- Down Arrow SVG (Now Rotates based on menu-open class) -->
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </svg>
+    </span>
 
-                <!-- Floating Menu (Keep same as before) -->
-                <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
-                    <div v-for="opt in allOptions.tag" :key="opt"
-                        class="perm-tag-option"
-                        :class="{ active: selectedPref.tag === opt }"
-                        @click="setTag(opt)">
-                        [[ opt ]]
-                    </div>
-                    <div class="perm-tag-option perm-tag-option-none" @click="setTag('')">No Tag</div>
-                </div>
-            </div>
+    <!-- Floating Menu (v-if="showTagMenu") -->
+    <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
+        <div v-for="opt in allOptions.tag" :key="opt" class="perm-tag-option" :class="{ active: selectedPref.tag === opt }" @click="setTag(opt)">
+            [[ opt ]]
+        </div>
+        <div class="perm-tag-option perm-tag-option-none" @click="setTag('')">No Tag</div>
+    </div>
+</div>
+
+
         </div>
 
 
@@ -623,7 +640,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         
         <!-- Geographic Filters Section -->
         <div class="perm-section">
-          <div class="perm-section-title">Geographic Filters</div>
+          <div class="perm-section-title" style="display: none">Geographic Filters</div>
           
           <div class="perm-field-row">
             <!-- Zone & Region side-by-side -->
