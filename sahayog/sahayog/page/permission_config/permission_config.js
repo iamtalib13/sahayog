@@ -658,13 +658,34 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                 </div>
             </div>
             <div class="perm-field-half">
-                <div class="perm-flabel-inline">
-                  <span>Region</span>
-                  <div class="perm-check-grid-chips-inline">
-                    <div v-for="opt in allOptions.region" :key="opt" class="perm-chip" :class="{ selected: selectedPref.region.includes(opt) }" @click="toggle('region', opt)">[[ opt ]]</div>
-                  </div>
-                </div>
-            </div>
+    <div class="perm-flabel-inline">
+      <span>Region</span>
+      <!-- Ensure the v-if is ONLY on this container -->
+      <div v-if="allOptions.region && allOptions.region.length" class="perm-check-grid-chips-inline">
+        
+        <!-- ALL Chip -->
+        <div class="perm-chip" 
+             :class="{ selected: isAllSelected('region') }" 
+             @click="toggleAll('region')">
+          ALL
+        </div>
+
+        <!-- Dynamic Chips -->
+        <div v-for="opt in allOptions.region" :key="opt" 
+             class="perm-chip" 
+             :class="{ selected: selectedPref.region.includes(opt) }" 
+             @click="toggle('region', opt)">
+          [[ opt ]]
+        </div>
+      </div>
+      
+      <!-- Show this if Region list is empty -->
+      <div v-else class="selected-empty-text" style="margin-left: 10px;">
+        No Regions available
+      </div>
+    </div>
+</div>
+
           </div>
 
           <!-- SOL ID Section -->
@@ -689,20 +710,20 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         </div>
     </div>
 
-    <!-- IF DISABLED: Show the "Configuration Disabled" Message -->
-    <div v-else class="perm-sidebar-empty">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <div style="font-size: 16px; font-weight: 600; color: #24292f; margin-top: 12px;">Configuration Disabled</div>
-        <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
-            Enable this user's preferences using the toggle above to configure report filters.
-        </div>
-    </div>
+      <!-- IF DISABLED: Show the "Configuration Disabled" Message -->
+      <div v-else class="perm-sidebar-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <div style="font-size: 16px; font-weight: 600; color: #24292f; margin-top: 12px;">Configuration Disabled</div>
+          <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
+              Enable this user's preferences using the toggle above to configure report filters.
+          </div>
+      </div>
 
+    </div>
   </div>
-</div>
 
 
           </div>
