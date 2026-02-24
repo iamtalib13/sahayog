@@ -1,5 +1,3 @@
-// apps/sahayog/sahayog/sahayog/page/permission_config/permission_config.js
-
 frappe.pages["permission-config"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({
     parent: wrapper,
