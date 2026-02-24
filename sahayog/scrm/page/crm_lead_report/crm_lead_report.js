@@ -429,13 +429,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             </div>
 
             <div class="ui-section-card"> 
-                <div class="tab-nav">
-                    <div v-for="t in tabs" :class="['tab-item', active_tab == t.id ? 'active' : '']" @click="active_tab = t.id">
-                        {{ t.label }}
-                    </div>
-                </div>
+               <div class="header-title mb-3">Employee Wise Performance</div>
                 <div class="tab-content" style="padding:20px; min-height:300px;">
-                     <div v-if="active_tab === 'employee'">
+                    <div>
                         <!-- Report Header with Date Display -->
                        <div class="report-header-section">
                           <div class="report-date-display">
@@ -465,6 +461,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 <div class="metric-label">Converted Leads</div>
                                 <div class="metric-value">{{ totalConvertedLeadsInReport }}</div>
                             </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Total Follow-ups</div>
+                                <div class="metric-value">{{ totalFollowupsInReport }}</div>
+                            </div>
+
+                            <div class="metric-card">
+                                <div class="metric-label">Not Interested</div>
+                                <div class="metric-value">{{ totalNotInterestedInReport }}</div>
+                            </div>
                         </div>
                         
                         <!-- Loading/Error/Empty States -->
@@ -489,6 +494,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         <th>Employee Name</th>
                                         <th>Branch</th> 
                                         <th>Follow-ups</th>
+                                        <th>Not Interested</th> 
                                         <th>Converted</th>
                                         <th>Qualification</th>
                                         <th>Rating</th>
@@ -523,6 +529,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                     <td>
                                         <span class="value-text">{{ emp.total_converted || 0 }}</span>
                                     </td>
+                                    <td>
+                                        <span class="value-text">{{ emp.total_not_interested || 0 }}</span>
+                                    </td>
 
                                    <td>
                                       <div class="status-cell-container">
@@ -545,7 +554,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </table>
                         </div>
                      </div>
-                     <iframe v-else :src="getTabUrl()" style="width:100%; height:70vh; border:none;"></iframe>
+                    
                 </div>
             </div>
         </div>
@@ -579,11 +588,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       product: "",
       source: "",
     },
-    tabs: [
-      { id: "employee", label: "Employee Wise Performance" },
-      { id: "daily_sales", label: "Daily Sales Report" },
-      { id: "lead_mgmt", label: "Lead Management" },
-    ],
+    tabs: [{ id: "employee", label: "Employee Wise Performance" }],
     // New properties for Employee Wise Performance tab
     employee_from_date: null,
     employee_to_date: null,
@@ -603,6 +608,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     get totalConvertedLeadsInReport() {
       return this.filteredEmployees.reduce(
         (sum, emp) => sum + (emp.total_converted || 0),
+        0,
+      );
+    },
+    get totalFollowupsInReport() {
+      return this.filteredEmployees.reduce(
+        (sum, emp) => sum + (emp.total_followups || 0),
+        0,
+      );
+    },
+
+    get totalNotInterestedInReport() {
+      return this.filteredEmployees.reduce(
+        (sum, emp) => sum + (emp.total_not_interested || 0),
         0,
       );
     },
@@ -758,13 +776,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
 
       return `${displayText} +${count - 1} more`;
-    },
-    getTabUrl() {
-      if (this.active_tab === "daily_sales")
-        return "/app/daily-sales-report?is_embedded=1";
-      if (this.active_tab === "lead_mgmt")
-        return "/app/crm-lead-management?is_embedded=1";
-      return "";
     },
 
     async fetchEmployeePerformance() {
