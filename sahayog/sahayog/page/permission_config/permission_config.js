@@ -41,7 +41,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 19px; }
 
         /* Internal Components */
-        .perm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #d0d7de; }
+        .perm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; 
+        padding-bottom: 12px; border-bottom: 1px solid #d0d7de; }
         .perm-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: #24292f; }
         
         .perm-search { position: relative; width: 100%; max-width: 320px; }
@@ -196,7 +197,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   display: flex; /* Enable flexbox */
   justify-content: space-between; /* Push items to edges */
   align-items: flex-start; /* Align top */
-  padding: 12px 16px;
+  padding: 23px 16px;
   background: transparent;
   border-bottom: 1px solid #d0d7de;
   flex-shrink: 0;
