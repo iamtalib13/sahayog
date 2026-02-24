@@ -279,6 +279,62 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 }
 
 
+/* Container for badge and menu */
+.perm-tag-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Make the badge look like a button */
+.perm-tag-badge-btn {
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.1s;
+}
+
+.perm-tag-badge-btn:active {
+    transform: scale(0.95);
+}
+
+/* Floating Menu Styling */
+.perm-tag-menu {
+    position: absolute;
+    top: 110%; /* Show below badge */
+    right: 0;
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.perm-tag-option {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #24292f;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.perm-tag-option:hover {
+    background-color: #f6f8fa;
+}
+
+.perm-tag-option.active {
+    font-weight: 600;
+    color: #0969da;
+    background-color: #f0f7ff;
+}
+
+.perm-tag-option-none {
+    border-top: 1px solid #f0f0f0;
+    color: #cf222e; /* Red color for "No Tag" */
+}
+
+
+
 
     </style>
 
@@ -339,14 +395,46 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   <!-- RIGHT SIDE: Toggle + Tag Badge -->
   <div v-if="selectedPref" style="display: flex; align-items: center;">
     
-    <!-- ENABLED TOGGLE -->
-    <label class="perm-toggle" title="Enable/Disable">
-      <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
-      <span class="perm-slider"></span>
-    </label>
+   
 
     <!-- TAG BADGE -->
-    <span v-if="selectedPref.tag" class="perm-tag-badge" style="font-size: 12px; padding: 4px 8px;">[[ selectedPref.tag ]]</span>
+    <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
+<div v-if="selectedPref" style="display: flex; align-items: center;">
+    
+    <!-- ENABLED TOGGLE -->
+    <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
+        <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
+        <span class="perm-slider"></span>
+    </label>
+
+    <!-- NEW: Clickable Tag Badge Container -->
+    <div class="perm-tag-container">
+        <!-- The Badge (Click to open menu) -->
+        <span class="perm-tag-badge perm-tag-badge-btn" 
+              style="font-size: 12px; padding: 4px 10px;"
+              @click.stop="toggleTagMenu">
+            [[ selectedPref.tag || 'No Tag' ]]
+        </span>
+
+        <!-- Floating Menu (Shows when showTagMenu is true) -->
+        <div v-if="showTagMenu" class="perm-tag-menu">
+            <!-- Dynamic Options from DocType -->
+            <div v-for="opt in allOptions.tag" :key="opt"
+                 class="perm-tag-option"
+                 :class="{ active: selectedPref.tag === opt }"
+                 @click="setTag(opt)">
+                [[ opt ]]
+            </div>
+            
+            <!-- Default "No Tag" option -->
+            <div class="perm-tag-option perm-tag-option-none" 
+                 @click="setTag('')">
+                No Tag
+            </div>
+        </div>
+    </div>
+</div>
+
   </div>
 
 </div>
@@ -481,6 +569,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     PetiteVue.createApp({
       $delimiters: ["[[", "]]"],
+      showTagMenu: false, // Tracks if the floating menu is open
+
 
       prefList: [],
       filteredList: [],
@@ -611,6 +701,28 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
         this.autoSave();
       },
+
+
+      toggleTagMenu() {
+        this.showTagMenu = !this.showTagMenu;
+        
+        // Optional: Close menu when clicking anywhere else
+        if (this.showTagMenu) {
+            const close = () => {
+                this.showTagMenu = false;
+                window.removeEventListener('click', close);
+            };
+            setTimeout(() => window.addEventListener('click', close), 0);
+        }
+    },
+
+      setTag(val) {
+          if (!this.selectedPref) return;
+          this.selectedPref.tag = val;
+          this.showTagMenu = false; // Close menu after selection
+          this.autoSave(); // Save to Report Preference DocType
+      },
+
 
       autoSave() {
         clearTimeout(this.saveTimeout);
