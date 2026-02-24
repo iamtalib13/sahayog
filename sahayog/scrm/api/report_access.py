@@ -215,6 +215,7 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             continue
 
         # 4. Product Logic
+        # 4. Product Logic (CORRECTED)
         l_products = product_map.get(l.name, [])
         matched_products = []
         
@@ -224,11 +225,14 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
                 skip_reason_product += 1
                 continue 
         else:
-            matched_products = l_products if l.l_products else [{}]
+            # FIX: Yahan 'l.l_products' galat tha. 
+            # Humein check karna hai ki lead ke paas products hain ya nahi.
+            matched_products = l_products if l_products else [{}]
 
         emp = employee_map.get(l.lead_owner)
 
         for p in matched_products:
+            # .get() use karna safe rehta hai jab p ek empty dict {} ho sake
             new_row = l.copy()
             new_row.update({
                 "product_code": p.get("product") or "-",
