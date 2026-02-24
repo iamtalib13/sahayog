@@ -872,23 +872,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       toggle(field, value) {
         if (!this.selectedPref) return;
         
-        // VALIDATION: If field is Region, check if at least one Zone is selected
+        // VALIDATION: Block Region selection if Zone is empty
         if (field === 'region') {
-            const hasZone = this.selectedPref.zone && this.selectedPref.zone.length > 0;
-            
-            if (!hasZone) {
-                // Block the selection and show a message
+            if (!this.selectedPref.zone || this.selectedPref.zone.length === 0) {
                 frappe.show_alert({
-                    message: __('Please select at least one <strong>Zone</strong> before selecting a Region.'),
+                    message: __('Please select at least one <strong>Zone</strong> first.'),
                     indicator: 'orange'
-                }, 5); // Show for 5 seconds
-                
-                // Optional: Also focus the Zone area visually if you have a ref
-                return; // Exit function so Region isn't added
+                }, 3);
+                return;
             }
         }
 
-        // NORMAL LOGIC: Add/Remove the selected value
+        // TOGGLE LOGIC: Add/Remove value
         const arr = this.selectedPref[field];
         const idx = arr.indexOf(value);
         
@@ -897,24 +892,29 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         } else {
             arr.push(value);
         }
+
+        // AUTO-CLEAR: If Zone was emptied, clear Regions
+        if (field === 'zone' && this.selectedPref.zone.length === 0) {
+            if (this.selectedPref.region && this.selectedPref.region.length > 0) {
+                this.selectedPref.region = [];
+                frappe.show_alert({
+                    message: __('Regions cleared because no Zone is selected.'),
+                    indicator: 'blue'
+                }, 3);
+            }
+        }
         
-        // Auto-save the changes to the database
+        // Save to DocType
         this.autoSave();
       },
 
       toggleAll(field) {
         if (!this.selectedPref) return;
         
-        // VALIDATION for Region "ALL" button
-        if (field === 'region') {
-            const hasZone = this.selectedPref.zone && this.selectedPref.zone.length > 0;
-            if (!hasZone) {
-                frappe.show_alert({
-                    message: __('Please select at least one <strong>Zone</strong> before selecting Regions.'),
-                    indicator: 'orange'
-                }, 5);
-                return;
-            }
+        // Block Region ALL if Zone empty
+        if (field === 'region' && (!this.selectedPref.zone || this.selectedPref.zone.length === 0)) {
+            frappe.show_alert({ message: __('Please select at least one <strong>Zone</strong> first.'), indicator: 'orange' }, 3);
+            return;
         }
 
         if (this.isAllSelected(field)) {
@@ -922,11 +922,15 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         } else {
             this.selectedPref[field] = [...this.allOptions[field]];
         }
+
+        // AUTO-CLEAR: If Zone ALL was deselected (emptying zones), clear Regions
+        if (field === 'zone' && this.selectedPref.zone.length === 0) {
+            this.selectedPref.region = [];
+            frappe.show_alert({ message: __('Regions cleared.'), indicator: 'blue' }, 2);
+        }
         
         this.autoSave();
-    },
-
-
+      },
 
       isAllSelected(field) {
         if (!this.selectedPref) return false;
