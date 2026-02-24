@@ -321,6 +321,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         color: #991b1b !important; 
         border: 1px solid #fecaca !important; 
     }
+    /* Pastel Yellow for Average */
+.bg-average { 
+    background-color: #fef9c3 !important; 
+    color: #854d0e !important; 
+    border: 1px solid #fef08a !important; 
+}
     .status-cell-container {
     display: flex;
     align-items: center;
@@ -477,15 +483,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         <div class="header-title mb-2">Employee Performance Summary</div>
                         <div v-else class="table-responsive-dsr">
                             <table class="dsr-table">
-                                <thead>
+                               <thead>
                                     <tr>
                                         <th>Employee ID</th>
                                         <th>Employee Name</th>
                                         <th>SOL ID</th>
                                         <th>Branch</th>
-                                        <th>Total Leads</th>
-                                        <th>Converted Leads</th>
-                                    </tr>
+                                        <th>Follow-ups</th> <th>Qualification</th> <th>Rating</th> </tr>
                                 </thead>
                                 <tbody>
                                 <tr v-for="emp in employee_performance_data" :key="emp.employee_id">
@@ -499,25 +503,27 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         <div style="font-weight: 600;">{{ emp.branch || 'N/A' }}</div>
                                         <span class="emp-info-sub">Region: {{ emp.region }} | Zone: {{ emp.zone }}</span>
                                     </td>
+                                    
                                     <td>
-                                        <div class="status-cell-container">
-                                            <span class="value-text">{{ emp.total_leads }}</span>
-                                            <span :class="['dsr-badge', getLeadStatus(emp.total_leads).class]">
-                                                {{ getLeadStatus(emp.total_leads).label }}
-                                            </span>
-                                        </div>
+                                        <span class="value-text">{{ emp.total_followups || 0 }}</span>
                                     </td>
 
-                                    <td>
-                                        <div class="status-cell-container">
-                                            <span class="value-text" :style="{ color: emp.total_converted > 0 ? '#05a15d' : '#1f2937' }">
-                                                {{ emp.total_converted }}
-                                            </span>
-                                            <span :class="['dsr-badge', getConversionStatus(emp.total_converted).class]">
-                                                {{ getConversionStatus(emp.total_converted).label }}
-                                            </span>
-                                        </div>
-                                    </td>
+                                   <td>
+                                      <div class="status-cell-container">
+                                          <span class="value-text">{{ emp.total_leads }}</span>
+                                          <span :class="['dsr-badge', getLeadStatus(emp.total_leads).class]">
+                                              {{ getLeadStatus(emp.total_leads).label }}
+                                          </span>
+                                      </div>
+                                  </td>
+
+                                 <td>
+                                      <div class="status-cell-container">
+                                          <span :class="['dsr-badge', getEnhancedRating(emp).class]">
+                                              {{ getEnhancedRating(emp).label }}
+                                          </span>
+                                      </div>
+                                  </td>
                                 </tr>
                               </tbody>
                             </table>
@@ -603,6 +609,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           this.employee_to_date,
         );
         this.fetchEmployeePerformance();
+      }
+    },
+    // Is function ko methods section mein add/replace karein
+    getEnhancedRating(emp) {
+      // 1. Agar ek bhi lead convert hui hai
+      if (emp.total_converted > 0) {
+        return { label: "Good", class: "badge-pastel-green" };
+      }
+      // 2. Agar convert nahi hui par 4 ya usse zyada follow-ups hain
+      else if ((emp.total_followups || 0) >= 4) {
+        return { label: "Average", class: "bg-average" };
+      }
+      // 3. Baaki sab cases mein "Bad"
+      else {
+        return { label: "Bad", class: "badge-pastel-red" };
       }
     },
     // Status logic for Badges
