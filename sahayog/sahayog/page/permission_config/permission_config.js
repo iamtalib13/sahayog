@@ -383,32 +383,60 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           
           <!-- Zone & Region Row -->
           <div class="perm-field-row">
-            <!-- Zone -->
-            <div class="perm-field perm-field-half">
-                <div class="perm-flabel-inline">
-                  <span>Zone</span>
-                  <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
-                    <div v-for="opt in allOptions.zone" :key="opt" class="perm-chip" :class="{ selected: selectedPref.zone.includes(opt) }" @click="toggle('zone', opt)">
-                      [[ opt ]] <input type="checkbox" :checked="selectedPref.zone.includes(opt)">
-                    </div>
-                  </div>
-                  <a class="perm-flink" @click="toggleAll('zone')" style="margin-left:auto;">[[ isAllSelected('zone') ? 'Deselect All' : 'Select All' ]]</a>
-                </div>
-            </div>
+  <!-- ZONE -->
+  <div class="perm-field perm-field-half">
+    <div class="perm-flabel-inline">
+      <span>Zone</span>
 
-            <!-- Region -->
-            <div class="perm-field perm-field-half">
-                <div class="perm-flabel-inline">
-                  <span>Region</span>
-                  <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
-                    <div v-for="opt in allOptions.region" :key="opt" class="perm-chip" :class="{ selected: selectedPref.region.includes(opt) }" @click="toggle('region', opt)">
-                      [[ opt ]] <input type="checkbox" :checked="selectedPref.region.includes(opt)">
-                    </div>
-                  </div>
-                  <a class="perm-flink" @click="toggleAll('region')" style="margin-left:auto;">[[ isAllSelected('region') ? 'Deselect All' : 'Select All' ]]</a>
-                </div>
-            </div>
-          </div>
+      <div v-if="allOptions.zone.length" class="perm-check-grid-chips-inline">
+        <!-- NEW: ALL Option -->
+        <div class="perm-chip" 
+             :class="{ selected: isAllSelected('zone') }"
+             @click="toggleAll('zone')">
+          ALL
+        </div>
+
+        <!-- Dynamic Zones -->
+        <div v-for="opt in allOptions.zone" :key="opt"
+             class="perm-chip"
+             :class="{ selected: selectedPref.zone.includes(opt) }"
+             @click="toggle('zone', opt)">
+          [[ opt ]]
+        </div>
+      </div>
+
+      <!-- Hide "Select All" link if options exist -->
+      <a v-if="!allOptions.zone.length" class="perm-flink" style="margin-left:auto;">No options available</a>
+    </div>
+  </div>
+
+  <!-- REGION -->
+  <div class="perm-field perm-field-half">
+    <div class="perm-flabel-inline">
+      <span>Region</span>
+
+      <div v-if="allOptions.region.length" class="perm-check-grid-chips-inline">
+        <!-- NEW: ALL Option -->
+        <div class="perm-chip" 
+             :class="{ selected: isAllSelected('region') }"
+             @click="toggleAll('region')">
+          ALL
+        </div>
+
+        <!-- Dynamic Regions (HO, 1, 2, etc.) -->
+        <div v-for="opt in allOptions.region" :key="opt"
+             class="perm-chip"
+             :class="{ selected: selectedPref.region.includes(opt) }"
+             @click="toggle('region', opt)">
+          [[ opt ]]
+        </div>
+      </div>
+
+      <a v-if="!allOptions.region.length" class="perm-flink" style="margin-left:auto;">No options available</a>
+    </div>
+  </div>
+</div>
+
 
           <!-- Other Filters (State, District, SOL ID) -->
           <div class="perm-field"><div class="perm-flabel"><span>State</span></div><div v-if="allOptions.state.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.state" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.state.includes(opt) }" @click="toggle('state', opt)"><input type="checkbox" :checked="selectedPref.state.includes(opt)" @click.stop="toggle('state', opt)"><label>[[ opt ]]</label></div></div></div>
