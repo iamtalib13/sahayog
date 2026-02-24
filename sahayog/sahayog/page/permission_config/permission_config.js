@@ -416,7 +416,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 }
 
 .perm-edit-btn:hover {
-    background-color: #f0f4f6;
+   
     color: #0969da;
 }
 
@@ -460,6 +460,32 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     font-size: 13px;
     color: #8c99a6;
     font-style: italic;
+}
+
+
+.selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Space between text and X */
+    padding: 4px 12px;
+    background: #e8fdf0;
+    color: #2f9d58;
+    border: 1px solid #A6EFC0;
+    border-radius: 16px;
+    font-size: 12px;
+}
+
+.remove-user {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    transition: color 0.2s;
+}
+
+.remove-user:hover {
+    color: #cf222e; /* Red on hover to indicate deletion */
 }
 
 
@@ -673,11 +699,15 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     <span v-if="!selectedPref.sol_id || selectedPref.sol_id.length === 0" class="selected-empty-text">
         No SOL IDs selected yet.
     </span>
+
+    <!-- Pill for each selected SOL ID -->
     <span v-for="sol in selectedPref.sol_id" :key="sol" class="selected-pill">
         [[ sol ]]
-        <span class="remove-user" @click.stop="removeSolId(sol)">&times;</span>
+        <!-- The X button -->
+        <span class="remove-user" @click.stop="removeSolId(sol)">×</span>
     </span>
-  </div>
+</div>
+
 </div>
 
 
@@ -852,6 +882,20 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
         this.autoSave();
       },
+
+      removeSolId(val) {
+        if (!this.selectedPref || !this.selectedPref.sol_id) return;
+        
+        // Filter out the clicked SOL ID
+        this.selectedPref.sol_id = this.selectedPref.sol_id.filter(s => s !== val);
+        
+        // Show a small feedback alert (optional)
+        frappe.show_alert({ message: `Removed ${val}`, indicator: 'orange' }, 2);
+        
+        // Sync changes to the Report Preference DocType
+        this.autoSave();
+      },
+
 
       getTagClass(tag) {
         const map = {
