@@ -119,7 +119,230 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 .dropdown-item:hover {
     background-color: #f0fdf4; /* Light green hover */
 }
-  `,
+      /* DSR-like Styling for Employee Wise Tab */
+      .report-header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+      }
+      .report-date-display {
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: #495057;
+      }
+      .report-date-icon {
+        margin-right: 8px;
+        font-size: 16px;
+        color: #6c757d;
+      }
+      .metric-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .metric-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      }
+      .metric-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 8px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .metric-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #343a40;
+        line-height: 1.2;
+      }
+      .table-responsive-dsr {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+      }
+      .dsr-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .dsr-table thead {
+        background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .dsr-table th {
+        color: white;
+        text-align: left; /* Changed from center to left */
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 12px;
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        line-height: 1.3;
+      }
+      .dsr-table td {
+        vertical-align: middle;
+        text-align: left; /* Changed from center to left */
+        font-size: 13px;
+        padding: 9px 12px;
+        border-top: 1px solid #dee2e6;
+        border-bottom: none;
+        line-height: 1.45;
+        color: #343a40;
+      }
+      .dsr-table tbody tr:hover {
+        background-color: #f8f9fa;
+      }
+      .dsr-table th:first-child,
+      .dsr-table td:first-child {
+        width: 60px;
+        min-width: 60px;
+        text-align: center;
+        font-weight: 600;
+      }
+      .empty-state-dsr {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+        font-size: 14px;
+        background: #fff;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+      }
+      .loading-spinner-dsr {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 50px;
+        background: #fff;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+      }
+      .spinner-dsr {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .report-header-section {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+        .metric-cards-container {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .dsr-table th, .dsr-table td {
+          font-size: 12px;
+          padding: 8px 6px;
+        }
+        .metric-card.primary {
+        border-left: 4px solid #007bff;
+        }
+
+       .metric-card.success {
+       border-left: 4px solid #22c55e;
+        }
+        /* Enhanced Rating Badges */
+       .rating-badge-dsr {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        }
+        .bg-good { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .bg-average { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+        .bg-bad { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .bg-qualified { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+        .emp-info-sub {
+            font-size: 10px;
+            color: #6b7280;
+            display: block;
+            margin-top: 2px;
+        }
+      }
+      /* Enhanced Rating & Pastel Badges - Moving outside media query */
+    .rating-badge-dsr, .dsr-badge {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap; /* Text wrap na ho */
+    margin-top: 0 !important; /* Top margin hata diya side alignment ke liye */
+}
+
+    /* Pastel Green */
+    .badge-pastel-green, .bg-good, .bg-qualified { 
+        background-color: #f0fdf4 !important; 
+        color: #166534 !important; 
+        border: 1px solid #bbf7d0 !important; 
+    }
+
+    /* Pastel Red */
+    .badge-pastel-red, .bg-bad, .bg-disqualified { 
+        background-color: #fef2f2 !important; 
+        color: #991b1b !important; 
+        border: 1px solid #fecaca !important; 
+    }
+    .status-cell-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Isse content left align rahega */
+    gap: 8px; /* Number aur Badge ke beech ka gap */
+}
+
+.value-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f2937;
+    min-width: 15px; /* Alignment barakar rakhne ke liye */
+}
+
+
+    .emp-info-sub {
+        font-size: 10px;
+        color: #6b7280;
+        display: block;
+        margin-top: 2px;
+    }
+    `,
     )
     .appendTo("head");
 
@@ -192,35 +415,43 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 </div>
                 <div class="tab-content" style="padding:20px; min-height:300px;">
                      <div v-if="active_tab === 'employee'">
-                        <div class="employee-report-controls d-flex align-items-center mb-3 p-3" style="background:#f8f9fa; border-radius:8px;">
-                            <span class="mr-2" style="font-size:10px; font-weight:bold; color:#6b7280;">FROM:</span>
-                          <input type="date"
-                            v-model="employee_from_date"
-                            @change="onDateChange"
-                            class="form-control form-control-sm mr-3"
-                            style="width:150px;">
+                        <!-- Report Header with Date Display -->
+                        <div class="report-header-section">
+                            <div class="report-date-display">
+                                <span class="report-date-icon">📅</span>
+                                <span>Report Period: {{ frappe.datetime.str_to_user(employee_from_date) }} to {{ frappe.datetime.str_to_user(employee_to_date) }}</span>
+                            </div>
+                        </div>
 
-                          <input type="date"
-                            v-model="employee_to_date"
-                            @change="onDateChange"
-                            class="form-control form-control-sm mr-3"
-                            style="width:150px;">
+                        <!-- Summary Metric Cards -->
+                        <div class="metric-cards-container">
+                            <div class="metric-card primary">
+                                <div class="metric-label">Total Leads</div>
+                                <div class="metric-value">{{ totalLeadsInReport }}</div>
+                            </div>
+                           <div class="metric-card success">
+                                <div class="metric-label">Converted Leads</div>
+                                <div class="metric-value">{{ totalConvertedLeadsInReport }}</div>
+                            </div>
                         </div>
                         
-                        <div v-if="employee_report_loading" class="text-center p-5 text-muted">
-                            <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
-                            <p>Loading Employee Performance Data...</p>
+                        <!-- Loading/Error/Empty States -->
+                        <div v-if="employee_report_loading" class="loading-spinner-dsr">
+                            <div class="spinner-dsr"></div>
+                            <span>Loading Employee Performance Data...</span>
                         </div>
                         <div v-else-if="employee_error_message" class="alert alert-danger text-center p-3">
                             <i class="fa fa-exclamation-triangle mr-2"></i> {{ employee_error_message }}
                         </div>
-                        <div v-else-if="employee_performance_data.length === 0" class="text-center p-5 text-muted">
+                        <div v-else-if="employee_performance_data.length === 0" class="empty-state-dsr">
                             <i class="fa fa-table fa-2x mb-3" style="color:#d1d8dd"></i>
                             <p>No employee performance data found for the selected period.</p>
                         </div>
-                        <div v-else class="table-responsive" style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px;">
-                            <table class="table table-bordered table-hover mb-0" style="font-size: 12px;">
-                                <thead style="position: sticky; top: 0; background-color: #f8f9fa; z-index: 1;">
+                        <!-- Employee Performance Table -->
+                        <div class="header-title mb-2">Employee Performance Summary</div>
+                        <div v-else class="table-responsive-dsr">
+                            <table class="dsr-table">
+                                <thead>
                                     <tr>
                                         <th>Employee ID</th>
                                         <th>Employee Name</th>
@@ -231,15 +462,38 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="emp in employee_performance_data" :key="emp.employee_id">
-                                        <td>{{ emp.employee_id || 'N/A' }}</td>
-                                        <td>{{ emp.employee_name || 'N/A' }}</td>
-                                        <td>{{ emp.sol_id || 'N/A' }}</td>
-                                       <td>{{ emp.branch_info?.branch || 'N/A' }}</td>
-                                        <td>{{ emp.total_leads }}</td>
-                                        <td>{{ emp.total_converted_leads }}</td>
-                                    </tr>
-                                </tbody>
+                                <tr v-for="emp in employee_performance_data" :key="emp.employee_id">
+                                    <td><span style="font-weight:bold;">{{ emp.employee_id || 'N/A' }}</span></td>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ emp.employee_name || 'N/A' }}</div>
+                                        <span class="emp-info-sub">{{ emp.designation || 'N/A' }}</span>
+                                    </td>
+                                    <td>{{ emp.sol_id || 'N/A' }}</td>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ emp.branch || 'N/A' }}</div>
+                                        <span class="emp-info-sub">Region: {{ emp.region }} | Zone: {{ emp.zone }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="status-cell-container">
+                                            <span class="value-text">{{ emp.total_leads }}</span>
+                                            <span :class="['dsr-badge', getLeadStatus(emp.total_leads).class]">
+                                                {{ getLeadStatus(emp.total_leads).label }}
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="status-cell-container">
+                                            <span class="value-text" :style="{ color: emp.total_converted > 0 ? '#05a15d' : '#1f2937' }">
+                                                {{ emp.total_converted }}
+                                            </span>
+                                            <span :class="['dsr-badge', getConversionStatus(emp.total_converted).class]">
+                                                {{ getConversionStatus(emp.total_converted).label }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                              </tbody>
                             </table>
                         </div>
                      </div>
@@ -288,10 +542,48 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_performance_data: [],
     employee_report_loading: false,
     employee_error_message: null,
+
+    get totalLeadsInReport() {
+      return this.employee_performance_data.reduce(
+        (sum, emp) => sum + (emp.total_leads || 0),
+        0,
+      );
+    },
+
+    get totalConvertedLeadsInReport() {
+      return this.employee_performance_data.reduce(
+        (sum, emp) => sum + (emp.total_converted || 0),
+        0,
+      );
+    },
+    getRating(emp) {
+      if (emp.total_converted > 0) return { label: "Good", class: "bg-good" };
+      if (emp.follow_ups >= 4) return { label: "Average", class: "bg-average" };
+      return { label: "Bad", class: "bg-bad" };
+    },
+
+    getQualification(total) {
+      return total >= 10
+        ? { label: "Qualified", class: "bg-qualified" }
+        : { label: "Disqualified", class: "bg-bad" };
+    },
     onDateChange() {
       if (this.employee_from_date && this.employee_to_date) {
         this.fetchEmployeePerformance();
       }
+    },
+    // Status logic for Badges
+    // Status logic for Badges
+    getLeadStatus(count) {
+      return count >= 10
+        ? { label: "Qualified", class: "badge-pastel-green" }
+        : { label: "Disqualified", class: "badge-pastel-red" };
+    },
+
+    getConversionStatus(count) {
+      return count > 0
+        ? { label: "Good", class: "badge-pastel-green" }
+        : { label: "Bad", class: "badge-pastel-red" };
     },
 
     async init() {
@@ -414,12 +706,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.employee_report_loading = false;
         return;
       }
-
-      console.log(
-        "fetchEmployeePerformance called with dates:",
-        this.employee_from_date,
-        this.employee_to_date,
-      ); // Debug log
 
       try {
         let res = await frappe.call({
