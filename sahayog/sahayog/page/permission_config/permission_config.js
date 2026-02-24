@@ -396,6 +396,73 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 .badge-gray   { background-color: #f0f4f6; color: #6c7680; border-color: #d1d8dd; } /* Default / No Tag */
 
 
+/* Container for Label and Pencil */
+.perm-flabel-with-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #24292f;
+}
+
+.perm-edit-btn {
+    cursor: pointer;
+    color: #6c7680;
+    padding: 2px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.perm-edit-btn:hover {
+    background-color: #f0f4f6;
+    color: #0969da;
+}
+
+/* Selected Pills Container */
+.selected-users-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fafbfc;
+    min-height: 40px;
+}
+
+.selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    background: #e8fdf0; /* Light green like your other selected items */
+    color: #2f9d58;
+    border: 1px solid #A6EFC0;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.remove-user {
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.remove-user:hover {
+    opacity: 1;
+}
+
+.selected-empty-text {
+    font-size: 13px;
+    color: #8c99a6;
+    font-style: italic;
+}
+
+
     </style>
 
       <div id="perm-root" v-scope @vue:mounted="init()">
@@ -527,7 +594,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         </div>
 
         <div class="perm-section">
-          <div class="perm-section-title">Geographic Filters</div>
+          <div class="perm-section-title" style="display: none">Geographic Filters</div>
           
           <!-- Zone & Region Row -->
           <div class="perm-field-row">
@@ -587,9 +654,33 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
 
           <!-- Other Filters (State, District, SOL ID) -->
-          <div class="perm-field"><div class="perm-flabel"><span>State</span></div><div v-if="allOptions.state.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.state" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.state.includes(opt) }" @click="toggle('state', opt)"><input type="checkbox" :checked="selectedPref.state.includes(opt)" @click.stop="toggle('state', opt)"><label>[[ opt ]]</label></div></div></div>
-          <div class="perm-field"><div class="perm-flabel"><span>District</span></div><div v-if="allOptions.district.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.district" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.district.includes(opt) }" @click="toggle('district', opt)"><input type="checkbox" :checked="selectedPref.district.includes(opt)" @click.stop="toggle('district', opt)"><label>[[ opt ]]</label></div></div></div>
-          <div class="perm-field"><div class="perm-flabel"><span>Sol ID</span></div><div v-if="allOptions.sol_id.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.sol_id" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.sol_id.includes(opt) }" @click="toggle('sol_id', opt)"><input type="checkbox" :checked="selectedPref.sol_id.includes(opt)" @click.stop="toggle('sol_id', opt)"><label>[[ opt ]]</label></div></div></div>
+          <div class="perm-field" style="display: none"><div class="perm-flabel"><span>State</span></div><div v-if="allOptions.state.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.state" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.state.includes(opt) }" @click="toggle('state', opt)"><input type="checkbox" :checked="selectedPref.state.includes(opt)" @click.stop="toggle('state', opt)"><label>[[ opt ]]</label></div></div></div>
+          <div class="perm-field" style="display: none"><div class="perm-flabel"><span>District</span></div><div v-if="allOptions.district.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.district" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.district.includes(opt) }" @click="toggle('district', opt)"><input type="checkbox" :checked="selectedPref.district.includes(opt)" @click.stop="toggle('district', opt)"><label>[[ opt ]]</label></div></div></div>
+          <div class="perm-field" style="display: none"><div class="perm-flabel"><span>Sol ID</span></div><div v-if="allOptions.sol_id.length" class="perm-check-grid perm-check-grid-multi"><div v-for="opt in allOptions.sol_id" :key="opt" class="perm-check-item" :class="{ selected: selectedPref.sol_id.includes(opt) }" @click="toggle('sol_id', opt)"><input type="checkbox" :checked="selectedPref.sol_id.includes(opt)" @click.stop="toggle('sol_id', opt)"><label>[[ opt ]]</label></div></div></div>
+          <div class="perm-field">
+  <div class="perm-field">
+  <div class="perm-flabel-with-edit">
+    <span>SOL ID</span>
+    <div class="perm-edit-btn" @click="openSolIdDialog">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+    </div>
+  </div>
+
+  <div class="selected-users-wrapper">
+    <span v-if="!selectedPref.sol_id || selectedPref.sol_id.length === 0" class="selected-empty-text">
+        No SOL IDs selected yet.
+    </span>
+    <span v-for="sol in selectedPref.sol_id" :key="sol" class="selected-pill">
+        [[ sol ]]
+        <span class="remove-user" @click.stop="removeSolId(sol)">&times;</span>
+    </span>
+  </div>
+</div>
+
+
         </div>
 
         <div class="perm-section">
@@ -788,6 +879,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
     },
 
+
+
+
+
       setTag(val) {
           if (!this.selectedPref) return;
           this.selectedPref.tag = val;
@@ -813,6 +908,123 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           });
         }, 800);
       },
+
+      openSolIdDialog() {
+    if (!this.selectedPref) return;
+    
+    // Initial state: load current selections from the record
+    this.tempSelectedSolIds = [...(this.selectedPref.sol_id || [])];
+
+    const d = new frappe.ui.Dialog({
+        title: "Select SOL IDs",
+        fields: [
+            { 
+                label: "Search Branch", 
+                fieldname: "search_text", 
+                fieldtype: "Data", 
+                placeholder: "Type branch name or SOL ID...", 
+                reqd: 0 
+            },
+            { fieldname: "selected_area", fieldtype: "HTML" },
+            { fieldname: "results", fieldtype: "HTML" }
+        ],
+        primary_action_label: "Save",
+        primary_action: () => {
+            // Apply temp selections to the real record
+            this.selectedPref.sol_id = this.tempSelectedSolIds;
+            this.autoSave(); 
+            d.hide();
+            frappe.show_alert({ message: "SOL IDs updated", indicator: "green" });
+        }
+    });
+
+    const renderSelectedSols = () => {
+        const $area = d.fields_dict.selected_area.$wrapper;
+        if (this.tempSelectedSolIds.length === 0) {
+            $area.html('<div class="selected-users-wrapper"><span class="selected-empty-text">No SOL IDs selected yet</span></div>');
+            return;
+        }
+        
+        let html = '<div class="selected-users-wrapper">';
+        this.tempSelectedSolIds.forEach(sol => {
+            html += `<span class="selected-pill">${sol}<span class="remove-user" data-val="${sol}">&times;</span></span>`;
+        });
+        html += '</div>';
+        $area.html(html);
+
+        // Click on pill to remove
+        $area.find('.selected-pill').on('click', (e) => {
+            const val = $(e.currentTarget).find('.remove-user').attr('data-val');
+            this.tempSelectedSolIds = this.tempSelectedSolIds.filter(s => s !== val);
+            renderSelectedSols();
+            // Uncheck in result list if visible
+            d.fields_dict.results.$wrapper.find(`.search-result-item[data-sol="${val}"]`).removeClass('selected').find('input').prop('checked', false);
+        });
+    };
+
+    d.fields_dict.search_text.$input.on("input", () => {
+        let value = d.get_value("search_text");
+        if (!value || value.length < 1) { 
+            d.fields_dict.results.$wrapper.html(""); 
+            return; 
+        }
+
+        // Call a specific search for branches (adjust method path if needed)
+        frappe.call({
+            method: "sahayog.sahayog.page.permission_config.permission_config.search_branch",
+            args: { search_text: value },
+            callback: (r) => {
+                let results = r.message || [];
+                let html = '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
+                
+                if (results.length === 0) {
+                    html += '<div style="padding:10px; color:#57606a; font-size:13px;">No branches found</div>';
+                } else {
+                   // Inside search_branch callback
+results.forEach((branch_doc) => {
+    let isChecked = this.tempSelectedSolIds.includes(branch_doc.name);
+    html += `
+        <div class="search-result-item ${isChecked ? 'selected' : ''}" data-sol="${branch_doc.name}">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} style="pointer-events:none;">
+            <div class="search-result-info">
+                <!-- branch_doc.branch is the descriptive name, branch_doc.name is the SOL ID -->
+                <div class="search-result-name">${branch_doc.branch || branch_doc.name}</div>
+                <div class="search-result-email">SOL ID: ${branch_doc.name}</div>
+            </div>
+        </div>`;
+});
+
+
+                }
+                html += "</div>";
+
+                const $wrapper = d.fields_dict.results.$wrapper;
+                $wrapper.html(html);
+
+                $wrapper.find('.search-result-item').on('click', (e) => {
+                    const $item = $(e.currentTarget);
+                    const sol = $item.attr('data-sol');
+                    const $checkbox = $item.find('input[type="checkbox"]');
+
+                    if (this.tempSelectedSolIds.includes(sol)) {
+                        this.tempSelectedSolIds = this.tempSelectedSolIds.filter(s => s !== sol);
+                        $item.removeClass('selected');
+                        $checkbox.prop('checked', false);
+                    } else {
+                        this.tempSelectedSolIds.push(sol);
+                        $item.addClass('selected');
+                        $checkbox.prop('checked', true);
+                    }
+                    renderSelectedSols();
+                });
+            }
+        });
+    });
+
+    d.show();
+    renderSelectedSols();
+},
+
 
       createNew() {
         // ... (create logic same as before, no changes needed for Tag unless you want to add tag selection in creation dialog too)
