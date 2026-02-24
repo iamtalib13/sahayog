@@ -410,7 +410,8 @@ def get_employee_performance_data(from_date, to_date):
                 "zone": branch.zone if branch else "-",
                 "total_leads": 0,
                 "total_converted": 0,
-                "total_followups": 0 # JS mein variable name total_followups hai
+                "total_followups": 0 ,
+                "total_not_interested": 0
             }
 
         employee_stats[key]["total_leads"] += 1
@@ -418,5 +419,7 @@ def get_employee_performance_data(from_date, to_date):
             employee_stats[key]["total_converted"] += 1
         if l.status == "Follow Up":
             employee_stats[key]["total_followups"] += 1
+        if l.status == "Not Interested":
+            employee_stats[key]["total_not_interested"] += 1
 
     return list(employee_stats.values())

@@ -461,6 +461,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 <div class="metric-label">Converted Leads</div>
                                 <div class="metric-value">{{ totalConvertedLeadsInReport }}</div>
                             </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Total Follow-ups</div>
+                                <div class="metric-value">{{ totalFollowupsInReport }}</div>
+                            </div>
+
+                            <div class="metric-card">
+                                <div class="metric-label">Not Interested</div>
+                                <div class="metric-value">{{ totalNotInterestedInReport }}</div>
+                            </div>
                         </div>
                         
                         <!-- Loading/Error/Empty States -->
@@ -485,6 +494,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         <th>Employee Name</th>
                                         <th>Branch</th> 
                                         <th>Follow-ups</th>
+                                        <th>Not Interested</th> 
                                         <th>Converted</th>
                                         <th>Qualification</th>
                                         <th>Rating</th>
@@ -518,6 +528,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                     </td>
                                     <td>
                                         <span class="value-text">{{ emp.total_converted || 0 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="value-text">{{ emp.total_not_interested || 0 }}</span>
                                     </td>
 
                                    <td>
@@ -595,6 +608,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     get totalConvertedLeadsInReport() {
       return this.filteredEmployees.reduce(
         (sum, emp) => sum + (emp.total_converted || 0),
+        0,
+      );
+    },
+    get totalFollowupsInReport() {
+      return this.filteredEmployees.reduce(
+        (sum, emp) => sum + (emp.total_followups || 0),
+        0,
+      );
+    },
+
+    get totalNotInterestedInReport() {
+      return this.filteredEmployees.reduce(
+        (sum, emp) => sum + (emp.total_not_interested || 0),
         0,
       );
     },
