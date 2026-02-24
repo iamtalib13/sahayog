@@ -342,6 +342,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         display: block;
         margin-top: 2px;
     }
+    .report-date-display input[type="date"] {
+    border: 1px solid #d1d8dd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #495057;
+    cursor: pointer;
+    background: #fff;
+}
+.report-date-display input[type="date"]:focus {
+    border-color: #05a15d;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(5, 161, 93, 0.1);
+}
     `,
     )
     .appendTo("head");
@@ -416,12 +431,23 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 <div class="tab-content" style="padding:20px; min-height:300px;">
                      <div v-if="active_tab === 'employee'">
                         <!-- Report Header with Date Display -->
-                        <div class="report-header-section">
-                            <div class="report-date-display">
-                                <span class="report-date-icon">📅</span>
-                                <span>Report Period: {{ frappe.datetime.str_to_user(employee_from_date) }} to {{ frappe.datetime.str_to_user(employee_to_date) }}</span>
-                            </div>
-                        </div>
+                       <div class="report-header-section">
+                          <div class="report-date-display">
+                              <span class="report-date-icon">📅</span>
+                              <span class="mr-2">Period:</span>
+                              <input type="date" 
+                                    v-model="employee_from_date" 
+                                    @change="onDateChange" 
+                                    class="select-input" 
+                                    style="width: 140px; margin-right: 10px;">
+                              <span class="mr-2">to</span>
+                              <input type="date" 
+                                    v-model="employee_to_date" 
+                                    @change="onDateChange" 
+                                    class="select-input" 
+                                    style="width: 140px;">
+                          </div>
+                       </div>
 
                         <!-- Summary Metric Cards -->
                         <div class="metric-cards-container">
@@ -568,7 +594,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         : { label: "Disqualified", class: "bg-bad" };
     },
     onDateChange() {
+      // Jaise hi date change hogi, ye function call hoga
       if (this.employee_from_date && this.employee_to_date) {
+        console.log(
+          "Fetching data for:",
+          this.employee_from_date,
+          "to",
+          this.employee_to_date,
+        );
         this.fetchEmployeePerformance();
       }
     },
