@@ -197,7 +197,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   display: flex; /* Enable flexbox */
   justify-content: space-between; /* Push items to edges */
   align-items: flex-start; /* Align top */
-  padding: 23px 16px;
+  padding: 12px 16px;
   background: transparent;
   border-bottom: 1px solid #d0d7de;
   flex-shrink: 0;
@@ -545,9 +545,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                   
                   <!-- UPDATED: Display Tag Badge next to Name -->
                   <div class="perm-card-top">
-                     <div class="perm-card-name" v-html="highlight(item.full_name || item.user, searchQuery)"></div>
-                     <span v-if="item.tag" class="perm-tag-badge">[[ item.tag ]]</span>
-                  </div>
+    <!-- User Name -->
+    <div class="perm-card-name" v-html="highlight(item.full_name || item.user, searchQuery)"></div>
+    
+    <!-- UPDATED: Added :class to sync colors -->
+    <span v-if="item.tag" 
+          class="perm-tag-badge" 
+          :class="getTagClass(item.tag)"
+          style="font-size: 10px; padding: 2px 6px;">
+        [[ item.tag ]]
+    </span>
+</div>
+
                   
                   <div class="perm-card-email" v-html="highlight(item.user, searchQuery)"></div>
                 </div>
