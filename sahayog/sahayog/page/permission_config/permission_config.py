@@ -2,8 +2,19 @@ import frappe
 import re
 from frappe import _
 
+def validate_page_access():
+    """Ensure user is Administrator or has Permission Manager role."""
+    user = frappe.session.user
+    if user == "Administrator":
+        return
+    
+    user_roles = frappe.get_roles(user)
+    if "Permission Manager" not in user_roles:
+        frappe.throw(_("Access Denied: You do not have the 'Permission Manager' role."), frappe.PermissionError)
+
 @frappe.whitelist()
 def get_all_preferences():
+    validate_page_access()
     """Return all Report Preference records with user details for list display."""
     prefs = frappe.get_all(
         "Report Preference",
@@ -171,6 +182,7 @@ def get_preference_detail(user):
 
 @frappe.whitelist()
 def save_preference(data):
+    validate_page_access()
     """Auto-save/update Report Preference for user."""
     import json
 
