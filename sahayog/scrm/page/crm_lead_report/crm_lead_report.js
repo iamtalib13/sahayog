@@ -533,14 +533,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             <table class="dsr-table">
                                <thead>
                                     <tr>
-                                        <th>Employee ID</th>
-                                        <th>Employee Name</th>
-                                        <th>Branch</th> 
-                                        <th>Follow-ups</th>
-                                        <th>Not Interested</th> 
-                                        <th>Converted</th>
-                                        <th>Qualification</th>
-                                        <th>Rating</th>
+                                      <th>Employee ID</th>
+                                      <th>Employee Name</th>
+                                      <th>Branch</th> 
+                                      <th>Total Leads</th> <th>Follow-ups</th>
+                                      <th>Not Interested</th> 
+                                      <th>Converted</th>
+                                      <th>Qualification</th>
+                                      <th>Rating</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -550,45 +550,50 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         <div style="font-weight: 600;">{{ emp.employee_name || 'N/A' }}</div>
                                         <span class="emp-info-sub">{{ emp.designation || 'N/A' }}</span>
                                     </td>
-                                  
+                                    
                                     <td>
                                         <div style="font-weight: 600; color: #1f2937;">
                                             {{ emp.sol_id }} - {{ emp.branch || 'N/A' }}
                                         </div>
-                                        
                                         <div class="status-cell-container" style="margin-top: 5px; gap: 5px;">
-                                            <span class="dsr-badge badge-pastel-green">
-                                                {{ emp.zone || 'N/A' }}
-                                            </span>
-                                            <span class="dsr-badge bg-qualified">
-                                                {{ emp.region || 'N/A' }}
-                                            </span>
+                                            <span class="dsr-badge badge-pastel-green">{{ emp.zone || 'N/A' }}</span>
+                                            <span class="dsr-badge bg-qualified">{{ emp.region || 'N/A' }}</span>
                                         </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="value-text">{{ emp.total_leads || 0 }}</span>
                                     </td>
                                     
                                     <td>
                                         <span class="value-text">{{ emp.total_followups || 0 }}</span>
                                     </td>
+
                                     <td>
                                         <span class="value-text">{{ emp.total_not_interested || 0 }}</span>
                                     </td>
 
-                                   <td>
-                                      <div class="status-cell-container">
-                                          <span class="value-text">{{ emp.total_leads }}</span>
-                                          <span :class="['dsr-badge', getLeadStatus(emp.total_leads).class]">
-                                              {{ getLeadStatus(emp.total_leads).label }}
-                                          </span>
-                                      </div>
-                                  </td>
+                                    <td>
+                                        <div class="status-cell-container">
+                                            <span class="value-text" style="color: #05a15d;">{{ emp.total_converted || 0 }}</span>
+                                        </div>
+                                    </td>
 
-                                 <td>
-                                      <div class="status-cell-container">
-                                          <span :class="['dsr-badge', getEnhancedRating(emp).class]">
-                                              {{ getEnhancedRating(emp).label }}
-                                          </span>
-                                      </div>
-                                  </td>
+                                    <td>
+                                        <div class="status-cell-container">
+                                            <span :class="['dsr-badge', getLeadStatus(emp.total_leads).class]">
+                                                {{ getLeadStatus(emp.total_leads).label }}
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="status-cell-container">
+                                            <span :class="['dsr-badge', getEnhancedRating(emp).class]">
+                                                {{ getEnhancedRating(emp).label }}
+                                            </span>
+                                        </div>
+                                    </td>
                                 </tr>
                               </tbody>
                             </table>
