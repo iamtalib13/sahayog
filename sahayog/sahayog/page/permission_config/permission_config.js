@@ -1,4 +1,31 @@
 frappe.pages["permission-config"].on_page_load = function (wrapper) {
+  // 1. Define required roles
+  const authorized_roles = ["Administrator", "Permission Manager"];
+  const user_roles = frappe.user_roles;
+
+  // 2. Check if user has at least one authorized role
+  const is_authorized = authorized_roles.some(role => user_roles.includes(role));
+
+  if (!is_authorized) {
+    // Show a clean Access Denied message
+    wrapper.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; color: #57606a;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cf222e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <h2 style="margin-top: 20px; color: #24292f;">Access Denied</h2>
+        <p style="font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6;">
+            You do not have the required permissions to access this page. 
+            Please contact your <strong>Administrator</strong> if you believe this is an error.
+        </p>
+        <button class="btn btn-default btn-sm" style="margin-top: 15px;" onclick="frappe.set_route('')">
+            Back to Home
+        </button>
+      </div>
+    `;
+    return; // Stop execution of the rest of the page script
+  }
   const page = frappe.ui.make_app_page({
     parent: wrapper,
     title: "Permission Configuration",
@@ -712,6 +739,33 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           </div>
         </div>
 
+        <!-- New Finacle Report Permission Section -->
+        <div class="perm-section">
+          <div class="perm-section-title">Finacle Report Permission</div>
+          
+          <div class="perm-field">
+            <div class="perm-flabel-inline">
+              <span>Reports</span>
+              <div class="perm-check-grid-chips-inline">
+                <!-- ALL toggle for roles -->
+                <div class="perm-chip" 
+                    :class="{ selected: isAllRolesSelected() }" 
+                    @click="toggleAllRoles()">ALL</div>
+
+                <!-- Dynamic Pills for Roles -->
+                <div v-for="pill in ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance']" 
+                    :key="pill" 
+                    class="perm-chip" 
+                    :class="{ selected: selectedPref.finacle_roles.includes(pill) }" 
+                    @click="toggleRole(pill)">
+                  [[ pill ]]
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
         <!-- Lead Specific Filters Section -->
         <div class="perm-section">
           <div class="perm-section-title">Lead Specific Filters</div>
@@ -929,6 +983,33 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             frappe.show_alert({ message: __('Regions cleared.'), indicator: 'blue' }, 2);
         }
         
+        this.autoSave();
+      },
+
+      toggleRole(pill) {
+        if (!this.selectedPref.finacle_roles) this.selectedPref.finacle_roles = [];
+        const arr = this.selectedPref.finacle_roles;
+        const idx = arr.indexOf(pill);
+        
+        if (idx >= 0) arr.splice(idx, 1);
+        else arr.push(pill);
+        
+        this.autoSave();
+      },
+
+      isAllRolesSelected() {
+        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance'];
+        const sel = this.selectedPref.finacle_roles || [];
+        return sel.length === all.length;
+      },
+
+      toggleAllRoles() {
+        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance'];
+        if (this.isAllRolesSelected()) {
+            this.selectedPref.finacle_roles = [];
+        } else {
+            this.selectedPref.finacle_roles = [...all];
+        }
         this.autoSave();
       },
 
