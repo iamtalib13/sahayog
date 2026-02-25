@@ -34,15 +34,46 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .header-controls { display: flex; align-items: center; gap: 15px; }
         .select-input { height: 32px; font-size: 13px; border: 1px solid #d1d8dd; border-radius: 4px; padding: 0 8px; margin-left: 5px; cursor: pointer; }
         .btn-generate-sm { background: #1f2937; color: #fff; border: none; padding: 0 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; height: 32px; }
-        .filter-grid { display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; }
-        .filter-column { flex: 1; min-width: 160px; border-right: 1px solid #eee; padding-right: 15px; }
+       .filter-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+          padding: 20px;
+          align-items: flex-start;
+        }
+
+        .filter-column {
+          flex: 0 0 auto;          /* Equal width remove */
+          min-width: unset;        /* Fixed minimum remove */
+          width: fit-content;      /* Content jitna ho utna */
+          max-width: 280px;        /* Control overflow */
+          border-right: none;      /* Divider remove (optional) */
+          padding-right: 0;
+        }
         .filter-column:last-child { border-right: none; }
         .filter-label { font-size: 10px; font-weight: 700; color: #1f2937; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        .mini-chip-list { display: flex; flex-wrap: wrap; gap: 5px; }
+        .mini-chip-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          max-width: 240px;
+        }
         .mini-chip { font-size: 11px; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: 1px solid #d1d8dd; cursor: pointer; background: #fff; }
         .mini-chip.active { background: #05a15d !important; color: #fff !important; border-color: #05a15d !important; font-weight: bold; }
         .custom-dropdown { position: relative; width: 100%; }
-        .dropdown-select { background: #fff; border: 1px solid #d1d8dd; border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+       .dropdown-select {
+          background: #fff;
+          border: 1px solid #d1d8dd;
+          border-radius: 6px;
+          padding: 6px 10px;
+          font-size: 12px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+          width: 220px;      /* Fixed compact width */
+        }
       .dropdown-list { 
     position: absolute; 
     top: 100%; 
@@ -96,7 +127,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     white-space: normal !important; /* Text ko niche wrap hone dega */
     line-height: 1.4;
 }
-
+.dropdown-input {
+  border: none;
+  outline: none;
+  font-size: 12px;
+  width: 100%;
+  text-align: center;   /* 👈 CENTER TEXT */
+}
 .dropdown-item input[type="checkbox"] {
     margin: 0;
     margin-top: 3px; /* Exact center alignment with first line of text */
@@ -531,9 +568,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                     
                                     <td>
                                         <span class="value-text">{{ emp.total_followups || 0 }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="value-text">{{ emp.total_converted || 0 }}</span>
                                     </td>
                                     <td>
                                         <span class="value-text">{{ emp.total_not_interested || 0 }}</span>
