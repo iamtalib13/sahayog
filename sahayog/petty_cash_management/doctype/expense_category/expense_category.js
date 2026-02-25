@@ -40,7 +40,7 @@ frappe.ui.form.on("Expense Category", {
 
         // 2. DEFAULT STATE: Lock sensitive fields for everyone
         // (Even if they have Write access, we start by locking these)
-        frm.set_df_property('finacle_gl_code', 'read_only', 0);
+        frm.set_df_property('finacle_gl_code', 'read_only', 1);
 
         // 3. MANAGER LOGIC
         if (is_manager || is_admin) {
