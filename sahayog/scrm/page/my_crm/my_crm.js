@@ -1589,54 +1589,65 @@ async getEmployeeByUser(userId) {
         ],
         primary_action_label: __("Update Lead"),
         primary_action: async (values) => {
-          // ✅ FIX: Get the actual selected status from UI
-          const input_status = d.$wrapper.find("#status_edit").val();
-          const input_mobile = d.$wrapper.find("#m_no_edit").val();
+    const input_status = d.$wrapper.find("#status_edit").val();
+    const input_mobile = d.$wrapper.find("#m_no_edit").val();
 
-          // 📱 Mobile Validation (6-9 start, 10 digit)
-          if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
-             return frappe.msgprint(__("Please enter a valid 10-digit mobile number starting with 6-9."));
-          }
-          
-          const final_values = {
-            first_name: d.$wrapper.find("#f_name_edit").val(),
-            mobile_no: input_mobile,
-            status: input_status, // 👈 Property Setter is active, so we send the actual status
-            source: d.$wrapper.find("#source_edit").val(),
-          };
+    // 📱 Mobile Validation
+    if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
+        return frappe.msgprint(__("Please enter a valid 10-digit mobile number starting with 6-9."));
+    }
 
-          // 📅 Follow Up Check
-          if (input_status === "Follow Up") {
-            const has_new_appt = d.$wrapper.find("#new_appt_t_edit").val();
-            if (!appointmentsData.length && !has_new_appt) {
-                frappe.msgprint(__("Please schedule an appointment for 'Follow Up' status in the Appointments tab."));
-                return;
-            }
-          }
+    const final_values = {
+        first_name: d.$wrapper.find("#f_name_edit").val(),
+        mobile_no: input_mobile,
+        status: input_status,
+        source: d.$wrapper.find("#source_edit").val(),
+    };
 
-          frappe.call({
-            method: "frappe.client.set_value",
-            args: {
-              doctype: "Lead",
-              name: name,
-              fieldname: {
+    // ✅ AUTO TAB SWITCH LOGIC
+    if (input_status === "Follow Up") {
+        const has_new_appt = d.$wrapper.find("#new_appt_t_edit").val();
+        
+        if (!appointmentsData.length && !has_new_appt) {
+            // 1. Alert dikhayein
+            frappe.msgprint({
+                title: __('Action Required'),
+                indicator: 'orange',
+                message: __('Please schedule an appointment to set status as <b>Follow Up</b>.')
+            });
+
+            // 2. Direct Appointment Tab par switch karein
+            d.$wrapper.find("#tab-appt-btn").trigger("click");
+
+            // 3. Date input ko highlight karein (User ka dhyan khichne ke liye)
+            const $apptInput = d.$wrapper.find("#new_appt_t_edit");
+            $apptInput.css("border", "2px solid #ff5858");
+            setTimeout(() => $apptInput.css("border", "1px solid #d1d8dd"), 3000);
+            
+            return; // Function yahan stop ho jayega
+        }
+    }
+
+    // Call save logic
+    frappe.call({
+        method: "frappe.client.set_value",
+        args: {
+            doctype: "Lead",
+            name: name,
+            fieldname: {
                 ...final_values,
                 custom_product_table: productsData,
-              },
             },
-            callback: (r) => {
-              if (!r.exc) {
-                frappe.show_alert({
-                  message: __("Lead Updated"),
-                  indicator: "green",
-                });
-                d.hide();
-                // 🔄 Refresh list and counts
-                me.fetchData();
-              }
-            },
-          });
         },
+        callback: (r) => {
+            if (!r.exc) {
+                frappe.show_alert({ message: __("Lead Updated"), indicator: "green" });
+                d.hide();
+                me.fetchData();
+            }
+        },
+    });
+},
       });
 
       const renderLeadTab = () => {
