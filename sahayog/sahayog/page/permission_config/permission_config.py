@@ -14,7 +14,7 @@ ROLE_MAP = {
     "Operation": "Operation Department Report",
     "TW": "Two Wheeler Department Report",
     "Branch": "Branch Report",
-    "Finacle": "Finacle Report Admin",
+    "Admin": "Finacle Report Admin",
     "Vigilance": "Vigilance Department Report"
 }
 
