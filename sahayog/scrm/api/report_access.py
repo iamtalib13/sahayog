@@ -29,13 +29,24 @@ def get_user_report_preference_record(user):
 
     for name in names:
         doc = frappe.get_doc("Report Preference", name)
+        
+        # Pre-fetch SOL ID labels
+        sol_ids = [str(d.sol_id) for d in doc.sol_id if d.sol_id]
+        branches = frappe.get_all("Sahayog Branch", filters={"sol_id": ["in", sol_ids]}, fields=["sol_id", "branch"])
+        branch_map = {str(b.sol_id): b.branch for b in branches}
+        
+        # Pre-fetch Product labels
+        product_codes = [d.product for d in doc.product]
+        products = frappe.get_all("Product", filters={"name": ["in", product_codes]}, fields=["name", "product_name"])
+        product_map = {p.name: p.product_name for p in products}
+
         result.append({
             "user": doc.user,
-            "product": [d.product for d in doc.product],
+            "product": [{"value": p, "label": f"{p} - {product_map.get(p, 'Unknown')}"} for p in product_codes],
             "source": [d.source for d in doc.source],
             "zone": [d.zone for d in doc.zone],
             "region": [d.region for d in doc.region],
-            "sol_id": [str(d.sol_id) for d in doc.sol_id if d.sol_id],
+            "sol_id": [{"value": s, "label": f"{s} - {branch_map.get(s, 'Unknown')}"} for s in sol_ids],
         })
     return result
 
@@ -86,11 +97,13 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
 
         p = pref_res[0]
         is_all_regions = p.get("all_regions") # Assign is_all_regions from preferences
-        products_pref = {norm(x) for x in p.get("product", [])}
+        
+        # Extract values from preference objects (Product/SOL ID are now lists of dicts)
+        products_pref = {norm(x.get("value")) for x in p.get("product", [])}
         sources_pref = {norm(x) for x in p.get("source", [])}
         zones_pref = {norm(x) for x in p.get("zone", [])}
         regions_pref = {norm(x) for x in p.get("region", [])}
-        sol_ids_pref = {str(x) for x in p.get("sol_id", [])}
+        sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
 
     filters = frappe.parse_json(filters) if filters else {}
 
