@@ -1547,11 +1547,14 @@ async getEmployeeByUser(userId) {
   //   });
   // }
 
-  async editLead(name) {
+ async editLead(name) {
     const me = this;
 
-    // 1. Sirf Source ke options fetch kiye dropdown ke liye
-    const lead_sources = await frappe.db.get_list("Lead Source", { fields: ["name"] });
+    // 1. Sirf wahi Lead Sources fetch honge jinka 'active' field 1 (Checked) hai
+    const lead_sources = await frappe.db.get_list("Lead Source", { 
+        fields: ["name"],
+        filters: { "active": 1 } 
+    });
     const source_options = lead_sources.map(s => s.name);
 
     frappe.model.with_doc("Lead", name, async function () {
@@ -1596,7 +1599,7 @@ async getEmployeeByUser(userId) {
     const input_status = d.$wrapper.find("#status_edit").val();
     const input_mobile = d.$wrapper.find("#m_no_edit").val();
 
-    // 📱 Mobile Validation (Same as original)
+    // 📱 Mobile Validation
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
         return frappe.msgprint(__("Please enter a valid 10-digit mobile number starting with 6-9."));
     }
@@ -1605,10 +1608,10 @@ async getEmployeeByUser(userId) {
         first_name: d.$wrapper.find("#f_name_edit").val(),
         mobile_no: input_mobile,
         status: input_status,
-        source: d.$wrapper.find("#source_edit").val(), // Picking value from our new select field
+        source: d.$wrapper.find("#source_edit").val(), 
     };
 
-    // ✅ AUTO TAB SWITCH LOGIC (Same as original)
+    // ✅ AUTO TAB SWITCH LOGIC
     if (input_status === "Follow Up") {
         const has_new_appt = d.$wrapper.find("#new_appt_t_edit").val();
         
@@ -1622,11 +1625,11 @@ async getEmployeeByUser(userId) {
             const $apptInput = d.$wrapper.find("#new_appt_t_edit");
             $apptInput.css("border", "2px solid #ff5858");
             setTimeout(() => $apptInput.css("border", "1px solid #d1d8dd"), 3000);
-            return;
+            return; 
         }
     }
 
-    // Call save logic (Same as original)
+    // Call save logic
     frappe.call({
         method: "frappe.client.set_value",
         args: {
@@ -1847,7 +1850,7 @@ async getEmployeeByUser(userId) {
       renderApptTab();
       setupTabs();
     });
-  }
+}
   // 🔹 extracted helper (Petite-Vue friendly & reusable)
   showEmptyState(show) {
     $("#mycrm-empty").toggle(show);
