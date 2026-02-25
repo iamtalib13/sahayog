@@ -443,7 +443,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         </div>
                         </div>
 
-                        <div v-for="key in ['sol_id', 'product', 'source']" :key="key" class="filter-column">
+                        <div v-for="key in ['sol_id', 'product', 'source'].filter(k => filter_data[k] && filter_data[k].length > 0)" :key="key" class="filter-column">
                             <span class="filter-label">{{ key.replace('_', ' ') }}</span>
                             <div class="custom-dropdown">
                                <div class="dropdown-select">
