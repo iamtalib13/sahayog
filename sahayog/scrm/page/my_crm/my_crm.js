@@ -1550,6 +1550,10 @@ async getEmployeeByUser(userId) {
   async editLead(name) {
     const me = this;
 
+    // 1. Sirf Source ke options fetch kiye dropdown ke liye
+    const lead_sources = await frappe.db.get_list("Lead Source", { fields: ["name"] });
+    const source_options = lead_sources.map(s => s.name);
+
     frappe.model.with_doc("Lead", name, async function () {
       const doc = frappe.get_doc("Lead", name);
       if (!doc) return;
@@ -1592,7 +1596,7 @@ async getEmployeeByUser(userId) {
     const input_status = d.$wrapper.find("#status_edit").val();
     const input_mobile = d.$wrapper.find("#m_no_edit").val();
 
-    // 📱 Mobile Validation
+    // 📱 Mobile Validation (Same as original)
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
         return frappe.msgprint(__("Please enter a valid 10-digit mobile number starting with 6-9."));
     }
@@ -1601,34 +1605,28 @@ async getEmployeeByUser(userId) {
         first_name: d.$wrapper.find("#f_name_edit").val(),
         mobile_no: input_mobile,
         status: input_status,
-        source: d.$wrapper.find("#source_edit").val(),
+        source: d.$wrapper.find("#source_edit").val(), // Picking value from our new select field
     };
 
-    // ✅ AUTO TAB SWITCH LOGIC
+    // ✅ AUTO TAB SWITCH LOGIC (Same as original)
     if (input_status === "Follow Up") {
         const has_new_appt = d.$wrapper.find("#new_appt_t_edit").val();
         
         if (!appointmentsData.length && !has_new_appt) {
-            // 1. Alert dikhayein
             frappe.msgprint({
                 title: __('Action Required'),
                 indicator: 'orange',
                 message: __('Please schedule an appointment to set status as <b>Follow Up</b>.')
             });
-
-            // 2. Direct Appointment Tab par switch karein
             d.$wrapper.find("#tab-appt-btn").trigger("click");
-
-            // 3. Date input ko highlight karein (User ka dhyan khichne ke liye)
             const $apptInput = d.$wrapper.find("#new_appt_t_edit");
             $apptInput.css("border", "2px solid #ff5858");
             setTimeout(() => $apptInput.css("border", "1px solid #d1d8dd"), 3000);
-            
-            return; // Function yahan stop ho jayega
+            return;
         }
     }
 
-    // Call save logic
+    // Call save logic (Same as original)
     frappe.call({
         method: "frappe.client.set_value",
         args: {
@@ -1674,7 +1672,10 @@ async getEmployeeByUser(userId) {
                             </div>
                             <div class="form-group">
                                 <label class="control-label">Source</label>
-                                <input type="text" id="source_edit" class="form-control" value="${doc.source || ""}">
+                                <select id="source_edit" class="form-control">
+                                    <option value=""> </option>
+                                    ${source_options.map((s) => `<option value="${s}" ${doc.source === s ? "selected" : ""}>${s}</option>`).join("")}
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -1847,7 +1848,6 @@ async getEmployeeByUser(userId) {
       setupTabs();
     });
   }
-
   // 🔹 extracted helper (Petite-Vue friendly & reusable)
   showEmptyState(show) {
     $("#mycrm-empty").toggle(show);
@@ -3072,7 +3072,7 @@ if (this.assignedByMap?.[item.name]) {
   //     .css({ "max-width": "800px", width: "95%" });
   // }
 
-createLead() {
+  createLead() {
     let productsData = [];
     let existingContact = null;
 
