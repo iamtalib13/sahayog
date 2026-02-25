@@ -764,7 +764,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           <div style="width: 1px; height: 18px; background: #d0d7de; margin: 0 8px;"></div>
 
           <!-- Dynamic Chips for each Role -->
-          <div v-for="pill in ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Admin', 'Vigilance']" 
+          <div v-for="pill in ['Admin', 'Audit', 'Branch', 'Finance', 'HR', 'JLL', 'Loan', 'MIS', 'Operation', 'TW', 'Vigilance']" 
                :key="pill" 
                class="perm-chip" 
                :class="{ selected: (selectedPref.finacle_roles || []).includes(pill) }" 
