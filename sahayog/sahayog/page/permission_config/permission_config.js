@@ -739,6 +739,33 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           </div>
         </div>
 
+        <!-- New Finacle Report Permission Section -->
+        <div class="perm-section">
+          <div class="perm-section-title">Finacle Report Permission</div>
+          
+          <div class="perm-field">
+            <div class="perm-flabel-inline">
+              <span>Reports</span>
+              <div class="perm-check-grid-chips-inline">
+                <!-- ALL toggle for roles -->
+                <div class="perm-chip" 
+                    :class="{ selected: isAllRolesSelected() }" 
+                    @click="toggleAllRoles()">ALL</div>
+
+                <!-- Dynamic Pills for Roles -->
+                <div v-for="pill in ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance']" 
+                    :key="pill" 
+                    class="perm-chip" 
+                    :class="{ selected: selectedPref.finacle_roles.includes(pill) }" 
+                    @click="toggleRole(pill)">
+                  [[ pill ]]
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
         <!-- Lead Specific Filters Section -->
         <div class="perm-section">
           <div class="perm-section-title">Lead Specific Filters</div>
