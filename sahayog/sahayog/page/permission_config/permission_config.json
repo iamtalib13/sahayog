@@ -4,13 +4,23 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2026-02-18 15:33:25.032952",
+ "modified": "2026-02-25 12:47:35.956420",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "permission-config",
  "owner": "Administrator",
  "page_name": "permission-config",
- "roles": [],
+ "roles": [
+  {
+   "role": "Permission Manager"
+  },
+  {
+   "role": "Administrator"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,
