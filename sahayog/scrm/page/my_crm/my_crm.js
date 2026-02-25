@@ -3072,7 +3072,7 @@ if (this.assignedByMap?.[item.name]) {
   //     .css({ "max-width": "800px", width: "95%" });
   // }
 
-  createLead() {
+createLead() {
     let productsData = [];
     let existingContact = null;
 
@@ -3096,18 +3096,30 @@ if (this.assignedByMap?.[item.name]) {
           reqd: 1,
           onchange: async function () {
             const phone = this.value;
-            if (!phone) { $("#customer-info-banner").hide(); return; }
+            
+            // ✅ FIX: Reset logic (Jaise hi user number change ya delete kare)
+            $("#customer-info-banner").hide();
+            dialog.set_df_property("first_name", "read_only", 0);
+            
+            // Agar input khali hai ya 10 digit se kam hai, toh purana name reset karo
+            if (!phone || phone.length < 10) {
+                dialog.set_value("first_name", "");
+                existingContact = null;
+                if (!phone) return;
+            }
 
             if (phone.length === 10) {
               if (!validateIndianPhone(phone)) {
                 frappe.show_alert({ message: __("Invalid mobile number (6-9)"), indicator: "orange" }, 3);
-                $("#customer-info-banner").hide();
+                dialog.set_value("first_name", ""); // Clear name on invalid phone
                 return;
               }
             } else if (phone.length > 10) {
               frappe.show_alert({ message: __("Mobile number cannot exceed 10 digits"), indicator: "red" }, 3);
               return;
-            } else { $("#customer-info-banner").hide(); return; }
+            } else { 
+                return; 
+            }
 
             try {
               const contactRes = await frappe.call({
@@ -3119,6 +3131,7 @@ if (this.assignedByMap?.[item.name]) {
                   limit: 1,
                 },
               });
+              
               if (contactRes.message && contactRes.message.length > 0) {
                 existingContact = contactRes.message[0];
                 $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
@@ -3126,8 +3139,9 @@ if (this.assignedByMap?.[item.name]) {
                 dialog.set_value("first_name", existingContact.full_name);
                 dialog.set_df_property("first_name", "read_only", 1);
               } else {
+                // ✅ FIX: Agar naya number hai jo database me nahi hai
                 existingContact = null;
-                $("#customer-info-banner").hide();
+                dialog.set_value("first_name", ""); // Purana naam hatao
                 dialog.set_df_property("first_name", "read_only", 0);
               }
             } catch (error) { console.error(error); }
@@ -3173,11 +3187,10 @@ if (this.assignedByMap?.[item.name]) {
         }
 
         try {
-          // ✅ AB BYPASS KI ZAROORAT NAHI: Property setter se options enable hain
           const leadDoc = {
             doctype: "Lead",
             lead_owner: this.currentUser,
-            status: values.status, // 👈 Asli status save hoga
+            status: values.status, 
             source: values.source,
             first_name: values.first_name,
             mobile_no: values.mobile_no,
@@ -3193,7 +3206,6 @@ if (this.assignedByMap?.[item.name]) {
 
           const leadName = response.message.name;
 
-          // ✅ AUTO APPOINTMENT: Agar Status Follow Up hai
           if (values.status === "Follow Up" && values.scheduled_time) {
             await frappe.call({
               method: "frappe.client.insert",
@@ -3214,8 +3226,6 @@ if (this.assignedByMap?.[item.name]) {
 
           frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
           dialog.hide();
-          
-          // 🔥 Refresh Logic
           this.invalidateCache("lead");
           this.invalidateCache("appointment");
           this.refresh(); 
@@ -3226,6 +3236,7 @@ if (this.assignedByMap?.[item.name]) {
       },
     });
 
+    // --- Product Table Rendering (Unchanged) ---
     const renderProductTable = () => {
       const html = `
         <style>
@@ -3301,7 +3312,6 @@ if (this.assignedByMap?.[item.name]) {
     renderProductTable();
     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
 }
-
   // createAppointment() {
   //   const dialog = new frappe.ui.Dialog({
   //     title: "Create New Appointment",
