@@ -255,24 +255,41 @@ def save_preference(data):
 
     doc.save(ignore_permissions=True)
 
-    # 2. HANDLE USER ROLE SYNC
+        # 2. HANDLE USER ROLE SYNC
+        # 2. HANDLE USER ROLE SYNC
     selected_pills = data.get("finacle_roles", [])
     user_doc = frappe.get_doc("User", user_id)
     
     roles_to_have = [ROLE_MAP[p] for p in selected_pills if p in ROLE_MAP]
     current_roles = [r.role for r in user_doc.roles]
     
-    # Add new roles
+    roles_changed = False
     for role in roles_to_have:
         if role not in current_roles:
             user_doc.add_roles(role)
+            roles_changed = True
             
-    # Remove roles that were unselected (only if they are in our ROLE_MAP)
     for pill, role in ROLE_MAP.items():
         if pill not in selected_pills and role in current_roles:
             user_doc.remove_roles(role)
+            roles_changed = True
+    
+    if roles_changed:
+        # 1. Block standard messages
+        frappe.flags.mute_messages = True
+        
+        # 2. Save the user
+        user_doc.save(ignore_permissions=True)
+        
+        # 3. CRITICAL: Clear the global message log to hide the "Permission Cleared" popup
+        if hasattr(frappe.local, "message_log"):
+            frappe.local.message_log = []
+            
+        frappe.flags.mute_messages = False
     
     frappe.db.commit()
+
+
 
     return {"success": True, "name": doc.name}
 
