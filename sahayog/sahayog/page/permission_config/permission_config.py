@@ -2,6 +2,24 @@ import frappe
 import re
 from frappe import _
 
+
+# Mapping of Page Labels to actual Frappe Roles
+ROLE_MAP = {
+    "HR": "HR Department Report",
+    "JLL": "JLL Department Report",
+    "MIS": "MIS Department Report",
+    "Loan": "Loan Department Report",
+    "Audit": "Audit Department Report",
+    "Finance": "Finance Department Report",
+    "Operation": "Operation Department Report",
+    "TW": "Two Wheeler Department Report",
+    "Branch": "Branch Report",
+    "Finacle": "Finacle Report Admin",
+    "Vigilance": "Vigilance Department Report"
+}
+
+
+
 def validate_page_access():
     """Ensure user is Administrator or has Permission Manager role."""
     user = frappe.session.user
@@ -115,45 +133,45 @@ def get_field_options():
 
     return options
 
+
 @frappe.whitelist()
 def get_preference_detail(user):
-    """Get existing Report Preference for specific user."""
+    """Get existing Report Preference and User Roles for specific user."""
+    validate_page_access()
     
     if not user:
         return None
 
     full_name = frappe.db.get_value("User", user, "full_name")
     pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
+    
+    # Fetch User's current roles from the system for the pills
+    user_roles = frappe.get_roles(user)
+    assigned_finacle_pills = [pill for pill, role in ROLE_MAP.items() if role in user_roles]
 
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
 
-        # Zone: "Zone -1" -> "1"
+        # Helper: "Zone -1" -> "1"
         def zone_to_code(val):
-            if not val:
-                return None
+            if not val: return None
             nums = re.findall(r'\d+', str(val))
-            if nums:
-                return nums[0]
-            return None
+            return nums[0] if nums else None
 
-        # Region: "Region-1" -> "1", "Region-2" -> "2", "Region-3" -> "3", "Region-4" -> "4", "Head Office" -> "HO"
+        # Helper: "Head Office" -> "HO", else digits
         def region_to_code(val):
-            if not val:
-                return None
+            if not val: return None
             s = str(val).strip()
-            if s.lower() == "head office":
-                return "HO"
+            if s.lower() == "head office": return "HO"
             nums = re.findall(r'\d+', s)
-            if nums:
-                return nums[0]
-            return None
+            return nums[0] if nums else None
 
         return {
             "name": doc.name,
             "user": doc.user,
             "full_name": full_name,
             "tag": doc.tag,
+            "enabled": bool(doc.enabled),
             "zone": [z for z in (zone_to_code(row.zone) for row in (doc.zone or []) if row.zone) if z],
             "region": [r for r in (region_to_code(row.region) for row in (doc.region or []) if row.region) if r],
             "state": [row.state for row in (doc.state or []) if row.state],
@@ -161,7 +179,7 @@ def get_preference_detail(user):
             "sol_id": [row.sol_id for row in (doc.sol_id or []) if row.sol_id],
             "product": [row.product for row in (doc.product or []) if row.product],
             "source": [row.source for row in (doc.source or []) if row.source],
-            "enabled": bool(doc.enabled),
+            "finacle_roles": assigned_finacle_pills
         }
 
     return {
@@ -169,6 +187,7 @@ def get_preference_detail(user):
         "user": user,
         "full_name": full_name,
         "tag": "",
+        "enabled": True,
         "zone": [],
         "region": [],
         "state": [],
@@ -176,38 +195,34 @@ def get_preference_detail(user):
         "sol_id": [],
         "product": [],
         "source": [],
-        "enabled": True,
-
+        "finacle_roles": assigned_finacle_pills
     }
 
 @frappe.whitelist()
 def save_preference(data):
+    """Auto-save Report Preference and Sync User Roles."""
     validate_page_access()
-    """Auto-save/update Report Preference for user."""
     import json
 
     if isinstance(data, str):
         data = json.loads(data)
 
-    user = data.get("user")
-    if not user:
+    user_id = data.get("user")
+    if not user_id:
         frappe.throw(_("User is required"))
 
-    pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
-
+    # 1. HANDLE REPORT PREFERENCE DOCTYPE
+    pref_name = frappe.db.get_value("Report Preference", {"user": user_id}, "name")
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
     else:
         doc = frappe.new_doc("Report Preference")
-        doc.user = user
+        doc.user = user_id
 
-    # Save the tag
     doc.tag = data.get("tag")
-
-    # Save enabled status
     doc.enabled = 1 if data.get("enabled") else 0
 
-    # Clear child tables
+    # Clear and Repopulate Child Tables
     doc.zone = []
     doc.region = []
     doc.state = []
@@ -216,63 +231,51 @@ def save_preference(data):
     doc.product = []
     doc.source = []
 
-    # ZONE: UI sends "1","2","3" → store "Zone -1"
     for z in data.get("zone", []):
-        if not z:
-            continue
+        if not z: continue
         zone_name = f"Zone -{z}"
-        if not frappe.db.exists("Zone", zone_name):
-            if frappe.db.exists("Zone", z):
-                zone_name = z
-            else:
-                continue
-        doc.append("zone", {"zone": zone_name})
+        if frappe.db.exists("Zone", zone_name):
+            doc.append("zone", {"zone": zone_name})
+        elif frappe.db.exists("Zone", z):
+            doc.append("zone", {"zone": z})
 
-    # REGION: UI sends "1","2","3","4","HO"
-    # Map codes back to Region doc names:
-    #  "1" -> Region-1
-    #  "2" -> Region-2
-    #  "3" -> Region-3
-    #  "4" -> Region-4
-    #  "HO" -> Head Office
     for r in data.get("region", []):
-        if not r:
-            continue
-
+        if not r: continue
         code = str(r).strip()
-        if code.upper() == "HO":
-            region_name = "Head Office"
-        else:
-            region_name = f"Region-{code}"
+        region_name = "Head Office" if code.upper() == "HO" else f"Region-{code}"
+        if frappe.db.exists("Region", region_name):
+            doc.append("region", {"region": region_name})
+        elif frappe.db.exists("Region", r):
+            doc.append("region", {"region": r})
 
-        if not frappe.db.exists("Region", region_name):
-            # Try raw code as fallback
-            if frappe.db.exists("Region", code):
-                region_name = code
-            else:
-                continue
-
-        doc.append("region", {"region": region_name})
-
-    for s in data.get("state", []):
-        if s: doc.append("state", {"state": s})
-    
-    for d in data.get("district", []):
-        if d: doc.append("district", {"district": d})
-    
-    for sol in data.get("sol_id", []):
-        if sol: doc.append("sol_id", {"sol_id": sol})
-    
-    for p in data.get("product", []):
-        if p: doc.append("product", {"product": p})
-    
-    for src in data.get("source", []):
-        if src: doc.append("source", {"source": src})
+    # Simple fields
+    for field in ["state", "district", "sol_id", "product", "source"]:
+        for val in data.get(field, []):
+            if val: doc.append(field, {field: val})
 
     doc.save(ignore_permissions=True)
+
+    # 2. HANDLE USER ROLE SYNC
+    selected_pills = data.get("finacle_roles", [])
+    user_doc = frappe.get_doc("User", user_id)
+    
+    roles_to_have = [ROLE_MAP[p] for p in selected_pills if p in ROLE_MAP]
+    current_roles = [r.role for r in user_doc.roles]
+    
+    # Add new roles
+    for role in roles_to_have:
+        if role not in current_roles:
+            user_doc.add_roles(role)
+            
+    # Remove roles that were unselected (only if they are in our ROLE_MAP)
+    for pill, role in ROLE_MAP.items():
+        if pill not in selected_pills and role in current_roles:
+            user_doc.remove_roles(role)
+    
     frappe.db.commit()
 
     return {"success": True, "name": doc.name}
+
 
 @frappe.whitelist()
 def search_user(search_text=None):

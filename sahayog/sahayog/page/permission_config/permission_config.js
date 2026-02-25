@@ -986,6 +986,33 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         this.autoSave();
       },
 
+      toggleRole(pill) {
+        if (!this.selectedPref.finacle_roles) this.selectedPref.finacle_roles = [];
+        const arr = this.selectedPref.finacle_roles;
+        const idx = arr.indexOf(pill);
+        
+        if (idx >= 0) arr.splice(idx, 1);
+        else arr.push(pill);
+        
+        this.autoSave();
+      },
+
+      isAllRolesSelected() {
+        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance'];
+        const sel = this.selectedPref.finacle_roles || [];
+        return sel.length === all.length;
+      },
+
+      toggleAllRoles() {
+        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance'];
+        if (this.isAllRolesSelected()) {
+            this.selectedPref.finacle_roles = [];
+        } else {
+            this.selectedPref.finacle_roles = [...all];
+        }
+        this.autoSave();
+      },
+
       isAllSelected(field) {
         if (!this.selectedPref) return false;
         const all = this.allOptions[field] || [];
