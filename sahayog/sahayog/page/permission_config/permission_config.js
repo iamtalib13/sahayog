@@ -740,30 +740,51 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         </div>
 
         <!-- New Finacle Report Permission Section -->
-        <div class="perm-section">
-          <div class="perm-section-title">Finacle Report Permission</div>
-          
-          <div class="perm-field">
-            <div class="perm-flabel-inline">
-              <span>Reports</span>
-              <div class="perm-check-grid-chips-inline">
-                <!-- ALL toggle for roles -->
-                <div class="perm-chip" 
-                    :class="{ selected: isAllRolesSelected() }" 
-                    @click="toggleAllRoles()">ALL</div>
+        <!-- Finacle Report Permission Section -->
+<!-- Finacle Report Permission Section -->
+<div class="perm-section">
+  <div class="perm-field">
+    <!-- Headline: Same style as SOL ID -->
+    <div class="perm-flabel-with-edit">
+        <span>Finacle Report Permission</span>
+    </div>
 
-                <!-- Dynamic Pills for Roles -->
-                <div v-for="pill in ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance']" 
-                    :key="pill" 
-                    class="perm-chip" 
-                    :class="{ selected: selectedPref.finacle_roles.includes(pill) }" 
-                    @click="toggleRole(pill)">
-                  [[ pill ]]
-                </div>
-              </div>
-            </div>
+    <!-- The Box Wrapper: Contains all selectable chips -->
+    <div class="selected-users-wrapper" style="padding: 12px; min-height: 60px; background: #fafbfc;">
+        
+        <div class="perm-check-grid-chips-inline" style="margin: 0;">
+          <!-- ALL Chip -->
+          <div class="perm-chip" 
+               :class="{ selected: isAllRolesSelected() }" 
+               @click="toggleAllRoles()">
+            ALL
+          </div>
+
+          <!-- Vertical Separator line -->
+          <div style="width: 1px; height: 18px; background: #d0d7de; margin: 0 8px;"></div>
+
+          <!-- Dynamic Chips for each Role -->
+          <div v-for="pill in ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Admin', 'Vigilance']" 
+               :key="pill" 
+               class="perm-chip" 
+               :class="{ selected: (selectedPref.finacle_roles || []).includes(pill) }" 
+               @click="toggleRole(pill)">
+            [[ pill ]]
+            <!-- 'x' only shows if the pill is currently selected -->
+            
           </div>
         </div>
+
+        <!-- Helper message if nothing is selected (optional) -->
+        <div v-if="!selectedPref.finacle_roles || selectedPref.finacle_roles.length === 0" 
+             class="selected-empty-text" style="margin-top: 10px; width: 100%;">
+            No permissions selected. Click on a role above to assign.
+        </div>
+    </div>
+  </div>
+</div>
+
+
 
 
         <!-- Lead Specific Filters Section -->
@@ -998,13 +1019,13 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       },
 
       isAllRolesSelected() {
-        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance'];
+        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Admin', 'Vigilance'];
         const sel = this.selectedPref.finacle_roles || [];
         return sel.length === all.length;
       },
 
       toggleAllRoles() {
-        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Finacle', 'Vigilance'];
+        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Admin', 'Vigilance'];
         if (this.isAllRolesSelected()) {
             this.selectedPref.finacle_roles = [];
         } else {
