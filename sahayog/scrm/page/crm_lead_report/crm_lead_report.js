@@ -382,9 +382,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 <option v-for="(m, index) in months" :value="index + 1">{{ m }}</option>
                             </select>
                         </div>
-                        <button class="btn-generate-sm" @click="applyFilters" :disabled="loading">
-                            <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i> EXPORT CSV
-                        </button>
+                      <button 
+                          class="btn-generate-sm" 
+                          v-if="totalLeadsInReport > 0"
+                          @click="applyFilters" 
+                          :disabled="loading"
+                      >
+                          <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i> EXPORT CSV
+                      </button>
                     </div>
                 </div>
 
@@ -434,22 +439,23 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <div>
                         <!-- Report Header with Date Display -->
                        <div class="report-header-section">
-                          <div class="report-date-display">
-                              <span class="report-date-icon">📅</span>
-                              <span class="mr-2">Period:</span>
-                              <input type="date" 
-                                    v-model="employee_from_date" 
-                                    @change="onDateChange" 
-                                    class="select-input" 
-                                    style="width: 140px; margin-right: 10px;">
-                              <span class="mr-2">to</span>
-                              <input type="date" 
-                                    v-model="employee_to_date" 
-                                    @change="onDateChange" 
-                                    class="select-input" 
-                                    style="width: 140px;">
-                          </div>
-                       </div>
+                            <div class="report-date-display">
+                                <span class="report-date-icon">📅</span>
+                                <span class="mr-2">Period:</span>
+                                <input type="date" v-model="employee_from_date" @change="onDateChange" class="select-input" style="width: 140px; margin-right: 10px;">
+                                <span class="mr-2">to</span>
+                                <input type="date" v-model="employee_to_date" @change="onDateChange" class="select-input" style="width: 140px;">
+                            </div>
+                            
+                            <div class="employee-search-container" style="position: relative; flex: 1; max-width: 300px; margin-left: 20px;">
+                                <i class="fa fa-search" style="position: absolute; left: 10px; top: 10px; color: #6b7280;"></i>
+                                <input type="text" 
+                                      v-model="employee_search_term" 
+                                      placeholder="Search Employee ID or Name..." 
+                                      class="select-input" 
+                                      style="width: 100%; padding-left: 30px;">
+                            </div>
+                        </div>
 
                         <!-- Summary Metric Cards -->
                         <div class="metric-cards-container">
@@ -595,9 +601,22 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_performance_data: [],
     employee_report_loading: false,
     employee_error_message: null,
+    employee_search_term: "",
 
     get filteredEmployees() {
-      return this.employee_performance_data || [];
+      if (!this.employee_performance_data) return [];
+
+      // Agar search box khali hai toh poora data dikhao
+      if (!this.employee_search_term) return this.employee_performance_data;
+
+      const term = this.employee_search_term.toLowerCase();
+
+      return this.employee_performance_data.filter((emp) => {
+        return (
+          (emp.employee_id && emp.employee_id.toLowerCase().includes(term)) ||
+          (emp.employee_name && emp.employee_name.toLowerCase().includes(term))
+        );
+      });
     },
     get totalLeadsInReport() {
       return this.filteredEmployees.reduce(
@@ -806,6 +825,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           this.employee_error_message =
             "No data found for the selected date range.";
         }
+        if (this.totalLeadsInReport === 0) {
+          this.showNoLeadsMessage();
+        } else {
+          page.set_intro(""); // Clear message if data exists
+        }
       } catch (error) {
         this.employee_error_message =
           error.message || "An error occurred while fetching data.";
@@ -820,12 +844,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
 
     async applyFilters() {
-      this.loading = true;
+      // Safety check: though button is hidden, we block the function too
+      if (this.totalLeadsInReport === 0) {
+        this.showNoLeadsMessage();
+        return;
+      }
 
-      // Update intro to show processing status (Compact)
+      this.loading = true;
       page.set_intro(`
         <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
-          <i class="fa fa-spinner fa-spin mr-2"></i> <b>Generating Report...</b> Please stay on this page for the download link.
+          <i class="fa fa-spinner fa-spin mr-2"></i> <b>Generating Report...</b> Please stay on this page.
         </div>
       `);
 
@@ -844,15 +872,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           },
         });
         if (res.message?.status === "queued") {
-          frappe.show_alert({
-            message: "Export started...",
-            indicator: "blue",
-          });
           this.checkStatus();
         }
-      } finally {
+      } catch (e) {
         this.loading = false;
       }
+    },
+
+    showNoLeadsMessage() {
+      page.set_intro(`
+        <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
+          <i class="fa fa-info-circle mr-2"></i> <b>No Records Found:</b> There are no leads available for the selected month or applied filter criteria.
+        </div>
+      `);
     },
 
     checkStatus() {
@@ -862,39 +894,35 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           "sahayog.scrm.api.report_access.check_export_status",
         );
 
-        // Update progress simulation (Compact)
         if (progress < 90) progress += 10;
+
         page.set_intro(`
           <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
-            <i class="fa fa-spinner fa-spin mr-2"></i> <b>Processing (${progress}%)...</b> Fetching records.
+            <i class="fa fa-spinner fa-spin mr-2"></i> <b>Processing (${progress}%)...</b> Fetching data.
           </div>
         `);
+
         if (res.message?.status === "completed") {
           clearInterval(timer);
+          this.loading = false;
+
+          if (res.message.row_count === 0) {
+            this.showNoLeadsMessage();
+            return;
+          }
 
           const fileName = res.message.file_url.split("/").pop();
-          const monthName = this.months[this.selected_month - 1];
-
           page.set_intro(`
-    <div class="p-2 blinking-success" 
-         style="background:#f0fdf4; border-left:4px solid #22c55e; border-radius:4px; font-size:12px; color:#166534;">
-      
-      <div style="display:flex; justify-content:space-between;">
-        <span><b>Export Complete</b></span>
-        <span>${res.message.row_count} rows</span>
-      </div>
+            <div class="p-2 blinking-success" style="background:#f0fdf4; border-left:4px solid #22c55e; border-radius:4px; font-size:12px; color:#166534;">
+              <div style="display:flex; justify-content:space-between;">
+                <span><i class="fa fa-check-circle"></i> <b>Export Ready</b></span>
+                <span><b>${res.message.row_count} rows</b></span>
+              </div>
+              <div style="margin-top:4px; font-size:11px;">📁 ${fileName}</div>
+            </div>
+          `);
 
-      <div style="margin-top:6px; font-size:11px;">
-        📁 <b>File:</b> ${fileName}
-      </div>
-
-      <div style="font-size:11px;">
-        📅 <b>Period:</b> ${monthName} ${this.selected_year}
-      </div>
-    </div>
-  `);
-
-          // Silent Download
+          // Trigger download
           const a = document.createElement("a");
           a.href = res.message.file_url;
           a.download = fileName;
@@ -903,11 +931,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           document.body.removeChild(a);
         } else if (res.message?.status === "failed") {
           clearInterval(timer);
-          page.set_intro(`
-            <div class="p-2" style="background-color: #fee2e2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
-              <i class="fa fa-exclamation-triangle mr-2"></i> <b>Export Failed</b> Please try again later.
-            </div>
-          `);
+          this.loading = false;
+          page.set_intro(
+            `<div class="p-2" style="color:#b91c1c;"><b>Error:</b> Export failed.</div>`,
+          );
         }
       }, 5000);
     },
