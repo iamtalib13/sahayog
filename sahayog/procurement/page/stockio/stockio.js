@@ -221,85 +221,43 @@ class StockIOPage {
     <!-- LEFT: TABS -->
   <div class="stockio-tabs" v-if="pageMode !== 'reports' && pageMode !== 'item'">
     <template v-if="pageMode === 'requests'">
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'all' }"
-      @click="setTab('all')"
-      >
-      All <b>{{ counts.all }}</b>
+      <span class="tab" :class="{ active: activeTab === 'all' }" @click="setTab('all')">
+        All <b>{{ counts.all }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'today' }"
-      @click="setTab('today')"
-      >
-      To Day <b class="green">{{ counts.today }}</b>
+      <span class="tab" :class="{ active: activeTab === 'today' }" @click="setTab('today')">
+        To Day <b class="status-success">{{ counts.today }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'draft' }"
-      @click="setTab('draft')"
-      >
-      Draft <b class="grey">{{ counts.draft }}</b>
+      <span class="tab" :class="{ active: activeTab === 'draft' }" @click="setTab('draft')">
+        Draft <b class="status-draft">{{ counts.draft }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'pending' }"
-      @click="setTab('pending')"
-      >
-      Pending <b class="orange">{{ counts.pending }}</b>
+      <span class="tab" :class="{ active: activeTab === 'pending' }" @click="setTab('pending')">
+        Pending <b class="status-pending">{{ counts.pending }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'approved' }"
-      @click="setTab('approved')"
-      >
-      Approved <b class="purple">{{ counts.approved }}</b>
+      <span class="tab" :class="{ active: activeTab === 'approved' }" @click="setTab('approved')">
+        Approved <b class="status-success">{{ counts.approved }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'cancelled' }"
-      @click="setTab('cancelled')"
-      >
-      Cancelled <b class="red">{{ counts.cancelled }}</b>
+      <span class="tab" :class="{ active: activeTab === 'cancelled' }" @click="setTab('cancelled')">
+        Cancelled <b class="status-danger">{{ counts.cancelled }}</b>
       </span>
     </template>
     <template v-else-if="pageMode === 'stock' || pageMode === 'asset'">
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'all' }"
-      @click="setTab('all')"
-      >
-      All <b>{{ counts.all }}</b>
+      <span class="tab" :class="{ active: activeTab === 'all' }" @click="setTab('all')">
+        All <b>{{ counts.all }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'draft' }"
-      @click="setTab('draft')"
-      >
-      Draft <b class="grey">{{ counts.draft }}</b>
+      <span class="tab" :class="{ active: activeTab === 'draft' }" @click="setTab('draft')">
+        Draft <b class="status-draft">{{ counts.draft }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'submitted' }"
-      @click="setTab('submitted')"
-      >
-      Submitted <b class="green">{{ counts.submitted }}</b>
+      <span class="tab" v-show="pageMode !== 'asset' || subMode !== 'item'" :class="{ active: activeTab === 'submitted' }" @click="setTab('submitted')">
+        Submitted <b class="status-success">{{ counts.submitted }}</b>
       </span>
-
-      <span
-      class="tab"
-      :class="{ active: activeTab === 'other' }"
-      @click="setTab('other')"
-      >
-      Other <b class="orange">{{ counts.other }}</b>
+      <span class="tab" v-show="pageMode === 'asset' && subMode === 'item'" :class="{ active: activeTab === 'available' }" @click="setTab('available')">
+        Available <b class="status-success">{{ counts.available }}</b>
+      </span>
+      <span class="tab" v-show="pageMode === 'asset' && subMode === 'item'" :class="{ active: activeTab === 'assigned' }" @click="setTab('assigned')">
+        Assigned/Depreciated <b class="status-pending">{{ counts.assigned }}</b>
+      </span>
+      <span class="tab" v-show="pageMode !== 'asset' || subMode !== 'item'" :class="{ active: activeTab === 'other' }" @click="setTab('other')">
+        Other <b class="status-pending">{{ counts.other }}</b>
       </span>
     </template>
   </div>
@@ -717,129 +675,185 @@ class StockIOPage {
             <div class="form-group">
               <label>Default UOM *</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.uom" 
-                       @focus="activeDropdown = 'uom'; $event.target.select()" 
-                       @click="activeDropdown = 'uom'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'uom') activeDropdown = null }, 300)"
-                       placeholder="Select UOM..." />
+                <input type="text" v-model="search.uom" @focus="activeDropdown = 'uom'; $event.target.select()" @click="activeDropdown = 'uom'" @blur="setTimeout(() => { if(activeDropdown === 'uom') activeDropdown = null }, 300)" placeholder="Select UOM..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'uom'">
-                  <div class="dropdown-item" 
-                       v-for="u in masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase()))" 
-                       @click="newItem.stock_uom = u.name; search.uom = u.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="u in masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase()))" @click="newItem.stock_uom = u.name; search.uom = u.name; activeDropdown = null">
                     {{ u.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.uoms.filter(x => !search.uom || x.name.toLowerCase().includes(search.uom.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
             </div>
             <div class="form-group">
               <label>Item Department *</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.dept" 
-                       @focus="activeDropdown = 'dept'; $event.target.select()" 
-                       @click="activeDropdown = 'dept'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'dept') activeDropdown = null }, 300)"
-                       placeholder="Select Department..." />
+                <input type="text" v-model="search.dept" @focus="activeDropdown = 'dept'; $event.target.select()" @click="activeDropdown = 'dept'" @blur="setTimeout(() => { if(activeDropdown === 'dept') activeDropdown = null }, 300)" placeholder="Select Department..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'dept'">
-                  <div class="dropdown-item" 
-                       v-for="d in masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase()))" 
-                       @click="newItem.custom_item_department = d.name; search.dept = d.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="d in masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase()))" @click="newItem.custom_item_department = d.name; search.dept = d.name; activeDropdown = null">
                     {{ d.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.departments.filter(x => !search.dept || x.name.toLowerCase().includes(search.dept.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
             </div>
             <div class="form-group">
               <label>Item Group *</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.group" 
-                       @focus="activeDropdown = 'group'; $event.target.select()" 
-                       @click="activeDropdown = 'group'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'group') activeDropdown = null }, 300)"
-                       placeholder="Select Group..." />
+                <input type="text" v-model="search.group" @focus="activeDropdown = 'group'; $event.target.select()" @click="activeDropdown = 'group'" @blur="setTimeout(() => { if(activeDropdown === 'group') activeDropdown = null }, 300)" placeholder="Select Group..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'group'">
-                  <div class="dropdown-item" 
-                       v-for="g in masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase()))" 
-                       @click="newItem.item_group = g.name; search.group = g.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="g in masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase()))" @click="newItem.item_group = g.name; search.group = g.name; activeDropdown = null">
                     {{ g.name }}
                   </div>
-                  <div class="no-result" v-if="masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.item_groups.filter(x => !search.group || x.name.toLowerCase().includes(search.group.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
-                            <div class="form-group" v-if="newItem.is_fixed_asset">
-              <label>Asset Category *</label>
-              <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.asset" 
-                       @focus="activeDropdown = 'asset'; $event.target.select()" 
-                       @click="activeDropdown = 'asset'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'asset') activeDropdown = null }, 300)"
-                       placeholder="Select Asset Category..." />
-                <div class="dropdown-list" v-show="activeDropdown === 'asset'">
-                  <div class="dropdown-item" 
-                       v-for="c in masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase()))" 
-                       @click="newItem.asset_category = c.name; search.asset = c.name; activeDropdown = null">
-                    {{ c.name }}
-                  </div>
-                  <div class="no-result" v-if="masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">
-                    No results
-                  </div>
-                </div>
-              </div>
-            </div>
             </div>
             <div class="form-group">
               <label>HSN/SAC</label>
               <div class="searchable-select">
-                <input type="text" 
-                       v-model="search.hsn" 
-                       @focus="activeDropdown = 'hsn'; $event.target.select()" 
-                       @click="activeDropdown = 'hsn'"
-                       @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)"
-                       placeholder="Select HSN Code..." />
+                <input type="text" v-model="search.hsn" @focus="activeDropdown = 'hsn'; $event.target.select()" @click="activeDropdown = 'hsn'" @blur="setTimeout(() => { if(activeDropdown === 'hsn') activeDropdown = null }, 300)" placeholder="Select HSN Code..." />
                 <div class="dropdown-list" v-show="activeDropdown === 'hsn'">
-                  <div class="dropdown-item" 
-                       v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" 
-                       @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
+                  <div class="dropdown-item" v-for="h in masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase()))" @click="newItem.gst_hsn_code = h.name; search.hsn = h.name; activeDropdown = null">
                     {{ h.name }} - {{ h.description }}
                   </div>
-                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">
-                    No results
-                  </div>
+                  <div class="no-result" v-if="masterData.hsn_codes.filter(x => !search.hsn || (x.name + ' ' + (x.description || '')).toLowerCase().includes(search.hsn.toLowerCase())).length === 0">No results</div>
                 </div>
               </div>
-
+            </div>
+            <div class="form-group" v-if="newItem.is_fixed_asset">
+              <label>Asset Category *</label>
+              <div class="searchable-select">
+                <input type="text" v-model="search.asset" @focus="activeDropdown = 'asset'; $event.target.select()" @click="activeDropdown = 'asset'" @blur="setTimeout(() => { if(activeDropdown === 'asset') activeDropdown = null }, 300)" placeholder="Select Asset Category..." />
+                <div class="dropdown-list" v-show="activeDropdown === 'asset'">
+                  <div class="dropdown-item" v-for="c in masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase()))" @click="newItem.asset_category = c.name; search.asset = c.name; activeDropdown = null">
+                    {{ c.name }}
+                  </div>
+                  <div class="no-result" v-if="masterData.asset_categories.filter(x => !search.asset || x.name.toLowerCase().includes(search.asset.toLowerCase())).length === 0">No results</div>
+                </div>
+              </div>
             </div>
             <div class="form-group full-width checkbox-group">
-              <label>
-                <input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" />
-                Is Stock Item
-              </label>
-              <label>
-                <input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" />
-                Is Fixed Asset
-              </label>
+              <label><input type="checkbox" v-model="newItem.is_stock_item" @change="if(newItem.is_stock_item) newItem.is_fixed_asset = false" /> Is Stock Item</label>
+              <label><input type="checkbox" v-model="newItem.is_fixed_asset" @change="if(newItem.is_fixed_asset) newItem.is_stock_item = false" /> Is Fixed Asset</label>
             </div>
-                          
-
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn ghost" @click="closeCreateItemModal">Cancel</button>
-          <button class="btn primary" @click="submitCreateItem" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Creating...' : 'Create' }}
-          </button>
+          <button class="btn primary" @click="submitCreateItem" :disabled="isSubmitting">{{ isSubmitting ? 'Creating...' : 'Create' }}</button>
         </div>
+      </div>
+    </div>
+
+    <!-- ================= ASSET MOVEMENT MODAL ================= -->
+    <div class="stockio-modal-overlay" v-if="showCreateAssetMovementModal" @click.self="closeCreateAssetMovementModal">
+      <div class="stockio-modal modal-large">
+        <div class="modal-header">
+          <h3>Create Asset Movement</h3>
+          <button class="close-btn" @click="closeCreateAssetMovementModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Purpose *</label>
+              <select v-model="newAssetMovement.purpose">
+                <option value="Issue">Issue</option>
+                <option value="Receipt">Receipt</option>
+                <option value="Transfer">Transfer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Transaction Date *</label>
+              <input type="date" v-model="newAssetMovement.transaction_date" />
+            </div>
+            <div class="form-group full-width">
+              <label>Company *</label>
+              <input type="text" :value="newAssetMovement.company" readonly />
+            </div>
+          </div>
+
+          <div class="modal-section full-width">
+            <div class="section-header">
+              <h4>Assets</h4>
+              <button class="btn ghost btn-sm" @click="addAssetRow">+ Add Row</button>
+            </div>
+            <div class="table-responsive">
+              <table class="stockio-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Asset Name</th>
+                    <th>Target Location</th>
+                    <th>To Employee</th>
+                    <th>Source Location</th>
+                    <th>From Employee</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, idx) in newAssetMovement.assets" :key="idx">
+                    <td>
+                      <div class="searchable-select">
+                        <input type="text" v-model="assetSearch[idx]" 
+                               @focus="activeDropdown = 'asset_' + idx; fetchAssetsList()" 
+                               @click="activeDropdown = 'asset_' + idx"
+                               placeholder="Select Asset..." />
+                        <div class="dropdown-list" v-show="activeDropdown === 'asset_' + idx">
+                          <div class="dropdown-item" 
+                               v-for="a in getFilteredAssetsForMovement(assetSearch[idx])"
+                               @click="selectAssetForRow(idx, a)">
+                            {{ a.name }} - {{ a.asset_name }}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><input type="text" v-model="row.asset_name" readonly /></td>
+                    <td>
+                        <div class="searchable-select">
+                            <input type="text" v-model="row.target_location" 
+                                   @focus="activeDropdown = 'target_loc_' + idx; fetchLocations()" 
+                                   @click="activeDropdown = 'target_loc_' + idx"
+                                   placeholder="Location..." />
+                            <div class="dropdown-list" v-show="activeDropdown === 'target_loc_' + idx">
+                                <div class="dropdown-item" v-for="l in masterData.locations.filter(x => !row.target_location || x.name.toLowerCase().includes(row.target_location.toLowerCase()))"
+                                     @click="row.target_location = l.name; activeDropdown = null">
+                                    {{ l.name }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="searchable-select">
+                            <input type="text" v-model="row.to_employee" 
+                                   @focus="activeDropdown = 'to_emp_' + idx; fetchEmployees()" 
+                                   @click="activeDropdown = 'to_emp_' + idx"
+                                   placeholder="Employee..." />
+                            <div class="dropdown-list" v-show="activeDropdown === 'to_emp_' + idx">
+                                <div class="dropdown-item" v-for="e in masterData.employees.filter(x => !row.to_employee || x.name.toLowerCase().includes(row.to_employee.toLowerCase()) || x.employee_name.toLowerCase().includes(row.to_employee.toLowerCase()))"
+                                     @click="row.to_employee = e.name; activeDropdown = null">
+                                    {{ e.name }} - {{ e.employee_name }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><input type="text" v-model="row.source_location" readonly /></td>
+                    <td><input type="text" v-model="row.from_employee" readonly /></td>
+                    <td><button class="btn btn-danger-ghost btn-sm" @click="removeAssetRow(idx)">&times;</button></td>
+                  </tr>
+                  <tr v-if="newAssetMovement.assets.length === 0">
+                    <td colspan="7" class="text-center muted">No assets added.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn ghost" @click="closeCreateAssetMovementModal">Cancel</button>
+          <button class="btn primary" @click="submitCreateAssetMovement" :disabled="isSubmitting">{{ isSubmitting ? 'Creating...' : 'Create' }}</button>
+        </div>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -877,6 +891,8 @@ class StockIOPage {
       outwardPageSize: 5,
 
       assets: [],
+      allAssets: [], // Keep full list for custom filtering
+      assetsWithMovement: [], // Track assets that have any movement record
       assetsVisible: [],
       assetsOffset: 0,
       assetsPageSize: 5,
@@ -893,6 +909,7 @@ class StockIOPage {
 
       // MODALS & FORM STATE
       showCreateItemModal: false,
+      showCreateAssetMovementModal: false,
       isSubmitting: false,
       activeDropdown: null,
       search: {
@@ -901,6 +918,13 @@ class StockIOPage {
         group: "",
         hsn: "",
         asset: "",
+      },
+      assetSearch: [], // Array of search strings for asset table rows
+      newAssetMovement: {
+        purpose: "Issue",
+        company: frappe.defaults.get_user_default("company"),
+        transaction_date: frappe.datetime.get_today(),
+        assets: [],
       },
       newItem: {
         item_code: "",
@@ -919,6 +943,8 @@ class StockIOPage {
         item_groups: [],
         hsn_codes: [],
         asset_categories: [],
+        locations: [],
+        employees: [],
       },
 
       // SELECTION
@@ -941,6 +967,7 @@ class StockIOPage {
         approved: 0,
         cancelled: 0,
         submitted: 0,
+        available: 0,
         other: 0,
       },
 
@@ -1261,14 +1288,26 @@ class StockIOPage {
 
         if (this.pageMode === "stock" || this.pageMode === "asset") {
           let list = this.activeList;
-          if (this.activeTab === "draft")
-            list = list.filter((d) => d.status === "Draft");
-          else if (this.activeTab === "submitted")
-            list = list.filter((d) => d.status === "Submitted");
-          else if (this.activeTab === "other")
-            list = list.filter(
-              (d) => d.status !== "Draft" && d.status !== "Submitted",
-            );
+          
+          if (this.pageMode === "asset" && this.subMode === "item") {
+            if (this.activeTab === "draft")
+              list = list.filter((d) => !d.custodian && !this.assetsWithMovement.includes(d.name));
+            else if (this.activeTab === "available")
+              list = list.filter((d) => !this.assetsWithMovement.includes(d.name));
+            else if (this.activeTab === "assigned")
+              list = list.filter((d) => this.assetsWithMovement.includes(d.name));
+          } else {
+            if (this.activeTab === "draft")
+              list = list.filter((d) => d.status === "Draft");
+            else if (this.activeTab === "submitted")
+              list = list.filter((d) => d.status === "Submitted");
+            else if (this.activeTab === "available")
+              list = list.filter((d) => !d.custodian);
+            else if (this.activeTab === "other")
+              list = list.filter(
+                (d) => d.status !== "Draft" && d.status !== "Submitted" && (this.pageMode !== 'asset' || this.subMode !== 'item' || d.custodian),
+              );
+          }
 
           if (q) {
             list = list.filter(
@@ -1303,6 +1342,25 @@ class StockIOPage {
         }
 
         return [];
+      },
+
+      getFilteredAssetsForMovement(searchTxt = "") {
+        let list = this.allAssets;
+        
+        // Rule: If Purpose != Transfer, show ONLY assets that don't have a movement
+        if (this.newAssetMovement.purpose !== "Transfer") {
+            list = list.filter(a => !this.assetsWithMovement.includes(a.name));
+        }
+
+        if (searchTxt) {
+            const q = searchTxt.toLowerCase();
+            list = list.filter(a => 
+                a.name.toLowerCase().includes(q) || 
+                (a.asset_name && a.asset_name.toLowerCase().includes(q)) ||
+                (a.item_name && a.item_name.toLowerCase().includes(q))
+            );
+        }
+        return list;
       },
 
       loadMore() {
@@ -1407,12 +1465,22 @@ class StockIOPage {
             approved: 0,
             cancelled: 0,
             submitted: 0,
+            available: 0,
+            assigned: 0,
             other: 0,
           };
           list.forEach((doc) => {
-            if (doc.status === "Draft") this.counts.draft++;
-            else if (doc.status === "Submitted") this.counts.submitted++;
-            else this.counts.other++;
+            if (this.pageMode === "asset" && this.subMode === "item") {
+              const hasMovement = this.assetsWithMovement.includes(doc.name);
+              
+              if (!doc.custodian && !hasMovement) this.counts.draft++;
+              if (!hasMovement) this.counts.available++;
+              if (hasMovement) this.counts.assigned++;
+            } else {
+              if (doc.status === "Draft") this.counts.draft++;
+              else if (doc.status === "Submitted") this.counts.submitted++;
+              else this.counts.other++;
+            }
           });
         }
       },
@@ -1546,13 +1614,13 @@ class StockIOPage {
           method: "frappe.client.get_list",
           args: {
             doctype: "Asset",
-            fields: ["name", "asset_name", "docstatus", "owner", "custodian"],
+            fields: ["name", "asset_name", "item_name", "docstatus", "owner", "custodian", "location"],
             order_by: "creation desc",
             limit_page_length: 1000,
           },
           callback: (r) => {
             if (!r.message) return;
-            this.assets = r.message.map((d) => {
+            const data = r.message.map((d) => {
               let status =
                 d.docstatus === 0
                   ? "Draft"
@@ -1561,10 +1629,11 @@ class StockIOPage {
                     : "Cancelled";
               return { ...d, status, items: [], showAllItems: false };
             });
-            this.computeCounts();
-            this.assetsOffset = 0;
-            this.assetsVisible = [];
-            this.loadMoreAssets();
+            this.allAssets = data;
+            this.assets = data;
+            
+            // fetchAssetsList will handle computeCounts and loadMoreAssets once it gets movement data
+            this.fetchAssetsList();
           },
         });
       },
@@ -1754,6 +1823,152 @@ class StockIOPage {
         });
       },
 
+      fetchAssetsList() {
+        if (!this.allAssets.length) {
+            this.loadAssets();
+        }
+        
+        // Also fetch assets that already have movements via whitelisted method
+        frappe.call({
+            method: "sahayog.procurement.page.stockio.stockio.get_assets_with_movements",
+            callback: (r) => {
+                if (r.message) {
+                    this.assetsWithMovement = r.message;
+                    
+                    // Re-compute and refresh if we are in asset mode
+                    if (this.pageMode === "asset" && this.subMode === "item") {
+                        this.computeCounts();
+                        this.assetsOffset = 0;
+                        this.assetsVisible = [];
+                        this.loadMoreAssets();
+                    }
+                }
+            }
+        });
+      },
+
+      fetchLocations() {
+        if (this.masterData.locations.length) return;
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Location",
+            fields: ["name"],
+            limit_page_length: 5000,
+            order_by: "name asc",
+          },
+          callback: (r) => {
+            if (r.message) this.masterData.locations = r.message;
+          },
+        });
+      },
+
+      fetchEmployees() {
+        if (this.masterData.employees.length) return;
+        frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Employee",
+            fields: ["name", "employee_name"],
+            filters: { status: "Active" },
+            limit_page_length: 5000,
+            order_by: "employee_name asc",
+          },
+          callback: (r) => {
+            if (r.message) this.masterData.employees = r.message;
+          },
+        });
+      },
+
+      addAssetRow() {
+        this.newAssetMovement.assets.push({
+          asset: "",
+          asset_name: "",
+          target_location: "",
+          to_employee: "",
+          source_location: "",
+          from_employee: "",
+        });
+        this.assetSearch.push("");
+      },
+
+      removeAssetRow(idx) {
+        this.newAssetMovement.assets.splice(idx, 1);
+        this.assetSearch.splice(idx, 1);
+      },
+
+      selectAssetForRow(idx, asset) {
+        const row = this.newAssetMovement.assets[idx];
+        row.asset = asset.name;
+        this.assetSearch[idx] = asset.name;
+        
+        frappe.db.get_value(
+          "Asset",
+          asset.name,
+          ["item_name", "asset_name", "location", "custodian"],
+          (r) => {
+            if (r) {
+              row.asset_name = r.item_name || r.asset_name || "";
+              row.source_location = r.location || "";
+              row.from_employee = r.custodian || "";
+            }
+          }
+        );
+        this.activeDropdown = null;
+      },
+
+      closeCreateAssetMovementModal() {
+        this.showCreateAssetMovementModal = false;
+        this.activeDropdown = null;
+        this.newAssetMovement = {
+          purpose: "Issue",
+          company: frappe.defaults.get_user_default("company"),
+          transaction_date: frappe.datetime.get_today(),
+          assets: [],
+        };
+        this.assetSearch = [];
+      },
+
+      submitCreateAssetMovement() {
+        if (!this.newAssetMovement.assets.length) {
+          frappe.msgprint("Please add at least one asset.");
+          return;
+        }
+
+        // Validation: all rows must have an asset
+        if (this.newAssetMovement.assets.some(a => !a.asset)) {
+            frappe.msgprint("Please select an asset for all rows.");
+            return;
+        }
+
+        this.isSubmitting = true;
+        frappe.call({
+          method: "sahayog.procurement.page.stockio.stockio.create_asset_movement_custom",
+          args: {
+            doc_data: {
+              doctype: "Asset Movement",
+              ...this.newAssetMovement,
+            },
+          },
+          callback: (r) => {
+            this.isSubmitting = false;
+            if (!r.exc && r.message) {
+              const am_name = r.message;
+              frappe.show_alert({
+                message: __("Asset Movement {0} created", [am_name]),
+                indicator: "green",
+              });
+              this.closeCreateAssetMovementModal();
+              this.loadAssetMovements();
+              frappe.set_route("Form", "Asset Movement", am_name);
+            }
+          },
+          error: () => {
+            this.isSubmitting = false;
+          },
+        });
+      },
+
       // HELPERS
       getStatusClass(status) {
         if (!status) return "";
@@ -1831,26 +2046,41 @@ class StockIOPage {
                           frappe.db.get_value(
                             "Item",
                             this.value,
-                            "stock_uom",
+                            ["stock_uom", "item_name"],
                             (r) => {
-                              if (r && r.stock_uom) {
+                              if (r) {
+                                if (r.stock_uom) {
+                                  frappe.model.set_value(
+                                    row.doc.doctype,
+                                    row.doc.name,
+                                    "uom",
+                                    r.stock_uom,
+                                  );
+                                  frappe.model.set_value(
+                                    row.doc.doctype,
+                                    row.doc.name,
+                                    "stock_uom",
+                                    r.stock_uom,
+                                  );
+                                }
                                 frappe.model.set_value(
                                   row.doc.doctype,
                                   row.doc.name,
-                                  "uom",
-                                  r.stock_uom,
-                                );
-                                frappe.model.set_value(
-                                  row.doc.doctype,
-                                  row.doc.name,
-                                  "stock_uom",
-                                  r.stock_uom,
+                                  "item_name",
+                                  r.item_name,
                                 );
                               }
                             },
                           );
                         }
                       },
+                    },
+                    {
+                      label: "Item Name",
+                      fieldname: "item_name",
+                      fieldtype: "Data",
+                      read_only: 1,
+                      in_list_view: 1,
                     },
                     {
                       label: "Quantity",
@@ -1977,32 +2207,47 @@ class StockIOPage {
                           frappe.db.get_value(
                             "Item",
                             this.value,
-                            "stock_uom",
+                            ["stock_uom", "item_name"],
                             (r) => {
-                              if (r && r.stock_uom) {
+                              if (r) {
+                                if (r.stock_uom) {
+                                  frappe.model.set_value(
+                                    row.doc.doctype,
+                                    row.doc.name,
+                                    "uom",
+                                    r.stock_uom,
+                                  );
+                                  frappe.model.set_value(
+                                    row.doc.doctype,
+                                    row.doc.name,
+                                    "stock_uom",
+                                    r.stock_uom,
+                                  );
+                                  frappe.model.set_value(
+                                    row.doc.doctype,
+                                    row.doc.name,
+                                    "conversion_factor",
+                                    1,
+                                  );
+                                }
                                 frappe.model.set_value(
                                   row.doc.doctype,
                                   row.doc.name,
-                                  "uom",
-                                  r.stock_uom,
-                                );
-                                frappe.model.set_value(
-                                  row.doc.doctype,
-                                  row.doc.name,
-                                  "stock_uom",
-                                  r.stock_uom,
-                                );
-                                frappe.model.set_value(
-                                  row.doc.doctype,
-                                  row.doc.name,
-                                  "conversion_factor",
-                                  1,
+                                  "item_name",
+                                  r.item_name,
                                 );
                               }
                             },
                           );
                         }
                       },
+                    },
+                    {
+                      label: "Item Name",
+                      fieldname: "item_name",
+                      fieldtype: "Data",
+                      read_only: 1,
+                      in_list_view: 1,
                     },
                     {
                       label: "Quantity",
@@ -2269,15 +2514,26 @@ class StockIOPage {
                   callback: (r) => {
                     if (!r.exc && r.message) {
                       const asset_name = r.message.name;
-                      frappe.msgprint({
-                        title: "Asset Created!",
-                        message: `Asset <b>${asset_name}</b> created successfully!<br><br>
-                          <button class="btn btn-primary btn-sm" onclick="window.submit_asset('${asset_name}')">
-                            <i class="fa fa-check"></i> Submit Now
-                          </button>`,
-                        indicator: "green",
-                        wide: true,
-                      });
+                      
+                      if (values.custodian) {
+                        // Show popup with Submit button only if Custodian is present
+                        frappe.msgprint({
+                          title: "Asset Created!",
+                          message: `Asset <b>${asset_name}</b> created successfully!<br><br>
+                            <button class="btn btn-primary btn-sm" onclick="window.submit_asset('${asset_name}')">
+                              <i class="fa fa-check"></i> Submit Now
+                            </button>`,
+                          indicator: "green",
+                          wide: true,
+                        });
+                      } else {
+                        // No custodian: just show a simple alert
+                        frappe.show_alert({
+                          message: __("Asset {0} created successfully", [asset_name]),
+                          indicator: "green"
+                        });
+                      }
+
                       dialog.hide();
                       this.loadAssets();
                     }
@@ -2289,161 +2545,15 @@ class StockIOPage {
             return;
           }
           if (this.subMode === "movement") {
-            const dialog = new frappe.ui.Dialog({
-              title: __("Create Asset Movement"),
-              fields: [
-                {
-                  label: "Purpose",
-                  fieldname: "purpose",
-                  fieldtype: "Select",
-                  options: "Issue\nReceipt\nTransfer",
-                  default: "Issue",
-                  reqd: 1,
-                },
-                {
-                  label: "Company",
-                  fieldname: "company",
-                  fieldtype: "Link",
-                  options: "Company",
-                  default: frappe.defaults.get_user_default("company"),
-                  reqd: 1,
-                },
-                {
-                  label: "Transaction Date",
-                  fieldname: "transaction_date",
-                  fieldtype: "Date",
-                  default: frappe.datetime.get_today(),
-                  reqd: 1,
-                },
-                {
-                  label: "Assets",
-                  fieldname: "assets",
-                  fieldtype: "Table",
-                  fields: [
-                    {
-                      label: "Asset",
-                      fieldname: "asset",
-                      fieldtype: "Link",
-                      options: "Asset",
-                      in_list_view: 1,
-                      reqd: 1,
-                      onchange: function () {
-                        const row = this.grid_row;
-                        if (this.value) {
-                          frappe.db.get_value(
-                            "Asset",
-                            this.value,
-                            ["asset_name", "location", "custodian"],
-                            (r) => {
-                              if (r) {
-                                frappe.model.set_value(
-                                  row.doc.doctype,
-                                  row.doc.name,
-                                  "asset_name",
-                                  r.asset_name || "",
-                                );
-                                frappe.model.set_value(
-                                  row.doc.doctype,
-                                  row.doc.name,
-                                  "source_location",
-                                  r.location || "",
-                                );
-                                frappe.model.set_value(
-                                  row.doc.doctype,
-                                  row.doc.name,
-                                  "from_employee",
-                                  r.custodian || "",
-                                );
-                              }
-                            },
-                          );
-                        } else {
-                          frappe.model.set_value(
-                            row.doc.doctype,
-                            row.doc.name,
-                            "asset_name",
-                            "",
-                          );
-                          frappe.model.set_value(
-                            row.doc.doctype,
-                            row.doc.name,
-                            "source_location",
-                            "",
-                          );
-                          frappe.model.set_value(
-                            row.doc.doctype,
-                            row.doc.name,
-                            "from_employee",
-                            "",
-                          );
-                        }
-                      },
-                    },
-                    {
-                      label: "Asset Name",
-                      fieldname: "asset_name",
-                      fieldtype: "Data",
-                      read_only: 1,
-                      in_list_view: 1,
-                    },
-                    {
-                      label: "Target Location",
-                      fieldname: "target_location",
-                      fieldtype: "Link",
-                      options: "Location",
-                      in_list_view: 1,
-                    },
-                    {
-                      label: "To Employee",
-                      fieldname: "to_employee",
-                      fieldtype: "Link",
-                      options: "Employee",
-                      in_list_view: 1,
-                    },
-                    {
-                      label: "Source Location",
-                      fieldname: "source_location",
-                      fieldtype: "Link",
-                      options: "Location",
-                      read_only: 1,
-                    },
-                    {
-                      label: "From Employee",
-                      fieldname: "from_employee",
-                      fieldtype: "Link",
-                      options: "Employee",
-                      read_only: 1,
-                    },
-                  ],
-                  reqd: 1,
-                },
-              ],
-              primary_action_label: __("Create"),
-              primary_action: (values) => {
-                frappe.call({
-                  method: "frappe.client.insert",
-                  args: {
-                    doc: {
-                      doctype: "Asset Movement",
-                      ...values,
-                    },
-                  },
-                  callback: (r) => {
-                    if (!r.exc && r.message) {
-                      const am_name = r.message.name;
-                      frappe.msgprint({
-                        title: "Asset Movement Created!",
-                        message: `Asset Movement <b>${am_name}</b> saved successfully!`,
-                        indicator: "green",
-                      });
-                      dialog.hide();
-                      this.loadAssetMovements();
-                    }
-                  },
-                });
-              },
-            });
-            dialog.show();
+            this.showCreateAssetMovementModal = true;
+            this.newAssetMovement = {
+              purpose: "Issue",
+              company: frappe.defaults.get_user_default("company"),
+              transaction_date: frappe.datetime.get_today(),
+              assets: [],
+            };
+            this.assetSearch = [];
+            this.addAssetRow();
             return;
           }
         }
@@ -2564,7 +2674,7 @@ class StockIOPage {
                       frappe.db.get_value(
                         "Item",
                         this.value,
-                        ["is_fixed_asset", "stock_uom"],
+                        ["is_fixed_asset", "stock_uom", "item_name"],
                         (r) => {
                           if (r) {
                             const is_fixed_asset =
@@ -2585,11 +2695,24 @@ class StockIOPage {
                               "uom",
                               r.stock_uom,
                             );
+                            frappe.model.set_value(
+                              row.doc.doctype,
+                              row.doc.name,
+                              "item_name",
+                              r.item_name,
+                            );
                           }
                         },
                       );
                     }
                   },
+                },
+                {
+                  fieldname: "item_name",
+                  fieldtype: "Data",
+                  label: "Item Name",
+                  in_list_view: 1,
+                  read_only: 1,
                 },
                 {
                   fieldname: "quantity",
@@ -3120,7 +3243,7 @@ class StockIOPage {
               if (!asset_list[a.item_code]) asset_list[a.item_code] = [];
               asset_list[a.item_code].push({
                 asset: a.name,
-                asset_name: a.asset_name,
+                asset_name: a.item_name || a.asset_name,
                 location: a.location,
                 custodian: a.custodian,
               });
@@ -3226,7 +3349,7 @@ class StockIOPage {
               if (!selected.length) return;
               frappe.call({
                 method:
-                  "sahayog.procurement.api.stock_balance_ledger.create_asset_movement_from_emmr",
+                  "sahayog.procurement.page.stockio.stockio.create_asset_movement_from_emmr_custom",
                 args: { emmr: docname, assets: selected },
                 freeze: true,
                 freeze_message: "Creating Asset Movement...",
