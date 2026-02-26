@@ -357,6 +357,11 @@ doc_events = {
 scheduler_events = {
     "cron": {
 
+        # Run daily at 12:00 AM — Auto Agent updation job to sync with Finacle and create/update agents in Sahayog
+        "0 2 * * *": [
+            "sahayog.api.auto_agent_creation.daily_agent_update_job"
+        ],
+
         # Run daily at 12:00 PM — Branch Petty Cash Account Balance Sync
         # "30 13 * * *": [
         #     "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
