@@ -76,6 +76,7 @@ def get_asset_combine_data(asset_name=None, asset_category=None, status=None, it
         fields=[
             "name",
             "asset_name",
+            "item_name",
             "item_code",
             "asset_category",
             "location",
@@ -236,21 +237,91 @@ def create_asset_movement_from_emmr(emmr, assets):
 
 # Child table (MANDATORY employee)
     for row in assets:
+        source_loc = row.get("location")
+        from_emp = row.get("custodian")
+        to_emp = row.get("employee")
+
+        # 1. Clean Asset: Clear composite flag and prepare for movement
+        asset_name = row["asset"]
+        frappe.db.sql("""UPDATE `tabAsset` SET is_composite_asset=0, booked_fixed_asset=1 WHERE name=%s""", asset_name)
+
         am.append(
             "assets", {
-                "asset": row["asset"],
-                "source_location": row["location"],
-                "from_employee": row["custodian"],
-                "to_employee": row["employee"],
+                "asset": asset_name,
+                "source_location": source_loc,
+                "from_employee": from_emp,
+                "to_employee": to_emp,
             })
-        
-        # Update Asset Workflow State to 'Assign'
-        try:
-            frappe.db.set_value("Asset", row["asset"], "workflow_state", "Assign")
-        except Exception:
-            pass
-
     am.insert(ignore_permissions=True)
     am.submit()
 
+    # 2. FINAL FORCE UPDATE: Override all standard status logic
+    for row in assets:
+        source_loc = row.get("location")
+        from_emp = row.get("custodian")
+        
+        # Determine target values
+        if not source_loc and not from_emp:
+            t_state, t_status = "Available", "Available"
+        else:
+            t_state, t_status = "Assign", "Issue"
+
+        # Force docstatus=1 to ensure get_status() does not return Work In Progress/Draft
+        # Force is_composite_asset=0 to bypass capitalization logic
+        frappe.db.sql("""UPDATE `tabAsset` 
+                      SET workflow_state=%s, status=%s, docstatus=1, is_composite_asset=0 
+                      WHERE name=%s""", (t_state, t_status, row["asset"]))
+    
+    frappe.db.commit()
+    am.submit()
+
+    # 2. FINAL Force Sync: Set Available/Available or Assign/Issue
+    for row in assets:
+        source_loc = row.get("location")
+        from_emp = row.get("custodian")
+        to_emp = row.get("employee")
+
+        # 1. Clean Asset: Clear composite flag and prepare for movement
+        asset_name = row["asset"]
+        frappe.db.sql("""UPDATE `tabAsset` SET is_composite_asset=0, booked_fixed_asset=1 WHERE name=%s""", asset_name)
+
+        am.append(
+            "assets", {
+                "asset": asset_name,
+                "source_location": source_loc,
+                "from_employee": from_emp,
+                "to_employee": to_emp,
+            })
+    for row in assets:
+        source_loc = row.get("location")
+        from_emp = row.get("custodian")
+        to_emp = row.get("employee")
+
+        # 1. Clean Asset: Clear composite flag and prepare for movement
+        asset_name = row["asset"]
+        frappe.db.sql("""UPDATE `tabAsset` SET is_composite_asset=0, booked_fixed_asset=1 WHERE name=%s""", asset_name)
+
+        am.append(
+            "assets", {
+                "asset": asset_name,
+                "source_location": source_loc,
+                "from_employee": from_emp,
+                "to_employee": to_emp,
+            })
+    for row in assets:
+        source_loc = row.get("location")
+        from_emp = row.get("custodian")
+        to_emp = row.get("employee")
+
+        # 1. Clean Asset: Clear composite flag and prepare for movement
+        asset_name = row["asset"]
+        frappe.db.sql("""UPDATE `tabAsset` SET is_composite_asset=0, booked_fixed_asset=1 WHERE name=%s""", asset_name)
+
+        am.append(
+            "assets", {
+                "asset": asset_name,
+                "source_location": source_loc,
+                "from_employee": from_emp,
+                "to_employee": to_emp,
+            })
     return am.name
