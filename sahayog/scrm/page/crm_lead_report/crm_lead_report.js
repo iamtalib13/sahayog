@@ -28,20 +28,33 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     .html(
       `
         #crm-app { padding: 10px; background-color: transparent; }
-        .ui-section-card { background: #fff; border: none !important; border-radius: 8px; margin-bottom: 20px; box-shadow: none !important; }
-        .section-header { background: #f8f9fa; padding: 10px 15px; border-bottom: 1px solid #d1d8dd; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
+        .ui-section-card { margin-bottom: 8px; border: 1px solid #d1d8dd; }
+       .section-header { 
+          background: #ffffff; 
+          padding: 8px 15px; 
+          border-bottom: 1px solid #d1d8dd; 
+          display: flex; 
+          flex-wrap: wrap; /* Mobile friendly */
+          justify-content: space-between; 
+          align-items: center; 
+        }
         .header-title { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; }
         .header-controls { display: flex; align-items: center; gap: 15px; }
         .select-input { height: 32px; font-size: 13px; border: 1px solid #d1d8dd; border-radius: 4px; padding: 0 8px; margin-left: 5px; cursor: pointer; }
         .btn-generate-sm { background: #1f2937; color: #fff; border: none; padding: 0 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; height: 32px; }
-       .filter-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 18px;
-          padding: 20px;
-          align-items: flex-start;
+       .filter-grid { display: none; }
+       /* Filter Pill Style for Header */
+        .filter-pill {
+            display: flex; align-items: center; gap: 6px; background: #fff; 
+            padding: 2px 8px; border: 1px solid #d1d8dd; border-radius: 4px; 
+            font-size: 11px; cursor: pointer; transition: 0.2s; height: 28px;
         }
-
+        .filter-pill:hover { border-color: #05a15d; background: #f0fdf4; }
+        .pencil-icon { color: #05a15d; font-size: 10px; }
+        .filter-modal-content {
+          background: #fff; padding: 15px; border-radius: 8px; width: 400px; 
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;
+        }
         .filter-column {
           flex: 0 0 auto;          /* Equal width remove */
           min-width: unset;        /* Fixed minimum remove */
@@ -179,34 +192,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         font-size: 16px;
         color: #6c757d;
       }
-      .metric-cards-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 15px;
-        margin-bottom: 20px;
+     .metric-cards-container {
+     display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
       }
       .metric-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 15px;
-        text-align: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      flex: 1; min-width: 120px; padding: 8px; text-align: left;
+      display: flex; flex-direction: column; justify-content: center;
       }
-      .metric-label {
-        font-size: 12px;
-        color: #6c757d;
-        margin-bottom: 8px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .metric-value {
-        font-size: 24px;
-        font-weight: 700;
-        color: #343a40;
-        line-height: 1.2;
-      }
+      .metric-label { font-size: 9px; margin-bottom: 2px; }
+      .metric-value { font-size: 16px; }
       .table-responsive-dsr {
         background: #fff;
         border-radius: 8px;
@@ -400,6 +394,36 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     outline: none;
     box-shadow: 0 0 0 2px rgba(5, 161, 93, 0.1);
 }
+/* Isko CSS block mein add karein */
+.filter-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Background dhundla karne ke liye */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Taaki sabse upar dikhe */
+}
+
+.filter-modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 450px; /* Width thodi badhayi hai professional look ke liye */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+/* Style block mein ye add karein */
+.filter-pill-header {
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.filter-pill-header:hover {
+    background: #f3f4f6;
+}
     `,
     )
     .appendTo("head");
@@ -407,49 +431,57 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   $container.append(`
         <div id="crm-app" v-scope @vue:mounted="init()">
             <div class="ui-section-card">
-                <div class="section-header">
-                    <div class="header-title">Lead Export Filters</div>
+               <div class="section-header">
+                    <div class="header-controls" style="flex: 1; justify-content: flex-start; gap: 20px;">
+                        <div v-for="key in ['zone', 'region', 'sol_id', 'product', 'source']" 
+                            class="d-flex align-items-center filter-pill-header" 
+                            style="cursor: pointer; gap: 6px;" 
+                            @click="active_popup = key">
+                            
+                            <span style="font-size:11px; font-weight:700; color:#4b5563; text-transform: uppercase; letter-spacing: 0.5px;">
+                                {{ key.replace('_', ' ') }}
+                            </span>
+                            <i class="fa fa-filter" style="font-size: 10px; color: #05a15d;"></i>
+                        </div>
+                    </div>
+
                     <div class="header-controls">
-                      <div class="d-flex align-items-center" style="gap: 10px;">
-                          <div class="d-flex align-items-center">
-                              <span style="font-size:10px; font-weight:bold; color:#6b7280">PICK MONTH:</span>
-                              <input 
+                        <div class="d-flex align-items-center" style="gap: 10px;">
+                            <div class="d-flex align-items-center">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280">PICK MONTH:</span>
+                                <input 
                                 type="month" 
                                 v-model="master_month" 
                                 @change="onMasterMonthChange"
                                 :max="today.substring(0,7)"
                                 class="select-input">
-                          </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280">FROM:</span>
+                               <input 
+                                type="date"
+                                v-model="employee_from_date"
+                                :min="month_start"
+                                :max="today < month_end ? today : month_end"
+                                @change="onDateChange"
+                                class="select-input">
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280">TO:</span>
+                                <input 
+                                type="date"
+                                v-model="employee_to_date"
+                                :min="employee_from_date"
+                                :max="today < month_end ? today : month_end"
+                                @change="onDateChange"
+                                class="select-input">
+                            </div>
+                        </div>
 
-                          <div class="d-flex align-items-center">
-                              <span style="font-size:10px; font-weight:bold; color:#6b7280">FROM:</span>
-                             <input 
-                              type="date"
-                              v-model="employee_from_date"
-                              :min="month_start"
-                              :max="today < month_end ? today : month_end"
-                              @change="onDateChange"
-                              class="select-input">
-
-
-                          </div>
-
-                          <div class="d-flex align-items-center">
-                              <span style="font-size:10px; font-weight:bold; color:#6b7280">TO:</span>
-                             <input 
-                              type="date"
-                              v-model="employee_to_date"
-                              :min="employee_from_date"
-                             :max="today < month_end ? today : month_end"
-                              @change="onDateChange"
-                              class="select-input">
-                          </div>
-                      </div>
-
-                      <button class="btn-generate-sm" v-if="totalLeadsInReport > 0" @click="applyFilters" :disabled="loading">
-                          <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i> EXPORT CSV
-                      </button>
-                  </div>
+                        <button class="btn-generate-sm" v-if="totalLeadsInReport > 0" @click="applyFilters" :disabled="loading">
+                            <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i> EXPORT CSV
+                        </button>
+                    </div>
                 </div>
 
                 <div class="section-body">
@@ -603,7 +635,31 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </table>
                         </div>
                      </div>
-                    
+                <div class="filter-modal-overlay" v-if="active_popup"@click.self="active_popup = null">
+                      <div class="filter-modal-content">
+                          <h6 class="text-uppercase mb-3" style="font-size:12px; font-weight:bold;">Select {{ active_popup.replace('_',' ') }}</h6>
+                          
+                          <div style="max-height: 300px; overflow-y: auto;">
+                              <div v-if="active_popup === 'zone' || active_popup === 'region'" class="mini-chip-list">
+                                  <div v-for="opt in filter_data[active_popup]" 
+                                      :class="['mini-chip', isSelected(active_popup, opt) ? 'active' : '']"
+                                      @click="toggleFilter(active_popup, opt)">
+                                      {{ formatDisplayText(active_popup, opt) }}
+                                  </div>
+                              </div>
+
+                              <div v-else>
+                                  <input type="text" v-model="search_query[active_popup]" placeholder="Search..." class="form-control form-control-sm mb-2">
+                                  <div class="dropdown-item" v-for="opt in filter_data[active_popup].filter(o => !search_query[active_popup] || (o.label || o).toLowerCase().includes(search_query[active_popup].toLowerCase()))" 
+                                      @click="toggleFilter(active_popup, opt.value || opt)">
+                                      <input type="checkbox" :checked="isSelected(active_popup, opt.value || opt)">
+                                      <span class="ml-2">{{ opt.label || opt }}</span>
+                                  </div>
+                              </div>
+                          </div>
+                          <button class="btn btn-primary btn-sm btn-block mt-3" @click="active_popup = null">Done</button>
+                      </div>
+                  </div>    
                 </div>
             </div>
         </div>
@@ -643,13 +699,25 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_report_loading: false,
     employee_error_message: null,
     employee_search_term: "",
-
+    active_popup: null,
     data() {
       return {
         date_input_key: 0,
       };
     },
-
+    getSelectedCountText(key) {
+      const count = this.selected[key].length;
+      if (count === 0) return "All";
+      if (count === 1) {
+        // Pehle selected item ka naam dikhao
+        const firstVal = this.selected[key][0];
+        const item = this.filter_data[key].find(
+          (o) => (o.value || o) === firstVal,
+        );
+        return item ? item.label || item : firstVal;
+      }
+      return `${count} Selected`;
+    },
     get month_start() {
       if (!this.master_month) return "";
       return this.master_month + "-01";
