@@ -356,7 +356,7 @@ doc_events = {
 # ---------------
 scheduler_events = {
     "cron": {
-        
+
         # Run daily at 12:00 PM — Branch Petty Cash Account Balance Sync
         # "30 13 * * *": [
         #     "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
@@ -398,7 +398,7 @@ scheduler_events = {
         ],
 
         # Run daily at 1:00 AM — Agent auto-update sync job
-       "0 2 * * *": [  # Runs at 1:00 AM daily
+       "0 2 * * *": [  # Runs at 2:00 AM daily
             "sahayog.api.auto_agent_creation.daily_agent_update_job"
         ],
 
