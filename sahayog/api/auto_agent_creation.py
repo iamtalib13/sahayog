@@ -393,3 +393,36 @@ def update_agent_from_finacle(agent_code):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), f"Single Agent Update Failed: {agent_code}")
         return {"status": "error", "message": str(e)}
+
+
+
+
+# Update ALL agents daily - This will be scheduled in the hooks.py
+def daily_agent_update_job():
+    agents = frappe.get_all("Agent", fields=["name"])
+    
+    # These will appear in worker.log or bench start terminal
+    print("\n" + "="*50)
+    print(f"CRON START: {frappe.utils.now_datetime()}")
+    print(f"Updating {len(agents)} agents...")
+    print("="*50 + "\n")
+    
+    success_count = 0
+    fail_count = 0
+
+    for agent in agents:
+        try:
+            result = update_agent_from_finacle(agent.name)
+            if result.get("status") == "success":
+                success_count += 1
+                print(f"✔ Updated: {agent.name}")
+            else:
+                fail_count += 1
+                print(f"✘ Failed: {agent.name} - {result.get('message')}")
+        except Exception as e:
+            fail_count += 1
+            print(f"‼ Error: {agent.name} - {str(e)}")
+
+    print("\n" + "="*50)
+    print(f"CRON END: Success: {success_count} | Fail: {fail_count}")
+    print("="*50 + "\n")
