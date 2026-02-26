@@ -1553,7 +1553,7 @@ async getEmployeeByUser(userId) {
     // 1. Sirf wahi Lead Sources fetch honge jinka 'active' field 1 (Checked) hai
     const lead_sources = await frappe.db.get_list("Lead Source", { 
         fields: ["name"],
-        filters: { "active": 1 } 
+        filters: { "custom_active": 1 } 
     });
     const source_options = lead_sources.map(s => s.name);
 
