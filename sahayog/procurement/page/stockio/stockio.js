@@ -209,7 +209,7 @@ class StockIOPage {
     <!-- HEADER -->
     <div class="stockio-header">
       <h2>{{ pageTitle }}</h2>
-      <div class="stockio-actions">
+      <div class="stockio-actions" v-if="pageMode !== 'reports'">
       <button class="btn ghost">Export</button>
       <button class="btn primary" @click="createRequest">Create</button>
       </div>
