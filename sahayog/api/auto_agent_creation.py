@@ -4,6 +4,7 @@ from psycopg2.extras import RealDictCursor
 import psycopg2
 from frappe.utils import today, add_days
 from datetime import datetime, timedelta
+import time
 
 
 def db_connection():
@@ -399,30 +400,68 @@ def update_agent_from_finacle(agent_code):
 
 # Update ALL agents daily - This will be scheduled in the hooks.py
 def daily_agent_update_job():
-    agents = frappe.get_all("Agent", fields=["name"])
+    """
+    Manager job: Splits agents into batches and enqueues them.
+    This prevents any single process from locking the DB for too long.
+    """
+    # 1. Get all agents
+    agents = frappe.get_all("Agent", fields=["name"], order_by="name asc")
+    agent_names = [a.name for a in agents]
     
-    # These will appear in worker.log or bench start terminal
-    print("\n" + "="*50)
-    print(f"CRON START: {frappe.utils.now_datetime()}")
-    print(f"Updating {len(agents)} agents...")
-    print("="*50 + "\n")
+    # 2. Define batch size (500 is safe for production)
+    batch_size = 500
+    total_batches = 0
     
-    success_count = 0
-    fail_count = 0
+    # 3. Split into batches and enqueue
+    for i in range(0, len(agent_names), batch_size):
+        batch = agent_names[i:i + batch_size]
+        
+        # Enqueue each batch as an independent job in the 'long' queue
+        # Each job gets its own database transaction
+        frappe.enqueue(
+            "sahayog.api.auto_agent_creation.process_agent_batch",
+            queue="long",
+            batch=batch,
+            batch_num=total_batches + 1,
+            timeout=2000 # 33 minutes per batch
+        )
+        total_batches += 1
+        
+        # Optional: Print progress to terminal if running manually
+        print(f"Enqueued Batch {total_batches} ({len(batch)} agents)")
 
-    for agent in agents:
+    print(f"✅ All {total_batches} batches enqueued to background workers.")
+
+
+def process_agent_batch(batch, batch_num):
+    """
+    Worker job: Processes a specific batch of agents.
+    """
+    print(f"🚀 Starting Batch {batch_num}: Processing {len(batch)} agents...")
+    
+    success = 0
+    fail = 0
+    
+    for agent_id in batch:
         try:
-            result = update_agent_from_finacle(agent.name)
+            # CALL YOUR ORIGINAL METHOD (No changes needed to it)
+            result = update_agent_from_finacle(agent_id)
+            
             if result.get("status") == "success":
-                success_count += 1
-                print(f"✔ Updated: {agent.name}")
+                success += 1
             else:
-                fail_count += 1
-                print(f"✘ Failed: {agent.name} - {result.get('message')}")
-        except Exception as e:
-            fail_count += 1
-            print(f"‼ Error: {agent.name} - {str(e)}")
+                fail += 1
+                # Log failures but keep going
+                frappe.log_error(f"Batch {batch_num} Fail: {agent_id}", "Agent Sync")
+            
+            # Commit after EVERY agent to ensure row-locks are released
+            frappe.db.commit()
 
-    print("\n" + "="*50)
-    print(f"CRON END: Success: {success_count} | Fail: {fail_count}")
-    print("="*50 + "\n")
+        except Exception:
+            frappe.db.rollback()
+            fail += 1
+            frappe.log_error(frappe.get_traceback(), f"Batch {batch_num} Critical Error: {agent_id}")
+
+    print(f"✅ Batch {batch_num} Finished. Success: {success}, Fail: {fail}")
+
+
