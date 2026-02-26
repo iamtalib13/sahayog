@@ -410,24 +410,46 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 <div class="section-header">
                     <div class="header-title">Lead Export Filters</div>
                     <div class="header-controls">
-                        <div class="d-flex align-items-center">
-                            <span style="font-size:10px; font-weight:bold; color:#6b7280">PERIOD:</span>
-                            <select v-model="selected_year" class="select-input">
-                                <option v-for="y in years" :value="y">{{ y }}</option>
-                            </select>
-                            <select v-model="selected_month" class="select-input" style="min-width: 100px;">
-                                <option v-for="(m, index) in months" :value="index + 1">{{ m }}</option>
-                            </select>
-                        </div>
-                      <button 
-                          class="btn-generate-sm" 
-                          v-if="totalLeadsInReport > 0"
-                          @click="applyFilters" 
-                          :disabled="loading"
-                      >
+                      <div class="d-flex align-items-center" style="gap: 10px;">
+                          <div class="d-flex align-items-center">
+                              <span style="font-size:10px; font-weight:bold; color:#6b7280">PICK MONTH:</span>
+                              <input 
+                                type="month" 
+                                v-model="master_month" 
+                                @change="onMasterMonthChange"
+                                :max="today.substring(0,7)"
+                                class="select-input">
+                          </div>
+
+                          <div class="d-flex align-items-center">
+                              <span style="font-size:10px; font-weight:bold; color:#6b7280">FROM:</span>
+                             <input 
+                              type="date"
+                              v-model="employee_from_date"
+                              :min="month_start"
+                              :max="today < month_end ? today : month_end"
+                              @change="onDateChange"
+                              class="select-input">
+
+
+                          </div>
+
+                          <div class="d-flex align-items-center">
+                              <span style="font-size:10px; font-weight:bold; color:#6b7280">TO:</span>
+                             <input 
+                              type="date"
+                              v-model="employee_to_date"
+                              :min="employee_from_date"
+                             :max="today < month_end ? today : month_end"
+                              @change="onDateChange"
+                              class="select-input">
+                          </div>
+                      </div>
+
+                      <button class="btn-generate-sm" v-if="totalLeadsInReport > 0" @click="applyFilters" :disabled="loading">
                           <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i> EXPORT CSV
                       </button>
-                    </div>
+                  </div>
                 </div>
 
                 <div class="section-body">
@@ -474,25 +496,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                <div class="header-title mb-3">Employee Wise Performance</div>
                 <div class="tab-content" style="padding:20px; min-height:300px;">
                     <div>
-                        <!-- Report Header with Date Display -->
-                       <div class="report-header-section">
-                            <div class="report-date-display">
-                                <span class="report-date-icon">📅</span>
-                                <span class="mr-2">Period:</span>
-                                <input type="date" v-model="employee_from_date" @change="onDateChange" class="select-input" style="width: 140px; margin-right: 10px;">
-                                <span class="mr-2">to</span>
-                                <input type="date" v-model="employee_to_date" @change="onDateChange" class="select-input" style="width: 140px;">
-                            </div>
-                            
-                            <div class="employee-search-container" style="position: relative; flex: 1; max-width: 300px; margin-left: 20px;">
-                                <i class="fa fa-search" style="position: absolute; left: 10px; top: 10px; color: #6b7280;"></i>
-                                <input type="text" 
-                                      v-model="employee_search_term" 
-                                      placeholder="Search Employee ID or Name..." 
-                                      class="select-input" 
-                                      style="width: 100%; padding-left: 30px;">
-                            </div>
-                        </div>
+                       
 
                         <!-- Summary Metric Cards -->
                         <div class="metric-cards-container">
@@ -628,19 +632,42 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     active_dropdown: null,
     filter_data: { zone: [], region: [], sol_id: [], product: [], source: [] },
     selected: { zone: [], region: [], sol_id: [], product: [], source: [] },
-    search_query: {
-      sol_id: "",
-      product: "",
-      source: "",
-    },
-    tabs: [{ id: "employee", label: "Employee Wise Performance" }],
-    // New properties for Employee Wise Performance tab
-    employee_from_date: null,
-    employee_to_date: null,
+    search_query: { sol_id: "", product: "", source: "" },
+
+    // Master Date Properties
+    master_month: frappe.datetime.now_date().substring(0, 7),
+    employee_from_date: "", // Init mein set hoga
+    employee_to_date: "", // Init mein set hoga
+
     employee_performance_data: [],
     employee_report_loading: false,
     employee_error_message: null,
     employee_search_term: "",
+
+    data() {
+      return {
+        date_input_key: 0,
+      };
+    },
+
+    get month_start() {
+      if (!this.master_month) return "";
+      return this.master_month + "-01";
+    },
+
+    get month_end() {
+      if (!this.master_month) return "";
+
+      const [year, month] = this.master_month.split("-").map(Number);
+
+      // JS month 0-based hota hai
+      const lastDay = new Date(year, month, 0).getDate();
+
+      return `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
+    },
+    get today() {
+      return frappe.datetime.nowdate();
+    },
 
     get filteredEmployees() {
       if (!this.employee_performance_data) return [];
@@ -693,17 +720,30 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         ? { label: "Qualified", class: "bg-qualified" }
         : { label: "Disqualified", class: "bg-bad" };
     },
+    onMasterMonthChange() {
+      if (!this.master_month) return;
+
+      this.employee_from_date = this.month_start;
+      this.employee_to_date = this.month_end;
+      console.log(this.employee_from_date, this.employee_to_date);
+      this.fetchEmployeePerformance();
+    },
     onDateChange() {
-      // Jaise hi date change hogi, ye function call hoga
-      if (this.employee_from_date && this.employee_to_date) {
-        console.log(
-          "Fetching data for:",
-          this.employee_from_date,
-          "to",
-          this.employee_to_date,
-        );
-        this.fetchEmployeePerformance();
+      const today = frappe.datetime.nowdate();
+
+      if (this.employee_from_date > today || this.employee_to_date > today) {
+        frappe.msgprint({
+          title: "Invalid Date",
+          message: "You cannot select a future date.",
+          indicator: "red",
+        });
+
+        this.employee_from_date = today;
+        this.employee_to_date = today;
+        return;
       }
+
+      this.fetchEmployeePerformance();
     },
     // Is function ko methods section mein add/replace karein
     getEnhancedRating(emp) {
@@ -734,7 +774,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         : { label: "Bad", class: "badge-pastel-red" };
     },
 
+    // 3. INITIALIZATION (Fix yahan tha)
     async init() {
+      // Preference load karein
       let res = await frappe.call(
         "sahayog.scrm.api.report_access.get_user_report_preference_record",
         { user: frappe.session.user },
@@ -748,32 +790,29 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           product: pref.product || [],
           source: pref.source || [],
         };
-
         this.selected = {
           zone: [...this.filter_data.zone],
           region: [...this.filter_data.region],
-          sol_id: this.filter_data.sol_id.map((o) => o.value || o), // Map to value
-          product: this.filter_data.product.map((o) => o.value || o), // Map to value
+          sol_id: this.filter_data.sol_id.map((o) => o.value || o),
+          product: this.filter_data.product.map((o) => o.value || o),
           source: [...this.filter_data.source],
         };
-        // DEBUG LOGS
-        console.log("Filter Data (Product):", this.filter_data.product);
-        console.log("Selected Array (Product):", this.selected.product);
-        // Preference ke basis par auto-select
       }
+
+      // SET DEFAULT DATES ON LOAD
+      // Default: Today date in both fields
+      const today = frappe.datetime.nowdate();
+      this.master_month = today.substring(0, 7);
+
+      this.employee_from_date = today; // ✅ today
+      this.employee_to_date = today; // ✅ today
+
+      console.log(this.employee_from_date, this.employee_to_date);
+      this.fetchEmployeePerformance();
+
       window.addEventListener("click", () => {
         this.active_dropdown = null;
       });
-
-      // Set default dates for Employee Performance tab to today's date
-      const today = frappe.datetime.nowdate();
-      this.employee_from_date = today;
-      this.employee_to_date = today;
-
-      // Fetch employee performance data by default on load for the active tab
-      if (this.active_tab === "employee") {
-        this.fetchEmployeePerformance();
-      }
     },
 
     // Watch for active_tab changes to load data automatically
@@ -839,14 +878,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     async fetchEmployeePerformance() {
       this.employee_report_loading = true;
       this.employee_error_message = null;
-      this.employee_performance_data = [];
-
-      if (!this.employee_from_date || !this.employee_to_date) {
-        this.employee_error_message =
-          "Please select both From Date and To Date.";
-        this.employee_report_loading = false;
-        return;
-      }
 
       try {
         let res = await frappe.call({
@@ -857,26 +888,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             to_date: this.employee_to_date,
           },
         });
-        if (res.message) {
-          console.log("Raw Data from Server:", res.message);
-          this.employee_performance_data = res.message;
-        } else {
-          this.employee_error_message =
-            "No data found for the selected date range.";
-        }
-        if (this.totalLeadsInReport === 0) {
+        this.employee_performance_data = res.message || [];
+
+        if (this.employee_performance_data.length === 0) {
           this.showNoLeadsMessage();
         } else {
-          page.set_intro(""); // Clear message if data exists
+          page.set_intro("");
         }
       } catch (error) {
-        this.employee_error_message =
-          error.message || "An error occurred while fetching data.";
-        frappe.msgprint({
-          title: __("Error"),
-          message: this.employee_error_message,
-          indicator: "red",
-        });
+        this.employee_error_message = error.message || "Error fetching data.";
       } finally {
         this.employee_report_loading = false;
       }
@@ -896,10 +916,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         </div>
       `);
 
-      const fromDate = `${this.selected_year}-${String(this.selected_month).padStart(2, "0")}-01`;
-      const toDate = new Date(this.selected_year, this.selected_month, 0)
-        .toISOString()
-        .split("T")[0];
+      const fromDate = this.employee_from_date;
+      const toDate = this.employee_to_date;
 
       try {
         let res = await frappe.call({
