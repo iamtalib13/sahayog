@@ -1,9 +1,9 @@
 frappe.listview_settings['Petty Cash Transaction'] = {
     onload: function(listview) {
         // Add Download Report button to list view
-        listview.page.add_inner_button(__('Download Report'), function() {
-            download_filtered_report(listview);
-        });
+        // listview.page.add_inner_button(__('Download Report'), function() {
+        //     download_filtered_report(listview);
+        // });
     }
 };
 
