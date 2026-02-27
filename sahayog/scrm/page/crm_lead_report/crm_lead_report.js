@@ -193,27 +193,38 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         color: #6c757d;
       }
      .metric-cards-container {
-     display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
       }
-      .metric-card {
-      flex: 1; min-width: 120px; padding: 8px; text-align: left;
-      display: flex; flex-direction: column; justify-content: center;
+     .metric-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-left: 4px solid #d1d8dd; /* Neutral */
       }
-      .metric-label { font-size: 9px; margin-bottom: 2px; }
-      .metric-value { font-size: 16px; }
-      .table-responsive-dsr {
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-        max-height: 500px;
-        overflow-y: auto;
-        border: 1px solid #e0e0e0;
+     .metric-label { font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; }
+      .metric-value { font-size: 20px; font-weight: 800; color: #111827; }
+      .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+      .metric-card.primary { border-left-color: #3b82f6; }   /* Blue */
+      .metric-card.success { border-left-color: #10b981; }   /* Green */
+      .metric-card.warning { border-left-color: #f59e0b; }   /* Orange */
+      .metric-card:nth-child(3) { border-left-color: #f59e0b; } /* Orange for Follow-ups */
+      .metric-card:last-child { border-left-color: #ef4444; }   /* Red for Not Interested */
+      .amt-text { font-weight: 700; color: #1f2937; white-space: nowrap; }
+     .table-responsive-dsr {
+      border: none;
+      box-shadow: none;
       }
       .dsr-table {
-        width: 100%;
-        margin: 0;
-        border-collapse: collapse;
-        font-size: 13px;
+      border-spacing: 0 8px; /* Rows ke beech gap */
+      border-collapse: separate;
       }
       .dsr-table thead {
         background: linear-gradient(135deg, #343a40 0%, #495057 100%);
@@ -233,25 +244,18 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         line-height: 1.3;
       }
       .dsr-table td {
-        vertical-align: middle;
-        text-align: left; /* Changed from center to left */
-        font-size: 13px;
-        padding: 9px 12px;
-        border-top: 1px solid #dee2e6;
-        border-bottom: none;
-        line-height: 1.45;
-        color: #343a40;
+      padding: 14px 12px;
+      border-top: 1px solid #f3f4f6;
+      border-bottom: 1px solid #f3f4f6;
       }
-      .dsr-table tbody tr:hover {
-        background-color: #f8f9fa;
+     .dsr-table tbody tr {
+      background-color: #ffffff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      border-radius: 8px;
       }
       .dsr-table th:first-child,
-      .dsr-table td:first-child {
-        width: 60px;
-        min-width: 60px;
-        text-align: center;
-        font-weight: 600;
-      }
+      .dsr-table td:first-child { border-left: 1px solid #f3f4f6; border-top-left-radius:    8px; border-bottom-left-radius: 8px; }
+      .dsr-table td:last-child { border-right: 1px solid #f3f4f6; border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
       .empty-state-dsr {
         text-align: center;
         padding: 40px 20px;
@@ -327,16 +331,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
       /* Enhanced Rating & Pastel Badges - Moving outside media query */
     .rating-badge-dsr, .dsr-badge {
-    padding: 2px 10px;
-    border-radius: 12px;
+    padding: 4px 12px;
+    border-radius: 20px; /* Pill Shape */
     font-size: 10px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    white-space: nowrap; /* Text wrap na ho */
-    margin-top: 0 !important; /* Top margin hata diya side alignment ke liye */
+    font-weight: 700;
 }
 
     /* Pastel Green */
@@ -575,6 +573,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                       <th>Total Leads</th> <th>Follow-ups</th>
                                       <th>Not Interested</th> 
                                       <th>Converted</th>
+                                      <th style="color: #05a15d;">Amount (₹)</th> 
                                       <th>Qualification</th>
                                       <th>Rating</th>
                                     </tr>
@@ -614,7 +613,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                             <span class="value-text" style="color: #05a15d;">{{ emp.total_converted || 0 }}</span>
                                         </div>
                                     </td>
-
+                                    <td>
+                                        <div class="amt-text">
+                                            {{ (emp.converted_amount || 0).toLocaleString('en-IN') }}
+                                        </div>
+                                    </td>
                                     <td>
                                         <div class="status-cell-container">
                                             <span :class="['dsr-badge', getLeadStatus(emp.total_leads).class]">

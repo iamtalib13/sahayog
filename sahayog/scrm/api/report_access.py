@@ -377,6 +377,15 @@ def get_employee_performance_data(from_date, to_date):
     )
 
     if not leads: return []
+    # Amount Mapping: Sabhi leads ke product amounts fetch karein
+    lead_names = [l.name for l in leads]
+    product_data = frappe.get_all("Lead Product", 
+        filters={"parent": ["in", lead_names]}, 
+        fields=["parent", "product_amount"])
+    
+    amt_map = {}
+    for p in product_data:
+        amt_map[p.parent] = amt_map.get(p.parent, 0) + (p.product_amount or 0)
 
     sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
     branch_map = get_branch_map(list(sol_ids))
@@ -423,6 +432,7 @@ def get_employee_performance_data(from_date, to_date):
                 "zone": branch.zone if branch else "-",
                 "total_leads": 0,
                 "total_converted": 0,
+                "converted_amount": 0,
                 "total_followups": 0 ,
                 "total_not_interested": 0
             }
@@ -430,9 +440,12 @@ def get_employee_performance_data(from_date, to_date):
         employee_stats[key]["total_leads"] += 1
         if l.status == "Converted":
             employee_stats[key]["total_converted"] += 1
+            employee_stats[key]["converted_amount"] += amt_map.get(l.name, 0)
         if l.status == "Follow Up":
             employee_stats[key]["total_followups"] += 1
         if l.status == "Not Interested":
             employee_stats[key]["total_not_interested"] += 1
-
+       
     return list(employee_stats.values())
+
+    
