@@ -560,6 +560,52 @@
         line-height: 1.5;
         max-width: 400px;
     }
+
+    /* Smooth Fade & Slide for dynamic elements */
+    .fade-slide {
+        animation: smoothFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes smoothFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+            margin-top: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow: hidden;
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 500px;
+            /* Arbitrary large height to allow content to expand */
+        }
+    }
+
+    /* Make the breakdown items themselves transition smoothly */
+    .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px dashed #cbd5e1;
+        font-size: 14px;
+        font-weight: 600;
+        color: #475569;
+        /* Add transition to prevent sudden snapping when v-show toggles */
+        transition: all 0.3s ease-in-out;
+    }
+
+    .breakdown-item[style*="display: none"] {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border-bottom-width: 0px;
+        opacity: 0;
+        transform: scaleY(0);
+        transform-origin: top;
+    }
 </style>
 <div id="app" v-scope @vue:mounted="init()" v-cloak>
     <div class="bg-dots"></div>
@@ -665,7 +711,7 @@
                                     <input type="number" v-model="acc.count" @input="preventNegative(acc, 'count')"
                                         @focus="clearZero(acc, 'count')" @blur="restoreZero(acc, 'count')"
                                         class="input-field" placeholder="0" min="0">
-                                    <span class="input-rate">@[[ acc.rate ]]</span>
+                                    <span class="input-rate">₹[[ acc.rate ]]</span>
                                 </div>
                             </div>
                         </div>
@@ -681,10 +727,12 @@
                                 <input type="number" v-model="mabAmount" @input="preventNegative(this, 'mabAmount')"
                                     @focus="clearZero(this, 'mabAmount')" @blur="restoreZero(this, 'mabAmount')"
                                     class="input-field" placeholder="0" style="width: 140px;" min="0">
-                                <div v-if="mabAmount > 0" class="mono"
+                                <!-- Added fade-slide here -->
+                                <div v-if="mabAmount > 0" class="mono fade-slide"
                                     style="font-weight: 800; color: #059669; font-size: 13px; background: #d1fae5; padding: 6px 10px; border-radius: 8px;">
                                     + ₹[[ getMabIncentive() ]]
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -717,7 +765,8 @@
                     <!-- Only show if there is actually money earned -->
 
                     <!-- Changed v-if to use instant real-time function -->
-                    <div style="margin-top: 16px;" v-if="hasAnyActiveInputs()">
+                    <!-- Add 'fade-slide' class to the Breakdown wrapper -->
+                    <div class="fade-slide" style="margin-top: 16px;" v-if="hasAnyActiveInputs()">
                         <span class="card-heading" style="margin-bottom: 12px;">Detailed Breakdown</span>
 
                         <div class="breakdown-container">
@@ -735,6 +784,7 @@
                             </div>
                         </div>
                     </div>
+
 
 
                 </div>
