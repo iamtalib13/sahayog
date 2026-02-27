@@ -270,10 +270,13 @@
         left: 14px;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--text-muted);
-        font-weight: 700;
+        color: var(--accent);
+        /* Changed to Teal Accent */
+        font-weight: 800;
+        /* Made slightly thicker so it pops */
         font-size: 14px;
     }
+
 
     /* Fix for overlapping prefixes in different inputs */
     .input-wrapper input.has-prefix {
@@ -680,7 +683,7 @@
                                 min="0">
                         </div>
                         <div class="input-wrapper">
-                            <span class="prefix" style="color: var(--success);">+ ₹</span>
+                            <span class="prefix">+ ₹</span>
                             <input type="number" v-model="slab.amount" class="has-prefix" placeholder="Payout"
                                 style="font-weight: 800; color: var(--primary);" min="0">
                         </div>
