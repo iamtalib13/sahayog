@@ -209,7 +209,7 @@ class StockIOPage {
     <!-- HEADER -->
     <div class="stockio-header">
       <h2>{{ pageTitle }}</h2>
-      <div class="stockio-actions">
+      <div class="stockio-actions" v-if="pageMode !== 'reports'">
       <button class="btn ghost">Export</button>
       <button class="btn primary" @click="createRequest">Create</button>
       </div>
@@ -1288,14 +1288,32 @@ class StockIOPage {
 
         if (this.pageMode === "stock" || this.pageMode === "asset") {
           let list = this.activeList;
-          
+
           if (this.pageMode === "asset" && this.subMode === "item") {
             if (this.activeTab === "draft")
-              list = list.filter((d) => !d.custodian && !this.assetsWithMovement.includes(d.name));
+              list = list.filter((d) => {
+                const mv = this.assetsWithMovement.find(
+                  (m) => m.asset === d.name,
+                );
+                return (
+                  !d.custodian &&
+                  !(mv && (mv.source_location || mv.from_employee))
+                );
+              });
             else if (this.activeTab === "available")
-              list = list.filter((d) => !this.assetsWithMovement.includes(d.name));
+              list = list.filter((d) => {
+                const mv = this.assetsWithMovement.find(
+                  (m) => m.asset === d.name,
+                );
+                return !(mv && (mv.source_location || mv.from_employee));
+              });
             else if (this.activeTab === "assigned")
-              list = list.filter((d) => this.assetsWithMovement.includes(d.name));
+              list = list.filter((d) => {
+                const mv = this.assetsWithMovement.find(
+                  (m) => m.asset === d.name,
+                );
+                return !!(mv && (mv.source_location || mv.from_employee));
+              });
           } else {
             if (this.activeTab === "draft")
               list = list.filter((d) => d.status === "Draft");
@@ -1305,7 +1323,12 @@ class StockIOPage {
               list = list.filter((d) => !d.custodian);
             else if (this.activeTab === "other")
               list = list.filter(
-                (d) => d.status !== "Draft" && d.status !== "Submitted" && (this.pageMode !== 'asset' || this.subMode !== 'item' || d.custodian),
+                (d) =>
+                  d.status !== "Draft" &&
+                  d.status !== "Submitted" &&
+                  (this.pageMode !== "asset" ||
+                    this.subMode !== "item" ||
+                    d.custodian),
               );
           }
 
@@ -1346,19 +1369,23 @@ class StockIOPage {
 
       getFilteredAssetsForMovement(searchTxt = "") {
         let list = this.allAssets;
-        
-        // Rule: If Purpose != Transfer, show ONLY assets that don't have a movement
+
+        // Rule: If Purpose != Transfer, show ONLY assets that are NOT Assigned
         if (this.newAssetMovement.purpose !== "Transfer") {
-            list = list.filter(a => !this.assetsWithMovement.includes(a.name));
+          list = list.filter((a) => {
+            const mv = this.assetsWithMovement.find((m) => m.asset === a.name);
+            return !(mv && (mv.source_location || mv.from_employee));
+          });
         }
 
         if (searchTxt) {
-            const q = searchTxt.toLowerCase();
-            list = list.filter(a => 
-                a.name.toLowerCase().includes(q) || 
-                (a.asset_name && a.asset_name.toLowerCase().includes(q)) ||
-                (a.item_name && a.item_name.toLowerCase().includes(q))
-            );
+          const q = searchTxt.toLowerCase();
+          list = list.filter(
+            (a) =>
+              a.name.toLowerCase().includes(q) ||
+              (a.asset_name && a.asset_name.toLowerCase().includes(q)) ||
+              (a.item_name && a.item_name.toLowerCase().includes(q)),
+          );
         }
         return list;
       },
@@ -1471,11 +1498,17 @@ class StockIOPage {
           };
           list.forEach((doc) => {
             if (this.pageMode === "asset" && this.subMode === "item") {
-              const hasMovement = this.assetsWithMovement.includes(doc.name);
-              
-              if (!doc.custodian && !hasMovement) this.counts.draft++;
-              if (!hasMovement) this.counts.available++;
-              if (hasMovement) this.counts.assigned++;
+              const mv = this.assetsWithMovement.find(
+                (m) => m.asset === doc.name,
+              );
+              const isAssigned = !!(
+                mv &&
+                (mv.source_location || mv.from_employee)
+              );
+
+              if (!doc.custodian && !isAssigned) this.counts.draft++;
+              if (!isAssigned) this.counts.available++;
+              if (isAssigned) this.counts.assigned++;
             } else {
               if (doc.status === "Draft") this.counts.draft++;
               else if (doc.status === "Submitted") this.counts.submitted++;
@@ -1614,7 +1647,15 @@ class StockIOPage {
           method: "frappe.client.get_list",
           args: {
             doctype: "Asset",
-            fields: ["name", "asset_name", "item_name", "docstatus", "owner", "custodian", "location"],
+            fields: [
+              "name",
+              "asset_name",
+              "item_name",
+              "docstatus",
+              "owner",
+              "custodian",
+              "location",
+            ],
             order_by: "creation desc",
             limit_page_length: 1000,
           },
@@ -1631,7 +1672,7 @@ class StockIOPage {
             });
             this.allAssets = data;
             this.assets = data;
-            
+
             // fetchAssetsList will handle computeCounts and loadMoreAssets once it gets movement data
             this.fetchAssetsList();
           },
@@ -1825,25 +1866,26 @@ class StockIOPage {
 
       fetchAssetsList() {
         if (!this.allAssets.length) {
-            this.loadAssets();
+          this.loadAssets();
         }
-        
+
         // Also fetch assets that already have movements via whitelisted method
         frappe.call({
-            method: "sahayog.procurement.page.stockio.stockio.get_assets_with_movements",
-            callback: (r) => {
-                if (r.message) {
-                    this.assetsWithMovement = r.message;
-                    
-                    // Re-compute and refresh if we are in asset mode
-                    if (this.pageMode === "asset" && this.subMode === "item") {
-                        this.computeCounts();
-                        this.assetsOffset = 0;
-                        this.assetsVisible = [];
-                        this.loadMoreAssets();
-                    }
-                }
+          method:
+            "sahayog.procurement.page.stockio.stockio.get_assets_with_movements",
+          callback: (r) => {
+            if (r.message) {
+              this.assetsWithMovement = r.message;
+
+              // Re-compute and refresh if we are in asset mode
+              if (this.pageMode === "asset" && this.subMode === "item") {
+                this.computeCounts();
+                this.assetsOffset = 0;
+                this.assetsVisible = [];
+                this.loadMoreAssets();
+              }
             }
+          },
         });
       },
 
@@ -1901,7 +1943,7 @@ class StockIOPage {
         const row = this.newAssetMovement.assets[idx];
         row.asset = asset.name;
         this.assetSearch[idx] = asset.name;
-        
+
         frappe.db.get_value(
           "Asset",
           asset.name,
@@ -1912,7 +1954,7 @@ class StockIOPage {
               row.source_location = r.location || "";
               row.from_employee = r.custodian || "";
             }
-          }
+          },
         );
         this.activeDropdown = null;
       },
@@ -1936,14 +1978,15 @@ class StockIOPage {
         }
 
         // Validation: all rows must have an asset
-        if (this.newAssetMovement.assets.some(a => !a.asset)) {
-            frappe.msgprint("Please select an asset for all rows.");
-            return;
+        if (this.newAssetMovement.assets.some((a) => !a.asset)) {
+          frappe.msgprint("Please select an asset for all rows.");
+          return;
         }
 
         this.isSubmitting = true;
         frappe.call({
-          method: "sahayog.procurement.page.stockio.stockio.create_asset_movement_custom",
+          method:
+            "sahayog.procurement.page.stockio.stockio.create_asset_movement_custom",
           args: {
             doc_data: {
               doctype: "Asset Movement",
@@ -1980,8 +2023,15 @@ class StockIOPage {
           s.includes("to process")
         )
           return "status-pending";
-                if (s.includes("approved") || s.includes("submitted") || s.includes("complete") || s.includes("success") || s.includes("available")) return "status-success";
-        
+        if (
+          s.includes("approved") ||
+          s.includes("submitted") ||
+          s.includes("complete") ||
+          s.includes("success") ||
+          s.includes("available")
+        )
+          return "status-success";
+
         if (
           s.includes("cancel") ||
           s.includes("reject") ||
@@ -2027,6 +2077,9 @@ class StockIOPage {
                   fieldtype: "Link",
                   options: "Warehouse",
                   reqd: 1,
+                  get_query: () => ({
+                    page_length: 1000,
+                  }),
                 },
                 {
                   label: "Items",
@@ -2514,7 +2567,7 @@ class StockIOPage {
                   callback: (r) => {
                     if (!r.exc && r.message) {
                       const asset_name = r.message.name;
-                      
+
                       if (values.custodian) {
                         // Show popup with Submit button only if Custodian is present
                         frappe.msgprint({
@@ -2529,8 +2582,10 @@ class StockIOPage {
                       } else {
                         // No custodian: just show a simple alert
                         frappe.show_alert({
-                          message: __("Asset {0} created successfully", [asset_name]),
-                          indicator: "green"
+                          message: __("Asset {0} created successfully", [
+                            asset_name,
+                          ]),
+                          indicator: "green",
                         });
                       }
 

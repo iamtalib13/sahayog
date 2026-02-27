@@ -99,10 +99,18 @@ def update_asset_custodians(am_name):
 
 @frappe.whitelist()
 def get_assets_with_movements():
-    """Returns a list of unique asset names that appear in any SUBMITTED Asset Movement."""
-    return frappe.db.sql_list("""
-        SELECT DISTINCT ami.asset 
-        FROM `tabAsset Movement Item` ami
-        JOIN `tabAsset Movement` am ON ami.parent = am.name
-        WHERE am.docstatus = 1
-    """)
+    """Returns the latest submitted movement details for all assets that have movements."""
+    return frappe.db.sql("""
+        SELECT t.asset, t.source_location, t.from_employee
+        FROM (
+            SELECT 
+                ami.asset, 
+                ami.source_location, 
+                ami.from_employee,
+                ROW_NUMBER() OVER (PARTITION BY ami.asset ORDER BY am.transaction_date DESC, am.creation DESC) as rn
+            FROM `tabAsset Movement Item` ami
+            JOIN `tabAsset Movement` am ON ami.parent = am.name
+            WHERE am.docstatus = 1
+        ) t
+        WHERE t.rn = 1
+    """, as_dict=1)
