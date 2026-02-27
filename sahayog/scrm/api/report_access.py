@@ -431,20 +431,31 @@ def get_employee_performance_data(from_date, to_date):
                 "region": branch.region if branch else "-",
                 "zone": branch.zone if branch else "-",
                 "total_leads": 0,
+                "total_leads_amount": 0,
                 "total_converted": 0,
                 "converted_amount": 0,
                 "total_followups": 0 ,
-                "total_not_interested": 0
+                "followup_amount": 0,
+                "total_not_interested": 0,
+                "not_interested_amount": 0,
+                
+                
             }
 
+        lead_amt = amt_map.get(l.name, 0)
+
         employee_stats[key]["total_leads"] += 1
+        employee_stats[key]["total_leads_amount"] += lead_amt   # ✅ ADD THIS
+
         if l.status == "Converted":
             employee_stats[key]["total_converted"] += 1
             employee_stats[key]["converted_amount"] += amt_map.get(l.name, 0)
         if l.status == "Follow Up":
             employee_stats[key]["total_followups"] += 1
+            employee_stats[key]["followup_amount"] += lead_amt
         if l.status == "Not Interested":
             employee_stats[key]["total_not_interested"] += 1
+            employee_stats[key]["not_interested_amount"] += lead_amt
        
     return list(employee_stats.values())
 

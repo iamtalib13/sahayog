@@ -832,15 +832,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           class: "converted",
         },
         {
-          label: "Follow-ups",
+          label: "Follow Ups",
           count: this.totalFollowupsInReport,
-          amount: 0, // Logic based on count as fallback if amount is 0
-          class: "follow-ups",
+          amount: this.filteredEmployees.reduce(
+            (sum, e) => sum + (e.followup_amount || 0),
+            0,
+          ),
+          class: "followup",
         },
         {
           label: "Not Interested",
           count: this.totalNotInterestedInReport,
-          amount: 0,
+          amount: this.filteredEmployees.reduce(
+            (sum, e) => sum + (e.not_interested_amount || 0),
+            0,
+          ),
           class: "not-interested",
         },
       ];
@@ -853,9 +859,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         label: "Total Leads",
         count: total,
         amount: this.filteredEmployees.reduce(
-          (sum, e) => sum + (e.total_leads_potential_amt || 0),
+          (sum, e) => sum + (e.total_leads_amount || 0),
           0,
-        ), // If applicable
+        ),
         class: "total-leads",
         isPrimary: true,
       };
