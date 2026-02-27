@@ -329,89 +329,90 @@ class StockIOPage {
       </div>
 
       <div class="stockio-body">
-      <div
-      class="order-card"
-      v-for="doc in visibleRequests"
-      :key="doc.name"
-      >
-      <div class="order-left">
-        <input
-        type="checkbox"
-        v-model="selectedDocs"
-        :value="doc.name"
-        @change="syncSelectAll"
-        />
-
-        <div class="order-info">
-          <!-- HEADER: SUMMARY, PROGRESS & ITEMS -->
-          <div class="order-header-row">
-            <!-- 1. SUMMARY -->
-            <div class="order-meta-info">
-              <div class="order-title">
-                <strong>{{ doc.name }}</strong>
-                <span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
-              </div>
-              <div class="order-meta">
-                {{ formatDate(doc.creation) }} · By: <b>{{ doc.owner }}</b>
-              </div>
-            </div>
-
-            <!-- 2. PROGRESS -->
-            <div class="approval-progress compact">
-              <!-- STEP 1 : Draft / Submitted -->
-              <div class="step" :class="getProgressFlow(doc).step1.state">
-                <span class="dot"></span>
-                <span class="label">{{ getProgressFlow(doc).step1.label }}</span>
-              </div>
-
-              <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
-
-              <!-- STEP 2 : Reporting -->
-              <div class="step" v-if="getProgressFlow(doc).step2.visible" :class="getProgressFlow(doc).step2.state">
-                <span class="dot"></span>
-                <span class="label">Reporting</span>
-              </div>
-
-              <div class="line"></div>
-
-              <!-- STEP 3 : HO Approval / Cancelled -->
-              <div class="step" :class="getProgressFlow(doc).step3.state">
-                <span class="dot"></span>
-                <span class="label">{{ getProgressFlow(doc).step3.label }}</span>
-              </div>
-            </div>
-
-            <!-- 3. ITEMS (When Expanded) -->
-            <div class="order-items-horizontal" v-if="doc.showAllItems">
-              <div class="item-compact-card" v-for="item in doc.items" :key="item.name">
-                <div class="item-name-row">
-                  <span>{{ item.item_code }}</span>
-                  <span class="badge" 
-                        v-if="item.item_category"
-                        :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
-                    {{ item.item_category[0] }}
-                  </span>
+      <div class="table-responsive">
+        <table class="stockio-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">
+                <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
+              </th>
+              <th>Document ID</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Owner</th>
+              <th>Reporting Person</th>
+              <th>HO Officer</th>
+              <th>Progress</th>
+              <th>Items</th>
+              <th style="width: 80px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="doc in visibleRequests"
+              :key="doc.name"
+              :class="{ 'expanded-row': doc.showAllItems }"
+            >
+              <td>
+                <input
+                  type="checkbox"
+                  v-model="selectedDocs"
+                  :value="doc.name"
+                  @change="syncSelectAll"
+                />
+              </td>
+              <td><strong>{{ doc.name }}</strong></td>
+              <td><span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span></td>
+              <td>{{ formatDate(doc.creation) }}</td>
+              <td><b>{{ doc.owner }}</b></td>
+              <td>{{ doc.reporting_person || '-' }}</td>
+              <td>{{ doc.head_office_officer || '-' }}</td>
+              <td>
+                <div class="approval-progress mini">
+                  <div class="step" :class="getProgressFlow(doc).step1.state" :title="getProgressFlow(doc).step1.label">
+                    <span class="dot"></span>
+                  </div>
+                  <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
+                  <div class="step" v-if="getProgressFlow(doc).step2.visible" :class="getProgressFlow(doc).step2.state" title="Reporting">
+                    <span class="dot"></span>
+                  </div>
+                  <div class="line"></div>
+                  <div class="step" :class="getProgressFlow(doc).step3.state" :title="getProgressFlow(doc).step3.label">
+                    <span class="dot"></span>
+                  </div>
                 </div>
-                <div class="item-meta-row">
-                  Qty: {{ item.quantity }}
+              </td>
+              <td>
+                <button class="btn ghost btn-sm" @click="toggleItems(doc)">
+                  {{ doc.showAllItems ? 'Hide' : (doc.items && doc.items.length > 0 ? 'Show (' + doc.items.length + ')' : 'Show') }}
+                </button>
+              </td>
+              <td>
+                <button class="btn ghost btn-sm" @click="openRequest(doc.name)">View</button>
+              </td>
+            </tr>
+            <!-- Expanded items row -->
+            <tr v-for="doc in visibleRequests" v-if="doc.showAllItems" :key="doc.name + '-items'" class="items-expanded-row">
+              <td colspan="10">
+                <div class="items-expanded-content">
+                  <div class="item-compact-card" v-for="item in doc.items" :key="item.name">
+                    <div class="item-name-row">
+                      <span>{{ item.item_code }}</span>
+                      <span class="badge"
+                            v-if="item.item_category"
+                            :class="item.item_category.toLowerCase().includes('asset') ? 'category-asset' : 'category-stock'">
+                        {{ item.item_category[0] }}
+                      </span>
+                    </div>
+                    <div class="item-meta-row">
+                      Qty: {{ item.quantity }}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TOGGLE BUTTON IN NEXT ROW -->
-          <div class="order-toggle-row">
-                          <button class="order-items-toggle" @click="toggleItems(doc)">
-                            {{ doc.showAllItems ? 'Hide Items' : (doc.items && doc.items.length > 0 ? 'Show Items (' + doc.items.length + ')' : 'Show Items') }}
-                          </button>          </div>
-        </div>
-      </div>
-
-      <div class="order-right">
-        <button class="btn ghost" @click="openRequest(doc.name)">
-        View
-        </button>
-      </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <div v-if="canLoadMore" style="text-align:center;margin:16px">
