@@ -579,6 +579,8 @@
     </div>
 </div>
 
+<!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script> -->
+
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
 <script>
     frappe.ready(function () {
@@ -612,7 +614,7 @@
                 this.designationRules = [
                     {
                         group_name: 'Officers', designations: 'Branch Officer, Risk Officer, Management Trainee', capping_amount: 5000,
-                        slabs: [{ min: 25000, max: null, amount: 125 }, { min: 50000, max: null, amount: 250 }, { min: 75000, max: null, amount: 375 }, { min: 100000, max: null, amount: 500 }]
+                        slabs: [{ min: 25000, max: null, amount: 125 }]
                     }
                 ];
             },
@@ -625,8 +627,103 @@
             },
             removeGroup(i) { this.designationRules.splice(i, 1); },
 
+            // --- NEW: STRICT VALIDATION LOGIC ---
+            // --- STRICT VALIDATION LOGIC ---
+            validate() {
+                // 1. Validate Account Rates
+                for (let i = 0; i < this.doc.account_rates.length; i++) {
+                    let acc = this.doc.account_rates[i];
+                    if (!acc.account_type || acc.account_type.trim() === '') {
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Account Row ${i + 1}: Account Name cannot be empty.` });
+                        return false;
+                    }
+                    if (acc.incentive_amount === '' || acc.incentive_amount === null || parseFloat(acc.incentive_amount) < 0) {
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Account Row ${i + 1}: Incentive rate cannot be blank or negative.` });
+                        return false;
+                    }
+                }
+
+                // 2. Validate Designation Groups
+                for (let i = 0; i < this.designationRules.length; i++) {
+                    let grp = this.designationRules[i];
+
+                    if (!grp.group_name || grp.group_name.trim() === '') {
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${i + 1}: Group Name cannot be empty.` });
+                        return false;
+                    }
+                    if (!grp.designations || grp.designations.trim() === '') {
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name}: Allowed Designations cannot be empty.` });
+                        return false;
+                    }
+                    if (grp.capping_amount === '' || grp.capping_amount === null || parseFloat(grp.capping_amount) < 0) {
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name}: Max Cap Limit cannot be blank or negative.` });
+                        return false;
+                    }
+
+                    // 3. Validate MAB Slabs inside the group
+                    let minValues = new Set();
+                    for (let j = 0; j < grp.slabs.length; j++) {
+                        let slab = grp.slabs[j];
+
+                        // Strict check for completely empty inputs
+                        if (slab.min === '' || slab.min === null) {
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Min limit cannot be left blank.` });
+                            return false;
+                        }
+                        if (slab.amount === '' || slab.amount === null) {
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Payout amount cannot be left blank.` });
+                            return false;
+                        }
+
+                        let minVal = parseFloat(slab.min);
+                        let maxVal = parseFloat(slab.max);
+                        let payout = parseFloat(slab.amount);
+
+                        if (minVal < 0) {
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Min limit cannot be negative.` });
+                            return false;
+                        }
+                        if (payout < 0) {
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Payout cannot be negative.` });
+                            return false;
+                        }
+
+                        // Check if Max is actually greater than Min (if Max is filled out)
+                        if (!isNaN(maxVal) && slab.max !== null && slab.max !== '') {
+                            if (maxVal <= minVal) {
+                                frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group ${grp.group_name}: Max limit (₹${maxVal}) must be strictly greater than Min limit (₹${minVal}).` });
+                                return false;
+                            }
+                        }
+
+                        // Prevent duplicate Min tiers (e.g. creating two "Min 25000" rules)
+                        if (minValues.has(minVal)) {
+                            frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group ${grp.group_name}: You cannot have multiple tiers starting with exactly Min ₹${minVal}.` });
+                            return false;
+                        }
+                        minValues.add(minVal);
+                    }
+                }
+
+                return true;
+            },
+
+
             saveConfig() {
-                // Ensure null values are strictly saved correctly
+                // RUN VALIDATOR FIRST
+                if (!this.validate()) return;
+
+                // If valid, format data safely
+                this.designationRules.forEach(grp => {
+                    grp.capping_amount = parseFloat(grp.capping_amount) || 0;
+                    grp.slabs.forEach(slab => {
+                        slab.min = parseFloat(slab.min) || 0;
+                        slab.amount = parseFloat(slab.amount) || 0;
+                        // If max is empty string, convert to actual null for JSON cleanliness
+                        slab.max = (slab.max === '' || isNaN(parseFloat(slab.max))) ? null : parseFloat(slab.max);
+                    });
+                });
+
                 this.doc.designation_structure = JSON.stringify(this.designationRules);
                 if (!this.doc.doctype) this.doc.doctype = 'Incentive Config';
 
@@ -646,4 +743,7 @@
         }).mount('#admin-app');
     });
 </script>
+
+
+
 {% endblock %}
