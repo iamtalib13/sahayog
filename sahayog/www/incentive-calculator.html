@@ -657,11 +657,13 @@
                     <div>
                         <span class="card-heading">1. Enter Account Counts</span>
                         <div class="inputs-row">
-                            <!-- Dynamic Account Inputs (Triggers Auto-Calc & Prevents Negatives) -->
+                            <!-- Dynamic Account Inputs -->
                             <div class="input-box" v-for="(acc, index) in accountInputs" :key="'acc'+index">
                                 <span class="input-label">[[ acc.name ]]</span>
                                 <div style="display: flex; align-items: center;">
+                                    <!-- Added @focus and @blur -->
                                     <input type="number" v-model="acc.count" @input="preventNegative(acc, 'count')"
+                                        @focus="clearZero(acc, 'count')" @blur="restoreZero(acc, 'count')"
                                         class="input-field" placeholder="0" min="0">
                                     <span class="input-rate">@[[ acc.rate ]]</span>
                                 </div>
@@ -675,8 +677,10 @@
                             <span class="input-label">MAB Amount</span>
                             <div
                                 style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
+                                <!-- Added @focus and @blur -->
                                 <input type="number" v-model="mabAmount" @input="preventNegative(this, 'mabAmount')"
-                                    class="input-field" placeholder="e.g. 50000" style="width: 140px;" min="0">
+                                    @focus="clearZero(this, 'mabAmount')" @blur="restoreZero(this, 'mabAmount')"
+                                    class="input-field" placeholder="0" style="width: 140px;" min="0">
                                 <div v-if="mabAmount > 0" class="mono"
                                     style="font-weight: 800; color: #059669; font-size: 13px; background: #d1fae5; padding: 6px 10px; border-radius: 8px;">
                                     + ₹[[ getMabIncentive() ]]
@@ -684,6 +688,7 @@
                             </div>
                         </div>
                     </div>
+
 
                     <!-- Live Sync Indicator -->
                     <div class="live-status"
@@ -847,6 +852,31 @@
                 }
                 this.triggerCalculation(); // Proceed with calculation
             },
+
+            // SECURITY: Prevent Negative Inputs
+            // preventNegative(obj, key) {
+            //     let val = parseFloat(obj[key]);
+            //     if (val < 0) {
+            //         obj[key] = 0;
+            //     }
+            //     this.triggerCalculation();
+            // },
+
+            // UX: Clear 0 on Focus
+            clearZero(obj, key) {
+                if (obj[key] === 0 || obj[key] === '0') {
+                    obj[key] = ''; // Empty the box when they click it
+                }
+            },
+
+            // UX: Restore 0 if they leave it empty
+            restoreZero(obj, key) {
+                if (obj[key] === '' || obj[key] === null) {
+                    obj[key] = 0; // Put 0 back so math doesn't break
+                    this.triggerCalculation();
+                }
+            },
+
 
             getMabIncentive(amt) {
                 if (!this.activeRule || !this.activeRule.slabs) return 0;
