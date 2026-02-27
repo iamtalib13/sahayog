@@ -7,7 +7,8 @@
  "field_order": [
   "account_settings_column",
   "account_rates",
-  "mab_slabs"
+  "mab_slabs",
+  "designation_structure"
  ],
  "fields": [
   {
@@ -26,13 +27,18 @@
    "fieldtype": "Table",
    "label": "MAB Slab",
    "options": "Incentive MAB Item"
+  },
+  {
+   "fieldname": "designation_structure",
+   "fieldtype": "Long Text",
+   "label": "Designation Structure"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-02-17 13:02:54.899375",
+ "modified": "2026-02-27 12:26:58.791452",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Incentive Config",
