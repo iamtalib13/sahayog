@@ -390,111 +390,137 @@
         font-family: 'JetBrains Mono', monospace;
     }
 </style>
-
 <div id="app" v-scope @vue:mounted="init()" v-cloak>
     <div class="bg-dots"></div>
 
     <div class="content-area" :class="showResults ? 'result-view' : 'initial-view'">
         <div class="dashboard-grid">
 
-            <!-- Sidebar -->
+            <!-- COLUMN 1: Sidebar -->
             <div class="col-sidebar">
                 <div class="panel-card">
                     <div class="user-profile-compact">
                         <div class="user-avatar">[[ userName.charAt(0) ]]</div>
                         <div>
-                            <div style="font-size: 16px; font-weight: 800; color: var(--primary);">[[ userName ]]</div>
-                            <div class="mono" style="font-size: 11px; color: #64748b;">ID: [[ employeeId ]]</div>
-                            <div class="designation-badge">[[ designation ]]</div>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--primary); line-height: 1.2;">[[
+                                userName ]]</div>
+                            <div class="mono" style="font-size: 11px; color: #64748b; margin-top: 4px;">[[ employeeId ]]
+                            </div>
+                            <div class="designation-container">
+                                <div class="designation-badge">[[ designation ]]</div>
+                            </div>
                         </div>
                     </div>
+
                     <div
-                        style="background: #f1f5f9; padding: 12px; border-radius: 12px; font-size: 12px; margin-top: 12px; display: flex; justify-content: space-between;">
+                        style="background: #f1f5f9; padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center;">
                         <span>Max Cap Limit</span>
-                        <span class="mono" style="font-weight: 700;">₹[[ cappingAmount.toLocaleString() ]]</span>
+                        <span class="mono" style="font-size: 14px; color: var(--primary);">₹[[
+                            cappingAmount.toLocaleString() ]]</span>
                     </div>
                 </div>
 
-                <!-- Suggestions -->
+                <!-- Smart Suggestions (Fully Dynamic) -->
                 <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned < cappingAmount">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                         <span style="font-size: 18px;">🚀</span>
                         <div>
                             <span class="card-heading" style="color: #15803d; margin:0;">Reach Your Cap Limit</span>
-                            <div style="font-size: 11px; color: #166534;">Gap: <strong>₹[[ (cappingAmount -
-                                    totalEarned).toLocaleString() ]]</strong></div>
+                            <div style="font-size: 11px; color: #166534; opacity: 0.9;">Gap to fill: <strong>₹[[
+                                    (cappingAmount - totalEarned).toLocaleString() ]]</strong></div>
                         </div>
                     </div>
-                    <p style="font-size: 12px; color: #14532d; margin-bottom: 10px;">Add <u>ANY ONE</u> of these
-                        options:</p>
+
+                    <p style="font-size: 12px; color: #14532d; margin: 0 0 10px 0; line-height: 1.4;">
+                        To earn the full <strong>₹[[ cappingAmount.toLocaleString() ]]</strong>, you can add <u>ANY
+                            ONE</u> of these options:
+                    </p>
 
                     <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <div v-for="acc in accountInputs" class="suggestion-item">
+                        <div class="suggestion-item" v-for="(acc, index) in accountInputs" :key="'sug'+index">
                             <div
-                                style="width: 24px; height: 24px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #bbf7d0;">
+                                style="width: 24px; height: 24px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">
                                 ✨</div>
                             <div>
-                                <span style="font-weight: 800; color: #166534;">
-                                    [[ Math.ceil((cappingAmount - totalEarned) / acc.rate) ]]
+                                <span style="font-weight: 800; color: #334155;">[[ Math.ceil((cappingAmount -
+                                    totalEarned) / acc.rate) ]]</span>
+                                <span
+                                    style="font-weight: 600; color: #64748b; font-size: 11px; text-transform: uppercase;">[[
+                                    acc.name ]] Accts</span>
+                            </div>
+                        </div>
+
+                        <div v-if="getNextMabGap() > 0" class="suggestion-item"
+                            style="background: rgba(243, 232, 255, 0.7); border-color: #d8b4fe;">
+                            <div
+                                style="width: 24px; height: 24px; background: #faf5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1px solid #c084fc;">
+                                📈</div>
+                            <div>
+                                <span style="font-weight: 600; color: #7e22ce; font-size: 11px;">Increase Funding to
                                 </span>
-                                <span style="font-weight: 600; opacity: 0.8; font-size: 11px;">
-                                    More [[ acc.name ]]s
-                                </span>
+                                <span style="font-weight: 800; color: #6b21a8;">₹[[ getNextMabTarget().toLocaleString()
+                                    ]]</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Limit Reached -->
+                <!-- Limit Reached State -->
                 <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned >= cappingAmount"
-                    style="background: #eff6ff; border-color: #bfdbfe;">
+                    style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span>🎉</span><span class="card-heading" style="color: #1e40af; margin:0;">Limit
-                            Reached!</span>
+                        <span style="font-size: 18px;">🎉</span>
+                        <span class="card-heading" style="color: #1e40af; margin:0;">Limit Reached!</span>
                     </div>
+                    <p style="font-size: 12px; color: #1e40af; margin: 5px 0 0 0; line-height: 1.4;">Great job! You have
+                        hit the maximum incentive cap for your designation.</p>
                 </div>
             </div>
 
-            <!-- Content -->
+            <!-- COLUMN 2: Content -->
             <div class="col-content">
-
-                <!-- Loader -->
-                <div v-if="isLoading" class="text-center py-10">
-                    <div style="font-size: 14px; font-weight: 600; color: #64748b;">Loading configuration...</div>
-                </div>
-
-                <!-- 1. Enter Account Counts (RESTORED STYLE) -->
-                <div v-else class="panel-card">
-                    <span class="card-heading">1. Enter Account Counts</span>
-
-                    <div class="input-grid">
-                        <!-- Dynamic Inputs using Old Styling -->
-                        <div v-for="(acc, index) in accountInputs" :key="index" class="input-box">
-                            <div>
+                <div class="panel-card">
+                    <div>
+                        <span class="card-heading">1. Enter Account Counts</span>
+                        <div class="inputs-row">
+                            <!-- Dynamic Account Inputs -->
+                            <div class="input-box" v-for="(acc, index) in accountInputs" :key="'acc'+index">
                                 <span class="input-label">[[ acc.name ]]</span>
-                                <span class="input-rate">₹[[ acc.rate ]] / acct</span>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="number" v-model="acc.count" class="input-field" placeholder="0"
+                                        min="0">
+                                    <span class="input-rate">@[[ acc.rate ]]</span>
+                                </div>
                             </div>
-                            <input type="number" v-model="acc.count" @input="calculateIncentive" class="input-field"
-                                placeholder="0" min="0">
                         </div>
                     </div>
-                </div>
-
-                <!-- 2. Funding / MAB (RESTORED STYLE) -->
-                <div v-if="!isLoading" class="panel-card">
-                    <span class="card-heading">2. Funding / MAB</span>
 
                     <div>
-                        <input type="number" v-model="currentMab" @input="calculateIncentive" class="mab-input"
-                            placeholder="₹ 0">
-                        <div class="mt-2 text-xs text-slate-400" style="margin-top: 8px;">
-                            Current Config: <span v-for="slab in mabSlabs" class="mr-2"> >[[ slab.min ]] = ₹[[
-                                slab.amount ]]</span>
+                        <span class="card-heading" style="margin-top: 10px;">2. Total Funding</span>
+                        <div class="input-box">
+                            <span class="input-label">MAB Amount</span>
+                            <div
+                                style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
+                                <input type="number" v-model="mabAmount" class="input-field" placeholder="e.g. 50000"
+                                    style="width: 120px;">
+                                <div v-if="mabAmount > 0" class="mono"
+                                    style="font-weight: 700; color: var(--accent); font-size: 12px; background: #e0f2f1; padding: 4px 8px; border-radius: 6px;">
+                                    + ₹[[ getMabIncentive() ]]
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <button @click="calculateIncentive()" class="btn-main">
+                        <span>Calculate Incentive</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
                 </div>
 
-                <!-- 3. Result Card -->
+                <!-- Card 4: Results -->
                 <div class="panel-card animate-enter" v-if="showResults" style="background: #fdfdfd;">
                     <span class="card-heading">3. Calculation Result</span>
 
@@ -509,113 +535,155 @@
                         </div>
                     </div>
 
-                    <div style="margin-top: 20px;">
-                        <span class="card-heading">Breakdown</span>
-                        <div class="breakdown-item" v-for="acc in accountInputs" v-if="acc.count > 0">
-                            <span>[[ acc.name ]] ([[ acc.count ]])</span>
-                            <span class="item-val">₹[[ (acc.count * acc.rate).toLocaleString() ]]</span>
+                    <div style="margin-top: 10px;">
+                        <span class="card-heading" style="margin-bottom: 10px;">Breakdown</span>
+                        <!-- Dynamic Breakdown -->
+                        <div class="breakdown-item" v-for="acc in accountInputs" v-if="(parseInt(acc.count) || 0) > 0">
+                            <span>[[ acc.name ]] Accounts ([[ acc.count ]])</span>
+                            <span class="item-val">₹[[ ((parseInt(acc.count) || 0) * acc.rate).toLocaleString()
+                                ]]</span>
                         </div>
-                        <div class="breakdown-item" v-if="mabIncentive > 0">
+                        <div class="breakdown-item" v-if="mabAmount > 0">
                             <span>MAB Funding Incentive</span>
-                            <span class="item-val">₹[[ mabIncentive.toLocaleString() ]]</span>
+                            <span class="item-val">₹[[ getMabIncentive().toLocaleString() ]]</span>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 </div>
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
-
 <script>
     frappe.ready(function () {
         PetiteVue.createApp({
             $delimiters: ['[[', ']]'],
 
-            // State
-            userName: frappe.session.user_fullname || 'Guest User',
-            employeeId: frappe.session.user,
-            designation: 'Staff',
-            isLoading: true,
+            // User Data
+            userName: 'Loading...',
+            employeeId: '...',
+            designation: '...',
 
-            // App Data
+            // Dynamic Config Data
             accountInputs: [],
-            mabSlabs: [],
+            designationRules: [],
+            activeRule: null, // The matched rule for this specific user
 
-            // Calculator State
-            currentMab: 0,
-            totalEarned: 0,
-            mabIncentive: 0,
-            finalIncentive: 0,
+            // Inputs
+            mabAmount: '',
+
+            // Results
             showResults: false,
-            cappingAmount: 5000,
+            totalEarned: 0,
+            cappingAmount: 0,
+            finalIncentive: 0,
 
             init() {
-                // Fetch Configuration via API
+                const loggedInUser = frappe.session.user;
+                if (loggedInUser === 'Guest') { this.userName = 'Guest'; return; }
+
+                // 1. Fetch Master Config From Python
                 frappe.call({
-                    method: "sahayog.www.incentive_calculator.get_incentive_config",
+                    method: 'sahayog.www.incentive_calculator.get_incentive_config',
                     callback: (r) => {
                         if (r.message) {
                             this.accountInputs = r.message.accounts || [];
-                            this.mabSlabs = r.message.mab_slabs || [];
-                            console.log("Config Loaded:", r.message);
+                            this.designationRules = r.message.designation_rules || [];
+
+                            // 2. Load User Profile to map logic
+                            this.fetchUserDetails(loggedInUser);
                         }
-                        this.isLoading = false;
                     }
                 });
-
-                // Inside your Calculator's init() or fetchConfig()
-
-                // 1. Load the JSON config
-                const ruleConfig = JSON.parse(serverConfig.designation_structure || '[]');
-
-                // 2. Find the user's group
-                const userDesig = this.designation.toUpperCase();
-                const activeRule = ruleConfig.find(rule => {
-                    // Check if user's designation is in the comma-separated list
-                    return rule.designations.toUpperCase().split(',').map(s => s.trim()).includes(userDesig);
-                });
-
-                if (activeRule) {
-                    this.cappingAmount = activeRule.capping_amount;
-
-                    // Override the getMabIncentive function logic dynamically
-                    this.mabSlabs = activeRule.slabs.map(s => ({
-                        min: "", // logic to map label to min/max
-                        amount: s.amount
-                    }));
-                }
-
             },
 
-            calculateIncentive() {
-                let accountTotal = 0;
+            fetchUserDetails(userId) {
+                frappe.call({
+                    method: 'frappe.client.get_list',
+                    args: { doctype: 'Employee', filters: { 'user_id': userId }, fields: ['name', 'employee_name', 'designation'], limit: 1 },
+                    callback: (r) => {
+                        if (r.message?.length) {
+                            const e = r.message[0];
+                            this.employeeId = e.name;
+                            this.userName = e.employee_name;
+                            this.designation = e.designation;
 
-                this.accountInputs.forEach(acc => {
-                    const count = parseInt(acc.count) || 0;
-                    accountTotal += count * acc.rate;
+                            // 3. Map Designation to Rules automatically
+                            this.mapDesignationRule(e.designation);
+                        }
+                    }
                 });
+            },
 
-                let mabInc = 0;
-                const mab = parseInt(this.currentMab) || 0;
+            mapDesignationRule(userDesig) {
+                const des = (userDesig || '').toUpperCase().trim();
+                this.activeRule = null;
+                this.cappingAmount = 0;
 
-                for (const slab of this.mabSlabs) {
-                    const maxLimit = slab.max > 0 ? slab.max : Infinity;
-                    if (mab >= slab.min && mab <= maxLimit) {
-                        mabInc = slab.amount;
+                // Scan through JSON rules to find matching designation
+                for (let rule of this.designationRules) {
+                    let dList = rule.designations.split(',').map(s => s.trim().toUpperCase());
+                    if (dList.includes(des)) {
+                        this.activeRule = rule;
+                        this.cappingAmount = parseFloat(rule.capping_amount) || 0;
                         break;
                     }
                 }
+            },
 
-                this.mabIncentive = mabInc;
-                this.totalEarned = accountTotal + mabInc;
-                this.finalIncentive = Math.min(this.totalEarned, this.cappingAmount);
+            getMabIncentive(amt) {
+                if (!this.activeRule || !this.activeRule.slabs) return 0;
+                const currentAmt = amt !== undefined ? amt : (parseFloat(this.mabAmount) || 0);
+
+                // Sort descending so the highest eligible minimum balance is hit first
+                let sortedSlabs = [...this.activeRule.slabs].sort((a, b) => b.min - a.min);
+
+                for (let slab of sortedSlabs) {
+                    if (currentAmt >= parseFloat(slab.min)) {
+                        return parseFloat(slab.amount) || 0;
+                    }
+                }
+                return 0;
+            },
+
+            getNextMabTarget() {
+                if (!this.activeRule || !this.activeRule.slabs) return 0;
+                const currentAmt = parseFloat(this.mabAmount) || 0;
+
+                // Sort ascending to find the immediate next highest tier
+                let sortedSlabs = [...this.activeRule.slabs].sort((a, b) => a.min - b.min);
+
+                for (let slab of sortedSlabs) {
+                    if (parseFloat(slab.min) > currentAmt) {
+                        return parseFloat(slab.min);
+                    }
+                }
+                return 0; // Max slab reached
+            },
+
+            getNextMabGap() {
+                const target = this.getNextMabTarget();
+                if (target === 0) return 0;
+                const currentInc = this.getMabIncentive(parseFloat(this.mabAmount) || 0);
+                const nextInc = this.getMabIncentive(target);
+                return nextInc - currentInc;
+            },
+
+            calculateIncentive() {
+                let acctInc = 0;
+
+                // Loop dynamically mapped inputs instead of hardcoded silver/gold/wealth
+                this.accountInputs.forEach(acc => {
+                    acctInc += (parseFloat(acc.count) || 0) * parseFloat(acc.rate);
+                });
+
+                this.totalEarned = acctInc + this.getMabIncentive();
+                this.finalIncentive = this.cappingAmount > 0 ? Math.min(this.totalEarned, this.cappingAmount) : this.totalEarned;
                 this.showResults = true;
             }
-
         }).mount('#app');
     });
 </script>
+
 {% endblock %}
