@@ -914,7 +914,7 @@
                 this.isCalculating = true;
                 clearTimeout(this.calcTimeout);
 
-                const delay = this.showResults ? 1000 : 4000;
+                const delay = this.showResults ? 1000 : 2800; // 4000ms for first calc, 1s for subsequent (if they keep typing)
 
                 this.calcTimeout = setTimeout(() => {
                     this.calculateIncentive();
