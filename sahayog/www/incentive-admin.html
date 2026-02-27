@@ -196,23 +196,26 @@
 
     .add-btn {
         font-size: 12px;
-        background: var(--success-light);
-        color: var(--success);
+        background: transparent;
+        color: var(--accent);
         padding: 8px 16px;
-        border-radius: 10px;
-        border: 1px solid #a7f3d0;
+        border-radius: 8px;
+        border: 2px solid var(--accent);
         cursor: pointer;
         font-weight: 700;
-        transition: 0.2s;
+        transition: all 0.2s ease-in-out;
         display: inline-flex;
         align-items: center;
         gap: 6px;
     }
 
     .add-btn:hover {
-        background: #d1fae5;
-        transform: translateY(-1px);
+        background: var(--accent);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(65, 125, 129, 0.3);
     }
+
 
     .del-btn {
         width: 36px;
@@ -339,8 +342,9 @@
 
     /* 1. Account Rows */
     .item-row {
+        /* Removed the first '40px' column that held the checkbox */
         display: grid;
-        grid-template-columns: 40px 1fr 1fr 40px;
+        grid-template-columns: 1fr 1fr 40px;
         gap: 16px;
         align-items: center;
         padding: 12px;
@@ -350,6 +354,7 @@
         margin-bottom: 12px;
         transition: 0.3s;
     }
+
 
     .item-row:hover {
         border-color: #cbd5e1;
@@ -556,7 +561,7 @@
     <!-- 1. Global Account Rates -->
     <div class="admin-card fade-enter">
         <div class="card-title">
-            <span>Global Account Rates</span>
+            <span>1. Global Account Rates</span>
             <button @click="addAccount" class="add-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -571,9 +576,7 @@
 
         <div class="item-row fade-enter" v-for="(item, index) in doc.account_rates" :key="index"
             :style="{animationDelay: (index * 0.05) + 's'}">
-            <div style="text-align: center;" title="Enable/Disable this account">
-                <input type="checkbox" v-model="item.enabled" :true-value="1" :false-value="0" class="toggle-check">
-            </div>
+            <!-- CHECKBOX DIV REMOVED FROM HERE -->
             <div>
                 <input type="text" v-model="item.account_type" placeholder="e.g. Silver Account"
                     style="font-weight: 700;">
@@ -588,6 +591,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- 2. Designation Logic -->
 
