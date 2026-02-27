@@ -2077,6 +2077,9 @@ class StockIOPage {
                   fieldtype: "Link",
                   options: "Warehouse",
                   reqd: 1,
+                  get_query: () => ({
+                    page_length: 1000,
+                  }),
                 },
                 {
                   label: "Items",
