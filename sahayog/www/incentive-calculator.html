@@ -714,7 +714,10 @@
                         </div>
                     </div>
 
-                    <div style="margin-top: 16px;">
+                    <!-- Only show if there is actually money earned -->
+
+                    <!-- Changed v-if to use instant real-time function -->
+                    <div style="margin-top: 16px;" v-if="hasAnyActiveInputs()">
                         <span class="card-heading" style="margin-bottom: 12px;">Detailed Breakdown</span>
 
                         <div class="breakdown-container">
@@ -725,13 +728,15 @@
                                     ]]</span>
                             </div>
 
-                            <div class="breakdown-item" v-show="mabAmount > 0">
+                            <div class="breakdown-item" v-show="mabAmount > 0 && getMabIncentive() > 0">
                                 <span>MAB Funding Incentive</span>
                                 <span class="item-val" style="color: #059669;">+ ₹[[ getMabIncentive().toLocaleString()
                                     ]]</span>
                             </div>
                         </div>
                     </div>
+
+
                 </div>
             </div>
         </div>
@@ -914,13 +919,25 @@
                 this.isCalculating = true;
                 clearTimeout(this.calcTimeout);
 
-                const delay = this.showResults ? 1000 : 2800; // 4000ms for first calc, 1s for subsequent (if they keep typing)
+                const delay = this.showResults ? 0 : 2500; // 4000ms for first calc, 1s for subsequent (if they keep typing)
 
                 this.calcTimeout = setTimeout(() => {
                     this.calculateIncentive();
                     setTimeout(() => { this.isCalculating = false; }, 300);
                 }, delay);
             },
+
+            // Instantly checks if ANY input has a valid amount > 0
+            hasAnyActiveInputs() {
+                // 1. Check if any account has a count > 0
+                let hasAccounts = this.accountInputs.some(acc => (parseInt(acc.count) || 0) > 0);
+
+                // 2. Check if MAB incentive > 0
+                let hasMab = (parseFloat(this.mabAmount) || 0) > 0 && this.getMabIncentive() > 0;
+
+                return hasAccounts || hasMab;
+            },
+
 
             calculateIncentive() {
                 let acctInc = 0;
