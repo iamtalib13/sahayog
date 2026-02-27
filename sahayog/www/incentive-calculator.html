@@ -516,13 +516,58 @@
     .mono {
         font-family: 'JetBrains Mono', monospace;
     }
-</style>
 
+    /* Unmapped Error State */
+    .unmapped-error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 24px;
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #fee2e2;
+        box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.1);
+        max-width: 600px;
+        margin: 60px auto;
+    }
+
+    .unmapped-icon {
+        width: 80px;
+        height: 80px;
+        background: #fef2f2;
+        color: #ef4444;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+
+    .unmapped-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 8px;
+    }
+
+    .unmapped-desc {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748b;
+        line-height: 1.5;
+        max-width: 400px;
+    }
+</style>
 <div id="app" v-scope @vue:mounted="init()" v-cloak>
     <div class="bg-dots"></div>
 
     <div class="content-area" :class="showResults ? 'result-view' : 'initial-view'">
-        <div class="dashboard-grid">
+
+        <!-- Show this IF the user IS mapped to a rule -->
+        <div class="dashboard-grid" v-if="isMapped">
 
             <!-- COLUMN 1: Sidebar -->
             <div class="col-sidebar">
@@ -612,11 +657,11 @@
                     <div>
                         <span class="card-heading">1. Enter Account Counts</span>
                         <div class="inputs-row">
-                            <!-- Dynamic Account Inputs (Triggers Auto-Calc) -->
+                            <!-- Dynamic Account Inputs (Triggers Auto-Calc & Prevents Negatives) -->
                             <div class="input-box" v-for="(acc, index) in accountInputs" :key="'acc'+index">
                                 <span class="input-label">[[ acc.name ]]</span>
                                 <div style="display: flex; align-items: center;">
-                                    <input type="number" v-model="acc.count" @input="triggerCalculation"
+                                    <input type="number" v-model="acc.count" @input="preventNegative(acc, 'count')"
                                         class="input-field" placeholder="0" min="0">
                                     <span class="input-rate">@[[ acc.rate ]]</span>
                                 </div>
@@ -630,8 +675,8 @@
                             <span class="input-label">MAB Amount</span>
                             <div
                                 style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
-                                <input type="number" v-model="mabAmount" @input="triggerCalculation" class="input-field"
-                                    placeholder="e.g. 50000" style="width: 140px;">
+                                <input type="number" v-model="mabAmount" @input="preventNegative(this, 'mabAmount')"
+                                    class="input-field" placeholder="e.g. 50000" style="width: 140px;" min="0">
                                 <div v-if="mabAmount > 0" class="mono"
                                     style="font-weight: 800; color: #059669; font-size: 13px; background: #d1fae5; padding: 6px 10px; border-radius: 8px;">
                                     + ₹[[ getMabIncentive() ]]
@@ -640,7 +685,7 @@
                         </div>
                     </div>
 
-                    <!-- Live Sync Indicator (Replaces Button) -->
+                    <!-- Live Sync Indicator -->
                     <div class="live-status"
                         :class="{'calculating': isCalculating, 'active': !isCalculating && showResults}">
                         <div class="status-dot"></div>
@@ -668,7 +713,6 @@
                         <span class="card-heading" style="margin-bottom: 12px;">Detailed Breakdown</span>
 
                         <div class="breakdown-container">
-                            <!-- Dynamic Account Breakdown using v-show instead of v-if to prevent Petite-Vue bugs -->
                             <div class="breakdown-item" v-for="(acc, index) in accountInputs" :key="'bd'+index"
                                 v-show="(parseInt(acc.count) || 0) > 0">
                                 <span>[[ acc.name ]] Accounts ([[ acc.count ]])</span>
@@ -676,7 +720,6 @@
                                     ]]</span>
                             </div>
 
-                            <!-- MAB Breakdown -->
                             <div class="breakdown-item" v-show="mabAmount > 0">
                                 <span>MAB Funding Incentive</span>
                                 <span class="item-val" style="color: #059669;">+ ₹[[ getMabIncentive().toLocaleString()
@@ -687,8 +730,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- Show this IF the user IS NOT mapped to a rule (Fallback Error) -->
+        <div class="unmapped-error-container" v-else-if="hasLoaded && !isMapped">
+            <div class="unmapped-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                    </path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <h2 class="unmapped-title">No Incentive Structure Found</h2>
+            <p class="unmapped-desc">
+                Your current designation (<strong>[[ designation ]]</strong>) is not mapped to any active incentive
+                rules.
+                <br><br>Please contact the Admin team to configure your incentive limits.
+            </p>
+        </div>
+
     </div>
 </div>
+
+<!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script> -->
+
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
 <script>
@@ -705,6 +771,10 @@
             accountInputs: [],
             designationRules: [],
             activeRule: null,
+
+            // Status States
+            isMapped: false,
+            hasLoaded: false,
 
             // Inputs & Timers
             mabAmount: '',
@@ -742,8 +812,10 @@
                             const e = r.message[0];
                             this.employeeId = e.name;
                             this.userName = e.employee_name;
-                            this.designation = e.designation;
-                            this.mapDesignationRule(e.designation);
+                            this.designation = e.designation || 'None';
+                            this.mapDesignationRule(this.designation);
+                        } else {
+                            this.hasLoaded = true; // No employee record found
                         }
                     }
                 });
@@ -753,15 +825,27 @@
                 const des = (userDesig || '').toUpperCase().trim();
                 this.activeRule = null;
                 this.cappingAmount = 0;
+                this.isMapped = false;
 
                 for (let rule of this.designationRules) {
                     let dList = rule.designations.split(',').map(s => s.trim().toUpperCase());
                     if (dList.includes(des)) {
                         this.activeRule = rule;
                         this.cappingAmount = parseFloat(rule.capping_amount) || 0;
+                        this.isMapped = true; // Turn on the calculator
                         break;
                     }
                 }
+                this.hasLoaded = true; // Stop loading state
+            },
+
+            // SECURITY: Prevent Negative Inputs
+            preventNegative(obj, key) {
+                let val = parseFloat(obj[key]);
+                if (val < 0) {
+                    obj[key] = 0; // Force to 0 if negative
+                }
+                this.triggerCalculation(); // Proceed with calculation
             },
 
             getMabIncentive(amt) {
@@ -796,17 +880,14 @@
                 return nextInc - currentInc;
             },
 
-            // SMART AUTO-CALCULATION TRIGGER
             triggerCalculation() {
                 this.isCalculating = true;
                 clearTimeout(this.calcTimeout);
 
-                // 4 seconds delay for the first time, 1 second delay after results are visible
-                const delay = this.showResults ? 1000 : 2000;
+                const delay = this.showResults ? 1000 : 4000;
 
                 this.calcTimeout = setTimeout(() => {
                     this.calculateIncentive();
-                    // Small visual delay so the user sees the 'Calculating...' status finish
                     setTimeout(() => { this.isCalculating = false; }, 300);
                 }, delay);
             },
@@ -825,4 +906,6 @@
         }).mount('#app');
     });
 </script>
+
+
 {% endblock %}
