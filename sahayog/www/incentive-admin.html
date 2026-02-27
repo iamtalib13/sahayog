@@ -272,9 +272,30 @@
         font-size: 14px;
     }
 
+    /* Fix for overlapping prefixes in different inputs */
     .input-wrapper input.has-prefix {
         padding-left: 32px;
     }
+
+    /* Default for single character like ₹ */
+
+    /* Specific padding overrides based on the length of the prefix text */
+    .slab-row .input-wrapper:nth-child(1) input.has-prefix {
+        padding-left: 56px;
+    }
+
+    /* For "Min ₹" */
+    .slab-row .input-wrapper:nth-child(2) input.has-prefix {
+        padding-left: 60px;
+    }
+
+    /* For "Max ₹" */
+    .slab-row .input-wrapper:nth-child(3) input.has-prefix {
+        padding-left: 45px;
+    }
+
+    /* For "+ ₹" */
+
 
     input[type="text"],
     input[type="number"],
