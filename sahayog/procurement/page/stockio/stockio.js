@@ -369,14 +369,10 @@ class StockIOPage {
               <td>{{ doc.head_office_officer || '-' }}</td>
               <td>
                 <div class="approval-progress mini">
-                  <div class="step" :class="getProgressFlow(doc).step1.state" :title="getProgressFlow(doc).step1.label">
-                    <span class="dot"></span>
-                  </div>
-                  <div class="line" v-if="getProgressFlow(doc).step2.visible"></div>
                   <div class="step" v-if="getProgressFlow(doc).step2.visible" :class="getProgressFlow(doc).step2.state" title="Reporting">
                     <span class="dot"></span>
                   </div>
-                  <div class="line"></div>
+                  <div class="line" v-if="getProgressFlow(doc).step3.visible"></div>
                   <div class="step" :class="getProgressFlow(doc).step3.state" :title="getProgressFlow(doc).step3.label">
                     <span class="dot"></span>
                   </div>
