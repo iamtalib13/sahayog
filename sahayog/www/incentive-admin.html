@@ -449,6 +449,86 @@
         border-radius: 12px;
         border: 2px dashed #cbd5e1;
     }
+
+    /* Collapsible Group Styles */
+    .group-header-bar {
+        background: #fff;
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        margin-bottom: 12px;
+    }
+
+    .group-header-bar:hover {
+        border-color: var(--accent);
+        background: #f8fafc;
+    }
+
+    .group-title-compact {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .group-badge {
+        background: var(--accent);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .chevron-icon {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        color: var(--text-muted);
+    }
+
+    .chevron-icon.open {
+        transform: rotate(180deg);
+        color: var(--accent);
+    }
+
+    /* The actual content container */
+    .group-body {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        position: relative;
+    }
+
+    /* Override remove button position for the new layout */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .remove-group-btn {
+        position: relative;
+        top: 0;
+        right: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+        color: var(--danger);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 </style>
 
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
@@ -476,7 +556,7 @@
     <!-- 1. Global Account Rates -->
     <div class="admin-card fade-enter">
         <div class="card-title">
-            <span>1. Global Account Rates</span>
+            <span>Global Account Rates</span>
             <button @click="addAccount" class="add-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -510,9 +590,11 @@
     </div>
 
     <!-- 2. Designation Logic -->
+
+    <!-- 2. Designation Logic -->
     <div class="admin-card fade-enter" style="animation-delay: 0.1s;">
         <div class="card-title">
-            <span>2. Designation Groups & Funding MAB Rules</span>
+            <span>Designation Groups & Funding MAB Rules</span>
             <button @click="addGroup" class="add-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -525,58 +607,88 @@
         <div v-if="designationRules.length === 0" class="empty-state">No designation groups configured. Click "Add
             Group" to begin.</div>
 
-        <div v-for="(group, gIndex) in designationRules" :key="gIndex" class="group-card fade-enter">
-            <button @click="removeGroup(gIndex)" class="remove-group-btn" title="Delete entire group">✕</button>
+        <!-- Group Loop -->
+        <div v-for="(group, gIndex) in designationRules" :key="gIndex" class="fade-enter">
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-                <div>
-                    <label class="label-text">Group Name & Allowed Designations</label>
-                    <input type="text" v-model="group.group_name" placeholder="Group Name (e.g. Branch Officers)"
-                        style="font-size: 16px; font-weight: 800; margin-bottom: 12px; color: var(--accent);">
-                    <textarea v-model="group.designations"
-                        placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea>
-                    <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
-                        Employee Designation field</div>
+            <!-- CLICKABLE HEADER -->
+            <div class="group-header-bar" @click="toggleGroup(group)">
+                <div class="group-title-compact">
+                    <svg class="chevron-icon" :class="{ 'open': group.isOpen }" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span>[[ group.group_name || 'Unnamed Group' ]]</span>
+                    <span class="group-badge">₹[[ (parseFloat(group.capping_amount) || 0).toLocaleString() ]] Cap</span>
                 </div>
-                <div>
-                    <label class="label-text">Maximum Incentive Cap limit</label>
-                    <div class="input-wrapper">
-                        <span class="prefix" style="font-size: 20px; top: 45%;">₹</span>
-                        <input type="number" v-model="group.capping_amount" class="has-prefix"
-                            style="font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; height: 60px;">
+
+                <div class="header-actions">
+                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">[[ group.slabs.length ]]
+                        Tiers</span>
+                    <!-- Move Delete Button to Header -->
+                    <button @click.stop="removeGroup(gIndex)" class="remove-group-btn"
+                        title="Delete entire group">✕</button>
+                </div>
+            </div>
+
+            <!-- COLLAPSIBLE BODY -->
+            <div class="group-body" v-show="group.isOpen">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                    <div>
+                        <label class="label-text">Group Name & Allowed Designations</label>
+                        <input type="text" v-model="group.group_name" placeholder="Group Name (e.g. Branch Officers)"
+                            style="font-size: 16px; font-weight: 800; margin-bottom: 12px; color: var(--accent);">
+                        <textarea v-model="group.designations"
+                            placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea>
+                        <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
+                            Employee Designation field</div>
+                    </div>
+                    <div>
+                        <label class="label-text">Maximum Incentive Cap limit</label>
+                        <div class="input-wrapper">
+                            <span class="prefix" style="font-size: 20px; top: 45%;">₹</span>
+                            <input type="number" v-model="group.capping_amount" class="has-prefix"
+                                style="font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; height: 60px;"
+                                min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slab-container">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <label class="label-text" style="margin: 0;">MAB Funding Tiers (Min Balance → Payout)</label>
+                        <button @click="group.slabs.push({min:'', max: null, amount:''})" class="add-btn"
+                            style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
+                    </div>
+
+                    <div v-if="group.slabs.length === 0" class="empty-state" style="padding: 15px;">No funding tiers
+                        added.</div>
+
+                    <div v-for="(slab, sIndex) in group.slabs" :key="sIndex" class="slab-row fade-enter">
+                        <div class="input-wrapper">
+                            <span class="prefix">Min ₹</span>
+                            <input type="number" v-model="slab.min" class="has-prefix" placeholder="e.g. 25000" min="0">
+                        </div>
+                        <div class="input-wrapper">
+                            <span class="prefix">Max ₹</span>
+                            <input type="number" v-model="slab.max" class="has-prefix" placeholder="(Optional limit)"
+                                min="0">
+                        </div>
+                        <div class="input-wrapper">
+                            <span class="prefix" style="color: var(--success);">+ ₹</span>
+                            <input type="number" v-model="slab.amount" class="has-prefix" placeholder="Payout"
+                                style="font-weight: 800; color: var(--primary);" min="0">
+                        </div>
+                        <button @click="group.slabs.splice(sIndex, 1)" class="del-btn" style="height: 100%;">✕</button>
                     </div>
                 </div>
             </div>
 
-            <div class="slab-container">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <label class="label-text" style="margin: 0;">MAB Funding Tiers (Min Balance → Payout)</label>
-                    <button @click="group.slabs.push({min:0, max: null, amount:0})" class="add-btn"
-                        style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
-                </div>
-
-                <div v-if="group.slabs.length === 0" class="empty-state" style="padding: 15px;">No funding tiers added.
-                </div>
-
-                <div v-for="(slab, sIndex) in group.slabs" :key="sIndex" class="slab-row fade-enter">
-                    <div class="input-wrapper">
-                        <span class="prefix">Min ₹</span>
-                        <input type="number" v-model="slab.min" class="has-prefix" placeholder="e.g. 25000">
-                    </div>
-                    <div class="input-wrapper">
-                        <span class="prefix">Max ₹</span>
-                        <input type="number" v-model="slab.max" class="has-prefix" placeholder="(Optional limit)">
-                    </div>
-                    <div class="input-wrapper">
-                        <span class="prefix" style="color: var(--success);">+ ₹</span>
-                        <input type="number" v-model="slab.amount" class="has-prefix" placeholder="Payout"
-                            style="font-weight: 800; color: var(--primary);">
-                    </div>
-                    <button @click="group.slabs.splice(sIndex, 1)" class="del-btn" style="height: 100%;">✕</button>
-                </div>
-            </div>
         </div>
     </div>
+
+
 </div>
 
 <!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script> -->
@@ -603,7 +715,12 @@
 
                             try {
                                 this.designationRules = JSON.parse(this.doc.designation_structure || '[]');
-                                if (this.designationRules.length === 0) this.loadDefaults();
+                                if (this.designationRules.length === 0) {
+                                    this.loadDefaults();
+                                } else {
+                                    // Inject isOpen state into loaded data, default first one to open
+                                    this.designationRules.forEach((grp, idx) => grp.isOpen = (idx === 0));
+                                }
                             } catch (e) { this.loadDefaults(); }
                         }
                     }
@@ -614,20 +731,38 @@
                 this.designationRules = [
                     {
                         group_name: 'Officers', designations: 'Branch Officer, Risk Officer, Management Trainee', capping_amount: 5000,
+                        isOpen: true, // Make sure defaults have the property
                         slabs: [{ min: 25000, max: null, amount: 125 }]
                     }
                 ];
             },
 
+            addGroup() {
+                // Automatically open new groups when added
+                this.designationRules.push({
+                    group_name: 'New Group', designations: '', capping_amount: 0,
+                    isOpen: true,
+                    slabs: [{ min: '', max: null, amount: '' }]
+                });
+            },
+
+            removeGroup(i) {
+                if (confirm("Are you sure you want to delete this entire group?")) {
+                    this.designationRules.splice(i, 1);
+                }
+            },
+
+            // --- NEW: TOGGLE FUNCTION ---
+            toggleGroup(group) {
+                // PetiteVue requires explicit assignment to trigger reactivity sometimes
+                group.isOpen = !group.isOpen;
+            },
+
+
+
             addAccount() { this.doc.account_rates.push({ account_type: '', incentive_amount: 0, enabled: 1 }); },
             removeAccount(i) { this.doc.account_rates.splice(i, 1); },
 
-            addGroup() {
-                this.designationRules.push({ group_name: '', designations: '', capping_amount: 0, slabs: [{ min: 25000, max: null, amount: 0 }] });
-            },
-            removeGroup(i) { this.designationRules.splice(i, 1); },
-
-            // --- NEW: STRICT VALIDATION LOGIC ---
             // --- STRICT VALIDATION LOGIC ---
             validate() {
                 // 1. Validate Account Rates
@@ -734,7 +869,7 @@
                     callback: (r) => {
                         this.isSaving = false;
                         if (!r.exc) {
-                            frappe.show_alert({ message: "✅ Configuration Saved Successfully!", indicator: 'green' });
+                            frappe.show_alert({ message: "Configuration Saved Successfully!", indicator: 'green' });
                             this.doc = r.message;
                         }
                     }
