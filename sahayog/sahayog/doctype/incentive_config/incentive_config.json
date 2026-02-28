@@ -38,7 +38,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-02-27 12:26:58.791452",
+ "modified": "2026-02-28 12:19:28.695463",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Incentive Config",
@@ -56,10 +56,11 @@
   },
   {
    "create": 1,
+   "delete": 1,
    "email": 1,
    "print": 1,
    "read": 1,
-   "role": "Incentive Manager",
+   "role": "Incentive Admin",
    "share": 1,
    "write": 1
   }

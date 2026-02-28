@@ -277,28 +277,46 @@
         font-size: 14px;
     }
 
+    /* 1. Perfect vertical alignment for ALL prefixes */
+    .input-wrapper .prefix {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%) !important;
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        pointer-events: none;
+        /* Prevents icon from blocking mouse clicks */
+    }
 
-    /* Fix for overlapping prefixes in different inputs */
+    /* 2. Default standard padding for single character (₹) like the Max Cap & Account Rates */
     .input-wrapper input.has-prefix {
-        padding-left: 32px;
+        padding-left: 36px !important;
     }
 
-    /* Default for single character like ₹ */
+    /* 3. Precise, pixel-perfect padding specifically for the MAB Tiers */
+    /* This accounts for the Drag Handle (which is child 1), so we target 2, 3, 4 */
 
-    /* Specific padding overrides based on the length of the prefix text */
-    .slab-row .input-wrapper:nth-child(1) input.has-prefix {
-        padding-left: 56px;
-    }
-
-    /* For "Min ₹" */
+    /* "Min ₹" box (Requires ~56px because 'Min' is 3 letters) */
     .slab-row .input-wrapper:nth-child(2) input.has-prefix {
-        padding-left: 60px;
+        padding-left: 56px !important;
     }
 
-    /* For "Max ₹" */
+    /* "Max ₹" box (Requires ~60px because 'Max' is slightly wider than Min) */
     .slab-row .input-wrapper:nth-child(3) input.has-prefix {
-        padding-left: 45px;
+        padding-left: 60px !important;
     }
+
+    /* "+ ₹" box (Requires ~42px because it's just a plus sign and rupee) */
+    .slab-row .input-wrapper:nth-child(4) input.has-prefix {
+        padding-left: 42px !important;
+    }
+
 
     /* For "+ ₹" */
 
@@ -537,166 +555,552 @@
         align-items: center;
         justify-content: center;
     }
+
+    /* Unmapped Error State (Access Denied) */
+    .unmapped-error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 24px;
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #fee2e2;
+        box-shadow: 0 10px 30px -5px rgba(239, 68, 68, 0.15);
+        max-width: 600px;
+        margin: 80px auto;
+        animation: smoothFadeIn 0.4s ease-out;
+    }
+
+    .unmapped-icon {
+        width: 80px;
+        height: 80px;
+        background: #fef2f2;
+        color: #ef4444;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .unmapped-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--primary);
+        margin: 0 0 12px 0;
+    }
+
+    .unmapped-desc {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        line-height: 1.6;
+        max-width: 450px;
+        margin: 0;
+    }
+
+    /* Searchable Dropdown & Pills Styles */
+    .dropdown-wrapper {
+        position: relative;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .designation-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 4px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 50;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .dropdown-item {
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary);
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: 0.2s;
+    }
+
+    .dropdown-item:last-child {
+        border-bottom: none;
+    }
+
+    .dropdown-item:hover {
+        background: #f8fafc;
+        color: var(--accent);
+        padding-left: 18px;
+    }
+
+    .pills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+        min-height: 32px;
+        padding: 8px;
+        background: #fff;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+    }
+
+    .desig-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(65, 125, 129, 0.1);
+        color: var(--accent);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid rgba(65, 125, 129, 0.2);
+        transition: 0.2s;
+        animation: smoothFadeIn 0.2s ease-out;
+    }
+
+    .remove-pill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        color: var(--danger);
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    .remove-pill:hover {
+        background: var(--danger);
+        color: #fff;
+    }
+
+    /* Drag & Drop Styles */
+    .drag-handle {
+        cursor: grab;
+        color: #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+
+    .drag-handle:hover {
+        color: var(--accent);
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    .draggable-row {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .draggable-row.dragging {
+        opacity: 0.4;
+    }
+
+    /* Updated Grids to make room for the drag handle */
+    .item-row {
+        display: grid;
+        grid-template-columns: 24px 1fr 1fr 40px;
+        gap: 16px;
+        align-items: center;
+        padding: 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        margin-bottom: 12px;
+    }
+
+    .slab-row {
+        display: grid;
+        grid-template-columns: 24px 1fr 1fr 1fr 40px;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    /* Enhanced Drag & Drop Feedback */
+    .drag-handle {
+        cursor: grab;
+        color: #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+
+    .drag-handle:hover {
+        color: var(--accent);
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    /* The visual state when dragging */
+    .draggable-row {
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, opacity 0.2s;
+    }
+
+    /* The glowing effect when an item is actively being held/dragged */
+    .draggable-row.is-dragging {
+        opacity: 0.95;
+        border: 1px solid transparent !important;
+        /* Remove hard borders */
+
+        /* 
+           Layered Box Shadow for True Soft Glow:
+           Layer 1: Inner subtle color wash (inset)
+           Layer 2: Tight, intense core glow
+           Layer 3: Wide, soft dispersed outer glow
+           Layer 4: Standard drop shadow for depth 
+        */
+        box-shadow:
+            inset 0 0 15px rgba(65, 125, 129, 0.05),
+            0 0 12px rgba(65, 125, 129, 0.4),
+            0 0 25px rgba(65, 125, 129, 0.2),
+            0 15px 35px -5px rgba(0, 0, 0, 0.15) !important;
+
+        /* Slightly tint the background itself with the accent color */
+        background: rgba(255, 255, 255, 0.9) !important;
+        background-blend-mode: overlay;
+
+        transform: scale(1.03);
+        /* Pop off screen more smoothly */
+        z-index: 50;
+        position: relative;
+    }
+
+
+    /* Subtle highlight for the row being hovered over (drop target) */
+    .draggable-row.drag-over {
+        border-top: 3px solid var(--accent);
+        transform: translateY(2px);
+    }
 </style>
 
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
     <div class="bg-pattern"></div>
 
-    <div class="section-header">
-        <h1 class="section-title">Incentive Rules Master</h1>
-        <button @click="saveConfig" class="save-btn" :disabled="isSaving">
-            <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-            </svg>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-            <span>[[ isSaving ? 'Saving Changes...' : 'Save Configuration' ]]</span>
-        </button>
-    </div>
-
-    <!-- 1. Global Account Rates -->
-    <div class="admin-card fade-enter">
-        <div class="card-title">
-            <span>Global Account Rates</span>
-            <button @click="addAccount" class="add-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg> Add Account
+    <!-- MAIN DASHBOARD: Show this ONLY if user has the correct role -->
+    <div v-if="hasAccess && !isCheckingAccess">
+        <div class="section-header">
+            <h1 class="section-title">Incentive Rules Master</h1>
+            <button @click="saveConfig" class="save-btn" :disabled="isSaving">
+                <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>[[ isSaving ? 'Saving Changes...' : 'Save Configuration' ]]</span>
             </button>
         </div>
 
-        <div v-if="doc.account_rates.length === 0" class="empty-state">No account types configured. Click "Add Account"
-            to begin.</div>
 
-        <div class="item-row fade-enter" v-for="(item, index) in doc.account_rates" :key="index"
-            :style="{animationDelay: (index * 0.05) + 's'}">
-            <!-- CHECKBOX DIV REMOVED FROM HERE -->
-            <div>
-                <input type="text" v-model="item.account_type" placeholder="e.g. Silver Account"
-                    style="font-weight: 700;">
+        <!-- 1. Global Account Rates -->
+        <div class="admin-card fade-enter">
+            <div class="card-title">
+                <span>Global Account Rates</span>
+                <button @click="addAccount" class="add-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg> Add Account
+                </button>
             </div>
-            <div class="input-wrapper">
-                <span class="prefix">₹</span>
-                <input type="number" v-model="item.incentive_amount" class="has-prefix"
-                    placeholder="Payout per account">
-            </div>
-            <div>
-                <button @click="removeAccount(index)" class="del-btn" title="Remove Account">✕</button>
-            </div>
-        </div>
-    </div>
 
 
-    <!-- 2. Designation Logic -->
+            <div v-if="doc.account_rates.length === 0" class="empty-state">No account types configured. Click "Add
+                Account"
+                to begin.</div>
 
-    <!-- 2. Designation Logic -->
-    <div class="admin-card fade-enter" style="animation-delay: 0.1s;">
-        <div class="card-title">
-            <span>Designation Groups & Funding MAB Rules</span>
-            <button @click="addGroup" class="add-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg> Add Group
-            </button>
-        </div>
 
-        <div v-if="designationRules.length === 0" class="empty-state">No designation groups configured. Click "Add
-            Group" to begin.</div>
+            <div class="item-row draggable-row fade-enter" v-for="(item, index) in doc.account_rates"
+                :key="'acc_' + index" draggable="true" @dragstart="dragStartAcc(index, $event)" @dragend="dragEndAcc()"
+                @dragover.prevent @drop="dropAcc(index)" :class="{ 'is-dragging': draggedAccIndex === index }"
+                :style="{animationDelay: (index * 0.05) + 's'}">
 
-        <!-- Group Loop -->
-        <div v-for="(group, gIndex) in designationRules" :key="gIndex" class="fade-enter">
 
-            <!-- CLICKABLE HEADER -->
-            <div class="group-header-bar" @click="toggleGroup(group)">
-                <div class="group-title-compact">
-                    <svg class="chevron-icon" :class="{ 'open': group.isOpen }" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
+                <!-- Drag Handle -->
+                <div class="drag-handle" title="Drag to reorder">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <circle cx="9" cy="12" r="1" />
+                        <circle cx="9" cy="5" r="1" />
+                        <circle cx="9" cy="19" r="1" />
+                        <circle cx="15" cy="12" r="1" />
+                        <circle cx="15" cy="5" r="1" />
+                        <circle cx="15" cy="19" r="1" />
                     </svg>
-                    <span>[[ group.group_name || 'Unnamed Group' ]]</span>
-                    <span class="group-badge">₹[[ (parseFloat(group.capping_amount) || 0).toLocaleString() ]] Cap</span>
                 </div>
 
-                <div class="header-actions">
-                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">[[ group.slabs.length ]]
-                        Tiers</span>
-                    <!-- Move Delete Button to Header -->
-                    <button @click.stop="removeGroup(gIndex)" class="remove-group-btn"
-                        title="Delete entire group">✕</button>
+                <div>
+                    <input type="text" v-model="item.account_type" placeholder="e.g. Silver Account"
+                        style="font-weight: 700;">
                 </div>
-            </div>
-
-            <!-- COLLAPSIBLE BODY -->
-            <div class="group-body" v-show="group.isOpen">
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-                    <div>
-                        <label class="label-text">Group Name & Allowed Designations</label>
-                        <input type="text" v-model="group.group_name" placeholder="Group Name (e.g. Branch Officers)"
-                            style="font-size: 16px; font-weight: 800; margin-bottom: 12px; color: var(--accent);">
-                        <textarea v-model="group.designations"
-                            placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea>
-                        <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
-                            Employee Designation field</div>
-                    </div>
-                    <div>
-                        <label class="label-text">Maximum Incentive Cap limit</label>
-                        <div class="input-wrapper">
-                            <span class="prefix" style="font-size: 20px; top: 45%;">₹</span>
-                            <input type="number" v-model="group.capping_amount" class="has-prefix"
-                                style="font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; height: 60px;"
-                                min="0">
-                        </div>
-                    </div>
+                <div class="input-wrapper">
+                    <span class="prefix">₹</span>
+                    <input type="number" v-model="item.incentive_amount" class="has-prefix"
+                        placeholder="Payout per account">
                 </div>
-
-                <div class="slab-container">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <label class="label-text" style="margin: 0;">MAB Funding Tiers (Min Balance → Payout)</label>
-                        <button @click="group.slabs.push({min:'', max: null, amount:''})" class="add-btn"
-                            style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
-                    </div>
-
-                    <div v-if="group.slabs.length === 0" class="empty-state" style="padding: 15px;">No funding tiers
-                        added.</div>
-
-                    <div v-for="(slab, sIndex) in group.slabs" :key="sIndex" class="slab-row fade-enter">
-                        <div class="input-wrapper">
-                            <span class="prefix">Min ₹</span>
-                            <input type="number" v-model="slab.min" class="has-prefix" placeholder="e.g. 25000" min="0">
-                        </div>
-                        <div class="input-wrapper">
-                            <span class="prefix">Max ₹</span>
-                            <input type="number" v-model="slab.max" class="has-prefix" placeholder="(Optional limit)"
-                                min="0">
-                        </div>
-                        <div class="input-wrapper">
-                            <span class="prefix">+ ₹</span>
-                            <input type="number" v-model="slab.amount" class="has-prefix" placeholder="Payout"
-                                style="font-weight: 800; color: var(--primary);" min="0">
-                        </div>
-                        <button @click="group.slabs.splice(sIndex, 1)" class="del-btn" style="height: 100%;">✕</button>
-                    </div>
+                <div>
+                    <button @click="removeAccount(index)" class="del-btn" title="Remove Account">✕</button>
                 </div>
             </div>
 
         </div>
+
+
+        <!-- 2. Designation Logic -->
+        <div class="admin-card fade-enter" style="animation-delay: 0.1s;">
+            <div class="card-title">
+                <span>Designation Groups & Funding MAB Rules</span>
+                <button @click="addGroup" class="add-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg> Add Group
+                </button>
+            </div>
+
+
+            <div v-if="designationRules.length === 0" class="empty-state">No designation groups configured. Click "Add
+                Group" to begin.</div>
+
+
+            <!-- Group Loop -->
+            <div v-for="(group, gIndex) in designationRules" :key="gIndex" class="fade-enter">
+
+
+                <!-- CLICKABLE HEADER -->
+                <div class="group-header-bar" @click="toggleGroup(group)">
+                    <div class="group-title-compact">
+                        <svg class="chevron-icon" :class="{ 'open': group.isOpen }" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                        <span>[[ group.group_name || 'Unnamed Group' ]]</span>
+                        <span class="group-badge">₹[[ (parseFloat(group.capping_amount) || 0).toLocaleString() ]]
+                            Cap</span>
+                    </div>
+
+
+                    <div class="header-actions">
+                        <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">[[ group.slabs.length ]]
+                            Tiers</span>
+
+                        <!-- Clone Group Button -->
+                        <button @click.stop="cloneGroup(group, gIndex)" class="add-btn"
+                            style="background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 4px 8px; font-size: 11px; margin-left: 8px;"
+                            title="Duplicate this group">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                style="margin-right: 4px;">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Clone
+                        </button>
+
+                        <!-- Move Delete Button to Header -->
+                        <button @click.stop="removeGroup(gIndex)" class="remove-group-btn"
+                            title="Delete entire group">✕</button>
+                    </div>
+
+                </div>
+
+
+                <!-- COLLAPSIBLE BODY -->
+                <div class="group-body" v-show="group.isOpen">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                        <div>
+                            <label class="label-text">Group Name & Allowed Designations</label>
+                            <input type="text" v-model="group.group_name"
+                                placeholder="Group Name (e.g. Branch Officers)"
+                                style="font-size: 16px; font-weight: 800; margin-bottom: 12px; color: var(--accent);">
+                            <!-- <textarea v-model="group.designations"
+                                placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea> -->
+
+                            <!-- SMART DESIGNATION SELECTOR -->
+                            <!-- SMART DESIGNATION SELECTOR -->
+                            <div class="dropdown-wrapper">
+                                <input type="text" v-model="group.searchQuery" @focus="group.showDropdown = true"
+                                    @blur="setTimeout(() => group.showDropdown = false, 150)"
+                                    placeholder="🔍 Search and select designations..." style="font-size: 13px;">
+
+                                <!-- Search Results Dropdown -->
+                                <div class="designation-dropdown"
+                                    v-show="group.showDropdown && filteredDesignations(group).length > 0">
+                                    <!-- Notice mousedown.prevent is still here, this is key! -->
+                                    <div class="dropdown-item" v-for="d in filteredDesignations(group)" :key="d"
+                                        @mousedown.prevent="addDesignation(group, d)">
+                                        [[ d ]]
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selected Pills -->
+                            <div class="pills-container">
+                                <div v-if="getDesignationArray(group).length === 0"
+                                    style="font-size: 11px; color: #94a3b8; font-style: italic; margin: auto;">No
+                                    designations selected</div>
+
+                                <div class="desig-pill" v-for="d in getDesignationArray(group)" :key="d">
+                                    <span>[[ d ]]</span>
+                                    <span class="remove-pill" @click="removeDesignation(group, d)"
+                                        title="Remove">✕</span>
+                                </div>
+                            </div>
+                            <!-- END SMART SELECTOR -->
+
+
+                            <!-- Selected Pills -->
+                            <!-- <div class="pills-container">
+                                <div v-if="getDesignationArray(group).length === 0"
+                                    style="font-size: 11px; color: #94a3b8; font-style: italic; margin: auto;">No
+                                    designations selected</div>
+
+                                <div class="desig-pill" v-for="d in getDesignationArray(group)" :key="d">
+                                    <span>[[ d ]]</span>
+                                    <span class="remove-pill" @click="removeDesignation(group, d)"
+                                        title="Remove">✕</span>
+                                </div>
+                            </div> -->
+                            <!-- END SMART SELECTOR -->
+
+                            <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
+                                Employee Designation field</div>
+                        </div>
+                        <div>
+                            <label class="label-text">Maximum Incentive Cap limit</label>
+                            <div class="input-wrapper">
+                                <!-- <span class="prefix" style="font-size: 20px; top: 45%;">₹</span> -->
+                                <span class="prefix" style="font-size: 20px;">₹</span>
+
+                                <input type="number" v-model="group.capping_amount" class="has-prefix"
+                                    style="font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; height: 60px;"
+                                    min="0">
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="slab-container">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <label class="label-text" style="margin: 0;">MAB Funding Tiers (Min Balance →
+                                Payout)</label>
+                            <div style="display: flex; gap: 8px;">
+                                <!-- Auto Sort Button -->
+                                <button @click="autoSortSlabs(group)" class="add-btn"
+                                    style="background: #f1f5f9; color: var(--primary); border-color: #cbd5e1; padding: 4px 10px; font-size: 11px;">
+                                    🪄 Auto-Sort Tiers
+                                </button>
+                                <button @click="group.slabs.push({min:'', max: null, amount:''})" class="add-btn"
+                                    style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
+                            </div>
+                        </div>
+
+                        <div v-if="group.slabs.length === 0" class="empty-state" style="padding: 15px;">No funding tiers
+                            added.</div>
+
+                        <div class="slab-row draggable-row fade-enter" v-for="(slab, sIndex) in group.slabs"
+                            :key="'slab_' + gIndex + '_' + sIndex" draggable="true"
+                            @dragstart="dragStartSlab(gIndex, sIndex, $event)" @dragend="dragEndSlab()"
+                            @dragover.prevent @drop="dropSlab(gIndex, sIndex)"
+                            :class="{ 'is-dragging': draggedSlab.groupIndex === gIndex && draggedSlab.slabIndex === sIndex }">
+
+
+                            <!-- Drag Handle -->
+                            <div class="drag-handle" title="Drag to reorder">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <circle cx="9" cy="12" r="1" />
+                                    <circle cx="9" cy="5" r="1" />
+                                    <circle cx="9" cy="19" r="1" />
+                                    <circle cx="15" cy="12" r="1" />
+                                    <circle cx="15" cy="5" r="1" />
+                                    <circle cx="15" cy="19" r="1" />
+                                </svg>
+                            </div>
+
+                            <div class="input-wrapper">
+                                <span class="prefix">Min ₹</span>
+                                <input type="number" v-model="slab.min" class="has-prefix" placeholder="e.g. 25000"
+                                    min="0">
+                            </div>
+                            <div class="input-wrapper">
+                                <span class="prefix">Max ₹</span>
+                                <input type="number" v-model="slab.max" class="has-prefix"
+                                    placeholder="(Optional limit)" min="0">
+                            </div>
+                            <div class="input-wrapper">
+                                <span class="prefix">+ ₹</span>
+                                <input type="number" v-model="slab.amount" class="has-prefix" placeholder="Payout"
+                                    style="font-weight: 800; color: var(--primary);" min="0">
+                            </div>
+                            <button @click="group.slabs.splice(sIndex, 1)" class="del-btn"
+                                style="height: 100%;">✕</button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- FALLBACK ERROR: Show this if the user is DENIED access -->
+    <!-- FALLBACK ERROR: Show this if the user is DENIED access -->
+    <div class="unmapped-error-container" v-else-if="!hasAccess && !isCheckingAccess">
+        <div class="unmapped-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </div>
+        <h2 class="unmapped-title">Access Restricted</h2>
+        <p class="unmapped-desc">
+            Your current account (<strong>[[ currentUser ]]</strong>) is not authorized to access the Admin Panel.
+            <br><br>Please contact the system administrator to assign the <strong>Incentive Admin</strong> role to your
+            profile.
+        </p>
     </div>
 
 
 </div>
+
 
 <!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script> -->
 
@@ -705,11 +1109,65 @@
     frappe.ready(function () {
         PetiteVue.createApp({
             $delimiters: ['[[', ']]'],
+
+            // Core Data
             doc: { doctype: 'Incentive Config', name: 'Incentive Config', account_rates: [], designation_structure: '' },
             designationRules: [],
+            availableDesignations: [], // Stores Designations
+            originalDataSnapshot: '',
             isSaving: false,
 
-            mounted() { this.fetchConfig(); },
+            // Security States
+            isCheckingAccess: true,
+            hasAccess: false,
+            currentUser: 'Loading...',
+
+            // State
+            draggedAccIndex: null,
+            draggedSlab: { groupIndex: null, slabIndex: null },
+
+
+            mounted() {
+                this.checkAccess(); // Step 1: Verify role first
+            },
+
+            checkAccess() {
+                const user = frappe.session.user;
+                this.currentUser = user;
+
+                if (user === 'Guest') {
+                    this.denyAccess();
+                    return;
+                }
+
+                // Make a secure server-side call to check roles perfectly
+                frappe.call({
+                    method: 'sahayog.www.incentive_calculator.check_admin_access',
+                    callback: (r) => {
+                        if (r.message === true) {
+                            this.grantAccess();
+                        } else {
+                            this.denyAccess();
+                        }
+                    },
+                    error: (err) => {
+                        console.error("Access Check Failed:", err);
+                        this.denyAccess();
+                    }
+                });
+            },
+
+            grantAccess() {
+                this.hasAccess = true;
+                this.isCheckingAccess = false;
+                this.fetchDesignationList(); // Fetch master list of designations for dropdowns
+                this.fetchConfig();
+            },
+
+            denyAccess() {
+                this.hasAccess = false;
+                this.isCheckingAccess = false;
+            },
 
             fetchConfig() {
                 frappe.call({
@@ -720,15 +1178,31 @@
                             this.doc = r.message;
                             if (!this.doc.account_rates) this.doc.account_rates = [];
 
+                            // try {
+                            //     this.designationRules = JSON.parse(this.doc.designation_structure || '[]');
+                            //     if (this.designationRules.length === 0) {
+                            //         this.loadDefaults();
+                            //     } else {
+                            //         // Inject isOpen state into loaded data, default first one to open
+                            //         this.designationRules.forEach((grp, idx) => grp.isOpen = (idx === 0));
+                            //     }
+                            // } catch (e) { this.loadDefaults(); }
+
                             try {
                                 this.designationRules = JSON.parse(this.doc.designation_structure || '[]');
                                 if (this.designationRules.length === 0) {
                                     this.loadDefaults();
                                 } else {
-                                    // Inject isOpen state into loaded data, default first one to open
-                                    this.designationRules.forEach((grp, idx) => grp.isOpen = (idx === 0));
+                                    // Inject UI states into loaded data
+                                    this.designationRules.forEach((grp, idx) => {
+                                        grp.isOpen = (idx === 0);
+                                        grp.searchQuery = '';     // NEW
+                                        grp.showDropdown = false; // NEW
+                                    });
                                 }
                             } catch (e) { this.loadDefaults(); }
+                            this.updateSnapshot();
+
                         }
                     }
                 });
@@ -747,8 +1221,12 @@
             addGroup() {
                 // Automatically open new groups when added
                 this.designationRules.push({
-                    group_name: 'New Group', designations: '', capping_amount: 0,
+                    group_name: 'New Group',
+                    designations: '',
+                    capping_amount: 0,
                     isOpen: true,
+                    searchQuery: '',
+                    showDropdown: false,
                     slabs: [{ min: '', max: null, amount: '' }]
                 });
             },
@@ -766,16 +1244,98 @@
             },
 
 
+            cloneGroup(group, index) {
+                // 1. Deep copy the slabs array so they don't share the same memory reference
+                const clonedSlabs = group.slabs.map(slab => ({
+                    min: slab.min,
+                    max: slab.max,
+                    amount: slab.amount
+                }));
+
+                // 2. Create the new group object
+                const clonedGroup = {
+                    group_name: group.group_name + ' (Copy)', // Append copy to name
+                    designations: '', // Leave empty so admin is forced to pick new designations
+                    capping_amount: group.capping_amount, // Copy the cap limit
+                    isOpen: true,     // Automatically open the new clone
+                    searchQuery: '',
+                    showDropdown: false,
+                    slabs: clonedSlabs // Attach the deeply copied slabs
+                };
+
+                // 3. Insert the new group immediately after the one we just cloned
+                this.designationRules.splice(index + 1, 0, clonedGroup);
+
+                // Optional: Show a tiny success toast
+                frappe.show_alert({
+                    message: `Group cloned successfully! Please select allowed designations for the new group.`,
+                    indicator: 'green'
+                }, 3);
+            },
+
+
+
 
             addAccount() { this.doc.account_rates.push({ account_type: '', incentive_amount: 0, enabled: 1 }); },
             removeAccount(i) { this.doc.account_rates.splice(i, 1); },
 
+
+            // --- DRAG & DROP: ACCOUNT RATES ---
+            // --- DRAG & DROP: ACCOUNT RATES ---
+            dragStartAcc(index, event) {
+                // Set the ghost image nicely, then set the tracking index
+                setTimeout(() => { this.draggedAccIndex = index; }, 10);
+            },
+            dragEndAcc() {
+                this.draggedAccIndex = null; // Clean up when drag finishes anywhere
+            },
+            dropAcc(index) {
+                if (this.draggedAccIndex === null || this.draggedAccIndex === index) return;
+                const item = this.doc.account_rates.splice(this.draggedAccIndex, 1)[0];
+                this.doc.account_rates.splice(index, 0, item);
+                this.draggedAccIndex = null;
+            },
+
+            // --- DRAG & DROP: MAB SLABS ---
+            dragStartSlab(gIndex, sIndex, event) {
+                setTimeout(() => {
+                    this.draggedSlab = { groupIndex: gIndex, slabIndex: sIndex };
+                }, 10);
+            },
+            dragEndSlab() {
+                this.draggedSlab = { groupIndex: null, slabIndex: null };
+            },
+            dropSlab(targetGroupIndex, targetSlabIndex) {
+                if (this.draggedSlab.groupIndex !== targetGroupIndex) return;
+                if (this.draggedSlab.slabIndex === targetSlabIndex) return;
+
+                const gIndex = this.draggedSlab.groupIndex;
+                const item = this.designationRules[gIndex].slabs.splice(this.draggedSlab.slabIndex, 1)[0];
+                this.designationRules[gIndex].slabs.splice(targetSlabIndex, 0, item);
+
+                this.draggedSlab = { groupIndex: null, slabIndex: null };
+            },
+
+
+            // --- MAGIC AUTO-SORT ---
+            autoSortSlabs(group) {
+                // Sorts tiers mathematically based on Min Value
+                group.slabs.sort((a, b) => {
+                    let minA = parseFloat(a.min) || 0;
+                    let minB = parseFloat(b.min) || 0;
+                    return minA - minB;
+                });
+            },
+
+
+
+            // --- STRICT VALIDATION LOGIC ---
             // --- STRICT VALIDATION LOGIC ---
             validate() {
                 // 1. Validate Account Rates
                 for (let i = 0; i < this.doc.account_rates.length; i++) {
                     let acc = this.doc.account_rates[i];
-                    if (!acc.account_type || acc.account_type.trim() === '') {
+                    if (!acc.account_type || !acc.account_type.trim()) {
                         frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Account Row ${i + 1}: Account Name cannot be empty.` });
                         return false;
                     }
@@ -789,83 +1349,205 @@
                 for (let i = 0; i < this.designationRules.length; i++) {
                     let grp = this.designationRules[i];
 
-                    if (!grp.group_name || grp.group_name.trim() === '') {
+                    if (!grp.group_name || !grp.group_name.trim()) {
                         frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${i + 1}: Group Name cannot be empty.` });
                         return false;
                     }
-                    if (!grp.designations || grp.designations.trim() === '') {
-                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name}: Allowed Designations cannot be empty.` });
+                    if (!grp.designations || !grp.designations.trim()) {
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}": At least one Designation must be selected.` });
                         return false;
                     }
                     if (grp.capping_amount === '' || grp.capping_amount === null || parseFloat(grp.capping_amount) < 0) {
-                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name}: Max Cap Limit cannot be blank or negative.` });
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}": Max Cap Limit cannot be blank or negative.` });
                         return false;
                     }
 
                     // 3. Validate MAB Slabs inside the group
                     let minValues = new Set();
+                    let validSlabs = []; // Store parsed slabs for overlap checking
+
                     for (let j = 0; j < grp.slabs.length; j++) {
                         let slab = grp.slabs[j];
 
-                        // Strict check for completely empty inputs
+                        // Strict check for empty inputs
                         if (slab.min === '' || slab.min === null) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Min limit cannot be left blank.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Min limit cannot be left blank.` });
                             return false;
                         }
                         if (slab.amount === '' || slab.amount === null) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Payout amount cannot be left blank.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Payout amount cannot be left blank.` });
                             return false;
                         }
 
                         let minVal = parseFloat(slab.min);
                         let maxVal = parseFloat(slab.max);
                         let payout = parseFloat(slab.amount);
+                        let hasMax = !isNaN(maxVal) && slab.max !== '' && slab.max !== null;
 
                         if (minVal < 0) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Min limit cannot be negative.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Min limit cannot be negative.` });
                             return false;
                         }
                         if (payout < 0) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Payout cannot be negative.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Payout cannot be negative.` });
                             return false;
                         }
 
-                        // Check if Max is actually greater than Min (if Max is filled out)
-                        if (!isNaN(maxVal) && slab.max !== null && slab.max !== '') {
-                            if (maxVal <= minVal) {
-                                frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group ${grp.group_name}: Max limit (₹${maxVal}) must be strictly greater than Min limit (₹${minVal}).` });
-                                return false;
-                            }
+                        // Check if Max is actually greater than Min
+                        if (hasMax && maxVal <= minVal) {
+                            frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group "${grp.group_name}": Max limit (₹${maxVal}) must be strictly greater than Min limit (₹${minVal}).` });
+                            return false;
                         }
 
-                        // Prevent duplicate Min tiers (e.g. creating two "Min 25000" rules)
+                        // Prevent duplicate exact Min tiers
                         if (minValues.has(minVal)) {
-                            frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group ${grp.group_name}: You cannot have multiple tiers starting with exactly Min ₹${minVal}.` });
+                            frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group "${grp.group_name}": You cannot have multiple tiers starting at exactly ₹${minVal}.` });
                             return false;
                         }
                         minValues.add(minVal);
+
+                        // Push to array for mathematical overlap checking
+                        validSlabs.push({
+                            min: minVal,
+                            max: hasMax ? maxVal : Infinity, // Infinity represents 'No Max Limit'
+                            originalIndex: j + 1
+                        });
+                    }
+
+                    // 4. PREVENT OVERLAPPING SLABS
+                    // Sort the slabs purely by Min value for logic checking
+                    validSlabs.sort((a, b) => a.min - b.min);
+
+                    for (let s = 0; s < validSlabs.length - 1; s++) {
+                        let currentSlab = validSlabs[s];
+                        let nextSlab = validSlabs[s + 1];
+
+                        // If the Current Slab has No Max (Infinity), but there is a Next Slab...
+                        if (currentSlab.max === Infinity) {
+                            frappe.msgprint({
+                                title: 'Logic Error', indicator: 'red',
+                                message: `Group "${grp.group_name}": Tier ${currentSlab.originalIndex} has no Max Limit, but is followed by Tier ${nextSlab.originalIndex} starting at ₹${nextSlab.min}. Please set a Max Limit on the lower tier.`
+                            });
+                            return false;
+                        }
+
+                        // If the Current Slab's Max is GREATER than the Next Slab's Min, they overlap!
+                        // Example: Current (25k - 50k), Next (40k - 60k). 50k > 40k = OVERLAP
+                        if (currentSlab.max > nextSlab.min) {
+                            frappe.msgprint({
+                                title: 'Overlap Detected', indicator: 'red',
+                                message: `Group "${grp.group_name}": Tier ${currentSlab.originalIndex} (Max: ₹${currentSlab.max}) overlaps with Tier ${nextSlab.originalIndex} (Min: ₹${nextSlab.min}).`
+                            });
+                            return false;
+                        }
+
+                        // Warning for gaps (Optional: Remove if you want to allow gaps like 25k-50k then 75k-100k earning 0 in between)
+                        // This forces continuous ranges: 25k-50k, 50k-75k
+                        if (currentSlab.max < nextSlab.min) {
+                            // Uncomment the below if you want to FORCE continuous tiers without gaps
+                            /*
+                            frappe.msgprint({ 
+                                title: 'Gap Detected', indicator: 'orange', 
+                                message: `Group "${grp.group_name}": There is a gap between Max ₹${currentSlab.max} and Min ₹${nextSlab.min} where employees will earn nothing.` 
+                            });
+                            return false;
+                            */
+                        }
                     }
                 }
-
                 return true;
             },
 
 
+
+            // --- NEW: SMART DESIGNATION LOGIC ---
+
+            fetchDesignationList() {
+                frappe.call({
+                    method: 'frappe.client.get_list',
+                    args: { doctype: 'Designation', fields: ['name'], limit: 1000 },
+                    callback: (r) => {
+                        if (r.message) {
+                            this.availableDesignations = r.message.map(d => d.name);
+                        }
+                    }
+                });
+            },
+
+            // Convert "BO, RO" string to Array ['BO', 'RO']
+            getDesignationArray(group) {
+                if (!group.designations) return [];
+                return group.designations.split(',').map(d => d.trim()).filter(d => d !== '');
+            },
+
+            // Filter dropdown based on search query AND hide already selected ones
+            filteredDesignations(group) {
+                let query = (group.searchQuery || '').toLowerCase();
+                let selected = this.getDesignationArray(group);
+
+                return this.availableDesignations.filter(d =>
+                    d.toLowerCase().includes(query) && !selected.includes(d)
+                ).slice(0, 15); // Show max 15 results to keep UI fast
+            },
+
+            addDesignation(group, desig) {
+                let arr = this.getDesignationArray(group);
+                if (!arr.includes(desig)) {
+                    arr.push(desig);
+                    group.designations = arr.join(', '); // Convert back to string for database
+                }
+                group.searchQuery = ''; // Clear search box
+                // group.showDropdown = false; // Hide dropdown
+            },
+
+            removeDesignation(group, desig) {
+                let arr = this.getDesignationArray(group);
+                arr = arr.filter(d => d !== desig);
+                group.designations = arr.join(', '); // Convert back to string for database
+            },
+            // -------------------------------------
+
+
+            updateSnapshot() {
+                // Strip out UI-only properties (like isOpen, searchQuery, showDropdown) before comparing
+                const cleanRules = this.designationRules.map(grp => {
+                    const { isOpen, searchQuery, showDropdown, ...rest } = grp;
+                    return rest;
+                });
+                // Create a master string of both the rules and the account rates
+                this.originalDataSnapshot = JSON.stringify({
+                    rules: cleanRules,
+                    rates: this.doc.account_rates
+                });
+            },
+
+
+
             saveConfig() {
-                // RUN VALIDATOR FIRST
+                // STAGE 1: Update the index (idx) of Account Rates
+                if (this.doc.account_rates && this.doc.account_rates.length > 0) {
+                    this.doc.account_rates.forEach((acc, i) => acc.idx = i + 1);
+                }
+
+                // STAGE 2: Validate Data
                 if (!this.validate()) return;
 
-                // If valid, format data safely
-                this.designationRules.forEach(grp => {
-                    grp.capping_amount = parseFloat(grp.capping_amount) || 0;
-                    grp.slabs.forEach(slab => {
-                        slab.min = parseFloat(slab.min) || 0;
-                        slab.amount = parseFloat(slab.amount) || 0;
-                        // If max is empty string, convert to actual null for JSON cleanliness
-                        slab.max = (slab.max === '' || isNaN(parseFloat(slab.max))) ? null : parseFloat(slab.max);
-                    });
+                // STAGE 3: Check if anything actually changed
+                const cleanRules = this.designationRules.map(grp => {
+                    const { isOpen, searchQuery, showDropdown, ...rest } = grp;
+                    return rest;
+                });
+                const currentDataString = JSON.stringify({
+                    rules: cleanRules,
+                    rates: this.doc.account_rates
                 });
 
+                if (currentDataString === this.originalDataSnapshot) {
+                    frappe.show_alert({ message: 'No changes detected.', indicator: 'gray' }, 3);
+                    return; // EXIT EARLY, do not hit the server!
+                }
+
+                // STAGE 4: Save Data
                 this.doc.designation_structure = JSON.stringify(this.designationRules);
                 if (!this.doc.doctype) this.doc.doctype = 'Incentive Config';
 
@@ -876,12 +1558,15 @@
                     callback: (r) => {
                         this.isSaving = false;
                         if (!r.exc) {
-                            frappe.show_alert({ message: "Configuration Saved Successfully!", indicator: 'green' });
+                            frappe.show_alert({ message: 'Incentive Rules Saved Successfully!', indicator: 'green' }, 5);
                             this.doc = r.message;
+                            this.updateSnapshot(); // Update the snapshot so they can't spam click save again!
                         }
                     }
                 });
-            }
+            },
+
+
         }).mount('#admin-app');
     });
 </script>
