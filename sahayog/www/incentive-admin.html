@@ -1029,8 +1029,12 @@
             addGroup() {
                 // Automatically open new groups when added
                 this.designationRules.push({
-                    group_name: 'New Group', designations: '', capping_amount: 0,
+                    group_name: 'New Group',
+                    designations: '',
+                    capping_amount: 0,
                     isOpen: true,
+                    searchQuery: '',
+                    showDropdown: false,
                     slabs: [{ min: '', max: null, amount: '' }]
                 });
             },
