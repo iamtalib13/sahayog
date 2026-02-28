@@ -1282,11 +1282,12 @@
 
 
             // --- STRICT VALIDATION LOGIC ---
+            // --- STRICT VALIDATION LOGIC ---
             validate() {
                 // 1. Validate Account Rates
                 for (let i = 0; i < this.doc.account_rates.length; i++) {
                     let acc = this.doc.account_rates[i];
-                    if (!acc.account_type || acc.account_type.trim() === '') {
+                    if (!acc.account_type || !acc.account_type.trim()) {
                         frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Account Row ${i + 1}: Account Name cannot be empty.` });
                         return false;
                     }
@@ -1300,66 +1301,115 @@
                 for (let i = 0; i < this.designationRules.length; i++) {
                     let grp = this.designationRules[i];
 
-                    if (!grp.group_name || grp.group_name.trim() === '') {
+                    if (!grp.group_name || !grp.group_name.trim()) {
                         frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${i + 1}: Group Name cannot be empty.` });
                         return false;
                     }
-                    if (!grp.designations || grp.designations.trim() === '') {
-                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name}: Allowed Designations cannot be empty.` });
+                    if (!grp.designations || !grp.designations.trim()) {
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}": At least one Designation must be selected.` });
                         return false;
                     }
                     if (grp.capping_amount === '' || grp.capping_amount === null || parseFloat(grp.capping_amount) < 0) {
-                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name}: Max Cap Limit cannot be blank or negative.` });
+                        frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}": Max Cap Limit cannot be blank or negative.` });
                         return false;
                     }
 
                     // 3. Validate MAB Slabs inside the group
                     let minValues = new Set();
+                    let validSlabs = []; // Store parsed slabs for overlap checking
+
                     for (let j = 0; j < grp.slabs.length; j++) {
                         let slab = grp.slabs[j];
 
-                        // Strict check for completely empty inputs
+                        // Strict check for empty inputs
                         if (slab.min === '' || slab.min === null) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Min limit cannot be left blank.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Min limit cannot be left blank.` });
                             return false;
                         }
                         if (slab.amount === '' || slab.amount === null) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Payout amount cannot be left blank.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Payout amount cannot be left blank.` });
                             return false;
                         }
 
                         let minVal = parseFloat(slab.min);
                         let maxVal = parseFloat(slab.max);
                         let payout = parseFloat(slab.amount);
+                        let hasMax = !isNaN(maxVal) && slab.max !== '' && slab.max !== null;
 
                         if (minVal < 0) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Min limit cannot be negative.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Min limit cannot be negative.` });
                             return false;
                         }
                         if (payout < 0) {
-                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group ${grp.group_name} (Tier ${j + 1}): Payout cannot be negative.` });
+                            frappe.msgprint({ title: 'Validation Error', indicator: 'red', message: `Group "${grp.group_name}" Tier ${j + 1}: Payout cannot be negative.` });
                             return false;
                         }
 
-                        // Check if Max is actually greater than Min (if Max is filled out)
-                        if (!isNaN(maxVal) && slab.max !== null && slab.max !== '') {
-                            if (maxVal <= minVal) {
-                                frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group ${grp.group_name}: Max limit (₹${maxVal}) must be strictly greater than Min limit (₹${minVal}).` });
-                                return false;
-                            }
+                        // Check if Max is actually greater than Min
+                        if (hasMax && maxVal <= minVal) {
+                            frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group "${grp.group_name}": Max limit (₹${maxVal}) must be strictly greater than Min limit (₹${minVal}).` });
+                            return false;
                         }
 
-                        // Prevent duplicate Min tiers (e.g. creating two "Min 25000" rules)
+                        // Prevent duplicate exact Min tiers
                         if (minValues.has(minVal)) {
-                            frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group ${grp.group_name}: You cannot have multiple tiers starting with exactly Min ₹${minVal}.` });
+                            frappe.msgprint({ title: 'Logic Error', indicator: 'red', message: `Group "${grp.group_name}": You cannot have multiple tiers starting at exactly ₹${minVal}.` });
                             return false;
                         }
                         minValues.add(minVal);
+
+                        // Push to array for mathematical overlap checking
+                        validSlabs.push({
+                            min: minVal,
+                            max: hasMax ? maxVal : Infinity, // Infinity represents 'No Max Limit'
+                            originalIndex: j + 1
+                        });
+                    }
+
+                    // 4. PREVENT OVERLAPPING SLABS
+                    // Sort the slabs purely by Min value for logic checking
+                    validSlabs.sort((a, b) => a.min - b.min);
+
+                    for (let s = 0; s < validSlabs.length - 1; s++) {
+                        let currentSlab = validSlabs[s];
+                        let nextSlab = validSlabs[s + 1];
+
+                        // If the Current Slab has No Max (Infinity), but there is a Next Slab...
+                        if (currentSlab.max === Infinity) {
+                            frappe.msgprint({
+                                title: 'Logic Error', indicator: 'red',
+                                message: `Group "${grp.group_name}": Tier ${currentSlab.originalIndex} has no Max Limit, but is followed by Tier ${nextSlab.originalIndex} starting at ₹${nextSlab.min}. Please set a Max Limit on the lower tier.`
+                            });
+                            return false;
+                        }
+
+                        // If the Current Slab's Max is GREATER than the Next Slab's Min, they overlap!
+                        // Example: Current (25k - 50k), Next (40k - 60k). 50k > 40k = OVERLAP
+                        if (currentSlab.max > nextSlab.min) {
+                            frappe.msgprint({
+                                title: 'Overlap Detected', indicator: 'red',
+                                message: `Group "${grp.group_name}": Tier ${currentSlab.originalIndex} (Max: ₹${currentSlab.max}) overlaps with Tier ${nextSlab.originalIndex} (Min: ₹${nextSlab.min}).`
+                            });
+                            return false;
+                        }
+
+                        // Warning for gaps (Optional: Remove if you want to allow gaps like 25k-50k then 75k-100k earning 0 in between)
+                        // This forces continuous ranges: 25k-50k, 50k-75k
+                        if (currentSlab.max < nextSlab.min) {
+                            // Uncomment the below if you want to FORCE continuous tiers without gaps
+                            /*
+                            frappe.msgprint({ 
+                                title: 'Gap Detected', indicator: 'orange', 
+                                message: `Group "${grp.group_name}": There is a gap between Max ₹${currentSlab.max} and Min ₹${nextSlab.min} where employees will earn nothing.` 
+                            });
+                            return false;
+                            */
+                        }
                     }
                 }
-
                 return true;
             },
+
 
 
             // --- NEW: SMART DESIGNATION LOGIC ---
