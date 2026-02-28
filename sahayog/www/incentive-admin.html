@@ -936,8 +936,9 @@
                             added.</div>
 
                         <div class="slab-row draggable-row fade-enter" v-for="(slab, sIndex) in group.slabs"
-                            :key="'slab'+sIndex" draggable="true" @dragstart="dragStartSlab(gIndex, sIndex)"
-                            @dragover.prevent @drop="dropSlab(gIndex, sIndex)">
+                            :key="'slab_' + gIndex + '_' + sIndex" draggable="true"
+                            @dragstart="dragStartSlab(gIndex, sIndex)" @dragover.prevent
+                            @drop="dropSlab(gIndex, sIndex)">
 
                             <!-- Drag Handle -->
                             <div class="drag-handle" title="Drag to reorder">
@@ -970,6 +971,7 @@
                             <button @click="group.slabs.splice(sIndex, 1)" class="del-btn"
                                 style="height: 100%;">✕</button>
                         </div>
+
                     </div>
 
                 </div>
