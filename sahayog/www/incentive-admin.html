@@ -735,6 +735,48 @@
         align-items: center;
         margin-bottom: 12px;
     }
+
+    /* Enhanced Drag & Drop Feedback */
+    .drag-handle {
+        cursor: grab;
+        color: #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+
+    .drag-handle:hover {
+        color: var(--accent);
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    /* The visual state when dragging */
+    .draggable-row {
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, opacity 0.2s;
+    }
+
+    /* The glowing effect when an item is actively being held/dragged */
+    .draggable-row.is-dragging {
+        opacity: 0.9;
+        border: 2px solid var(--accent) !important;
+        box-shadow: 0 0 0 4px rgba(65, 125, 129, 0.2), 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+        transform: scale(1.02);
+        /* Slightly enlarge to pop out of the screen */
+        background: #fff;
+        z-index: 50;
+        /* Keep it above other rows */
+        position: relative;
+    }
+
+    /* Subtle highlight for the row being hovered over (drop target) */
+    .draggable-row.drag-over {
+        border-top: 3px solid var(--accent);
+        transform: translateY(2px);
+    }
 </style>
 
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
@@ -782,8 +824,10 @@
 
 
             <div class="item-row draggable-row fade-enter" v-for="(item, index) in doc.account_rates"
-                :key="'acc_' + index" draggable="true" @dragstart="dragStartAcc(index)" @dragover.prevent
-                @drop="dropAcc(index)" :style="{animationDelay: (index * 0.05) + 's'}">
+                :key="'acc_' + index" draggable="true" @dragstart="dragStartAcc(index, $event)" @dragend="dragEndAcc()"
+                @dragover.prevent @drop="dropAcc(index)" :class="{ 'is-dragging': draggedAccIndex === index }"
+                :style="{animationDelay: (index * 0.05) + 's'}">
+
 
                 <!-- Drag Handle -->
                 <div class="drag-handle" title="Drag to reorder">
@@ -957,8 +1001,10 @@
 
                         <div class="slab-row draggable-row fade-enter" v-for="(slab, sIndex) in group.slabs"
                             :key="'slab_' + gIndex + '_' + sIndex" draggable="true"
-                            @dragstart="dragStartSlab(gIndex, sIndex)" @dragover.prevent
-                            @drop="dropSlab(gIndex, sIndex)">
+                            @dragstart="dragStartSlab(gIndex, sIndex, $event)" @dragend="dragEndSlab()"
+                            @dragover.prevent @drop="dropSlab(gIndex, sIndex)"
+                            :class="{ 'is-dragging': draggedSlab.groupIndex === gIndex && draggedSlab.slabIndex === sIndex }">
+
 
                             <!-- Drag Handle -->
                             <div class="drag-handle" title="Drag to reorder">
@@ -1170,23 +1216,31 @@
 
 
             // --- DRAG & DROP: ACCOUNT RATES ---
-            dragStartAcc(index) {
-                this.draggedAccIndex = index;
+            // --- DRAG & DROP: ACCOUNT RATES ---
+            dragStartAcc(index, event) {
+                // Set the ghost image nicely, then set the tracking index
+                setTimeout(() => { this.draggedAccIndex = index; }, 10);
+            },
+            dragEndAcc() {
+                this.draggedAccIndex = null; // Clean up when drag finishes anywhere
             },
             dropAcc(index) {
                 if (this.draggedAccIndex === null || this.draggedAccIndex === index) return;
-                // Splice out the dragged item, then insert it at the new target index
                 const item = this.doc.account_rates.splice(this.draggedAccIndex, 1)[0];
                 this.doc.account_rates.splice(index, 0, item);
                 this.draggedAccIndex = null;
             },
 
             // --- DRAG & DROP: MAB SLABS ---
-            dragStartSlab(gIndex, sIndex) {
-                this.draggedSlab = { groupIndex: gIndex, slabIndex: sIndex };
+            dragStartSlab(gIndex, sIndex, event) {
+                setTimeout(() => {
+                    this.draggedSlab = { groupIndex: gIndex, slabIndex: sIndex };
+                }, 10);
+            },
+            dragEndSlab() {
+                this.draggedSlab = { groupIndex: null, slabIndex: null };
             },
             dropSlab(targetGroupIndex, targetSlabIndex) {
-                // Ensure they are dropping it inside the same designation group
                 if (this.draggedSlab.groupIndex !== targetGroupIndex) return;
                 if (this.draggedSlab.slabIndex === targetSlabIndex) return;
 
@@ -1196,6 +1250,7 @@
 
                 this.draggedSlab = { groupIndex: null, slabIndex: null };
             },
+
 
             // --- MAGIC AUTO-SORT ---
             autoSortSlabs(group) {
