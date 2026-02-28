@@ -33,3 +33,14 @@ def get_incentive_config():
             config["designation_rules"] = []
 
     return config
+
+
+@frappe.whitelist()
+def check_admin_access():
+    user = frappe.session.user
+    if user == "Guest":
+        return False
+        
+    # Check if user is Administrator or has the 'Incentive Admin' role
+    has_access = "Administrator" in frappe.get_roles(user) or "Incentive Admin" in frappe.get_roles(user)
+    return has_access
