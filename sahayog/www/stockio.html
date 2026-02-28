@@ -1,0 +1,511 @@
+{% extends "templates/web.html" %}
+
+{% block title %}StockIO{% endblock %}
+
+{% block style %}
+<style>
+/* 1. IMPORT ORIGINAL CSS */
+{{ stockio_css }}
+
+/* 2. OVERRIDE WEB TEMPLATE FOR FULL SCREEN (TRUE EDGE-TO-EDGE) */
+header.navbar, footer, .web-footer, .navbar, .page-breadcrumbs, .page-head { display: none !important; }
+
+/* Reclaim every pixel of space from the standard Frappe containers */
+.main-section, 
+.page-container, 
+.page-content, 
+.container,
+[data-page-route="stockio"] { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    padding-top: 0 !important;
+    max-width: 100vw !important; 
+    width: 100vw !important; 
+    min-width: 100vw !important;
+    font-size: 12px !important; 
+}
+
+/* MINIMIZE HEADER HEIGHT AND TOP SPACE */
+.stockio-main { padding-top: 0 !important; }
+.stockio-header { padding: 6px 32px !important; min-height: auto !important; }
+.stockio-header h2 { margin: 0 !important; line-height: 1.2 !important; font-size: 16px !important; font-weight: 700 !important; }
+.stockio-toolbar { padding-top: 0 !important; padding-bottom: 10px !important; }
+
+/* ADJUST ALL ELEMENTS -2PX */
+.menu-item { font-size: 13px !important; padding: 9px 14px !important; }
+.submenu-item { font-size: 12px !important; }
+.tab { font-size: 13px !important; }
+.tab b { font-size: 11px !important; }
+.stockio-table th { font-size: 11px !important; padding: 11px 16px !important; }
+.stockio-table td { font-size: 12px !important; padding: 11px 16px !important; }
+.badge { font-size: 10px !important; padding: 3px 9px !important; }
+.btn { font-size: 12px !important; padding: 7px 15px !important; }
+.search-input { font-size: 13px !important; padding: 9px 16px !important; }
+.order-title strong { font-size: 14px !important; }
+.order-meta { font-size: 12px !important; }
+.order-card { padding: 14px !important; }
+
+body { 
+    background-color: var(--bg) !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    overflow: hidden !important;
+}
+
+.stockio-app { 
+    width: 100vw; 
+    height: 100vh; 
+    margin: 0; 
+    padding: 0;
+}
+
+/* Animation for the sidebar glow */
+@keyframes active-glow {
+  0% { box-shadow: 0 0 8px rgba(79, 110, 247, 0.4); }
+  100% { box-shadow: 0 0 16px rgba(79, 110, 247, 0.7); }
+}
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% raw %}
+<div class="stockio-app" v-scope @vue:mounted="init">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="stockio-sidebar" :class="{ collapsed: sidebarCollapsed }">
+
+    <div class="sidebar-top">
+      <div class="logo" v-if="!sidebarCollapsed">StockIO</div>
+      <button class="sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed">
+      <span v-if="sidebarCollapsed">☰</span>
+      <span v-else>❮</span>
+      </button>
+    </div>
+
+    <nav class="menu">
+
+      <!-- REQUESTS -->
+      <div
+      class="menu-item"
+      :class="{ active: pageMode === 'requests' }"
+      @click="setMode('requests')"
+      title="Requests"
+      >
+      <span class="icon">🏠</span>
+      <span v-if="!sidebarCollapsed">Requests</span>
+      </div>
+
+      <!-- STOCK -->
+      <div class="menu-group">
+      <div class="menu-item"
+         :class="{ active: pageMode === 'stock' }"
+         @click="stockOpen = !stockOpen; setMode('stock')"
+         >
+        <span class="icon">
+          {{ pageMode === 'stock' ? (subMode === 'outward' ? '📤' : '📥') : '🛒' }}
+        </span>
+        <span v-if="!sidebarCollapsed">Stock</span>
+        <span v-if="!sidebarCollapsed" class="chevron">▾</span>
+      </div>
+
+      <div v-show="stockOpen && !sidebarCollapsed" class="submenu">
+        <div class="submenu-item"
+           :class="{ active: pageMode === 'stock' && subMode === 'inward' }"
+           @click="setMode('stock', 'inward')"
+        >Inward
+        </div>
+        <div class="submenu-item"
+           :class="{ active: pageMode === 'stock' && subMode === 'outward' }"
+           @click="setMode('stock', 'outward')"
+        >Outward
+        </div>
+      </div>
+      </div>
+
+      <!-- ASSET -->
+      <div class="menu-group">
+      <div class="menu-item"
+         :class="{ active: pageMode === 'asset' }"
+         @click="assetOpen = !assetOpen; setMode('asset')"
+         >
+        <span class="icon">
+          {{ pageMode === 'asset' ? (subMode === 'movement' ? '🚛' : '🏷️') : '📦' }}
+        </span>
+        <span v-if="!sidebarCollapsed">Asset</span>
+        <span v-if="!sidebarCollapsed" class="chevron">▾</span>
+      </div>
+
+      <div v-show="assetOpen && !sidebarCollapsed" class="submenu">
+        <div class="submenu-item"
+           :class="{ active: pageMode === 'asset' && subMode === 'item' }"
+           @click="setMode('asset', 'item')"
+        >Asset Master
+        </div>
+        <div class="submenu-item"
+           :class="{ active: pageMode === 'asset' && subMode === 'movement' }"
+           @click="setMode('asset', 'movement')"
+        >Asset Transactions
+        </div>
+      </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div
+      class="menu-item"
+      :class="{ active: pageMode === 'reports' }"
+      @click="setMode('reports')"
+      title="Reports"
+      >
+      <span class="icon">📊</span>
+      <span v-if="!sidebarCollapsed">Reports</span>
+      </div>
+
+      <!-- ITEMS -->
+      <div
+      class="menu-item"
+      :class="{ active: pageMode === 'item' }"
+      @click="setMode('item')"
+      title="Items"
+      >
+      <span class="icon">🏷️</span>
+      <span v-if="!sidebarCollapsed">Items</span>
+      </div>
+
+    </nav>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <main class="stockio-main">
+
+    <!-- HEADER -->
+    <div class="stockio-header">
+      <h2>{{ pageTitle }}</h2>
+      <div class="stockio-actions" v-if="pageMode !== 'reports'">
+      <button class="btn ghost">Export</button>
+      <button class="btn primary">Create</button>
+      </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="stockio-toolbar">
+
+    <!-- LEFT: TABS -->
+  <div class="stockio-tabs" v-if="pageMode !== 'reports' && pageMode !== 'item'">
+    <template v-if="pageMode === 'requests'">
+      <span class="tab" :class="{ active: activeTab === 'all' }" @click="setTab('all')">
+        All <b>{{ counts.all }}</b>
+      </span>
+      <span class="tab" :class="{ active: activeTab === 'today' }" @click="setTab('today')">
+        To Day <b class="status-success">{{ counts.today }}</b>
+      </span>
+      <span class="tab" :class="{ active: activeTab === 'draft' }" @click="setTab('draft')">
+        Draft <b class="status-draft">{{ counts.draft }}</b>
+      </span>
+      <span class="tab" :class="{ active: activeTab === 'pending' }" @click="setTab('pending')">
+        Pending <b class="status-pending">{{ counts.pending }}</b>
+      </span>
+    </template>
+    <template v-else-if="pageMode === 'stock' || pageMode === 'asset'">
+      <span class="tab" :class="{ active: activeTab === 'all' }" @click="setTab('all')">
+        All <b>{{ counts.all }}</b>
+      </span>
+      <span class="tab" :class="{ active: activeTab === 'draft' }" @click="setTab('draft')">
+        Draft <b class="status-draft">{{ counts.draft }}</b>
+      </span>
+      <span class="tab" v-show="pageMode !== 'asset' || subMode !== 'item'" :class="{ active: activeTab === 'submitted' }" @click="setTab('submitted')">
+        Submitted <b class="status-success">{{ counts.submitted }}</b>
+      </span>
+      <span class="tab" v-show="pageMode === 'asset' && subMode === 'item'" :class="{ active: activeTab === 'available' }" @click="setTab('available')">
+        Available <b class="status-success">{{ counts.available }}</b>
+      </span>
+      <span class="tab" v-show="pageMode === 'asset' && subMode === 'item'" :class="{ active: activeTab === 'assigned' }" @click="setTab('assigned')">
+        Assigned/Depreciated <b class="status-pending">{{ counts.assigned }}</b>
+      </span>
+    </template>
+  </div>
+
+      <div class="stockio-search">
+      <input
+        :placeholder="'Search ' + pageTitle.toLowerCase() + '...'"
+        v-model="searchText"
+        @input="filterVisibleItems()"
+      />
+      </div>
+
+    </div>
+
+    <!-- ================= REQUESTS TABLE VIEW ================= -->
+    <div v-if="pageMode === 'requests'" class="stockio-view-container">
+      <div class="stockio-body">
+      <div class="table-responsive">
+        <table class="stockio-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;"></th>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Owner</th>
+              <th>Reporting Person</th>
+              <th>HO Officer</th>
+              <th>Items</th>
+              <th style="width: 80px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="doc in visibleItems" :key="doc.name">
+              <td><input type="checkbox"></td>
+              <td><strong>{{ doc.name }}</strong></td>
+              <td><span :class="'badge ' + getStatusClass(doc.status)">{{ doc.status }}</span></td>
+              <td>{{ formatDate(doc.creation) }}</td>
+              <td><b>{{ doc.owner }}</b></td>
+              <td>
+                <span :class="{ 'status-approved': doc.reporting_person_status === 'Approved' }">
+                  {{ doc.reporting_person || '-' }}
+                </span>
+              </td>
+              <td>
+                <span :class="{ 'status-approved': doc.ho_officer_status === 'Approved' }">
+                  {{ doc.head_office_officer || '-' }}
+                </span>
+              </td>
+              <td>
+                <button class="btn ghost btn-sm" @click="showItemsPopup = true; popupDoc = doc; loadItems(doc)">
+                  Show Items
+                </button>
+              </td>
+              <td>
+                <button class="btn ghost btn-sm" @click="openDoc(doc.name)">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      </div>
+    </div>
+
+    <!-- ================= STOCK/ASSET CARD VIEW ================= -->
+    <div v-if="pageMode !== 'requests' && pageMode !== 'reports'" class="stockio-view-container">
+      <div class="stockio-body">
+        <div class="order-card" v-for="doc in visibleItems" :key="doc.name">
+          <div class="order-left">
+            <input type="checkbox">
+            <div class="order-info">
+              <div class="order-title">
+                <strong>{{ doc.name }}</strong>
+                <span :class="'badge ' + getStatusClass(doc.status || (doc.custodian ? 'Assigned' : 'Available'))">
+                  {{ doc.status || (doc.custodian ? 'Assigned' : 'Available') }}
+                </span>
+              </div>
+              <div class="order-meta" v-if="pageMode === 'stock'">
+                {{ formatDate(doc.posting_date) }} · {{ doc.supplier || doc.purpose }}
+              </div>
+              <div class="order-meta" v-if="pageMode === 'asset'">
+                {{ doc.asset_name || doc.item_name }} · Owner: <b>{{ doc.custodian || 'Available' }}</b>
+              </div>
+            </div>
+          </div>
+          <div class="order-right">
+            <button class="btn ghost" @click="openDoc(doc.name)">View</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= REPORTS GRID ================= -->
+    <div class="stockio-body" v-if="pageMode === 'reports'">
+      <div class="report-grid">
+      <div class="report-card" v-for="r in reports" :key="r.label" @click="window.location.href = r.route">
+        <div class="report-icon">📄</div>
+        <div class="report-title">{{ r.label }}</div>
+      </div>
+      </div>
+    </div>
+
+    </main>
+
+    <!-- Items Popup -->
+    <div class="stockio-modal-overlay" v-if="showItemsPopup && popupDoc" @click.self="showItemsPopup = false">
+      <div class="stockio-modal items-popup">
+        <div class="modal-header">
+          <h3>Items - {{ popupDoc.name }}</h3>
+          <button class="close-btn" @click="showItemsPopup = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="items-grid" v-if="popupDoc.items && popupDoc.items.length">
+            <div class="item-card" v-for="item in popupDoc.items" :key="item.name">
+              <div class="item-header">
+                <span class="item-code">{{ item.item_code }}</span>
+              </div>
+              <div class="item-details">
+                <span>Qty: <strong>{{ item.quantity }}</strong></span>
+              </div>
+            </div>
+          </div>
+          <div v-else style="text-align:center; padding:20px;">Loading items...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endraw %}
+{% endblock %}
+
+{% block script %}
+<script src="https://unpkg.com/petite-vue"></script>
+<script>
+{% raw %}
+document.addEventListener("DOMContentLoaded", function () {
+  const app = {
+    pageMode: 'requests',
+    subMode: 'inward',
+    activeTab: 'all',
+    sidebarCollapsed: false,
+    stockOpen: false,
+    assetOpen: false,
+    searchText: '',
+    items: [],
+    visibleItems: [],
+    showItemsPopup: false,
+    popupDoc: null,
+    counts: { all: 0, today: 0, draft: 0, pending: 0, submitted: 0, available: 0, assigned: 0 },
+
+    reports: [
+      { label: "My Material Requests", route: "/app/query-report/My%20Material%20Requests" },
+      { label: "Store Asset Master", route: "/app/query-report/Store%20Asset%20Master" },
+      { label: "Store Material Request", route: "/app/query-report/Store%20material%20request" },
+      { label: "My Pending Approvals", route: "/app/query-report/My%20Pending%20Approvals" },
+      { label: "Asset Transfer", route: "/app/query-report/Asset%20Transfer" },
+      { label: "Consumed Items", route: "/app/query-report/Consumed%20Items" },
+      { label: "Branch Stock", route: "/app/query-report/Branch%20Stock" },
+      { label: "My Assets", route: "/app/query-report/My%20Assets" }
+    ],
+
+    get pageTitle() {
+      if (this.pageMode === 'requests') return 'Material Requests';
+      if (this.pageMode === 'stock') return this.subMode === 'inward' ? 'Stock Inward' : 'Stock Outward';
+      if (this.pageMode === 'asset') return this.subMode === 'item' ? 'Asset Master' : 'Asset Transactions';
+      if (this.pageMode === 'item') return 'Items';
+      return 'StockIO';
+    },
+
+    init() {
+      document.body.classList.add("stockio-active");
+      this.fetchData();
+    },
+
+    setMode(mode, sub = null) {
+      this.pageMode = mode;
+      if (sub) this.subMode = sub;
+      this.activeTab = 'all';
+      this.fetchData();
+    },
+
+    setTab(tab) {
+      this.activeTab = tab;
+      this.filterVisibleItems();
+    },
+
+    fetchData() {
+      let doctype = "Employee Material Request";
+      let fields = ["name", "status", "creation", "owner", "reporting_person", "head_office_officer", "reporting_person_status", "ho_officer_status"];
+
+      if (this.pageMode === 'stock') {
+        doctype = this.subMode === 'inward' ? "Purchase Receipt" : "Stock Entry";
+        fields = ["name", "docstatus", "posting_date", this.subMode === 'inward' ? "supplier" : "purpose"];
+        // Purchase Receipt also has status, but Stock Entry uses docstatus
+        if (this.subMode === 'inward') fields.push("status");
+      } else if (this.pageMode === 'asset') {
+        if (this.subMode === 'item') {
+          doctype = "Asset";
+          fields = ["name", "asset_name", "item_name", "custodian", "status"];
+        } else {
+          doctype = "Asset Movement";
+          fields = ["name", "docstatus", "transaction_date", "purpose"];
+        }
+      } else if (this.pageMode === 'item') {
+        doctype = "Item";
+        fields = ["name", "item_code", "item_name", "stock_uom"];
+      }
+
+      frappe.call({
+        method: "frappe.client.get_list",
+        args: { doctype, fields, limit_page_length: 100, order_by: "creation desc" },
+        callback: (r) => {
+          this.items = (r.message || []).map(item => {
+            // Normalize status for display if only docstatus exists
+            if (!item.status && item.docstatus !== undefined) {
+              item.status = item.docstatus === 0 ? "Draft" : item.docstatus === 1 ? "Submitted" : "Cancelled";
+            }
+            return item;
+          });
+          this.filterVisibleItems();
+          this.updateCounts();
+        }
+      });
+    },
+
+    loadItems(doc) {
+      frappe.call({
+        method: "frappe.client.get",
+        args: { doctype: "Employee Material Request", name: doc.name },
+        callback: (r) => { if (r.message) doc.items = r.message.items || []; }
+      });
+    },
+
+    filterVisibleItems() {
+      let list = this.items;
+      if (this.activeTab === 'draft') list = list.filter(i => (i.status || '').toLowerCase().includes('draft'));
+      else if (this.activeTab === 'pending') list = list.filter(i => (i.status || '').toLowerCase().includes('pending'));
+      else if (this.activeTab === 'today') {
+        const today = new Date().toISOString().split('T')[0];
+        list = list.filter(i => (i.creation || '').startsWith(today));
+      }
+
+      if (this.searchText) {
+        const q = this.searchText.toLowerCase();
+        list = list.filter(i => i.name.toLowerCase().includes(q) || (i.owner && i.owner.toLowerCase().includes(q)));
+      }
+      this.visibleItems = list;
+    },
+
+    updateCounts() {
+      this.counts.all = this.items.length;
+      this.counts.draft = this.items.filter(i => (i.status || '').toLowerCase().includes('draft')).length;
+      this.counts.pending = this.items.filter(i => (i.status || '').toLowerCase().includes('pending')).length;
+      const today = new Date().toISOString().split('T')[0];
+      this.counts.today = this.items.filter(i => (i.creation || '').startsWith(today)).length;
+    },
+
+    getStatusClass(status) {
+      if (!status) return "";
+      const s = status.toLowerCase();
+      if (s.includes("draft")) return "status-draft";
+      if (s.includes("pending") || s.includes("receive")) return "status-pending";
+      if (s.includes("approved") || s.includes("submitted") || s.includes("available")) return "status-success";
+      if (s.includes("cancel") || s.includes("reject")) return "status-danger";
+      return "";
+    },
+
+    formatDate(date) {
+      if (!date) return "";
+      return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    },
+
+    openDoc(name) {
+      const map = {
+        'requests': 'employee-material-request',
+        'stock': this.subMode === 'inward' ? 'purchase-receipt' : 'stock-entry',
+        'asset': this.subMode === 'item' ? 'asset' : 'asset-movement',
+        'item': 'item'
+      };
+      window.location.href = `/app/${map[this.pageMode]}/${name}`;
+    }
+  };
+
+  PetiteVue.createApp(app).mount('.stockio-app');
+});
+{% endraw %}
+</script>
+{% endblock %}
