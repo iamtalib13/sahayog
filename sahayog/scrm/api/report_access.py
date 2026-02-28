@@ -99,8 +99,8 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         is_all_regions = p.get("all_regions") # Assign is_all_regions from preferences
         
         # Extract values from preference objects (Product/SOL ID are now lists of dicts)
-        products_pref = {norm(x.get("value")) for x in p.get("product", [])}
-        sources_pref = {norm(x) for x in p.get("source", [])}
+        products_pref = set()
+        sources_pref = set()
         zones_pref = {norm(x) for x in p.get("zone", [])}
         regions_pref = {norm(x) for x in p.get("region", [])}
         sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
@@ -110,15 +110,12 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     # PRODUCT
     if "product" in filters:
         ui_products = {norm(x) for x in filters.get("product", [])}
-        if not ui_products: products_pref = set()
-        else: products_pref = products_pref.intersection(ui_products)
+        products_pref = ui_products
 
     # SOURCE
     if "source" in filters:
-        ui_sources = {norm(x) for x in filters.get("source", [])}
-        if not ui_sources: sources_pref = set()
-        else: sources_pref = sources_pref.intersection(ui_sources)
-
+       ui_sources = {norm(x) for x in filters.get("source", [])}
+       sources_pref = ui_sources
     # ZONE
     if "zone" in filters:
         ui_zones = {norm(x) for x in filters.get("zone", [])}
@@ -128,7 +125,7 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     # REGION
     if "region" in filters:
        ui_regions = {norm(x) for x in filters.get("region", [])}
-    if not ui_regions:
+       if not ui_regions:
         regions_pref = set()
     else:
         regions_pref = regions_pref.intersection(ui_regions)
@@ -459,4 +456,25 @@ def get_employee_performance_data(from_date, to_date):
        
     return list(employee_stats.values())
 
-    
+@frappe.whitelist()
+def get_all_products_sources():
+    # Distinct Products from Lead Product child table
+    products = frappe.db.sql("""
+        SELECT DISTINCT product
+        FROM `tabLead Product`
+        WHERE product IS NOT NULL AND product != ''
+        ORDER BY product ASC
+    """, as_dict=True)
+
+    # Distinct Sources from Lead master
+    sources = frappe.db.sql("""
+        SELECT DISTINCT source
+        FROM `tabLead`
+        WHERE source IS NOT NULL AND source != ''
+        ORDER BY source ASC
+    """, as_dict=True)
+
+    return {
+        "products": [p.product for p in products],
+        "sources": [s.source for s in sources]
+    }

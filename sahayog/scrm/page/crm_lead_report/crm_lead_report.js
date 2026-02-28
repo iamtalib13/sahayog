@@ -998,21 +998,31 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         "sahayog.scrm.api.report_access.get_user_report_preference_record",
         { user: frappe.session.user },
       );
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.get_all_products_sources",
+        callback: function (r) {
+          if (r.message) {
+            this.filter_data.product = r.message.products;
+            this.filter_data.source = r.message.sources;
+            this.renderFilters();
+          }
+        }.bind(this),
+      });
       const pref = (res.message || [])[0];
       if (pref) {
         this.filter_data = {
           zone: pref.zone || [],
           region: pref.region || [],
           sol_id: pref.sol_id || [],
-          product: pref.product || [],
-          source: pref.source || [],
+          // product: pref.product || [],
+          // source: pref.source || [],
         };
         this.selected = {
           zone: [...this.filter_data.zone],
           region: [...this.filter_data.region],
           sol_id: this.filter_data.sol_id.map((o) => o.value || o),
-          product: this.filter_data.product.map((o) => o.value || o),
-          source: [...this.filter_data.source],
+          product: [],
+          source: [],
         };
       }
 
