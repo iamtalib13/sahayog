@@ -670,6 +670,53 @@
         background: var(--danger);
         color: #fff;
     }
+
+    /* Drag & Drop Styles */
+    .drag-handle {
+        cursor: grab;
+        color: #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+
+    .drag-handle:hover {
+        color: var(--accent);
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    .draggable-row {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .draggable-row.dragging {
+        opacity: 0.4;
+    }
+
+    /* Updated Grids to make room for the drag handle */
+    .item-row {
+        display: grid;
+        grid-template-columns: 24px 1fr 1fr 40px;
+        gap: 16px;
+        align-items: center;
+        padding: 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        margin-bottom: 12px;
+    }
+
+    .slab-row {
+        display: grid;
+        grid-template-columns: 24px 1fr 1fr 1fr 40px;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+    }
 </style>
 
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
@@ -716,8 +763,23 @@
                 to begin.</div>
 
 
-            <div class="item-row fade-enter" v-for="(item, index) in doc.account_rates" :key="index"
-                :style="{animationDelay: (index * 0.05) + 's'}">
+            <div class="item-row draggable-row fade-enter" v-for="(item, index) in doc.account_rates"
+                :key="'acc_' + index" draggable="true" @dragstart="dragStartAcc(index)" @dragover.prevent
+                @drop="dropAcc(index)" :style="{animationDelay: (index * 0.05) + 's'}">
+
+                <!-- Drag Handle -->
+                <div class="drag-handle" title="Drag to reorder">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <circle cx="9" cy="12" r="1" />
+                        <circle cx="9" cy="5" r="1" />
+                        <circle cx="9" cy="19" r="1" />
+                        <circle cx="15" cy="12" r="1" />
+                        <circle cx="15" cy="5" r="1" />
+                        <circle cx="15" cy="19" r="1" />
+                    </svg>
+                </div>
+
                 <div>
                     <input type="text" v-model="item.account_type" placeholder="e.g. Silver Account"
                         style="font-weight: 700;">
@@ -731,6 +793,7 @@
                     <button @click="removeAccount(index)" class="del-btn" title="Remove Account">✕</button>
                 </div>
             </div>
+
         </div>
 
 
@@ -858,16 +921,37 @@
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                             <label class="label-text" style="margin: 0;">MAB Funding Tiers (Min Balance →
                                 Payout)</label>
-                            <button @click="group.slabs.push({min:'', max: null, amount:''})" class="add-btn"
-                                style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
+                            <div style="display: flex; gap: 8px;">
+                                <!-- Auto Sort Button -->
+                                <button @click="autoSortSlabs(group)" class="add-btn"
+                                    style="background: #f1f5f9; color: var(--primary); border-color: #cbd5e1; padding: 4px 10px; font-size: 11px;">
+                                    🪄 Auto-Sort Tiers
+                                </button>
+                                <button @click="group.slabs.push({min:'', max: null, amount:''})" class="add-btn"
+                                    style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
+                            </div>
                         </div>
-
 
                         <div v-if="group.slabs.length === 0" class="empty-state" style="padding: 15px;">No funding tiers
                             added.</div>
 
+                        <div class="slab-row draggable-row fade-enter" v-for="(slab, sIndex) in group.slabs"
+                            :key="'slab'+sIndex" draggable="true" @dragstart="dragStartSlab(gIndex, sIndex)"
+                            @dragover.prevent @drop="dropSlab(gIndex, sIndex)">
 
-                        <div v-for="(slab, sIndex) in group.slabs" :key="sIndex" class="slab-row fade-enter">
+                            <!-- Drag Handle -->
+                            <div class="drag-handle" title="Drag to reorder">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <circle cx="9" cy="12" r="1" />
+                                    <circle cx="9" cy="5" r="1" />
+                                    <circle cx="9" cy="19" r="1" />
+                                    <circle cx="15" cy="12" r="1" />
+                                    <circle cx="15" cy="5" r="1" />
+                                    <circle cx="15" cy="19" r="1" />
+                                </svg>
+                            </div>
+
                             <div class="input-wrapper">
                                 <span class="prefix">Min ₹</span>
                                 <input type="number" v-model="slab.min" class="has-prefix" placeholder="e.g. 25000"
@@ -887,6 +971,7 @@
                                 style="height: 100%;">✕</button>
                         </div>
                     </div>
+
                 </div>
 
             </div>
@@ -935,6 +1020,11 @@
             isCheckingAccess: true,
             hasAccess: false,
             currentUser: 'Loading...',
+
+            // State
+            draggedAccIndex: null,
+            draggedSlab: { groupIndex: null, slabIndex: null },
+
 
             mounted() {
                 this.checkAccess(); // Step 1: Verify role first
@@ -1055,6 +1145,47 @@
 
             addAccount() { this.doc.account_rates.push({ account_type: '', incentive_amount: 0, enabled: 1 }); },
             removeAccount(i) { this.doc.account_rates.splice(i, 1); },
+
+
+            // --- DRAG & DROP: ACCOUNT RATES ---
+            dragStartAcc(index) {
+                this.draggedAccIndex = index;
+            },
+            dropAcc(index) {
+                if (this.draggedAccIndex === null || this.draggedAccIndex === index) return;
+                // Splice out the dragged item, then insert it at the new target index
+                const item = this.doc.account_rates.splice(this.draggedAccIndex, 1)[0];
+                this.doc.account_rates.splice(index, 0, item);
+                this.draggedAccIndex = null;
+            },
+
+            // --- DRAG & DROP: MAB SLABS ---
+            dragStartSlab(gIndex, sIndex) {
+                this.draggedSlab = { groupIndex: gIndex, slabIndex: sIndex };
+            },
+            dropSlab(targetGroupIndex, targetSlabIndex) {
+                // Ensure they are dropping it inside the same designation group
+                if (this.draggedSlab.groupIndex !== targetGroupIndex) return;
+                if (this.draggedSlab.slabIndex === targetSlabIndex) return;
+
+                const gIndex = this.draggedSlab.groupIndex;
+                const item = this.designationRules[gIndex].slabs.splice(this.draggedSlab.slabIndex, 1)[0];
+                this.designationRules[gIndex].slabs.splice(targetSlabIndex, 0, item);
+
+                this.draggedSlab = { groupIndex: null, slabIndex: null };
+            },
+
+            // --- MAGIC AUTO-SORT ---
+            autoSortSlabs(group) {
+                // Sorts tiers mathematically based on Min Value
+                group.slabs.sort((a, b) => {
+                    let minA = parseFloat(a.min) || 0;
+                    let minB = parseFloat(b.min) || 0;
+                    return minA - minB;
+                });
+            },
+
+
 
             // --- STRICT VALIDATION LOGIC ---
             validate() {
@@ -1187,20 +1318,17 @@
 
 
             saveConfig() {
-                // RUN VALIDATOR FIRST
+                // STAGE 1: Update the index (idx) of Account Rates so Frappe saves the drag-and-drop order!
+                if (this.doc.account_rates && this.doc.account_rates.length > 0) {
+                    this.doc.account_rates.forEach((acc, i) => {
+                        acc.idx = i + 1; // Frappe indexes start at 1
+                    });
+                }
+
+                // STAGE 2: Validate Data
                 if (!this.validate()) return;
 
-                // If valid, format data safely
-                this.designationRules.forEach(grp => {
-                    grp.capping_amount = parseFloat(grp.capping_amount) || 0;
-                    grp.slabs.forEach(slab => {
-                        slab.min = parseFloat(slab.min) || 0;
-                        slab.amount = parseFloat(slab.amount) || 0;
-                        // If max is empty string, convert to actual null for JSON cleanliness
-                        slab.max = (slab.max === '' || isNaN(parseFloat(slab.max))) ? null : parseFloat(slab.max);
-                    });
-                });
-
+                // STAGE 3: Save Data
                 this.doc.designation_structure = JSON.stringify(this.designationRules);
                 if (!this.doc.doctype) this.doc.doctype = 'Incentive Config';
 
@@ -1211,12 +1339,13 @@
                     callback: (r) => {
                         this.isSaving = false;
                         if (!r.exc) {
-                            frappe.show_alert({ message: "Configuration Saved Successfully!", indicator: 'green' });
+                            frappe.msgprint({ title: 'Success', indicator: 'green', message: 'Incentive Rules Saved Successfully!' });
                             this.doc = r.message;
                         }
                     }
                 });
-            }
+            },
+
         }).mount('#admin-app');
     });
 </script>
