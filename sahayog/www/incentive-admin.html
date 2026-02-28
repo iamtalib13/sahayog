@@ -1114,6 +1114,7 @@
             doc: { doctype: 'Incentive Config', name: 'Incentive Config', account_rates: [], designation_structure: '' },
             designationRules: [],
             availableDesignations: [], // Stores Designations
+            originalDataSnapshot: '',
             isSaving: false,
 
             // Security States
@@ -1200,6 +1201,7 @@
                                     });
                                 }
                             } catch (e) { this.loadDefaults(); }
+                            this.updateSnapshot();
 
                         }
                     }
@@ -1506,19 +1508,46 @@
             // -------------------------------------
 
 
+            updateSnapshot() {
+                // Strip out UI-only properties (like isOpen, searchQuery, showDropdown) before comparing
+                const cleanRules = this.designationRules.map(grp => {
+                    const { isOpen, searchQuery, showDropdown, ...rest } = grp;
+                    return rest;
+                });
+                // Create a master string of both the rules and the account rates
+                this.originalDataSnapshot = JSON.stringify({
+                    rules: cleanRules,
+                    rates: this.doc.account_rates
+                });
+            },
+
+
 
             saveConfig() {
-                // STAGE 1: Update the index (idx) of Account Rates so Frappe saves the drag-and-drop order!
+                // STAGE 1: Update the index (idx) of Account Rates
                 if (this.doc.account_rates && this.doc.account_rates.length > 0) {
-                    this.doc.account_rates.forEach((acc, i) => {
-                        acc.idx = i + 1; // Frappe indexes start at 1
-                    });
+                    this.doc.account_rates.forEach((acc, i) => acc.idx = i + 1);
                 }
 
                 // STAGE 2: Validate Data
                 if (!this.validate()) return;
 
-                // STAGE 3: Save Data
+                // STAGE 3: Check if anything actually changed
+                const cleanRules = this.designationRules.map(grp => {
+                    const { isOpen, searchQuery, showDropdown, ...rest } = grp;
+                    return rest;
+                });
+                const currentDataString = JSON.stringify({
+                    rules: cleanRules,
+                    rates: this.doc.account_rates
+                });
+
+                if (currentDataString === this.originalDataSnapshot) {
+                    frappe.show_alert({ message: 'No changes detected.', indicator: 'gray' }, 3);
+                    return; // EXIT EARLY, do not hit the server!
+                }
+
+                // STAGE 4: Save Data
                 this.doc.designation_structure = JSON.stringify(this.designationRules);
                 if (!this.doc.doctype) this.doc.doctype = 'Incentive Config';
 
@@ -1529,17 +1558,14 @@
                     callback: (r) => {
                         this.isSaving = false;
                         if (!r.exc) {
-                            // Non-blocking toast alert instead of modal popup
-                            frappe.show_alert({
-                                message: 'Incentive Rules Saved Successfully!',
-                                indicator: 'green'
-                            }, 5); // 5 seconds duration
-
+                            frappe.show_alert({ message: 'Incentive Rules Saved Successfully!', indicator: 'green' }, 5);
                             this.doc = r.message;
+                            this.updateSnapshot(); // Update the snapshot so they can't spam click save again!
                         }
                     }
                 });
             },
+
 
         }).mount('#admin-app');
     });
