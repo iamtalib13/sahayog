@@ -277,28 +277,46 @@
         font-size: 14px;
     }
 
+    /* 1. Perfect vertical alignment for ALL prefixes */
+    .input-wrapper .prefix {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%) !important;
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        pointer-events: none;
+        /* Prevents icon from blocking mouse clicks */
+    }
 
-    /* Fix for overlapping prefixes in different inputs */
+    /* 2. Default standard padding for single character (₹) like the Max Cap & Account Rates */
     .input-wrapper input.has-prefix {
-        padding-left: 32px;
+        padding-left: 36px !important;
     }
 
-    /* Default for single character like ₹ */
+    /* 3. Precise, pixel-perfect padding specifically for the MAB Tiers */
+    /* This accounts for the Drag Handle (which is child 1), so we target 2, 3, 4 */
 
-    /* Specific padding overrides based on the length of the prefix text */
-    .slab-row .input-wrapper:nth-child(1) input.has-prefix {
-        padding-left: 56px;
-    }
-
-    /* For "Min ₹" */
+    /* "Min ₹" box (Requires ~56px because 'Min' is 3 letters) */
     .slab-row .input-wrapper:nth-child(2) input.has-prefix {
-        padding-left: 60px;
+        padding-left: 56px !important;
     }
 
-    /* For "Max ₹" */
+    /* "Max ₹" box (Requires ~60px because 'Max' is slightly wider than Min) */
     .slab-row .input-wrapper:nth-child(3) input.has-prefix {
-        padding-left: 45px;
+        padding-left: 60px !important;
     }
+
+    /* "+ ₹" box (Requires ~42px because it's just a plus sign and rupee) */
+    .slab-row .input-wrapper:nth-child(4) input.has-prefix {
+        padding-left: 42px !important;
+    }
+
 
     /* For "+ ₹" */
 
@@ -907,7 +925,9 @@
                         <div>
                             <label class="label-text">Maximum Incentive Cap limit</label>
                             <div class="input-wrapper">
-                                <span class="prefix" style="font-size: 20px; top: 45%;">₹</span>
+                                <!-- <span class="prefix" style="font-size: 20px; top: 45%;">₹</span> -->
+                                <span class="prefix" style="font-size: 20px;">₹</span>
+
                                 <input type="number" v-model="group.capping_amount" class="has-prefix"
                                     style="font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; height: 60px;"
                                     min="0">
