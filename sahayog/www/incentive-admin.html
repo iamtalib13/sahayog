@@ -1483,7 +1483,12 @@
                     callback: (r) => {
                         this.isSaving = false;
                         if (!r.exc) {
-                            frappe.msgprint({ title: 'Success', indicator: 'green', message: 'Incentive Rules Saved Successfully!' });
+                            // Non-blocking toast alert instead of modal popup
+                            frappe.show_alert({
+                                message: 'Incentive Rules Saved Successfully!',
+                                indicator: 'green'
+                            }, 5); // 5 seconds duration
+
                             this.doc = r.message;
                         }
                     }
