@@ -582,6 +582,94 @@
         max-width: 450px;
         margin: 0;
     }
+
+    /* Searchable Dropdown & Pills Styles */
+    .dropdown-wrapper {
+        position: relative;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .designation-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 4px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 50;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .dropdown-item {
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary);
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: 0.2s;
+    }
+
+    .dropdown-item:last-child {
+        border-bottom: none;
+    }
+
+    .dropdown-item:hover {
+        background: #f8fafc;
+        color: var(--accent);
+        padding-left: 18px;
+    }
+
+    .pills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+        min-height: 32px;
+        padding: 8px;
+        background: #fff;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+    }
+
+    .desig-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(65, 125, 129, 0.1);
+        color: var(--accent);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid rgba(65, 125, 129, 0.2);
+        transition: 0.2s;
+        animation: smoothFadeIn 0.2s ease-out;
+    }
+
+    .remove-pill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        color: var(--danger);
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    .remove-pill:hover {
+        background: var(--danger);
+        color: #fff;
+    }
 </style>
 
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
@@ -700,8 +788,39 @@
                             <input type="text" v-model="group.group_name"
                                 placeholder="Group Name (e.g. Branch Officers)"
                                 style="font-size: 16px; font-weight: 800; margin-bottom: 12px; color: var(--accent);">
-                            <textarea v-model="group.designations"
-                                placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea>
+                            <!-- <textarea v-model="group.designations"
+                                placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea> -->
+
+                            <!-- SMART DESIGNATION SELECTOR -->
+                            <div class="dropdown-wrapper">
+                                <input type="text" v-model="group.searchQuery" @focus="group.showDropdown = true"
+                                    @blur="group.showDropdown = false"
+                                    placeholder="🔍 Search and select designations..." style="font-size: 13px;">
+
+                                <!-- Search Results Dropdown -->
+                                <div class="designation-dropdown"
+                                    v-show="group.showDropdown && filteredDesignations(group).length > 0">
+                                    <div class="dropdown-item" v-for="d in filteredDesignations(group)" :key="d"
+                                        @mousedown.prevent="addDesignation(group, d)">
+                                        [[ d ]]
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selected Pills -->
+                            <div class="pills-container">
+                                <div v-if="getDesignationArray(group).length === 0"
+                                    style="font-size: 11px; color: #94a3b8; font-style: italic; margin: auto;">No
+                                    designations selected</div>
+
+                                <div class="desig-pill" v-for="d in getDesignationArray(group)" :key="d">
+                                    <span>[[ d ]]</span>
+                                    <span class="remove-pill" @click="removeDesignation(group, d)"
+                                        title="Remove">✕</span>
+                                </div>
+                            </div>
+                            <!-- END SMART SELECTOR -->
+
                             <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
                                 Employee Designation field</div>
                         </div>
@@ -792,6 +911,7 @@
             // Core Data
             doc: { doctype: 'Incentive Config', name: 'Incentive Config', account_rates: [], designation_structure: '' },
             designationRules: [],
+            availableDesignations: [], // Stores Designations
             isSaving: false,
 
             // Security States
@@ -832,6 +952,7 @@
             grantAccess() {
                 this.hasAccess = true;
                 this.isCheckingAccess = false;
+                this.fetchDesignationList(); // Fetch master list of designations for dropdowns
                 this.fetchConfig();
             },
 
@@ -849,15 +970,30 @@
                             this.doc = r.message;
                             if (!this.doc.account_rates) this.doc.account_rates = [];
 
+                            // try {
+                            //     this.designationRules = JSON.parse(this.doc.designation_structure || '[]');
+                            //     if (this.designationRules.length === 0) {
+                            //         this.loadDefaults();
+                            //     } else {
+                            //         // Inject isOpen state into loaded data, default first one to open
+                            //         this.designationRules.forEach((grp, idx) => grp.isOpen = (idx === 0));
+                            //     }
+                            // } catch (e) { this.loadDefaults(); }
+
                             try {
                                 this.designationRules = JSON.parse(this.doc.designation_structure || '[]');
                                 if (this.designationRules.length === 0) {
                                     this.loadDefaults();
                                 } else {
-                                    // Inject isOpen state into loaded data, default first one to open
-                                    this.designationRules.forEach((grp, idx) => grp.isOpen = (idx === 0));
+                                    // Inject UI states into loaded data
+                                    this.designationRules.forEach((grp, idx) => {
+                                        grp.isOpen = (idx === 0);
+                                        grp.searchQuery = '';     // NEW
+                                        grp.showDropdown = false; // NEW
+                                    });
                                 }
                             } catch (e) { this.loadDefaults(); }
+
                         }
                     }
                 });
@@ -978,6 +1114,55 @@
 
                 return true;
             },
+
+
+            // --- NEW: SMART DESIGNATION LOGIC ---
+
+            fetchDesignationList() {
+                frappe.call({
+                    method: 'frappe.client.get_list',
+                    args: { doctype: 'Designation', fields: ['name'], limit: 1000 },
+                    callback: (r) => {
+                        if (r.message) {
+                            this.availableDesignations = r.message.map(d => d.name);
+                        }
+                    }
+                });
+            },
+
+            // Convert "BO, RO" string to Array ['BO', 'RO']
+            getDesignationArray(group) {
+                if (!group.designations) return [];
+                return group.designations.split(',').map(d => d.trim()).filter(d => d !== '');
+            },
+
+            // Filter dropdown based on search query AND hide already selected ones
+            filteredDesignations(group) {
+                let query = (group.searchQuery || '').toLowerCase();
+                let selected = this.getDesignationArray(group);
+
+                return this.availableDesignations.filter(d =>
+                    d.toLowerCase().includes(query) && !selected.includes(d)
+                ).slice(0, 15); // Show max 15 results to keep UI fast
+            },
+
+            addDesignation(group, desig) {
+                let arr = this.getDesignationArray(group);
+                if (!arr.includes(desig)) {
+                    arr.push(desig);
+                    group.designations = arr.join(', '); // Convert back to string for database
+                }
+                group.searchQuery = ''; // Clear search box
+                group.showDropdown = false; // Hide dropdown
+            },
+
+            removeDesignation(group, desig) {
+                let arr = this.getDesignationArray(group);
+                arr = arr.filter(d => d !== desig);
+                group.designations = arr.join(', '); // Convert back to string for database
+            },
+            // -------------------------------------
+
 
 
             saveConfig() {
