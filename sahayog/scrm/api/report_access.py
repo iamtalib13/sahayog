@@ -458,13 +458,13 @@ def get_employee_performance_data(from_date, to_date):
 
 @frappe.whitelist()
 def get_all_products_sources():
-    # Distinct Products from Lead Product child table
-    products = frappe.db.sql("""
-        SELECT DISTINCT product
-        FROM `tabLead Product`
-        WHERE product IS NOT NULL AND product != ''
-        ORDER BY product ASC
-    """, as_dict=True)
+
+    # Products from Product Doctype (Master)
+    products = frappe.get_all(
+        "Product",
+        fields=["name", "product_name", "exclude"],
+        order_by="name asc"
+    )
 
     # Distinct Sources from Lead master
     sources = frappe.db.sql("""
@@ -475,6 +475,13 @@ def get_all_products_sources():
     """, as_dict=True)
 
     return {
-        "products": [p.product for p in products],
+        "products": [
+            {
+                "label": f"{p.name} - {p.product_name or ''}",
+                "value": p.name,
+                "exclude": p.exclude
+            }
+            for p in products
+        ],
         "sources": [s.source for s in sources]
     }

@@ -10,7 +10,8 @@
   "product_code",
   "product_name",
   "product_type",
-  "enabled"
+  "enabled",
+  "exclude"
  ],
  "fields": [
   {
@@ -40,13 +41,19 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "exclude",
+   "fieldtype": "Check",
+   "label": "Exclude"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-30 23:25:53.535394",
- "modified_by": "Administrator",
+ "modified": "2026-02-28 12:20:49.184737",
+ "modified_by": "9517@sahayog.com",
  "module": "SCRM",
  "name": "Product",
  "naming_rule": "By fieldname",
