@@ -915,10 +915,25 @@
                     <div class="header-actions">
                         <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">[[ group.slabs.length ]]
                             Tiers</span>
+
+                        <!-- Clone Group Button -->
+                        <button @click.stop="cloneGroup(group, gIndex)" class="add-btn"
+                            style="background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 4px 8px; font-size: 11px; margin-left: 8px;"
+                            title="Duplicate this group">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                style="margin-right: 4px;">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Clone
+                        </button>
+
                         <!-- Move Delete Button to Header -->
                         <button @click.stop="removeGroup(gIndex)" class="remove-group-btn"
                             title="Delete entire group">✕</button>
                     </div>
+
                 </div>
 
 
@@ -1225,6 +1240,37 @@
                 // PetiteVue requires explicit assignment to trigger reactivity sometimes
                 group.isOpen = !group.isOpen;
             },
+
+
+            cloneGroup(group, index) {
+                // 1. Deep copy the slabs array so they don't share the same memory reference
+                const clonedSlabs = group.slabs.map(slab => ({
+                    min: slab.min,
+                    max: slab.max,
+                    amount: slab.amount
+                }));
+
+                // 2. Create the new group object
+                const clonedGroup = {
+                    group_name: group.group_name + ' (Copy)', // Append copy to name
+                    designations: '', // Leave empty so admin is forced to pick new designations
+                    capping_amount: group.capping_amount, // Copy the cap limit
+                    isOpen: true,     // Automatically open the new clone
+                    searchQuery: '',
+                    showDropdown: false,
+                    slabs: clonedSlabs // Attach the deeply copied slabs
+                };
+
+                // 3. Insert the new group immediately after the one we just cloned
+                this.designationRules.splice(index + 1, 0, clonedGroup);
+
+                // Optional: Show a tiny success toast
+                frappe.show_alert({
+                    message: `Group cloned successfully! Please select allowed designations for the new group.`,
+                    indicator: 'green'
+                }, 3);
+            },
+
 
 
 
