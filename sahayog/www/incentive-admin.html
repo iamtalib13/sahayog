@@ -807,41 +807,38 @@
                 const user = frappe.session.user;
                 this.currentUser = user;
 
-                // 1. Immediately reject guests
                 if (user === 'Guest') {
-                    this.isCheckingAccess = false;
-                    this.hasAccess = false;
+                    this.denyAccess();
                     return;
                 }
 
-                // 2. Use Frappe's official user role checking API
-                let isAuthorized = false;
-
-                if (frappe.user && typeof frappe.user.has_role === 'function') {
-                    // Check if they are Admin or have the specific Incentive Admin role
-                    isAuthorized = frappe.user.has_role('Administrator') || frappe.user.has_role('Incentive Admin');
-                } else if (user === 'Administrator') {
-                    // Fallback just in case frappe.user API is still loading
-                    isAuthorized = true;
-                }
-
-                // 3. Grant or Deny based on the check
-                if (isAuthorized) {
-                    this.grantAccess();
-                } else {
-                    // Lock them out
-                    this.isCheckingAccess = false;
-                    this.hasAccess = false;
-                }
+                // Make a secure server-side call to check roles perfectly
+                frappe.call({
+                    method: 'sahayog.www.incentive_calculator.check_admin_access',
+                    callback: (r) => {
+                        if (r.message === true) {
+                            this.grantAccess();
+                        } else {
+                            this.denyAccess();
+                        }
+                    },
+                    error: (err) => {
+                        console.error("Access Check Failed:", err);
+                        this.denyAccess();
+                    }
+                });
             },
 
             grantAccess() {
                 this.hasAccess = true;
                 this.isCheckingAccess = false;
-                this.fetchConfig(); // Safe to load data now
+                this.fetchConfig();
             },
 
-
+            denyAccess() {
+                this.hasAccess = false;
+                this.isCheckingAccess = false;
+            },
 
             fetchConfig() {
                 frappe.call({
