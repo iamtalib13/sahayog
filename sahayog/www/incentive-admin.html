@@ -761,16 +761,33 @@
 
     /* The glowing effect when an item is actively being held/dragged */
     .draggable-row.is-dragging {
-        opacity: 0.9;
-        border: 2px solid var(--accent) !important;
-        box-shadow: 0 0 0 4px rgba(65, 125, 129, 0.2), 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
-        transform: scale(1.02);
-        /* Slightly enlarge to pop out of the screen */
-        background: #fff;
+        opacity: 0.95;
+        border: 1px solid transparent !important;
+        /* Remove hard borders */
+
+        /* 
+           Layered Box Shadow for True Soft Glow:
+           Layer 1: Inner subtle color wash (inset)
+           Layer 2: Tight, intense core glow
+           Layer 3: Wide, soft dispersed outer glow
+           Layer 4: Standard drop shadow for depth 
+        */
+        box-shadow:
+            inset 0 0 15px rgba(65, 125, 129, 0.05),
+            0 0 12px rgba(65, 125, 129, 0.4),
+            0 0 25px rgba(65, 125, 129, 0.2),
+            0 15px 35px -5px rgba(0, 0, 0, 0.15) !important;
+
+        /* Slightly tint the background itself with the accent color */
+        background: rgba(255, 255, 255, 0.9) !important;
+        background-blend-mode: overlay;
+
+        transform: scale(1.03);
+        /* Pop off screen more smoothly */
         z-index: 50;
-        /* Keep it above other rows */
         position: relative;
     }
+
 
     /* Subtle highlight for the row being hovered over (drop target) */
     .draggable-row.drag-over {
