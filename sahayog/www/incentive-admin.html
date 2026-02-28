@@ -537,166 +537,249 @@
         align-items: center;
         justify-content: center;
     }
+
+    /* Unmapped Error State (Access Denied) */
+    .unmapped-error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 24px;
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #fee2e2;
+        box-shadow: 0 10px 30px -5px rgba(239, 68, 68, 0.15);
+        max-width: 600px;
+        margin: 80px auto;
+        animation: smoothFadeIn 0.4s ease-out;
+    }
+
+    .unmapped-icon {
+        width: 80px;
+        height: 80px;
+        background: #fef2f2;
+        color: #ef4444;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .unmapped-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--primary);
+        margin: 0 0 12px 0;
+    }
+
+    .unmapped-desc {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        line-height: 1.6;
+        max-width: 450px;
+        margin: 0;
+    }
 </style>
 
 <div id="admin-app" v-scope @vue:mounted="mounted()" v-cloak class="admin-container">
     <div class="bg-pattern"></div>
 
-    <div class="section-header">
-        <h1 class="section-title">Incentive Rules Master</h1>
-        <button @click="saveConfig" class="save-btn" :disabled="isSaving">
-            <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-            </svg>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+    <!-- MAIN DASHBOARD: Show this ONLY if user has the correct role -->
+    <div v-if="hasAccess && !isCheckingAccess">
+        <div class="section-header">
+            <h1 class="section-title">Incentive Rules Master</h1>
+            <button @click="saveConfig" class="save-btn" :disabled="isSaving">
+                <svg v-if="!isSaving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>[[ isSaving ? 'Saving Changes...' : 'Save Configuration' ]]</span>
+            </button>
+        </div>
+
+
+        <!-- 1. Global Account Rates -->
+        <div class="admin-card fade-enter">
+            <div class="card-title">
+                <span>Global Account Rates</span>
+                <button @click="addAccount" class="add-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg> Add Account
+                </button>
+            </div>
+
+
+            <div v-if="doc.account_rates.length === 0" class="empty-state">No account types configured. Click "Add
+                Account"
+                to begin.</div>
+
+
+            <div class="item-row fade-enter" v-for="(item, index) in doc.account_rates" :key="index"
+                :style="{animationDelay: (index * 0.05) + 's'}">
+                <div>
+                    <input type="text" v-model="item.account_type" placeholder="e.g. Silver Account"
+                        style="font-weight: 700;">
+                </div>
+                <div class="input-wrapper">
+                    <span class="prefix">₹</span>
+                    <input type="number" v-model="item.incentive_amount" class="has-prefix"
+                        placeholder="Payout per account">
+                </div>
+                <div>
+                    <button @click="removeAccount(index)" class="del-btn" title="Remove Account">✕</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 2. Designation Logic -->
+        <div class="admin-card fade-enter" style="animation-delay: 0.1s;">
+            <div class="card-title">
+                <span>Designation Groups & Funding MAB Rules</span>
+                <button @click="addGroup" class="add-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg> Add Group
+                </button>
+            </div>
+
+
+            <div v-if="designationRules.length === 0" class="empty-state">No designation groups configured. Click "Add
+                Group" to begin.</div>
+
+
+            <!-- Group Loop -->
+            <div v-for="(group, gIndex) in designationRules" :key="gIndex" class="fade-enter">
+
+
+                <!-- CLICKABLE HEADER -->
+                <div class="group-header-bar" @click="toggleGroup(group)">
+                    <div class="group-title-compact">
+                        <svg class="chevron-icon" :class="{ 'open': group.isOpen }" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                        <span>[[ group.group_name || 'Unnamed Group' ]]</span>
+                        <span class="group-badge">₹[[ (parseFloat(group.capping_amount) || 0).toLocaleString() ]]
+                            Cap</span>
+                    </div>
+
+
+                    <div class="header-actions">
+                        <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">[[ group.slabs.length ]]
+                            Tiers</span>
+                        <!-- Move Delete Button to Header -->
+                        <button @click.stop="removeGroup(gIndex)" class="remove-group-btn"
+                            title="Delete entire group">✕</button>
+                    </div>
+                </div>
+
+
+                <!-- COLLAPSIBLE BODY -->
+                <div class="group-body" v-show="group.isOpen">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                        <div>
+                            <label class="label-text">Group Name & Allowed Designations</label>
+                            <input type="text" v-model="group.group_name"
+                                placeholder="Group Name (e.g. Branch Officers)"
+                                style="font-size: 16px; font-weight: 800; margin-bottom: 12px; color: var(--accent);">
+                            <textarea v-model="group.designations"
+                                placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea>
+                            <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
+                                Employee Designation field</div>
+                        </div>
+                        <div>
+                            <label class="label-text">Maximum Incentive Cap limit</label>
+                            <div class="input-wrapper">
+                                <span class="prefix" style="font-size: 20px; top: 45%;">₹</span>
+                                <input type="number" v-model="group.capping_amount" class="has-prefix"
+                                    style="font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; height: 60px;"
+                                    min="0">
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="slab-container">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <label class="label-text" style="margin: 0;">MAB Funding Tiers (Min Balance →
+                                Payout)</label>
+                            <button @click="group.slabs.push({min:'', max: null, amount:''})" class="add-btn"
+                                style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
+                        </div>
+
+
+                        <div v-if="group.slabs.length === 0" class="empty-state" style="padding: 15px;">No funding tiers
+                            added.</div>
+
+
+                        <div v-for="(slab, sIndex) in group.slabs" :key="sIndex" class="slab-row fade-enter">
+                            <div class="input-wrapper">
+                                <span class="prefix">Min ₹</span>
+                                <input type="number" v-model="slab.min" class="has-prefix" placeholder="e.g. 25000"
+                                    min="0">
+                            </div>
+                            <div class="input-wrapper">
+                                <span class="prefix">Max ₹</span>
+                                <input type="number" v-model="slab.max" class="has-prefix"
+                                    placeholder="(Optional limit)" min="0">
+                            </div>
+                            <div class="input-wrapper">
+                                <span class="prefix">+ ₹</span>
+                                <input type="number" v-model="slab.amount" class="has-prefix" placeholder="Payout"
+                                    style="font-weight: 800; color: var(--primary);" min="0">
+                            </div>
+                            <button @click="group.slabs.splice(sIndex, 1)" class="del-btn"
+                                style="height: 100%;">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- FALLBACK ERROR: Show this if the user is DENIED access -->
+    <!-- FALLBACK ERROR: Show this if the user is DENIED access -->
+    <div class="unmapped-error-container" v-else-if="!hasAccess && !isCheckingAccess">
+        <div class="unmapped-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-            <span>[[ isSaving ? 'Saving Changes...' : 'Save Configuration' ]]</span>
-        </button>
-    </div>
-
-    <!-- 1. Global Account Rates -->
-    <div class="admin-card fade-enter">
-        <div class="card-title">
-            <span>Global Account Rates</span>
-            <button @click="addAccount" class="add-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg> Add Account
-            </button>
         </div>
-
-        <div v-if="doc.account_rates.length === 0" class="empty-state">No account types configured. Click "Add Account"
-            to begin.</div>
-
-        <div class="item-row fade-enter" v-for="(item, index) in doc.account_rates" :key="index"
-            :style="{animationDelay: (index * 0.05) + 's'}">
-            <!-- CHECKBOX DIV REMOVED FROM HERE -->
-            <div>
-                <input type="text" v-model="item.account_type" placeholder="e.g. Silver Account"
-                    style="font-weight: 700;">
-            </div>
-            <div class="input-wrapper">
-                <span class="prefix">₹</span>
-                <input type="number" v-model="item.incentive_amount" class="has-prefix"
-                    placeholder="Payout per account">
-            </div>
-            <div>
-                <button @click="removeAccount(index)" class="del-btn" title="Remove Account">✕</button>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- 2. Designation Logic -->
-
-    <!-- 2. Designation Logic -->
-    <div class="admin-card fade-enter" style="animation-delay: 0.1s;">
-        <div class="card-title">
-            <span>Designation Groups & Funding MAB Rules</span>
-            <button @click="addGroup" class="add-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg> Add Group
-            </button>
-        </div>
-
-        <div v-if="designationRules.length === 0" class="empty-state">No designation groups configured. Click "Add
-            Group" to begin.</div>
-
-        <!-- Group Loop -->
-        <div v-for="(group, gIndex) in designationRules" :key="gIndex" class="fade-enter">
-
-            <!-- CLICKABLE HEADER -->
-            <div class="group-header-bar" @click="toggleGroup(group)">
-                <div class="group-title-compact">
-                    <svg class="chevron-icon" :class="{ 'open': group.isOpen }" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                    <span>[[ group.group_name || 'Unnamed Group' ]]</span>
-                    <span class="group-badge">₹[[ (parseFloat(group.capping_amount) || 0).toLocaleString() ]] Cap</span>
-                </div>
-
-                <div class="header-actions">
-                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">[[ group.slabs.length ]]
-                        Tiers</span>
-                    <!-- Move Delete Button to Header -->
-                    <button @click.stop="removeGroup(gIndex)" class="remove-group-btn"
-                        title="Delete entire group">✕</button>
-                </div>
-            </div>
-
-            <!-- COLLAPSIBLE BODY -->
-            <div class="group-body" v-show="group.isOpen">
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-                    <div>
-                        <label class="label-text">Group Name & Allowed Designations</label>
-                        <input type="text" v-model="group.group_name" placeholder="Group Name (e.g. Branch Officers)"
-                            style="font-size: 16px; font-weight: 800; margin-bottom: 12px; color: var(--accent);">
-                        <textarea v-model="group.designations"
-                            placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea>
-                        <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
-                            Employee Designation field</div>
-                    </div>
-                    <div>
-                        <label class="label-text">Maximum Incentive Cap limit</label>
-                        <div class="input-wrapper">
-                            <span class="prefix" style="font-size: 20px; top: 45%;">₹</span>
-                            <input type="number" v-model="group.capping_amount" class="has-prefix"
-                                style="font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; height: 60px;"
-                                min="0">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="slab-container">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <label class="label-text" style="margin: 0;">MAB Funding Tiers (Min Balance → Payout)</label>
-                        <button @click="group.slabs.push({min:'', max: null, amount:''})" class="add-btn"
-                            style="padding: 4px 10px; font-size: 11px;">+ Add Tier</button>
-                    </div>
-
-                    <div v-if="group.slabs.length === 0" class="empty-state" style="padding: 15px;">No funding tiers
-                        added.</div>
-
-                    <div v-for="(slab, sIndex) in group.slabs" :key="sIndex" class="slab-row fade-enter">
-                        <div class="input-wrapper">
-                            <span class="prefix">Min ₹</span>
-                            <input type="number" v-model="slab.min" class="has-prefix" placeholder="e.g. 25000" min="0">
-                        </div>
-                        <div class="input-wrapper">
-                            <span class="prefix">Max ₹</span>
-                            <input type="number" v-model="slab.max" class="has-prefix" placeholder="(Optional limit)"
-                                min="0">
-                        </div>
-                        <div class="input-wrapper">
-                            <span class="prefix">+ ₹</span>
-                            <input type="number" v-model="slab.amount" class="has-prefix" placeholder="Payout"
-                                style="font-weight: 800; color: var(--primary);" min="0">
-                        </div>
-                        <button @click="group.slabs.splice(sIndex, 1)" class="del-btn" style="height: 100%;">✕</button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+        <h2 class="unmapped-title">Access Restricted</h2>
+        <p class="unmapped-desc">
+            Your current account (<strong>[[ currentUser ]]</strong>) is not authorized to access the Admin Panel.
+            <br><br>Please contact the system administrator to assign the <strong>Incentive Admin</strong> role to your
+            profile.
+        </p>
     </div>
 
 
 </div>
+
 
 <!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script> -->
 
@@ -705,11 +788,60 @@
     frappe.ready(function () {
         PetiteVue.createApp({
             $delimiters: ['[[', ']]'],
+
+            // Core Data
             doc: { doctype: 'Incentive Config', name: 'Incentive Config', account_rates: [], designation_structure: '' },
             designationRules: [],
             isSaving: false,
 
-            mounted() { this.fetchConfig(); },
+            // Security States
+            isCheckingAccess: true,
+            hasAccess: false,
+            currentUser: 'Loading...',
+
+            mounted() {
+                this.checkAccess(); // Step 1: Verify role first
+            },
+
+            checkAccess() {
+                const user = frappe.session.user;
+                this.currentUser = user;
+
+                // 1. Immediately reject guests
+                if (user === 'Guest') {
+                    this.isCheckingAccess = false;
+                    this.hasAccess = false;
+                    return;
+                }
+
+                // 2. Use Frappe's official user role checking API
+                let isAuthorized = false;
+
+                if (frappe.user && typeof frappe.user.has_role === 'function') {
+                    // Check if they are Admin or have the specific Incentive Admin role
+                    isAuthorized = frappe.user.has_role('Administrator') || frappe.user.has_role('Incentive Admin');
+                } else if (user === 'Administrator') {
+                    // Fallback just in case frappe.user API is still loading
+                    isAuthorized = true;
+                }
+
+                // 3. Grant or Deny based on the check
+                if (isAuthorized) {
+                    this.grantAccess();
+                } else {
+                    // Lock them out
+                    this.isCheckingAccess = false;
+                    this.hasAccess = false;
+                }
+            },
+
+            grantAccess() {
+                this.hasAccess = true;
+                this.isCheckingAccess = false;
+                this.fetchConfig(); // Safe to load data now
+            },
+
+
 
             fetchConfig() {
                 frappe.call({
