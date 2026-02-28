@@ -581,10 +581,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                     <i class="fa fa-caret-down text-muted"></i>
                                 </div>
                                 <div :class="['dropdown-list', active_dropdown === key ? 'show' : '']">
-                                    <div class="dropdown-item"v-for="opt in filter_data[key].filter(o => 
-                                          !search_query[key] || 
-                                          (o.label || o).toLowerCase().includes(search_query[key].toLowerCase())
-                                      )"@click.stop="toggleFilter(key, opt.value || opt)">
+                                   <div class="dropdown-item"
+                                    v-for="opt in getFilteredOptions(active_dropdown)"
+
+                                    @click.stop="toggleFilter(key, opt.value || opt)">
                                                     <input type="checkbox" :checked="isSelected(key, opt.value || opt)">
                                      <span>{{ opt.label || opt }}</span>
                                     </div>
@@ -707,32 +707,44 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </table>
                         </div>
                      </div>
-                <div class="filter-modal-overlay" v-if="active_popup"@click.self="active_popup = null">
-                      <div class="filter-modal-content">
-                          <h6 class="text-uppercase mb-3" style="font-size:12px; font-weight:bold;">Select {{ active_popup.replace('_',' ') }}</h6>
+               <div class="filter-modal-overlay" v-if="active_popup" @click.self="active_popup = null">
+                  <div class="filter-modal-content">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                          <h6 class="text-uppercase m-0" style="font-size:12px; font-weight:bold;">Select {{ active_popup.replace('_',' ') }}</h6>
                           
-                          <div style="max-height: 300px; overflow-y: auto;">
-                              <div v-if="active_popup === 'zone' || active_popup === 'region'" class="mini-chip-list">
-                                  <div v-for="opt in filter_data[active_popup]" 
-                                      :class="['mini-chip', isSelected(active_popup, opt) ? 'active' : '']"
-                                      @click="toggleFilter(active_popup, opt)">
-                                      {{ formatDisplayText(active_popup, opt) }}
-                                  </div>
-                              </div>
-
-                              <div v-else>
-                                  <input type="text" v-model="search_query[active_popup]" placeholder="Search..." class="form-control form-control-sm mb-2">
-                                  <div class="dropdown-item" v-for="opt in filter_data[active_popup].filter(o => !search_query[active_popup] || (o.label || o).toLowerCase().includes(search_query[active_popup].toLowerCase()))" 
-                                      @click="toggleFilter(active_popup, opt.value || opt)">
-                                      <input type="checkbox" :checked="isSelected(active_popup, opt.value || opt)">
-                                      <span class="ml-2">{{ opt.label || opt }}</span>
-                                  </div>
+                          <div v-if="active_popup === 'product'" style="display: flex; align-items: center; gap: 6px;">
+                              <input type="checkbox" v-model="hide_excluded_products" id="hide_excluded" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
+                              <label for="hide_excluded" style="font-size: 11px; font-weight: 600; color: #6b7280; cursor: pointer; margin: 0;">Exclude</label>
+                          </div>
+                      </div>
+                      
+                      <div style="max-height: 300px; overflow-y: auto;">
+                          <div v-if="active_popup === 'zone' || active_popup === 'region'" class="mini-chip-list">
+                              <div v-for="opt in getFilteredOptions(active_popup)" 
+                                  :class="['mini-chip', isSelected(active_popup, opt) ? 'active' : '']"
+                                  @click="toggleFilter(active_popup, opt)">
+                                  {{ formatDisplayText(active_popup, opt) }}
                               </div>
                           </div>
-                          <button class="btn btn-primary btn-sm btn-block mt-3" @click="active_popup = null">Done</button>
-                      </div>
-                  </div>    
-                </div>
+
+                          <div v-else>
+                               <input type="text" v-model="search_query[active_popup]" placeholder="Search..." class="form-control form-control-sm mb-2">
+                              
+                              <div class="dropdown-item" 
+                                  v-for="opt in getFilteredOptions(active_popup)" 
+                                  @click="toggleFilter(active_popup, opt.value || opt)">
+                                  <input type="checkbox" :checked="isSelected(active_popup, opt.value || opt)">
+                                  <span class="ml-2">{{ opt.label || opt }}</span>
+                              </div>
+                              
+                              <div v-if="getFilteredOptions(active_popup).length === 0" class="text-center p-3 text-muted">
+                                  No results found
+                              </div>
+                          </div>
+                        </div>
+                      <button class="btn btn-primary btn-sm btn-block mt-3" @click="active_popup = null">Done</button>
+                  </div>
+              </div>
             </div>
         </div>
     `);
@@ -772,6 +784,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_error_message: null,
     employee_search_term: "",
     active_popup: null,
+    hide_excluded_products: false,
     data() {
       return {
         date_input_key: 0,
@@ -808,7 +821,27 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     get today() {
       return frappe.datetime.nowdate();
     },
+    getFilteredOptions(key) {
+      let list = this.filter_data[key] || [];
 
+      if (!Array.isArray(list)) return [];
+
+      // Search filter
+      list = list.filter((o) => {
+        let label = (o.label || o || "").toString().toLowerCase();
+        return (
+          !this.search_query[key] ||
+          label.includes(this.search_query[key].toLowerCase())
+        );
+      });
+
+      // Product exclude logic
+      if (key === "product" && this.hide_excluded_products) {
+        list = list.filter((o) => !o.exclude);
+      }
+
+      return list;
+    },
     get filteredEmployees() {
       if (!this.employee_performance_data) return [];
 
@@ -1000,23 +1033,24 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       );
       frappe.call({
         method: "sahayog.scrm.api.report_access.get_all_products_sources",
-        callback: function (r) {
+        callback: (r) => {
           if (r.message) {
-            this.filter_data.product = r.message.products;
-            this.filter_data.source = r.message.sources;
-            this.renderFilters();
+            // Data ko reactive property mein set karein
+            this.filter_data.product = r.message.products || [];
+            this.filter_data.source = r.message.sources || [];
+
+            // Debug ke liye console check karein ki data aaya ya nahi
+            console.log("Products Loaded:", this.filter_data.product);
           }
-        }.bind(this),
+        },
       });
       const pref = (res.message || [])[0];
       if (pref) {
-        this.filter_data = {
-          zone: pref.zone || [],
-          region: pref.region || [],
-          sol_id: pref.sol_id || [],
-          // product: pref.product || [],
-          // source: pref.source || [],
-        };
+        this.filter_data.zone = pref.zone || [];
+        this.filter_data.region = pref.region || [];
+        this.filter_data.sol_id = pref.sol_id || [];
+
+        console.log(this.filter_data);
         this.selected = {
           zone: [...this.filter_data.zone],
           region: [...this.filter_data.region],
