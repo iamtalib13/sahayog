@@ -792,14 +792,16 @@
                                 placeholder="Enter exact designations separated by commas (e.g. Branch Officer, Risk Officer)"></textarea> -->
 
                             <!-- SMART DESIGNATION SELECTOR -->
+                            <!-- SMART DESIGNATION SELECTOR -->
                             <div class="dropdown-wrapper">
                                 <input type="text" v-model="group.searchQuery" @focus="group.showDropdown = true"
-                                    @blur="group.showDropdown = false"
+                                    @blur="setTimeout(() => group.showDropdown = false, 150)"
                                     placeholder="🔍 Search and select designations..." style="font-size: 13px;">
 
                                 <!-- Search Results Dropdown -->
                                 <div class="designation-dropdown"
                                     v-show="group.showDropdown && filteredDesignations(group).length > 0">
+                                    <!-- Notice mousedown.prevent is still here, this is key! -->
                                     <div class="dropdown-item" v-for="d in filteredDesignations(group)" :key="d"
                                         @mousedown.prevent="addDesignation(group, d)">
                                         [[ d ]]
@@ -819,6 +821,21 @@
                                         title="Remove">✕</span>
                                 </div>
                             </div>
+                            <!-- END SMART SELECTOR -->
+
+
+                            <!-- Selected Pills -->
+                            <!-- <div class="pills-container">
+                                <div v-if="getDesignationArray(group).length === 0"
+                                    style="font-size: 11px; color: #94a3b8; font-style: italic; margin: auto;">No
+                                    designations selected</div>
+
+                                <div class="desig-pill" v-for="d in getDesignationArray(group)" :key="d">
+                                    <span>[[ d ]]</span>
+                                    <span class="remove-pill" @click="removeDesignation(group, d)"
+                                        title="Remove">✕</span>
+                                </div>
+                            </div> -->
                             <!-- END SMART SELECTOR -->
 
                             <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Must perfectly match the HR
@@ -1153,7 +1170,7 @@
                     group.designations = arr.join(', '); // Convert back to string for database
                 }
                 group.searchQuery = ''; // Clear search box
-                group.showDropdown = false; // Hide dropdown
+                // group.showDropdown = false; // Hide dropdown
             },
 
             removeDesignation(group, desig) {
