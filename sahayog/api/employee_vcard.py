@@ -45,28 +45,41 @@ def get_employee_vcard_qr():
     # -------------------------
     # vCard Content
     # -------------------------
-    vcard = f"""BEGIN:VCARD
-VERSION:3.0
-FN:{full_name}
-TEL;TYPE=CELL:{employee.cell_number or ""}
-EMAIL:{employee.company_email or ""}
-URL:https://www.sahayogmultistate.com/
-ORG:Sahayog Multistate
-TITLE:{employee.designation or ""}
-NOTE:Department - {employee.department or ""}, Branch - {employee.branch or ""}
-ADR;TYPE=WORK:;;{employee.current_address or ""};;;
-END:VCARD
-"""
-
+#     vcard = f"""BEGIN:VCARD
+# VERSION:3.0
+# FN:{full_name}
+# TEL;TYPE=CELL:{employee.cell_number or ""}
+# EMAIL:{employee.company_email or ""}
+# URL:https://www.sahayogmultistate.com/
+# ORG:Sahayog Multistate
+# TITLE:{employee.designation or ""}
+# NOTE:Department - {employee.department or ""}, Branch - {employee.branch or ""}
+# ADR;TYPE=WORK:;;{employee.current_address or ""};;;
+# END:VCARD
+# """
+    vcard = (
+        "BEGIN:VCARD\r\n"
+        "VERSION:3.0\r\n"
+        f"N:{employee.last_name or ''};{employee.first_name or ''};;;\r\n"
+        f"FN:{full_name}\r\n"
+        "ORG:Sahayog Multistate\r\n"
+        f"TITLE:{employee.designation or ''}\r\n"
+        f"TEL;TYPE=CELL:{employee.cell_number or ''}\r\n"
+        f"EMAIL;TYPE=WORK:{employee.company_email or ''}\r\n"
+        "URL:https://www.sahayogmultistate.com/\r\n"
+        f"ADR;TYPE=WORK:;;{employee.current_address or ''};;;;\r\n"
+        f"NOTE:Department - {employee.department or ''}, Branch - {employee.branch or ''}\r\n"
+        "END:VCARD\r\n"
+    )
     # -------------------------
     # QR Code Generate
     # -------------------------
     qr = qrcode.QRCode(
-        version=2,
-        box_size=8,
-        border=2
-    )
-    qr.add_data(vcard)
+    error_correction=qrcode.constants.ERROR_CORRECT_L,
+    box_size=10,
+    border=4,
+)
+    qr.add_data(vcard.encode("utf-8"))
     qr.make(fit=True)
 
     img = qr.make_image(fill_color="black", back_color="white")
