@@ -495,6 +495,36 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     font-weight: 800; 
     color: rgba(0,0,0,0.15); 
 }
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.export-menu {
+    position: absolute;
+    top: 100%; /* Button ke exact niche */
+    right: 0;
+    background: #fff;
+    border: 1px solid #d1d8dd;
+    border-radius: 6px;
+    min-width: 160px; /* Thoda wide professional dikhne ke liye */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 3001; /* Sabse upar */
+    display: block !important; /* v-if handling handles visibility */
+    margin-top: 5px;
+}
+
+.export-item {
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.export-item:hover {
+    background: #f0fdf4;
+    color: #05a15d;
+}
     `,
     )
     .appendTo("head");
@@ -549,9 +579,23 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </div>
                         </div>
 
-                        <button class="btn-generate-sm" v-if="totalLeadsInReport > 0" @click="applyFilters" :disabled="loading">
-                            <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i> EXPORT CSV
-                        </button>
+                       <div class="export-dropdown" v-if="totalLeadsInReport > 0">
+                            <button class="btn-generate-sm"
+                                    @click.stop="toggleExportMenu" 
+                                    :disabled="loading">
+                                <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i>
+                                EXPORT <i class="fa fa-caret-down ml-1"></i>
+                            </button>
+
+                            <div class="export-menu" v-if="show_export_menu">
+                                <div class="export-item" @click="exportCSV">
+                                    Export CSV
+                                </div>
+                                <div class="export-item" @click="exportZIP">
+                                    Export ZIP
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -785,11 +829,30 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_search_term: "",
     active_popup: null,
     hide_excluded_products: false,
-    data() {
-      return {
-        date_input_key: 0,
-      };
+    show_export_menu: false,
+    toggleExportMenu() {
+      this.show_export_menu = !this.show_export_menu;
     },
+
+    exportCSV() {
+      this.show_export_menu = false;
+
+      // 👇 Existing functionality untouched
+      this.applyFilters();
+    },
+
+    exportZIP() {
+      this.show_export_menu = false;
+
+      // 👇 Abhi ke liye same function call karenge
+      // Later backend me format param add karenge
+      this.applyFilters("zip");
+    },
+    // data() {
+    //   return {
+    //     date_input_key: 0,
+    //   };
+    // },
     getSelectedCountText(key) {
       const count = this.selected[key].length;
       if (count === 0) return "All";
@@ -1071,8 +1134,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       console.log(this.employee_from_date, this.employee_to_date);
       this.fetchEmployeePerformance();
 
+      // init() function ke andar ka event listener aise update karein:
       window.addEventListener("click", () => {
         this.active_dropdown = null;
+        this.show_export_menu = false;
+        // active_popup ko null mat kijiye yahan, warna modal bhi band ho jayega
       });
     },
 
@@ -1163,7 +1229,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
     },
 
-    async applyFilters() {
+    async applyFilters(format = "csv") {
       // Safety check: though button is hidden, we block the function too
       if (this.totalLeadsInReport === 0) {
         this.showNoLeadsMessage();
@@ -1187,6 +1253,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             from_date: fromDate,
             to_date: toDate,
             filters: this.selected,
+            format: format, // 👈 THIS IS THE FIX
           },
         });
         if (res.message?.status === "queued") {

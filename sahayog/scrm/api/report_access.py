@@ -286,57 +286,130 @@ def validate_date_range(from_date, to_date):
 # sahayog/scrm/api/report_access.py (Ke andar changes)
 
 @frappe.whitelist()
-def queue_leads_export(from_date, to_date, filters=None):
-    # Ensure current user is passed to the job
+def queue_leads_export(from_date, to_date, filters=None, format="csv"):
     user = frappe.session.user
-    
-    # Status ko 'processing' set karein taaki UI ko pata chale kaam shuru ho gaya hai
-    frappe.cache().set_value(f"export_status_{user}", {"status": "processing"}, expires_in_sec=600)
-    
+
+    frappe.cache().set_value(
+        f"export_status_{user}",
+        {"status": "processing"},
+        expires_in_sec=600
+    )
+
     frappe.enqueue(
         method="sahayog.scrm.api.report_access.run_leads_export_job",
-        queue="long", 
-        timeout=3600, 
+        queue="long",
+        timeout=3600,
         user=user,
-        from_date=from_date, 
-        to_date=to_date, 
-        filters=filters
+        from_date=from_date,
+        to_date=to_date,
+        filters=filters,
+        format=format
     )
+    frappe.log_error("EXPORT FORMAT DEBUG", f"Format Received: {format}")
     return {"status": "queued"}
 
 # Baaki Python logic (get_leads etc.) same rahega jo aapne diya hai.
 
-def run_leads_export_job(user, from_date, to_date, filters=None):
+import io
+import csv
+import zipfile
+
+
+def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
     frappe.set_user(user)
-    # Fetch ALL matching leads
+
     data = get_leads(from_date, to_date, filters=filters)
     leads = data.get("leads", [])
-    
-    headers = ["Sr.No.", "Status", "Lead ID", "Customer", "Contact", "Source", "Product Code", "Product Name", "Amount", "Employee Name", "Employee ID", "Designation", "SOL ID", "Branch", "District", "Region", "Zone", "Created On"]
-    all_rows = [headers]
+
+    headers = [
+        "Sr.No.", "Status", "Lead ID", "Customer", "Contact",
+        "Source", "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+    ]
+
+    # ---------- CREATE CSV IN MEMORY (FAST) ----------
+    output = io.StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+
+    writer.writerow(headers)
 
     for i, l in enumerate(leads):
         b = l.get("branch_info", {})
-        all_rows.append([
-            i + 1, l.status, l.name, l.lead_name or "", l.contact, l.source or "",
-            l.product_code, l.product_name, l.amount, l.employee_name, l.employee_id, l.designation,
-            l.sol_id or "-", b.get("branch", "-"), b.get("district", "-"), b.get("region", "-"), b.get("zone", "-"),
+        writer.writerow([
+            i + 1,
+            l.status,
+            l.name,
+            l.lead_name or "",
+            l.contact,
+            l.source or "",
+            l.product_code,
+            l.product_name,
+            l.amount,
+            l.employee_name,
+            l.employee_id,
+            l.designation,
+            l.sol_id or "-",
+            b.get("branch", "-"),
+            b.get("district", "-"),
+            b.get("region", "-"),
+            b.get("zone", "-"),
             format_date(l.creation, "dd-mm-yyyy")
-    ])
-    
-    filename = f"crm_leads_{from_date}_to_{to_date}.csv"
+        ])
+
+    csv_content = output.getvalue()
+    output.close()
+
+    # ---------- HANDLE FORMAT ----------
+    if format == "zip":
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+            compresslevel=6  # balanced speed + compression
+        ) as zip_file:
+            zip_file.writestr(
+                f"crm_leads_{from_date}_to_{to_date}.csv",
+                csv_content
+            )
+
+        file_content = zip_buffer.getvalue()
+        filename = f"crm_leads_{from_date}_to_{to_date}.zip"
+
+    else:
+        file_content = csv_content
+        filename = f"crm_leads_{from_date}_to_{to_date}.csv"
+    frappe.log_error("EXPORT FORMAT DEBUG", f"Format Received: {format}")
+    # ---------- SAVE FILE ----------
     file_doc = frappe.get_doc({
-        "doctype": "File", "file_name": filename,
-        "content": "\n".join(",".join(f'"{str(c)}"' for c in r) for r in all_rows),
+        "doctype": "File",
+        "file_name": filename,
+        "content": file_content,
         "is_private": 1
     }).insert(ignore_permissions=True)
 
     status_data = {
-        "status": "completed", "file_url": file_doc.file_url,
-        "row_count": len(leads), "from_date": from_date, "to_date": to_date
+        "status": "completed",
+        "file_url": file_doc.file_url,
+        "row_count": len(leads),
+        "from_date": from_date,
+        "to_date": to_date
     }
-    frappe.cache().set_value(f"export_status_{user}", status_data, expires_in_sec=600)
-    notify_user(user, f"Export Ready: {filename}. <a href='{file_doc.file_url}' target='_blank'>Download</a>")
+
+    frappe.cache().set_value(
+        f"export_status_{user}",
+        status_data,
+        expires_in_sec=600
+    )
+
+    notify_user(
+        user,
+        f"Export Ready: {filename}. "
+        f"<a href='{file_doc.file_url}' target='_blank'>Download</a>"
+    )
+
     frappe.db.commit()
 
 @frappe.whitelist()
@@ -466,14 +539,14 @@ def get_all_products_sources():
         order_by="name asc"
     )
 
-    # Distinct Sources from Lead master
-    sources = frappe.db.sql("""
-        SELECT DISTINCT source
-        FROM `tabLead`
-        WHERE source IS NOT NULL AND source != ''
-        ORDER BY source ASC
-    """, as_dict=True)
-
+    sources = frappe.get_all(
+    "Lead",
+    fields=["distinct source"],
+    filters={
+        "source": ["!=", ""]
+    },
+    order_by="source asc"
+    )
     return {
         "products": [
             {
