@@ -532,7 +532,6 @@ def get_employee_performance_data(from_date, to_date):
 @frappe.whitelist()
 def get_all_products_sources():
 
-    # Products from Product Doctype (Master)
     products = frappe.get_all(
         "Product",
         fields=["name", "product_name", "exclude"],
@@ -540,13 +539,14 @@ def get_all_products_sources():
     )
 
     sources = frappe.get_all(
-    "Lead",
-    fields=["distinct source"],
-    filters={
-        "source": ["!=", ""]
-    },
-    order_by="source asc"
+        "Lead Source",
+        fields=["name"],
+        filters={
+            "custom_active": 1
+        },
+        order_by="name asc"
     )
+
     return {
         "products": [
             {
@@ -556,5 +556,5 @@ def get_all_products_sources():
             }
             for p in products
         ],
-        "sources": [s.source for s in sources]
+        "sources": [s.name for s in sources]
     }
