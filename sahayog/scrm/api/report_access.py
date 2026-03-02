@@ -558,3 +558,146 @@ def get_all_products_sources():
         ],
         "sources": [s.name for s in sources]
     }
+
+@frappe.whitelist()
+def get_crm_top_analytics(from_date, to_date):
+    user = frappe.session.user
+    from_date, to_date = validate_date_range(from_date, to_date)
+
+    # ---------- Preferences ----------
+    zones_pref, regions_pref = set(), set()
+    if user != "Administrator":
+        pref_res = get_user_report_preference_record(user)
+        if pref_res:
+            p = pref_res[0]
+            zones_pref = {norm(x) for x in p.get("zone", [])}
+            regions_pref = {norm(x) for x in p.get("region", [])}
+
+    # ---------- Fetch Leads ----------
+    leads = frappe.get_all(
+        "Lead",
+        filters=[
+            ["creation", ">=", f"{from_date} 00:00:00"],
+            ["creation", "<=", f"{to_date} 23:59:59"]
+        ],
+        fields=["name", "lead_owner", "sol_id", "status"]
+    )
+
+    if not leads:
+        return {
+            "top_branches": [],
+            "top_employees": [],
+            "lowest_usage_branches": []
+        }
+
+    sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
+    branch_map = get_branch_map(list(sol_ids))
+    employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
+
+    branch_stats = {}
+    employee_stats = {}
+
+    for l in leads:
+        curr_sol = str(l.sol_id) if l.sol_id else ""
+        branch = branch_map.get(curr_sol)
+
+        # ----- Preference Filtering -----
+        if branch:
+            lead_zone = norm(branch.zone)
+            lead_region = norm(branch.region)
+
+            zone_match = not zones_pref or (lead_zone in zones_pref)
+
+            allowed_regions = set(regions_pref)
+            for r in list(regions_pref):
+                allowed_regions |= REGION_ALIAS_MAP.get(r, set())
+
+            region_match = not regions_pref or (lead_region in allowed_regions)
+
+            if not zone_match or not region_match:
+                continue
+        else:
+            continue
+
+        # =========================
+        # Branch Aggregation
+        # =========================
+        branch_key = branch.branch
+
+        if branch_key not in branch_stats:
+            branch_stats[branch_key] = {
+                "branch": branch.branch,
+                "zone": branch.zone,
+                "region": branch.region,
+                "total_leads": 0,
+                "converted": 0,
+                "followups": 0
+            }
+
+        branch_stats[branch_key]["total_leads"] += 1
+
+        if l.status == "Converted":
+            branch_stats[branch_key]["converted"] += 1
+
+        if l.status == "Follow Up":
+            branch_stats[branch_key]["followups"] += 1
+
+        # =========================
+        # Employee Aggregation
+        # =========================
+        emp = employee_map.get(l.lead_owner)
+        if emp:
+            emp_key = emp.employee_number
+
+            if emp_key not in employee_stats:
+                employee_stats[emp_key] = {
+                    "employee_id": emp.employee_number,
+                    "employee_name": emp.employee_name,
+                    "designation": emp.designation or "-",
+                    "total_leads": 0,
+                    "converted": 0
+                }
+
+            employee_stats[emp_key]["total_leads"] += 1
+
+            if l.status == "Converted":
+                employee_stats[emp_key]["converted"] += 1
+
+    # ---------- Conversion Rate Add Karein ----------
+    for b in branch_stats.values():
+        b["conversion_rate"] = round(
+            (b["converted"] / b["total_leads"]) * 100, 2
+        ) if b["total_leads"] else 0
+
+        b["usage_percent"] = round(
+            (b["followups"] / b["total_leads"]) * 100, 2
+        ) if b["total_leads"] else 0
+
+    for e in employee_stats.values():
+        e["conversion_rate"] = round(
+            (e["converted"] / e["total_leads"]) * 100, 2
+        ) if e["total_leads"] else 0
+
+    # ---------- Sorting ----------
+    top_branches = sorted(
+        branch_stats.values(),
+        key=lambda x: x["total_leads"],
+        reverse=True
+    )[:5]
+
+    top_employees = sorted(
+        employee_stats.values(),
+        key=lambda x: x["total_leads"],
+        reverse=True
+    )[:10]
+
+    lowest_usage_branches = sorted(
+        branch_stats.values(),
+        key=lambda x: x["usage_percent"]
+    )[:5]
+
+    return {
+        "top_branches": top_branches,
+        "top_employees": top_employees,
+        "lowest_usage_branches": lowest_usage_branches
+    }
