@@ -525,6 +525,60 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     background: #f0fdf4;
     color: #05a15d;
 }
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.analytics-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.analytics-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.mini-table {
+    width: 100%;
+    font-size: 11px;
+}
+.mini-table th { color: #6b7280; padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: left; }
+.mini-table td { padding: 8px; border-bottom: 1px solid #f9fafb; }
+.rank-badge {
+    width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;
+    background: #f3f4f6; border-radius: 4px; font-weight: bold; color: #4b5563; margin-right: 5px;
+}
+.top-3-rank { background: #fef3c7; color: #92400e; } /* Gold color for top 3 */
+.btn-toggle-analytics {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d8dd;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-toggle-analytics:hover {
+    background: #e5e7eb;
+}
+.analytics-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
     `,
     )
     .appendTo("head");
@@ -661,7 +715,59 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </div>
                             </div>
                         </div>
-                        
+                      <div class="analytics-section-header mt-4">
+                            <div class="header-title" style="margin:0;">Performance Insights</div>
+                            <button class="btn-toggle-analytics" @click="show_analytics = !show_analytics">
+                                <i :class="['fa', show_analytics ? 'fa-eye-slash' : 'fa-eye']" style="margin-right: 5px;"></i>
+                                {{ show_analytics ? 'Hide Analytics' : 'Show Analytics' }}
+                            </button>
+                        </div>
+
+                        <div class="analytics-grid" v-if="!analytics_loading && show_analytics">
+                            <div class="analytics-card">
+                                <div class="analytics-title"><i class="fa fa-university text-primary"></i> Top 5 Branches</div>
+                                <table class="mini-table">
+                                    <thead><tr><th>Branch</th><th>Leads</th><th>Conv %</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="(b, i) in analytics_data.top_branches" :key="i">
+                                            <td><span :class="['rank-badge', i < 3 ? 'top-3-rank' : '']">{{i+1}}</span> {{b.branch}}</td>
+                                            <td><b>{{b.total_leads}}</b></td>
+                                            <td><span class="badge-pastel-green">{{b.conversion_rate}}%</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="analytics-card">
+                                <div class="analytics-title"><i class="fa fa-users text-success"></i> Top 10 Performers</div>
+                                <div style="max-height: 250px; overflow-y: auto;">
+                                    <table class="mini-table">
+                                        <thead><tr><th>Employee</th><th>Leads</th><th>Conv %</th></tr></thead>
+                                        <tbody>
+                                            <tr v-for="(e, i) in analytics_data.top_employees" :key="i">
+                                                <td><span :class="['rank-badge', i < 3 ? 'top-3-rank' : '']">{{i+1}}</span> {{e.employee_name}}</td>
+                                                <td><b>{{e.total_leads}}</b></td>
+                                                <td><span class="badge-pastel-green">{{e.conversion_rate}}%</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="analytics-card">
+                                <div class="analytics-title"><i class="fa fa-exclamation-circle text-danger"></i> Lowest CRM Usage</div>
+                                <table class="mini-table">
+                                    <thead><tr><th>Branch</th><th>Follow-ups</th><th>Usage %</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="(b, i) in analytics_data.lowest_usage_branches" :key="i">
+                                            <td>{{b.branch}}</td>
+                                            <td>{{b.followups}}</td>
+                                            <td><span class="badge-pastel-red">{{b.usage_percent}}%</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         <!-- Loading/Error/Empty States -->
                         <div v-if="employee_report_loading" class="loading-spinner-dsr">
                             <div class="spinner-dsr"></div>
@@ -675,7 +781,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             <p>No employee performance data found for the selected period.</p>
                         </div>
                         <!-- Employee Performance Table -->
-                        <div class="header-title mb-2">Employee Performance Summary</div>
                         <div v-else class="table-responsive-dsr">
                             <table class="dsr-table">
                                <thead>
@@ -830,6 +935,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     active_popup: null,
     hide_excluded_products: false,
     show_export_menu: false,
+    // Isse replace karein
+    analytics_data: {
+      top_branches: [],
+      top_employees: [],
+      lowest_usage_branches: [],
+    },
+    analytics_loading: false,
+    show_analytics: false, // By default Analytics dikhega
+
     toggleExportMenu() {
       this.show_export_menu = !this.show_export_menu;
     },
@@ -1107,6 +1221,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           }
         },
       });
+
       const pref = (res.message || [])[0];
       if (pref) {
         this.filter_data.zone = pref.zone || [];
@@ -1205,6 +1320,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     async fetchEmployeePerformance() {
       this.employee_report_loading = true;
       this.employee_error_message = null;
+      this.fetchAnalytics();
 
       try {
         let res = await frappe.call({
@@ -1228,8 +1344,27 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.employee_report_loading = false;
       }
     },
+    async fetchAnalytics() {
+      this.analytics_loading = true;
+      try {
+        let res = await frappe.call({
+          method: "sahayog.scrm.api.report_access.get_crm_top_analytics",
+          args: {
+            from_date: this.employee_from_date,
+            to_date: this.employee_to_date,
+          },
+        });
+        if (res.message) {
+          this.analytics_data = res.message;
+        }
+      } catch (e) {
+        console.error("Analytics Error:", e);
+      } finally {
+        this.analytics_loading = false;
+      }
+    },
 
-    async applyFilters(format = "csv") {
+    async applyFilters() {
       // Safety check: though button is hidden, we block the function too
       if (this.totalLeadsInReport === 0) {
         this.showNoLeadsMessage();
@@ -1253,7 +1388,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             from_date: fromDate,
             to_date: toDate,
             filters: this.selected,
-            format: format, // 👈 THIS IS THE FIX
           },
         });
         if (res.message?.status === "queued") {
