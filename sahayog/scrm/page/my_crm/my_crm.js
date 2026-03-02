@@ -3308,6 +3308,12 @@ if (this.assignedByMap?.[item.name]) {
       });
       renderRows();
     };
+    // ✅ ONLY ADD THIS PART BEFORE dialog.show()
+    dialog.get_field("source").get_query = function() {
+        return {
+            filters: { "custom_active": 1 }
+        };
+    };
 
     dialog.show();
     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
