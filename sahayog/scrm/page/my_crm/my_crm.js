@@ -3308,6 +3308,15 @@ if (this.assignedByMap?.[item.name]) {
       });
       renderRows();
     };
+    // ✅ Naya Source create karne ki restriction aur Active filter
+    const sourceField = dialog.get_field("source");
+    sourceField.df.only_select = 1; // User naya source add nahi kar payega
+    // ✅ ONLY ADD THIS PART BEFORE dialog.show()
+    dialog.get_field("source").get_query = function() {
+        return {
+            filters: { "custom_active": 1 }
+        };
+    };
 
     dialog.show();
     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
