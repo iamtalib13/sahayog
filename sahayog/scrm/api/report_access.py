@@ -9,6 +9,21 @@ REGION_ALIAS_MAP = {
     "headoffice": {"ho", "headoffice", "head-office"},
 }
 
+def validate_report_access():
+    user = frappe.session.user
+
+    if user == "Administrator":
+        return True
+
+    exists = frappe.db.exists(
+        "Report Preference",
+        {"user": user}
+    )
+
+    if not exists:
+        frappe.throw("You are not authorized to access CRM Leads Report.")
+
+    return True
     
 @frappe.whitelist()
 def get_all_system_regions():
@@ -18,6 +33,7 @@ def get_all_system_regions():
 
 @frappe.whitelist()
 def get_user_report_preference_record(user):
+    validate_report_access()
     frappe.log_error(f"CRM Preference Fetch", f"User: {user}")
     result = []
     if user == "Administrator":
@@ -70,6 +86,7 @@ def empty_stats():
 
 @frappe.whitelist()
 def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
+    validate_report_access()
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
     
@@ -424,6 +441,7 @@ def notify_user(user, message):
     
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date):
+    validate_report_access()
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
 
@@ -561,6 +579,7 @@ def get_all_products_sources():
 
 @frappe.whitelist()
 def get_crm_top_analytics(from_date, to_date):
+    validate_report_access()
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
 

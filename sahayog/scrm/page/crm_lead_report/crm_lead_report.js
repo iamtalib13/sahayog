@@ -1223,6 +1223,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       });
 
       const pref = (res.message || [])[0];
+
+      if (!pref) {
+        frappe.msgprint({
+          title: "Access Denied",
+          message: "You are not authorized to access this report.",
+          indicator: "red",
+        });
+
+        frappe.set_route("app");
+        return;
+      }
       if (pref) {
         this.filter_data.zone = pref.zone || [];
         this.filter_data.region = pref.region || [];
