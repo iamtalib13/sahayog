@@ -73,7 +73,6 @@ doctype_list_js = {
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = ["/assets/sahayog/js/assignmate.js"]
-app_include_js = ["/assets/sahayog/js/petite-vue.iife.js",]
 
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -149,6 +148,7 @@ after_migrate = [
     # "sahayog.patches.fixtures.add_role_and_role_profile_for_project_doctype.execute",
     "sahayog.patches.fixtures.allow_login_using_user_name.execute",
     #    "sahayog.patches.fixtures.add_custom_html_for_assigned_task.execute",
+    "sahayog.patches.fixtures.add_custom_html_for_employee_ess.execute",
     "sahayog.patches.add_roles.execute",
     # "sahayog.patches.fixtures.add_item_group.execute",
     # "sahayog.patches.fixtures.add_warehouses.execute",
@@ -164,8 +164,6 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
     "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
     "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
-    "sahayog.patches.custom_fields.add_custom_field_asset_serial_no.execute",
-    "sahayog.patches.custom_fields.add_custom_fields_asset_key.execute",
 
 ]
 # Uninstallation
@@ -210,27 +208,11 @@ permission_query_conditions = {
     "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",
     "Shareholder": "sahayog.permissions.get_shareholder_permission",
     "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
-
-
-    "Petty Cash Transaction": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
-    "Branch Petty Cash Account": "sahayog.petty_cash_management.permissions.get_branch_permission_query",
-
-    # This will restrict records based on Branch assigned in Employee Master
-    "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.get_permission_query_conditions",
-    # This will restrict records based on Branch assigned in Employee Master
-    "Branch Petty Cash Account": "sahayog.petty_cash_management.permission_queries.get_account_permission_query_conditions",
-    # You can even restrict the Branch Master itself if you want:
-    # "Sahayog Branch": "sahayog.petty_cash_management.permissions.get_branch_permission_query"
-    "Employee Material Request": "sahayog.permissions.get_employee_material_request_permission",
 }
 #
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
-
-has_permission = {
-    "Agent": "sahayog.agent_and_bdo.doctype.agent.agent.has_permission"
-}
 
 # DocType Class
 # ---------------
@@ -243,7 +225,7 @@ override_doctype_class = {
     "Item": "sahayog.override.autoname_item.CustomItem",
     # "Report": "sahayog.override.report.CustomReport"
 
-   
+    "Report": "sahayog.override.report.CustomReport",
 }
 
 # Document Events
@@ -309,7 +291,7 @@ doc_events = {
         "before_save": "sahayog.doc_events.supplier_quotation.sync_project_field",
     },
     "Project": {
-        # "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
+        "after_insert": "sahayog.doc_events.project_warehouse.create_project_warehouse"
     },
     "Purchase Order": {
         # "on_update": "sahayog.doc_events.purchase_order.show_status_messages",
@@ -346,44 +328,12 @@ doc_events = {
     "User": {
         "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
         "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
-    },
-    "Asset": {
-        "after_insert": "sahayog.doc_events.create_asset_key.create_asset_keys",
-        "on_update": "sahayog.doc_events.create_asset_key.create_asset_keys",
-    },  
+    }
 }
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
     "cron": {
-
-        # Run daily at 12:00 PM — Branch Petty Cash Account Balance Sync
-        # "30 13 * * *": [
-        #     "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance"
-        # ],
-
-          # Run every 30 minute — Auto Fund Allocation AND Auto Cash Withdrawal
-        "*/30 * * * *": [
-            "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle",
-            "sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals",
-            "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
-        ],
-
-    #     "* * * * *": [
-    #     "sahayog.petty_cash_management.api.auto_fund_allocation.sync_fund_allocations_from_finacle"
-    #   ],
-
-        # Run daily at 6:00 PM — Evening trainer daily activity email
-        "0 18 * * *": [
-            "sahayog.agent_and_bdo.doctype.agent_activation_call_log.trainer_report.send_daily_trainer_report"
-        ],
-
-        
-        # Run daily at 6:00 PM — Evening trainer weekly activity email
-        "0 16 * * 6": [
-            "sahayog.agent_and_bdo.doctype.agent_activation_call_log.weekly_trainer_report.send_weekly_trainer_report"
-        ],
-
         # Run daily at 5:00 AM — Early morning department ticket summary email
         "0 5 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
@@ -396,12 +346,6 @@ scheduler_events = {
         "0 1 * * *": [
             "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
         ],
-
-        # Run daily at 1:00 AM — Agent auto-update sync job
-       "0 2 * * *": [  # Runs at 2:00 AM daily
-            # "sahayog.api.auto_agent_creation.daily_agent_update_job"
-        ],
-
         # "*/5 * * * *": [
         #     "sahayog.tasks.reset_auto_prepared_reports"  
         # ],
@@ -410,10 +354,7 @@ scheduler_events = {
         "0 0 * * *": [
             "sahayog.tasks.sync_district_state"
         ],
-        # "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
-        #             "59 17 * * *": [
-        #     "sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_email_activation.send_daily_trainer_activity_report"
-        # ],
+        "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
@@ -436,7 +377,6 @@ scheduler_events = {
     #     # Runs once every month (1st day of month, midnight)
     #     "sahayog.tasks.monthly"
     # ]
-
 }
 
 # Testing
@@ -536,6 +476,11 @@ fixtures = [
         "dt": "Workflow",
         "filters": [["name", "in", ["Disciplinary Case", "Branch Proposal"]]],
     },
+    # Unauthorized Absence Workflow
+    {
+        "dt": "Workflow",
+        "filters": [["name", "=", "Unauthorized Absence"]],
+    },
     # Workflow State for Disciplinary Case
         {
             "dt": "Workflow State",
@@ -612,8 +557,6 @@ fixtures = [
                     "Tickets Dashboard",
                     "Finacle Dashboard",
                     "IT Dashboard",
-                    "Trainer Dashboard",
-                    "Petty Cash Dashboard Widget"
                 ],
             ]
         ],
@@ -636,29 +579,26 @@ fixtures = [
 # email templates fixtures
 {
     "dt": "Email Template",
-    "filters": [["name", "in", ["Disciplinary Case Update",
-                                "Response to SCN",
-                                "Suspension Process",
-                                "Domestic Enquiry Notice",
-                                "Reminder Notice of Enquiry",
-                                "Unauthorized Absence",
-                                "Reminder Of Unauthorized Absence",
-                                "Case Closure Update",
-                                "Trainer Daily Activity",
-                                "Trainer Weekly Activity",
-                                ]]]
+    "filters": [
+        ["name", "in", [
+            "Disciplinary Case Update",
+            "Disciplinary - SCN",
+            "Response to SCN",
+            "Suspension Process",
+            "Domestic Enquiry Notice",
+            "Reminder Notice of Enquiry",
+            "Unauthorized Absence",
+            "Reminder Of Unauthorized Absence",
+            "Case Closure Update"
+        ]]
+    ],
 },
+
   
     # Print Format fixture
 {
     "dt": "Print Format",
-    "filters": [["name", "in", ["Reminder Unauthorized absence", "Domestic Enquiry", "Disciplinary-SCN"]]]
+    "filters": [["name", "in", ["Reminder Unauthorized absence"]]]
 },
-
-# Notification fixtures
-    {
-        "dt": "Notification",
-        "filters": [["name", "in", ["Show Cause Notice"]]]
-    },
 
 ]
