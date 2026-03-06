@@ -7,3 +7,4 @@ SCRM
 MIS
 HRMS
 Petty Cash Management
+Loan
