@@ -1,31 +1,45 @@
-# Copyright (c) 2025, Developer Team and contributors
-# For license information, please see license.txt
 import frappe
 from frappe.model.document import Document
-import frappe
 from frappe.utils import formatdate
 
 class UnauthorizedAbsence(Document):
-  def autoname(self):
-    from frappe.utils import getdate
 
-    today = getdate()
-    fy = today.year
+    def autoname(self):
+        from frappe.utils import getdate
+        today = getdate()
+        fy = today.year
+        self.name = frappe.model.naming.make_autoname(f"UA-FY-{fy}-.####")
 
-    self.name = frappe.model.naming.make_autoname(f"UA-FY-{fy}-.####")
     def on_submit(self):
-        """
-        Auto send Unauthorized Absence email on submit.
-        Existing send logic is reused – no duplication.
-        """
         try:
             send_unauthorized_absence_email(self.name)
         except Exception:
-            # Log error but do not block submission
             frappe.log_error(
                 frappe.get_traceback(),
                 "Unauthorized Absence Auto Email Failed"
             )
+
+    def before_insert(self):
+        user = frappe.session.user
+
+        if user == "Administrator":
+            self.hr_employee_id = "Administrator"
+            self.hr_name = "Administrator"
+            return
+
+        hr_employee_data = frappe.db.get_value(
+            "Employee",
+            {"user_id": user},
+            ["name", "employee_name"]
+        )
+
+        if hr_employee_data:
+            self.hr_employee_id, self.hr_name = hr_employee_data
+        else:
+            frappe.throw("Please set User ID in Employee record.")
+
+    def after_insert(self):
+        self.db_set("case_id", self.name, update_modified=False)
 
 @frappe.whitelist()
 def check_employee_email(employee):
@@ -82,3 +96,4 @@ def send_unauthorized_absence_email(docname):
         now=False
     )
     return "Email Sent Successfully"
+
