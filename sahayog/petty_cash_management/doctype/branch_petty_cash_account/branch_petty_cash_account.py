@@ -264,3 +264,35 @@ def fix_missing_accounts():
             print(f"Created Account for {w.branch}")
             
     return f"Process Complete. Created {created_count} missing accounts."
+
+
+
+# Add this at the very bottom of branch_petty_cash_account.py
+
+def get_permission_query_conditions(user):
+    """
+    Filters frappe.db.get_list queries so the JS fallback only returns allowed branches.
+    """
+    if not user:
+        user = frappe.session.user
+
+    # Allow full list access for Admin and Managers
+    if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
+        return None
+
+    # Import your existing custom permission logic
+    from sahayog.petty_cash_management.permissions import get_user_allowed_branches
+    allowed_branches = get_user_allowed_branches()
+
+    # If the function returns None, it implies full access
+    if allowed_branches is None:
+        return None
+
+    # If the user has assigned branches, only return those branches
+    if allowed_branches:
+        # Securely format the branches for the SQL query
+        branches_str = ", ".join([frappe.db.escape(b) for b in allowed_branches])
+        return f"`tabBranch Petty Cash Account`.branch IN ({branches_str})"
+
+    # If the user has no allowed branches, return nothing
+    return "1=0"
