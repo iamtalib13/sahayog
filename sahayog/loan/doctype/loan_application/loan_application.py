@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class GoldLoanApplication(Document):
+class LoanApplication(Document):
 	pass

@@ -1,0 +1,174 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-06 17:26:20.360799",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "case_initiation_section",
+  "case_id",
+  "cif_id",
+  "customer_name",
+  "pan__aadhaar",
+  "column_break_lonk",
+  "branch_code",
+  "customer",
+  "is_new_customer",
+  "mobile_number",
+  "valuation_parameters_section",
+  "gold_rate_per_gram",
+  "column_break_dbbl",
+  "ltv_percent",
+  "ornaments_section",
+  "ornaments_list",
+  "totals_and_calculation_section",
+  "total_gross_weight",
+  "total_valuation",
+  "column_break_tgnr",
+  "total_net_weight",
+  "loan_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "cif_id",
+   "fieldtype": "Data",
+   "label": "CIF ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer ",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_lonk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name "
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Phone",
+   "label": "Mobile Number "
+  },
+  {
+   "fieldname": "valuation_parameters_section",
+   "fieldtype": "Section Break",
+   "label": "Valuation Parameters"
+  },
+  {
+   "fieldname": "gold_rate_per_gram",
+   "fieldtype": "Currency",
+   "label": "Gold Rate (per gram) "
+  },
+  {
+   "fieldname": "column_break_dbbl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "75",
+   "fieldname": "ltv_percent",
+   "fieldtype": "Percent",
+   "label": "LTV Percent (%) "
+  },
+  {
+   "fieldname": "ornaments_section",
+   "fieldtype": "Section Break",
+   "label": "Ornaments"
+  },
+  {
+   "fieldname": "ornaments_list",
+   "fieldtype": "Data",
+   "label": "Ornaments List "
+  },
+  {
+   "fieldname": "totals_and_calculation_section",
+   "fieldtype": "Section Break",
+   "label": "Totals and Calculation"
+  },
+  {
+   "fieldname": "total_gross_weight",
+   "fieldtype": "Float",
+   "label": "Total Gross Weight "
+  },
+  {
+   "fieldname": "total_net_weight",
+   "fieldtype": "Float",
+   "label": "Total Net Weight "
+  },
+  {
+   "fieldname": "total_valuation",
+   "fieldtype": "Currency",
+   "label": "Total Valuation "
+  },
+  {
+   "fieldname": "column_break_tgnr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "loan_amount",
+   "fieldtype": "Currency",
+   "label": "Loan Amount "
+  },
+  {
+   "fieldname": "case_initiation_section",
+   "fieldtype": "Section Break",
+   "label": "Case Initiation"
+  },
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Data",
+   "label": "Case ID ",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code ",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pan__aadhaar",
+   "fieldtype": "Data",
+   "label": "PAN / Aadhaar "
+  },
+  {
+   "default": "0",
+   "fieldname": "is_new_customer",
+   "fieldtype": "Check",
+   "label": "Is New Customer?"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-07 11:41:32.656497",
+ "modified_by": "Administrator",
+ "module": "Loan",
+ "name": "Loan Application",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
