@@ -208,11 +208,16 @@ permission_query_conditions = {
     "Stock Entry": "sahayog.permissions.get_stock_entry_permission_for_warehouse",
     "Shareholder": "sahayog.permissions.get_shareholder_permission",
     "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
+    "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.get_transaction_query_conditions",
 }
 #
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
+
+has_permission = {
+    "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.has_transaction_permission",
+}
 
 # DocType Class
 # ---------------
