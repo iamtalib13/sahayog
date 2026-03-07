@@ -85,8 +85,9 @@
   },
   {
    "fieldname": "ornaments_list",
-   "fieldtype": "Data",
-   "label": "Ornaments List "
+   "fieldtype": "Table",
+   "label": "Ornaments List ",
+   "options": "Loan Ornament"
   },
   {
    "fieldname": "total_net_weight",
@@ -189,7 +190,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-07 12:50:01.320674",
+ "modified": "2026-03-07 13:28:22.950533",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
