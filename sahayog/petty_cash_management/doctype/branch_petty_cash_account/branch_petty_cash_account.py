@@ -296,3 +296,17 @@ def get_permission_query_conditions(user):
 
     # If the user has no allowed branches, return nothing
     return "1=0"
+
+
+@frappe.whitelist()
+def get_current_user_branch():
+    """
+    Securely fetches the logged-in user's assigned branch from the Employee profile.
+    Because this runs on the backend, it bypasses the frontend read restrictions.
+    """
+    branch = frappe.db.get_value(
+        "Employee", 
+        {"user_id": frappe.session.user, "status": "Active"}, 
+        "sahayog_branch"
+    )
+    return branch
