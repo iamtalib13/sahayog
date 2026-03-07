@@ -1818,3 +1818,47 @@ def download_excel_api(name):   # <--- Renamed
 def download_txt_api(name):     # <--- Renamed
     doc = frappe.get_doc("Petty Cash Transaction", name)
     doc.download_transaction_txt()
+
+
+# Add this at the very bottom of petty_cash_transaction.py
+
+# def get_permission_query_conditions(user):
+#     """
+#     Filters the List View / frappe.db.get_list queries at the database level.
+#     """
+#     if not user:
+#         user = frappe.session.user
+
+#     # Allow full access for Admin and Managers
+#     if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
+#         return None
+
+#     # Fetch dynamic branch from Employee profile
+#     employee_branch = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
+
+#     if employee_branch:
+#         # Return SQL condition to only show records matching the employee's branch
+#         return f"`tabPetty Cash Transaction`.branch = {frappe.db.escape(employee_branch)}"
+    
+#     # If the user has no active employee record or branch, show them nothing
+#     return "1=0"
+
+
+# def has_permission(doc, user):
+#     """
+#     Prevents direct access to unauthorized records via direct URL/Form View.
+#     """
+#     if not user:
+#         user = frappe.session.user
+
+#     # Allow full access for Admin and Managers
+#     if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
+#         return True
+
+#     employee_branch = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
+
+#     # Only allow access if the document's branch matches the employee's active branch
+#     if employee_branch and doc.branch == employee_branch:
+#         return True
+        
+#     return False
