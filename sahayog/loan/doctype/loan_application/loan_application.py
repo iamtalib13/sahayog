@@ -23,3 +23,6 @@ class LoanApplication(Document):
         # At least one KYC required
         if not self.pan_number and not self.aadhaar_number:
             frappe.throw("Either PAN Number or Aadhaar Number is required.")
+            
+        if self.cibil_score and not (300 <= self.cibil_score <= 900 or self.cibil_score in [-1, 0]):
+            frappe.throw("Invalid CIBIL Score. Please enter a value between 300 and 900.")
