@@ -69,7 +69,8 @@
    "in_list_view": 1,
    "label": "Mobile Number ",
    "options": "Phone",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "description": "Today\u2019s gold price for 1 gram.",
@@ -274,14 +275,15 @@
    "description": "Enter 12 digit Aadhaar number",
    "fieldname": "aadhaar_number",
    "fieldtype": "Data",
-   "label": "Aadhaar Number"
+   "label": "Aadhaar Number",
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-09 15:38:15.029349",
+ "modified": "2026-03-09 16:04:50.084274",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
