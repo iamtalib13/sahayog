@@ -33,16 +33,23 @@
   "final_payout",
   "column_break_tgnr",
   "loan_amount",
-  "processing_fee"
+  "processing_fee",
+  "packet_details_section",
+  "packet_number",
+  "packet_image",
+  "column_break_dkxm",
+  "packet_weight"
  ],
  "fields": [
   {
+   "description": "The Customer's ID from the Bank's main database.",
    "fieldname": "cif_id",
    "fieldtype": "Data",
    "label": "CIF ID",
    "read_only": 1
   },
   {
+   "description": "Link to the Customer record",
    "fieldname": "customer",
    "fieldtype": "Link",
    "label": "Customer ",
@@ -64,6 +71,7 @@
    "label": "Mobile Number "
   },
   {
+   "description": "Today\u2019s gold price for 1 gram.",
    "fieldname": "gold_rate_per_gram",
    "fieldtype": "Currency",
    "label": "Gold Rate (per gram) "
@@ -74,6 +82,7 @@
   },
   {
    "default": "75",
+   "description": "Percentage of gold value given as a loan (Max 75%).",
    "fieldname": "ltv_percent",
    "fieldtype": "Percent",
    "label": "LTV Percent (%) "
@@ -85,15 +94,18 @@
   },
   {
    "fieldname": "ornaments_list",
-   "fieldtype": "Data",
-   "label": "Ornaments List "
+   "fieldtype": "Table",
+   "label": "Ornaments List ",
+   "options": "Loan Ornament"
   },
   {
+   "description": "Total weight of pure gold only.",
    "fieldname": "total_net_weight",
    "fieldtype": "Float",
    "label": "Total Net Weight "
   },
   {
+   "description": "Total market value of all gold items.",
    "fieldname": "total_valuation",
    "fieldtype": "Currency",
    "label": "Total Valuation "
@@ -103,6 +115,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "The final loan amount approved for the customer.",
    "fieldname": "loan_amount",
    "fieldtype": "Currency",
    "label": "Loan Amount "
@@ -113,12 +126,14 @@
    "label": "Case Initiation"
   },
   {
+   "description": "The unique ID for this loan case",
    "fieldname": "case_id",
    "fieldtype": "Data",
    "label": "Case ID ",
    "read_only": 1
   },
   {
+   "description": "The code of the branch where the loan is started.",
    "fieldname": "branch_code",
    "fieldtype": "Data",
    "label": "Branch Code ",
@@ -131,6 +146,7 @@
   },
   {
    "default": "0",
+   "description": "Tick this if the customer is new to the bank.",
    "fieldname": "is_new_customer",
    "fieldtype": "Check",
    "label": "Is New Customer?"
@@ -141,17 +157,20 @@
    "label": "Credit Underwriting"
   },
   {
+   "description": "Credit score of the customer",
    "fieldname": "cibil_score",
    "fieldtype": "Int",
    "label": "CIBIL Score "
   },
   {
+   "description": "Whether ID documents are verified or not.",
    "fieldname": "kyc_status",
    "fieldtype": "Select",
    "label": "KYC Status ",
    "options": "\nPending\nVerified\nRejected"
   },
   {
+   "description": "Credit Team's final remarks on the loan risk.",
    "fieldname": "credit_appraisal",
    "fieldtype": "Small Text",
    "label": "Credit Appraisal "
@@ -171,25 +190,52 @@
    "label": "Sanction and Charges"
   },
   {
+   "description": "The yearly interest percentage for this loan.",
    "fieldname": "interest_rate",
    "fieldtype": "Percent",
    "label": "Interest (ROI) "
   },
   {
+   "description": "The fee charged by the bank to process the loan.",
    "fieldname": "processing_fee",
    "fieldtype": "Currency",
    "label": "Processing Fee "
   },
   {
+   "description": "The actual cash/amount the customer will receive.",
    "fieldname": "final_payout",
    "fieldtype": "Currency",
    "label": "Final Payout "
+  },
+  {
+   "fieldname": "packet_details_section",
+   "fieldtype": "Section Break",
+   "label": "Packet Details"
+  },
+  {
+   "fieldname": "packet_number",
+   "fieldtype": "Data",
+   "label": "Packet Number"
+  },
+  {
+   "fieldname": "packet_weight",
+   "fieldtype": "Float",
+   "label": "Packet Weight"
+  },
+  {
+   "fieldname": "packet_image",
+   "fieldtype": "Attach",
+   "label": "Packet Image"
+  },
+  {
+   "fieldname": "column_break_dkxm",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-07 12:50:01.320674",
+ "modified": "2026-03-09 10:55:04.756566",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
