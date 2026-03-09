@@ -159,5 +159,25 @@ frappe.ui.form.on("Loan Application", {
     if (frm.doc.aadhaar_number && !/^\d{12}$/.test(frm.doc.aadhaar_number)) {
       frappe.throw(__("Aadhaar Number must be exactly 12 digits."));
     }
+    if (frm.doc.cibil_score) {
+      if (frm.doc.cibil_score < 300 || frm.doc.cibil_score > 900) {
+        // Sirf tab allow karein agar score -1 (No History) hai
+        if (frm.doc.cibil_score !== -1 && frm.doc.cibil_score !== 0) {
+          frappe.throw(
+            __(
+              "CIBIL Score must be between 300 and 900, or -1 for No History, or 0 for Not Checked.",
+            ),
+          );
+        }
+      }
+    }
+    if (frm.doc.kyc_status === "Rejected") {
+      frappe.msgprint(
+        __(
+          "KYC Status is Rejected. Please ensure KYC is verified before proceeding.",
+        ),
+      );
+      frappe.validated = false;
+    }
   },
 });

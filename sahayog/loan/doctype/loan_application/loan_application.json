@@ -153,7 +153,7 @@
    "label": "Credit Underwriting"
   },
   {
-   "description": "Credit score of the customer",
+   "description": "Credit score of the customer( Range: 300-900 , Use -1/0 for No History)",
    "fieldname": "cibil_score",
    "fieldtype": "Int",
    "label": "CIBIL Score ",
@@ -164,7 +164,8 @@
    "fieldname": "kyc_status",
    "fieldtype": "Select",
    "label": "KYC Status ",
-   "options": "\nPending\nVerified\nRejected"
+   "options": "\nPending\nVerified\nRejected",
+   "reqd": 1
   },
   {
    "description": "Credit Team's final remarks on the loan risk.",
@@ -283,7 +284,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-09 16:04:50.084274",
+ "modified": "2026-03-09 16:41:10.681603",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
