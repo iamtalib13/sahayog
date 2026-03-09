@@ -59,6 +59,39 @@ frappe.ui.form.on("Loan Application", {
         }, 100);
       });
     }
+    // 3. PAN/Aadhaar Restriction - Only Alphanumeric, Auto Uppercase
+    if (frm.fields_dict.pan__aadhaar && frm.fields_dict.pan__aadhaar.$input) {
+      let id_input = frm.fields_dict.pan__aadhaar.$input;
+
+      // Typing block: Sirf Numbers aur Capital Letters allow karein
+      // Typing block: Sirf Numbers aur Capital Letters allow karein
+      id_input.on("keypress", function (e) {
+        let charCode = e.which;
+        let current_val = $(this).val();
+
+        // 1. Max length check (12 characters)
+        if (current_val.length >= 12) {
+          e.preventDefault();
+          return false;
+        }
+
+        // 2. Allowed characters (0-9, A-Z, a-z)
+        if (
+          !(charCode >= 48 && charCode <= 57) &&
+          !(charCode >= 65 && charCode <= 90) &&
+          !(charCode >= 97 && charCode <= 122)
+        ) {
+          e.preventDefault();
+          return false;
+        }
+      });
+
+      // Auto-Uppercase: PAN hamesha capital mein hota hai
+      id_input.on("blur", function () {
+        let val = $(this).val().toUpperCase();
+        frm.set_value("pan__aadhaar", val);
+      });
+    }
   },
 
   is_new_customer: function (frm) {
@@ -85,6 +118,17 @@ frappe.ui.form.on("Loan Application", {
     // Mobile validation check (Existing)
     if (frm.doc.mobile_number && !/^\d{10}$/.test(frm.doc.mobile_number)) {
       frappe.throw(__("Mobile Number must be exactly 10 digits."));
+    }
+    let val = frm.doc.pan__aadhaar;
+    if (val) {
+      let is_pan = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val); // PAN: ABCDE1234F
+      let is_aadhaar = /^\d{12}$/.test(val); // Aadhaar: 12 digits
+
+      if (!is_pan && !is_aadhaar) {
+        frappe.throw(
+          __("Please Enter valid PAN (ABCDE1234F) or Aadhaar (12 digits)."),
+        );
+      }
     }
   },
 });

@@ -145,7 +145,8 @@
   {
    "fieldname": "pan__aadhaar",
    "fieldtype": "Data",
-   "label": "PAN / Aadhaar "
+   "label": "PAN / Aadhaar ",
+   "unique": 1
   },
   {
    "default": "0",
@@ -238,7 +239,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-09 12:21:49.380043",
+ "modified": "2026-03-09 13:01:40.196982",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
