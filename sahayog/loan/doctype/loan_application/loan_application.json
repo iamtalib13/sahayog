@@ -5,40 +5,45 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "customer_and_case_tab",
   "case_initiation_section",
   "case_id",
+  "branch_code",
+  "is_new_customer",
+  "customer_details_section",
+  "column_break_lonk",
   "cif_id",
   "customer_name",
-  "pan__aadhaar",
-  "column_break_lonk",
-  "branch_code",
-  "customer",
-  "is_new_customer",
+  "column_break_pjdo",
   "mobile_number",
+  "pan_number",
+  "aadhaar_number",
+  "credit_check_tab",
   "credit_underwriting_section",
   "cibil_score",
-  "credit_appraisal",
-  "column_break_jdbg",
   "kyc_status",
+  "credit_appraisal",
+  "gold_details_tab",
   "ornaments_section",
   "ornaments_list",
   "gold_valuation_section",
   "gold_rate_per_gram",
   "total_net_weight",
-  "column_break_dbbl",
   "total_valuation",
+  "loan_sanction_tab",
   "sanction_and_charges_section",
   "ltv_percent",
-  "interest_rate",
+  "loan_amount",
   "final_payout",
   "column_break_tgnr",
-  "loan_amount",
+  "interest_rate",
   "processing_fee",
   "packet_details_section",
   "packet_number",
   "packet_image",
   "column_break_dkxm",
-  "packet_weight"
+  "packet_weight",
+  "amended_from"
  ],
  "fields": [
   {
@@ -49,21 +54,14 @@
    "read_only": 1
   },
   {
-   "description": "Link to the Customer record",
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "label": "Customer ",
-   "options": "Customer",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_lonk",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "customer_name",
    "fieldtype": "Data",
-   "label": "Customer Name "
+   "label": "Customer Name ",
+   "reqd": 1
   },
   {
    "fieldname": "mobile_number",
@@ -78,10 +76,6 @@
    "fieldname": "gold_rate_per_gram",
    "fieldtype": "Currency",
    "label": "Gold Rate (per gram) "
-  },
-  {
-   "fieldname": "column_break_dbbl",
-   "fieldtype": "Column Break"
   },
   {
    "default": "75",
@@ -105,13 +99,15 @@
    "description": "Total weight of pure gold only.",
    "fieldname": "total_net_weight",
    "fieldtype": "Float",
-   "label": "Total Net Weight "
+   "label": "Total Net Weight ",
+   "read_only": 1
   },
   {
    "description": "Total market value of all gold items.",
    "fieldname": "total_valuation",
    "fieldtype": "Currency",
-   "label": "Total Valuation "
+   "label": "Total Valuation ",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_tgnr",
@@ -121,7 +117,8 @@
    "description": "The final loan amount approved for the customer.",
    "fieldname": "loan_amount",
    "fieldtype": "Currency",
-   "label": "Loan Amount "
+   "label": "Loan Amount ",
+   "read_only": 1
   },
   {
    "fieldname": "case_initiation_section",
@@ -143,12 +140,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "pan__aadhaar",
-   "fieldtype": "Data",
-   "label": "PAN / Aadhaar ",
-   "unique": 1
-  },
-  {
    "default": "0",
    "description": "Tick this if the customer is new to the bank.",
    "fieldname": "is_new_customer",
@@ -164,7 +155,8 @@
    "description": "Credit score of the customer",
    "fieldname": "cibil_score",
    "fieldtype": "Int",
-   "label": "CIBIL Score "
+   "label": "CIBIL Score ",
+   "reqd": 1
   },
   {
    "description": "Whether ID documents are verified or not.",
@@ -178,10 +170,6 @@
    "fieldname": "credit_appraisal",
    "fieldtype": "Small Text",
    "label": "Credit Appraisal "
-  },
-  {
-   "fieldname": "column_break_jdbg",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "gold_valuation_section",
@@ -209,7 +197,8 @@
    "description": "The actual cash/amount the customer will receive.",
    "fieldname": "final_payout",
    "fieldtype": "Currency",
-   "label": "Final Payout "
+   "label": "Final Payout ",
+   "read_only": 1
   },
   {
    "fieldname": "packet_details_section",
@@ -234,12 +223,65 @@
   {
    "fieldname": "column_break_dkxm",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Loan Application",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "customer_and_case_tab",
+   "fieldtype": "Tab Break",
+   "label": "Customer and Case"
+  },
+  {
+   "fieldname": "customer_details_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Details"
+  },
+  {
+   "fieldname": "credit_check_tab",
+   "fieldtype": "Tab Break",
+   "label": "Credit Check"
+  },
+  {
+   "fieldname": "gold_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Gold Details"
+  },
+  {
+   "fieldname": "loan_sanction_tab",
+   "fieldtype": "Tab Break",
+   "label": "Loan Sanction"
+  },
+  {
+   "fieldname": "column_break_pjdo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Enter 10 character PAN",
+   "fieldname": "pan_number",
+   "fieldtype": "Data",
+   "label": "PAN Number",
+   "unique": 1
+  },
+  {
+   "description": "Enter 12 digit Aadhaar number",
+   "fieldname": "aadhaar_number",
+   "fieldtype": "Data",
+   "label": "Aadhaar Number"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-03-09 13:01:40.196982",
+ "modified": "2026-03-09 15:38:15.029349",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
