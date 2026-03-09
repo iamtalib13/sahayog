@@ -67,8 +67,11 @@
   },
   {
    "fieldname": "mobile_number",
-   "fieldtype": "Phone",
-   "label": "Mobile Number "
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mobile Number ",
+   "options": "Phone",
+   "reqd": 1
   },
   {
    "description": "Today\u2019s gold price for 1 gram.",
@@ -235,7 +238,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-09 10:55:04.756566",
+ "modified": "2026-03-09 12:21:49.380043",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
