@@ -1037,18 +1037,17 @@ class StockIOPage {
       get canActionSelection() {
         if (!this.selectedDocs.length) return false;
 
-        if (
-          frappe.session.user === "Administrator" ||
-          frappe.user.has_role("Store Manager")
-        ) {
-          return true;
-        }
-
         const selectedDocsData = this.requests.filter((d) =>
           this.selectedDocs.includes(d.name),
         );
 
         if (this.selectionStatus === "Pending Reporting Person") {
+          if (
+            frappe.session.user === "Administrator" ||
+            frappe.user.has_role("Store Manager")
+          ) {
+            return true;
+          }
           return selectedDocsData.every(
             (d) => d.reporting_person === frappe.session.user,
           );
@@ -1056,9 +1055,10 @@ class StockIOPage {
 
         if (this.selectionStatus === "Pending HO Approval") {
           return (
+            frappe.session.user === "Administrator" ||
             selectedDocsData.every(
               (d) => d.head_office_officer === frappe.session.user,
-            ) || frappe.user.has_role("Head Office Officer")
+            )
           );
         }
 
@@ -2806,7 +2806,8 @@ class StockIOPage {
             // Re-verify item categories to ensure they match Item master
             if (values.items && values.items.length) {
               for (let item of values.items) {
-                item.employee = values.employee;
+                item.assigned_to_employee = values.employee;
+                item.purpose = values.remark;
 
                 const res = await frappe.db.get_value("Item", item.item_code, [
                   "is_fixed_asset",
@@ -3410,8 +3411,11 @@ class StockIOPage {
                 freeze_message: "Creating Asset Movement...",
                 callback: (r) => {
                   if (r.message) {
-                    frappe.set_route("Form", "Asset Movement", r.message);
                     d.hide();
+                    frappe.show_alert({ message: __("Asset Movement {0} created", [r.message]), indicator: "green" });
+                    setTimeout(() => {
+                      frappe.set_route("Form", "Asset Movement", r.message);
+                    }, 500);
                   }
                 },
               });
