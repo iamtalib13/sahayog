@@ -194,13 +194,35 @@ def get_share_transfer_permission(user, doctype=None):
     # No access otherwise
     frappe.msgprint("You don't have access")
     return "1=0"
-def get_employee_material_request_permission(user, doctype=None):
+def get_employee_material_request_permission(user=None, doctype=None):
     if not user:
         user = frappe.session.user
 
     user_roles = frappe.get_roles(user)
 
-    if "Administrator" in user_roles or "Store Manager" in user_roles or "Head Office Officer" in user_roles:
+    # Administrator & Head Office Officer → full access
+    if "Administrator" in user_roles or "Head Office Officer" in user_roles:
         return ""
 
-    return f"(`tabEmployee Material Request`.owner = '{user}' OR `tabEmployee Material Request`.reporting_person = '{user}' OR `tabEmployee Material Request`.head_office_officer = '{user}')"
+    # Base conditions (Owner, Reporting Person, HO Officer)
+    conditions = [
+        f"`tabEmployee Material Request`.owner = '{user}'",
+        f"`tabEmployee Material Request`.reporting_person = '{user}'",
+        f"`tabEmployee Material Request`.head_office_officer = '{user}'"
+    ]
+
+    # Store Manager → also see records from their branch/sol_id warehouse
+    if any("Store Manager" in role for role in user_roles):
+        emp = frappe.db.get_value("Employee", {"user_id": user}, ["branch", "sol_id"], as_dict=True)
+        
+        if emp:
+            # Clean prefixes like 'Branch - ' to ensure Gondia HO matches Branch - Gondia HO
+            if emp.branch:
+                branch_val = emp.branch.replace("Branch - ", "").strip()
+                conditions.append(f"LOWER(`tabEmployee Material Request`.source_warehouse) LIKE LOWER('%{branch_val}%')")
+            
+            if emp.sol_id:
+                sol_val = str(emp.sol_id).replace("Branch - ", "").strip()
+                conditions.append(f"LOWER(`tabEmployee Material Request`.source_warehouse) LIKE LOWER('%{sol_val}%')")
+
+    return f"({' OR '.join(conditions)})"

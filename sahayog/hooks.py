@@ -209,6 +209,7 @@ permission_query_conditions = {
     "Shareholder": "sahayog.permissions.get_shareholder_permission",
     "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
     "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.get_transaction_query_conditions",
+    "Employee Material Request": "sahayog.permissions.get_employee_material_request_permission",
 }
 #
 # has_permission = {
