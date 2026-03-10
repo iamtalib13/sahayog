@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "format:GL-{branch_code}-{#####}",
  "creation": "2026-03-06 17:26:20.360799",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -8,7 +8,6 @@
   "customer_and_case_tab",
   "case_initiation_section",
   "loan_type",
-  "is_new_customer",
   "column_break_xzaf",
   "case_id",
   "branch_code",
@@ -24,8 +23,6 @@
   "credit_check_tab",
   "credit_underwriting_section",
   "cibil_score",
-  "column_break_vdhm",
-  "kyc_status",
   "section_break_igty",
   "credit_appraisal",
   "loan_asset_details_tab",
@@ -43,6 +40,8 @@
   "column_break_tgnr",
   "interest_rate",
   "processing_fee",
+  "section_break_ykpd",
+  "status",
   "packet_details_section",
   "packet_number",
   "packet_image",
@@ -84,11 +83,10 @@
   },
   {
    "description": "Percentage of gold value given as a loan (Max 75%).",
-   "fetch_from": "loan_type.ltv_percent_",
+   "fetch_from": "loan_type.ltv_percent",
    "fieldname": "ltv_percent",
-   "fieldtype": "Link",
-   "label": "LTV Percent (%) ",
-   "options": "Loan Type"
+   "fieldtype": "Data",
+   "label": "LTV Percent (%) "
   },
   {
    "fieldname": "ornaments_section",
@@ -132,28 +130,12 @@
    "label": "Case Initiation"
   },
   {
-   "description": "The unique ID for this loan case",
-   "fieldname": "case_id",
-   "fieldtype": "Data",
-   "label": "Case ID ",
-   "read_only": 1
-  },
-  {
    "description": "The code of the branch where the loan is started.",
    "fieldname": "branch_code",
    "fieldtype": "Link",
    "label": "Branch Code ",
    "options": "Sahayog Branch",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.loan_type",
-   "description": "Tick this if the customer is new to the bank.",
-   "fieldname": "is_new_customer",
-   "fieldtype": "Check",
-   "label": "Is New Customer?",
-   "mandatory_depends_on": "eval:doc.loan_type"
+   "reqd": 1
   },
   {
    "fieldname": "credit_underwriting_section",
@@ -165,14 +147,6 @@
    "fieldname": "cibil_score",
    "fieldtype": "Int",
    "label": "CIBIL Score ",
-   "reqd": 1
-  },
-  {
-   "description": "Whether ID documents are verified or not.",
-   "fieldname": "kyc_status",
-   "fieldtype": "Select",
-   "label": "KYC Status ",
-   "options": "\nPending\nVerified\nRejected",
    "reqd": 1
   },
   {
@@ -193,6 +167,7 @@
   },
   {
    "description": "The yearly interest percentage for this loan.",
+   "fetch_from": "loan_type.interest_rate",
    "fieldname": "interest_rate",
    "fieldtype": "Percent",
    "label": "Interest (ROI) "
@@ -269,10 +244,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_vdhm",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "section_break_igty",
    "fieldtype": "Section Break"
   },
@@ -309,16 +280,34 @@
    "fieldname": "kyc_details_section",
    "fieldtype": "Section Break",
    "label": "KYC Details"
+  },
+  {
+   "fieldname": "section_break_ykpd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nDraft\nUnder Review\nApproved\nRejected\nDisbursed\nClosed"
+  },
+  {
+   "description": "The unique ID for this loan case",
+   "fieldname": "case_id",
+   "fieldtype": "Data",
+   "label": "Case ID ",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-10 12:08:48.108901",
+ "modified": "2026-03-10 13:54:59.369259",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
