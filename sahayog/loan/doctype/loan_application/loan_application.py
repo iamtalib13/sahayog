@@ -3,6 +3,7 @@ from frappe.model.document import Document
 import re
 
 class LoanApplication(Document):
+
     def before_save(self):
         if self.customer_name:
             self.customer_name = self.customer_name.title()
@@ -14,19 +15,18 @@ class LoanApplication(Document):
             if not re.match(r"^\d{10}$", str(self.mobile_number)):
                 frappe.throw("Mobile Number must be exactly 10 digits")
 
-        # PAN validation
-        if self.pan_number:
-            if not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", self.pan_number.upper()):
-                frappe.throw("Invalid PAN format. Example: ABCDE1234F")
+        # Customer Name validation
+        if self.customer_name:
+            if re.search(r"[^a-zA-Z\s]", self.customer_name):
+                frappe.throw("Customer Name should only contain alphabets and spaces")
 
-        # Aadhaar validation
-        if self.aadhaar_number:
-            if not re.match(r"^\d{12}$", str(self.aadhaar_number)):
-                frappe.throw("Aadhaar Number must be exactly 12 digits")
+        # CIBIL validation
+        if self.cibil_score:
+            if not (300 <= self.cibil_score <= 900 or self.cibil_score in [-1, 0]):
+                frappe.throw(
+                    "CIBIL Score must be between 300 and 900, or use -1 for No History or 0 for Not Checked."
+                )
 
-        # At least one KYC required
-        if not self.pan_number and not self.aadhaar_number:
-            frappe.throw("Either PAN Number or Aadhaar Number is required.")
-            
-        if self.cibil_score and not (300 <= self.cibil_score <= 900 or self.cibil_score in [-1, 0]):
-            frappe.throw("Invalid CIBIL Score. Please enter a value between 300 and 900.")
+        # KYC Documents validation (Child Table)
+        if not self.kyc_documents:
+            frappe.throw("At least one KYC Document is required.")

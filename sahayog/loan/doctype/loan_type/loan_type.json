@@ -7,7 +7,7 @@
  "field_order": [
   "is_active",
   "loan_type",
-  "ltv_percent_",
+  "ltv_percent",
   "interest_rate",
   "maximum_loan_amount",
   "minimum_loan_amounts",
@@ -53,7 +53,7 @@
    "label": "Description"
   },
   {
-   "fieldname": "ltv_percent_",
+   "fieldname": "ltv_percent",
    "fieldtype": "Percent",
    "label": "LTV Percent (%) "
   }
@@ -61,7 +61,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-10 11:53:01.297321",
+ "modified": "2026-03-10 12:33:45.018081",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Type",
