@@ -18,6 +18,7 @@
   "column_break_hbga",
   "mobile_number",
   "date_of_birth",
+  "status",
   "kyc_details_section",
   "kyc_documents",
   "credit_check_tab",
@@ -40,8 +41,6 @@
   "column_break_tgnr",
   "interest_rate",
   "processing_fee",
-  "section_break_ykpd",
-  "status",
   "packet_details_section",
   "packet_number",
   "packet_image",
@@ -103,15 +102,13 @@
    "description": "Total weight of pure gold only.",
    "fieldname": "total_net_weight",
    "fieldtype": "Float",
-   "label": "Total Net Weight ",
-   "read_only": 1
+   "label": "Total Net Weight "
   },
   {
    "description": "Total market value of all gold items.",
    "fieldname": "total_valuation",
    "fieldtype": "Currency",
-   "label": "Total Valuation ",
-   "read_only": 1
+   "label": "Total Valuation "
   },
   {
    "fieldname": "column_break_tgnr",
@@ -121,8 +118,7 @@
    "description": "The final loan amount approved for the customer.",
    "fieldname": "loan_amount",
    "fieldtype": "Currency",
-   "label": "Loan Amount ",
-   "read_only": 1
+   "label": "Loan Amount "
   },
   {
    "fieldname": "case_initiation_section",
@@ -170,7 +166,8 @@
    "fetch_from": "loan_type.interest_rate",
    "fieldname": "interest_rate",
    "fieldtype": "Percent",
-   "label": "Interest (ROI) "
+   "label": "Interest (ROI) ",
+   "read_only": 1
   },
   {
    "description": "The fee charged by the bank to process the loan.",
@@ -182,8 +179,7 @@
    "description": "The actual cash/amount the customer will receive.",
    "fieldname": "final_payout",
    "fieldtype": "Currency",
-   "label": "Final Payout ",
-   "read_only": 1
+   "label": "Final Payout "
   },
   {
    "fieldname": "packet_details_section",
@@ -282,10 +278,6 @@
    "label": "KYC Details"
   },
   {
-   "fieldname": "section_break_ykpd",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
@@ -303,7 +295,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-10 13:54:59.369259",
+ "modified": "2026-03-10 16:42:29.162283",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",

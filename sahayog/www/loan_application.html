@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sahayog Loan Management</title>
+    <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      :root {
+        --bg-main: #f1f5f9;
+        --sidebar-bg: #ffffff;
+        --sidebar-border: #e2e8f0;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --accent: #107070;
+        --white: #ffffff;
+        --step-inactive: #e2e8f0;
+        --green-success: #22c55e;
+      }
+
+      body {
+        margin: 0;
+        display: flex;
+        height: 100vh;
+        background: var(--bg-main);
+        color: var(--text-main);
+        font-family: "Inter", sans-serif;
+        overflow: hidden;
+      }
+      [v-cloak] {
+        display: none;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 200px;
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--sidebar-border);
+        display: flex;
+        flex-direction: column;
+      }
+      .nav-item {
+        padding: 0.7rem 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 8px;
+        margin: 4px 10px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-muted);
+      }
+      .nav-item.active {
+        background: var(--accent);
+        color: white;
+      }
+
+      .main-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      /* Dashboard Specific Styles */
+      .dash-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+      }
+      .stat-card {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 12px;
+        border: 1px solid var(--sidebar-border);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .stat-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #10707015;
+        color: var(--accent);
+      }
+
+      /* Application Cards (Same as before) */
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+        padding: 1.25rem;
+      }
+      .loan-card {
+        background: var(--white);
+        border: 1px solid var(--sidebar-border);
+        border-radius: 10px;
+        padding: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      .loan-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+      }
+
+      /* Stepper & Stats Box (Same as before) */
+      .stepper-box {
+        padding: 0.4rem 0;
+        margin: 0.2rem 0;
+        border-top: 1px solid #f8fafc;
+        border-bottom: 1px solid #f8fafc;
+      }
+      .stepper {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+      }
+      .stepper::before {
+        content: "";
+        position: absolute;
+        top: 8px;
+        left: 15%;
+        right: 15%;
+        height: 1.5px;
+        background: var(--step-inactive);
+        z-index: 1;
+        border-top: 1.5px dashed var(--step-inactive);
+      }
+      .step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+        width: 33%;
+        position: relative;
+      }
+      .step-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1.5px solid var(--step-inactive);
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: transparent;
+      }
+      .step-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+      .completed .step-icon {
+        background: var(--green-success);
+        border-color: var(--green-success);
+        color: white;
+      }
+      .completed .step-label {
+        color: var(--green-success);
+      }
+
+      .stats-box {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem;
+      }
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid #f1f5f9;
+      }
+      .stat-label {
+        font-size: 9px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+      .stat-val {
+        font-weight: 700;
+        font-size: 11px;
+        color: var(--text-main);
+      }
+      .status-pill {
+        font-size: 9px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+
+  <body v-scope="App()" @vue:mounted="mounted">
+    <aside class="sidebar" v-cloak>
+      <div
+        style="
+          padding: 1.5rem 1rem;
+          font-weight: 800;
+          color: var(--accent);
+          letter-spacing: 1px;
+          font-size: 1.2rem;
+        "
+      >
+        SAHAYOG
+      </div>
+      <nav>
+        <div
+          class="nav-item"
+          :class="{ active: currentView === 'dashboard' }"
+          @click="currentView = 'dashboard'"
+        >
+          <i data-lucide="layout-dashboard"></i> Dashboard
+        </div>
+        <div
+          class="nav-item"
+          :class="{ active: currentView === 'applications' }"
+          @click="currentView = 'applications'"
+        >
+          <i data-lucide="file-text"></i> Applications
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main-container">
+      <header
+        style="
+          background: #fff;
+          padding: 0.75rem 1.5rem;
+          border-bottom: 1px solid var(--sidebar-border);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        "
+      >
+        <h3 style="margin: 0; font-size: 1.1rem">
+          [[ currentView === 'dashboard' ? 'Overview' : 'Loan Applications' ]]
+        </h3>
+        <button
+          @click="newApplication"
+          style="
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85rem;
+          "
+        >
+          + New Application
+        </button>
+      </header>
+
+      <div v-if="currentView === 'dashboard'" v-cloak>
+        <div class="dash-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i data-lucide="banknote"></i></div>
+            <div>
+              <div
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  font-weight: 600;
+                "
+              >
+                Total Disbursed
+              </div>
+              <div style="font-size: 1.2rem; font-weight: 800">
+                ₹[[ totalAmount.toLocaleString() ]]
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="color: #2563eb; background: #2563eb15"
+            >
+              <i data-lucide="file-check"></i>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  font-weight: 600;
+                "
+              >
+                Active Applications
+              </div>
+              <div style="font-size: 1.2rem; font-weight: 800">
+                [[ applications.length ]]
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="color: #ea580c; background: #ea580c15"
+            >
+              <i data-lucide="coins"></i>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  font-weight: 600;
+                "
+              >
+                Today's Gold Rate
+              </div>
+              <div style="font-size: 1.2rem; font-weight: 800">
+                ₹6,250
+                <span style="font-size: 0.7rem; color: var(--green-success)"
+                  >+0.5%</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 0 1.5rem">
+          <h4 style="margin-bottom: 1rem">Recent Applications</h4>
+          <div
+            style="
+              background: white;
+              border-radius: 12px;
+              border: 1px solid var(--sidebar-border);
+              overflow: hidden;
+            "
+          >
+            <table
+              style="width: 100%; border-collapse: collapse; font-size: 0.85rem"
+            >
+              <tr
+                style="
+                  background: #f8fafc;
+                  text-align: left;
+                  border-bottom: 1px solid var(--sidebar-border);
+                "
+              >
+                <th style="padding: 1rem">ID</th>
+                <th style="padding: 1rem">Customer</th>
+                <th style="padding: 1rem">Amount</th>
+                <th style="padding: 1rem">Status</th>
+              </tr>
+              <tr
+                v-for="app in applications.slice(0, 5)"
+                style="border-bottom: 1px solid #f1f5f9; cursor: pointer"
+                @click="viewDetails(app.name)"
+              >
+                <td
+                  style="padding: 1rem; color: var(--accent); font-weight: 600"
+                >
+                  [[ app.name ]]
+                </td>
+                <td style="padding: 1rem; font-weight: 600">
+                  [[ app.customer_name ]]
+                </td>
+                <td style="padding: 1rem">
+                  ₹[[ app.loan_amount.toLocaleString() ]]
+                </td>
+                <td style="padding: 1rem">
+                  <span
+                    class="status-pill"
+                    :style="{ background: getStatusColor(app.status) + '15', color: getStatusColor(app.status) }"
+                    >[[ app.status ]]</span
+                  >
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="currentView === 'applications'" class="card-grid" v-cloak>
+        <div
+          v-for="app in applications"
+          class="loan-card"
+          @click="viewDetails(app.name)"
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <span
+              style="font-size: 10px; color: var(--accent); font-weight: 700"
+              >[[ app.name ]]</span
+            >
+            <span
+              class="status-pill"
+              :style="{ background: getStatusColor(app.status) + '15', color: getStatusColor(app.status) }"
+              >[[ app.status ]]</span
+            >
+          </div>
+          <h3 style="margin: 0; font-size: 14px; font-weight: 700">
+            [[ app.customer_name ]]
+          </h3>
+
+          <div class="stepper-box">
+            <div class="stepper">
+              <div
+                class="step-item"
+                :class="{ completed: isStepActive(app.status, 1) }"
+              >
+                <div class="step-icon">
+                  <i data-lucide="check" style="width: 12px; height: 12px"></i>
+                </div>
+                <span class="step-label">Customer</span>
+              </div>
+              <div
+                class="step-item"
+                :class="{ completed: isStepActive(app.status, 2) }"
+              >
+                <div class="step-icon">
+                  <i data-lucide="check" style="width: 12px; height: 12px"></i>
+                </div>
+                <span class="step-label">Asset</span>
+              </div>
+              <div
+                class="step-item"
+                :class="{ completed: isStepActive(app.status, 3) }"
+              >
+                <div class="step-icon">
+                  <i data-lucide="check" style="width: 12px; height: 12px"></i>
+                </div>
+                <span class="step-label">Sanction</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats-box">
+            <div class="stat-row">
+              <span class="stat-label">Loan Amt</span
+              ><span class="stat-val"
+                >₹[[ (app.loan_amount || 0).toLocaleString() ]]</span
+              >
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Payout</span
+              ><span class="stat-val" style="color: var(--accent)"
+                >₹[[ (app.final_payout || 0).toLocaleString() ]]</span
+              >
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Net Wt</span
+              ><span class="stat-val">[[ app.total_net_weight || 0 ]]g</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">LTV</span
+              ><span class="stat-val">[[ app.ltv_percent ]]%</span>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 0.2rem;
+              padding-top: 0.4rem;
+              border-top: 1px dotted #e2e8f0;
+            "
+          >
+            <span style="font-size: 9px; color: var(--text-muted)"
+              >[[ formatDate(app.creation) ]]</span
+            >
+            <span
+              style="
+                color: var(--accent);
+                font-size: 10px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: 2px;
+              "
+              >Details <i data-lucide="chevron-right" style="width: 12px"></i
+            ></span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      function App() {
+        return {
+          $delimiters: ["[[", "]]"],
+          currentView: "applications",
+          applications: [],
+          totalAmount: 0,
+
+          async fetchApplications() {
+            try {
+              const fields = [
+                "name",
+                "customer_name",
+                "loan_amount",
+                "status",
+                "creation",
+                "total_net_weight",
+                "ltv_percent",
+                "final_payout",
+              ];
+              const response = await fetch(
+                `/api/resource/Loan Application?fields=${JSON.stringify(fields)}&order_by=creation desc`,
+              );
+              const res = await response.json();
+              this.applications = res.data || [];
+              this.totalAmount = this.applications.reduce(
+                (sum, app) => sum + (app.loan_amount || 0),
+                0,
+              );
+              setTimeout(() => lucide.createIcons(), 100);
+            } catch (e) {
+              console.error(e);
+            }
+          },
+
+          isStepActive(status, step) {
+            if (step === 1) return true;
+            if (step === 2)
+              return ["Approved", "Disbursed", "Closed"].includes(status);
+            if (step === 3) return ["Disbursed", "Closed"].includes(status);
+            return false;
+          },
+
+          getStatusColor(status) {
+            const colors = {
+              Draft: "#64748b",
+              "Under Review": "#2563eb",
+              Approved: "#ea580c",
+              Disbursed: "#107070",
+              Closed: "#0f172a",
+            };
+            return colors[status] || "#64748b";
+          },
+
+          viewDetails(name) {
+            window.location.href = `/app/loan-application/${name}`;
+          },
+          newApplication() {
+            window.location.href = `/app/loan-application/new-loan-application-1`;
+          },
+          formatDate(d) {
+            if (!d) return "-";
+            const dt = new Date(d);
+            return `${String(dt.getDate()).padStart(2, "0")}-${String(dt.getMonth() + 1).padStart(2, "0")}-${dt.getFullYear()}`;
+          },
+          mounted() {
+            this.fetchApplications();
+          },
+        };
+      }
+      PetiteVue.createApp(App()).mount("body");
+    </script>
+  </body>
+</html>

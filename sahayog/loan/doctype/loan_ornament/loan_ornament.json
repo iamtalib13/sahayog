@@ -41,15 +41,13 @@
    "fieldname": "net_weight",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Net Weight",
-   "read_only": 1
+   "label": "Net Weight"
   },
   {
    "fieldname": "valuation",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Valuation ",
-   "read_only": 1
+   "label": "Valuation "
   },
   {
    "fieldname": "deduction",
@@ -62,7 +60,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-09 16:51:44.012466",
+ "modified": "2026-03-10 15:29:51.866637",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Ornament",
