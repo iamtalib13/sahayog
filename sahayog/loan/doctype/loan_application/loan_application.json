@@ -7,23 +7,28 @@
  "field_order": [
   "customer_and_case_tab",
   "case_initiation_section",
+  "loan_type",
+  "is_new_customer",
+  "column_break_xzaf",
   "case_id",
   "branch_code",
-  "is_new_customer",
   "customer_details_section",
   "column_break_lonk",
   "cif_id",
   "customer_name",
-  "column_break_pjdo",
+  "column_break_hbga",
   "mobile_number",
-  "pan_number",
-  "aadhaar_number",
+  "date_of_birth",
+  "kyc_details_section",
+  "kyc_documents",
   "credit_check_tab",
   "credit_underwriting_section",
   "cibil_score",
+  "column_break_vdhm",
   "kyc_status",
+  "section_break_igty",
   "credit_appraisal",
-  "gold_details_tab",
+  "loan_asset_details_tab",
   "ornaments_section",
   "ornaments_list",
   "gold_valuation_section",
@@ -50,8 +55,7 @@
    "description": "The Customer's ID from the Bank's main database.",
    "fieldname": "cif_id",
    "fieldtype": "Data",
-   "label": "CIF ID",
-   "read_only": 1
+   "label": "CIF ID"
   },
   {
    "fieldname": "column_break_lonk",
@@ -79,11 +83,12 @@
    "label": "Gold Rate (per gram) "
   },
   {
-   "default": "75",
    "description": "Percentage of gold value given as a loan (Max 75%).",
+   "fetch_from": "loan_type.ltv_percent_",
    "fieldname": "ltv_percent",
-   "fieldtype": "Percent",
-   "label": "LTV Percent (%) "
+   "fieldtype": "Link",
+   "label": "LTV Percent (%) ",
+   "options": "Loan Type"
   },
   {
    "fieldname": "ornaments_section",
@@ -136,16 +141,19 @@
   {
    "description": "The code of the branch where the loan is started.",
    "fieldname": "branch_code",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Branch Code ",
+   "options": "Sahayog Branch",
    "read_only": 1
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.loan_type",
    "description": "Tick this if the customer is new to the bank.",
    "fieldname": "is_new_customer",
    "fieldtype": "Check",
-   "label": "Is New Customer?"
+   "label": "Is New Customer?",
+   "mandatory_depends_on": "eval:doc.loan_type"
   },
   {
    "fieldname": "credit_underwriting_section",
@@ -239,7 +247,7 @@
   {
    "fieldname": "customer_and_case_tab",
    "fieldtype": "Tab Break",
-   "label": "Customer and Case"
+   "label": "Customer Details"
   },
   {
    "fieldname": "customer_details_section",
@@ -249,12 +257,7 @@
   {
    "fieldname": "credit_check_tab",
    "fieldtype": "Tab Break",
-   "label": "Credit Check"
-  },
-  {
-   "fieldname": "gold_details_tab",
-   "fieldtype": "Tab Break",
-   "label": "Gold Details"
+   "label": "Credit Details"
   },
   {
    "fieldname": "loan_sanction_tab",
@@ -262,29 +265,57 @@
    "label": "Loan Sanction"
   },
   {
-   "fieldname": "column_break_pjdo",
+   "fieldname": "column_break_xzaf",
    "fieldtype": "Column Break"
   },
   {
-   "description": "Enter 10 character PAN",
-   "fieldname": "pan_number",
-   "fieldtype": "Data",
-   "label": "PAN Number",
-   "unique": 1
+   "fieldname": "column_break_vdhm",
+   "fieldtype": "Column Break"
   },
   {
-   "description": "Enter 12 digit Aadhaar number",
-   "fieldname": "aadhaar_number",
-   "fieldtype": "Data",
-   "label": "Aadhaar Number",
-   "unique": 1
+   "fieldname": "section_break_igty",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "loan_type",
+   "fieldtype": "Link",
+   "label": "Loan Type",
+   "link_filters": "[[\"Loan Type\",\"is_active\",\"=\",1]]",
+   "options": "Loan Type",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "loan_asset_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Loan Asset Details"
+  },
+  {
+   "fieldname": "kyc_documents",
+   "fieldtype": "Table",
+   "label": "KYC Documents",
+   "options": "Loan Document"
+  },
+  {
+   "fieldname": "column_break_hbga",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kyc_details_section",
+   "fieldtype": "Section Break",
+   "label": "KYC Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-09 16:41:10.681603",
+ "modified": "2026-03-10 12:08:48.108901",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",

@@ -3,6 +3,10 @@ from frappe.model.document import Document
 import re
 
 class LoanApplication(Document):
+    def before_save(self):
+        if self.customer_name:
+            self.customer_name = self.customer_name.title()
+
     def validate(self):
 
         # Mobile validation
