@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "autoname": "field:loan_type",
+ "creation": "2026-03-10 10:54:42.053610",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "is_active",
+  "loan_type",
+  "ltv_percent_",
+  "interest_rate",
+  "maximum_loan_amount",
+  "minimum_loan_amounts",
+  "loan_tenure",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "loan_type",
+   "fieldtype": "Data",
+   "label": "Loan Type",
+   "unique": 1
+  },
+  {
+   "fieldname": "interest_rate",
+   "fieldtype": "Percent",
+   "label": "Interest Rate (%)"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "maximum_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Maximum Loan Amount"
+  },
+  {
+   "fieldname": "minimum_loan_amounts",
+   "fieldtype": "Currency",
+   "label": "Minimum Loan Amounts"
+  },
+  {
+   "fieldname": "loan_tenure",
+   "fieldtype": "Int",
+   "label": "Loan Tenure"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "ltv_percent_",
+   "fieldtype": "Percent",
+   "label": "LTV Percent (%) "
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-10 11:53:01.297321",
+ "modified_by": "Administrator",
+ "module": "Loan",
+ "name": "Loan Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
