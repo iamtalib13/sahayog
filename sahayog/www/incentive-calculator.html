@@ -615,201 +615,206 @@
         <!-- Show this IF the user IS mapped to a rule -->
         <!-- <div class="dashboard-grid" v-if="isMapped"> -->
 
-        <!-- COLUMN 1: Sidebar -->
-        <div class="col-sidebar">
-            <div class="panel-card">
-                <div class="user-profile-compact">
-                    <div class="user-avatar">[[ userName.charAt(0) ]]</div>
-                    <div>
-                        <div style="font-size: 16px; font-weight: 800; color: var(--primary); line-height: 1.2;">[[
-                            userName ]]</div>
-                        <div class="mono" style="font-size: 11px; color: #64748b; margin-top: 4px;">[[ employeeId ]]
-                        </div>
-                        <div class="designation-container">
-                            <div class="designation-badge">[[ designation ]]</div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Now shows for EVERYONE -->
+        <div class="dashboard-grid" v-if="hasLoaded">
 
-                <div
-                    style="background: #f1f5f9; padding: 14px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
-                    <span>Max Cap Limit</span>
-                    <span class="mono" style="font-size: 15px; font-weight: 800; color: var(--primary);">₹[[
-                        cappingAmount.toLocaleString() ]]</span>
-                </div>
-            </div>
 
-            <!-- Smart Suggestions (Fully Dynamic) -->
-            <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned < cappingAmount">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <span style="font-size: 18px;">🚀</span>
-                    <div>
-                        <span class="card-heading" style="color: #15803d; margin:0;">Reach Your Cap Limit</span>
-                        <div style="font-size: 11px; color: #166534; opacity: 0.9;">Gap to fill: <strong>₹[[
-                                (cappingAmount - totalEarned).toLocaleString() ]]</strong></div>
-                    </div>
-                </div>
-
-                <p style="font-size: 12px; color: #14532d; margin: 0 0 12px 0; line-height: 1.5;">
-                    To earn the full <strong>₹[[ cappingAmount.toLocaleString() ]]</strong>, you can add <u>ANY
-                        ONE</u> of these options:
-                </p>
-
-                <div style="display: flex; flex-direction: column; gap: 6px;">
-                    <div class="suggestion-item" v-for="(acc, index) in accountInputs" :key="'sug'+index">
-                        <div
-                            style="width: 28px; height: 28px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">
-                            ✨</div>
+            <!-- COLUMN 1: Sidebar -->
+            <div class="col-sidebar">
+                <div class="panel-card">
+                    <div class="user-profile-compact">
+                        <div class="user-avatar">[[ userName.charAt(0) ]]</div>
                         <div>
-                            <span style="font-weight: 800; color: #334155; font-size: 14px;">[[
-                                Math.ceil((cappingAmount - totalEarned) / acc.rate) ]]</span>
-                            <span
-                                style="font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; margin-left: 4px;">[[
-                                acc.name ]] Accts</span>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--primary); line-height: 1.2;">[[
+                                userName ]]</div>
+                            <div class="mono" style="font-size: 11px; color: #64748b; margin-top: 4px;">[[ employeeId ]]
+                            </div>
+                            <div class="designation-container">
+                                <div class="designation-badge">[[ designation ]]</div>
+                            </div>
                         </div>
                     </div>
 
-                    <div v-if="getNextMabGap() > 0" class="suggestion-item"
-                        style="background: rgba(243, 232, 255, 0.8); border-color: #d8b4fe;">
-                        <div
-                            style="width: 28px; height: 28px; background: #faf5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #c084fc;">
-                            📈</div>
+                    <div
+                        style="background: #f1f5f9; padding: 14px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+                        <span>Max Cap Limit</span>
+                        <span class="mono" style="font-size: 15px; font-weight: 800; color: var(--primary);">₹[[
+                            cappingAmount.toLocaleString() ]]</span>
+                    </div>
+                </div>
+
+                <!-- Smart Suggestions (Fully Dynamic) -->
+                <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned < cappingAmount">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <span style="font-size: 18px;">🚀</span>
                         <div>
-                            <span style="font-weight: 600; color: #7e22ce; font-size: 12px;">Increase Funding to
-                            </span>
-                            <span style="font-weight: 800; color: #6b21a8; font-size: 14px;">₹[[
-                                getNextMabTarget().toLocaleString() ]]</span>
+                            <span class="card-heading" style="color: #15803d; margin:0;">Reach Your Cap Limit</span>
+                            <div style="font-size: 11px; color: #166534; opacity: 0.9;">Gap to fill: <strong>₹[[
+                                    (cappingAmount - totalEarned).toLocaleString() ]]</strong></div>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #14532d; margin: 0 0 12px 0; line-height: 1.5;">
+                        To earn the full <strong>₹[[ cappingAmount.toLocaleString() ]]</strong>, you can add <u>ANY
+                            ONE</u> of these options:
+                    </p>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div class="suggestion-item" v-for="(acc, index) in accountInputs" :key="'sug'+index">
+                            <div
+                                style="width: 28px; height: 28px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                                ✨</div>
+                            <div>
+                                <span style="font-weight: 800; color: #334155; font-size: 14px;">[[
+                                    Math.ceil((cappingAmount - totalEarned) / acc.rate) ]]</span>
+                                <span
+                                    style="font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; margin-left: 4px;">[[
+                                    acc.name ]] Accts</span>
+                            </div>
+                        </div>
+
+                        <div v-if="getNextMabGap() > 0" class="suggestion-item"
+                            style="background: rgba(243, 232, 255, 0.8); border-color: #d8b4fe;">
+                            <div
+                                style="width: 28px; height: 28px; background: #faf5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #c084fc;">
+                                📈</div>
+                            <div>
+                                <span style="font-weight: 600; color: #7e22ce; font-size: 12px;">Increase Funding to
+                                </span>
+                                <span style="font-weight: 800; color: #6b21a8; font-size: 14px;">₹[[
+                                    getNextMabTarget().toLocaleString() ]]</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Limit Reached State -->
-            <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned >= cappingAmount"
-                style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 20px;">🎉</span>
-                    <span class="card-heading" style="color: #1e40af; margin:0;">Limit Reached!</span>
+                <!-- Limit Reached State -->
+                <div class="panel-card suggestion-card animate-enter" v-if="showResults && totalEarned >= cappingAmount"
+                    style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">🎉</span>
+                        <span class="card-heading" style="color: #1e40af; margin:0;">Limit Reached!</span>
+                    </div>
+                    <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 8px 0 0 0; line-height: 1.5;">
+                        Great job! You have hit the maximum incentive cap for your designation.
+                    </p>
                 </div>
-                <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 8px 0 0 0; line-height: 1.5;">
-                    Great job! You have hit the maximum incentive cap for your designation.
-                </p>
             </div>
-        </div>
 
-        <!-- COLUMN 2: Content -->
-        <div class="col-content">
-            <div class="panel-card">
-                <div>
-                    <span class="card-heading">1. Enter Account Counts</span>
-                    <div class="inputs-row">
-                        <!-- Dynamic Account Inputs -->
-                        <div class="input-box" v-for="(acc, index) in accountInputs" :key="'acc'+index">
-                            <span class="input-label">[[ acc.name ]]</span>
-                            <div style="display: flex; align-items: center;">
+            <!-- COLUMN 2: Content -->
+            <div class="col-content">
+                <div class="panel-card">
+                    <div>
+                        <span class="card-heading">1. Enter Account Counts</span>
+                        <div class="inputs-row">
+                            <!-- Dynamic Account Inputs -->
+                            <div class="input-box" v-for="(acc, index) in accountInputs" :key="'acc'+index">
+                                <span class="input-label">[[ acc.name ]]</span>
+                                <div style="display: flex; align-items: center;">
+                                    <!-- Added @focus and @blur -->
+                                    <input type="number" v-model="acc.count" @input="preventNegative(acc, 'count')"
+                                        @focus="clearZero(acc, 'count')" @blur="restoreZero(acc, 'count')"
+                                        class="input-field" placeholder="0" min="0">
+                                    <span class="input-rate">₹[[ acc.rate ]]</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="card-heading" style="margin-top: 10px;">2. Total Funding</span>
+                        <div class="input-box">
+                            <span class="input-label">MAB Amount</span>
+                            <div
+                                style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
                                 <!-- Added @focus and @blur -->
-                                <input type="number" v-model="acc.count" @input="preventNegative(acc, 'count')"
-                                    @focus="clearZero(acc, 'count')" @blur="restoreZero(acc, 'count')"
-                                    class="input-field" placeholder="0" min="0">
-                                <span class="input-rate">₹[[ acc.rate ]]</span>
+                                <input type="number" v-model="mabAmount" @input="preventNegative(this, 'mabAmount')"
+                                    @focus="clearZero(this, 'mabAmount')" @blur="restoreZero(this, 'mabAmount')"
+                                    class="input-field" placeholder="0" style="width: 140px;" min="0">
+                                <!-- Added fade-slide here -->
+                                <div v-if="mabAmount > 0" class="mono fade-slide"
+                                    style="font-weight: 800; color: #059669; font-size: 13px; background: #d1fae5; padding: 6px 10px; border-radius: 8px;">
+                                    + ₹[[ getMabIncentive() ]]
+                                </div>
+
                             </div>
                         </div>
                     </div>
+
+
+                    <!-- Live Sync Indicator -->
+                    <div class="live-status"
+                        :class="{'calculating': isCalculating, 'active': !isCalculating && showResults}">
+                        <div class="status-dot"></div>
+                        <span>[[ isCalculating ? 'Calculating updates...' : (showResults ? 'Live Sync Active' : 'Start
+                            typing to see calculations...') ]]</span>
+                    </div>
                 </div>
 
-                <div>
-                    <span class="card-heading" style="margin-top: 10px;">2. Total Funding</span>
-                    <div class="input-box">
-                        <span class="input-label">MAB Amount</span>
-                        <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
-                            <!-- Added @focus and @blur -->
-                            <input type="number" v-model="mabAmount" @input="preventNegative(this, 'mabAmount')"
-                                @focus="clearZero(this, 'mabAmount')" @blur="restoreZero(this, 'mabAmount')"
-                                class="input-field" placeholder="0" style="width: 140px;" min="0">
-                            <!-- Added fade-slide here -->
-                            <div v-if="mabAmount > 0" class="mono fade-slide"
-                                style="font-weight: 800; color: #059669; font-size: 13px; background: #d1fae5; padding: 6px 10px; border-radius: 8px;">
-                                + ₹[[ getMabIncentive() ]]
+                <!-- Card 4: Results -->
+                <div class="panel-card animate-enter" v-if="showResults" style="background: #fdfdfd;">
+                    <span class="card-heading">3. Final Payout Summary</span>
+
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="card-heading" style="margin:0;">Total Generated</div>
+                            <div class="summary-val">₹[[ totalEarned.toLocaleString() ]]</div>
+                        </div>
+                        <div class="summary-card highlight">
+                            <div class="card-heading" style="margin:0; color: var(--accent);">Final Payout</div>
+                            <div class="summary-val">₹[[ finalIncentive.toLocaleString() ]]</div>
+                        </div>
+                    </div>
+
+                    <!-- Only show if there is actually money earned -->
+
+                    <!-- Changed v-if to use instant real-time function -->
+                    <!-- Add 'fade-slide' class to the Breakdown wrapper -->
+                    <div class="fade-slide" style="margin-top: 16px;" v-if="hasAnyActiveInputs()">
+                        <span class="card-heading" style="margin-bottom: 12px;">Detailed Breakdown</span>
+
+                        <div class="breakdown-container">
+                            <div class="breakdown-item" v-for="(acc, index) in accountInputs" :key="'bd'+index"
+                                v-show="(parseInt(acc.count) || 0) > 0">
+                                <span>[[ acc.name ]] Accounts ([[ acc.count ]])</span>
+                                <span class="item-val">₹[[ ((parseInt(acc.count) || 0) * acc.rate).toLocaleString()
+                                    ]]</span>
                             </div>
 
+                            <div class="breakdown-item" v-show="mabAmount > 0 && getMabIncentive() > 0">
+                                <span>MAB Funding Incentive</span>
+                                <span class="item-val" style="color: #059669;">+ ₹[[ getMabIncentive().toLocaleString()
+                                    ]]</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
 
-                <!-- Live Sync Indicator -->
-                <div class="live-status"
-                    :class="{'calculating': isCalculating, 'active': !isCalculating && showResults}">
-                    <div class="status-dot"></div>
-                    <span>[[ isCalculating ? 'Calculating updates...' : (showResults ? 'Live Sync Active' : 'Start
-                        typing to see calculations...') ]]</span>
+
                 </div>
             </div>
+        </div>
 
-            <!-- Card 4: Results -->
-            <div class="panel-card animate-enter" v-if="showResults" style="background: #fdfdfd;">
-                <span class="card-heading">3. Final Payout Summary</span>
-
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <div class="card-heading" style="margin:0;">Total Generated</div>
-                        <div class="summary-val">₹[[ totalEarned.toLocaleString() ]]</div>
-                    </div>
-                    <div class="summary-card highlight">
-                        <div class="card-heading" style="margin:0; color: var(--accent);">Final Payout</div>
-                        <div class="summary-val">₹[[ finalIncentive.toLocaleString() ]]</div>
-                    </div>
-                </div>
-
-                <!-- Only show if there is actually money earned -->
-
-                <!-- Changed v-if to use instant real-time function -->
-                <!-- Add 'fade-slide' class to the Breakdown wrapper -->
-                <div class="fade-slide" style="margin-top: 16px;" v-if="hasAnyActiveInputs()">
-                    <span class="card-heading" style="margin-bottom: 12px;">Detailed Breakdown</span>
-
-                    <div class="breakdown-container">
-                        <div class="breakdown-item" v-for="(acc, index) in accountInputs" :key="'bd'+index"
-                            v-show="(parseInt(acc.count) || 0) > 0">
-                            <span>[[ acc.name ]] Accounts ([[ acc.count ]])</span>
-                            <span class="item-val">₹[[ ((parseInt(acc.count) || 0) * acc.rate).toLocaleString()
-                                ]]</span>
-                        </div>
-
-                        <div class="breakdown-item" v-show="mabAmount > 0 && getMabIncentive() > 0">
-                            <span>MAB Funding Incentive</span>
-                            <span class="item-val" style="color: #059669;">+ ₹[[ getMabIncentive().toLocaleString()
-                                ]]</span>
-                        </div>
-                    </div>
-                </div>
-
-
-
+        <!-- Show this IF the user IS NOT mapped to a rule (Fallback Error) -->
+        <div class="unmapped-error-container" v-else-if="hasLoaded && !isMapped">
+            <div class="unmapped-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                    </path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
             </div>
+            <h2 class="unmapped-title">No Incentive Structure Found</h2>
+            <p class="unmapped-desc">
+                Your current designation (<strong>[[ designation ]]</strong>) is not mapped to any active incentive
+                rules.
+                <br><br>Please contact the Admin team to configure your incentive limits.
+            </p>
         </div>
-    </div>
 
-    <!-- Show this IF the user IS NOT mapped to a rule (Fallback Error) -->
-    <div class="unmapped-error-container" v-else-if="hasLoaded && !isMapped">
-        <div class="unmapped-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
-                </path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-        </div>
-        <h2 class="unmapped-title">No Incentive Structure Found</h2>
-        <p class="unmapped-desc">
-            Your current designation (<strong>[[ designation ]]</strong>) is not mapped to any active incentive
-            rules.
-            <br><br>Please contact the Admin team to configure your incentive limits.
-        </p>
     </div>
-
-</div>
 </div>
 
 <!-- <script src="/assets/sahayog/js/petite-vue.iife.js"></script> -->
