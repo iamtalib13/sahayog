@@ -613,7 +613,11 @@
     <div class="content-area" :class="showResults ? 'result-view' : 'initial-view'">
 
         <!-- Show this IF the user IS mapped to a rule -->
-        <div class="dashboard-grid" v-if="isMapped">
+        <!-- <div class="dashboard-grid" v-if="isMapped"> -->
+
+        <!-- Now shows for EVERYONE -->
+        <div class="dashboard-grid" v-if="hasLoaded">
+
 
             <!-- COLUMN 1: Sidebar -->
             <div class="col-sidebar">
@@ -631,12 +635,25 @@
                         </div>
                     </div>
 
-                    <div
+                    <!-- <div
                         style="background: #f1f5f9; padding: 14px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
                         <span>Max Cap Limit</span>
                         <span class="mono" style="font-size: 15px; font-weight: 800; color: var(--primary);">₹[[
                             cappingAmount.toLocaleString() ]]</span>
+                    </div> -->
+
+                    <div v-if="isMapped"
+                        style="background: #f1f5f9; padding: 14px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+                        <span>Max Cap Limit</span>
+                        <span class="mono" style="font-size: 15px; font-weight: 800; color: var(--primary);">₹ [[
+                            cappingAmount.toLocaleString() ]]</span>
                     </div>
+                    <!-- Show this instead if unmapped -->
+                    <div v-else
+                        style="background: #fef2f2; padding: 12px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #ef4444; border: 1px dashed #fca5a5; text-align: center;">
+                        Monthly Slab (MAB) is not configured for your designation.
+                    </div>
+
                 </div>
 
                 <!-- Smart Suggestions (Fully Dynamic) -->
@@ -717,17 +734,17 @@
                         </div>
                     </div>
 
-                    <div>
+                    <!-- <div>
                         <span class="card-heading" style="margin-top: 10px;">2. Total Funding</span>
                         <div class="input-box">
                             <span class="input-label">MAB Amount</span>
                             <div
                                 style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
-                                <!-- Added @focus and @blur -->
+                                 Added @focus and @blur
                                 <input type="number" v-model="mabAmount" @input="preventNegative(this, 'mabAmount')"
                                     @focus="clearZero(this, 'mabAmount')" @blur="restoreZero(this, 'mabAmount')"
                                     class="input-field" placeholder="0" style="width: 140px;" min="0">
-                                <!-- Added fade-slide here -->
+                                Added fade-slide here
                                 <div v-if="mabAmount > 0" class="mono fade-slide"
                                     style="font-weight: 800; color: #059669; font-size: 13px; background: #d1fae5; padding: 6px 10px; border-radius: 8px;">
                                     + ₹[[ getMabIncentive() ]]
@@ -735,7 +752,38 @@
 
                             </div>
                         </div>
+                    </div> -->
+
+                    <div>
+                        <span class="card-heading" style="margin-top: 10px;">2. Total Funding</span>
+
+                        <!-- Show normal input if Mapped -->
+                        <div v-if="isMapped" class="input-box">
+                            <span class="input-label">MAB Amount</span>
+                            <div
+                                style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end;">
+                                <input type="number" v-model="mabAmount" @input="preventNegative(this, 'mabAmount')"
+                                    @focus="clearZero(this, 'mabAmount')" @blur="restoreZero(this, 'mabAmount')"
+                                    class="input-field" placeholder="0" style="width: 140px;" min="0">
+
+                                <div v-if="mabAmount > 0" class="mono fade-slide"
+                                    style="font-weight: 800; color: #059669; font-size: 13px; background: #d1fae5; padding: 6px 10px; border-radius: 8px;">
+                                    + ₹ [[ getMabIncentive() ]]
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Show Disabled Message if Unmapped -->
+                        <div v-else class="input-box"
+                            style="background: #f8fafc; opacity: 0.7; pointer-events: none; border: 1px dashed #cbd5e1;">
+                            <span class="input-label" style="color: #94a3b8;">MAB Amount</span>
+                            <div
+                                style="font-size: 11px; font-weight: 700; color: #ef4444; background: #fef2f2; padding: 6px 10px; border-radius: 8px;">
+                                Not Available
+                            </div>
+                        </div>
                     </div>
+
 
 
                     <!-- Live Sync Indicator -->
@@ -792,7 +840,7 @@
         </div>
 
         <!-- Show this IF the user IS NOT mapped to a rule (Fallback Error) -->
-        <div class="unmapped-error-container" v-else-if="hasLoaded && !isMapped">
+        <!-- <div class="unmapped-error-container" v-else-if="hasLoaded && !isMapped">
             <div class="unmapped-icon">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -808,7 +856,7 @@
                 rules.
                 <br><br>Please contact the Admin team to configure your incentive limits.
             </p>
-        </div>
+        </div> -->
 
     </div>
 </div>
@@ -989,17 +1037,36 @@
             },
 
 
+            // calculateIncentive() {
+            //     let acctInc = 0;
+
+            //     this.accountInputs.forEach(acc => {
+            //         acctInc += (parseFloat(acc.count) || 0) * parseFloat(acc.rate);
+            //     });
+
+            //     this.totalEarned = acctInc + this.getMabIncentive();
+            //     this.finalIncentive = this.cappingAmount > 0 ? Math.min(this.totalEarned, this.cappingAmount) : this.totalEarned;
+            //     this.showResults = true;
+            // }
+
             calculateIncentive() {
                 let acctInc = 0;
-
                 this.accountInputs.forEach(acc => {
                     acctInc += (parseFloat(acc.count) || 0) * parseFloat(acc.rate);
                 });
 
                 this.totalEarned = acctInc + this.getMabIncentive();
-                this.finalIncentive = this.cappingAmount > 0 ? Math.min(this.totalEarned, this.cappingAmount) : this.totalEarned;
+
+                // FIX: If unmapped, don't limit to Capping Amount!
+                if (!this.isMapped) {
+                    this.finalIncentive = this.totalEarned;
+                } else {
+                    this.finalIncentive = this.cappingAmount > 0 ? Math.min(this.totalEarned, this.cappingAmount) : this.totalEarned;
+                }
+
                 this.showResults = true;
             }
+
         }).mount('#app');
     });
 </script>
