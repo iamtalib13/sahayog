@@ -1,11 +1,101 @@
+// --- 1. HIDE PRIVACY TOGGLE BUTTONS GLOBALLY FOR THIS FORM ---
+frappe.dom.set_style(`
+    /* Hide standard sidebar lock/unlock icons and Make Private actions */
+    body.pct-active-form [data-action="toggle_private"],
+    body.pct-active-form [data-action="make_private"],
+    body.pct-active-form .btn-private,
+    body.pct-active-form .btn-public,
+    /* Hide dynamically tagged Vue elements inside the Uploader */
+    body.pct-active-form .force-hide-privacy-btn {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+`, 'pct-file-privacy-css');
+
+// --- 2. VUE INTERCEPTOR (MUTATION OBSERVER) ---
+// This continuously monitors the File Uploader modal and actively hides the Private toggles
+const privacyObserver = new MutationObserver((mutations) => {
+    // Only run if we are on the Petty Cash form AND a modal is open
+    if ($('body').hasClass('pct-active-form') && $('.modal-dialog').length > 0) {
+        
+        // Target buttons and checkboxes inside the modal that aren't hidden yet
+        $('.modal-dialog label.frappe-checkbox:not(.force-hide-privacy-btn), .modal-dialog button:not(.force-hide-privacy-btn)').each(function() {
+            // Clean up the text to match reliably (removes extra spaces/newlines Vue might add)
+            let text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
+            
+            if (text === 'private' || text === 'set all private' || text === 'set all public') {
+                $(this).addClass('force-hide-privacy-btn');
+            }
+        });
+    }
+});
+
+// Start observing the DOM
+privacyObserver.observe(document.body, { childList: true, subtree: true });
+
+// Listen to route changes to safely add/remove the CSS scope
+frappe.router.on('change', () => {
+    if (frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Petty Cash Transaction') {
+        $('body').addClass('pct-active-form');
+    } else {
+        $('body').removeClass('pct-active-form');
+    }
+});
+// -------------------------------------------------------------
+
+
 
 frappe.ui.form.on('Petty Cash Transaction', {
 
 
+//     setup: function(frm) {
+//     // Add Download Report button to List View
+//     // This will be available in the list view toolbar
+// },
+
     setup: function(frm) {
-    // Add Download Report button to List View
-    // This will be available in the list view toolbar
-},
+        // --- CUSTOM FILE UPLOADER OVERRIDE ---
+        // Override Attach Control to force public uploads and remove the 'Private' checkbox
+        if (frappe.ui.form.ControlAttach && !frappe.ui.form.ControlAttach.prototype._original_set_upload_options) {
+            
+            // Backup the standard frappe upload options function
+            frappe.ui.form.ControlAttach.prototype._original_set_upload_options = frappe.ui.form.ControlAttach.prototype.set_upload_options;
+            
+            // Override with our custom logic
+            frappe.ui.form.ControlAttach.prototype.set_upload_options = function() {
+                // Call the original function to build standard options
+                this._original_set_upload_options();
+                
+                // Only apply this customization if we are inside Petty Cash Transaction
+                if (this.frm && this.frm.doctype === "Petty Cash Transaction") {
+                    
+                    // Force attachment to be Public by default
+                    this.upload_options.make_attachments_public = true;
+                    
+                    // Completely hide/disable the "Private" checkbox from the Vue modal
+                    this.upload_options.allow_toggle_private = false;
+                }
+            };
+        }
+
+        // --- 2. CUSTOM FILE UPLOADER OVERRIDE ---
+        if (frappe.ui.form.ControlAttach && !frappe.ui.form.ControlAttach.prototype._original_set_upload_options) {
+            frappe.ui.form.ControlAttach.prototype._original_set_upload_options = frappe.ui.form.ControlAttach.prototype.set_upload_options;
+            frappe.ui.form.ControlAttach.prototype.set_upload_options = function() {
+                this._original_set_upload_options();
+                if (this.frm && this.frm.doctype === "Petty Cash Transaction") {
+                    this.upload_options.make_attachments_public = true;
+                    this.upload_options.allow_toggle_private = false;
+                }
+            };
+        }
+        // -------------------------------------
+
+        // Add Download Report button to List View
+        // This will be available in the list view toolbar
+    },
+
 
     refresh: function(frm) {
 
