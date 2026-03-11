@@ -27,12 +27,16 @@
   "section_break_igty",
   "credit_appraisal",
   "loan_asset_details_tab",
+  "section_break_yanm",
+  "security_type",
   "ornaments_section",
   "ornaments_list",
   "gold_valuation_section",
   "gold_rate_per_gram",
   "total_net_weight",
   "total_valuation",
+  "eligible_loan_amount",
+  "tenure_months",
   "loan_sanction_tab",
   "sanction_and_charges_section",
   "ltv_percent",
@@ -41,6 +45,7 @@
   "column_break_tgnr",
   "interest_rate",
   "processing_fee",
+  "remaining_balance",
   "packet_details_section",
   "packet_number",
   "packet_image",
@@ -171,8 +176,9 @@
   },
   {
    "description": "The fee charged by the bank to process the loan.",
+   "fetch_from": "loan_type.processing_fee",
    "fieldname": "processing_fee",
-   "fieldtype": "Currency",
+   "fieldtype": "Percent",
    "label": "Processing Fee "
   },
   {
@@ -289,13 +295,38 @@
    "fieldtype": "Data",
    "label": "Case ID ",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_yanm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "security_type",
+   "fieldtype": "Link",
+   "label": "Security Type",
+   "options": "Loan Security Type"
+  },
+  {
+   "fieldname": "eligible_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Eligible Loan Amount"
+  },
+  {
+   "fieldname": "tenure_months",
+   "fieldtype": "Int",
+   "label": "Tenure (Months)"
+  },
+  {
+   "fieldname": "remaining_balance",
+   "fieldtype": "Currency",
+   "label": "Remaining Balance"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-10 16:42:29.162283",
+ "modified": "2026-03-11 16:28:30.239193",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
