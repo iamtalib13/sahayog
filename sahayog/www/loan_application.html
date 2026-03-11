@@ -672,7 +672,7 @@
         class="card-grid"
         v-cloak
       >
-        <div v-for="app in applications" class="loan-card">
+        <div v-for="app in applications" class="loan-card" @click="viewDetails(app.name)">
           <!-- Header -->
           <div class="loan-header">
             <div>
@@ -681,7 +681,13 @@
             </div>
 
             <div class="loan-actions">
-              <span class="btn-call"> <i data-lucide="phone"></i> Call </span>
+              <span 
+                class="btn-call" 
+                @click.stop="makeCall(app.mobile_number, app.name)"
+                style="cursor: pointer"
+              > 
+                <i data-lucide="phone"></i> Call 
+              </span>
 
               <span
                 class="status-pill"
@@ -850,6 +856,7 @@
                 "total_net_weight",
                 "ltv_percent",
                 "final_payout",
+                "mobile_number",
               ];
               const response = await fetch(
                 `/api/resource/Loan Application?fields=${JSON.stringify(fields)}&order_by=creation desc`,
@@ -878,11 +885,25 @@
             const colors = {
               Draft: "#64748b",
               "Under Review": "#2563eb",
+              Submitted: "#107070",
               Approved: "#ea580c",
               Disbursed: "#107070",
               Closed: "#0f172a",
             };
             return colors[status] || "#64748b";
+          },
+
+          makeCall(phone, customerName) {
+            if (!phone) {
+              alert('No mobile number available');
+              return;
+            }
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+              window.location.href = `tel:${phone}`;
+            } else {
+              alert(`Call ${customerName}\n\nPhone: ${phone}`);
+            }
           },
 
           viewDetails(name) {
