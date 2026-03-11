@@ -7,11 +7,13 @@
  "field_order": [
   "is_active",
   "loan_type",
-  "ltv_percent",
+  "loan_category",
   "interest_rate",
-  "maximum_loan_amount",
+  "ltv_percent",
   "minimum_loan_amounts",
+  "maximum_loan_amount",
   "loan_tenure",
+  "processing_fee",
   "description"
  ],
  "fields": [
@@ -56,12 +58,23 @@
    "fieldname": "ltv_percent",
    "fieldtype": "Percent",
    "label": "LTV Percent (%) "
+  },
+  {
+   "fieldname": "loan_category",
+   "fieldtype": "Select",
+   "label": "Loan Category",
+   "options": "\nSecured\nUnsecured"
+  },
+  {
+   "fieldname": "processing_fee",
+   "fieldtype": "Percent",
+   "label": "Processing Fee (%)"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-10 12:33:45.018081",
+ "modified": "2026-03-11 12:52:31.002093",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Type",
