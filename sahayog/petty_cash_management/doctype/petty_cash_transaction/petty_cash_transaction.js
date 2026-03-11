@@ -1,11 +1,55 @@
 
+
 frappe.ui.form.on('Petty Cash Transaction', {
 
 
+//     setup: function(frm) {
+//     // Add Download Report button to List View
+//     // This will be available in the list view toolbar
+// },
+
     setup: function(frm) {
-    // Add Download Report button to List View
-    // This will be available in the list view toolbar
-},
+        // --- CUSTOM FILE UPLOADER OVERRIDE ---
+        // Override Attach Control to force public uploads and remove the 'Private' checkbox
+        if (frappe.ui.form.ControlAttach && !frappe.ui.form.ControlAttach.prototype._original_set_upload_options) {
+            
+            // Backup the standard frappe upload options function
+            frappe.ui.form.ControlAttach.prototype._original_set_upload_options = frappe.ui.form.ControlAttach.prototype.set_upload_options;
+            
+            // Override with our custom logic
+            frappe.ui.form.ControlAttach.prototype.set_upload_options = function() {
+                // Call the original function to build standard options
+                this._original_set_upload_options();
+                
+                // Only apply this customization if we are inside Petty Cash Transaction
+                if (this.frm && this.frm.doctype === "Petty Cash Transaction") {
+                    
+                    // Force attachment to be Public by default
+                    this.upload_options.make_attachments_public = true;
+                    
+                    // Completely hide/disable the "Private" checkbox from the Vue modal
+                    this.upload_options.allow_toggle_private = false;
+                }
+            };
+        }
+
+        // --- 2. CUSTOM FILE UPLOADER OVERRIDE ---
+        if (frappe.ui.form.ControlAttach && !frappe.ui.form.ControlAttach.prototype._original_set_upload_options) {
+            frappe.ui.form.ControlAttach.prototype._original_set_upload_options = frappe.ui.form.ControlAttach.prototype.set_upload_options;
+            frappe.ui.form.ControlAttach.prototype.set_upload_options = function() {
+                this._original_set_upload_options();
+                if (this.frm && this.frm.doctype === "Petty Cash Transaction") {
+                    this.upload_options.make_attachments_public = true;
+                    this.upload_options.allow_toggle_private = false;
+                }
+            };
+        }
+        // -------------------------------------
+
+        // Add Download Report button to List View
+        // This will be available in the list view toolbar
+    },
+
 
     refresh: function(frm) {
 
