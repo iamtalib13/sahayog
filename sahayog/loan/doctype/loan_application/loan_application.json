@@ -325,8 +325,19 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2026-03-11 16:28:30.239193",
+ "links": [
+  {
+   "group": "Disbursement",
+   "link_doctype": "Loan Disbursement",
+   "link_fieldname": "loan_application"
+  },
+  {
+   "group": "Repayment",
+   "link_doctype": "Loan Repayment",
+   "link_fieldname": "loan_application"
+  }
+ ],
+ "modified": "2026-03-11 16:54:27.104950",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",

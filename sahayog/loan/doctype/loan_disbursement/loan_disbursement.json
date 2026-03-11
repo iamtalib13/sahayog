@@ -91,7 +91,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-11 16:11:55.354801",
+ "modified": "2026-03-11 17:03:45.774720",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Disbursement",
@@ -111,6 +111,7 @@
    "write": 1
   }
  ],
+ "quick_entry": 1,
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
