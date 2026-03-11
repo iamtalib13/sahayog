@@ -420,8 +420,11 @@
       .loan-amount-row {
         display: flex;
         justify-content: space-between;
-        font-size: 12px;
-        color: #475569;
+        font-size: 11px;
+        color: #64748b;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 0.5rem;
       }
     </style>
   </head>
@@ -703,8 +706,8 @@
 
           <!-- Amounts -->
           <div class="loan-amount-row">
-            <span>Paid: ₹[[ (app.final_payout || 0).toLocaleString() ]]</span>
-            <span>Pending: ₹[[ (app.loan_amount || 0).toLocaleString() ]]</span>
+            <span>Loan Amt: ₹[[ (app.loan_amount || 0).toLocaleString() ]] | Net Wt: [[ app.total_net_weight || 0 ]]g</span>
+            <span>Payout: ₹[[ (app.final_payout || 0).toLocaleString() ]]</span>
           </div>
         </div>
       </div>
