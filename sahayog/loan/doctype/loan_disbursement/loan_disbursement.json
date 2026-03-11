@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-11 15:59:28.858693",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "loan_reference_section",
+  "loan_application",
+  "customer_name",
+  "column_break_ktue",
+  "branch_code",
+  "amended_from",
+  "disbursement_details_section",
+  "disbursement_date",
+  "disbursement_mode",
+  "column_break_bgmh",
+  "disbursement_amount",
+  "reference_number"
+ ],
+ "fields": [
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Loan Disbursement",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "loan_application",
+   "fieldtype": "Link",
+   "label": "Loan Application",
+   "options": "Loan Application"
+  },
+  {
+   "fetch_from": "loan_application.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name "
+  },
+  {
+   "fetch_from": "loan_application.branch_code",
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code"
+  },
+  {
+   "fieldname": "loan_reference_section",
+   "fieldtype": "Section Break",
+   "label": "Loan Reference"
+  },
+  {
+   "fieldname": "column_break_ktue",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "disbursement_details_section",
+   "fieldtype": "Section Break",
+   "label": "Disbursement Details"
+  },
+  {
+   "fieldname": "disbursement_date",
+   "fieldtype": "Date",
+   "label": "Disbursement Date"
+  },
+  {
+   "fieldname": "disbursement_amount",
+   "fieldtype": "Currency",
+   "label": "Disbursement Amount "
+  },
+  {
+   "fieldname": "disbursement_mode",
+   "fieldtype": "Select",
+   "label": "Disbursement Mode ",
+   "options": "\nCash\nBank Transfer\nUPI\nCheque"
+  },
+  {
+   "fieldname": "column_break_bgmh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reference_number",
+   "fieldtype": "Data",
+   "label": "Reference Number"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-03-11 16:11:55.354801",
+ "modified_by": "Administrator",
+ "module": "Loan",
+ "name": "Loan Disbursement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
