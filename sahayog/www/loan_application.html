@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
     <title>Sahayog Loan Management</title>
     <link type="text/css" rel="stylesheet" href="/assets/frappe/dist/css/desk.bundle.XOBCSR6E.css">
     <script
@@ -1271,6 +1272,106 @@
               </select>
             </div>
           </div>
+          
+          <!-- KYC Documents Section -->
+          <div style="margin-top: 1.5rem; border-top: 1px solid var(--sidebar-border); padding-top: 1rem;">
+            <h4 style="margin: 0 0 1rem 0; font-size: 14px; font-weight: 700; color: var(--text-main);">KYC Documents *</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 0.5rem; align-items: end; margin-bottom: 0.5rem;">
+              <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Document Type *</label>
+                <select 
+                  v-model="newKycDoc.document" 
+                  style="width: 100%; padding: 0.4rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 12px; margin-top: 2px;"
+                >
+                  <option value="">Select Document</option>
+                  <option value="Aadhaar Card">Aadhaar Card</option>
+                  <option value="PAN Card">PAN Card</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Attach Document</label>
+                <input 
+                  type="file" 
+                  @change="handleFileUpload"
+                  style="width: 100%; padding: 0.4rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 12px; margin-top: 2px;"
+                />
+                <div v-if="newKycDoc.file_name" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                  Selected: [[ newKycDoc.file_name ]]
+                </div>
+              </div>
+              <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Status</label>
+                <select 
+                  v-model="newKycDoc.status" 
+                  style="width: 100%; padding: 0.4rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 12px; margin-top: 2px;"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Verified By</label>
+                <input 
+                  list="users-list"
+                  v-model="newKycDoc.verified_by" 
+                  style="width: 100%; padding: 0.4rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 12px; margin-top: 2px;"
+                  placeholder="Search and select User"
+                />
+                <datalist id="users-list">
+                  <option v-for="u in users" :key="u.name" :value="u.name">[[ u.full_name || u.name ]]</option>
+                </datalist>
+              </div>
+              <div>
+                <button 
+                  type="button" 
+                  @click="addKycDocument"
+                  style="padding: 0.4rem 0.75rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;"
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+            
+            <!-- KYC Documents List -->
+            <div v-if="newApp.kyc_documents && newApp.kyc_documents.length > 0" style="margin-top: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; overflow: hidden;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <thead>
+                  <tr style="background: #f8fafc;">
+                    <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--sidebar-border);">Document</th>
+                    <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--sidebar-border);">Attach</th>
+                    <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--sidebar-border);">Status</th>
+                    <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--sidebar-border);">Verified By</th>
+                    <th style="padding: 0.5rem; text-align: center; border-bottom: 1px solid var(--sidebar-border);">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(doc, idx) in newApp.kyc_documents" :key="idx" style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 0.5rem;">[[ doc.document ]]</td>
+                    <td style="padding: 0.5rem;">
+                      <span v-if="doc.file_name">[[ doc.file_name ]]</span>
+                      <span v-else-if="doc.attach_document">[[ doc.attach_document ]]</span>
+                      <span v-else>-</span>
+                    </td>
+                    <td style="padding: 0.5rem;">[[ doc.status ]]</td>
+                    <td style="padding: 0.5rem;">[[ doc.verified_by || '-' ]]</td>
+                    <td style="padding: 0.5rem; text-align: center;">
+                      <button 
+                        type="button" 
+                        @click="removeKycDocument(idx)"
+                        style="padding: 0.25rem 0.5rem; background: #ef4444; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="margin-top: 0.5rem; padding: 0.75rem; background: #fef3c7; border-radius: 6px; font-size: 12px; color: #92400e;">
+              ⚠️ At least one KYC document is required to submit the application
+            </div>
+          </div>
           <div class="call-modal-actions" style="margin-top: 1.5rem;">
             <button
               type="button"
@@ -1331,6 +1432,7 @@
           saving: false,
           loanTypes: [],
           branches: [],
+          users: [],
           newApp: {
             loan_type: "",
             branch_code: "",
@@ -1339,6 +1441,14 @@
             date_of_birth: "",
             cibil_score: "",
             status: "Draft",
+            kyc_documents: [],
+          },
+          newKycDoc: {
+            document: "",
+            attach_document: "",
+            file_name: "",
+            status: "Pending",
+            verified_by: "",
           },
 
           initScrollObserver() {
@@ -1418,6 +1528,16 @@
             }
           },
 
+          async fetchUsers() {
+            try {
+              const response = await fetch('/api/resource/User?fields=["name","full_name"]&filters=[["User","enabled","=",1]]');
+              const res = await response.json();
+              this.users = res.data || [];
+            } catch (e) {
+              console.error(e);
+            }
+          },
+
           isStepActive(status, step) {
             if (step === 1) return true;
             if (step === 2)
@@ -1468,42 +1588,191 @@
               date_of_birth: "",
               cibil_score: "",
               status: "Draft",
+              kyc_documents: [],
+            };
+            this.newKycDoc = {
+              document: "",
+              attach_document: "",
+              file_name: "",
+              status: "Pending",
+              verified_by: "",
             };
             // Refresh dropdown data
             this.fetchLoanTypes();
             this.fetchBranches();
+            this.fetchUsers();
             this.showNewAppModal = true;
+          },
+
+          handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+              this.newKycDoc.file_name = file.name;
+              this.newKycDoc.file = file;
+            }
+          },
+
+          async uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const csrfToken = await this.ensureCsrfToken();
+            const headers = {};
+            if (csrfToken) {
+              headers["X-Frappe-CSRF-Token"] = csrfToken;
+            }
+            
+            const response = await fetch('/api/method/frappe.core.doctype.file.file.upload_file', {
+              method: 'POST',
+              headers: headers,
+              body: formData,
+              credentials: 'include',
+            });
+            const res = await response.json();
+            if (res.message) {
+              return res.message.file_url;
+            }
+            return null;
+          },
+
+          addKycDocument() {
+            if (!this.newKycDoc.document) {
+              frappe.show_alert({
+                message: "Please select a document type",
+                indicator: "red",
+              });
+              return;
+            }
+            if (!this.newApp.kyc_documents) {
+              this.newApp.kyc_documents = [];
+            }
+            this.newApp.kyc_documents.push({
+              document: this.newKycDoc.document,
+              attach_document: this.newKycDoc.attach_document,
+              status: this.newKycDoc.status,
+              verified_by: this.newKycDoc.verified_by,
+            });
+            // Reset the input fields
+            this.newKycDoc = {
+              document: "",
+              attach_document: "",
+              file_name: "",
+              file: null,
+              status: "Pending",
+              verified_by: "",
+            };
+          },
+
+          removeKycDocument(index) {
+            if (this.newApp.kyc_documents && this.newApp.kyc_documents.length > index) {
+              this.newApp.kyc_documents.splice(index, 1);
+            }
           },
 
           async submitNewApplication() {
             this.saving = true;
             try {
+              // Validate KYC documents
+              if (!this.newApp.kyc_documents || this.newApp.kyc_documents.length === 0) {
+                frappe.show_alert({
+                  message: "At least one KYC document is required",
+                  indicator: "red",
+                });
+                this.saving = false;
+                return;
+              }
+              
+              // Upload any pending files
+              for (let i = 0; i < this.newApp.kyc_documents.length; i++) {
+                const doc = this.newApp.kyc_documents[i];
+                if (doc.file && !doc.attach_document) {
+                  try {
+                    const fileUrl = await this.uploadFile(doc.file);
+                    if (fileUrl) {
+                      doc.attach_document = fileUrl;
+                    }
+                  } catch (e) {
+                    console.error('File upload error:', e);
+                  }
+                }
+              }
+              
+              // Get CSRF token from cookie
+              const csrfToken = await this.ensureCsrfToken();
+              const headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+              };
+              if (csrfToken) {
+                headers["X-Frappe-CSRF-Token"] = csrfToken;
+              }
+
               const response = await fetch("/api/resource/Loan Application", {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Accept": "application/json",
-                },
+                headers: headers,
                 body: JSON.stringify(this.newApp),
+                credentials: 'include',
               });
               const res = await response.json();
               if (res.data) {
                 this.showNewAppModal = false;
                 frappe.show_alert({
-                  message: `Loan Application ${res.data.name} created successfully`,
+                  message: "Loan Application " + res.data.name + " created successfully",
                   indicator: "green",
                 });
                 this.fetchApplications();
+              } else if (res.exc || res._server_messages) {
+                var errorMsg = "Error creating application";
+                if (res._server_messages) {
+                  try {
+                    var msgs = JSON.parse(res._server_messages);
+                    errorMsg = msgs[0].message || errorMsg;
+                  } catch(e) {}
+                }
+                frappe.show_alert({
+                  message: errorMsg,
+                  indicator: "red",
+                });
               }
             } catch (e) {
               console.error(e);
               frappe.show_alert({
-                message: "Error creating application",
+                message: "Error creating application: " + e.message,
                 indicator: "red",
               });
             } finally {
               this.saving = false;
             }
+          },
+
+          getCookie(name) {
+            var value = "; " + document.cookie;
+            var parts = value.split("; " + name + "=");
+            if (parts.length === 2) return parts.pop().split(";").shift();
+            return null;
+          },
+
+          async ensureCsrfToken() {
+            // Try to get CSRF token from meta tag first
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag && metaTag.content) {
+              return metaTag.content;
+            }
+            
+            // Try to get CSRF token from cookie
+            let token = this.getCookie('csrf_token');
+            if (!token) {
+              token = this.getCookie('csrfToken');
+            }
+            if (!token) {
+              // Fetch a fresh token from the server
+              try {
+                const resp = await fetch('/api/method/frappe.realtime.get_user_info');
+                await resp.json();
+                token = this.getCookie('csrf_token');
+              } catch(e) {}
+            }
+            return token;
           },
           formatDate(d) {
             if (!d) return "-";
@@ -1514,6 +1783,7 @@
             this.fetchApplications();
             this.fetchLoanTypes();
             this.fetchBranches();
+            this.fetchUsers();
             this.initScrollObserver();
           },
         };
