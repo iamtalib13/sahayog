@@ -174,7 +174,7 @@
         gap: 2px;
         border-radius: 8px;
         margin: 4px 0;
-        font-size: 10px;
+        font-size: 08px;
         font-weight: 600;
         color: var(--text-muted);
         transition: all 0.2s ease;
@@ -910,7 +910,7 @@
           data-tooltip="Applications"
         >
           <i data-lucide="file-text"></i>
-          <span class="nav-label">Apps</span>
+          <span class="nav-label">Applications</span>
         </div>
       </nav>
     </aside>
@@ -1747,7 +1747,7 @@
         </div>
       </div>
 
-      <div v-if="currentView === 'dashboard'" v-cloak class="dashboard-content">
+      <div v-if="currentView === 'dashboard'" v-cloak class="dashboard-content" :class="{ shifted: showStickyKpi }">
         <!-- Sticky Compact KPI Bar (Mobile Only) -->
         <div class="sticky-kpi-bar" :class="{ active: showStickyKpi }">
           <div class="kpi-item">
@@ -1844,7 +1844,7 @@
             style="padding: 0; gap: 0.5rem"
           >
             <div
-              v-for="app in applications.slice(0, 6)"
+              v-for="app in applications"
               class="loan-card"
               @click="viewDetails(app.name)"
               style="cursor: pointer"
@@ -1948,7 +1948,7 @@
                 <th style="padding: 1rem">Status</th>
               </tr>
               <tr
-                v-for="app in applications.slice(0, 6)"
+                v-for="app in applications"
                 style="border-bottom: 1px solid #f1f5f9; cursor: pointer"
                 @click="viewDetails(app.name)"
               >
