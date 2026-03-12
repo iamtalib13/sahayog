@@ -71,6 +71,11 @@ frappe.ui.form.on("Loan Application", {
       frappe.throw(__("Mobile Number must be exactly 10 digits."));
     }
 
+    // Date of Birth Validation
+    if (frm.doc.date_of_birth && frappe.datetime.get_today() < frm.doc.date_of_birth) {
+      frappe.throw(__("Date of Birth cannot be in the future."));
+    }
+
     // CIBIL Score Validation
     if (frm.doc.cibil_score) {
       if (frm.doc.cibil_score < 300 || frm.doc.cibil_score > 900) {
@@ -82,6 +87,41 @@ frappe.ui.form.on("Loan Application", {
           );
         }
       }
+    }
+
+    // KYC Documents Validation
+    if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+      frappe.throw(__("At least one KYC Document is required."));
+    }
+
+    // Positive Value Validations
+    if (frm.doc.loan_amount && frm.doc.loan_amount <= 0) {
+      frappe.throw(__("Loan Amount must be greater than zero."));
+    }
+
+    if (frm.doc.tenure_months && frm.doc.tenure_months <= 0) {
+      frappe.throw(__("Tenure (Months) must be greater than zero."));
+    }
+
+    if (frm.doc.gold_rate_per_gram && frm.doc.gold_rate_per_gram <= 0) {
+      frappe.throw(__("Gold Rate (per gram) must be greater than zero."));
+    }
+
+    // Loan Amount vs Eligible Amount Validation
+    if (frm.doc.loan_amount && frm.doc.eligible_loan_amount) {
+      if (frm.doc.loan_amount > frm.doc.eligible_loan_amount) {
+        frappe.throw(
+          __("Loan Amount ({0}) cannot exceed the Eligible Loan Amount ({1}).", [
+            frm.doc.loan_amount,
+            frm.doc.eligible_loan_amount,
+          ]),
+        );
+      }
+    }
+
+    // LTV Percent Validation
+    if (frm.doc.ltv_percent && frm.doc.ltv_percent > 75) {
+      frappe.throw(__("LTV Percent (%) cannot exceed 75%."));
     }
   },
 });
