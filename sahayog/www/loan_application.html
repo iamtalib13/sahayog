@@ -347,8 +347,10 @@
         /* Sticky Compact KPI Bar for Mobile Dashboard */
         .sticky-kpi-bar {
           display: none;
-          position: sticky;
-          top: 48px; /* Below desktop-header */
+          position: fixed;
+          top: 52px; /* Below mobile header */
+          left: 0;
+          right: 0;
           background: white;
           border-bottom: 1px solid var(--sidebar-border);
           padding: 0.6rem 0.75rem;
@@ -381,6 +383,13 @@
           font-size: 11px;
           font-weight: 700;
           color: var(--text-main);
+        }
+        .dash-grid.compact {
+          display: none;
+        }
+        /* Add padding to content when sticky bar is active */
+        .dashboard-content.shifted {
+          padding-top: 50px;
         }
       }
 
@@ -442,6 +451,65 @@
         display: flex;
         align-items: center;
         gap: 3px;
+      }
+
+      /* Custom Call Modal */
+      .call-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      }
+      .call-modal-overlay.active {
+        display: flex;
+      }
+      .call-modal {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        min-width: 300px;
+        max-width: 90%;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      }
+      .call-modal-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 0.5rem;
+      }
+      .call-modal-phone {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--accent);
+        margin: 1rem 0;
+        text-align: center;
+      }
+      .call-modal-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+      }
+      .call-modal-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+      }
+      .call-modal-btn.primary {
+        background: var(--accent);
+        color: white;
+      }
+      .call-modal-btn.secondary {
+        background: #f1f5f9;
+        color: var(--text-muted);
       }
 
       .loan-progress-row {
@@ -577,6 +645,48 @@
               List
             </button>
           </div>
+          <div
+            v-if="currentView === 'dashboard'"
+            style="
+              display: flex;
+              background: #f1f5f9;
+              border-radius: 6px;
+              padding: 2px;
+            "
+          >
+            <button
+              @click="dashboardViewMode = 'card'"
+              :style="{
+                padding: '0.35rem 0.75rem',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: dashboardViewMode === 'card' ? 'white' : 'transparent',
+                color: dashboardViewMode === 'card' ? 'var(--accent)' : 'var(--text-muted)',
+                boxShadow: dashboardViewMode === 'card' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+              }"
+            >
+              Card
+            </button>
+            <button
+              @click="dashboardViewMode = 'list'"
+              :style="{
+                padding: '0.35rem 0.75rem',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: dashboardViewMode === 'list' ? 'white' : 'transparent',
+                color: dashboardViewMode === 'list' ? 'var(--accent)' : 'var(--text-muted)',
+                boxShadow: dashboardViewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+              }"
+            >
+              List
+            </button>
+          </div>
           <button
             @click="newApplication"
             style="
@@ -595,7 +705,7 @@
         </div>
       </header>
 
-      <div v-if="currentView === 'dashboard'" v-cloak>
+      <div v-if="currentView === 'dashboard'" v-cloak class="dashboard-content">
         <!-- Sticky Compact KPI Bar (Mobile Only) -->
         <div class="sticky-kpi-bar" :class="{ active: showStickyKpi }">
           <div class="kpi-item">
@@ -612,7 +722,7 @@
           </div>
         </div>
 
-        <div class="dash-grid">
+        <div class="dash-grid" :class="{ compact: showStickyKpi }">
           <div class="stat-card">
             <div class="stat-icon"><i data-lucide="banknote"></i></div>
             <div>
@@ -679,7 +789,41 @@
           </div>
         </div>
 
-        <div style="padding: 0 1.5rem">
+        <!-- Dashboard Recent Applications - Card View -->
+        <div v-if="dashboardViewMode === 'card'" style="padding: 0.75rem" v-cloak>
+          <h4 style="margin: 0 0.75rem 1rem">Recent Applications</h4>
+          <div ref="recentSection" class="card-grid" style="padding: 0; gap: 0.5rem">
+            <div
+              v-for="app in applications.slice(0, 6)"
+              class="loan-card"
+              @click="viewDetails(app.name)"
+              style="cursor: pointer"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem">
+                <div style="flex: 1">
+                  <h3 style="margin: 0 0 0.15rem 0; font-size: 13px; font-weight: 700; color: var(--text-main)">
+                    [[ app.customer_name ]]
+                  </h3>
+                  <span style="font-size: 10px; color: var(--text-muted); font-weight: 600">
+                    [[ app.name ]]
+                  </span>
+                </div>
+                <span
+                  class="status-pill"
+                  :style="{ background: getStatusColor(app.status) + '15', color: getStatusColor(app.status) }"
+                  >[[ app.status ]]</span
+                >
+              </div>
+              <div style="margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px solid #f1f5f9">
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 2px">Amount</div>
+                <div style="font-size: 13px; font-weight: 700; color: var(--text-main)">₹[[ (app.loan_amount || 0).toLocaleString() ]]</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Recent Applications - List View -->
+        <div v-if="dashboardViewMode === 'list'" style="padding: 0 1.5rem" v-cloak>
           <h4 style="margin-bottom: 1rem">Recent Applications</h4>
           <div
             ref="recentSection"
@@ -706,7 +850,7 @@
                 <th style="padding: 1rem">Status</th>
               </tr>
               <tr
-                v-for="app in applications"
+                v-for="app in applications.slice(0, 6)"
                 style="border-bottom: 1px solid #f1f5f9; cursor: pointer"
                 @click="viewDetails(app.name)"
               >
@@ -878,6 +1022,18 @@
       </div>
     </main>
 
+    <!-- Custom Call Modal -->
+    <div class="call-modal-overlay" :class="{ active: showCallModal }" @click.self="showCallModal = false">
+      <div class="call-modal">
+        <div class="call-modal-title">Call [[ callCustomerName ]]</div>
+        <div class="call-modal-phone">[[ callPhone ]]</div>
+        <div class="call-modal-actions">
+          <button class="call-modal-btn secondary" @click="showCallModal = false">Cancel</button>
+          <a class="call-modal-btn primary" :href="'tel:' + callPhone">Call Now</a>
+        </div>
+      </div>
+    </div>
+
     <!-- Mobile Bottom Navigation -->
     <nav class="bottom-nav" v-cloak>
       <div class="bottom-nav-items">
@@ -906,9 +1062,32 @@
           $delimiters: ["[[", "]]"],
           currentView: "applications",
           viewMode: "card",
+          dashboardViewMode: "card",
           applications: [],
           totalAmount: 0,
           showStickyKpi: false,
+          observer: null,
+          showCallModal: false,
+          callPhone: "",
+          callCustomerName: "",
+
+          initScrollObserver() {
+            if (window.innerWidth >= 768) return;
+            
+            // Use scroll event for mobile sticky KPI bar
+            setTimeout(() => {
+              const container = document.querySelector('.main-container');
+              if (container) {
+                container.addEventListener('scroll', () => {
+                  if (this.currentView === 'dashboard') {
+                    this.showStickyKpi = container.scrollTop > 150;
+                  } else {
+                    this.showStickyKpi = false;
+                  }
+                });
+              }
+            }, 200);
+          },
 
           setViewMode(mode) {
             this.viewMode = mode;
@@ -980,7 +1159,9 @@
             if (isMobile) {
               window.location.href = `tel:${phone}`;
             } else {
-              alert(`Call ${customerName}\n\nPhone: ${phone}`);
+              this.callPhone = phone;
+              this.callCustomerName = customerName;
+              this.showCallModal = true;
             }
           },
 
@@ -997,18 +1178,7 @@
           },
           mounted() {
             this.fetchApplications();
-            
-            // Scroll detection for mobile sticky KPI
-            const container = document.querySelector('.main-container');
-            if (container) {
-              container.addEventListener('scroll', () => {
-                if (window.innerWidth < 768 && this.currentView === 'dashboard') {
-                  this.showStickyKpi = container.scrollTop > 120;
-                } else {
-                  this.showStickyKpi = false;
-                }
-              });
-            }
+            this.initScrollObserver();
           },
         };
       }
