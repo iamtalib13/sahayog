@@ -89,7 +89,7 @@
    "description": "Percentage of gold value given as a loan (Max 75%).",
    "fetch_from": "loan_type.ltv_percent",
    "fieldname": "ltv_percent",
-   "fieldtype": "Data",
+   "fieldtype": "Percent",
    "label": "LTV Percent (%) "
   },
   {
@@ -337,11 +337,11 @@
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-11 16:54:27.104950",
+ "modified": "2026-03-12 10:21:55.594770",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
