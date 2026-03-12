@@ -194,16 +194,19 @@
    "label": "Packet Details"
   },
   {
+   "description": "Unique ID of the stored gold packet.",
    "fieldname": "packet_number",
    "fieldtype": "Data",
    "label": "Packet Number"
   },
   {
+   "description": "Weight of the sealed gold packet.",
    "fieldname": "packet_weight",
    "fieldtype": "Float",
    "label": "Packet Weight"
   },
   {
+   "description": "Image of the sealed gold packet.",
    "fieldname": "packet_image",
    "fieldtype": "Attach",
    "label": "Packet Image"
@@ -257,6 +260,7 @@
    "reqd": 1
   },
   {
+   "description": "Select the type of loan being applied for.",
    "fieldname": "loan_type",
    "fieldtype": "Link",
    "label": "Loan Type",
@@ -302,22 +306,26 @@
    "fieldtype": "Section Break"
   },
   {
+   "description": "Select the asset used as security for this loan.",
    "fieldname": "security_type",
    "fieldtype": "Link",
    "label": "Security Type",
    "options": "Loan Security Type"
   },
   {
+   "description": "Maximum loan amount the customer can get.",
    "fieldname": "eligible_loan_amount",
    "fieldtype": "Currency",
    "label": "Eligible Loan Amount"
   },
   {
+   "description": "Loan repayment period in months.",
    "fieldname": "tenure_months",
    "fieldtype": "Int",
    "label": "Tenure (Months)"
   },
   {
+   "description": "Loan amount still to be repaid.",
    "fieldname": "remaining_balance",
    "fieldtype": "Currency",
    "label": "Remaining Balance"
