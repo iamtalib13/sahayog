@@ -67,9 +67,11 @@
    "label": "Disbursement Date"
   },
   {
+   "fetch_from": "loan_application.final_payout",
    "fieldname": "disbursement_amount",
    "fieldtype": "Currency",
-   "label": "Disbursement Amount "
+   "label": "Disbursement Amount ",
+   "read_only": 1
   },
   {
    "fieldname": "disbursement_mode",
@@ -91,7 +93,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-11 17:03:45.774720",
+ "modified": "2026-03-12 10:29:18.567394",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Disbursement",
