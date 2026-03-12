@@ -19,6 +19,7 @@
   "mobile_number",
   "date_of_birth",
   "status",
+  "kyc_details_tab",
   "kyc_details_section",
   "kyc_documents",
   "credit_check_tab",
@@ -320,6 +321,11 @@
    "fieldname": "remaining_balance",
    "fieldtype": "Currency",
    "label": "Remaining Balance"
+  },
+  {
+   "fieldname": "kyc_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "KYC Details"
   }
  ],
  "grid_page_length": 50,
@@ -337,7 +343,7 @@
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-12 10:21:55.594770",
+ "modified": "2026-03-12 10:36:59.362896",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
