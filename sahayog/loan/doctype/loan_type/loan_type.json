@@ -1,32 +1,84 @@
 {
  "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
  "autoname": "field:loan_type",
  "creation": "2026-03-10 10:54:42.053610",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "is_active",
+  "basic_config_tab",
+  "basic_info_section",
   "loan_type",
   "loan_category",
+  "is_active",
+  "column_break_1",
   "interest_rate",
+  "processing_fee",
   "ltv_percent",
+  "valuation_charges",
+  "stamp_duty_percent",
+  "limits_section",
   "minimum_loan_amounts",
   "maximum_loan_amount",
   "loan_tenure",
-  "processing_fee",
+  "policy_gates_tab",
+  "age_policy_section",
+  "min_age",
+  "max_age_at_maturity",
+  "column_break_2",
+  "credit_shield_mandatory",
+  "restricted_profiles_check",
+  "dds_policy_section",
+  "max_dds_gap_days",
+  "min_dds_vintage_months",
+  "scoring_config_tab",
+  "scoring_weights_section",
+  "weight_behavior",
+  "weight_financials",
+  "weight_credit",
+  "column_break_3",
+  "weight_dds",
+  "weight_stability",
+  "min_passing_score",
+  "eligibility_logic_tab",
+  "logic_section",
+  "income_recognition_percent",
+  "max_foir_percent",
+  "column_break_4",
+  "dds_multiplier",
+  "score_bands_section",
+  "score_70_79_cap_percent",
+  "score_60_69_cap_percent",
+  "column_break_5",
+  "score_55_59_cap_percent",
+  "score_50_54_cap_percent",
+  "description_tab",
+  "desc_section",
   "description"
  ],
  "fields": [
   {
+   "fieldname": "basic_config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Product Basics"
+  },
+  {
+   "fieldname": "basic_info_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
    "fieldname": "loan_type",
    "fieldtype": "Data",
-   "label": "Loan Type",
+   "label": "Loan Type Name",
    "unique": 1
   },
   {
-   "fieldname": "interest_rate",
-   "fieldtype": "Percent",
-   "label": "Interest Rate (%)"
+   "fieldname": "loan_category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "\nSecured\nUnsecured"
   },
   {
    "default": "1",
@@ -35,46 +87,246 @@
    "label": "Is Active"
   },
   {
-   "fieldname": "maximum_loan_amount",
-   "fieldtype": "Currency",
-   "label": "Maximum Loan Amount"
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
   },
   {
-   "fieldname": "minimum_loan_amounts",
-   "fieldtype": "Currency",
-   "label": "Minimum Loan Amounts"
-  },
-  {
-   "fieldname": "loan_tenure",
-   "fieldtype": "Int",
-   "label": "Loan Tenure"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description"
-  },
-  {
-   "fieldname": "ltv_percent",
+   "fieldname": "interest_rate",
    "fieldtype": "Percent",
-   "label": "LTV Percent (%) "
-  },
-  {
-   "fieldname": "loan_category",
-   "fieldtype": "Select",
-   "label": "Loan Category",
-   "options": "\nSecured\nUnsecured"
+   "label": "Interest Rate (%)"
   },
   {
    "fieldname": "processing_fee",
    "fieldtype": "Percent",
    "label": "Processing Fee (%)"
+  },
+  {
+   "fieldname": "ltv_percent",
+   "fieldtype": "Percent",
+   "label": "Default LTV (%)",
+   "description": "Used for secured loans."
+  },
+  {
+   "fieldname": "valuation_charges",
+   "fieldtype": "Currency",
+   "label": "Valuation Charges (Fix)"
+  },
+  {
+   "fieldname": "stamp_duty_percent",
+   "fieldtype": "Percent",
+   "label": "Stamp Duty (%)"
+  },
+  {
+   "fieldname": "limits_section",
+   "fieldtype": "Section Break",
+   "label": "Amount & Tenure Limits"
+  },
+  {
+   "fieldname": "minimum_loan_amounts",
+   "fieldtype": "Currency",
+   "label": "Min Loan Amount"
+  },
+  {
+   "fieldname": "maximum_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Max Product Ceiling",
+   "description": "Rule 4.2.6: Product policy cap."
+  },
+  {
+   "fieldname": "loan_tenure",
+   "fieldtype": "Int",
+   "label": "Max Tenure (Months)"
+  },
+  {
+   "fieldname": "policy_gates_tab",
+   "fieldtype": "Tab Break",
+   "label": "Policy (Layer 1)"
+  },
+  {
+   "fieldname": "age_policy_section",
+   "fieldtype": "Section Break",
+   "label": "Age Constraints"
+  },
+  {
+   "default": "21",
+   "fieldname": "min_age",
+   "fieldtype": "Int",
+   "label": "Min Applicant Age"
+  },
+  {
+   "default": "60",
+   "fieldname": "max_age_at_maturity",
+   "fieldtype": "Int",
+   "label": "Max Age at Maturity"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "credit_shield_mandatory",
+   "fieldtype": "Check",
+   "label": "Credit Shield Mandatory"
+  },
+  {
+   "default": "1",
+   "fieldname": "restricted_profiles_check",
+   "fieldtype": "Check",
+   "label": "Restrict PEP/Sanctioned Profiles",
+   "description": "Rule 2.2.6: Mandatory Screening."
+  },
+  {
+   "fieldname": "dds_policy_section",
+   "fieldtype": "Section Break",
+   "label": "Deposit Discipline"
+  },
+  {
+   "default": "5",
+   "fieldname": "max_dds_gap_days",
+   "fieldtype": "Int",
+   "label": "Max Allowed DDS Gaps (Days)"
+  },
+  {
+   "default": "3",
+   "fieldname": "min_dds_vintage_months",
+   "fieldtype": "Int",
+   "label": "Min DDS Account Vintage (Months)"
+  },
+  {
+   "fieldname": "scoring_config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Scoring (Layer 2)"
+  },
+  {
+   "fieldname": "scoring_weights_section",
+   "fieldtype": "Section Break",
+   "label": "Dimension Weights (Total 100%)"
+  },
+  {
+   "default": "10",
+   "fieldname": "weight_behavior",
+   "fieldtype": "Percent",
+   "label": "Behavior Weight (%)"
+  },
+  {
+   "default": "30",
+   "fieldname": "weight_financials",
+   "fieldtype": "Percent",
+   "label": "Financials Weight (%)"
+  },
+  {
+   "default": "25",
+   "fieldname": "weight_credit",
+   "fieldtype": "Percent",
+   "label": "Credit Weight (%)"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "20",
+   "fieldname": "weight_dds",
+   "fieldtype": "Percent",
+   "label": "DDS Behavior Weight (%)"
+  },
+  {
+   "default": "15",
+   "fieldname": "weight_stability",
+   "fieldtype": "Percent",
+   "label": "Stability Weight (%)"
+  },
+  {
+   "default": "40",
+   "fieldname": "min_passing_score",
+   "fieldtype": "Int",
+   "label": "Minimum Passing Score"
+  },
+  {
+   "fieldname": "eligibility_logic_tab",
+   "fieldtype": "Tab Break",
+   "label": "Eligibility (Layer 3)"
+  },
+  {
+   "fieldname": "logic_section",
+   "fieldtype": "Section Break",
+   "label": "Constraint Parameters"
+  },
+  {
+   "default": "30",
+   "fieldname": "income_recognition_percent",
+   "fieldtype": "Percent",
+   "label": "Income Recognition (%)"
+  },
+  {
+   "default": "50",
+   "fieldname": "max_foir_percent",
+   "fieldtype": "Percent",
+   "label": "Max FOIR Cap (%)"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "12",
+   "fieldname": "dds_multiplier",
+   "fieldtype": "Int",
+   "label": "DDS Multiplier (Annualized)"
+  },
+  {
+   "fieldname": "score_bands_section",
+   "fieldtype": "Section Break",
+   "label": "Score-Based Haircuts"
+  },
+  {
+   "default": "85",
+   "fieldname": "score_70_79_cap_percent",
+   "fieldtype": "Percent",
+   "label": "Score 70-79 Cap (%)"
+  },
+  {
+   "default": "75",
+   "fieldname": "score_60_69_cap_percent",
+   "fieldtype": "Percent",
+   "label": "Score 60-69 Cap (%)"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "65",
+   "fieldname": "score_55_59_cap_percent",
+   "fieldtype": "Percent",
+   "label": "Score 55-59 Cap (%)"
+  },
+  {
+   "default": "50",
+   "fieldname": "score_50_54_cap_percent",
+   "fieldtype": "Percent",
+   "label": "Score 50-54 Cap (%)"
+  },
+  {
+   "fieldname": "description_tab",
+   "fieldtype": "Tab Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "desc_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Internal Product Notes"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-11 12:52:31.002093",
+ "modified": "2026-03-12 14:30:00.000000",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Type",
