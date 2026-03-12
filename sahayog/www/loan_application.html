@@ -4,6 +4,71 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sahayog Loan Management</title>
+    <link type="text/css" rel="stylesheet" href="/assets/frappe/dist/css/desk.bundle.XOBCSR6E.css">
+    <script
+      type="text/javascript"
+      src="/assets/frappe/js/lib/jquery/jquery.min.js"
+    ></script>
+    <script type="text/javascript">
+      window.frappe = window.frappe || {};
+      frappe.boot = {
+        sysdefaults: {
+          date_format: "yyyy-mm-dd",
+          time_format: "HH:mm:ss",
+        },
+        link_renderers: {},
+        user: { name: "{{ user }}" },
+      };
+    </script>
+    <script type="text/javascript" src="/assets/frappe/dist/js/desk.bundle.UC3JMTPW.js"></script>
+    <script type="text/javascript">
+      frappe.utils = frappe.utils || {};
+      frappe.utils.icon = function (name) {
+        if (name === "close") return "X";
+        if (name === "add") return "+";
+        return "";
+      };
+
+      // Polyfill common Frappe utilities missing in portal environment
+      window.cint =
+        window.cint ||
+        function (v, def) {
+          let n = parseInt(v);
+          return isNaN(n) ? def || 0 : n;
+        };
+      window.flt =
+        window.flt ||
+        function (v, decimals, def) {
+          let n = parseFloat(v);
+          if (isNaN(n)) return def || 0;
+          if (decimals !== undefined) return parseFloat(n.toFixed(decimals));
+          return n;
+        };
+      window.cstr =
+        window.cstr ||
+        function (v) {
+          return v === null || v === undefined ? "" : String(v);
+        };
+      window._t = window._t || function (v) { return v; };
+
+      // Polyfill for frappe.show_alert
+      window.frappe = window.frappe || {};
+      frappe.show_alert = function(opts) {
+        const msg = opts.message || opts;
+        const indicator = opts.indicator || 'blue';
+        var bgColor = '#3b82f6';
+        if (indicator === 'green') bgColor = '#22c55e';
+        else if (indicator === 'red') bgColor = '#ef4444';
+        const alertDiv = document.createElement('div');
+        alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 12px 20px; background: ' + bgColor + '; color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 99999; font-size: 14px; font-weight: 500; animation: slideIn 0.3s ease;';
+        alertDiv.textContent = msg;
+        document.body.appendChild(alertDiv);
+        setTimeout(function() {
+          alertDiv.style.animation = 'slideOut 0.3s ease';
+          setTimeout(function() { alertDiv.remove(); }, 300);
+        }, 3000);
+      };
+    </script>
     <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -18,6 +83,15 @@
         --white: #ffffff;
         --step-inactive: #e2e8f0;
         --green-success: #22c55e;
+      }
+
+      @keyframes slideIn {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(400px); opacity: 0; }
       }
 
       body {
@@ -343,6 +417,9 @@
         .mobile-table-container td {
           padding: 0.5rem 0.75rem !important;
         }
+        .call-modal {
+          min-width: 90% !important;
+        }
 
         /* Sticky Compact KPI Bar for Mobile Dashboard */
         .sticky-kpi-bar {
@@ -355,7 +432,7 @@
           border-bottom: 1px solid var(--sidebar-border);
           padding: 0.6rem 0.75rem;
           z-index: 99;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
           justify-content: space-between;
           align-items: center;
         }
@@ -790,21 +867,49 @@
         </div>
 
         <!-- Dashboard Recent Applications - Card View -->
-        <div v-if="dashboardViewMode === 'card'" style="padding: 0.75rem" v-cloak>
+        <div
+          v-if="dashboardViewMode === 'card'"
+          style="padding: 0.75rem"
+          v-cloak
+        >
           <h4 style="margin: 0 0.75rem 1rem">Recent Applications</h4>
-          <div ref="recentSection" class="card-grid" style="padding: 0; gap: 0.5rem">
+          <div
+            ref="recentSection"
+            class="card-grid"
+            style="padding: 0; gap: 0.5rem"
+          >
             <div
               v-for="app in applications.slice(0, 6)"
               class="loan-card"
               @click="viewDetails(app.name)"
               style="cursor: pointer"
             >
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: flex-start;
+                  margin-bottom: 0.35rem;
+                "
+              >
                 <div style="flex: 1">
-                  <h3 style="margin: 0 0 0.15rem 0; font-size: 13px; font-weight: 700; color: var(--text-main)">
+                  <h3
+                    style="
+                      margin: 0 0 0.15rem 0;
+                      font-size: 13px;
+                      font-weight: 700;
+                      color: var(--text-main);
+                    "
+                  >
                     [[ app.customer_name ]]
                   </h3>
-                  <span style="font-size: 10px; color: var(--text-muted); font-weight: 600">
+                  <span
+                    style="
+                      font-size: 10px;
+                      color: var(--text-muted);
+                      font-weight: 600;
+                    "
+                  >
                     [[ app.name ]]
                   </span>
                 </div>
@@ -814,16 +919,44 @@
                   >[[ app.status ]]</span
                 >
               </div>
-              <div style="margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px solid #f1f5f9">
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 2px">Amount</div>
-                <div style="font-size: 13px; font-weight: 700; color: var(--text-main)">₹[[ (app.loan_amount || 0).toLocaleString() ]]</div>
+              <div
+                style="
+                  margin-top: 0.35rem;
+                  padding-top: 0.35rem;
+                  border-top: 1px solid #f1f5f9;
+                "
+              >
+                <div
+                  style="
+                    font-size: 9px;
+                    color: var(--text-muted);
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    margin-bottom: 2px;
+                  "
+                >
+                  Amount
+                </div>
+                <div
+                  style="
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: var(--text-main);
+                  "
+                >
+                  ₹[[ (app.loan_amount || 0).toLocaleString() ]]
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Dashboard Recent Applications - List View -->
-        <div v-if="dashboardViewMode === 'list'" style="padding: 0 1.5rem" v-cloak>
+        <div
+          v-if="dashboardViewMode === 'list'"
+          style="padding: 0 1.5rem"
+          v-cloak
+        >
           <h4 style="margin-bottom: 1rem">Recent Applications</h4>
           <div
             ref="recentSection"
@@ -1023,14 +1156,138 @@
     </main>
 
     <!-- Custom Call Modal -->
-    <div class="call-modal-overlay" :class="{ active: showCallModal }" @click.self="showCallModal = false">
+    <div
+      class="call-modal-overlay"
+      :class="{ active: showCallModal }"
+      @click.self="showCallModal = false"
+    >
       <div class="call-modal">
         <div class="call-modal-title">Call [[ callCustomerName ]]</div>
         <div class="call-modal-phone">[[ callPhone ]]</div>
         <div class="call-modal-actions">
-          <button class="call-modal-btn secondary" @click="showCallModal = false">Cancel</button>
-          <a class="call-modal-btn primary" :href="'tel:' + callPhone">Call Now</a>
+          <button
+            class="call-modal-btn secondary"
+            @click="showCallModal = false"
+          >
+            Cancel
+          </button>
+          <a class="call-modal-btn primary" :href="'tel:' + callPhone"
+            >Call Now</a
+          >
         </div>
+      </div>
+    </div>
+
+    <!-- New Application Modal -->
+    <div
+      class="call-modal-overlay"
+      :class="{ active: showNewAppModal }"
+      @click.self="showNewAppModal = false"
+    >
+      <div class="call-modal" style="min-width: 500px; max-width: 90vw; max-height: 90vh; overflow-y: auto;">
+        <div class="call-modal-title">New Loan Application</div>
+        <form @submit.prevent="submitNewApplication">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div>
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Loan Type *</label>
+              <input 
+                list="loan-types-list"
+                v-model="newApp.loan_type" 
+                required
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;"
+                placeholder="Search and select Loan Type"
+              />
+              <datalist id="loan-types-list">
+                <option v-for="lt in loanTypes" :key="lt.name" :value="lt.name">[[ lt.name ]]</option>
+              </datalist>
+            </div>
+            <div>
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Branch Code *</label>
+              <input 
+                list="branches-list"
+                v-model="newApp.branch_code" 
+                required
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;"
+                placeholder="Search and select Branch"
+              />
+              <datalist id="branches-list">
+                <option v-for="b in branches" :key="b.name" :value="b.name">[[ b.name ]]</option>
+              </datalist>
+            </div>
+            <div>
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Customer Name *</label>
+              <input 
+                type="text" 
+                v-model="newApp.customer_name" 
+                required
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;"
+                placeholder="Enter Customer Name"
+              />
+            </div>
+            <div>
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Mobile Number *</label>
+              <input 
+                type="text" 
+                v-model="newApp.mobile_number" 
+                required
+                maxlength="10"
+                pattern="\d{10}"
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;"
+                placeholder="10 digit mobile number"
+              />
+            </div>
+            <div>
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Date of Birth *</label>
+              <input 
+                type="date" 
+                v-model="newApp.date_of_birth" 
+                required
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;"
+              />
+            </div>
+            <div>
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">CIBIL Score</label>
+              <input 
+                type="number" 
+                v-model="newApp.cibil_score" 
+                min="300" 
+                max="900"
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;"
+                placeholder="300-900"
+              />
+            </div>
+            <div>
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Status</label>
+              <select 
+                v-model="newApp.status" 
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;"
+              >
+                <option value="Draft">Draft</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Submitted">Submitted</option>
+                <option value="Approved">Approved</option>
+                <option value="Disbursed">Disbursed</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </div>
+          </div>
+          <div class="call-modal-actions" style="margin-top: 1.5rem;">
+            <button
+              type="button"
+              class="call-modal-btn secondary"
+              @click="showNewAppModal = false"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="call-modal-btn primary"
+              :disabled="saving"
+            >
+              [[ saving ? 'Creating...' : 'Create' ]]
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -1070,16 +1327,29 @@
           showCallModal: false,
           callPhone: "",
           callCustomerName: "",
+          showNewAppModal: false,
+          saving: false,
+          loanTypes: [],
+          branches: [],
+          newApp: {
+            loan_type: "",
+            branch_code: "",
+            customer_name: "",
+            mobile_number: "",
+            date_of_birth: "",
+            cibil_score: "",
+            status: "Draft",
+          },
 
           initScrollObserver() {
             if (window.innerWidth >= 768) return;
-            
+
             // Use scroll event for mobile sticky KPI bar
             setTimeout(() => {
-              const container = document.querySelector('.main-container');
+              const container = document.querySelector(".main-container");
               if (container) {
-                container.addEventListener('scroll', () => {
-                  if (this.currentView === 'dashboard') {
+                container.addEventListener("scroll", () => {
+                  if (this.currentView === "dashboard") {
                     this.showStickyKpi = container.scrollTop > 150;
                   } else {
                     this.showStickyKpi = false;
@@ -1114,7 +1384,7 @@
                 "mobile_number",
               ];
               const response = await fetch(
-                `/api/resource/Loan Application?fields=${JSON.stringify(fields)}&order_by=creation desc`,
+                `/api/resource/Loan Application?fields=${encodeURIComponent(JSON.stringify(fields))}&order_by=creation desc`,
               );
               const res = await response.json();
               this.applications = res.data || [];
@@ -1123,6 +1393,26 @@
                 0,
               );
               setTimeout(() => lucide.createIcons(), 100);
+            } catch (e) {
+              console.error(e);
+            }
+          },
+
+          async fetchLoanTypes() {
+            try {
+              const response = await fetch('/api/resource/Loan Type?fields=["name"]&filters=[["Loan Type","is_active","=",1]]');
+              const res = await response.json();
+              this.loanTypes = res.data || [];
+            } catch (e) {
+              console.error(e);
+            }
+          },
+
+          async fetchBranches() {
+            try {
+              const response = await fetch('/api/resource/Sahayog Branch?fields=["name"]');
+              const res = await response.json();
+              this.branches = res.data || [];
             } catch (e) {
               console.error(e);
             }
@@ -1169,7 +1459,51 @@
             window.location.href = `/app/loan-application/${name}`;
           },
           newApplication() {
-            window.location.href = `/app/loan-application/new-loan-application-1`;
+            // Reset form
+            this.newApp = {
+              loan_type: "",
+              branch_code: "",
+              customer_name: "",
+              mobile_number: "",
+              date_of_birth: "",
+              cibil_score: "",
+              status: "Draft",
+            };
+            // Refresh dropdown data
+            this.fetchLoanTypes();
+            this.fetchBranches();
+            this.showNewAppModal = true;
+          },
+
+          async submitNewApplication() {
+            this.saving = true;
+            try {
+              const response = await fetch("/api/resource/Loan Application", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+                },
+                body: JSON.stringify(this.newApp),
+              });
+              const res = await response.json();
+              if (res.data) {
+                this.showNewAppModal = false;
+                frappe.show_alert({
+                  message: `Loan Application ${res.data.name} created successfully`,
+                  indicator: "green",
+                });
+                this.fetchApplications();
+              }
+            } catch (e) {
+              console.error(e);
+              frappe.show_alert({
+                message: "Error creating application",
+                indicator: "red",
+              });
+            } finally {
+              this.saving = false;
+            }
           },
           formatDate(d) {
             if (!d) return "-";
@@ -1178,6 +1512,8 @@
           },
           mounted() {
             this.fetchApplications();
+            this.fetchLoanTypes();
+            this.fetchBranches();
             this.initScrollObserver();
           },
         };
