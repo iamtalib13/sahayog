@@ -973,6 +973,717 @@
         </div>
       </header>
 
+      <div v-if="currentView === 'details'" v-cloak style="padding: 1.5rem">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+          "
+        >
+          <button
+            @click="setView('applications')"
+            style="
+              background: #f1f5f9;
+              border: none;
+              padding: 0.5rem;
+              border-radius: 8px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <i data-lucide="arrow-left" style="width: 20px; height: 20px"></i>
+          </button>
+          <h3 style="margin: 0">Application: [[ selectedApp.name ]]</h3>
+        </div>
+
+        <div
+          style="
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--sidebar-border);
+            padding: 1.5rem;
+          "
+        >
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 1.5rem;
+            "
+          >
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-muted);
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Customer Name
+              </div>
+              <div style="font-weight: 600; font-size: 15px; margin-top: 4px">
+                [[ selectedApp.customer_name ]]
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-muted);
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Mobile Number
+              </div>
+              <div style="font-weight: 600; font-size: 15px; margin-top: 4px">
+                [[ selectedApp.mobile_number ]]
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-muted);
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Loan Amount
+              </div>
+              <div
+                style="
+                  font-weight: 700;
+                  font-size: 18px;
+                  margin-top: 4px;
+                  color: var(--accent);
+                "
+              >
+                ₹[[ (selectedApp.loan_amount || 0).toLocaleString() ]]
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-muted);
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Status
+              </div>
+              <div style="margin-top: 4px">
+                <span
+                  class="status-pill"
+                  :style="{ background: getStatusColor(selectedApp.status) + '15', color: getStatusColor(selectedApp.status), padding: '4px 10px', fontSize: '11px' }"
+                  >[[ selectedApp.status ]]</span
+                >
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-muted);
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Loan Type
+              </div>
+              <div style="font-weight: 600; font-size: 15px; margin-top: 4px">
+                [[ selectedApp.loan_type ]]
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: var(--text-muted);
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Branch Code
+              </div>
+              <div style="font-weight: 600; font-size: 15px; margin-top: 4px">
+                [[ selectedApp.branch_code ]]
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              margin-top: 2rem;
+              border-top: 1px solid #f1f5f9;
+              padding-top: 1.5rem;
+            "
+          >
+            <h4 style="margin: 0 0 1rem 0">KYC Documents</h4>
+            <div
+              style="
+                border: 1px solid var(--sidebar-border);
+                border-radius: 8px;
+                overflow: hidden;
+              "
+            >
+              <table
+                style="
+                  width: 100%;
+                  border-collapse: collapse;
+                  font-size: 0.85rem;
+                "
+              >
+                <tr style="background: #f8fafc; text-align: left">
+                  <th style="padding: 0.75rem 1rem">Document Type</th>
+                  <th style="padding: 0.75rem 1rem">Document Number</th>
+                  <th style="padding: 0.75rem 1rem">Status</th>
+                  <th style="padding: 0.75rem 1rem">Attachment</th>
+                </tr>
+                <tr
+                  v-for="doc in (selectedApp.kyc_documents || [])"
+                  style="border-top: 1px solid #f1f5f9"
+                >
+                  <td style="padding: 0.75rem 1rem">[[ doc.document_type ]]</td>
+                  <td style="padding: 0.75rem 1rem">
+                    [[ doc.document_number ]]
+                  </td>
+                  <td style="padding: 0.75rem 1rem">
+                    <span
+                      class="status-pill"
+                      :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b') }"
+                    >
+                      [[ doc.status ]]
+                    </span>
+                  </td>
+                  <td style="padding: 0.75rem 1rem">
+                    <a
+                      v-if="doc.attachment"
+                      :href="doc.attachment"
+                      target="_blank"
+                      style="color: var(--accent); font-weight: 600"
+                      >View</a
+                    >
+                    <span v-else style="color: var(--text-muted)">-</span>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- New Loan Application View (In-page) -->
+      <div v-if="currentView === 'create'" v-cloak style="padding: 1.5rem">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+          "
+        >
+          <button
+            @click="setView('applications')"
+            style="
+              background: #f1f5f9;
+              border: none;
+              padding: 0.5rem;
+              border-radius: 8px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <i data-lucide="arrow-left" style="width: 20px; height: 20px"></i>
+          </button>
+          <h3 style="margin: 0">New Loan Application</h3>
+        </div>
+
+        <div
+          style="
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--sidebar-border);
+            padding: 1.5rem;
+          "
+        >
+          <form @submit.prevent="submitNewApplication">
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.25rem;
+              "
+            >
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >Loan Type *</label
+                >
+                <div
+                  class="inline-select-input"
+                  @click="openDropdownPopup('loan_type', loanTypes, 'Select Loan Type')"
+                  style="
+                    margin-top: 4px;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    padding: 0.5rem;
+                    font-size: 13px;
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: white;
+                  "
+                >
+                  <span>[[ newApp.loan_type || 'Select Loan Type' ]]</span>
+                  <i
+                    data-lucide="chevron-down"
+                    style="width: 14px; height: 14px"
+                  ></i>
+                </div>
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >Branch Code *</label
+                >
+                <div
+                  class="inline-select-input"
+                  @click="openDropdownPopup('branch_code', branches, 'Select Branch')"
+                  style="
+                    margin-top: 4px;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    padding: 0.5rem;
+                    font-size: 13px;
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: white;
+                  "
+                >
+                  <span>[[ newApp.branch_code || 'Select Branch' ]]</span>
+                  <i
+                    data-lucide="chevron-down"
+                    style="width: 14px; height: 14px"
+                  ></i>
+                </div>
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >Customer Name *</label
+                >
+                <input
+                  type="text"
+                  v-model="newApp.customer_name"
+                  required
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    font-size: 13px;
+                    margin-top: 4px;
+                  "
+                  placeholder="Enter Customer Name"
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >Mobile Number *</label
+                >
+                <input
+                  type="tel"
+                  v-model="newApp.mobile_number"
+                  required
+                  pattern="[0-9]{10}"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    font-size: 13px;
+                    margin-top: 4px;
+                  "
+                  placeholder="10 digit mobile number"
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >Date of Birth *</label
+                >
+                <input
+                  type="date"
+                  v-model="newApp.date_of_birth"
+                  required
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    font-size: 13px;
+                    margin-top: 4px;
+                  "
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >CIBIL Score</label
+                >
+                <input
+                  type="number"
+                  v-model="newApp.cibil_score"
+                  min="300"
+                  max="900"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    font-size: 13px;
+                    margin-top: 4px;
+                  "
+                  placeholder="300-900"
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >Status</label
+                >
+                <div
+                  class="inline-select-input"
+                  @click="openDropdownPopup('status', ['Draft', 'Under Review', 'Submitted', 'Approved', 'Disbursed', 'Closed'], 'Select Status')"
+                  style="
+                    margin-top: 4px;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    padding: 0.5rem;
+                    font-size: 13px;
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: white;
+                  "
+                >
+                  <span>[[ newApp.status || 'Select Status' ]]</span>
+                  <i
+                    data-lucide="chevron-down"
+                    style="width: 14px; height: 14px"
+                  ></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- KYC Documents Section -->
+            <div
+              style="
+                margin-top: 2rem;
+                border-top: 1px solid var(--sidebar-border);
+                padding-top: 1.5rem;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 1rem;
+                "
+              >
+                <h4
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: var(--text-main);
+                  "
+                >
+                  KYC Documents *
+                </h4>
+                <button
+                  type="button"
+                  @click="addKycRow"
+                  style="
+                    padding: 0.5rem 1rem;
+                    background: var(--accent);
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                  "
+                >
+                  + Add Row
+                </button>
+              </div>
+
+              <!-- KYC Documents Grid -->
+              <div
+                v-if="newApp.kyc_documents && newApp.kyc_documents.length > 0"
+                style="
+                  border: 1px solid var(--sidebar-border);
+                  border-radius: 8px;
+                  overflow: hidden;
+                  background: white;
+                "
+              >
+                <!-- Grid Table -->
+                <div style="overflow-x: auto">
+                  <table
+                    style="
+                      width: 100%;
+                      border-collapse: collapse;
+                      font-size: 0.85rem;
+                      min-width: 800px;
+                    "
+                  >
+                    <tr style="background: #f8fafc; text-align: left">
+                      <th style="padding: 0.75rem 1rem; width: 50px">#</th>
+                      <th style="padding: 0.75rem 1rem">Document</th>
+                      <th style="padding: 0.75rem 1rem">Attach Document</th>
+                      <th style="padding: 0.75rem 1rem">Status</th>
+                      <th style="padding: 0.75rem 1rem">Verified By</th>
+                      <th style="padding: 0.75rem 1rem; width: 50px"></th>
+                    </tr>
+                    <tr
+                      v-for="(doc, idx) in newApp.kyc_documents"
+                      :key="idx"
+                      style="border-top: 1px solid #f1f5f9"
+                    >
+                      <td style="padding: 0.75rem 1rem; text-align: center">
+                        [[ idx + 1 ]]
+                      </td>
+                      <td style="padding: 0.75rem 1rem">
+                        <div
+                          class="inline-select-input"
+                          @click="openDocDropdownPopup(idx, ['', 'Aadhaar Card', 'PAN Card'], 'Select Document Type')"
+                          style="
+                            padding: 0.35rem 0.5rem;
+                            font-size: 12px;
+                            cursor: pointer;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            background: white;
+                            border: 1px solid var(--sidebar-border);
+                            border-radius: 4px;
+                          "
+                        >
+                          <span>[[ doc.document || 'Select' ]]</span>
+                          <i
+                            data-lucide="chevron-down"
+                            style="width: 12px; height: 12px"
+                          ></i>
+                        </div>
+                      </td>
+                      <td style="padding: 0.75rem 1rem">
+                        <input
+                          type="file"
+                          @change="(e) => handleFileUpload(e, idx)"
+                          style="width: 100%; font-size: 11px"
+                        />
+                        <div
+                          v-if="doc.file_name"
+                          style="
+                            font-size: 10px;
+                            color: var(--text-muted);
+                            margin-top: 2px;
+                          "
+                        >
+                          [[ doc.file_name ]]
+                        </div>
+                      </td>
+                      <td style="padding: 0.75rem 1rem">
+                        <div
+                          class="inline-select-input"
+                          @click="openDocStatusDropdownPopup(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')"
+                          style="
+                            padding: 0.35rem 0.5rem;
+                            font-size: 12px;
+                            cursor: pointer;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            background: white;
+                            border: 1px solid var(--sidebar-border);
+                            border-radius: 4px;
+                          "
+                        >
+                          <span>[[ doc.status || 'Status' ]]</span>
+                          <i
+                            data-lucide="chevron-down"
+                            style="width: 12px; height: 12px"
+                          ></i>
+                        </div>
+                      </td>
+                      <td style="padding: 0.75rem 1rem; position: relative">
+                        <input
+                          type="text"
+                          v-model="doc.verified_by"
+                          @focus="(e) => openUserDropdown(e, idx)"
+                          @input="(e) => filterUsers(e, idx)"
+                          @blur="closeUserDropdown()"
+                          style="
+                            width: 100%;
+                            padding: 0.35rem;
+                            border: 1px solid var(--sidebar-border);
+                            border-radius: 4px;
+                            font-size: 12px;
+                            background: white;
+                          "
+                          placeholder="Search User"
+                        />
+                        <div
+                          v-if="showUserDropdown && activeUserDropdownIdx === idx"
+                          class="custom-dropdown"
+                        >
+                          <div
+                            v-for="(u, uIdx) in filteredUsers"
+                            :key="u.name"
+                            @mousedown.prevent="selectUser(u, doc)"
+                            class="custom-dropdown-item"
+                          >
+                            <div style="font-weight: 600">
+                              [[ u.full_name || u.name ]]
+                            </div>
+                            <div
+                              style="font-size: 10px; color: var(--text-muted)"
+                            >
+                              [[ u.name ]]
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="padding: 0.75rem 1rem; text-align: right">
+                        <button
+                          type="button"
+                          @click="removeKycDocument(idx)"
+                          style="
+                            background: transparent;
+                            color: #ef4444;
+                            border: none;
+                            cursor: pointer;
+                            font-size: 16px;
+                          "
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              <!-- Empty State -->
+              <div
+                v-else
+                style="
+                  padding: 2rem;
+                  background: #fef3c7;
+                  border-radius: 8px;
+                  font-size: 13px;
+                  color: #92400e;
+                  text-align: center;
+                  border: 1px dashed #fcd34d;
+                "
+              >
+                ⚠️ At least one KYC document is required to submit the
+                application
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div
+              style="
+                margin-top: 2rem;
+                display: flex;
+                justify-content: flex-end;
+                gap: 1rem;
+              "
+            >
+              <button
+                type="button"
+                @click="setView('applications')"
+                style="
+                  padding: 0.6rem 1.5rem;
+                  background: #f1f5f9;
+                  color: var(--text-main);
+                  border: none;
+                  border-radius: 8px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="saving"
+                style="
+                  padding: 0.6rem 2rem;
+                  background: var(--accent);
+                  color: white;
+                  border: none;
+                  border-radius: 8px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                [[ saving ? 'Creating...' : 'Create Application' ]]
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div v-if="currentView === 'dashboard'" v-cloak class="dashboard-content">
         <!-- Sticky Compact KPI Bar (Mobile Only) -->
         <div class="sticky-kpi-bar" :class="{ active: showStickyKpi }">
@@ -2073,6 +2784,7 @@
           currentView: "applications",
           viewMode: "card",
           dashboardViewMode: "card",
+          selectedApp: null,
           applications: [],
           totalAmount: 0,
           showStickyKpi: false,
@@ -2080,7 +2792,6 @@
           showCallModal: false,
           callPhone: "",
           callCustomerName: "",
-          showNewAppModal: false,
           // Dropdown Selection Popup state
           showDropdownPopup: false,
           dropdownPopupTitle: "",
@@ -2138,6 +2849,7 @@
           setView(view) {
             this.currentView = view;
             this.showStickyKpi = false;
+            this.selectedApp = null;
             setTimeout(() => lucide.createIcons(), 50);
           },
 
@@ -2235,8 +2947,20 @@
             }
           },
 
-          viewDetails(name) {
-            window.location.href = `/app/loan-application/${name}`;
+          async viewDetails(name) {
+            try {
+              const response = await fetch(
+                `/api/method/sahayog.api.loan_application.get_loan_application?name=${name}`,
+              );
+              const res = await response.json();
+              if (res.message) {
+                this.selectedApp = res.message;
+                this.currentView = "details";
+                setTimeout(() => lucide.createIcons(), 50);
+              }
+            } catch (e) {
+              console.error(e);
+            }
           },
           newApplication() {
             // Reset form
@@ -2256,7 +2980,8 @@
             this.fetchLoanTypes();
             this.fetchBranches();
             this.fetchUsers();
-            this.showNewAppModal = true;
+            this.currentView = "create";
+            setTimeout(() => lucide.createIcons(), 50);
           },
 
           // Inline dropdown methods
@@ -2509,7 +3234,6 @@
               );
               const res = await response.json();
               if (res.message && res.message.status === "success") {
-                this.showNewAppModal = false;
                 frappe.show_alert({
                   message:
                     "Loan Application " +
@@ -2518,7 +3242,7 @@
                   indicator: "green",
                 });
                 this.fetchApplications();
-                // Redirect to the new application form/details
+                // Show the new application form/details in-page
                 setTimeout(() => {
                   this.viewDetails(res.message.name);
                 }, 500);
