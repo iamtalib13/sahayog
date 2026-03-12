@@ -19,6 +19,7 @@
   "mobile_number",
   "date_of_birth",
   "status",
+  "kyc_details_tab",
   "kyc_details_section",
   "kyc_documents",
   "credit_check_tab",
@@ -193,16 +194,19 @@
    "label": "Packet Details"
   },
   {
+   "description": "Unique ID of the stored gold packet.",
    "fieldname": "packet_number",
    "fieldtype": "Data",
    "label": "Packet Number"
   },
   {
+   "description": "Weight of the sealed gold packet.",
    "fieldname": "packet_weight",
    "fieldtype": "Float",
    "label": "Packet Weight"
   },
   {
+   "description": "Image of the sealed gold packet.",
    "fieldname": "packet_image",
    "fieldtype": "Attach",
    "label": "Packet Image"
@@ -256,6 +260,7 @@
    "reqd": 1
   },
   {
+   "description": "Select the type of loan being applied for.",
    "fieldname": "loan_type",
    "fieldtype": "Link",
    "label": "Loan Type",
@@ -301,25 +306,34 @@
    "fieldtype": "Section Break"
   },
   {
+   "description": "Select the asset used as security for this loan.",
    "fieldname": "security_type",
    "fieldtype": "Link",
    "label": "Security Type",
    "options": "Loan Security Type"
   },
   {
+   "description": "Maximum loan amount the customer can get.",
    "fieldname": "eligible_loan_amount",
    "fieldtype": "Currency",
    "label": "Eligible Loan Amount"
   },
   {
+   "description": "Loan repayment period in months.",
    "fieldname": "tenure_months",
    "fieldtype": "Int",
    "label": "Tenure (Months)"
   },
   {
+   "description": "Loan amount still to be repaid.",
    "fieldname": "remaining_balance",
    "fieldtype": "Currency",
    "label": "Remaining Balance"
+  },
+  {
+   "fieldname": "kyc_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "KYC Details"
   }
  ],
  "grid_page_length": 50,
@@ -337,7 +351,7 @@
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-12 10:21:55.594770",
+ "modified": "2026-03-12 11:05:47.461796",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
