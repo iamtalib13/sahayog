@@ -306,10 +306,14 @@
           display: block;
         }
         .mobile-header {
-          display: block;
+          display: none !important;
         }
         .desktop-header {
-          display: none;
+          display: flex !important;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: white;
         }
         .main-container {
           width: 100%;
@@ -338,6 +342,52 @@
         .mobile-table-container th,
         .mobile-table-container td {
           padding: 0.5rem 0.75rem !important;
+        }
+
+        /* Sticky Compact KPI Bar for Mobile Dashboard */
+        .sticky-kpi-bar {
+          display: none;
+          position: sticky;
+          top: 48px; /* Below desktop-header */
+          background: white;
+          border-bottom: 1px solid var(--sidebar-border);
+          padding: 0.6rem 0.75rem;
+          z-index: 99;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          justify-content: space-between;
+          align-items: center;
+        }
+        .sticky-kpi-bar.active {
+          display: flex;
+        }
+        .sticky-kpi-bar .kpi-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          border-right: 1px solid #f1f5f9;
+          padding-right: 8px;
+          flex: 1;
+          justify-content: center;
+        }
+        .sticky-kpi-bar .kpi-item:last-child {
+          border-right: none;
+        }
+        .sticky-kpi-bar .kpi-label {
+          font-size: 10px;
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+        .sticky-kpi-bar .kpi-value {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--text-main);
+        }
+      }
+
+      /* Desktop - Never show compact KPI bar */
+      @media (min-width: 769px) {
+        .sticky-kpi-bar {
+          display: none !important;
         }
       }
       .loan-card {
@@ -540,12 +590,28 @@
               font-size: 0.85rem;
             "
           >
-            + New
+            +New
           </button>
         </div>
       </header>
 
       <div v-if="currentView === 'dashboard'" v-cloak>
+        <!-- Sticky Compact KPI Bar (Mobile Only) -->
+        <div class="sticky-kpi-bar" :class="{ active: showStickyKpi }">
+          <div class="kpi-item">
+            <span class="kpi-label">Disbursed:</span>
+            <span class="kpi-value">₹[[ totalAmount.toLocaleString() ]]</span>
+          </div>
+          <div class="kpi-item">
+            <span class="kpi-label">Active:</span>
+            <span class="kpi-value">[[ applications.length ]]</span>
+          </div>
+          <div class="kpi-item">
+            <span class="kpi-label">Gold:</span>
+            <span class="kpi-value">₹6,250</span>
+          </div>
+        </div>
+
         <div class="dash-grid">
           <div class="stat-card">
             <div class="stat-icon"><i data-lucide="banknote"></i></div>
@@ -616,6 +682,7 @@
         <div style="padding: 0 1.5rem">
           <h4 style="margin-bottom: 1rem">Recent Applications</h4>
           <div
+            ref="recentSection"
             style="
               background: white;
               border-radius: 12px;
@@ -639,7 +706,7 @@
                 <th style="padding: 1rem">Status</th>
               </tr>
               <tr
-                v-for="app in applications.slice(0, 5)"
+                v-for="app in applications"
                 style="border-bottom: 1px solid #f1f5f9; cursor: pointer"
                 @click="viewDetails(app.name)"
               >
@@ -672,7 +739,11 @@
         class="card-grid"
         v-cloak
       >
-        <div v-for="app in applications" class="loan-card" @click="viewDetails(app.name)">
+        <div
+          v-for="app in applications"
+          class="loan-card"
+          @click="viewDetails(app.name)"
+        >
           <!-- Header -->
           <div class="loan-header">
             <div>
@@ -681,12 +752,12 @@
             </div>
 
             <div class="loan-actions">
-              <span 
-                class="btn-call" 
+              <span
+                class="btn-call"
                 @click.stop="makeCall(app.mobile_number, app.name)"
                 style="cursor: pointer"
-              > 
-                <i data-lucide="phone"></i> Call 
+              >
+                <i data-lucide="phone"></i> Call
               </span>
 
               <span
@@ -712,7 +783,10 @@
 
           <!-- Amounts -->
           <div class="loan-amount-row">
-            <span>Loan Amt: ₹[[ (app.loan_amount || 0).toLocaleString() ]] | Net Wt: [[ app.total_net_weight || 0 ]]g</span>
+            <span
+              >Loan Amt: ₹[[ (app.loan_amount || 0).toLocaleString() ]] | Net
+              Wt: [[ app.total_net_weight || 0 ]]g</span
+            >
             <span>Payout: ₹[[ (app.final_payout || 0).toLocaleString() ]]</span>
           </div>
         </div>
@@ -834,6 +908,7 @@
           viewMode: "card",
           applications: [],
           totalAmount: 0,
+          showStickyKpi: false,
 
           setViewMode(mode) {
             this.viewMode = mode;
@@ -842,6 +917,7 @@
 
           setView(view) {
             this.currentView = view;
+            this.showStickyKpi = false;
             setTimeout(() => lucide.createIcons(), 50);
           },
 
@@ -895,10 +971,12 @@
 
           makeCall(phone, customerName) {
             if (!phone) {
-              alert('No mobile number available');
+              alert("No mobile number available");
               return;
             }
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(
+              navigator.userAgent,
+            );
             if (isMobile) {
               window.location.href = `tel:${phone}`;
             } else {
@@ -919,6 +997,18 @@
           },
           mounted() {
             this.fetchApplications();
+            
+            // Scroll detection for mobile sticky KPI
+            const container = document.querySelector('.main-container');
+            if (container) {
+              container.addEventListener('scroll', () => {
+                if (window.innerWidth < 768 && this.currentView === 'dashboard') {
+                  this.showStickyKpi = container.scrollTop > 120;
+                } else {
+                  this.showStickyKpi = false;
+                }
+              });
+            }
           },
         };
       }
