@@ -931,7 +931,7 @@
         "
       >
         <h3 style="margin: 0; font-size: 1.1rem">
-          [[ currentView === 'dashboard' ? 'Dashboard' : 'Loan Applications' ]]
+          [[ currentView === 'dashboard' ? 'Dashboard' : (currentView === 'details' ? 'Loan Applications :' + selectedApp.name : 'Loan Applications') ]]
         </h3>
         <div style="display: flex; align-items: center; gap: 0.75rem">
           <div
@@ -1019,6 +1019,22 @@
             </button>
           </div>
           <button
+            v-if="currentView === 'details'"
+            @click="setView('applications')"
+            style="
+              background: #f1f5f9;
+              color: var(--text-main);
+              border: none;
+              padding: 0.5rem 1rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.85rem;
+            "
+          >
+            Back
+          </button>
+          <button
             @click="newApplication"
             style="
               background: var(--accent);
@@ -1037,32 +1053,6 @@
       </header>
 
       <div v-if="currentView === 'details'" v-cloak style="padding: 1.5rem">
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 1.5rem;
-          "
-        >
-          <button
-            @click="setView('applications')"
-            style="
-              background: #f1f5f9;
-              border: none;
-              padding: 0.5rem;
-              border-radius: 8px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            "
-          >
-            <i data-lucide="arrow-left" style="width: 20px; height: 20px"></i>
-          </button>
-          <h3 style="margin: 0">Application: [[ selectedApp.name ]]</h3>
-        </div>
-
         <div
           style="
             background: white;
@@ -1238,10 +1228,6 @@
                 </tr>
               </table>
             </div>
-          </div>
-        </div>
-      </div>
-
           </div>
         </div>
       </div>
