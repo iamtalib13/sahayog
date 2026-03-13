@@ -912,6 +912,28 @@
           <i data-lucide="file-text"></i>
           <span class="nav-label">Applications</span>
         </div>
+
+        <!-- Section Navigation for Details/Create -->
+        <div v-if="currentView === 'details' || currentView === 'create'" style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px;">
+          <div
+            class="nav-item"
+            :class="{ active: currentSection === 'info' }"
+            @click="setSection('info')"
+            data-tooltip="Basic Info"
+          >
+            <i data-lucide="user"></i>
+            <span class="nav-label">Info</span>
+          </div>
+          <div
+            class="nav-item"
+            :class="{ active: currentSection === 'kyc' }"
+            @click="setSection('kyc')"
+            data-tooltip="KYC Docs"
+          >
+            <i data-lucide="file-check"></i>
+            <span class="nav-label">KYC</span>
+          </div>
+        </div>
       </nav>
     </aside>
 
@@ -1062,6 +1084,7 @@
           "
         >
           <div
+            v-if="currentSection === 'info'"
             style="
               display: grid;
               grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1172,10 +1195,10 @@
           </div>
 
           <div
+            v-if="currentSection === 'kyc'"
             style="
-              margin-top: 2rem;
-              border-top: 1px solid #f1f5f9;
-              padding-top: 1.5rem;
+              margin-top: 0;
+              padding-top: 0;
             "
           >
             <h4 style="margin: 0 0 1rem 0">KYC Documents</h4>
@@ -1244,6 +1267,7 @@
         >
           <form @submit.prevent="submitNewApplication">
             <div
+              v-if="currentSection === 'info'"
               style="
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1447,10 +1471,10 @@
 
             <!-- KYC Documents Section -->
             <div
+              v-if="currentSection === 'kyc'"
               style="
-                margin-top: 2rem;
-                border-top: 1px solid var(--sidebar-border);
-                padding-top: 1.5rem;
+                margin-top: 0;
+                padding-top: 0;
               "
             >
               <div
@@ -2805,6 +2829,7 @@
         return {
           $delimiters: ["[[", "]]"],
           currentView: "applications",
+          currentSection: "info",
           viewMode: "card",
           dashboardViewMode: "card",
           selectedApp: null,
@@ -2871,6 +2896,7 @@
 
           setView(view) {
             this.currentView = view;
+            this.currentSection = "info";
             this.showStickyKpi = false;
             this.selectedApp = null;
             setTimeout(() => lucide.createIcons(), 50);
@@ -2878,6 +2904,11 @@
 
           $nextTick(callback) {
             setTimeout(callback, 0);
+          },
+
+          setSection(section) {
+            this.currentSection = section;
+            setTimeout(() => lucide.createIcons(), 50);
           },
 
           async fetchApplications() {
@@ -2978,6 +3009,7 @@
               const res = await response.json();
               if (res.message) {
                 this.selectedApp = res.message;
+                this.currentSection = "info";
                 this.currentView = "details";
                 setTimeout(() => lucide.createIcons(), 50);
               }
@@ -2987,6 +3019,7 @@
           },
           newApplication() {
             // Reset form
+            this.currentSection = "info";
             this.newApp = {
               loan_type: "",
               branch_code: "",
