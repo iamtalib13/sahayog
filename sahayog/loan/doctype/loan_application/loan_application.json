@@ -48,6 +48,7 @@
   "eligible_loan_amount",
   "loan_amount",
   "tenure_months",
+  "ltv_percent",
   "column_break_6",
   "interest_rate",
   "processing_fee",
@@ -70,8 +71,7 @@
   "column_break_7",
   "packet_number",
   "packet_weight",
-  "amended_from",
-  "ltv_percent"
+  "amended_from"
  ],
  "fields": [
   {
@@ -85,6 +85,7 @@
    "label": "Primary Details"
   },
   {
+   "description": "Full legal name of the applicant.",
    "fieldname": "customer_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -92,6 +93,7 @@
    "reqd": 1
   },
   {
+   "description": "10-digit mobile number for communication.",
    "fieldname": "mobile_number",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -104,19 +106,21 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Unique Customer Identification File (CIF) ID.",
    "fieldname": "cif_id",
    "fieldtype": "Data",
    "label": "CIF ID"
   },
   {
+   "description": "Applicant's date of birth as per KYC.",
    "fieldname": "date_of_birth",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Date of Birth",
-   "reqd": 1
+   "label": "Date of Birth"
   },
   {
    "default": "0",
+   "description": "Check if an earning family member is joining the loan.",
    "fieldname": "has_co_applicant",
    "fieldtype": "Check",
    "label": "Has Earning Co-Applicant"
@@ -127,6 +131,7 @@
    "label": "Identity Verification"
   },
   {
+   "description": "Upload and verify ID proofs (Aadhaar, PAN, etc.).",
    "fieldname": "kyc_documents",
    "fieldtype": "Table",
    "label": "KYC Documents",
@@ -143,14 +148,15 @@
    "label": "Gold Valuation"
   },
   {
+   "description": "Select the loan scheme (e.g., DD Loan, Gold Loan).",
    "fieldname": "loan_type",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Loan Product",
-   "options": "Loan Type",
-   "reqd": 1
+   "options": "Loan Type"
   },
   {
+   "description": "Type of collateral provided (e.g., Gold).",
    "fieldname": "security_type",
    "fieldtype": "Link",
    "label": "Security Type",
@@ -158,6 +164,7 @@
   },
   {
    "default": "Today",
+   "description": "The date on which the security was valued.",
    "fieldname": "valuation_date",
    "fieldtype": "Date",
    "label": "Valuation Date"
@@ -167,29 +174,34 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Current market price of gold per gram.",
    "fieldname": "gold_rate_per_gram",
    "fieldtype": "Currency",
    "label": "Valuation Rate Per Gram"
   },
   {
+   "description": "Calculated total gross weight of all ornaments.",
    "fieldname": "total_gross_weight",
    "fieldtype": "Float",
    "label": "Total GW",
    "read_only": 1
   },
   {
+   "description": "Total weight deducted for stones, dust, or wax.",
    "fieldname": "total_deduction",
    "fieldtype": "Float",
    "label": "Total Deduction",
    "read_only": 1
   },
   {
+   "description": "Total net weight of gold (GW - Deduction).",
    "fieldname": "total_net_weight",
    "fieldtype": "Float",
    "label": "Total NW",
    "read_only": 1
   },
   {
+   "description": "Total market value of the gold provided.",
    "fieldname": "total_valuation",
    "fieldtype": "Currency",
    "label": "Total Valuation",
@@ -202,6 +214,7 @@
    "label": "Individual Ornaments"
   },
   {
+   "description": "List every gold item with its specific weight and purity.",
    "fieldname": "ornaments_list",
    "fieldtype": "Table",
    "label": "Ornaments List",
@@ -218,11 +231,13 @@
    "label": "Risk Inputs"
   },
   {
+   "description": "Applicant's verifiable net monthly income.",
    "fieldname": "monthly_income",
    "fieldtype": "Currency",
    "label": "Monthly Income"
   },
   {
+   "description": "Sum of all existing monthly loan repayments.",
    "fieldname": "existing_emi",
    "fieldtype": "Currency",
    "label": "Existing EMIs"
@@ -232,11 +247,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Average amount deposited daily in the DDS account.",
    "fieldname": "avg_monthly_dds",
    "fieldtype": "Currency",
    "label": "Avg Monthly DDS Deposit"
   },
   {
+   "description": "Maximum consecutive days missed in daily deposits.",
    "fieldname": "dds_gap_days",
    "fieldtype": "Int",
    "label": "Max DDS Gap (Days)"
@@ -247,11 +264,13 @@
    "label": "Scoring Result"
   },
   {
+   "description": "Credit score as per the bureau report.",
    "fieldname": "cibil_score",
    "fieldtype": "Int",
    "label": "CIBIL Score"
   },
   {
+   "description": "Automated risk score calculated by the rule engine.",
    "fieldname": "total_risk_score",
    "fieldtype": "Int",
    "label": "Total Risk Score",
@@ -262,11 +281,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Notes from the credit underwriting team.",
    "fieldname": "credit_appraisal",
    "fieldtype": "Small Text",
    "label": "Credit Remarks"
   },
   {
+   "description": "Final decision from the automated policy gates.",
    "fieldname": "rule_engine_status",
    "fieldtype": "Data",
    "label": "Rule Engine Status",
@@ -283,24 +304,26 @@
    "label": "Eligibility & Fees"
   },
   {
+   "description": "Maximum loan amount allowed based on all constraints.",
    "fieldname": "eligible_loan_amount",
    "fieldtype": "Currency",
    "label": "Final Eligible Amount",
    "read_only": 1
   },
   {
+   "description": "Actual loan amount requested by the applicant.",
    "fieldname": "loan_amount",
    "fieldtype": "Currency",
-   "label": "Loan Value (Applied)",
-   "reqd": 1
+   "label": "Loan Value (Applied)"
   },
   {
+   "description": "Number of months for loan repayment.",
    "fieldname": "tenure_months",
    "fieldtype": "Int",
-   "label": "Tenure (Months)",
-   "reqd": 1
+   "label": "Tenure (Months)"
   },
   {
+   "description": "Loan-to-Value percentage applied to the collateral.",
    "fieldname": "ltv_percent",
    "fieldtype": "Percent",
    "label": "Applied LTV (%)"
@@ -310,34 +333,40 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Annual interest percentage pulled from the product scheme.",
    "fieldname": "interest_rate",
    "fieldtype": "Percent",
    "label": "Interest Rate (%)",
    "read_only": 1
   },
   {
+   "description": "One-time administrative fee percentage.",
    "fieldname": "processing_fee",
    "fieldtype": "Percent",
    "label": "Processing Fee (%)",
    "read_only": 1
   },
   {
+   "description": "Fixed fee for assessing the gold security.",
    "fieldname": "valuation_charges",
    "fieldtype": "Currency",
    "label": "Valuation Charges"
   },
   {
+   "description": "Legal/government tax applicable on the loan.",
    "fieldname": "stamp_duty",
    "fieldtype": "Currency",
    "label": "Stamp Duty"
   },
   {
+   "description": "The net amount the customer will receive (Loan - Fees).",
    "fieldname": "final_payout",
    "fieldtype": "Currency",
    "label": "Final Disbursement Value",
    "read_only": 1
   },
   {
+   "description": "Current amount remaining to be paid back.",
    "fieldname": "remaining_balance",
    "fieldtype": "Currency",
    "label": "Outstanding Balance",
@@ -353,11 +382,13 @@
    "fieldtype": "Section Break"
   },
   {
+   "description": "Clear photo of the specific ornaments.",
    "fieldname": "ornament_image",
    "fieldtype": "Attach",
    "label": "1. Ornament Image"
   },
   {
+   "description": "Photo of the sealed packet/bag.",
    "fieldname": "package_image",
    "fieldtype": "Attach",
    "label": "2. Package Image"
@@ -367,11 +398,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Group photo of all items being pledged.",
    "fieldname": "pledge_group_image",
    "fieldtype": "Attach",
    "label": "3. Pledge(Group) Image"
   },
   {
+   "description": "Photo of the signed valuation certificate.",
    "fieldname": "valuation_report_image",
    "fieldtype": "Attach",
    "label": "4. Valuation Report Image"
@@ -386,18 +419,21 @@
    "fieldtype": "Section Break"
   },
   {
+   "description": "Current lifecycle stage of this application.",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
    "options": "\nDraft\nUnder Review\nApproved\nRejected\nDisbursed\nClosed"
   },
   {
+   "description": "Unique internal case reference ID.",
    "fieldname": "case_id",
    "fieldtype": "Data",
    "label": "Case ID",
    "read_only": 1
   },
   {
+   "description": "The branch where the application was initiated.",
    "fieldname": "branch_code",
    "fieldtype": "Link",
    "label": "Branch",
@@ -409,11 +445,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Physical ID tagged on the storage bag.",
    "fieldname": "packet_number",
    "fieldtype": "Data",
    "label": "Packet ID"
   },
   {
+   "description": "Total physical weight of the packet (including bag).",
    "fieldname": "packet_weight",
    "fieldtype": "Float",
    "label": "Packet Weight"
@@ -443,7 +481,7 @@
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-12 16:55:14.788504",
+ "modified": "2026-03-12 17:00:00.000000",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
