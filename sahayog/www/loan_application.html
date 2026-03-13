@@ -1041,7 +1041,7 @@
             </button>
           </div>
           <button
-            v-if="currentView === 'details' || currentView === 'create'"
+            v-if="(currentView === 'details' || currentView === 'create') && (!isMobile || !isEditing)"
             @click="setView('applications')"
             style="
               background: #f1f5f9;
@@ -1106,6 +1106,7 @@
             [[ saving ? 'Saving...' : 'Save Changes' ]]
           </button>
           <button
+            v-if="!isMobile || !isEditing"
             @click="newApplication"
             style="
               background: var(--accent);
