@@ -40,7 +40,7 @@ frappe.ui.form.on("Expense Category", {
 
         // 2. DEFAULT STATE: Lock sensitive fields for everyone
         // (Even if they have Write access, we start by locking these)
-        frm.set_df_property('finacle_gl_code', 'read_only', 1);
+        // frm.set_df_property('finacle_gl_code', 'read_only', 0);
 
         // 3. MANAGER LOGIC
         if (is_manager || is_admin) {
@@ -48,6 +48,8 @@ frappe.ui.form.on("Expense Category", {
             // Allow editing limits (These are always open for Managers)
             frm.set_df_property('metro_limit', 'read_only', 0);
             frm.set_df_property('non_metro_limit', 'read_only', 0);
+            frm.set_df_property('finacle_gl_code', 'read_only', 0);
+
 
             // CONDITIONAL UNLOCK: Finacle GL Code
             // Only if Category Name is "Other Expenses"
@@ -59,6 +61,7 @@ frappe.ui.form.on("Expense Category", {
             // NON-MANAGERS: Lock everything
             frm.set_df_property('metro_limit', 'read_only', 1);
             frm.set_df_property('non_metro_limit', 'read_only', 1);
+            frm.set_df_property('finacle_gl_code', 'read_only', 1);
             // finacle_gl_code is already locked by default above
         }
     },
