@@ -46,10 +46,8 @@ def create_loan_application(**kwargs):
     try:
         doc = frappe.new_doc("Loan Application")
         
-        # Map kwargs to doc fields
-        for key, value in kwargs.items():
-            if hasattr(doc, key):
-                setattr(doc, key, value)
+        # Use update to correctly handle child tables and fields
+        doc.update(kwargs)
         
         doc.insert()
         frappe.db.commit()
