@@ -1057,6 +1057,55 @@
             Back
           </button>
           <button
+            v-if="currentView === 'details' && selectedApp && selectedApp.status === 'Draft' && !isEditing"
+            @click="isEditing = true"
+            style="
+              background: var(--accent);
+              color: white;
+              border: none;
+              padding: 0.5rem 1rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.85rem;
+            "
+          >
+            Edit
+          </button>
+          <button
+            v-if="currentView === 'details' && isEditing"
+            @click="isEditing = false; viewDetails(selectedApp.name)"
+            style="
+              background: #f1f5f9;
+              color: var(--text-main);
+              border: none;
+              padding: 0.5rem 1rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.85rem;
+            "
+          >
+            Cancel
+          </button>
+          <button
+            v-if="currentView === 'details' && isEditing"
+            @click="updateApplication"
+            :disabled="saving"
+            style="
+              background: #10b981;
+              color: white;
+              border: none;
+              padding: 0.5rem 1rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.85rem;
+            "
+          >
+            [[ saving ? 'Saving...' : 'Save Changes' ]]
+          </button>
+          <button
             @click="newApplication"
             style="
               background: var(--accent);
@@ -1097,15 +1146,18 @@
             >
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Customer Name</div>
-                <div style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.customer_name ]]</div>
+                <input v-if="isEditing" type="text" v-model="selectedApp.customer_name" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 4px;" />
+                <div v-else style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.customer_name ]]</div>
               </div>
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Mobile Number</div>
-                <div style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.mobile_number ]]</div>
+                <input v-if="isEditing" type="tel" v-model="selectedApp.mobile_number" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 4px;" />
+                <div v-else style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.mobile_number ]]</div>
               </div>
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Date of Birth</div>
-                <div style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ formatDate(selectedApp.date_of_birth) ]]</div>
+                <input v-if="isEditing" type="date" v-model="selectedApp.date_of_birth" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 4px;" />
+                <div v-else style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ formatDate(selectedApp.date_of_birth) ]]</div>
               </div>
             </div>
           </div>
@@ -1130,21 +1182,40 @@
             >
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Loan Amount</div>
-                <div style="font-weight: 700; font-size: 18px; margin-top: 4px; color: var(--accent);">₹[[ (selectedApp.loan_amount || 0).toLocaleString() ]]</div>
+                <input v-if="isEditing" type="number" v-model="selectedApp.loan_amount" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 4px;" />
+                <div v-else style="font-weight: 700; font-size: 18px; margin-top: 4px; color: var(--accent);">₹[[ (selectedApp.loan_amount || 0).toLocaleString() ]]</div>
               </div>
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Status</div>
-                <div style="margin-top: 4px">
+                <div v-if="isEditing" style="margin-top: 4px;">
+                  <div class="inline-select-input" @click="openDropdownPopup('status', ['Draft', 'Under Review', 'Submitted', 'Approved', 'Disbursed', 'Closed'], 'Select Status', (val) => selectedApp.status = val)" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                    <span>[[ selectedApp.status || 'Select Status' ]]</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
+                  </div>
+                </div>
+                <div v-else style="margin-top: 4px">
                   <span class="status-pill" :style="{ background: getStatusColor(selectedApp.status) + '15', color: getStatusColor(selectedApp.status), padding: '4px 10px', fontSize: '11px' }">[[ selectedApp.status ]]</span>
                 </div>
               </div>
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Loan Type</div>
-                <div style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.loan_type ]]</div>
+                <div v-if="isEditing" style="margin-top: 4px;">
+                  <div class="inline-select-input" @click="openDropdownPopup('loan_type', loanTypes, 'Select Loan Type', (val) => selectedApp.loan_type = val)" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                    <span>[[ selectedApp.loan_type || 'Select Loan Type' ]]</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
+                  </div>
+                </div>
+                <div v-else style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.loan_type ]]</div>
               </div>
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Branch Code</div>
-                <div style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.branch_code ]]</div>
+                <div v-if="isEditing" style="margin-top: 4px;">
+                  <div class="inline-select-input" @click="openDropdownPopup('branch_code', branches, 'Select Branch', (val) => selectedApp.branch_code = val)" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                    <span>[[ selectedApp.branch_code || 'Select Branch' ]]</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
+                  </div>
+                </div>
+                <div v-else style="font-weight: 600; font-size: 15px; margin-top: 4px">[[ selectedApp.branch_code ]]</div>
               </div>
             </div>
           </div>
@@ -2705,6 +2776,7 @@
           $delimiters: ["[[", "]]"],
           currentView: "applications",
           currentSection: "info",
+          isEditing: false,
           isMobile: window.innerWidth < 768,
           previewUrl: null,
           viewMode: "card",
@@ -2888,6 +2960,7 @@
               const res = await response.json();
               if (res.message) {
                 this.selectedApp = res.message;
+                this.isEditing = false;
                 this.currentSection = "info";
                 this.currentView = "details";
                 setTimeout(() => lucide.createIcons(), 50);
@@ -2954,15 +3027,15 @@
           },
 
           // Custom dropdown popup methods
-          openDropdownPopup(field, options, title) {
+          openDropdownPopup(field, options, title, callback = null) {
             this.showDropdownPopup = true;
             this.dropdownPopupTitle = title;
             this.dropdownPopupOptions = options.map((opt) => opt.name || opt);
             this.dropdownPopupSearchQuery = "";
-            this.dropdownPopupSelected = this.newApp[field] || "";
-            this.dropdownPopupCallback = (value) => {
+            this.dropdownPopupSelected = callback ? (this.selectedApp[field] || "") : (this.newApp[field] || "");
+            this.dropdownPopupCallback = callback || ((value) => {
               this.newApp[field] = value;
-            };
+            });
             setTimeout(() => lucide.createIcons(), 50);
           },
 
@@ -3120,6 +3193,63 @@
             doc.verified_by = user.name;
             this.showUserDropdown = false;
             this.activeUserDropdownIdx = -1;
+          },
+
+          async updateApplication() {
+            this.saving = true;
+            try {
+              // Get CSRF token from cookie
+              const csrfToken = await this.ensureCsrfToken();
+              const headers = {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              };
+              if (csrfToken) {
+                headers["X-Frappe-CSRF-Token"] = csrfToken;
+              }
+
+              const response = await fetch(
+                "/api/method/sahayog.api.loan_application.update_loan_application",
+                {
+                  method: "POST",
+                  headers: headers,
+                  body: JSON.stringify({
+                    name: this.selectedApp.name,
+                    ...this.selectedApp
+                  }),
+                  credentials: "include",
+                },
+              );
+              const res = await response.json();
+              if (res.message && res.message.status === "success") {
+                frappe.show_alert({
+                  message: "Loan Application updated successfully",
+                  indicator: "green",
+                });
+                this.isEditing = false;
+                this.viewDetails(this.selectedApp.name);
+              } else if (res.exc || res._server_messages) {
+                var errorMsg = "Error updating application";
+                if (res._server_messages) {
+                  try {
+                    var msgs = JSON.parse(res._server_messages);
+                    errorMsg = msgs[0].message || errorMsg;
+                  } catch (e) {}
+                }
+                frappe.show_alert({
+                  message: errorMsg,
+                  indicator: "red",
+                });
+              }
+            } catch (e) {
+              console.error(e);
+              frappe.show_alert({
+                message: "Error updating application: " + e.message,
+                indicator: "red",
+              });
+            } finally {
+              this.saving = false;
+            }
           },
 
           async submitNewApplication() {
