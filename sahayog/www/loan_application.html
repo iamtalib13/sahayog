@@ -1763,36 +1763,73 @@
                 gap: 1rem;
               "
             >
-              <button
-                type="button"
-                @click="setView('applications')"
-                style="
-                  padding: 0.6rem 1.5rem;
-                  background: #f1f5f9;
-                  color: var(--text-main);
-                  border: none;
-                  border-radius: 8px;
-                  font-weight: 600;
-                  cursor: pointer;
-                "
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                :disabled="saving"
-                style="
-                  padding: 0.6rem 2rem;
-                  background: var(--accent);
-                  color: white;
-                  border: none;
-                  border-radius: 8px;
-                  font-weight: 600;
-                  cursor: pointer;
-                "
-              >
-                [[ saving ? 'Creating...' : 'Create Application' ]]
-              </button>
+              <!-- Info Section Buttons -->
+              <template v-if="currentSection === 'info'">
+                <button
+                  type="button"
+                  @click="setView('applications')"
+                  style="
+                    padding: 0.6rem 1.5rem;
+                    background: #f1f5f9;
+                    color: var(--text-main);
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                  "
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  @click="setSection('kyc')"
+                  style="
+                    padding: 0.6rem 2rem;
+                    background: var(--accent);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                  "
+                >
+                  Next
+                </button>
+              </template>
+
+              <!-- KYC Section Buttons -->
+              <template v-if="currentSection === 'kyc'">
+                <button
+                  type="button"
+                  @click="setSection('info')"
+                  style="
+                    padding: 0.6rem 1.5rem;
+                    background: #f1f5f9;
+                    color: var(--text-main);
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                  "
+                >
+                  Previous
+                </button>
+                <button
+                  type="submit"
+                  :disabled="saving"
+                  style="
+                    padding: 0.6rem 2rem;
+                    background: var(--accent);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                  "
+                >
+                  [[ saving ? 'Creating...' : 'Create Application' ]]
+                </button>
+              </template>
             </div>
           </form>
         </div>
