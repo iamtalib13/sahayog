@@ -32,8 +32,8 @@ frappe.ui.form.on("Loan Application", {
     if (frm.doc.status !== "Draft" && frm.doc.docstatus === 0) {
       // frm.set_df_property("customer_name", "read_only", 1);
       // frm.set_df_property("mobile_number", "read_only", 1);
-      frm.set_df_property("loan_amount", "read_only", 1);
-      frm.set_df_property("loan_type", "read_only", 1);
+      // frm.set_df_property("loan_amount", "read_only", 1);
+      // frm.set_df_property("loan_type", "read_only", 1);
     }
 
     // 3. UI Styling for Status
