@@ -1240,8 +1240,8 @@
                   </td>
                   <td style="padding: 0.75rem 1rem">
                     <a
-                      v-if="doc.attachment"
-                      :href="doc.attachment"
+                      v-if="doc.document_file"
+                      :href="doc.document_file"
                       target="_blank"
                       style="color: var(--accent); font-weight: 600"
                       >View</a
@@ -1442,6 +1442,56 @@
                     font-weight: 600;
                     color: var(--text-main);
                   "
+                  >Loan Amount *</label
+                >
+                <input
+                  type="number"
+                  v-model="newApp.loan_amount"
+                  required
+                  min="0"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    font-size: 13px;
+                    margin-top: 4px;
+                  "
+                  placeholder="Enter Amount"
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
+                  >Tenure (Months) *</label
+                >
+                <input
+                  type="number"
+                  v-model="newApp.tenure_months"
+                  required
+                  min="1"
+                  style="
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid var(--sidebar-border);
+                    border-radius: 6px;
+                    font-size: 13px;
+                    margin-top: 4px;
+                  "
+                  placeholder="e.g. 12"
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-main);
+                  "
                   >Status</label
                 >
                 <div
@@ -1530,12 +1580,13 @@
                       width: 100%;
                       border-collapse: collapse;
                       font-size: 0.85rem;
-                      min-width: 800px;
+                      min-width: 900px;
                     "
                   >
                     <tr style="background: #f8fafc; text-align: left">
                       <th style="padding: 0.75rem 1rem; width: 50px">#</th>
-                      <th style="padding: 0.75rem 1rem">Document</th>
+                      <th style="padding: 0.75rem 1rem">Document Type</th>
+                      <th style="padding: 0.75rem 1rem">Document Number</th>
                       <th style="padding: 0.75rem 1rem">Attach Document</th>
                       <th style="padding: 0.75rem 1rem">Status</th>
                       <th style="padding: 0.75rem 1rem">Verified By</th>
@@ -1565,12 +1616,28 @@
                             border-radius: 4px;
                           "
                         >
-                          <span>[[ doc.document || 'Select' ]]</span>
+                          <span>[[ doc.document_type || 'Select' ]]</span>
                           <i
                             data-lucide="chevron-down"
                             style="width: 12px; height: 12px"
                           ></i>
                         </div>
+                      </td>
+                      <td style="padding: 0.75rem 1rem">
+                        <input
+                          type="text"
+                          v-model="doc.document_number"
+                          required
+                          style="
+                            width: 100%;
+                            padding: 0.35rem;
+                            border: 1px solid var(--sidebar-border);
+                            border-radius: 4px;
+                            font-size: 12px;
+                            background: white;
+                          "
+                          placeholder="Doc Number"
+                        />
                       </td>
                       <td style="padding: 0.75rem 1rem">
                         <input
@@ -2400,7 +2467,7 @@
                 class="grid-heading-row"
                 style="
                   display: grid;
-                  grid-template-columns: 50px 1fr 1.5fr 100px 1fr 50px;
+                  grid-template-columns: 50px 1.2fr 1fr 1.5fr 100px 1fr 50px;
                   gap: 0;
                   background: #f8fafc;
                   border-bottom: 1px solid var(--sidebar-border);
@@ -2428,7 +2495,19 @@
                     border-right: 1px solid var(--sidebar-border);
                   "
                 >
-                  Document
+                  Document Type
+                </div>
+                <div
+                  style="
+                    padding: 0.5rem;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--text-muted);
+                    text-align: left;
+                    border-right: 1px solid var(--sidebar-border);
+                  "
+                >
+                  Doc Number
                 </div>
                 <div
                   style="
@@ -2485,7 +2564,7 @@
                   class="grid-row"
                   style="
                     display: grid;
-                    grid-template-columns: 50px 1fr 1.5fr 100px 1fr 50px;
+                    grid-template-columns: 50px 1.2fr 1fr 1.5fr 100px 1fr 50px;
                     gap: 0;
                     border-bottom: 1px solid #f1f5f9;
                     background: white;
@@ -2528,9 +2607,25 @@
                         border-radius: 4px;
                       "
                     >
-                      <span>[[ doc.document || 'Select' ]]</span>
+                      <span>[[ doc.document_type || 'Select' ]]</span>
                       <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
                     </div>
+                  </div>
+                  <div style="padding: 0.5rem; border-right: 1px solid #f1f5f9">
+                    <input
+                      type="text"
+                      v-model="doc.document_number"
+                      required
+                      style="
+                        width: 100%;
+                        padding: 0.35rem;
+                        border: 1px solid var(--sidebar-border);
+                        border-radius: 4px;
+                        font-size: 12px;
+                        background: white;
+                      "
+                      placeholder="Number"
+                    />
                   </div>
                   <div style="padding: 0.5rem; border-right: 1px solid #f1f5f9">
                     <input
@@ -2868,6 +2963,8 @@
             date_of_birth: "",
             cibil_score: "",
             status: "Draft",
+            loan_amount: "",
+            tenure_months: "",
             kyc_documents: [],
           },
 
@@ -3027,6 +3124,8 @@
               mobile_number: "",
               date_of_birth: "",
               cibil_score: "",
+              loan_amount: "",
+              tenure_months: "",
               status: "Draft",
               kyc_documents: [],
             };
@@ -3091,11 +3190,11 @@
             this.dropdownPopupOptions = options;
             this.dropdownPopupSearchQuery = "";
             this.dropdownPopupSelected =
-              this.newApp.kyc_documents[idx]?.document || "";
+              this.newApp.kyc_documents[idx]?.document_type || "";
             this.activeDocDropdownIdx = idx;
             this.dropdownPopupCallback = (value) => {
               if (this.newApp.kyc_documents[idx]) {
-                this.newApp.kyc_documents[idx].document = value;
+                this.newApp.kyc_documents[idx].document_type = value;
               }
             };
             setTimeout(() => lucide.createIcons(), 50);
@@ -3148,8 +3247,9 @@
               this.newApp.kyc_documents = [];
             }
             this.newApp.kyc_documents.push({
-              document: "",
-              attach_document: "",
+              document_type: "",
+              document_number: "",
+              document_file: "",
               file_name: "",
               file: null,
               status: "Pending",
@@ -3254,14 +3354,27 @@
                 return;
               }
 
+              // Validate each KYC row
+              for (let i = 0; i < this.newApp.kyc_documents.length; i++) {
+                const doc = this.newApp.kyc_documents[i];
+                if (!doc.document_type || !doc.document_number) {
+                  frappe.show_alert({
+                    message: `Row ${i + 1}: KYC Type and Number are mandatory`,
+                    indicator: "red",
+                  });
+                  this.saving = false;
+                  return;
+                }
+              }
+
               // Upload any pending files
               for (let i = 0; i < this.newApp.kyc_documents.length; i++) {
                 const doc = this.newApp.kyc_documents[i];
-                if (doc.file && !doc.attach_document) {
+                if (doc.file && !doc.document_file) {
                   try {
                     const fileUrl = await this.uploadFile(doc.file);
                     if (fileUrl) {
-                      doc.attach_document = fileUrl;
+                      doc.document_file = fileUrl;
                     }
                   } catch (e) {
                     console.error("File upload error:", e);
