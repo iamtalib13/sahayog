@@ -931,7 +931,7 @@
         "
       >
         <h3 style="margin: 0; font-size: 1.1rem">
-          [[ currentView === 'dashboard' ? 'Dashboard' : (currentView === 'details' ? 'Loan Applications :' + selectedApp.name : 'Loan Applications') ]]
+          [[ currentView === 'dashboard' ? 'Dashboard' : (currentView === 'details' ? 'Loan Applications :' + selectedApp.name : (currentView === 'create' ? 'New Loan Application' : 'Loan Applications')) ]]
         </h3>
         <div style="display: flex; align-items: center; gap: 0.75rem">
           <div
@@ -1019,7 +1019,7 @@
             </button>
           </div>
           <button
-            v-if="currentView === 'details'"
+            v-if="currentView === 'details' || currentView === 'create'"
             @click="setView('applications')"
             style="
               background: #f1f5f9;
@@ -1234,32 +1234,6 @@
 
       <!-- New Loan Application View (In-page) -->
       <div v-if="currentView === 'create'" v-cloak style="padding: 1.5rem">
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 1.5rem;
-          "
-        >
-          <button
-            @click="setView('applications')"
-            style="
-              background: #f1f5f9;
-              border: none;
-              padding: 0.5rem;
-              border-radius: 8px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            "
-          >
-            <i data-lucide="arrow-left" style="width: 20px; height: 20px"></i>
-          </button>
-          <h3 style="margin: 0">New Loan Application</h3>
-        </div>
-
         <div
           style="
             background: white;
