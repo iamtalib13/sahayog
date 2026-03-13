@@ -3075,7 +3075,7 @@ if (this.assignedByMap?.[item.name]) {
   //     .css({ "max-width": "800px", width: "95%" });
   // }
 
-  createLead() {
+createLead() {
     let productsData = [];
     let existingContact = null;
 
@@ -3090,7 +3090,12 @@ if (this.assignedByMap?.[item.name]) {
         {
           fieldname: "customer_info_html",
           fieldtype: "HTML",
-          options: `<div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>`,
+          options: `
+            <div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>
+            <div id="duplicate-warning-banner" style="display: none; padding: 10px; margin-bottom: 16px; border-radius: 6px; background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; font-size: 13px;">
+                <strong>⚠️ Warning:</strong> Duplicate lead (Same Product & Amount) detected for today.
+            </div>
+          `,
         },
         {
           fieldname: "mobile_no",
@@ -3099,31 +3104,23 @@ if (this.assignedByMap?.[item.name]) {
           reqd: 1,
           onchange: async function () {
             const phone = this.value;
-            
-            // ✅ FIX: Reset logic (Jaise hi user number change ya delete kare)
             $("#customer-info-banner").hide();
             dialog.set_df_property("first_name", "read_only", 0);
-            
-            // Agar input khali hai ya 10 digit se kam hai, toh purana name reset karo
             if (!phone || phone.length < 10) {
                 dialog.set_value("first_name", "");
                 existingContact = null;
                 if (!phone) return;
             }
-
             if (phone.length === 10) {
               if (!validateIndianPhone(phone)) {
                 frappe.show_alert({ message: __("Invalid mobile number (6-9)"), indicator: "orange" }, 3);
-                dialog.set_value("first_name", ""); // Clear name on invalid phone
+                dialog.set_value("first_name", "");
                 return;
               }
             } else if (phone.length > 10) {
               frappe.show_alert({ message: __("Mobile number cannot exceed 10 digits"), indicator: "red" }, 3);
               return;
-            } else { 
-                return; 
-            }
-
+            } else { return; }
             try {
               const contactRes = await frappe.call({
                 method: "frappe.client.get_list",
@@ -3134,7 +3131,6 @@ if (this.assignedByMap?.[item.name]) {
                   limit: 1,
                 },
               });
-              
               if (contactRes.message && contactRes.message.length > 0) {
                 existingContact = contactRes.message[0];
                 $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
@@ -3142,17 +3138,25 @@ if (this.assignedByMap?.[item.name]) {
                 dialog.set_value("first_name", existingContact.full_name);
                 dialog.set_df_property("first_name", "read_only", 1);
               } else {
-                // ✅ FIX: Agar naya number hai jo database me nahi hai
                 existingContact = null;
-                dialog.set_value("first_name", ""); // Purana naam hatao
+                dialog.set_value("first_name", "");
                 dialog.set_df_property("first_name", "read_only", 0);
               }
+              // Number change hone par warning check refresh karein
+              checkDuplicateWarning();
             } catch (error) { console.error(error); }
           },
         },
         { fieldname: "first_name", fieldtype: "Data", label: "Full Name", reqd: 1 },
         { fieldname: "column_break_1", fieldtype: "Column Break" },
-        { fieldname: "source", fieldtype: "Link", label: "Source", options: "Lead Source", reqd: 1 },
+        { 
+            fieldname: "source", 
+            fieldtype: "Link", 
+            label: "Source", 
+            options: "Lead Source", 
+            reqd: 1,
+            onchange: () => checkDuplicateWarning() 
+        },
         {
           fieldname: "status",
           fieldtype: "Select",
@@ -3183,11 +3187,14 @@ if (this.assignedByMap?.[item.name]) {
           frappe.msgprint({ title: __("Invalid Phone Number"), indicator: "red", message: __("Please enter a valid 10-digit mobile number.") });
           return;
         }
-
         if (productsData.length === 0) {
           frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
           return;
         }
+
+        // Final Validation on Save
+        const isStillDuplicate = await checkDuplicateWarning(true);
+        if (isStillDuplicate) return;
 
         try {
           const leadDoc = {
@@ -3199,39 +3206,19 @@ if (this.assignedByMap?.[item.name]) {
             mobile_no: values.mobile_no,
             custom_product_table: productsData,
           };
-
           const response = await frappe.call({
             method: "frappe.client.insert",
             args: { doc: leadDoc },
             freeze: true,
             freeze_message: "Creating Lead..."
           });
-
-          const leadName = response.message.name;
-
-          if (values.status === "Follow Up" && values.scheduled_time) {
-            await frappe.call({
-              method: "frappe.client.insert",
-              args: {
-                doc: {
-                  doctype: "Appointment",
-                  appointment_with: "Lead",
-                  party: leadName,
-                  scheduled_time: values.scheduled_time,
-                  customer_name: values.first_name,
-                  contact_number: values.mobile_no,
-                  customer_email: `${leadName}@lead.local`,
-                  status: "Open",
-                },
-              },
-            });
+          if (!response.exc) {
+              frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
+              dialog.hide();
+              this.invalidateCache("lead");
+              this.invalidateCache("appointment");
+              this.refresh(); 
           }
-
-          frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
-          dialog.hide();
-          this.invalidateCache("lead");
-          this.invalidateCache("appointment");
-          this.refresh(); 
         } catch (error) {
           console.error(error);
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
@@ -3239,27 +3226,66 @@ if (this.assignedByMap?.[item.name]) {
       },
     });
 
-    // --- Product Table Rendering (Unchanged) ---
+    // --- 🛡️ Global Warning Logic ---
+    const checkDuplicateWarning = async (isSave = false) => {
+        const mobile = dialog.get_value("mobile_no");
+        const source = dialog.get_value("source");
+        const warningBanner = $("#duplicate-warning-banner");
+
+        if (!mobile || !source || productsData.length === 0) {
+            warningBanner.hide();
+            return false;
+        }
+
+        const today = frappe.datetime.get_today();
+        const res = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+                doctype: "Lead",
+                filters: { mobile_no: mobile, source: source, creation: [">=", today + " 00:00:00"] },
+                fields: ["name"]
+            }
+        });
+
+        let duplicateFound = false;
+        if (res.message && res.message.length > 0) {
+            for (let lead of res.message) {
+                const fullLead = await frappe.db.get_doc("Lead", lead.name);
+                const existingPairs = (fullLead.custom_product_table || []).map(p => `${p.product}|${p.product_amount}`);
+                duplicateFound = productsData.some(p => existingPairs.includes(`${p.product}|${p.product_amount}`));
+                if (duplicateFound) break;
+            }
+        }
+
+        if (duplicateFound) {
+            warningBanner.show();
+            if (isSave) {
+                frappe.msgprint({ title: __("Duplicate Detected"), indicator: "red", message: __("Lead block: Same Product & Amount already exists for today.") });
+            }
+            return true;
+        } else {
+            warningBanner.hide();
+            return false;
+        }
+    };
+
     const renderProductTable = () => {
-      const html = `
-        <style>
-            .lead-product-table table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; }
-            .lead-product-table th { background: #f9fafb; padding: 10px; border: 1px solid #d1d5db; font-size: 13px; text-align: left; }
-            .lead-product-table td { padding: 8px; border: 1px solid #d1d5db; }
-            .lead-product-input { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; }
-            .lead-product-add-btn { margin-top: 10px; background: #236867; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-            .lead-product-del-btn { background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
-        </style>
-        <div class="lead-product-table">
+      const html = `<div class="lead-product-table">
+            <style>
+                .lead-product-table table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; }
+                .lead-product-table th { background: #f9fafb; padding: 10px; border: 1px solid #d1d5db; font-size: 13px; text-align: left; }
+                .lead-product-table td { padding: 8px; border: 1px solid #d1d5db; }
+                .lead-product-input { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; }
+                .lead-product-add-btn { margin-top: 10px; background: #236867; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+                .lead-product-del-btn { background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+            </style>
             <table>
                 <thead><tr><th>Product</th><th style="width:30%">Amount (₹)</th><th style="text-align:center; width:15%">Action</th></tr></thead>
                 <tbody id="lead-product-rows"></tbody>
             </table>
             <button class="lead-product-add-btn" id="lead-add-product-btn">+ Add Product</button>
         </div>`;
-
       dialog.fields_dict.product_html.$wrapper.html(html);
-
       const renderRows = () => {
         const tbody = dialog.$wrapper.find("#lead-product-rows").empty();
         if (productsData.length === 0) {
@@ -3272,7 +3298,6 @@ if (this.assignedByMap?.[item.name]) {
                     <td><input type="number" class="lead-product-input product-amount" data-index="${index}" value="${row.product_amount || ""}"></td>
                     <td style="text-align:center"><button class="lead-product-del-btn" data-index="${index}">🗑</button></td>
                 </tr>`).appendTo(tbody);
-
           const productField = frappe.ui.form.make_control({
             df: {
               fieldtype: "Link",
@@ -3281,24 +3306,21 @@ if (this.assignedByMap?.[item.name]) {
               onchange: function () {
                 const val = this.get_value();
                 productsData[index].product = val;
-                if (val) {
-                  frappe.db.get_value("Product", val, "product_name", (r) => {
-                    if (r.product_name) productsData[index].product_name = r.product_name;
-                  });
-                }
+                checkDuplicateWarning(); // Real-time check
               },
             },
             parent: tr.find(`.product-link-wrapper-${index}`),
             render_input: true,
           });
           if (row.product) productField.set_value(row.product);
-
           tr.find(".product-amount").on("change", function () {
             productsData[index].product_amount = parseFloat($(this).val()) || 0;
+            checkDuplicateWarning(); // Real-time check
           });
           tr.find(".lead-product-del-btn").on("click", function () {
             productsData.splice(index, 1);
             renderRows();
+            checkDuplicateWarning();
           });
         });
       };
@@ -3308,22 +3330,17 @@ if (this.assignedByMap?.[item.name]) {
       });
       renderRows();
     };
-    // ✅ Naya Source create karne ki restriction aur Active filter
+
     const sourceField = dialog.get_field("source");
-    sourceField.df.only_select = 1; // User naya source add nahi kar payega
-    // ✅ ONLY ADD THIS PART BEFORE dialog.show()
-    dialog.get_field("source").get_query = function() {
-        return {
-            filters: { "custom_active": 1 }
-        };
-    };
+    sourceField.df.only_select = 1; 
+    sourceField.get_query = function() { return { filters: { "custom_active": 1 } }; };
 
     dialog.show();
     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
     appt.find("input").attr("placeholder", "DD/MM/YYYY, HH:MM:SS");
     renderProductTable();
     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
-}
+  }
   // createAppointment() {
   //   const dialog = new frappe.ui.Dialog({
   //     title: "Create New Appointment",
