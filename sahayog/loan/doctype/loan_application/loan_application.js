@@ -1,8 +1,4 @@
 frappe.ui.form.on("Loan Application", {
-  setup: function (frm) {
-    // Standard cleanup
-  },
-
   refresh: function (frm) {
     // 1. Workflow Button Logic
     if (frm.doc.docstatus === 0) {
@@ -32,12 +28,12 @@ frappe.ui.form.on("Loan Application", {
       }
     }
 
-    // 2. Dynamic Field Restrictions
+    // 2. Field Restrictions based on Stage
     if (frm.doc.status !== "Draft" && frm.doc.docstatus === 0) {
-      //frm.set_df_property("customer_name", "read_only", 1);
-      //frm.set_df_property("mobile_number", "read_only", 1);
-      //frm.set_df_property("loan_amount", "read_only", 1);
-      //frm.set_df_property("loan_type", "read_only", 1);
+      // frm.set_df_property("customer_name", "read_only", 1);
+      // frm.set_df_property("mobile_number", "read_only", 1);
+      frm.set_df_property("loan_amount", "read_only", 1);
+      frm.set_df_property("loan_type", "read_only", 1);
     }
 
     // 3. UI Styling for Status
@@ -119,7 +115,17 @@ frappe.ui.form.on("Loan Application", {
   },
 
   validate: function (frm) {
-    // Logic sanity before save
+    // Skip validations if in Draft state
+    if (frm.doc.status === "Draft") return;
+
+    if (frm.doc.customer_name && /[^a-zA-Z\s]/.test(frm.doc.customer_name)) {
+      frappe.throw(
+        __("Customer Name should only contain alphabets and spaces."),
+      );
+    }
+    if (frm.doc.mobile_number && !/^\d{10}$/.test(frm.doc.mobile_number)) {
+      frappe.throw(__("Mobile Number must be exactly 10 digits."));
+    }
     if (flt(frm.doc.loan_amount) > flt(frm.doc.eligible_loan_amount) + 0.01) {
       frappe.msgprint({
         title: __("Over Limit"),
