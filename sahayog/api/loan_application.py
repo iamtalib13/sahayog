@@ -60,3 +60,13 @@ def create_loan_application(**kwargs):
         frappe.log_error(f"Error creating loan application: {str(e)}")
         frappe.throw(str(e))
         return None
+
+
+@frappe.whitelist()
+def get_loan_application(name):
+    """Get single loan application details"""
+    try:
+        return frappe.get_doc("Loan Application", name)
+    except Exception as e:
+        frappe.log_error(f"Error getting loan application {name}: {str(e)}")
+        return None
