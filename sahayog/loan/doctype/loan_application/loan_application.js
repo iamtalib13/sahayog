@@ -43,6 +43,35 @@ frappe.ui.form.on("Loan Application", {
       frm.page.set_indicator("Rejected", "red");
     else if (frm.doc.status === "Under Review")
       frm.page.set_indicator("Under Review", "orange");
+
+    // Mobile Number Restriction - Only Numbers (10 digits)
+    if (frm.fields_dict.mobile_number && frm.fields_dict.mobile_number.$input) {
+      let mobile_input = frm.fields_dict.mobile_number.$input;
+
+      mobile_input.off("keypress paste");
+
+      mobile_input.on("keypress", function (e) {
+        // Only allow numbers (48-57 are keycodes for 0-9)
+        if (e.which < 48 || e.which > 57) {
+          e.preventDefault();
+          return false;
+        }
+
+        // Limit to 10 digits
+        if ($(this).val().length >= 10) {
+          e.preventDefault();
+          return false;
+        }
+      });
+
+      mobile_input.on("paste", function () {
+        setTimeout(() => {
+          let value = $(this).val().replace(/\D/g, "").slice(0, 10);
+          $(this).val(value);
+          frm.set_value("mobile_number", value);
+        }, 100);
+      });
+    }
   },
 
   loan_type: function (frm) {
@@ -62,6 +91,14 @@ frappe.ui.form.on("Loan Application", {
   gold_rate_per_gram: function (frm) {
     frm.trigger("recalculate_all");
   },
+  
+  date_of_birth: function(frm) {
+    if (frm.doc.date_of_birth && frappe.datetime.get_today() < frm.doc.date_of_birth) {
+      frappe.msgprint(__("Date of Birth cannot be in the future."));
+      frm.set_value("date_of_birth", "");
+    }
+  },
+
   tenure_months: function (frm) {
     frm.trigger("recalculate_all");
   },
