@@ -61,6 +61,28 @@ def create_loan_application(**kwargs):
 
 
 @frappe.whitelist()
+def update_loan_application(name, **kwargs):
+    """Update an existing loan application"""
+    try:
+        doc = frappe.get_doc("Loan Application", name)
+        
+        # Only allow updates if in Draft status (optional, but good practice if requested)
+        if doc.status != "Draft":
+            frappe.throw("Only applications in Draft status can be updated.")
+            
+        doc.update(kwargs)
+        doc.save()
+        frappe.db.commit()
+        
+        return {"name": doc.name, "status": "success"}
+
+    except Exception as e:
+        frappe.log_error(f"Error updating loan application {name}: {str(e)}")
+        frappe.throw(str(e))
+        return None
+
+
+@frappe.whitelist()
 def get_loan_application(name):
     """Get single loan application details"""
     try:
