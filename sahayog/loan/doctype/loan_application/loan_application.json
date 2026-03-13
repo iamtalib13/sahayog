@@ -11,9 +11,10 @@
   "customer_details_section",
   "customer_name",
   "mobile_number",
+  "date_of_birth",
   "column_break_1",
   "cif_id",
-  "date_of_birth",
+  "branch_code",
   "has_co_applicant",
   "kyc_section",
   "kyc_documents",
@@ -67,7 +68,6 @@
   "ops_section",
   "status",
   "case_id",
-  "branch_code",
   "column_break_7",
   "packet_number",
   "packet_weight",
@@ -116,7 +116,8 @@
    "fieldname": "date_of_birth",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Date of Birth"
+   "label": "Date of Birth",
+   "reqd": 1
   },
   {
    "default": "0",
@@ -153,7 +154,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Loan Product",
-   "options": "Loan Type"
+   "options": "Loan Type",
+   "reqd": 1
   },
   {
    "description": "Type of collateral provided (e.g., Gold).",
@@ -481,7 +483,7 @@
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-12 17:00:00.000000",
+ "modified": "2026-03-13 12:20:51.914437",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
