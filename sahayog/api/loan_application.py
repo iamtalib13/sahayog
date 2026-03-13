@@ -3,7 +3,7 @@ import frappe
 
 
 @frappe.whitelist()
-def get_loan_applications(fields=None, order_by="creation desc", limit_page_length=100):
+def get_loan_applications(fields=None, order_by="creation desc", limit_page_length=7):
     """Get list of loan applications with specified fields"""
     try:
         # Parse fields if provided as string
