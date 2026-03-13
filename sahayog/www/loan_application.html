@@ -1070,7 +1070,7 @@
             style="padding: 0; gap: 0.5rem"
           >
             <div
-              v-for="app in applications.slice(0, 6)"
+              v-for="app in applications.slice(0, 7)"
               class="loan-card"
               @click="viewDetails(app.name)"
               style="cursor: pointer"
@@ -1172,12 +1172,12 @@
                 <th style="padding: 1rem">Customer</th>
                 <th style="padding: 1rem">Amount</th>
                 <th style="padding: 1rem">Status</th>
-              </tr>
-              <tr
-                v-for="app in applications.slice(0, 6)"
+                </tr>
+                <tr
+                v-for="app in applications.slice(0, 7)"
                 style="border-bottom: 1px solid #f1f5f9; cursor: pointer"
                 @click="viewDetails(app.name)"
-              >
+                >
                 <td
                   style="padding: 1rem; color: var(--accent); font-weight: 600"
                 >
