@@ -1032,7 +1032,7 @@
             </button>
           </div>
           <button
-            v-if="currentView === 'details' || currentView === 'create'"
+            v-if="(currentView === 'details' || currentView === 'create') && !isEditing"
             @click="setView('applications')"
             style="
               background: #f1f5f9;
@@ -1064,7 +1064,7 @@
             [[ saving ? 'Creating...' : 'Create' ]]
           </button>
           <button
-            v-if="currentView !== 'create'"
+            v-if="currentView !== 'create' && !isEditing"
             @click="newApplication"
             style="
               background: var(--accent);
@@ -1239,13 +1239,9 @@
           "
         >
           <h4 style="margin: 0 0 1rem 0">KYC Documents</h4>
-          <div
-            style="
-              border: 1px solid var(--sidebar-border);
-              border-radius: 8px;
-              overflow: hidden;
-            "
-          >
+          
+          <!-- Desktop Table View -->
+          <div v-if="!isMobile" style="border: 1px solid var(--sidebar-border); border-radius: 8px; overflow: hidden;">
             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
               <tr style="background: #f8fafc; text-align: left">
                 <th style="padding: 0.75rem 1rem">Document Type</th>
@@ -1274,6 +1270,50 @@
                 </td>
               </tr>
             </table>
+          </div>
+          
+          <!-- Mobile Vertical Card View -->
+          <div v-if="isMobile">
+            <div
+              v-for="(doc, idx) in (selectedApp.kyc_documents || [])"
+              :key="idx"
+              style="
+                background: #f8fafc;
+                border: 1px solid var(--sidebar-border);
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+              "
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span style="font-weight: 700; font-size: 13px; color: var(--text-main);">KYC Document [[ idx + 1 ]]</span>
+              </div>
+              
+              <div style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Type</label>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_type ]]</div>
+              </div>
+              
+              <div style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Number</label>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_number ]]</div>
+              </div>
+              
+              <div style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Status</label>
+                <span class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b'), padding: '6px 12px', fontSize: '12px', fontWeight: '700' }">[[ doc.status ]]</span>
+              </div>
+              
+              <div v-if="doc.document_file" style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Attachment</label>
+                <button
+                  @click="previewUrl = (previewUrl === doc.document_file ? null : doc.document_file)"
+                  style="background: none; border: none; padding: 0.5rem 0.75rem; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 13px; background: white; border-radius: 6px; width: 100%; text-align: left;"
+                >
+                  📄 [[ previewUrl === doc.document_file ? 'Hide' : 'View Document' ]]
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Preview Area -->
