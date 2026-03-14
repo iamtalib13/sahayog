@@ -1481,8 +1481,8 @@
                   background: white;
                 "
               >
-                <!-- Grid Table -->
-                <div style="overflow-x: auto">
+                <!-- Desktop Table View -->
+                <div v-if="!isMobile" style="overflow-x: auto">
                   <table
                     style="
                       width: 100%;
@@ -1652,6 +1652,178 @@
                       </td>
                     </tr>
                   </table>
+                </div>
+
+                <!-- Mobile Vertical Card View -->
+                <div v-if="isMobile" style="padding: 0.75rem">
+                  <div
+                    v-for="(doc, idx) in newApp.kyc_documents"
+                    :key="idx"
+                    style="
+                      background: #f8fafc;
+                      border: 1px solid var(--sidebar-border);
+                      border-radius: 8px;
+                      padding: 1rem;
+                      margin-bottom: 0.75rem;
+                    "
+                  >
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                      <span style="font-weight: 700; font-size: 13px; color: var(--text-main);">KYC Document [[ idx + 1 ]]</span>
+                      <button
+                        type="button"
+                        @click="removeKycDocument(idx)"
+                        style="
+                          background: transparent;
+                          color: #ef4444;
+                          border: none;
+                          cursor: pointer;
+                          font-size: 18px;
+                          font-weight: 700;
+                        "
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Type</label>
+                      <div
+                        class="inline-select-input"
+                        @click="openDocDropdownPopup(idx, ['', 'Aadhaar Card', 'PAN Card'], 'Select Document Type')"
+                        style="
+                          padding: 0.5rem 0.75rem;
+                          font-size: 13px;
+                          cursor: pointer;
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          background: white;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                        "
+                      >
+                        <span>[[ doc.document_type || 'Select' ]]</span>
+                        <i
+                          data-lucide="chevron-down"
+                          style="width: 14px; height: 14px"
+                        ></i>
+                      </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Number</label>
+                      <input
+                        type="text"
+                        v-model="doc.document_number"
+                        required
+                        style="
+                          width: 100%;
+                          padding: 0.5rem 0.75rem;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                          font-size: 13px;
+                          background: white;
+                          box-sizing: border-box;
+                        "
+                        placeholder="Enter Document Number"
+                      />
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Attach Document</label>
+                      <input
+                        type="file"
+                        @change="(e) => handleFileUpload(e, idx)"
+                        style="width: 100%; font-size: 12px;"
+                      />
+                      <div
+                        v-if="doc.file_name"
+                        style="
+                          font-size: 11px;
+                          color: var(--text-muted);
+                          margin-top: 4px;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                        "
+                      >
+                        <span>[[ doc.file_name ]]</span>
+                        <button
+                          type="button"
+                          @click="previewUrl = (previewUrl === (doc.local_preview || doc.document_file) ? null : (doc.local_preview || doc.document_file))"
+                          style="background: none; border: none; padding: 0; color: var(--accent); font-size: 11px; font-weight: 700; cursor: pointer;"
+                        >
+                          [[ previewUrl === (doc.local_preview || doc.document_file) ? 'Hide' : 'View' ]]
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Status</label>
+                      <div
+                        class="inline-select-input"
+                        @click="openDocStatusDropdownPopup(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')"
+                        style="
+                          padding: 0.5rem 0.75rem;
+                          font-size: 13px;
+                          cursor: pointer;
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          background: white;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                        "
+                      >
+                        <span>[[ doc.status || 'Status' ]]</span>
+                        <i
+                          data-lucide="chevron-down"
+                          style="width: 14px; height: 14px"
+                        ></i>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Verified By</label>
+                      <input
+                        type="text"
+                        v-model="doc.verified_by"
+                        @focus="(e) => openUserDropdown(e, idx)"
+                        @input="(e) => filterUsers(e, idx)"
+                        @blur="closeUserDropdown()"
+                        style="
+                          width: 100%;
+                          padding: 0.5rem 0.75rem;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                          font-size: 13px;
+                          background: white;
+                          box-sizing: border-box;
+                        "
+                        placeholder="Search User"
+                      />
+                      <div
+                        v-if="showUserDropdown && activeUserDropdownIdx === idx"
+                        class="custom-dropdown"
+                      >
+                        <div
+                          v-for="(u, uIdx) in filteredUsers"
+                          :key="u.name"
+                          @mousedown.prevent="selectUser(u, doc)"
+                          class="custom-dropdown-item"
+                        >
+                          <div style="font-weight: 600">
+                            [[ u.full_name || u.name ]]
+                          </div>
+                          <div
+                            style="font-size: 10px; color: var(--text-muted)"
+                          >
+                            [[ u.name ]]
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
