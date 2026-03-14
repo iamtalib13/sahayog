@@ -648,6 +648,15 @@ document.head.appendChild(style);
                     // LOG FULL RESPONSE FOR DEBUGGING
                     console.log("Finacle Response:", r.message);
 
+                    // 👇 ADD THIS BLOCK TO LOG THE XML 👇
+                    if (r.message && r.message.data) {
+                        r.message.data.forEach(row => {
+                            if (row.request_sent) {
+                                console.log(`"request_sent": ${JSON.stringify(row.request_sent)}`);
+                            }
+                        });
+                    }
+
                     // 3. Handle Response based on Status
                     if (r.message && r.message.status === "SUCCESS") {
                         this.handleSuccess(r.message);
