@@ -1902,6 +1902,7 @@ def download_txt_api(name):     # <--- Renamed
 def download_consolidated_txt_api():
     """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
     from frappe.utils import nowdate, getdate
+    import base64
     
     # 1. Permission Check
     if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
@@ -1917,14 +1918,12 @@ def download_consolidated_txt_api():
         order_by="creation ASC"
     )
     
-    # [FIX] Graceful handling - Show message instead of error
+    # [FIX] Return JSON response instead of msgprint for no data
     if not transactions:
-        frappe.msgprint(
-            msg=f"No verified transactions found for today ({today}).",
-            title="No Data Available",
-            indicator="orange"
-        )
-        return  # Exit gracefully without throwing error
+        return {
+            "status": "no_data",
+            "message": f"No verified transactions found for today ({today})."
+        }
         
     content = []
     
@@ -1976,10 +1975,12 @@ def download_consolidated_txt_api():
 
     final_txt = "\n".join(content)
     
-    # 4. Trigger direct file download
-    frappe.response['filename'] = f"Consolidated_TTUM_{today}.txt"
-    frappe.response['filecontent'] = final_txt
-    frappe.response['type'] = 'download'
+    # 4. Return JSON response with file data
+    return {
+        "status": "success",
+        "filename": f"Consolidated_TTUM_{today}.txt",
+        "filecontent": final_txt
+    }
 
 
 @frappe.whitelist()
@@ -1991,6 +1992,7 @@ def download_consolidated_excel_api():
     from frappe.utils import nowdate
     import csv
     import io
+    import base64
     
     # 1. Permission Check
     if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
@@ -2006,14 +2008,12 @@ def download_consolidated_excel_api():
         order_by="creation ASC"
     )
     
-    # [FIX] Graceful handling - Show message instead of error
+    # [FIX] Return JSON response instead of msgprint for no data
     if not transactions:
-        frappe.msgprint(
-            msg=f"No verified transactions found for today ({today}).",
-            title="No Data Available",
-            indicator="orange"
-        )
-        return  # Exit gracefully without throwing error
+        return {
+            "status": "no_data",
+            "message": f"No verified transactions found for today ({today})."
+        }
         
     output = io.StringIO()
     writer = csv.writer(output)
@@ -2083,11 +2083,16 @@ def download_consolidated_excel_api():
             ]
             writer.writerow(row_data)
                 
-    # 5. Set Response
+    # 5. Return JSON response with base64 encoded file
     output.seek(0)
     csv_content = output.getvalue()
     output.close()
     
-    frappe.response['filename'] = f"Consolidated_Report_{today}.csv"
-    frappe.response['filecontent'] = csv_content
-    frappe.response['type'] = 'binary'
+    # Encode to base64 for safe JSON transport
+    file_data = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
+    
+    return {
+        "status": "success",
+        "filename": f"Consolidated_Report_{today}.csv",
+        "filecontent": file_data
+    }
