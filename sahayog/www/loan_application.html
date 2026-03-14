@@ -904,8 +904,8 @@
           <span class="nav-label">Applications</span>
         </div>
 
-        <!-- Section Navigation for Details/Create -->
-        <div v-if="currentView === 'details' || currentView === 'create'" style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px;">
+        <!-- Section Navigation for Details -->
+        <div v-if="currentView === 'details'" style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px;">
           <div
             class="nav-item"
             :class="{ active: currentSection === 'info' }"
@@ -1032,7 +1032,7 @@
             </button>
           </div>
           <button
-            v-if="(currentView === 'details' || currentView === 'create') && (!isMobile || !isEditing)"
+            v-if="currentView === 'details' || currentView === 'create'"
             @click="setView('applications')"
             style="
               background: #f1f5f9;
@@ -1046,6 +1046,38 @@
             "
           >
             Back
+          </button>
+          <button
+            v-if="currentView === 'create'"
+            @click="submitNewApplication"
+            style="
+              background: var(--accent);
+              color: white;
+              border: none;
+              padding: 0.5rem 1rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.85rem;
+            "
+          >
+            [[ saving ? 'Creating...' : 'Create' ]]
+          </button>
+          <button
+            v-if="currentView !== 'create'"
+            @click="newApplication"
+            style="
+              background: var(--accent);
+              color: white;
+              border: none;
+              padding: 0.5rem 1rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.85rem;
+            "
+          >
+            +New
           </button>
           <button
             v-if="currentView === 'details' && selectedApp && selectedApp.status === 'Draft' && !isEditing"
@@ -1082,7 +1114,6 @@
           <button
             v-if="currentView === 'details' && isEditing"
             @click="updateApplication"
-            :disabled="saving"
             style="
               background: #10b981;
               color: white;
@@ -1095,22 +1126,6 @@
             "
           >
             [[ saving ? 'Saving...' : 'Save Changes' ]]
-          </button>
-          <button
-            v-if="!isMobile || !isEditing"
-            @click="newApplication"
-            style="
-              background: var(--accent);
-              color: white;
-              border: none;
-              padding: 0.5rem 1rem;
-              border-radius: 6px;
-              font-weight: 600;
-              cursor: pointer;
-              font-size: 0.85rem;
-            "
-          >
-            +New
           </button>
         </div>
       </header>
@@ -1286,8 +1301,8 @@
           "
         >
           <form @submit.prevent="submitNewApplication">
-            <!-- Info Section (Desktop Tab or Mobile All) -->
-            <div v-if="currentSection === 'info' || isMobile">
+            <!-- Info Section -->
+            <div>
               <!-- Customer Info Grid -->
               <h4 style="margin: 0 0 1.25rem 0; font-size: 14px; font-weight: 700; color: var(--text-main);">Customer Info</h4>
               <div
@@ -1358,9 +1373,8 @@
               </div>
             </div>
 
-            <!-- KYC Section (Desktop Tab or Mobile All) -->
+            <!-- KYC Section -->
             <div
-              v-if="currentSection === 'kyc' || isMobile"
               style="
                 margin-top: 0;
                 padding-top: 1.5rem;
@@ -1615,27 +1629,6 @@
                 ⚠️ At least one KYC document is required to submit the
                 application
               </div>
-            </div>
-
-            <!-- Form Actions -->
-            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
-              <!-- On Mobile, show single set of buttons -->
-              <template v-if="isMobile">
-                <button type="button" @click="setView('applications')" style="padding: 0.6rem 1.5rem; background: #f1f5f9; color: var(--text-main); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancel</button>
-                <button type="submit" :disabled="saving" style="padding: 0.6rem 2rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">[[ saving ? 'Creating...' : 'Create Application' ]]</button>
-              </template>
-
-              <!-- On Desktop, show tabbed buttons -->
-              <template v-else>
-                <template v-if="currentSection === 'info'">
-                  <button type="button" @click="setView('applications')" style="padding: 0.6rem 1.5rem; background: #f1f5f9; color: var(--text-main); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancel</button>
-                  <button type="button" @click="setSection('kyc')" style="padding: 0.6rem 2rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Next</button>
-                </template>
-                <template v-if="currentSection === 'kyc'">
-                  <button type="button" @click="setSection('info')" style="padding: 0.6rem 1.5rem; background: #f1f5f9; color: var(--text-main); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Previous</button>
-                  <button type="submit" :disabled="saving" style="padding: 0.6rem 2rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">[[ saving ? 'Creating...' : 'Create Application' ]]</button>
-                </template>
-              </template>
             </div>
           </form>
         </div>
@@ -2365,7 +2358,6 @@
           },
           newApplication() {
             // Reset form
-            this.currentSection = "info";
             this.newApp = {
               loan_type: "",
               branch_code: "",
@@ -2496,6 +2488,7 @@
               this.newApp.kyc_documents = [];
             }
             this.newApp.kyc_documents.push({
+              doctype: "Loan Document",
               document_type: "",
               document_number: "",
               document_file: "",
@@ -2647,8 +2640,19 @@
           },
 
           async submitNewApplication() {
+            console.log("Submit clicked, saving:", this.saving);
             this.saving = true;
             try {
+              // Validate required fields
+              if (!this.newApp.customer_name || !this.newApp.mobile_number || !this.newApp.loan_amount) {
+                frappe.show_alert({
+                  message: "Customer Name, Mobile Number, and Loan Amount are required",
+                  indicator: "red",
+                });
+                this.saving = false;
+                return;
+              }
+
               // Validate KYC documents
               if (
                 !this.newApp.kyc_documents ||
@@ -2700,16 +2704,34 @@
                 headers["X-Frappe-CSRF-Token"] = csrfToken;
               }
 
+              // Ensure doctype is set for KYC documents
+              const submitData = { ...this.newApp };
+              if (submitData.kyc_documents) {
+                submitData.kyc_documents = submitData.kyc_documents.map(doc => ({
+                  ...doc,
+                  doctype: "Loan Document",
+                  file: undefined, // Remove file object, only send file_url
+                  local_preview: undefined, // Remove local preview URL
+                }));
+              }
+
+              console.log("Submitting application:", submitData);
+
               const response = await fetch(
                 "/api/method/sahayog.api.loan_application.create_loan_application",
                 {
                   method: "POST",
                   headers: headers,
-                  body: JSON.stringify(this.newApp),
+                  body: JSON.stringify(submitData),
                   credentials: "include",
                 },
               );
+              
+              console.log("Response status:", response.status);
+              
               const res = await response.json();
+              console.log("Response:", res);
+              
               if (res.message && res.message.status === "success") {
                 frappe.show_alert({
                   message:
@@ -2735,9 +2757,14 @@
                   message: errorMsg,
                   indicator: "red",
                 });
+              } else {
+                frappe.show_alert({
+                  message: "Error creating application: Unexpected response",
+                  indicator: "red",
+                });
               }
             } catch (e) {
-              console.error(e);
+              console.error("Submit error:", e);
               frappe.show_alert({
                 message: "Error creating application: " + e.message,
                 indicator: "red",
