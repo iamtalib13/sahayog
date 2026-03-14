@@ -1869,7 +1869,6 @@ renderWhatsAppCard(item) {
       avatar = name.charAt(0).toUpperCase();
 
       const totalAmount = item.totalAmount || 0;
-      // ✅ Amount logic: Stable & Attached to name
       amountDisplay = totalAmount > 0 
         ? `<span style="color: #10b981; font-weight: 700; white-space: nowrap; flex-shrink: 0; padding-left: 4px;"> - ₹${this.formatIndianCurrency(totalAmount)}</span>` 
         : "";
@@ -1905,32 +1904,33 @@ renderWhatsAppCard(item) {
         <div class="mycrm-list-item" data-name="${item.name}" style="cursor: pointer; padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 12px; overflow: hidden;">
             <div class="mycrm-avatar" style="min-width: 42px; height: 42px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4b5563; flex-shrink: 0;">${avatar}</div>
             <div class="mycrm-content" style="flex: 1; min-width: 0; overflow: hidden;">
-                <div class="mycrm-header" style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 4px; width: 100%;">
+                <div class="mycrm-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; width: 100%;">
                     
-                    <div class="name-only-scroll-container" style="display: flex; overflow: hidden; white-space: nowrap; position: relative; min-width: 0; flex-shrink: 1;">
-                        <style>
-                            @media (max-width: 768px) {
-                                .should-scroll-name {
-                                    display: inline-block;
-                                    padding-right: 30px;
-                                    animation: marquee-only-name 8s linear infinite;
+                    <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
+                        <div class="name-only-scroll-container" style="display: flex; overflow: hidden; white-space: nowrap; position: relative; min-width: 0;">
+                            <style>
+                                @media (max-width: 768px) {
+                                    .should-scroll-name {
+                                        display: inline-block;
+                                        padding-right: 30px;
+                                        animation: marquee-only-name 8s linear infinite;
+                                    }
+                                    @keyframes marquee-only-name {
+                                        0% { transform: translateX(0); }
+                                        100% { transform: translateX(-50%); }
+                                    }
                                 }
-                                @keyframes marquee-only-name {
-                                    0% { transform: translateX(0); }
-                                    100% { transform: translateX(-50%); }
-                                }
-                            }
-                        </style>
-                        <div class="name-wrapper" style="font-weight: 600; color: #111827; font-size: 14px; display: inline-block;">
-                            <span class="main-name-span">${name}</span>
+                            </style>
+                            <div class="name-wrapper" style="font-weight: 600; color: #111827; font-size: 14px; display: inline-block;">
+                                <span class="main-name-span">${name}</span>
+                            </div>
                         </div>
+                        ${amountDisplay}
                     </div>
 
-                    <div style="display: flex; align-items: center; flex-shrink: 0; margin-left: 0;">
-                        ${amountDisplay}
-                        <div class="mycrm-time" style="font-size: 11px; color: #6b7280; margin-left: 12px; white-space: nowrap;">${modified}</div>
-                    </div>
+                    <div class="mycrm-time" style="font-size: 11px; color: #6b7280; white-space: nowrap; flex-shrink: 0; margin-left: 10px;">${modified}</div>
                 </div>
+                
                 <div class="mycrm-message" style="font-size: 13px; color: #4b5563; display: flex; justify-content: space-between; align-items: flex-end;">
                     <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${message}</span>
                     <span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px; white-space: nowrap;">${statusText}</span>
@@ -1942,8 +1942,6 @@ renderWhatsAppCard(item) {
     setTimeout(() => {
         const container = card.find('.name-only-scroll-container');
         const wrapper = card.find('.name-wrapper');
-
-        // Only scroll on mobile and if name is actually longer than container
         if (window.innerWidth <= 768 && wrapper.width() > container.width()) {
             wrapper.append(`<span style="margin-left: 30px;">${name}</span>`);
             wrapper.addClass('should-scroll-name');
