@@ -903,28 +903,6 @@
           <i data-lucide="file-text"></i>
           <span class="nav-label">Applications</span>
         </div>
-
-        <!-- Section Navigation for Details -->
-        <div v-if="currentView === 'details'" style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px;">
-          <div
-            class="nav-item"
-            :class="{ active: currentSection === 'info' }"
-            @click="setSection('info')"
-            data-tooltip="Basic Info"
-          >
-            <i data-lucide="user"></i>
-            <span class="nav-label">Info</span>
-          </div>
-          <div
-            class="nav-item"
-            :class="{ active: currentSection === 'kyc' }"
-            @click="setSection('kyc')"
-            data-tooltip="KYC Docs"
-          >
-            <i data-lucide="file-check"></i>
-            <span class="nav-label">KYC</span>
-          </div>
-        </div>
       </nav>
     </aside>
 
@@ -1131,6 +1109,74 @@
       </header>
 
       <div v-if="currentView === 'details'" v-cloak style="padding: 1.5rem">
+        <!-- Mobile Progress Bar -->
+        <div v-if="isMobile" style="background: white; border-radius: 12px; border: 1px solid var(--sidebar-border); padding: 0.5rem; margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+            <!-- Progress Line -->
+            <div style="position: absolute; left: 20px; right: 20px; top: 12px; height: 2px; background: #e2e8f0; z-index: 1;"></div>
+            <div style="position: absolute; left: 20px; right: 50%; top: 12px; height: 2px; background: var(--accent); z-index: 1; transition: all 0.3s ease;" :style="{ right: currentSection === 'kyc' ? '20px' : '50%' }"></div>
+            
+            <!-- Step 1: Info -->
+            <div @click="setSection('info')" style="display: flex; flex-direction: column; align-items: center; z-index: 2; cursor: pointer; flex: 1;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; transition: all 0.3s ease;" :style="{ background: currentSection === 'info' ? 'var(--accent)' : 'white', color: currentSection === 'info' ? 'white' : 'var(--text-muted)', border: '2px solid ' + (currentSection === 'info' ? 'var(--accent)' : '#e2e8f0') }">1</div>
+              <span style="font-size: 11px; font-weight: 600; margin-top: 4px; transition: all 0.3s ease;" :style="{ color: currentSection === 'info' ? 'var(--accent)' : 'var(--text-muted)' }">Info</span>
+            </div>
+            
+            <!-- Step 2: KYC -->
+            <div @click="setSection('kyc')" style="display: flex; flex-direction: column; align-items: center; z-index: 2; cursor: pointer; flex: 1;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; transition: all 0.3s ease;" :style="{ background: currentSection === 'kyc' ? 'var(--accent)' : 'white', color: currentSection === 'kyc' ? 'white' : 'var(--text-muted)', border: '2px solid ' + (currentSection === 'kyc' ? 'var(--accent)' : '#e2e8f0') }">2</div>
+              <span style="font-size: 11px; font-weight: 600; margin-top: 4px; transition: all 0.3s ease;" :style="{ color: currentSection === 'kyc' ? 'var(--accent)' : 'var(--text-muted)' }">KYC</span>
+            </div>
+          </div>
+        </div>
+        
+        <div
+          style="
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--sidebar-border);
+            overflow: hidden;
+            display: flex;
+          "
+        >
+          <!-- Internal Sidebar for Details View (Desktop Only) -->
+          <div v-if="!isMobile" :style="{ width: '200px', background: '#f1f5f9', borderRight: currentSection === 'info' || currentSection === 'kyc' ? 'none' : '1px solid var(--sidebar-border)', padding: 0 }">
+            <div
+              @click="setSection('info')"
+              style="
+                padding: 0.75rem 1rem;
+                border-radius: 0;
+                cursor: pointer;
+                margin-bottom: 0;
+                font-weight: 600;
+                font-size: 13px;
+                transition: all 0.2s ease;
+              "
+              :style="{ background: currentSection === 'info' ? 'white' : 'transparent', color: currentSection === 'info' ? 'var(--accent)' : 'var(--text-muted)' }"
+            >
+              <i data-lucide="user" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
+              Info
+            </div>
+            <div
+              @click="setSection('kyc')"
+              style="
+                padding: 0.75rem 1rem;
+                border-radius: 0;
+                cursor: pointer;
+                margin-bottom: 0;
+                font-weight: 600;
+                font-size: 13px;
+                transition: all 0.2s ease;
+              "
+              :style="{ background: currentSection === 'kyc' ? 'white' : 'transparent', color: currentSection === 'kyc' ? 'var(--accent)' : 'var(--text-muted)' }"
+            >
+              <i data-lucide="file-check" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
+              KYC
+            </div>
+          </div>
+          
+          <!-- Form Content Area -->
+          <div style="flex: 1; padding: 1rem;">
         <!-- Info Section -->
         <div v-if="selectedApp && (currentSection === 'info' || isMobile)">
           <!-- Customer Info Card -->
@@ -1328,6 +1374,8 @@
             </div>
           </div>
         </div>
+          </div>
+        </div>
       </div>
 
       <!-- New Loan Application View (In-page) -->
@@ -1363,14 +1411,14 @@
           "
         >
           <!-- Internal Sidebar for Create View (Desktop Only) -->
-          <div v-if="!isMobile" style="width: 200px; background: #f1f5f9; border-right: 1px solid var(--sidebar-border); padding: 1rem;">
+          <div v-if="!isMobile" :style="{ width: '200px', background: '#f1f5f9', borderRight: currentSection === 'info' || currentSection === 'kyc' ? 'none' : '1px solid var(--sidebar-border)', padding: 0 }">
             <div
               @click="currentSection = 'info'"
               style="
                 padding: 0.75rem 1rem;
-                border-radius: 8px;
+                border-radius: 0;
                 cursor: pointer;
-                margin-bottom: 0.5rem;
+                margin-bottom: 0;
                 font-weight: 600;
                 font-size: 13px;
                 transition: all 0.2s ease;
@@ -1384,9 +1432,9 @@
               @click="currentSection = 'kyc'"
               style="
                 padding: 0.75rem 1rem;
-                border-radius: 8px;
+                border-radius: 0;
                 cursor: pointer;
-                margin-bottom: 0.5rem;
+                margin-bottom: 0;
                 font-weight: 600;
                 font-size: 13px;
                 transition: all 0.2s ease;
@@ -1399,7 +1447,7 @@
           </div>
 
           <!-- Form Content Area -->
-          <div style="flex: 1; padding: 1.5rem;">
+          <div style="flex: 1; padding: 1rem;">
             <form @submit.prevent="submitNewApplication">
               <!-- Info Section -->
               <div v-if="currentSection === 'info'">
