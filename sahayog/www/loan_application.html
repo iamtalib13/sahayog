@@ -1419,7 +1419,7 @@
                 </div>
                 <div>
                   <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Mobile Number *</label>
-                  <input type="tel" v-model="newApp.mobile_number" required pattern="[0-9]{10}" style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;" placeholder="10 digit mobile number" />
+                  <input type="tel" v-model="newApp.mobile_number" required pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;" placeholder="10 digit mobile number" />
                 </div>
                 <div>
                   <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Date of Birth *</label>
@@ -2192,16 +2192,17 @@
         <div
           class="mobile-table-container"
           style="
-            padding: 1.25rem;
+            padding: 0.75rem;
             background: white;
-            margin: 0 1rem;
+            margin: 0 0.5rem;
             border-radius: 12px;
             border: 1px solid var(--sidebar-border);
-            overflow: hidden;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
           "
         >
           <table
-            style="width: 100%; border-collapse: collapse; font-size: 0.85rem"
+            style="width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 700px;"
           >
             <thead>
               <tr
@@ -2211,20 +2212,14 @@
                   border-bottom: 1px solid var(--sidebar-border);
                 "
               >
-                <th style="padding: 0.75rem 1rem; font-weight: 600">ID</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">
-                  Customer
-                </th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">Status</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">
-                  Loan Amount
-                </th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">Payout</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">
-                  Net Weight
-                </th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">LTV</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">Date</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">ID</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Customer</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Status</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Loan Amt</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Payout</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Net Wt</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">LTV</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -2237,34 +2232,35 @@
               >
                 <td
                   style="
-                    padding: 0.75rem 1rem;
+                    padding: 0.5rem 0.6rem;
                     color: var(--accent);
                     font-weight: 600;
+                    white-space: nowrap;
                   "
                 >
                   [[ app.name ]]
                 </td>
-                <td style="padding: 0.75rem 1rem; font-weight: 600">
+                <td style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">
                   [[ app.customer_name ]]
                 </td>
-                <td style="padding: 0.75rem 1rem">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">
                   <span
                     class="status-pill"
-                    :style="{ background: getStatusColor(app.status) + '15', color: getStatusColor(app.status) }"
+                    :style="{ background: getStatusColor(app.status) + '15', color: getStatusColor(app.status), fontSize: '10px', padding: '3px 6px' }"
                     >[[ app.status ]]</span
                   >
                 </td>
-                <td style="padding: 0.75rem 1rem">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">
                   ₹[[ (app.loan_amount || 0).toLocaleString() ]]
                 </td>
-                <td style="padding: 0.75rem 1rem; color: var(--accent)">
+                <td style="padding: 0.5rem 0.6rem; color: var(--accent); white-space: nowrap;">
                   ₹[[ (app.final_payout || 0).toLocaleString() ]]
                 </td>
-                <td style="padding: 0.75rem 1rem">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">
                   [[ app.total_net_weight || 0 ]]g
                 </td>
-                <td style="padding: 0.75rem 1rem">[[ app.ltv_percent ]]%</td>
-                <td style="padding: 0.75rem 1rem; color: var(--text-muted)">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">[[ app.ltv_percent ]]%</td>
+                <td style="padding: 0.5rem 0.6rem; color: var(--text-muted); white-space: nowrap;">
                   [[ formatDate(app.creation) ]]
                 </td>
               </tr>
