@@ -1624,6 +1624,9 @@
                           type="text"
                           v-model="doc.document_number"
                           required
+                          :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)"
+                          @input="doc.document_type === 'PAN Card' ? doc.document_number = doc.document_number.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : (doc.document_type === 'Aadhaar Card' ? doc.document_number = doc.document_number.replace(/[^0-9]/g, '').slice(0, 12) : '')"
+                          :inputmode="doc.document_type === 'Aadhaar Card' ? 'numeric' : 'text'"
                           style="
                             width: 100%;
                             padding: 0.35rem;
@@ -1632,7 +1635,7 @@
                             font-size: 12px;
                             background: white;
                           "
-                          placeholder="Doc Number"
+                          :placeholder="doc.document_type === 'PAN Card' ? 'e.g. ABCDE1234F' : (doc.document_type === 'Aadhaar Card' ? '12 digit number' : 'Doc Number')"
                         />
                       </td>
                       <td style="padding: 0.75rem 1rem">
@@ -1797,13 +1800,16 @@
                         ></i>
                       </div>
                     </div>
-                    
+
                     <div style="margin-bottom: 0.75rem;">
                       <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Number</label>
                       <input
                         type="text"
                         v-model="doc.document_number"
                         required
+                        :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)"
+                        @input="doc.document_type === 'PAN Card' ? doc.document_number = doc.document_number.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : (doc.document_type === 'Aadhaar Card' ? doc.document_number = doc.document_number.replace(/[^0-9]/g, '').slice(0, 12) : '')"
+                        :inputmode="doc.document_type === 'Aadhaar Card' ? 'numeric' : 'text'"
                         style="
                           width: 100%;
                           padding: 0.5rem 0.75rem;
@@ -1813,7 +1819,7 @@
                           background: white;
                           box-sizing: border-box;
                         "
-                        placeholder="Enter Document Number"
+                        :placeholder="doc.document_type === 'PAN Card' ? 'e.g. ABCDE1234F' : (doc.document_type === 'Aadhaar Card' ? '12 digit number' : 'Enter Document Number')"
                       />
                     </div>
                     
