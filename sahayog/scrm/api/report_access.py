@@ -720,3 +720,68 @@ def get_crm_top_analytics(from_date, to_date):
         "top_employees": top_employees,
         "lowest_usage_branches": lowest_usage_branches
     }
+import frappe
+
+@frappe.whitelist()
+def transfer_employee_leads(target_employee, source_employee):
+
+    try:
+
+        user_roles = frappe.get_roles(frappe.session.user)
+
+        if "Branch Manager" not in user_roles:
+            frappe.throw("Only Branch Manager can transfer leads")
+
+        target_user = frappe.db.get_value("Employee", target_employee, "user_id")
+        source_user = frappe.db.get_value("Employee", source_employee, "user_id")
+
+        if not target_user:
+            frappe.throw(f"Employee {target_employee} does not have a User ID")
+
+        if not source_user:
+            frappe.throw(f"Employee {source_employee} does not have a User ID")
+
+        count = frappe.db.count("Lead", {"lead_owner": target_user})
+
+        if count == 0:
+            return {"status": "no_leads"}
+
+        frappe.db.sql("""
+            UPDATE `tabLead`
+            SET lead_owner = %s
+            WHERE lead_owner = %s
+        """, (source_user, target_user))
+
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "count": count
+        }
+
+    except Exception:
+
+        frappe.log_error(
+            title="Lead Transfer Error",
+            message=frappe.get_traceback()
+        )
+
+        frappe.throw("Error occurred while transferring leads")
+@frappe.whitelist()
+def get_employee_lead_count(employee):
+
+    user = frappe.db.get_value("Employee", employee, "user_id")
+    emp_name = frappe.db.get_value("Employee", employee, "employee_name")
+
+    if not user:
+        return {
+            "count": 0,
+            "employee_name": emp_name
+        }
+
+    count = frappe.db.count("Lead", {"lead_owner": user})
+
+    return {
+        "count": count,
+        "employee_name": emp_name
+    }

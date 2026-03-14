@@ -715,14 +715,29 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </div>
                             </div>
                         </div>
-                      <div class="analytics-section-header mt-4">
-                            <div class="header-title" style="margin:0;">Performance Insights</div>
-                            <button class="btn-toggle-analytics" @click="show_analytics = !show_analytics">
-                                <i :class="['fa', show_analytics ? 'fa-eye-slash' : 'fa-eye']" style="margin-right: 5px;"></i>
-                                {{ show_analytics ? 'Hide Analytics' : 'Show Analytics' }}
-                            </button>
-                        </div>
+                     <div class="analytics-section-header mt-4">
+                        <div class="header-title" style="margin:0;">Performance Insights</div>
 
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn-toggle-analytics"
+                                        @click="show_analytics = !show_analytics">
+                                    <i :class="['fa', show_analytics ? 'fa-eye-slash' : 'fa-eye']"
+                                      style="margin-right:5px;"></i>
+                                    {{ show_analytics ? 'Hide Analytics' : 'Show Analytics' }}
+                                </button>
+
+                               <button 
+                                    v-if="frappe.user_roles.includes('Branch Manager')"
+                                    class="btn-toggle-analytics"
+                                    @click="openLeadTransferDialog">
+
+                                    <i class="fa fa-exchange"></i>
+                                    Lead Transfer
+
+                                </button>
+                            </div>
+                        </div>
+                    
                         <div class="analytics-grid" v-if="!analytics_loading && show_analytics">
                             <div class="analytics-card">
                                 <div class="analytics-title"><i class="fa fa-university text-primary"></i> Top 5 Branches</div>
@@ -768,6 +783,37 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </table>
                             </div>
                         </div>
+                        <div v-if="active_tab === 'transfer'" style="padding:20px">
+
+                        <div class="card p-3">
+
+                            <h5>Lead Reassignment</h5>
+
+                            <div class="row">
+
+                                <div class="col-md-6">
+                                    <label>Target Employee (Resigned)</label>
+                                    <input type="text" v-model="lead_transfer.target_employee" class="form-control">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label>Source Employee (New Owner)</label>
+                                    <input type="text" v-model="lead_transfer.source_employee" class="form-control">
+                                </div>
+
+                            </div>
+
+                            <button
+                                class="btn btn-danger mt-3"
+                                @click="transferLeads"
+                                :disabled="transfer_loading"
+                            >
+                                Transfer Leads
+                            </button>
+
+                        </div>
+
+                    </div>
                         <!-- Loading/Error/Empty States -->
                         <div v-if="employee_report_loading" class="loading-spinner-dsr">
                             <div class="spinner-dsr"></div>
@@ -943,6 +989,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
     analytics_loading: false,
     show_analytics: false, // By default Analytics dikhega
+    lead_transfer: {
+      target_employee: "",
+      source_employee: "",
+    },
+    transfer_loading: false,
 
     toggleExportMenu() {
       this.show_export_menu = !this.show_export_menu;
@@ -1199,6 +1250,105 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return count > 0
         ? { label: "Good", class: "badge-pastel-green" }
         : { label: "Bad", class: "badge-pastel-red" };
+    },
+    openLeadTransferDialog() {
+      let lead_count = 0;
+      let target_emp_name = "";
+      let source_emp_name = "";
+
+      let dialog = new frappe.ui.Dialog({
+        title: "Transfer Leads",
+        size: "small",
+
+        fields: [
+          {
+            fieldtype: "HTML",
+            fieldname: "lead_info",
+          },
+
+          {
+            label: "Target Employee",
+            fieldname: "target_employee",
+            fieldtype: "Link",
+            options: "Employee",
+            reqd: 1,
+          },
+
+          {
+            label: "New Lead Owner",
+            fieldname: "source_employee",
+            fieldtype: "Link",
+            options: "Employee",
+            reqd: 1,
+          },
+        ],
+
+        primary_action_label: "Transfer Leads",
+
+        primary_action: async (values) => {
+          frappe.confirm(
+            `Transfer <b>${lead_count}</b> leads from 
+        <b>${target_emp_name} (${values.target_employee})</b> 
+        to 
+        <b>${source_emp_name} (${values.source_employee})</b>?`,
+            async () => {
+              frappe.show_alert({
+                message: "Transferring leads...",
+                indicator: "orange",
+              });
+
+              let res = await frappe.call({
+                method:
+                  "sahayog.scrm.api.report_access.transfer_employee_leads",
+                args: values,
+              });
+
+              if (res.message.status === "success") {
+                frappe.msgprint({
+                  title: "Success",
+                  message: `${res.message.count} Leads Transferred`,
+                  indicator: "green",
+                });
+
+                dialog.hide();
+              } else {
+                frappe.msgprint("No leads found for selected employee");
+              }
+            },
+          );
+        },
+      });
+
+      dialog.show();
+
+      // Fetch lead count when target employee selected
+      dialog.fields_dict.target_employee.$input.on("change", async () => {
+        let emp = dialog.get_value("target_employee");
+        if (!emp) return;
+
+        let res = await frappe.call({
+          method: "sahayog.scrm.api.report_access.get_employee_lead_count",
+          args: { employee: emp },
+        });
+
+        lead_count = res.message.count || 0;
+        target_emp_name = res.message.employee_name || "";
+
+        dialog.fields_dict.lead_info.$wrapper.html(`
+    <div style="background:#f0f9ff;padding:8px;border-left:4px solid #0ea5e9;border-radius:4px;font-size:12px;">
+      <b>${target_emp_name}(${emp})</b> has 
+      <b>${lead_count}</b> leads.
+    </div>
+  `);
+      });
+      // Get source employee name
+      dialog.fields_dict.source_employee.$input.on("change", async () => {
+        let emp = dialog.get_value("source_employee");
+        if (!emp) return;
+
+        let r = await frappe.db.get_doc("Employee", emp);
+        source_emp_name = r.employee_name;
+      });
     },
 
     // 3. INITIALIZATION (Fix yahan tha)
