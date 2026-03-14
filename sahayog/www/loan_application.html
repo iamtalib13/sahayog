@@ -903,28 +903,6 @@
           <i data-lucide="file-text"></i>
           <span class="nav-label">Applications</span>
         </div>
-
-        <!-- Section Navigation for Details -->
-        <div v-if="currentView === 'details'" style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px;">
-          <div
-            class="nav-item"
-            :class="{ active: currentSection === 'info' }"
-            @click="setSection('info')"
-            data-tooltip="Basic Info"
-          >
-            <i data-lucide="user"></i>
-            <span class="nav-label">Info</span>
-          </div>
-          <div
-            class="nav-item"
-            :class="{ active: currentSection === 'kyc' }"
-            @click="setSection('kyc')"
-            data-tooltip="KYC Docs"
-          >
-            <i data-lucide="file-check"></i>
-            <span class="nav-label">KYC</span>
-          </div>
-        </div>
       </nav>
     </aside>
 
@@ -1032,7 +1010,7 @@
             </button>
           </div>
           <button
-            v-if="currentView === 'details' || currentView === 'create'"
+            v-if="(currentView === 'details' || currentView === 'create') && !isEditing"
             @click="setView('applications')"
             style="
               background: #f1f5f9;
@@ -1064,7 +1042,7 @@
             [[ saving ? 'Creating...' : 'Create' ]]
           </button>
           <button
-            v-if="currentView !== 'create'"
+            v-if="currentView !== 'create' && !isEditing"
             @click="newApplication"
             style="
               background: var(--accent);
@@ -1131,6 +1109,74 @@
       </header>
 
       <div v-if="currentView === 'details'" v-cloak style="padding: 1.5rem">
+        <!-- Mobile Progress Bar -->
+        <div v-if="isMobile" style="background: white; border-radius: 12px; border: 1px solid var(--sidebar-border); padding: 0.5rem; margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+            <!-- Progress Line -->
+            <div style="position: absolute; left: 20px; right: 20px; top: 12px; height: 2px; background: #e2e8f0; z-index: 1;"></div>
+            <div style="position: absolute; left: 20px; right: 50%; top: 12px; height: 2px; background: var(--accent); z-index: 1; transition: all 0.3s ease;" :style="{ right: currentSection === 'kyc' ? '20px' : '50%' }"></div>
+            
+            <!-- Step 1: Info -->
+            <div @click="setSection('info')" style="display: flex; flex-direction: column; align-items: center; z-index: 2; cursor: pointer; flex: 1;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; transition: all 0.3s ease;" :style="{ background: currentSection === 'info' ? 'var(--accent)' : 'white', color: currentSection === 'info' ? 'white' : 'var(--text-muted)', border: '2px solid ' + (currentSection === 'info' ? 'var(--accent)' : '#e2e8f0') }">1</div>
+              <span style="font-size: 11px; font-weight: 600; margin-top: 4px; transition: all 0.3s ease;" :style="{ color: currentSection === 'info' ? 'var(--accent)' : 'var(--text-muted)' }">Info</span>
+            </div>
+            
+            <!-- Step 2: KYC -->
+            <div @click="setSection('kyc')" style="display: flex; flex-direction: column; align-items: center; z-index: 2; cursor: pointer; flex: 1;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; transition: all 0.3s ease;" :style="{ background: currentSection === 'kyc' ? 'var(--accent)' : 'white', color: currentSection === 'kyc' ? 'white' : 'var(--text-muted)', border: '2px solid ' + (currentSection === 'kyc' ? 'var(--accent)' : '#e2e8f0') }">2</div>
+              <span style="font-size: 11px; font-weight: 600; margin-top: 4px; transition: all 0.3s ease;" :style="{ color: currentSection === 'kyc' ? 'var(--accent)' : 'var(--text-muted)' }">KYC</span>
+            </div>
+          </div>
+        </div>
+        
+        <div
+          style="
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--sidebar-border);
+            overflow: hidden;
+            display: flex;
+          "
+        >
+          <!-- Internal Sidebar for Details View (Desktop Only) -->
+          <div v-if="!isMobile" :style="{ width: '200px', background: '#f1f5f9', borderRight: currentSection === 'info' || currentSection === 'kyc' ? 'none' : '1px solid var(--sidebar-border)', padding: 0 }">
+            <div
+              @click="setSection('info')"
+              style="
+                padding: 0.75rem 1rem;
+                border-radius: 0;
+                cursor: pointer;
+                margin-bottom: 0;
+                font-weight: 600;
+                font-size: 13px;
+                transition: all 0.2s ease;
+              "
+              :style="{ background: currentSection === 'info' ? 'white' : 'transparent', color: currentSection === 'info' ? 'var(--accent)' : 'var(--text-muted)' }"
+            >
+              <i data-lucide="user" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
+              Info
+            </div>
+            <div
+              @click="setSection('kyc')"
+              style="
+                padding: 0.75rem 1rem;
+                border-radius: 0;
+                cursor: pointer;
+                margin-bottom: 0;
+                font-weight: 600;
+                font-size: 13px;
+                transition: all 0.2s ease;
+              "
+              :style="{ background: currentSection === 'kyc' ? 'white' : 'transparent', color: currentSection === 'kyc' ? 'var(--accent)' : 'var(--text-muted)' }"
+            >
+              <i data-lucide="file-check" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
+              KYC
+            </div>
+          </div>
+          
+          <!-- Form Content Area -->
+          <div style="flex: 1; padding: 1rem;">
         <!-- Info Section -->
         <div v-if="selectedApp && (currentSection === 'info' || isMobile)">
           <!-- Customer Info Card -->
@@ -1239,13 +1285,9 @@
           "
         >
           <h4 style="margin: 0 0 1rem 0">KYC Documents</h4>
-          <div
-            style="
-              border: 1px solid var(--sidebar-border);
-              border-radius: 8px;
-              overflow: hidden;
-            "
-          >
+          
+          <!-- Desktop Table View -->
+          <div v-if="!isMobile" style="border: 1px solid var(--sidebar-border); border-radius: 8px; overflow: hidden;">
             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
               <tr style="background: #f8fafc; text-align: left">
                 <th style="padding: 0.75rem 1rem">Document Type</th>
@@ -1275,6 +1317,50 @@
               </tr>
             </table>
           </div>
+          
+          <!-- Mobile Vertical Card View -->
+          <div v-if="isMobile">
+            <div
+              v-for="(doc, idx) in (selectedApp.kyc_documents || [])"
+              :key="idx"
+              style="
+                background: #f8fafc;
+                border: 1px solid var(--sidebar-border);
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+              "
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span style="font-weight: 700; font-size: 13px; color: var(--text-main);">KYC Document [[ idx + 1 ]]</span>
+              </div>
+              
+              <div style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Type</label>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_type ]]</div>
+              </div>
+              
+              <div style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Number</label>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_number ]]</div>
+              </div>
+              
+              <div style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Status</label>
+                <span class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b'), padding: '6px 12px', fontSize: '12px', fontWeight: '700' }">[[ doc.status ]]</span>
+              </div>
+              
+              <div v-if="doc.document_file" style="margin-bottom: 0.75rem;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Attachment</label>
+                <button
+                  @click="previewUrl = (previewUrl === doc.document_file ? null : doc.document_file)"
+                  style="background: none; border: none; padding: 0.5rem 0.75rem; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 13px; background: white; border-radius: 6px; width: 100%; text-align: left;"
+                >
+                  📄 [[ previewUrl === doc.document_file ? 'Hide' : 'View Document' ]]
+                </button>
+              </div>
+            </div>
+          </div>
 
           <!-- Preview Area -->
           <div v-if="previewUrl" style="margin-top: 1.5rem; border-top: 1px dashed #e2e8f0; padding-top: 1rem;">
@@ -1288,23 +1374,85 @@
             </div>
           </div>
         </div>
+          </div>
+        </div>
       </div>
 
       <!-- New Loan Application View (In-page) -->
-      <div v-if="currentView === 'create'" v-cloak style="padding: 1.5rem">
+      <div v-if="currentView === 'create'" v-cloak :style="{ padding: isMobile ? '0.75rem' : '1.5rem' }">
+        <!-- Mobile Progress Bar -->
+        <div v-if="isMobile" style="background: white; border-radius: 12px; border: 1px solid var(--sidebar-border); padding: 0.5rem; margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+            <!-- Progress Line -->
+            <div style="position: absolute; left: 20px; right: 20px; top: 12px; height: 2px; background: #e2e8f0; z-index: 1;"></div>
+            <div style="position: absolute; left: 20px; right: 50%; top: 12px; height: 2px; background: var(--accent); z-index: 1; transition: all 0.3s ease;" :style="{ right: currentSection === 'kyc' ? '20px' : '50%' }"></div>
+            
+            <!-- Step 1: Info -->
+            <div @click="currentSection = 'info'" style="display: flex; flex-direction: column; align-items: center; z-index: 2; cursor: pointer; flex: 1;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; transition: all 0.3s ease;" :style="{ background: currentSection === 'info' ? 'var(--accent)' : 'white', color: currentSection === 'info' ? 'white' : 'var(--text-muted)', border: '2px solid ' + (currentSection === 'info' ? 'var(--accent)' : '#e2e8f0') }">1</div>
+              <span style="font-size: 11px; font-weight: 600; margin-top: 4px; transition: all 0.3s ease;" :style="{ color: currentSection === 'info' ? 'var(--accent)' : 'var(--text-muted)' }">Info</span>
+            </div>
+            
+            <!-- Step 2: KYC -->
+            <div @click="currentSection = 'kyc'" style="display: flex; flex-direction: column; align-items: center; z-index: 2; cursor: pointer; flex: 1;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; transition: all 0.3s ease;" :style="{ background: currentSection === 'kyc' ? 'var(--accent)' : 'white', color: currentSection === 'kyc' ? 'white' : 'var(--text-muted)', border: '2px solid ' + (currentSection === 'kyc' ? 'var(--accent)' : '#e2e8f0') }">2</div>
+              <span style="font-size: 11px; font-weight: 600; margin-top: 4px; transition: all 0.3s ease;" :style="{ color: currentSection === 'kyc' ? 'var(--accent)' : 'var(--text-muted)' }">KYC</span>
+            </div>
+          </div>
+        </div>
+        
         <div
           style="
             background: white;
             border-radius: 12px;
             border: 1px solid var(--sidebar-border);
-            padding: 1.5rem;
+            overflow: hidden;
+            display: flex;
           "
         >
-          <form @submit.prevent="submitNewApplication">
-            <!-- Info Section -->
-            <div>
-              <!-- Customer Info Grid -->
-              <h4 style="margin: 0 0 1.25rem 0; font-size: 14px; font-weight: 700; color: var(--text-main);">Customer Info</h4>
+          <!-- Internal Sidebar for Create View (Desktop Only) -->
+          <div v-if="!isMobile" :style="{ width: '200px', background: '#f1f5f9', borderRight: currentSection === 'info' || currentSection === 'kyc' ? 'none' : '1px solid var(--sidebar-border)', padding: 0 }">
+            <div
+              @click="currentSection = 'info'"
+              style="
+                padding: 0.75rem 1rem;
+                border-radius: 0;
+                cursor: pointer;
+                margin-bottom: 0;
+                font-weight: 600;
+                font-size: 13px;
+                transition: all 0.2s ease;
+              "
+              :style="{ background: currentSection === 'info' ? 'white' : 'transparent', color: currentSection === 'info' ? 'var(--accent)' : 'var(--text-muted)' }"
+            >
+              <i data-lucide="user" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
+              Info
+            </div>
+            <div
+              @click="currentSection = 'kyc'"
+              style="
+                padding: 0.75rem 1rem;
+                border-radius: 0;
+                cursor: pointer;
+                margin-bottom: 0;
+                font-weight: 600;
+                font-size: 13px;
+                transition: all 0.2s ease;
+              "
+              :style="{ background: currentSection === 'kyc' ? 'white' : 'transparent', color: currentSection === 'kyc' ? 'var(--accent)' : 'var(--text-muted)' }"
+            >
+              <i data-lucide="file-check" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
+              KYC
+            </div>
+          </div>
+
+          <!-- Form Content Area -->
+          <div style="flex: 1; padding: 1rem;">
+            <form @submit.prevent="submitNewApplication">
+              <!-- Info Section -->
+              <div v-if="currentSection === 'info'">
+                <!-- Customer Info Grid -->
+                <h4 style="margin: 0 0 1.25rem 0; font-size: 14px; font-weight: 700; color: var(--text-main);">Customer Info</h4>
               <div
                 style="
                   display: grid;
@@ -1319,7 +1467,7 @@
                 </div>
                 <div>
                   <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Mobile Number *</label>
-                  <input type="tel" v-model="newApp.mobile_number" required pattern="[0-9]{10}" style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;" placeholder="10 digit mobile number" />
+                  <input type="tel" v-model="newApp.mobile_number" required pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; margin-top: 4px;" placeholder="10 digit mobile number" />
                 </div>
                 <div>
                   <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Date of Birth *</label>
@@ -1374,13 +1522,7 @@
             </div>
 
             <!-- KYC Section -->
-            <div
-              style="
-                margin-top: 0;
-                padding-top: 1.5rem;
-                border-top: 1px solid #f1f5f9;
-              "
-            >
+            <div v-if="currentSection === 'kyc'">
               <div
                 style="
                   display: flex;
@@ -1427,8 +1569,8 @@
                   background: white;
                 "
               >
-                <!-- Grid Table -->
-                <div style="overflow-x: auto">
+                <!-- Desktop Table View -->
+                <div v-if="!isMobile" style="overflow-x: auto">
                   <table
                     style="
                       width: 100%;
@@ -1482,6 +1624,9 @@
                           type="text"
                           v-model="doc.document_number"
                           required
+                          :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)"
+                          @input="doc.document_type === 'PAN Card' ? doc.document_number = doc.document_number.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : (doc.document_type === 'Aadhaar Card' ? doc.document_number = doc.document_number.replace(/[^0-9]/g, '').slice(0, 12) : '')"
+                          :inputmode="doc.document_type === 'Aadhaar Card' ? 'numeric' : 'text'"
                           style="
                             width: 100%;
                             padding: 0.35rem;
@@ -1490,7 +1635,7 @@
                             font-size: 12px;
                             background: white;
                           "
-                          placeholder="Doc Number"
+                          :placeholder="doc.document_type === 'PAN Card' ? 'e.g. ABCDE1234F' : (doc.document_type === 'Aadhaar Card' ? '12 digit number' : 'Doc Number')"
                         />
                       </td>
                       <td style="padding: 0.75rem 1rem">
@@ -1599,6 +1744,181 @@
                     </tr>
                   </table>
                 </div>
+
+                <!-- Mobile Vertical Card View -->
+                <div v-if="isMobile" style="padding: 0.75rem">
+                  <div
+                    v-for="(doc, idx) in newApp.kyc_documents"
+                    :key="idx"
+                    style="
+                      background: #f8fafc;
+                      border: 1px solid var(--sidebar-border);
+                      border-radius: 8px;
+                      padding: 1rem;
+                      margin-bottom: 0.75rem;
+                    "
+                  >
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                      <span style="font-weight: 700; font-size: 13px; color: var(--text-main);">KYC Document [[ idx + 1 ]]</span>
+                      <button
+                        type="button"
+                        @click="removeKycDocument(idx)"
+                        style="
+                          background: transparent;
+                          color: #ef4444;
+                          border: none;
+                          cursor: pointer;
+                          font-size: 18px;
+                          font-weight: 700;
+                        "
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Type</label>
+                      <div
+                        class="inline-select-input"
+                        @click="openDocDropdownPopup(idx, ['', 'Aadhaar Card', 'PAN Card'], 'Select Document Type')"
+                        style="
+                          padding: 0.5rem 0.75rem;
+                          font-size: 13px;
+                          cursor: pointer;
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          background: white;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                        "
+                      >
+                        <span>[[ doc.document_type || 'Select' ]]</span>
+                        <i
+                          data-lucide="chevron-down"
+                          style="width: 14px; height: 14px"
+                        ></i>
+                      </div>
+                    </div>
+
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Number</label>
+                      <input
+                        type="text"
+                        v-model="doc.document_number"
+                        required
+                        :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)"
+                        @input="doc.document_type === 'PAN Card' ? doc.document_number = doc.document_number.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : (doc.document_type === 'Aadhaar Card' ? doc.document_number = doc.document_number.replace(/[^0-9]/g, '').slice(0, 12) : '')"
+                        :inputmode="doc.document_type === 'Aadhaar Card' ? 'numeric' : 'text'"
+                        style="
+                          width: 100%;
+                          padding: 0.5rem 0.75rem;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                          font-size: 13px;
+                          background: white;
+                          box-sizing: border-box;
+                        "
+                        :placeholder="doc.document_type === 'PAN Card' ? 'e.g. ABCDE1234F' : (doc.document_type === 'Aadhaar Card' ? '12 digit number' : 'Enter Document Number')"
+                      />
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Attach Document</label>
+                      <input
+                        type="file"
+                        @change="(e) => handleFileUpload(e, idx)"
+                        style="width: 100%; font-size: 12px;"
+                      />
+                      <div
+                        v-if="doc.file_name"
+                        style="
+                          font-size: 11px;
+                          color: var(--text-muted);
+                          margin-top: 4px;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                        "
+                      >
+                        <span>[[ doc.file_name ]]</span>
+                        <button
+                          type="button"
+                          @click="previewUrl = (previewUrl === (doc.local_preview || doc.document_file) ? null : (doc.local_preview || doc.document_file))"
+                          style="background: none; border: none; padding: 0; color: var(--accent); font-size: 11px; font-weight: 700; cursor: pointer;"
+                        >
+                          [[ previewUrl === (doc.local_preview || doc.document_file) ? 'Hide' : 'View' ]]
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.75rem;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Status</label>
+                      <div
+                        class="inline-select-input"
+                        @click="openDocStatusDropdownPopup(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')"
+                        style="
+                          padding: 0.5rem 0.75rem;
+                          font-size: 13px;
+                          cursor: pointer;
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          background: white;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                        "
+                      >
+                        <span>[[ doc.status || 'Status' ]]</span>
+                        <i
+                          data-lucide="chevron-down"
+                          style="width: 14px; height: 14px"
+                        ></i>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Verified By</label>
+                      <input
+                        type="text"
+                        v-model="doc.verified_by"
+                        @focus="(e) => openUserDropdown(e, idx)"
+                        @input="(e) => filterUsers(e, idx)"
+                        @blur="closeUserDropdown()"
+                        style="
+                          width: 100%;
+                          padding: 0.5rem 0.75rem;
+                          border: 1px solid var(--sidebar-border);
+                          border-radius: 6px;
+                          font-size: 13px;
+                          background: white;
+                          box-sizing: border-box;
+                        "
+                        placeholder="Search User"
+                      />
+                      <div
+                        v-if="showUserDropdown && activeUserDropdownIdx === idx"
+                        class="custom-dropdown"
+                      >
+                        <div
+                          v-for="(u, uIdx) in filteredUsers"
+                          :key="u.name"
+                          @mousedown.prevent="selectUser(u, doc)"
+                          class="custom-dropdown-item"
+                        >
+                          <div style="font-weight: 600">
+                            [[ u.full_name || u.name ]]
+                          </div>
+                          <div
+                            style="font-size: 10px; color: var(--text-muted)"
+                          >
+                            [[ u.name ]]
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Preview Area for Create View -->
@@ -1631,6 +1951,7 @@
               </div>
             </div>
           </form>
+          </div>
         </div>
       </div>
 
@@ -1925,16 +2246,17 @@
         <div
           class="mobile-table-container"
           style="
-            padding: 1.25rem;
+            padding: 0.75rem;
             background: white;
-            margin: 0 1rem;
+            margin: 0 0.5rem;
             border-radius: 12px;
             border: 1px solid var(--sidebar-border);
-            overflow: hidden;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
           "
         >
           <table
-            style="width: 100%; border-collapse: collapse; font-size: 0.85rem"
+            style="width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 700px;"
           >
             <thead>
               <tr
@@ -1944,20 +2266,14 @@
                   border-bottom: 1px solid var(--sidebar-border);
                 "
               >
-                <th style="padding: 0.75rem 1rem; font-weight: 600">ID</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">
-                  Customer
-                </th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">Status</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">
-                  Loan Amount
-                </th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">Payout</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">
-                  Net Weight
-                </th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">LTV</th>
-                <th style="padding: 0.75rem 1rem; font-weight: 600">Date</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">ID</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Customer</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Status</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Loan Amt</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Payout</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Net Wt</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">LTV</th>
+                <th style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -1970,34 +2286,35 @@
               >
                 <td
                   style="
-                    padding: 0.75rem 1rem;
+                    padding: 0.5rem 0.6rem;
                     color: var(--accent);
                     font-weight: 600;
+                    white-space: nowrap;
                   "
                 >
                   [[ app.name ]]
                 </td>
-                <td style="padding: 0.75rem 1rem; font-weight: 600">
+                <td style="padding: 0.5rem 0.6rem; font-weight: 600; white-space: nowrap;">
                   [[ app.customer_name ]]
                 </td>
-                <td style="padding: 0.75rem 1rem">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">
                   <span
                     class="status-pill"
-                    :style="{ background: getStatusColor(app.status) + '15', color: getStatusColor(app.status) }"
+                    :style="{ background: getStatusColor(app.status) + '15', color: getStatusColor(app.status), fontSize: '10px', padding: '3px 6px' }"
                     >[[ app.status ]]</span
                   >
                 </td>
-                <td style="padding: 0.75rem 1rem">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">
                   ₹[[ (app.loan_amount || 0).toLocaleString() ]]
                 </td>
-                <td style="padding: 0.75rem 1rem; color: var(--accent)">
+                <td style="padding: 0.5rem 0.6rem; color: var(--accent); white-space: nowrap;">
                   ₹[[ (app.final_payout || 0).toLocaleString() ]]
                 </td>
-                <td style="padding: 0.75rem 1rem">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">
                   [[ app.total_net_weight || 0 ]]g
                 </td>
-                <td style="padding: 0.75rem 1rem">[[ app.ltv_percent ]]%</td>
-                <td style="padding: 0.75rem 1rem; color: var(--text-muted)">
+                <td style="padding: 0.5rem 0.6rem; white-space: nowrap;">[[ app.ltv_percent ]]%</td>
+                <td style="padding: 0.5rem 0.6rem; color: var(--text-muted); white-space: nowrap;">
                   [[ formatDate(app.creation) ]]
                 </td>
               </tr>
@@ -2358,6 +2675,7 @@
           },
           newApplication() {
             // Reset form
+            this.currentSection = 'info';
             this.newApp = {
               loan_type: "",
               branch_code: "",
