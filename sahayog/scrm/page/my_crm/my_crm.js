@@ -1870,7 +1870,7 @@ renderWhatsAppCard(item) {
 
       const totalAmount = item.totalAmount || 0;
       amountDisplay = totalAmount > 0 
-        ? `<span style="color: #10b981; font-weight: 700; white-space: nowrap; flex-shrink: 0; padding-left: 4px;"> - ₹${this.formatIndianCurrency(totalAmount)}</span>` 
+        ? `<span style="color: #10b981; font-weight: 700; white-space: nowrap; flex-shrink: 0; padding-left: 4px;">  ₹${this.formatIndianCurrency(totalAmount)}</span>` 
         : "";
 
       const details = [];
