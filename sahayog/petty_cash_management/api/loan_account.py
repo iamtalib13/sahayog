@@ -486,7 +486,7 @@ def test_create_loan_account():
         installment_start_date="2026-02-14",
         num_installments="24",
         operative_account_id="100110020034025",
-        account_open_date="2026-01-15" # Optional: Leave None to use system date
+        account_open_date="2026-01-14" # Optional: Leave None to use system date
     )
 
 

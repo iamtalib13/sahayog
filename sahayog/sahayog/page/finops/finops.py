@@ -86,6 +86,7 @@ def create_loan_account(file_url, operation_type):
                 row_result['status'] = api_response.get('status')
                 row_result['message'] = api_response.get('message')
                 row_result['account_id'] = api_response.get('account_id', '')
+                row_result['request_sent'] = api_response.get('request_sent', '') 
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':
@@ -136,6 +137,7 @@ def process_loan_disbursement(file_url, operation_type):
                 row_result['status'] = api_response.get('status')
                 row_result['message'] = api_response.get('message')
                 row_result['tran_id'] = api_response.get('tran_id', '')
+                row_result['request_sent'] = api_response.get('request_sent', '')
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':
@@ -209,6 +211,7 @@ def create_cif(file_url, operation_type):
                 row_result['status'] = api_response.get('status')
                 row_result['message'] = api_response.get('message')
                 row_result['cif_id'] = api_response.get('cif_id', '')
+                row_result['request_sent'] = api_response.get('request_sent', '')
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':

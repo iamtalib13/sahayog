@@ -240,6 +240,7 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
 @frappe.whitelist()
 def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id, 
                                 disbursement_date=None, remarks="Loan Disbursement"):
+    
     try:
         finacle_settings = frappe.get_single("Finacle Settings")
         mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
