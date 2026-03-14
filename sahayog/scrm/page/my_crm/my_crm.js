@@ -1767,17 +1767,19 @@ async getEmployeeByUser(userId) {
                 <div id="appointment-content-section" style="display:none;">
                     <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc;">
                         <h6 style="font-weight:600; margin-bottom:12px;">Schedule New Appointment</h6>
-                        <div style="display:flex; gap:10px; margin-bottom:20px;">
-                            <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="max-width:250px;">
-                            <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264;">Schedule</button>
+                        <div style="display:flex; flex-wrap: wrap; gap:10px; margin-bottom:20px;">
+                            <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px; max-width:250px;">
+                            <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264; height: 34px;">Schedule</button>
                         </div>
                         <h6 style="font-weight:600; margin-bottom:12px;">Appointment History</h6>
-                        <table class="table table-bordered" style="font-size:13px;">
-                            <thead style="background:#f7fafc;">
-                                <tr><th>Time</th><th>Status</th><th style="text-align:center;">Action</th></tr>
-                            </thead>
-                            <tbody id="appt-h-body-edit"></tbody>
-                        </table>
+                        <div style="overflow-x: auto;">
+                            <table class="table table-bordered" style="font-size:13px; min-width: 300px;">
+                                <thead style="background:#f7fafc;">
+                                    <tr><th>Time</th><th>Status</th><th style="text-align:center;">Action</th></tr>
+                                </thead>
+                                <tbody id="appt-h-body-edit"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `);
