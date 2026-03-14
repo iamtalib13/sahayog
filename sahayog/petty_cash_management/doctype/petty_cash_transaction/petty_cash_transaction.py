@@ -1891,3 +1891,157 @@ def download_txt_api(name):     # <--- Renamed
         
 #     return False
 
+
+
+
+
+# ==============================================================================
+# [NEW] CONSOLIDATED DOWNLOAD APIs (LIST VIEW)
+# ==============================================================================
+
+@frappe.whitelist()
+def download_consolidated_txt_api():
+    """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
+    from frappe.utils import nowdate, getdate
+    
+    # 1. Permission Check
+    if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
+        frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+        
+    today = nowdate()
+    
+    # 2. Fetch all matching transactions (Today + Verified)
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters={"transaction_date": today, "approval_status": "Verified"},
+        pluck="name",
+        order_by="creation ASC"
+    )
+    
+    if not transactions:
+        frappe.throw(f"No verified transactions found for today ({today}).")
+        
+    content = []
+    
+    # 3. Loop through each document and aggregate TTUM lines
+    for txn_name in transactions:
+        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+        
+        date_obj = getdate(doc.transaction_date)
+        ttum_date = date_obj.strftime("%b%y").upper() # JAN26
+        currency_str = f"INR{doc.branch}" 
+        
+        narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
+        total_debit = 0.0
+        
+        # --- DEBIT ROWS (Expenses) ---
+        for row in doc.items:
+            if not row.finacle_gl_code:
+                frappe.throw(f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
+            
+            amount_str = "{:.2f}".format(row.amount)
+            total_debit += row.amount
+            
+            raw_desc = f"{row.description}" if row.description else narrative_suffix
+            debitDescription = raw_desc[:30] # 30 char limit exactly like single view
+            
+            # Formatting/Spacing matching single doc view
+            padding_count = 17 - len(amount_str)
+            if padding_count < 10:
+                padding_count = 10
+            space_str = " " * padding_count
+            
+            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
+            content.append(line)
+
+        # --- CREDIT ROW (Branch Wallet) ---
+        wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {"branch": doc.branch}, "gl_sub_code")
+        if not wallet_gl:
+             frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+
+        total_amount_str = "{:.2f}".format(total_debit)
+        padding_count = 17 - len(total_amount_str)
+        if padding_count < 10:
+            padding_count = 10
+        space_str = " " * padding_count
+        creditDescription = narrative_suffix[:30]
+        
+        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
+        content.append(credit_line)
+
+    final_txt = "\n".join(content)
+    
+    # 4. Trigger direct file download
+    frappe.response['filename'] = f"Consolidated_TTUM_{today}.txt"
+    frappe.response['filecontent'] = final_txt
+    frappe.response['type'] = 'download'
+
+
+@frappe.whitelist()
+def download_consolidated_excel_api():
+    """Generates a Consolidated CSV/Excel report for all Verified transactions of the current date."""
+    from frappe.utils import nowdate
+    import csv
+    import io
+    
+    # 1. Permission Check
+    if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
+        frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+        
+    today = nowdate()
+    
+    # 2. Fetch all matching transactions (Today + Verified)
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters={"transaction_date": today, "approval_status": "Verified"},
+        pluck="name",
+        order_by="creation ASC"
+    )
+    
+    if not transactions:
+        frappe.throw(f"No verified transactions found for today ({today}).")
+        
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Headers exactly matching your single Excel/CSV report format
+    headers = [
+        "Transaction ID", "Branch Code", "Branch Name", "Date", "Type", 
+        "Total Amount", "Wallet Balance", "Cash in Hand", "Approval Status", 
+        "Within Limit", "Exceeding Limit", "Deducted Amount", "Approved By", 
+        "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account"
+    ]
+    writer.writerow(headers)
+    
+    # 3. Loop through and aggregate
+    for txn_name in transactions:
+        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+        wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {"branch": doc.branch}, "gl_sub_code") or ""
+        
+        row_data = [
+            doc.name, 
+            doc.branch, 
+            doc.branch_name, 
+            doc.transaction_date, 
+            doc.transaction_type,
+            "{:.2f}".format(doc.amount), 
+            "{:.2f}".format(doc.current_branch_balance), 
+            "{:.2f}".format(doc.current_unsettled_cash), 
+            doc.approval_status,
+            "{:.2f}".format(doc.amount_within_limit), 
+            "{:.2f}".format(doc.amount_exceeding_limit), 
+            "{:.2f}".format(doc.amount_deducted), 
+            doc.approved_by,
+            doc.custom_ttum_remarks, 
+            doc.finacle_tran_particular, 
+            wallet_gl
+        ]
+        writer.writerow(row_data)
+                
+    csv_content = output.getvalue()
+    output.close()
+    
+    # 4. Trigger direct file download
+    frappe.response['filename'] = f"Consolidated_Report_{today}.csv"
+    frappe.response['filecontent'] = csv_content
+    frappe.response['type'] = 'binary'
