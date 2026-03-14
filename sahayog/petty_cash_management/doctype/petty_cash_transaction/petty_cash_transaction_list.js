@@ -1,9 +1,30 @@
 frappe.listview_settings['Petty Cash Transaction'] = {
-    onload: function(listview) {
+    // onload: function(listview) {
         // Add Download Report button to list view
         // listview.page.add_inner_button(__('Download Report'), function() {
         //     download_filtered_report(listview);
         // });
+    // },
+    onload: function(listview) {
+        // [NEW] Add Consolidated Download Buttons for Managers & Admin
+        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+            
+            // 1. Consolidated Excel Option
+            listview.page.add_inner_button(__('Excel Report'), function() {
+                window.open(
+                    frappe.request.url + 
+                    '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_consolidated_excel_api'
+                );
+            }, __('Download Files'));
+
+            // 2. Consolidated TXT (TTUM) Option
+            listview.page.add_inner_button(__('TXT File (Finacle)'), function() {
+                window.open(
+                    frappe.request.url + 
+                    '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_consolidated_txt_api'
+                );
+            }, __('Download Files'));
+        }
     }
 };
 
