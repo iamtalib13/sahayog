@@ -1894,7 +1894,6 @@ def download_txt_api(name):     # <--- Renamed
 
 
 
-
 # ==============================================================================
 # [NEW] CONSOLIDATED DOWNLOAD APIs (LIST VIEW)
 # ==============================================================================
@@ -1918,8 +1917,14 @@ def download_consolidated_txt_api():
         order_by="creation ASC"
     )
     
+    # [FIX] Graceful handling - Show message instead of error
     if not transactions:
-        frappe.throw(f"No verified transactions found for today ({today}).")
+        frappe.msgprint(
+            msg=f"No verified transactions found for today ({today}).",
+            title="No Data Available",
+            indicator="orange"
+        )
+        return  # Exit gracefully without throwing error
         
     content = []
     
@@ -1979,7 +1984,10 @@ def download_consolidated_txt_api():
 
 @frappe.whitelist()
 def download_consolidated_excel_api():
-    """Generates a Consolidated CSV/Excel report for all Verified transactions of the current date."""
+    """
+    Generates a Consolidated CSV/Excel report for all Verified transactions of the current date.
+    Each expense item from child table appears as a separate row (matching single transaction format).
+    """
     from frappe.utils import nowdate
     import csv
     import io
@@ -1998,50 +2006,88 @@ def download_consolidated_excel_api():
         order_by="creation ASC"
     )
     
+    # [FIX] Graceful handling - Show message instead of error
     if not transactions:
-        frappe.throw(f"No verified transactions found for today ({today}).")
+        frappe.msgprint(
+            msg=f"No verified transactions found for today ({today}).",
+            title="No Data Available",
+            indicator="orange"
+        )
+        return  # Exit gracefully without throwing error
         
     output = io.StringIO()
     writer = csv.writer(output)
     
-    # Headers exactly matching your single Excel/CSV report format
+    # Write BOM for Excel UTF-8 compatibility
+    output.write('\ufeff')
+    
+    # 3. Headers - Matching your single transaction Excel format exactly
     headers = [
         "Transaction ID", "Branch Code", "Branch Name", "Date", "Type", 
-        "Total Amount", "Wallet Balance", "Cash in Hand", "Approval Status", 
-        "Within Limit", "Exceeding Limit", "Deducted Amount", "Approved By", 
-        "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account"
+        "Total Amount", "Wallet Balance", "Cash in Hand", 
+        "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
+        "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account", 
+        # Child Item Fields
+        "Expense Category", "Vendor", "Bill No", "Item Amount", "Description", "Expense GL Code"
     ]
     writer.writerow(headers)
     
-    # 3. Loop through and aggregate
+    # Helper to format amounts safely
+    def fmt(val):
+        return flt(val) if val else 0.0
+    
+    # 4. Loop through each transaction and expand child items into separate rows
     for txn_name in transactions:
         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
-        wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {"branch": doc.branch}, "gl_sub_code") or ""
         
-        row_data = [
-            doc.name, 
-            doc.branch, 
-            doc.branch_name, 
-            doc.transaction_date, 
-            doc.transaction_type,
-            "{:.2f}".format(doc.amount), 
-            "{:.2f}".format(doc.current_branch_balance), 
-            "{:.2f}".format(doc.current_unsettled_cash), 
-            doc.approval_status,
-            "{:.2f}".format(doc.amount_within_limit), 
-            "{:.2f}".format(doc.amount_exceeding_limit), 
-            "{:.2f}".format(doc.amount_deducted), 
-            doc.approved_by,
-            doc.custom_ttum_remarks, 
-            doc.finacle_tran_particular, 
-            wallet_gl
-        ]
-        writer.writerow(row_data)
+        # Fetch Wallet GL Code
+        wallet_gl_code = frappe.db.get_value("Branch Petty Cash Account", {"branch": doc.branch}, "gl_sub_code") or ""
+        
+        # Fetch Category Names Map (Optimized - fetch all at once)
+        category_ids = [row.expense_category for row in doc.items if row.expense_category]
+        category_map = {}
+        if category_ids:
+            categories = frappe.get_all("Expense Category", filters={"name": ["in", category_ids]}, fields=["name", "category_name"])
+            for cat in categories:
+                category_map[cat.name] = cat.category_name
+        
+        # IMPORTANT: Each expense item becomes a separate row
+        for row in doc.items:
+            # Resolve Category Name
+            cat_name = category_map.get(row.expense_category, row.expense_category)
+            
+            row_data = [
+                doc.name,
+                doc.branch,
+                doc.branch_name,
+                doc.transaction_date,
+                doc.transaction_type,
+                fmt(doc.amount),
+                fmt(doc.current_branch_balance),
+                fmt(doc.current_unsettled_cash),
+                doc.approval_status,
+                fmt(doc.amount_within_limit),
+                fmt(doc.amount_exceeding_limit),
+                fmt(doc.amount_deducted),
+                doc.approved_by,
+                doc.custom_ttum_remarks,
+                doc.finacle_tran_particular,
+                wallet_gl_code,
+                # Child Data (each item in separate row)
+                cat_name,
+                row.vendor_name,
+                row.bill_number,
+                fmt(row.amount),
+                row.description,
+                row.finacle_gl_code
+            ]
+            writer.writerow(row_data)
                 
+    # 5. Set Response
+    output.seek(0)
     csv_content = output.getvalue()
     output.close()
     
-    # 4. Trigger direct file download
     frappe.response['filename'] = f"Consolidated_Report_{today}.csv"
     frappe.response['filecontent'] = csv_content
     frappe.response['type'] = 'binary'
