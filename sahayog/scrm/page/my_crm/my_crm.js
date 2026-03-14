@@ -1767,17 +1767,19 @@ async getEmployeeByUser(userId) {
                 <div id="appointment-content-section" style="display:none;">
                     <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc;">
                         <h6 style="font-weight:600; margin-bottom:12px;">Schedule New Appointment</h6>
-                        <div style="display:flex; gap:10px; margin-bottom:20px;">
-                            <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="max-width:250px;">
-                            <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264;">Schedule</button>
+                        <div style="display:flex; flex-wrap: wrap; gap:10px; margin-bottom:20px;">
+                            <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px; max-width:250px;">
+                            <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264; height: 34px;">Schedule</button>
                         </div>
                         <h6 style="font-weight:600; margin-bottom:12px;">Appointment History</h6>
-                        <table class="table table-bordered" style="font-size:13px;">
-                            <thead style="background:#f7fafc;">
-                                <tr><th>Time</th><th>Status</th><th style="text-align:center;">Action</th></tr>
-                            </thead>
-                            <tbody id="appt-h-body-edit"></tbody>
-                        </table>
+                        <div style="overflow-x: auto;">
+                            <table class="table table-bordered" style="font-size:13px; min-width: 300px;">
+                                <thead style="background:#f7fafc;">
+                                    <tr><th>Time</th><th>Status</th><th style="text-align:center;">Action</th></tr>
+                                </thead>
+                                <tbody id="appt-h-body-edit"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `);
@@ -1858,49 +1860,38 @@ async getEmployeeByUser(userId) {
     $("#mycrm-load-more").toggle(!show && this.state.hasMore);
   }
 // UI implementation of a WhatsApp-style card
-  renderWhatsAppCard(item) {
+renderWhatsAppCard(item) {
     const modified = frappe.datetime.comment_when(item.modified);
-    let name,
-      message,
-      statusClass,
-      statusText,
-      avatar,
-      amountDisplay = "";
+    let name, message, statusClass, statusText, avatar, amountDisplay = "";
 
     if (this.state.section === "lead") {
-      name =
-        item.lead_name ||
-        `${item.first_name || ""} ${item.last_name || ""}`.trim() ||
-        "Unnamed";
+      name = item.lead_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unnamed";
       avatar = name.charAt(0).toUpperCase();
 
-      // ✅ Amount Display logic (Restored)
       const totalAmount = item.totalAmount || 0;
-      amountDisplay =
-        totalAmount > 0
-          ? ` - <span style="color: #10b981; font-weight: 700;">₹${this.formatIndianCurrency(totalAmount)}</span>`
-          : "";
+      amountDisplay = totalAmount > 0 
+        ? `<span style="color: #10b981; font-weight: 700; white-space: nowrap; flex-shrink: 0; padding-left: 4px;">  ₹${this.formatIndianCurrency(totalAmount)}</span>` 
+        : "";
 
       const details = [];
       if (item.mobile_no) details.push(`📱 ${item.mobile_no}`);
       if (item.source) details.push(`📌 ${item.source}`);
 
-      // Assigned By Logic
-if (this.assignedByMap?.[item.name]) {
-  const a = this.assignedByMap[item.name];
-  details.push(`
-    <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
-      <span style="background:#f1f5f9; padding:4px 8px; border-radius:6px; color:#111;">
-        Assigned By: <b>${a.full_name}
-    </div>
-  `);
-}
+      if (this.assignedByMap?.[item.name]) {
+        const a = this.assignedByMap[item.name];
+        details.push(`
+          <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; font-size:12px;">
+            <span style="background:#f1f5f9; padding:4px 8px; border-radius:6px; color:#111;">
+              Assigned By: <b>${a.full_name}</b>
+            </span>
+          </div>
+        `);
+      }
 
       message = details.join(" • ") || "No details";
       statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
       statusText = item.status || "Lead";
     } else {
-      // Appointment Section
       name = item.customer_name || "Unnamed";
       avatar = name.charAt(0).toUpperCase();
       const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
@@ -1910,34 +1901,61 @@ if (this.assignedByMap?.[item.name]) {
     }
 
     const card = $(`
-        <div class="mycrm-list-item" data-name="${item.name}" style="cursor: pointer; padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 12px;">
-            <div class="mycrm-avatar" style="min-width: 42px; height: 42px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4b5563;">${avatar}</div>
-            <div class="mycrm-content" style="flex: 1; min-width: 0;">
-                <div class="mycrm-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <div class="mycrm-name" style="font-weight: 600; color: #111827;">${name}${amountDisplay}</div>
-                    <div class="mycrm-time" style="font-size: 11px; color: #6b7280;">${modified}</div>
+        <div class="mycrm-list-item" data-name="${item.name}" style="cursor: pointer; padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 12px; overflow: hidden;">
+            <div class="mycrm-avatar" style="min-width: 42px; height: 42px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4b5563; flex-shrink: 0;">${avatar}</div>
+            <div class="mycrm-content" style="flex: 1; min-width: 0; overflow: hidden;">
+                <div class="mycrm-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; width: 100%;">
+                    
+                    <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
+                        <div class="name-only-scroll-container" style="display: flex; overflow: hidden; white-space: nowrap; position: relative; min-width: 0;">
+                            <style>
+                                @media (max-width: 768px) {
+                                    .should-scroll-name {
+                                        display: inline-block;
+                                        padding-right: 30px;
+                                        animation: marquee-only-name 8s linear infinite;
+                                    }
+                                    @keyframes marquee-only-name {
+                                        0% { transform: translateX(0); }
+                                        100% { transform: translateX(-50%); }
+                                    }
+                                }
+                            </style>
+                            <div class="name-wrapper" style="font-weight: 600; color: #111827; font-size: 14px; display: inline-block;">
+                                <span class="main-name-span">${name}</span>
+                            </div>
+                        </div>
+                        ${amountDisplay}
+                    </div>
+
+                    <div class="mycrm-time" style="font-size: 11px; color: #6b7280; white-space: nowrap; flex-shrink: 0; margin-left: 10px;">${modified}</div>
                 </div>
+                
                 <div class="mycrm-message" style="font-size: 13px; color: #4b5563; display: flex; justify-content: space-between; align-items: flex-end;">
                     <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${message}</span>
-                    <span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px;">${statusText}</span>
+                    <span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px; white-space: nowrap;">${statusText}</span>
                 </div>
             </div>
         </div>
     `);
 
-    // ✅ CLICK HANDLER FIX:
-    // Lead ke liye sirf custom dialog kholega, Appointment ke liye direct form.
-    card.on("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation(); // Click event ko standard route par jane se rokta hai
+    setTimeout(() => {
+        const container = card.find('.name-only-scroll-container');
+        const wrapper = card.find('.name-wrapper');
+        if (window.innerWidth <= 768 && wrapper.width() > container.width()) {
+            wrapper.append(`<span style="margin-left: 30px;">${name}</span>`);
+            wrapper.addClass('should-scroll-name');
+        }
+    }, 150);
 
-      if (this.state.section === "lead") {
-        // Sirf custom dialog call hoga
-        this.editLead(item.name);
-      } else {
-        // Appointment ke liye standard route thik hai
-        frappe.set_route("Form", "Appointment", item.name);
-      }
+    card.on("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.state.section === "lead") {
+            this.editLead(item.name);
+        } else {
+            frappe.set_route("Form", "Appointment", item.name);
+        }
     });
 
     return card;
