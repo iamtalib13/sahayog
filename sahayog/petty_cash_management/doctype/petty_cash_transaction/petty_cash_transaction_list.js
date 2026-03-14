@@ -106,10 +106,10 @@ function download_filtered_report(listview) {
 // ==============================================================================
 
 function download_consolidated_excel() {
-    frappe.show_alert({ message: __('Generating consolidated Excel...'), indicator: 'blue' }, 3);
-    
     frappe.call({
         method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_consolidated_excel_api',
+        freeze: true,
+        freeze_message: __('Checking and Generating Excel...'),
         callback: function(r) {
             if (r.message && r.message.status === 'success') {
                 // Decode base64 and trigger download
@@ -155,10 +155,10 @@ function download_consolidated_excel() {
 }
 
 function download_consolidated_txt() {
-    frappe.show_alert({ message: __('Generating consolidated TTUM...'), indicator: 'blue' }, 3);
-    
     frappe.call({
         method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_consolidated_txt_api',
+        freeze: true,
+        freeze_message: __('Checking and Generating TTUM...'),
         callback: function(r) {
             if (r.message && r.message.status === 'success') {
                 // Trigger text file download
@@ -197,3 +197,4 @@ function download_consolidated_txt() {
         }
     });
 }
+
