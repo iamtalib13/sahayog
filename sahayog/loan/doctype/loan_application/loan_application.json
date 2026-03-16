@@ -8,6 +8,10 @@
  "engine": "InnoDB",
  "field_order": [
   "applicant_details_tab",
+  "product_selection_section",
+  "loan_type",
+  "column_break_ps",
+  "security_type",
   "customer_details_section",
   "customer_name",
   "mobile_number",
@@ -16,15 +20,11 @@
   "column_break_1",
   "cif_id",
   "branch_code",
-  "has_co_applicant",
   "kyc_section",
   "kyc_documents",
   "asset_security_tab",
-  "product_selection_section",
-  "loan_type",
-  "security_type",
-  "column_break_ps",
-  "valuation_date",
+  "ornaments_section",
+  "ornaments_list",
   "security_details_section",
   "gold_rate_per_gram",
   "total_gross_weight",
@@ -32,8 +32,6 @@
   "column_break_2",
   "total_net_weight",
   "total_valuation",
-  "ornaments_section",
-  "ornaments_list",
   "rule_engine_tab",
   "re_input_section",
   "monthly_income",
@@ -83,6 +81,7 @@
    "label": "Applicant Info"
   },
   {
+   "depends_on": "eval:doc.loan_type",
    "fieldname": "customer_details_section",
    "fieldtype": "Section Break",
    "label": "Primary Details"
@@ -123,13 +122,7 @@
    "reqd": 1
   },
   {
-   "default": "0",
-   "description": "Check if an earning family member is joining the loan.",
-   "fieldname": "has_co_applicant",
-   "fieldtype": "Check",
-   "label": "Has Earning Co-Applicant"
-  },
-  {
+   "depends_on": "eval:doc.date_of_birth",
    "fieldname": "kyc_section",
    "fieldtype": "Section Break",
    "label": "Identity Verification"
@@ -142,6 +135,7 @@
    "options": "Loan Document"
   },
   {
+   "depends_on": "eval:doc.branch_code",
    "fieldname": "asset_security_tab",
    "fieldtype": "Tab Break",
    "label": "Asset & Security"
@@ -157,27 +151,23 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Loan Product",
+   "link_filters": "[[\"Loan Type\",\"is_active\",\"=\",1]]",
    "options": "Loan Type",
    "reqd": 1
   },
   {
+   "default": "Gold",
+   "depends_on": "eval:doc.loan_type==\"Gold Loan\"",
    "description": "Type of collateral provided (e.g., Gold).",
    "fieldname": "security_type",
    "fieldtype": "Link",
    "label": "Security Type",
+   "mandatory_depends_on": "eval:doc.loan_type==\"Gold Loan\"",
    "options": "Loan Security Type"
   },
   {
    "fieldname": "column_break_ps",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "Today",
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "description": "The date on which the security was valued.",
-   "fieldname": "valuation_date",
-   "fieldtype": "Date",
-   "label": "Valuation Date"
   },
   {
    "depends_on": "eval:doc.security_type=='Gold'",
@@ -243,6 +233,7 @@
    "options": "Loan Ornament"
   },
   {
+   "depends_on": "eval:doc.branch_code",
    "fieldname": "rule_engine_tab",
    "fieldtype": "Tab Break",
    "label": "Rule Engine"
@@ -318,6 +309,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.branch_code",
    "fieldname": "loan_sanction_tab",
    "fieldtype": "Tab Break",
    "label": "Loan Sanction"
@@ -399,6 +391,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.branch_code",
    "fieldname": "photos_tab",
    "fieldtype": "Tab Break",
    "label": "Photos"
@@ -441,6 +434,7 @@
    "label": "4. Valuation Report Image"
   },
   {
+   "depends_on": "eval:doc.branch_code",
    "fieldname": "internal_ops_tab",
    "fieldtype": "Tab Break",
    "label": "Ops & Internal"
@@ -502,25 +496,28 @@
    "description": "Applicant Profile Photo (for identity verification)",
    "fieldname": "customer_photo",
    "fieldtype": "Attach Image",
-   "label": "Customer Profile Photo"
+   "hidden": 1,
+   "label": "Customer Profile Photo",
+   "no_copy": 1
   }
  ],
  "grid_page_length": 50,
+ "image_field": "customer_photo",
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [
   {
-   "group": "Operations",
+   "group": "Disbursement Transaction",
    "link_doctype": "Loan Disbursement",
    "link_fieldname": "loan_application"
   },
   {
-   "group": "Operations",
+   "group": "Repayment Transaction",
    "link_doctype": "Loan Repayment",
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-13 15:26:17.775782",
+ "modified": "2026-03-16 17:02:47.422088",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
@@ -566,7 +563,7 @@
    "title": "Disbursed"
   },
   {
-   "color": "Black",
+   "color": "Purple",
    "title": "Closed"
   }
  ]
