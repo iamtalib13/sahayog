@@ -49,7 +49,11 @@ def get_transaction_query_conditions(user):
         user = frappe.session.user
 
     # Admin and Managers see everything
-    if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
+    # if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
+    #     return None
+
+    roles = frappe.get_roles(user)
+    if 'System Manager' in roles or 'Administrator' in roles or any(r in roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier"]):
         return None
 
     # Dynamic Subquery - Database evaluates this live on every request
@@ -64,7 +68,11 @@ def has_transaction_permission(doc, ptype, user):
     if not user:
         user = frappe.session.user
 
-    if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
+    # if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
+    #     return True
+
+    user_roles = frappe.get_roles(user)
+    if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier"]):
         return True
 
     # SQL bypasses frappe.db.get_value caching
