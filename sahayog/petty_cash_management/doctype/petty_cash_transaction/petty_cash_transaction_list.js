@@ -29,7 +29,9 @@ frappe.listview_settings['Petty Cash Transaction'] = {
         // [NEW] Add Consolidated Download Buttons for Managers & Admin
 
         // || frappe.user.has_role('HO Petty Cash Manager')
-        if (frappe.session.user === 'Administrator' ) {
+        // if (frappe.session.user === 'Administrator' ) {
+        // [NEW] Add Consolidated Download Buttons for Managers, Verifiers & Admin
+        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager') || frappe.user.has_role('HO Petty Cash Verifier')) {
             
             // 1. Consolidated Excel Option
             listview.page.add_inner_button(__('Excel Report'), function() {

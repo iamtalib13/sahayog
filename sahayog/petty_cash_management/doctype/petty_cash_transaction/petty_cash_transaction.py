@@ -1022,8 +1022,13 @@ class PettyCashTransaction(Document):
         """
         Scenario 2 Step 2: HO Manager approves the excess.
         """
-        if "HO Petty Cash Manager" not in frappe.get_roles():
-            frappe.throw(_("Only HO Petty Cash Manager can approve limits."))
+        # if "HO Petty Cash Manager" not in frappe.get_roles():
+        #     frappe.throw(_("Only HO Petty Cash Manager can approve limits."))
+
+        user_roles = frappe.get_roles()
+        if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw("Only HO Petty Cash Manager or Approver can approve.")
+
 
         if self.docstatus != 1 or self.approval_status != "Pending Approval":
             frappe.throw(_("Document is not pending approval."))
@@ -1138,8 +1143,13 @@ class PettyCashTransaction(Document):
         Modified to support Manual Mode (File Download)
         """
         # Permission Check (Same as before)
-        if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
-            frappe.throw(_("Only HO Petty Cash Manager can verify."))
+        # if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
+        #     frappe.throw(_("Only HO Petty Cash Manager can verify."))
+
+        user_roles = frappe.get_roles()
+        if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw("Only HO Petty Cash Manager or Verifier can verify.")
+
 
         if self.approval_status != "Approved":
             frappe.throw(_("Document must be Approved before Verification."))
@@ -1209,25 +1219,51 @@ class PettyCashTransaction(Document):
 
 
 
-    def has_permission(self, permtype="read"):
-        """
-        This method is called automatically by Frappe when accessing a document via URL/Form.
-        """
-        # 1. Get allowed branches for current user
-        allowed_branches = get_user_allowed_branches()
+    # def has_permission(self, permtype="read"):
+    #     """
+    #     This method is called automatically by Frappe when accessing a document via URL/Form.
+    #     """
+    #     # 1. Get allowed branches for current user
+    #     allowed_branches = get_user_allowed_branches()
 
-        # 2. If None, it means they are Admin/Manager -> Allow
-        if allowed_branches is None:
+    #     # 2. If None, it means they are Admin/Manager -> Allow
+    #     if allowed_branches is None:
+    #         return True
+
+    #     # 3. Check if the document's branch is in the allowed list
+    #     # If the document is new (no branch yet), allow creation so they can select their branch
+    #     if self.is_new():
+    #         return True
+
+    #     if self.branch in allowed_branches:
+    #         return True
+        
+    #     return False
+
+
+    def has_permission(self, ptype="read", user=None):
+        if not user:
+            user = frappe.session.user
+            
+        user_roles = frappe.get_roles(user)
+        
+        # [UPDATED] Allow Administrator and all HO roles to open the document
+        if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "System Manager"]):
             return True
 
-        # 3. Check if the document's branch is in the allowed list
-        # If the document is new (no branch yet), allow creation so they can select their branch
+        # Existing branch logic fallback
+        from sahayog.petty_cash_management.permissions import get_user_allowed_branches
+        allowed_branches = get_user_allowed_branches(user)
+        
+        if allowed_branches is None: # Admin/Manager fallback
+            return True
+            
         if self.is_new():
             return True
-
-        if self.branch in allowed_branches:
+            
+        if self.branch in (allowed_branches or []):
             return True
-        
+            
         return False
 
 
@@ -1905,8 +1941,14 @@ def download_consolidated_txt_api():
     import base64
     
     # 1. Permission Check
-    if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
-        frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+    # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
+    #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+
+    # 1. Permission Check
+    user_roles = frappe.get_roles()
+    if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
+        frappe.throw("Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
+
         
     today = nowdate()
     
@@ -1995,9 +2037,15 @@ def download_consolidated_excel_api():
     import base64
     
     # 1. Permission Check
-    if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
-        frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+    # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
+    #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
         
+        # 1. Permission Check
+    user_roles = frappe.get_roles()
+    if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
+        frappe.throw("Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
+
+
     today = nowdate()
     
     # 2. Fetch all matching transactions (Today + Verified)
