@@ -73,6 +73,19 @@ frappe.ui.form.on("Loan Application", {
       });
     }
   },
+// customer name auto-capitalization
+  customer_name: function (frm) {
+    if (frm.doc.customer_name) {
+      let capitalized = frm.doc.customer_name
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+      
+      if (frm.doc.customer_name !== capitalized) {
+        frm.set_value("customer_name", capitalized);
+      }
+    }
+  },
 
   loan_type: function (frm) {
     if (frm.doc.loan_type) {
