@@ -72,6 +72,56 @@ frappe.ui.form.on("Loan Application", {
         }, 100);
       });
     }
+
+    // 4. KYC Table Real-time Validation (Stop Infinite Inputting)
+    if (frm.fields_dict.kyc_documents && frm.fields_dict.kyc_documents.grid) {
+      $(frm.fields_dict.kyc_documents.grid.wrapper).on("keypress", 'input[data-fieldname="document_number"]', function (e) {
+        let grid_row = $(this).closest(".grid-row");
+        let row_id = grid_row.attr("data-name");
+        let row = frappe.get_doc("Loan Document", row_id);
+        let val = $(this).val();
+
+        if (row && row.document_type === "Aadhaar Card") {
+          // Aadhaar: 12 digits numeric
+          if (e.which < 48 || e.which > 57 || val.length >= 12) {
+            e.preventDefault();
+            return false;
+          }
+        } else if (row && row.document_type === "PAN Card") {
+          // PAN: 10 chars, strict alphanumeric
+          if (val.length >= 10) {
+            e.preventDefault();
+            return false;
+          }
+          let char = String.fromCharCode(e.which).toUpperCase();
+          let i = val.length;
+          // Format: LLLLL NNNN L
+          if (i < 5 || i === 9) { // 0-4 and 9 are Letters
+            if (!/[A-Z]/.test(char)) { e.preventDefault(); return false; }
+          } else if (i >= 5 && i <= 8) { // 5-8 are Digits
+            if (!/\d/.test(char)) { e.preventDefault(); return false; }
+          }
+        }
+      });
+
+      // Handle Paste for KYC (Auto-trim)
+      $(frm.fields_dict.kyc_documents.grid.wrapper).on("paste", 'input[data-fieldname="document_number"]', function () {
+        let $input = $(this);
+        let grid_row = $input.closest(".grid-row");
+        let row_id = grid_row.attr("data-name");
+        let row = frappe.get_doc("Loan Document", row_id);
+
+        setTimeout(() => {
+          let val = $input.val().toUpperCase();
+          if (row && row.document_type === "Aadhaar Card") {
+            $input.val(val.replace(/\D/g, "").slice(0, 12));
+          } else if (row && row.document_type === "PAN Card") {
+            $input.val(val.slice(0, 10));
+          }
+          $input.trigger("change");
+        }, 100);
+      });
+    }
   },
 // customer name auto-capitalization
   customer_name: function (frm) {
