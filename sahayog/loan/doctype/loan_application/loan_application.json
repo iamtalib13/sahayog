@@ -20,14 +20,16 @@
   "kyc_section",
   "kyc_documents",
   "asset_security_tab",
-  "security_details_section",
+  "product_selection_section",
   "loan_type",
   "security_type",
+  "column_break_ps",
   "valuation_date",
-  "column_break_2",
+  "security_details_section",
   "gold_rate_per_gram",
   "total_gross_weight",
   "total_deduction",
+  "column_break_2",
   "total_net_weight",
   "total_valuation",
   "ornaments_section",
@@ -145,9 +147,9 @@
    "label": "Asset & Security"
   },
   {
-   "fieldname": "security_details_section",
+   "fieldname": "product_selection_section",
    "fieldtype": "Section Break",
-   "label": "Gold Valuation"
+   "label": "Product Selection"
   },
   {
    "description": "Select the loan scheme (e.g., DD Loan, Gold Loan).",
@@ -166,23 +168,32 @@
    "options": "Loan Security Type"
   },
   {
+   "fieldname": "column_break_ps",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "Today",
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "The date on which the security was valued.",
    "fieldname": "valuation_date",
    "fieldtype": "Date",
    "label": "Valuation Date"
   },
   {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
+   "depends_on": "eval:doc.security_type=='Gold'",
+   "fieldname": "security_details_section",
+   "fieldtype": "Section Break",
+   "label": "Gold Valuation"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Current market price of gold per gram.",
    "fieldname": "gold_rate_per_gram",
    "fieldtype": "Currency",
    "label": "Valuation Rate Per Gram"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Calculated total gross weight of all ornaments.",
    "fieldname": "total_gross_weight",
    "fieldtype": "Float",
@@ -190,6 +201,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Total weight deducted for stones, dust, or wax.",
    "fieldname": "total_deduction",
    "fieldtype": "Float",
@@ -197,6 +209,11 @@
    "read_only": 1
   },
   {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Total net weight of gold (GW - Deduction).",
    "fieldname": "total_net_weight",
    "fieldtype": "Float",
@@ -204,6 +221,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Total market value of the gold provided.",
    "fieldname": "total_valuation",
    "fieldtype": "Currency",
@@ -217,6 +235,7 @@
    "label": "Individual Ornaments"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "List every gold item with its specific weight and purity.",
    "fieldname": "ornaments_list",
    "fieldtype": "Table",
@@ -250,12 +269,14 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.security_type != 'Gold'",
    "description": "Average amount deposited daily in the DDS account.",
    "fieldname": "avg_monthly_dds",
    "fieldtype": "Currency",
    "label": "Avg Monthly DDS Deposit"
   },
   {
+   "depends_on": "eval:doc.security_type != 'Gold'",
    "description": "Maximum consecutive days missed in daily deposits.",
    "fieldname": "dds_gap_days",
    "fieldtype": "Int",
@@ -326,6 +347,7 @@
    "label": "Tenure (Months)"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Loan-to-Value percentage applied to the collateral.",
    "fieldname": "ltv_percent",
    "fieldtype": "Percent",
@@ -350,6 +372,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Fixed fee for assessing the gold security.",
    "fieldname": "valuation_charges",
    "fieldtype": "Currency",
@@ -381,16 +404,19 @@
    "label": "Photos"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "fieldname": "photos_section",
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Clear photo of the specific ornaments.",
    "fieldname": "ornament_image",
    "fieldtype": "Attach",
    "label": "1. Ornament Image"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Photo of the sealed packet/bag.",
    "fieldname": "package_image",
    "fieldtype": "Attach",
@@ -401,12 +427,14 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Group photo of all items being pledged.",
    "fieldname": "pledge_group_image",
    "fieldtype": "Attach",
    "label": "3. Pledge(Group) Image"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Photo of the signed valuation certificate.",
    "fieldname": "valuation_report_image",
    "fieldtype": "Attach",
@@ -448,12 +476,14 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Physical ID tagged on the storage bag.",
    "fieldname": "packet_number",
    "fieldtype": "Data",
    "label": "Packet ID"
   },
   {
+   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Total physical weight of the packet (including bag).",
    "fieldname": "packet_weight",
    "fieldtype": "Float",
