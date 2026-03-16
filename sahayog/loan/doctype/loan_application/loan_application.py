@@ -199,6 +199,17 @@ class LoanApplication(Document):
         for d in self.kyc_documents:
             if not d.document_type or not d.document_number:
                 frappe.throw(_("Row {0}: KYC Type and Number are mandatory.").format(d.idx))
+            
+            # 🆔 Aadhaar Validation: Exactly 12 digits
+            if d.document_type == "Aadhaar Card":
+                if not re.match(r"^\d{12}$", str(d.document_number)):
+                    frappe.throw(_("Row {0}: Aadhaar Card number must be exactly 12 digits.").format(d.idx))
+            
+            # 💳 PAN Card Validation: 5 letters + 4 digits + 1 letter
+            elif d.document_type == "PAN Card":
+                if not re.match(r"^[A-Z]{5}\d{4}[A-Z]{1}$", str(d.document_number).upper()):
+                    frappe.throw(_("Row {0}: Invalid PAN Card format. Expected: 5 Letters, 4 Digits, 1 Letter (e.g., ABCDE1234F).").format(d.idx))
+
             if d.document_type in types:
                 frappe.throw(_("Duplicate KYC Type: {0}").format(d.document_type))
             types.append(d.document_type)
