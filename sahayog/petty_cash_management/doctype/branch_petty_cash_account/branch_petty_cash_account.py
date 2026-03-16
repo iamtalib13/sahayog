@@ -206,16 +206,38 @@ class BranchPettyCashAccount(Document):
         
         return (total_funds - total_expenses) or 0
     
-    def has_permission(self, permtype="read"):
-        allowed_branches = get_user_allowed_branches()
+    # def has_permission(self, permtype="read"):
+    #     allowed_branches = get_user_allowed_branches()
+
+    #     if allowed_branches is None:
+    #         return True
+
+    #     if self.branch in allowed_branches:
+    #         return True
+            
+    #     return False
+
+    def has_permission(self, ptype="read", user=None):
+        if not user:
+            user = frappe.session.user
+            
+        user_roles = frappe.get_roles(user)
+        
+        # [UPDATED] Allow Administrator and all HO roles to open the account document
+        if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "System Manager"]):
+            return True
+            
+        from sahayog.petty_cash_management.permissions import get_user_allowed_branches
+        allowed_branches = get_user_allowed_branches(user)
 
         if allowed_branches is None:
             return True
 
-        if self.branch in allowed_branches:
+        if self.branch in (allowed_branches or []):
             return True
             
         return False
+
     
     def update_unsettled_cash(self, amount, transaction_type):
         current_val = flt(self.unsettled_cash)
