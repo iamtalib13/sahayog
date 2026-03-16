@@ -165,7 +165,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
         if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Pending Approval") {
             
             // Check permissions explicitly
-            if (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator') {
+            // if (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator') {
+            if (frappe.user.has_role('HO Petty Cash Manager') || frappe.user.has_role('HO Petty Cash Approver') || frappe.session.user === 'Administrator') {
                 console.log(">> Adding 'Approve Limit' Button");
                 
                 frm.add_custom_button(__('Approve Limit Exceedance'), function() {
@@ -185,7 +186,9 @@ frappe.ui.form.on('Petty Cash Transaction', {
         // SCENARIO 1 & 2: Limit OK -> Needs Verification
         if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Approved") {
             
-            if (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator') {
+            // if (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator') {
+             // Added Verifier Role
+            if (frappe.user.has_role('HO Petty Cash Manager') || frappe.user.has_role('HO Petty Cash Verifier') || frappe.session.user === 'Administrator') {
                 console.log(">> Adding 'Verify' Button");
                 
                 frm.add_custom_button(__('Verify & Process'), function() {
@@ -244,7 +247,9 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 
         // --- NEW LOGIC: DOWNLOAD BUTTONS ---
-        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+        // if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
+        // Added Verifier Role
+        if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager') || frappe.user.has_role('HO Petty Cash Verifier')) {
             if (frm.doc.approval_status === 'Verified') {
                 
                 // Add Group Button
