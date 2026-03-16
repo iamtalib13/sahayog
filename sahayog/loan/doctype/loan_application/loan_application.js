@@ -73,6 +73,19 @@ frappe.ui.form.on("Loan Application", {
       });
     }
   },
+// customer name auto-capitalization
+  customer_name: function (frm) {
+    if (frm.doc.customer_name) {
+      let capitalized = frm.doc.customer_name
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+      
+      if (frm.doc.customer_name !== capitalized) {
+        frm.set_value("customer_name", capitalized);
+      }
+    }
+  },
 
   loan_type: function (frm) {
     if (frm.doc.loan_type) {
@@ -191,14 +204,34 @@ frappe.ui.form.on("Loan Document", {
   document_number: function (frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     let val = row.document_number || "";
+
     if (row.document_type === "Aadhaar Card") {
+      // Allow only numbers and max 12 digits
       let filtered = val.replace(/\D/g, "").slice(0, 12);
-      if (val !== filtered)
+      if (val !== filtered) {
         frappe.model.set_value(cdt, cdn, "document_number", filtered);
+      }
     } else if (row.document_type === "PAN Card") {
+      // Auto-capitalize and limit to 10 characters
       let filtered = val.toUpperCase().slice(0, 10);
-      if (val !== filtered)
-        frappe.model.set_value(cdt, cdn, "document_number", filtered);
+      
+      // Basic formatting as user types: 
+      // 1-5: Letters, 6-9: Digits, 10: Letter
+      let correct = "";
+      for (let i = 0; i < filtered.length; i++) {
+        let char = filtered[i];
+        if (i < 5) { // First 5 should be letters
+          if (/[A-Z]/.test(char)) correct += char;
+        } else if (i < 9) { // Next 4 should be digits
+          if (/\d/.test(char)) correct += char;
+        } else { // Last 1 should be letter
+          if (/[A-Z]/.test(char)) correct += char;
+        }
+      }
+
+      if (val !== correct) {
+        frappe.model.set_value(cdt, cdn, "document_number", correct);
+      }
     }
   },
 });
