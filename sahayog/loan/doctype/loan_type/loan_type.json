@@ -69,12 +69,14 @@
    "label": "Identity"
   },
   {
+   "description": "Product name or code.",
    "fieldname": "loan_type",
    "fieldtype": "Data",
    "label": "Loan Type Name",
    "unique": 1
   },
   {
+   "description": "Secured or Unsecured.",
    "fieldname": "loan_category",
    "fieldtype": "Select",
    "label": "Category",
@@ -82,6 +84,7 @@
   },
   {
    "default": "1",
+   "description": "Enable for new applications.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active"
@@ -91,27 +94,31 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Yearly interest %.",
    "fieldname": "interest_rate",
    "fieldtype": "Percent",
    "label": "Interest Rate (%)"
   },
   {
+   "description": "Processing fee %.",
    "fieldname": "processing_fee",
    "fieldtype": "Percent",
    "label": "Processing Fee (%)"
   },
   {
+   "description": "Loan to Value %.",
    "fieldname": "ltv_percent",
    "fieldtype": "Percent",
-   "label": "Default LTV (%)",
-   "description": "Used for secured loans."
+   "label": "Default LTV (%)"
   },
   {
+   "description": "Fixed valuation fee.",
    "fieldname": "valuation_charges",
    "fieldtype": "Currency",
    "label": "Valuation Charges (Fix)"
   },
   {
+   "description": "Stamp duty %.",
    "fieldname": "stamp_duty_percent",
    "fieldtype": "Percent",
    "label": "Stamp Duty (%)"
@@ -122,17 +129,19 @@
    "label": "Amount & Tenure Limits"
   },
   {
+   "description": "Minimum loan amount.",
    "fieldname": "minimum_loan_amounts",
    "fieldtype": "Currency",
    "label": "Min Loan Amount"
   },
   {
+   "description": "Maximum loan limit.",
    "fieldname": "maximum_loan_amount",
    "fieldtype": "Currency",
-   "label": "Max Product Ceiling",
-   "description": "Rule 4.2.6: Product policy cap."
+   "label": "Max Product Ceiling"
   },
   {
+   "description": "Maximum months for loan.",
    "fieldname": "loan_tenure",
    "fieldtype": "Int",
    "label": "Max Tenure (Months)"
@@ -149,12 +158,14 @@
   },
   {
    "default": "21",
+   "description": "Minimum age to apply.",
    "fieldname": "min_age",
    "fieldtype": "Int",
    "label": "Min Applicant Age"
   },
   {
    "default": "60",
+   "description": "Max age at loan completion.",
    "fieldname": "max_age_at_maturity",
    "fieldtype": "Int",
    "label": "Max Age at Maturity"
@@ -165,16 +176,17 @@
   },
   {
    "default": "1",
+   "description": "Require insurance/credit shield.",
    "fieldname": "credit_shield_mandatory",
    "fieldtype": "Check",
    "label": "Credit Shield Mandatory"
   },
   {
    "default": "1",
+   "description": "Screen for PEP/Sanctions.",
    "fieldname": "restricted_profiles_check",
    "fieldtype": "Check",
-   "label": "Restrict PEP/Sanctioned Profiles",
-   "description": "Rule 2.2.6: Mandatory Screening."
+   "label": "Restrict PEP/Sanctioned Profiles"
   },
   {
    "fieldname": "dds_policy_section",
@@ -183,12 +195,14 @@
   },
   {
    "default": "5",
+   "description": "Max allowed gap in DDS payments.",
    "fieldname": "max_dds_gap_days",
    "fieldtype": "Int",
    "label": "Max Allowed DDS Gaps (Days)"
   },
   {
    "default": "3",
+   "description": "Min DDS account age (months).",
    "fieldname": "min_dds_vintage_months",
    "fieldtype": "Int",
    "label": "Min DDS Account Vintage (Months)"
@@ -205,18 +219,21 @@
   },
   {
    "default": "10",
+   "description": "Weight for repayment behavior.",
    "fieldname": "weight_behavior",
    "fieldtype": "Percent",
    "label": "Behavior Weight (%)"
   },
   {
    "default": "30",
+   "description": "Weight for financial health.",
    "fieldname": "weight_financials",
    "fieldtype": "Percent",
    "label": "Financials Weight (%)"
   },
   {
    "default": "25",
+   "description": "Weight for credit history.",
    "fieldname": "weight_credit",
    "fieldtype": "Percent",
    "label": "Credit Weight (%)"
@@ -227,18 +244,21 @@
   },
   {
    "default": "20",
+   "description": "Weight for DDS consistency.",
    "fieldname": "weight_dds",
    "fieldtype": "Percent",
    "label": "DDS Behavior Weight (%)"
   },
   {
    "default": "15",
+   "description": "Weight for job stability.",
    "fieldname": "weight_stability",
    "fieldtype": "Percent",
    "label": "Stability Weight (%)"
   },
   {
    "default": "40",
+   "description": "Min score to pass.",
    "fieldname": "min_passing_score",
    "fieldtype": "Int",
    "label": "Minimum Passing Score"
@@ -255,12 +275,14 @@
   },
   {
    "default": "30",
+   "description": "% of income considered.",
    "fieldname": "income_recognition_percent",
    "fieldtype": "Percent",
    "label": "Income Recognition (%)"
   },
   {
    "default": "50",
+   "description": "Max income used for EMI %.",
    "fieldname": "max_foir_percent",
    "fieldtype": "Percent",
    "label": "Max FOIR Cap (%)"
@@ -271,6 +293,7 @@
   },
   {
    "default": "12",
+   "description": "Income estimation multiplier.",
    "fieldname": "dds_multiplier",
    "fieldtype": "Int",
    "label": "DDS Multiplier (Annualized)"
@@ -282,12 +305,14 @@
   },
   {
    "default": "85",
+   "description": "Cap for score 70-79.",
    "fieldname": "score_70_79_cap_percent",
    "fieldtype": "Percent",
    "label": "Score 70-79 Cap (%)"
   },
   {
    "default": "75",
+   "description": "Cap for score 60-69.",
    "fieldname": "score_60_69_cap_percent",
    "fieldtype": "Percent",
    "label": "Score 60-69 Cap (%)"
@@ -298,12 +323,14 @@
   },
   {
    "default": "65",
+   "description": "Cap for score 55-59.",
    "fieldname": "score_55_59_cap_percent",
    "fieldtype": "Percent",
    "label": "Score 55-59 Cap (%)"
   },
   {
    "default": "50",
+   "description": "Cap for score 50-54.",
    "fieldname": "score_50_54_cap_percent",
    "fieldtype": "Percent",
    "label": "Score 50-54 Cap (%)"
@@ -318,6 +345,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "description": "Internal notes.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Internal Product Notes"
