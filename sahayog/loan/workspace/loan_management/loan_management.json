@@ -1,0 +1,86 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"WFqDlWJ_SE\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Loan Management</span>\",\"col\":12}},{\"id\":\"CxeEqFU4KH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Application\",\"col\":3}},{\"id\":\"EklwGgVSzx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Disbursement\",\"col\":3}},{\"id\":\"UiSI4_I5sD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Repayment\",\"col\":3}},{\"id\":\"rNEIVrIVKf\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Loan Setting</b></span>\",\"col\":12}},{\"id\":\"jS4bjEHAnW\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Type\",\"col\":3}},{\"id\":\"m6eJwMqUtA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Security Type\",\"col\":3}},{\"id\":\"aeqMbJ6NA1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Gold Loan Setting</b></span>\",\"col\":12}},{\"id\":\"_XxpRil8us\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Loan Ornament Type\",\"col\":3}},{\"id\":\"P2TSgkN3Za\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gold Purity Master\",\"col\":3}}]",
+ "creation": "2026-03-16 13:45:45.389333",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "liabilities",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Loan Management",
+ "links": [],
+ "modified": "2026-03-16 13:53:12.586734",
+ "modified_by": "Administrator",
+ "module": "Loan",
+ "name": "Loan Management",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 95.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Loan Application",
+   "link_to": "Loan Application",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Gold Purity Master",
+   "link_to": "Gold Purity Master",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Loan Disbursement",
+   "link_to": "Loan Disbursement",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Loan Repayment",
+   "link_to": "Loan Repayment",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Loan Type",
+   "link_to": "Loan Type",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Loan Security Type",
+   "link_to": "Loan Security Type",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Loan Ornament Type",
+   "link_to": "Loan Ornament Type",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Loan Management"
+}
