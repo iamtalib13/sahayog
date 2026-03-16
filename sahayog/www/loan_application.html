@@ -1108,7 +1108,7 @@
         </div>
       </header>
 
-      <div v-if="currentView === 'details'" v-cloak style="padding: 1.5rem">
+      <div v-if="currentView === 'details'" v-cloak style="padding: 0.5rem">
         <!-- Mobile Progress Bar -->
         <div v-if="isMobile" style="background: white; border-radius: 12px; border: 1px solid var(--sidebar-border); padding: 0.5rem; margin-bottom: 0.75rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
@@ -1241,7 +1241,7 @@
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Status</div>
                 <div v-if="isEditing" style="margin-top: 4px;">
-                  <div class="inline-select-input" @click="openDropdownPopup('status', ['Draft', 'Under Review', 'Submitted', 'Approved', 'Disbursed', 'Closed'], 'Select Status', (val) => selectedApp.status = val)" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                  <div class="inline-select-input" @click="openEditDropdown('status', ['Draft', 'Under Review', 'Submitted', 'Approved', 'Disbursed', 'Closed'], 'Select Status')" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
                     <span>[[ selectedApp.status || 'Select Status' ]]</span>
                     <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
                   </div>
@@ -1253,7 +1253,7 @@
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Loan Type</div>
                 <div v-if="isEditing" style="margin-top: 4px;">
-                  <div class="inline-select-input" @click="openDropdownPopup('loan_type', loanTypes, 'Select Loan Type', (val) => selectedApp.loan_type = val)" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                  <div class="inline-select-input" @click="openEditDropdown('loan_type', loanTypes.map(lt => lt.name), 'Select Loan Type')" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
                     <span>[[ selectedApp.loan_type || 'Select Loan Type' ]]</span>
                     <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
                   </div>
@@ -1263,7 +1263,7 @@
               <div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Branch Code</div>
                 <div v-if="isEditing" style="margin-top: 4px;">
-                  <div class="inline-select-input" @click="openDropdownPopup('branch_code', branches, 'Select Branch', (val) => selectedApp.branch_code = val)" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                  <div class="inline-select-input" @click="openEditDropdown('branch_code', branches.map(b => b.name), 'Select Branch')" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
                     <span>[[ selectedApp.branch_code || 'Select Branch' ]]</span>
                     <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
                   </div>
@@ -1296,17 +1296,43 @@
                 <th style="padding: 0.75rem 1rem">Attachment</th>
               </tr>
               <tr
-                v-for="doc in (selectedApp.kyc_documents || [])"
+                v-for="(doc, idx) in (selectedApp.kyc_documents || [])"
                 style="border-top: 1px solid #f1f5f9"
               >
-                <td style="padding: 0.75rem 1rem">[[ doc.document_type ]]</td>
-                <td style="padding: 0.75rem 1rem">[[ doc.document_number ]]</td>
                 <td style="padding: 0.75rem 1rem">
-                  <span class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b') }">[[ doc.status ]]</span>
+                  <div v-if="isEditing" class="inline-select-input" @click="openEditKycDropdown(idx, ['Aadhaar Card', 'PAN Card', 'Passport', 'Driving License', 'Voter ID', 'Other'], 'Select Document Type')" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                    <span>[[ doc.document_type || 'Select' ]]</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
+                  </div>
+                  <span v-else>[[ doc.document_type ]]</span>
                 </td>
                 <td style="padding: 0.75rem 1rem">
+                  <input v-if="isEditing" type="text" v-model="doc.document_number" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px;" :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)" />
+                  <span v-else>[[ doc.document_number ]]</span>
+                </td>
+                <td style="padding: 0.75rem 1rem">
+                  <div v-if="isEditing" class="inline-select-input" @click="openEditKycStatusDropdown(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                    <span>[[ doc.status || 'Select' ]]</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
+                  </div>
+                  <span v-else class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b') }">[[ doc.status ]]</span>
+                </td>
+                <td style="padding: 0.75rem 1rem">
+                  <div v-if="isEditing">
+                    <input type="file" :data-doc-idx="idx" @change="onEditKycFileChange" style="width: 100%; font-size: 11px; margin-bottom: 4px;" />
+                    <div v-if="doc.document_file" style="display: flex; align-items: center; gap: 8px;">
+                      <button
+                        @click="previewUrl = (previewUrl === doc.document_file ? null : doc.document_file)"
+                        style="background: none; border: none; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer; font-size: 11px;"
+                      >
+                        [[ previewUrl === doc.document_file ? 'Hide' : 'View' ]]
+                      </button>
+                      <span style="font-size: 10px; color: var(--text-muted);">[[ doc.file_name || 'Uploaded' ]]</span>
+                    </div>
+                    <span v-else style="font-size: 10px; color: var(--text-muted);">No file uploaded</span>
+                  </div>
                   <button
-                    v-if="doc.document_file"
+                    v-else-if="doc.document_file"
                     @click="previewUrl = (previewUrl === doc.document_file ? null : doc.document_file)"
                     style="background: none; border: none; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer;"
                   >
@@ -1317,7 +1343,7 @@
               </tr>
             </table>
           </div>
-          
+
           <!-- Mobile Vertical Card View -->
           <div v-if="isMobile">
             <div
@@ -1334,30 +1360,43 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                 <span style="font-weight: 700; font-size: 13px; color: var(--text-main);">KYC Document [[ idx + 1 ]]</span>
               </div>
-              
+
               <div style="margin-bottom: 0.75rem;">
                 <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Type</label>
-                <div style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_type ]]</div>
+                <div v-if="isEditing" class="inline-select-input" @click="openEditKycDropdown(idx, ['Aadhaar Card', 'PAN Card', 'Passport', 'Driving License', 'Voter ID', 'Other'], 'Select Document Type')" style="border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                  <span>[[ doc.document_type || 'Select' ]]</span>
+                  <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
+                </div>
+                <div v-else style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_type ]]</div>
               </div>
-              
+
               <div style="margin-bottom: 0.75rem;">
                 <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Number</label>
-                <div style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_number ]]</div>
+                <input v-if="isEditing" type="text" v-model="doc.document_number" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px;" :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)" />
+                <div v-else style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_number ]]</div>
               </div>
-              
+
               <div style="margin-bottom: 0.75rem;">
                 <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Status</label>
-                <span class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b'), padding: '6px 12px', fontSize: '12px', fontWeight: '700' }">[[ doc.status ]]</span>
+                <div v-if="isEditing" class="inline-select-input" @click="openEditKycStatusDropdown(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                  <span>[[ doc.status || 'Select' ]]</span>
+                  <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
+                </div>
+                <span v-else class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b'), padding: '6px 12px', fontSize: '12px', fontWeight: '700' }">[[ doc.status ]]</span>
               </div>
-              
-              <div v-if="doc.document_file" style="margin-bottom: 0.75rem;">
+
+              <div v-if="doc.document_file || isEditing" style="margin-bottom: 0.75rem;">
                 <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Attachment</label>
-                <button
-                  @click="previewUrl = (previewUrl === doc.document_file ? null : doc.document_file)"
-                  style="background: none; border: none; padding: 0.5rem 0.75rem; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 13px; background: white; border-radius: 6px; width: 100%; text-align: left;"
-                >
-                  📄 [[ previewUrl === doc.document_file ? 'Hide' : 'View Document' ]]
-                </button>
+                <input v-if="isEditing" type="file" :data-doc-idx="idx" @change="onEditKycFileChange" style="width: 100%; font-size: 12px; margin-bottom: 4px;" />
+                <div v-if="doc.document_file" style="display: flex; align-items: center; gap: 8px;">
+                  <button
+                    @click="previewUrl = (previewUrl === doc.document_file ? null : doc.document_file)"
+                    style="background: none; border: none; padding: 0.5rem 0.75rem; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 13px; background: white; border-radius: 6px; width: 100%; text-align: left;"
+                  >
+                    📄 [[ previewUrl === doc.document_file ? 'Hide' : 'View Document' ]]
+                  </button>
+                </div>
+                <span v-if="isEditing && !doc.document_file" style="font-size: 11px; color: var(--text-muted);">No file uploaded</span>
               </div>
             </div>
           </div>
@@ -1379,7 +1418,7 @@
       </div>
 
       <!-- New Loan Application View (In-page) -->
-      <div v-if="currentView === 'create'" v-cloak :style="{ padding: isMobile ? '0.75rem' : '1.5rem' }">
+      <div v-if="currentView === 'create'" v-cloak style="padding: 0.5rem">
         <!-- Mobile Progress Bar -->
         <div v-if="isMobile" style="background: white; border-radius: 12px; border: 1px solid var(--sidebar-border); padding: 0.5rem; margin-bottom: 0.75rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
@@ -2326,9 +2365,11 @@
 
     <!-- Custom Call Modal -->
     <div
+      v-if="showCallModal"
       class="call-modal-overlay"
       :class="{ active: showCallModal }"
       @click.self="showCallModal = false"
+      style="pointer-events: auto;"
     >
       <div class="call-modal">
         <div class="call-modal-title">Call [[ callCustomerName ]]</div>
@@ -2349,10 +2390,11 @@
 
     <!-- Dropdown Selection Popup Modal (Mobile & Desktop) -->
     <div
+      v-if="showDropdownPopup"
       class="call-modal-overlay"
       :class="{ active: showDropdownPopup }"
-      @click.self="closeDropdownPopup"
-      style="z-index: 10002"
+      @click.self="closeDropdownPopup()"
+      style="z-index: 10002; pointer-events: auto;"
     >
       <div
         class="call-modal"
@@ -2363,6 +2405,7 @@
           padding: 0;
           display: flex;
           flex-direction: column;
+          pointer-events: auto;
         "
       >
         <div
@@ -2377,7 +2420,7 @@
         >
           <span>[[ dropdownPopupTitle ]]</span>
           <button
-            @click="closeDropdownPopup"
+            @click="closeDropdownPopup()"
             style="
               background: none;
               border: none;
@@ -2396,7 +2439,7 @@
               v-model="dropdownPopupSearchQuery"
               placeholder="Search..."
               style="
-                width: 100%;
+                width: 80%;
                 padding: 0.5rem 0.75rem 0.5rem 2.25rem;
                 border: 1px solid var(--sidebar-border);
                 border-radius: 8px;
@@ -2497,6 +2540,9 @@
           dropdownPopupCallback: null,
           activeDocDropdownIdx: -1,
           activeDocStatusDropdownIdx: -1,
+          // Edit mode dropdown state
+          editDropdownField: "",
+          editDropdownOptions: [],
           saving: false,
           loanTypes: [],
           branches: [],
@@ -2736,11 +2782,23 @@
             this.dropdownPopupTitle = title;
             this.dropdownPopupOptions = options.map((opt) => opt.name || opt);
             this.dropdownPopupSearchQuery = "";
-            this.dropdownPopupSelected = callback ? (this.selectedApp[field] || "") : (this.newApp[field] || "");
+            this.dropdownPopupSelected = callback ? (this.newApp[field] || "") : (this.newApp[field] || "");
             this.dropdownPopupCallback = callback || ((value) => {
               this.newApp[field] = value;
             });
             setTimeout(() => lucide.createIcons(), 50);
+          },
+
+          closeDropdownPopup() {
+            this.showDropdownPopup = false;
+            setTimeout(() => {
+              this.dropdownPopupOptions = [];
+              this.dropdownPopupSearchQuery = "";
+              this.dropdownPopupSelected = "";
+              this.dropdownPopupCallback = null;
+              this.activeDocDropdownIdx = -1;
+              this.activeDocStatusDropdownIdx = -1;
+            }, 50);
           },
 
           openDocDropdownPopup(idx, options, title) {
@@ -2791,14 +2849,67 @@
             this.closeDropdownPopup();
           },
 
-          closeDropdownPopup() {
-            this.showDropdownPopup = false;
-            this.dropdownPopupOptions = [];
+          // Edit mode dropdown methods
+          openEditDropdown(field, options, title) {
+            this.editDropdownField = field;
+            this.showDropdownPopup = true;
+            this.dropdownPopupTitle = title;
+            this.dropdownPopupOptions = options;
             this.dropdownPopupSearchQuery = "";
-            this.dropdownPopupSelected = "";
-            this.dropdownPopupCallback = null;
-            this.activeDocDropdownIdx = -1;
-            this.activeDocStatusDropdownIdx = -1;
+            this.dropdownPopupSelected = this.selectedApp[field] || "";
+            this.dropdownPopupCallback = (value) => {
+              this.selectedApp[field] = value;
+            };
+            setTimeout(() => lucide.createIcons(), 50);
+          },
+
+          openEditKycDropdown(idx, options, title) {
+            this.editDropdownField = 'kyc_document_type_' + idx;
+            this.showDropdownPopup = true;
+            this.dropdownPopupTitle = title;
+            this.dropdownPopupOptions = options;
+            this.dropdownPopupSearchQuery = "";
+            this.dropdownPopupSelected = this.selectedApp.kyc_documents[idx]?.document_type || "";
+            this.dropdownPopupCallback = (value) => {
+              if (this.selectedApp.kyc_documents[idx]) {
+                this.selectedApp.kyc_documents[idx].document_type = value;
+              }
+            };
+            setTimeout(() => lucide.createIcons(), 50);
+          },
+
+          openEditKycStatusDropdown(idx, options, title) {
+            this.editDropdownField = 'kyc_status_' + idx;
+            this.showDropdownPopup = true;
+            this.dropdownPopupTitle = title;
+            this.dropdownPopupOptions = options;
+            this.dropdownPopupSearchQuery = "";
+            this.dropdownPopupSelected = this.selectedApp.kyc_documents[idx]?.status || "";
+            this.dropdownPopupCallback = (value) => {
+              if (this.selectedApp.kyc_documents[idx]) {
+                this.selectedApp.kyc_documents[idx].status = value;
+              }
+            };
+            setTimeout(() => lucide.createIcons(), 50);
+          },
+
+          handleEditKycFileUpload(event, idx) {
+            const file = event.target.files[0];
+            console.log("File selected for KYC doc", idx, ":", file ? file.name : "No file");
+            if (file && this.selectedApp.kyc_documents[idx]) {
+              this.selectedApp.kyc_documents[idx].file_name = file.name;
+              this.selectedApp.kyc_documents[idx].file = file;
+              this.selectedApp.kyc_documents[idx].local_preview = URL.createObjectURL(file);
+              // Ensure doctype is set for Frappe child table
+              this.selectedApp.kyc_documents[idx].doctype = "Loan Document";
+              console.log("KYC doc", idx, "updated with file:", this.selectedApp.kyc_documents[idx]);
+            }
+          },
+
+          onEditKycFileChange(event) {
+            const idx = parseInt(event.target.getAttribute('data-doc-idx'));
+            console.log("File input changed for index:", idx);
+            this.handleEditKycFileUpload(event, idx);
           },
 
           addKycRow() {
@@ -2830,6 +2941,7 @@
           async uploadFile(file) {
             const formData = new FormData();
             formData.append("file", file);
+            formData.append("is_private", 0);
 
             const csrfToken = await this.ensureCsrfToken();
             const headers = {};
@@ -2838,7 +2950,7 @@
             }
 
             const response = await fetch(
-              "/api/method/frappe.core.doctype.file.file.upload_file",
+              "/api/method/frappe.handler.upload_file",
               {
                 method: "POST",
                 headers: headers,
@@ -2847,8 +2959,10 @@
               },
             );
             const res = await response.json();
+            console.log("Upload file response:", res);
             if (res.message) {
-              return res.message.file_url;
+              // Handle both direct file_url and nested message structure
+              return res.message.file_url || res.message;
             }
             return null;
           },
@@ -2903,6 +3017,31 @@
           async updateApplication() {
             this.saving = true;
             try {
+              // Upload any pending files first
+              if (this.selectedApp.kyc_documents) {
+                for (let i = 0; i < this.selectedApp.kyc_documents.length; i++) {
+                  const doc = this.selectedApp.kyc_documents[i];
+                  console.log("KYC Doc", i, ":", {
+                    file_name: doc.file_name,
+                    has_file: !!doc.file,
+                    document_file: doc.document_file,
+                    has_local_preview: !!doc.local_preview
+                  });
+                  if (doc.file) {
+                    try {
+                      console.log("Uploading file for KYC doc", i, ":", doc.file_name);
+                      const fileUrl = await this.uploadFile(doc.file);
+                      console.log("File uploaded, URL:", fileUrl);
+                      if (fileUrl) {
+                        doc.document_file = fileUrl;
+                      }
+                    } catch (e) {
+                      console.error("File upload error:", e);
+                    }
+                  }
+                }
+              }
+
               // Get CSRF token from cookie
               const csrfToken = await this.ensureCsrfToken();
               const headers = {
@@ -2913,19 +3052,35 @@
                 headers["X-Frappe-CSRF-Token"] = csrfToken;
               }
 
+              // Prepare data for submission (remove file objects and local_preview)
+              const submitData = { ...this.selectedApp };
+              if (submitData.kyc_documents) {
+                submitData.kyc_documents = submitData.kyc_documents.map(doc => {
+                  // Ensure doctype is set for all child table items
+                  if (!doc.doctype) {
+                    doc.doctype = "Loan Document";
+                  }
+                  return {
+                    ...doc,
+                    file: undefined,
+                    local_preview: undefined,
+                  };
+                });
+              }
+
+              console.log("Submitting update data:", JSON.stringify(submitData, null, 2));
+
               const response = await fetch(
                 "/api/method/sahayog.api.loan_application.update_loan_application",
                 {
                   method: "POST",
                   headers: headers,
-                  body: JSON.stringify({
-                    name: this.selectedApp.name,
-                    ...this.selectedApp
-                  }),
+                  body: JSON.stringify(submitData),
                   credentials: "include",
                 },
               );
               const res = await response.json();
+              console.log("Update response:", res);
               if (res.message && res.message.status === "success") {
                 frappe.show_alert({
                   message: "Loan Application updated successfully",
@@ -3000,7 +3155,7 @@
               // Upload any pending files
               for (let i = 0; i < this.newApp.kyc_documents.length; i++) {
                 const doc = this.newApp.kyc_documents[i];
-                if (doc.file && !doc.document_file) {
+                if (doc.file) {
                   try {
                     const fileUrl = await this.uploadFile(doc.file);
                     if (fileUrl) {
