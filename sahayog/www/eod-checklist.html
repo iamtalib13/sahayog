@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EOD Checklist - Workspace</title>
+    <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light Mode (Default) */
+            --bg-color: #f8f9fb;
+            --sidebar-bg: #ffffff;
+            --chat-bg: #f8f9fb;
+            --card-bg: #ffffff;
+            --card-border: #eef1f4;
+            --text-primary: #1a1d21;
+            --text-secondary: #707991;
+            --accent-green: #00b09b;
+            --accent-orange: #ff5c00;
+            --message-me-bg: #e8ebfa;
+            --message-other-bg: #ffffff;
+            --input-bg: #ffffff;
+            --checkbox-border: #d1d5db;
+        }
+
+        [v-cloak] {
+            display: none !important;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Sidebar / Checklist Section */
+        .sidebar {
+            flex: 1;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        /* Sidebar Header */
+        .header {
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .capsule-btn {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .capsule-btn:not(:disabled):hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-start {
+            background-color: var(--accent-green);
+            color: white;
+        }
+
+        .btn-started {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+            border: 1px solid var(--card-border);
+            box-shadow: none;
+        }
+
+        .btn-end {
+            background-color: var(--accent-orange);
+            color: white;
+        }
+
+        .btn-completed {
+            background-color: #f3f4f6;
+            color: var(--accent-green);
+            cursor: default;
+            border: 1px solid var(--card-border);
+            box-shadow: none;
+        }
+
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .app-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-green), #96c93d);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 16px;
+        }
+
+        .title h1 {
+            font-size: 22px;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .current-timestamp {
+            font-size: 13px;
+            color: var(--accent-green);
+            font-weight: 600;
+            margin: 4px 0;
+        }
+
+        .title p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* Progress */
+        .progress-section {
+            margin-bottom: 32px;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .progress-bar-bg {
+            height: 8px;
+            background-color: rgba(128, 128, 128, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-green);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* Checklist Items */
+        .section-item {
+            margin-bottom: 28px;
+        }
+
+        .section-header {
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            font-size: 14px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .task-item:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .task-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--checkbox-border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .checkbox.checked {
+            background-color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .task-text {
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .task-text.done {
+            color: var(--text-secondary);
+            text-decoration: line-through;
+        }
+
+        .task-meta {
+            align-self: flex-end;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .task-completed-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            background: #eee;
+        }
+
+        .task-completed-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .task-completed-time {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Chat Section */
+        .chat-container {
+            flex: 1;
+            background-color: var(--chat-bg);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 20px 32px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title h2 {
+            font-size: 18px;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .messages-area {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Message Styles */
+        .message-row {
+            display: flex;
+            gap: 14px;
+            max-width: 85%;
+        }
+
+        .message-row.me {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #eee;
+            flex-shrink: 0;
+            object-fit: cover;
+        }
+
+        .message-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: flex;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .message-row.me .message-info {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            padding: 14px 18px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            position: relative;
+            font-weight: 500;
+        }
+
+        .message-row.other .bubble {
+            background-color: var(--message-other-bg);
+            border-top-left-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .message-row.me .bubble {
+            background-color: var(--message-me-bg);
+            border-top-right-radius: 4px;
+            color: #1a1d21;
+        }
+
+        .chat-input-area {
+            padding: 24px 32px;
+            background: transparent;
+        }
+
+        .input-floating-bar {
+            background: var(--input-bg);
+            border-radius: 18px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--card-border);
+        }
+
+        .input-floating-bar input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            color: var(--text-primary);
+            padding: 10px 0;
+            font-weight: 500;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 10px;
+            color: #b0b9c1;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+            font-size: 18px;
+        }
+
+        .action-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .send-pill {
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .send-pill:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 176, 155, 0.3);
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            border: 2px dashed var(--card-border);
+            margin-top: 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            filter: grayscale(1);
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 32px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-green), #96c93d);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+            font-size: 40px;
+            box-shadow: 0 10px 20px rgba(0, 176, 155, 0.2);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .modal-close-btn {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .modal-close-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .btn-modal-cancel {
+            background: #f3f4f6;
+            color: var(--text-secondary);
+            border: 1px solid var(--card-border);
+            padding: 14px 24px;
+            border-radius: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn-modal-confirm {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 2;
+        }
+
+        .btn-modal-confirm.start {
+            background: var(--accent-green);
+        }
+
+        .btn-modal-confirm.end {
+            background: var(--accent-orange);
+        }
+
+        .btn-modal-cancel:hover,
+        .btn-modal-confirm:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+
+        /* Chat States */
+        .chat-not-started {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            text-align: center;
+            padding: 40px;
+        }
+
+        .chat-closed-notice {
+            background: #fff4ed;
+            color: #c2410c;
+            padding: 16px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            border-top: 1px solid #ffedd5;
+        }
+    </style>
+</head>
+
+<body id="app" v-cloak>
+    <div class="app-container">
+        <!-- Sidebar: Checklist -->
+        <aside class="sidebar">
+            <div class="header">
+                <div class="title-group">
+                    <div class="app-icon">S</div>
+                    <div class="title">
+                        <h1>EOD Checklist</h1>
+                        <div class="current-timestamp" v-text="currentDateTime"></div>
+                        <p v-text="project.subtitle"></p>
+                    </div>
+                </div>
+                <button class="capsule-btn" :class="{ 
+                        'btn-start': eodStatus === 'idle', 
+                        'btn-started': eodStatus === 'started' && !isAllTasksDone(),
+                        'btn-end': eodStatus === 'started' && isAllTasksDone(),
+                        'btn-completed': eodStatus === 'completed'
+                    }" :disabled="(eodStatus === 'started' && !isAllTasksDone()) || eodStatus === 'completed'"
+                    @click="handleEodAction">
+                    <span v-if="eodStatus === 'idle'">Start</span>
+                    <span v-else-if="eodStatus === 'started' && !isAllTasksDone()">Started</span>
+                    <span v-else-if="eodStatus === 'started' && isAllTasksDone()">End</span>
+                    <span v-else-if="eodStatus === 'completed'">Completed</span>
+                </button>
+            </div>
+
+            <div v-if="eodStatus === 'idle'" class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-text">EOD still not started</div>
+            </div>
+
+            <div v-if="eodStatus !== 'idle'" class="progress-section">
+                <div class="progress-labels">
+                    <span>Task Progress</span>
+                    <span><span v-text="calculateProgress()"></span>%</span>
+                </div>
+                <div class="progress-labels" style="margin-top: -8px; margin-bottom: 12px;">
+                    <span style="font-weight: 500; color: var(--text-secondary);">Daily Operations Routine</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
+                </div>
+            </div>
+
+            <div v-if="eodStatus !== 'idle'" class="checklist">
+                <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item">
+                    <div class="section-header">
+                        <span class="section-title" v-text="section.title"></span>
+                    </div>
+
+                    <div class="task-list">
+                        <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
+                            @click="toggleTask(task)">
+                            <div class="task-left">
+                                <div class="checkbox" :class="{ checked: task.done }"></div>
+                                <span class="task-text" :class="{ done: task.done }" v-text="task.text"></span>
+                            </div>
+                            <div v-if="task.done" class="task-meta">
+                                <div class="task-completed-avatar" :title="task.completedBy">
+                                    <img :src="'https://i.pravatar.cc/100?u=' + task.completedBy" alt="User">
+                                </div>
+                                <span class="task-completed-time" v-text="task.completedAt"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content: Chat -->
+        <main class="chat-container">
+            <div v-if="eodStatus !== 'idle'" style="display: flex; flex-direction: column; flex: 1;">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <h2>Group Chat</h2>
+                    </div>
+                </div>
+
+                <div class="messages-area" id="messages">
+                    <div v-for="msg in chat.messages" :class="['message-row', msg.isMe ? 'me' : 'other']"
+                        :key="msg.time + msg.text">
+                        <img v-if="!msg.isMe" :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender"
+                            class="avatar">
+                        <div class="message-content">
+                            <div class="message-info">
+                                <span v-text="msg.isMe ? 'You' : msg.sender" style="font-weight: 600;"></span>
+                                <span v-text="msg.time"></span>
+                            </div>
+                            <div class="bubble" v-text="msg.text"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="eodStatus === 'started'" class="chat-input-area">
+                    <div class="input-floating-bar">
+                        <div class="input-actions">
+                            <button class="action-btn">😊</button>
+                        </div>
+                        <input type="text" v-model="chat.newMessage" placeholder="Write your message..."
+                            @keyup.enter="sendMessage">
+                        <div class="input-actions">
+                            <button class="action-btn">📎</button>
+                        </div>
+                        <button class="send-pill" @click="sendMessage">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div v-else-if="eodStatus === 'completed'" class="chat-closed-notice">
+                    Chat is closed as EOD for <span v-text="currentDateFormatted"></span> has been completed.
+                </div>
+            </div>
+            <div v-else class="chat-not-started">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-text">Start EOD process to access group chat</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Stunning Modal -->
+    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+        <div class="modal-content">
+            <div class="success-icon">✓</div>
+            <div class="modal-title">EOD Complete!</div>
+            <div class="modal-body">
+                Great job! End of Day process for <br>
+                <strong v-text="currentDateFormatted"></strong> has been successfully completed and logged.
+            </div>
+            <button class="modal-close-btn" @click="showModal = false">Close</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+        <div class="modal-content">
+            <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">?</div>
+            <div class="modal-title" v-text="confirmModal.title"></div>
+            <div class="modal-body" v-text="confirmModal.message"></div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" @click="confirmModal.show = false">Cancel</button>
+                <button class="btn-modal-confirm" :class="confirmModal.type" @click="executeConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            function initApp() {
+                if (typeof PetiteVue === 'undefined') {
+                    setTimeout(initApp, 100);
+                    return;
+                }
+
+                const app = PetiteVue.createApp({
+                    currentDateTime: '',
+                    eodStatus: 'idle', // idle, started, completed
+                    showModal: false,
+                    confirmModal: {
+                        show: false,
+                        title: '',
+                        message: '',
+                        type: '', // 'start' or 'end'
+                        onConfirm: null
+                    },
+                    currentDateFormatted: '',
+                    project: {
+                        subtitle: 'Branch Operations - Daily Routine',
+                        sections: [
+                            {
+                                title: 'Cash & Vault',
+                                tasks: [
+                                    { text: 'Verify Physical Cash', done: true, completedBy: 'Me', completedDate: 'Mar 17', completedAt: '04:30 PM' },
+                                    { text: 'Vault Closing Protocol', done: true, completedBy: 'Me', completedDate: 'Mar 17', completedAt: '04:45 PM' },
+                                    { text: 'Check ATM Cash Levels', done: false }
+                                ]
+                            },
+                            {
+                                title: 'Documentation',
+                                tasks: [
+                                    { text: 'File Day Book', done: true, completedBy: 'Me', completedDate: 'Mar 17', completedAt: '05:00 PM' },
+                                    { text: 'Verify Loan Applications', done: false },
+                                    { text: 'Sign Branch Register', done: false }
+                                ]
+                            }
+                        ]
+                    },
+                    chat: {
+                        messages: [
+                            { sender: 'Kate Johnson', text: 'Hi everyone, let\'s start the call soon 😊', time: '11:24 AM', isMe: false, avatar: 'https://i.pravatar.cc/100?u=kate' },
+                            { sender: 'Evan Scott', text: 'Recently I saw properties in a great location that I did not pay attention to before 😅', time: '11:25 AM', isMe: false, avatar: 'https://i.pravatar.cc/100?u=evan' },
+                            { sender: 'Me', text: 'He creates an atmosphere of mystery 😉', time: '11:26 AM', isMe: true },
+                            { sender: 'Evan Scott', text: 'Robert, don\'t be like that and say something more :)', time: '11:34 AM', isMe: false, avatar: 'https://i.pravatar.cc/100?u=evan' },
+                        ],
+                        newMessage: ''
+                    },
+
+                    updateDateTime() {
+                        const now = new Date();
+                        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                        this.currentDateTime = now.toLocaleDateString('en-US', options);
+                        this.currentDateFormatted = now.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+                    },
+
+                    isAllTasksDone() {
+                        let totalTasks = 0, completedTasks = 0;
+                        if (!this.project || !this.project.sections) return false;
+                        this.project.sections.forEach(s => {
+                            if (s.tasks) {
+                                totalTasks += s.tasks.length;
+                                completedTasks += s.tasks.filter(t => t.done).length;
+                            }
+                        });
+                        return totalTasks > 0 && totalTasks === completedTasks;
+                    },
+
+                    handleEodAction() {
+                        if (this.eodStatus === 'idle') {
+                            this.confirmModal.title = 'Start EOD Process';
+                            this.confirmModal.message = 'Are you sure you want to start the EOD process for today?';
+                            this.confirmModal.type = 'start';
+                            this.confirmModal.show = true;
+                        } else if (this.eodStatus === 'started' && this.isAllTasksDone()) {
+                            this.confirmModal.title = 'End EOD Process';
+                            this.confirmModal.message = 'Are you sure you want to end the EOD process? This will close the checklist and chat.';
+                            this.confirmModal.type = 'end';
+                            this.confirmModal.show = true;
+                        }
+                    },
+
+                    executeConfirm() {
+                        const type = this.confirmModal.type;
+                        this.confirmModal.show = false;
+                        
+                        if (type === 'start') {
+                            this.eodStatus = 'started';
+                            this.updateDateTime();
+                        } else if (type === 'end') {
+                            this.eodStatus = 'completed';
+                            this.showModal = true;
+                        }
+                    },
+
+                    calculateProgress() {
+                        let totalTasks = 0, completedTasks = 0;
+                        if (!this.project || !this.project.sections) return 0;
+                        this.project.sections.forEach(s => {
+                            if (s.tasks) {
+                                totalTasks += s.tasks.length;
+                                completedTasks += s.tasks.filter(t => t.done).length;
+                            }
+                        });
+                        return totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                    },
+
+                    toggleTask(task) {
+                        if (this.eodStatus !== 'started') return;
+                        
+                        task.done = !task.done;
+                        if (task.done) {
+                            const now = new Date();
+                            task.completedBy = 'Me';
+                            task.completedDate = now.toLocaleDateString([], { day: '2-digit', month: 'short' });
+                            task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        } else {
+                            task.completedBy = null;
+                            task.completedDate = null;
+                            task.completedAt = null;
+                        }
+                    },
+
+                    sendMessage() {
+                        if (!this.chat.newMessage.trim()) return;
+
+                        this.chat.messages.push({
+                            sender: 'Me',
+                            text: this.chat.newMessage,
+                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            isMe: true
+                        });
+
+                        this.chat.newMessage = '';
+
+                        setTimeout(() => {
+                            const el = document.getElementById('messages');
+                            if (el) el.scrollTop = el.scrollHeight;
+                        }, 50);
+                    }
+                });
+
+                app.mount('#app');
+                app.updateDateTime();
+                setInterval(() => app.updateDateTime(), 60000);
+            }
+
+            initApp();
+        })();
+    </script>
+</body>
+
+</html>
