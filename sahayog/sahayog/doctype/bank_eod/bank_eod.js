@@ -32,3 +32,4 @@ frappe.ui.form.on("Bank EOD", {
         });
     }
 });
+// END
