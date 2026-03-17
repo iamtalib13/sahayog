@@ -210,6 +210,7 @@ permission_query_conditions = {
     "Share Transfer": "sahayog.permissions.get_share_transfer_permission",
     "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.get_transaction_query_conditions",
     "Employee Material Request": "sahayog.permissions.get_employee_material_request_permission",
+    "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.get_permission_query_conditions",
 }
 #
 # has_permission = {
@@ -218,6 +219,7 @@ permission_query_conditions = {
 
 has_permission = {
     "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.has_transaction_permission",
+    "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.has_permission",
 }
 
 # DocType Class
@@ -364,7 +366,8 @@ scheduler_events = {
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
-        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
+        "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle",
+        "sahayog.sahayog.doctype.bank_eod.bank_eod.create_daily_bank_eod"
     ],
     # --- Example blocks below: Uncomment if/when needed ---
     # "all": [
