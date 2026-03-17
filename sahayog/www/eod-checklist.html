@@ -482,6 +482,61 @@
         .chat-input-area {
             padding: 24px 32px;
             background: transparent;
+            position: relative;
+        }
+
+        /* Emoji Picker Styles */
+        .emoji-picker {
+            position: absolute;
+            bottom: 100%;
+            left: 32px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--card-border);
+            width: 280px;
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 100;
+            margin-bottom: 10px;
+            animation: slideUp 0.2s ease-out;
+        }
+
+        .emoji-picker-header {
+            padding: 12px;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            padding: 10px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .emoji-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .emoji-item:hover {
+            background-color: var(--bg-color);
         }
 
         .input-floating-bar {
@@ -862,10 +917,22 @@
                 </div>
 
                 <div v-if="eodStatus === 'started'" class="chat-input-area">
+                    <!-- Emoji Picker UI -->
+                    <div v-if="chat.showEmojiPicker" class="emoji-picker">
+                        <div class="emoji-picker-header">
+                            <span>Emojis</span>
+                            <span style="cursor: pointer;" @click="chat.showEmojiPicker = false">✕</span>
+                        </div>
+                        <div class="emoji-grid">
+                            <span v-for="emoji in chat.emojiList" :key="emoji" class="emoji-item" 
+                                @click="addEmoji(emoji)" v-text="emoji"></span>
+                        </div>
+                    </div>
+
                     <input type="file" id="fileInput" @change="handleFileUpload" style="display: none;" multiple>
                     <div class="input-floating-bar">
                         <div class="input-actions">
-                            <button class="action-btn">😊</button>
+                            <button class="action-btn" @click="chat.showEmojiPicker = !chat.showEmojiPicker">😊</button>
                         </div>
                         <input type="text" v-model="chat.newMessage" placeholder="Write your message..."
                             @keyup.enter="sendMessage">
@@ -969,7 +1036,9 @@
                             { sender: 'Me', text: 'He creates an atmosphere of mystery 😉', time: '11:26 AM', isMe: true },
                             { sender: 'Evan Scott', text: 'Robert, don\'t be like that and say something more :)', time: '11:34 AM', isMe: false, avatar: 'https://i.pravatar.cc/100?u=evan' },
                         ],
-                        newMessage: ''
+                        newMessage: '',
+                        showEmojiPicker: false,
+                        emojiList: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤']
                     },
 
                     updateDateTime() {
@@ -1071,8 +1140,8 @@
                         if (!files || files.length === 0) return;
 
                         Array.from(files).forEach(file => {
-                            if (file.size > 10 * 1024 * 1024) {
-                                alert(`File "${file.name}" is too large. Max size is 10MB.`);
+                            if (file.size > 50 * 1024 * 1024) {
+                                alert(`File "${file.name}" is too large. Max size is 50MB.`);
                                 return;
                             }
 
@@ -1104,6 +1173,10 @@
                         e.target.value = '';
                     },
 
+                    addEmoji(emoji) {
+                        this.chat.newMessage += emoji;
+                    },
+
                     sendMessage() {
                         if (!this.chat.newMessage.trim()) return;
 
@@ -1115,6 +1188,7 @@
                         });
 
                         this.chat.newMessage = '';
+                        this.chat.showEmojiPicker = false;
 
                         setTimeout(() => {
                             const el = document.getElementById('messages');
