@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Petite-Vue</title>
+    <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-box {
+            background: #d1fae5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .counter {
+            font-size: 72px;
+            font-weight: bold;
+            color: #3b82f6;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .success-box {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-scope @vue:mounted="init()">
+        <div class="container">
+            <h1>Petite-Vue Test</h1>
+
+            <div class="status-box">
+                <p><strong>Status:</strong> [[ status ]]</p>
+            </div>
+
+            <div class="counter">[[ count ]]</div>
+
+            <button @click="testVue()">Test Vue</button>
+
+            <div v-if="working" class="success-box">
+                Petite-Vue is Working
+            </div>
+        </div>
+    </div>
+
+    <script>
+        PetiteVue.createApp({
+            $delimiters: ['[[', ']]'],
+            status: 'Ready to test',
+            count: 0,
+            working: false,
+
+            testVue() {
+                this.count++;
+                this.working = true;
+                this.status = 'Working! Clicked ' + this.count + ' times';
+            },
+
+            init() {
+                console.log('Petite-Vue initialized');
+            }
+        }).mount('#app'); 
+    </script>
+</body>
+
+</html>
