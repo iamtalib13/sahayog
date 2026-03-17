@@ -592,20 +592,33 @@
         }
 
         .modal-close-btn {
-            background: var(--text-primary);
-            color: white;
-            border: none;
-            padding: 14px 32px;
+            background: #f3f4f6;
+            color: var(--text-secondary);
+            border: 1px solid var(--card-border);
+            padding: 14px 24px;
             border-radius: 16px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
-            width: 100%;
+            flex: 1;
         }
 
-        .modal-close-btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .modal-next-btn {
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .modal-close-btn:hover,
+        .modal-next-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
         }
 
         .modal-footer {
@@ -706,6 +719,10 @@
                     
                     <button v-if="eodStatus === 'started' && isAllTasksDone()" class="capsule-btn btn-end" @click="handleEodAction">
                         End
+                    </button>
+
+                    <button v-if="eodStatus === 'completed'" class="capsule-btn btn-start" @click="resetForNextDay">
+                        Next Day EOD
                     </button>
                 </div>
             </div>
@@ -816,7 +833,10 @@
                 Great job! End of Day process for <br>
                 <strong v-text="currentDateFormatted"></strong> has been successfully completed and logged.
             </div>
-            <button class="modal-close-btn" @click="showModal = false">Close</button>
+            <div class="modal-footer">
+                <button class="modal-close-btn" @click="showModal = false">View EOD</button>
+                <button class="modal-next-btn" @click="resetForNextDay">Next Day EOD</button>
+            </div>
         </div>
     </div>
 
@@ -956,6 +976,26 @@
                             task.completedDate = null;
                             task.completedAt = null;
                         }
+                    },
+
+                    resetForNextDay() {
+                        this.eodStatus = 'idle';
+                        this.showModal = false;
+                        if (this.project && this.project.sections) {
+                            this.project.sections.forEach(s => {
+                                if (s.tasks) {
+                                    s.tasks.forEach(t => {
+                                        t.done = false;
+                                        t.completedBy = null;
+                                        t.completedDate = null;
+                                        t.completedAt = null;
+                                    });
+                                }
+                            });
+                        }
+                        this.chat.messages = [
+                            { sender: 'System', text: 'New EOD session started.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isMe: false }
+                        ];
                     },
 
                     sendMessage() {
