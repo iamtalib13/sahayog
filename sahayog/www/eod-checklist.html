@@ -426,6 +426,59 @@
             color: #1a1d21;
         }
 
+        /* Attachment Styles */
+        .attachment-preview {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .attachment-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-green);
+            color: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .attachment-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .attachment-name {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+
+        .attachment-size {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .attachment-image {
+            margin-top: 8px;
+            max-width: 100%;
+            border-radius: 8px;
+            display: block;
+            cursor: pointer;
+            border: 1px solid var(--card-border);
+        }
+
         .chat-input-area {
             padding: 24px 32px;
             background: transparent;
@@ -702,10 +755,10 @@
                         <p v-text="project.subtitle"></p>
                     </div>
                 </div>
-                
+
                 <div class="header-actions">
                     <!-- Status Capsule -->
-                    <div v-if="eodStatus !== 'idle'" class="status-capsule" 
+                    <div v-if="eodStatus !== 'idle'" class="status-capsule"
                         :class="isAllTasksDone() ? 'status-completed' : 'status-pending'">
                         <div class="status-dot"></div>
                         <span v-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
@@ -716,8 +769,9 @@
                     <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
                         Start
                     </button>
-                    
-                    <button v-if="eodStatus === 'started' && isAllTasksDone()" class="capsule-btn btn-end" @click="handleEodAction">
+
+                    <button v-if="eodStatus === 'started' && isAllTasksDone()" class="capsule-btn btn-end"
+                        @click="handleEodAction">
                         End
                     </button>
 
@@ -789,12 +843,26 @@
                                 <span v-text="msg.isMe ? 'You' : msg.sender" style="font-weight: 600;"></span>
                                 <span v-text="msg.time"></span>
                             </div>
-                            <div class="bubble" v-text="msg.text"></div>
+                            <div class="bubble">
+                                <div v-if="msg.text" v-text="msg.text"></div>
+                                <div v-if="msg.attachment" class="attachment-container">
+                                    <img v-if="msg.attachment.isImage" :src="msg.attachment.data"
+                                        class="attachment-image" @click="window.open(msg.attachment.data)">
+                                    <div v-else class="attachment-preview">
+                                        <div class="attachment-icon">📄</div>
+                                        <div class="attachment-info">
+                                            <span class="attachment-name" v-text="msg.attachment.name"></span>
+                                            <span class="attachment-size" v-text="msg.attachment.size"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div v-if="eodStatus === 'started'" class="chat-input-area">
+                    <input type="file" id="fileInput" @change="handleFileUpload" style="display: none;" multiple>
                     <div class="input-floating-bar">
                         <div class="input-actions">
                             <button class="action-btn">😊</button>
@@ -802,7 +870,7 @@
                         <input type="text" v-model="chat.newMessage" placeholder="Write your message..."
                             @keyup.enter="sendMessage">
                         <div class="input-actions">
-                            <button class="action-btn">📎</button>
+                            <button class="action-btn" @click="document.getElementById('fileInput').click()">📎</button>
                         </div>
                         <button class="send-pill" @click="sendMessage">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -940,7 +1008,7 @@
                     executeConfirm() {
                         const type = this.confirmModal.type;
                         this.confirmModal.show = false;
-                        
+
                         if (type === 'start') {
                             this.eodStatus = 'started';
                             this.updateDateTime();
@@ -964,7 +1032,7 @@
 
                     toggleTask(task) {
                         if (this.eodStatus !== 'started') return;
-                        
+
                         task.done = !task.done;
                         if (task.done) {
                             const now = new Date();
@@ -996,6 +1064,44 @@
                         this.chat.messages = [
                             { sender: 'System', text: 'New EOD session started.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isMe: false }
                         ];
+                    },
+
+                    handleFileUpload(e) {
+                        const files = e.target.files;
+                        if (!files || files.length === 0) return;
+
+                        Array.from(files).forEach(file => {
+                            if (file.size > 10 * 1024 * 1024) {
+                                alert(`File "${file.name}" is too large. Max size is 10MB.`);
+                                return;
+                            }
+
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                const isImage = file.type.startsWith('image/');
+                                this.chat.messages.push({
+                                    sender: 'Me',
+                                    text: '',
+                                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                    isMe: true,
+                                    attachment: {
+                                        name: file.name,
+                                        size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+                                        data: event.target.result,
+                                        isImage: isImage
+                                    }
+                                });
+
+                                setTimeout(() => {
+                                    const el = document.getElementById('messages');
+                                    if (el) el.scrollTop = el.scrollHeight;
+                                }, 50);
+                            };
+                            reader.readAsDataURL(file);
+                        });
+
+                        // Reset input
+                        e.target.value = '';
                     },
 
                     sendMessage() {
