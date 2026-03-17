@@ -338,6 +338,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            overflow: hidden;
         }
 
         .chat-header {
@@ -347,6 +348,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .chat-title h2 {
@@ -363,6 +365,7 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
+            min-height: 0;
         }
 
         /* Message Styles */
@@ -881,7 +884,7 @@
 
         <!-- Main Content: Chat -->
         <main class="chat-container">
-            <div v-if="eodStatus !== 'idle'" style="display: flex; flex-direction: column; flex: 1;">
+            <div v-if="eodStatus !== 'idle'" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
                 <div class="chat-header">
                     <div class="chat-title">
                         <h2>Group Chat</h2>
