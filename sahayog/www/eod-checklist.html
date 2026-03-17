@@ -331,8 +331,9 @@
 
         .task-meta {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 4px;
             flex-shrink: 0;
         }
 
@@ -899,10 +900,10 @@
                                 <span class="task-text" :class="{ done: task.done }" v-text="task.text"></span>
                             </div>
                             <div v-if="task.done" class="task-meta">
-                                <span class="task-completed-time" v-text="task.completedAt"></span>
                                 <div class="task-completed-avatar" :title="task.completedBy">
                                     <img :src="'https://i.pravatar.cc/100?u=' + task.completedBy" alt="User">
                                 </div>
+                                <span class="task-completed-time" v-text="task.completedAt"></span>
                             </div>
                         </div>
                     </div>
