@@ -6,6 +6,13 @@ from frappe.model.document import Document
 from frappe.utils import nowdate
 
 class BankEOD(Document):
+    def autoname(self):
+        # Format the name as EOD-DD-MM-YYYY based on the date field
+        if self.date:
+            from frappe.utils import getdate
+            d = getdate(self.date)
+            self.name = d.strftime("EOD-%d-%m-%Y")
+
     def before_insert(self):
         self.load_tasks()
 
