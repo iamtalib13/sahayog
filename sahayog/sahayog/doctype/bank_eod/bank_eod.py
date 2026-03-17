@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import nowdate
+from frappe.utils import nowdate, _
 
 class BankEOD(Document):
     def autoname(self):
@@ -15,6 +15,28 @@ class BankEOD(Document):
 
     def before_insert(self):
         self.load_tasks()
+
+    def validate(self):
+        self.check_all_tasks_completed()
+
+    def check_all_tasks_completed(self):
+        """
+        If all tasks in the child table are 'Completed', set status to 'Closed'.
+        """
+        if not self.eod_tasks:
+            return
+
+        all_completed = all(task.status == "Completed" for task in self.eod_tasks)
+        
+        if all_completed:
+            if self.status != "Closed":
+                self.status = "Closed"
+                frappe.msgprint(_("All tasks completed. Bank EOD status set to Closed."))
+        else:
+            if self.status == "Closed":
+                # Re-open if someone unchecks a task or adds a pending one
+                self.status = "Open"
+                frappe.msgprint(_("Some tasks are still pending. Bank EOD status set to Open."))
 
     def load_tasks(self):
         """
@@ -75,4 +97,3 @@ def create_daily_bank_eod():
         return eod.name
     
     return existing_eod
-# END
