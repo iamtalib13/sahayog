@@ -111,6 +111,44 @@
             box-shadow: none;
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-capsule {
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-pending {
+            background-color: #fff7ed;
+            color: #ea580c;
+            border-color: #ffedd5;
+        }
+
+        .status-completed {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border-color: #dcfce7;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
         .title-group {
             display: flex;
             align-items: center;
@@ -651,18 +689,25 @@
                         <p v-text="project.subtitle"></p>
                     </div>
                 </div>
-                <button class="capsule-btn" :class="{ 
-                        'btn-start': eodStatus === 'idle', 
-                        'btn-started': eodStatus === 'started' && !isAllTasksDone(),
-                        'btn-end': eodStatus === 'started' && isAllTasksDone(),
-                        'btn-completed': eodStatus === 'completed'
-                    }" :disabled="(eodStatus === 'started' && !isAllTasksDone()) || eodStatus === 'completed'"
-                    @click="handleEodAction">
-                    <span v-if="eodStatus === 'idle'">Start</span>
-                    <span v-else-if="eodStatus === 'started' && !isAllTasksDone()">Started</span>
-                    <span v-else-if="eodStatus === 'started' && isAllTasksDone()">End</span>
-                    <span v-else-if="eodStatus === 'completed'">Completed</span>
-                </button>
+                
+                <div class="header-actions">
+                    <!-- Status Capsule -->
+                    <div v-if="eodStatus !== 'idle'" class="status-capsule" 
+                        :class="isAllTasksDone() ? 'status-completed' : 'status-pending'">
+                        <div class="status-dot"></div>
+                        <span v-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
+                        <span v-else>Pending</span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
+                        Start
+                    </button>
+                    
+                    <button v-if="eodStatus === 'started' && isAllTasksDone()" class="capsule-btn btn-end" @click="handleEodAction">
+                        End
+                    </button>
+                </div>
             </div>
 
             <div v-if="eodStatus === 'idle'" class="empty-state">
