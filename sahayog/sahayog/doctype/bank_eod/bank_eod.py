@@ -2,8 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
-from frappe.utils import nowdate, _
+from frappe.utils import nowdate
 
 class BankEOD(Document):
     def autoname(self):
