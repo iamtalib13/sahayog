@@ -33,7 +33,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Document Type",
-   "options": "\nAadhaar Card\nPAN Card\nPhotograph\nAddress Proof\nIncome Document",
+   "options": "\nAadhaar Card\nPAN Card\nPhotograph\nAddress Proof\nIncome Document\nPassport\nVoter ID\nElectricity Bill\nUtility Bill\nBank Statement",
    "reqd": 1
   },
   {
@@ -61,7 +61,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-16 15:14:23.942054",
+ "modified": "2026-03-18 15:44:48.136835",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Document",
