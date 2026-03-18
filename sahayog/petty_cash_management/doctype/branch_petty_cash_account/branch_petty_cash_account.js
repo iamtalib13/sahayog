@@ -29,6 +29,18 @@ frappe.ui.form.on('Branch Petty Cash Account', {
                 frm.trigger('get_finacle_balance');
             });
         }
+
+        // Check if the user is Administrator OR has the HO Manager role
+        let is_admin = frappe.session.user === 'Administrator';
+        let is_ho_manager = frappe.user.has_role('HO Petty Cash Manager');
+
+        // If they are NOT Admin and NOT HO Manager, lock the field
+        if (!is_admin && !is_ho_manager) {
+            frm.set_df_property('go_live_date', 'read_only', 1);
+        } else {
+            // Otherwise, make sure it is editable
+            frm.set_df_property('go_live_date', 'read_only', 0);
+        }
         
     },
 
