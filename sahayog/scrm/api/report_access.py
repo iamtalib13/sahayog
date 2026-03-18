@@ -331,51 +331,13 @@ import io
 import csv
 import zipfile
 
+
 def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
     frappe.set_user(user)
-    
-    # 1. User ki Preferences nikalna (SQL Filter ke liye)
-    zones_pref, regions_pref = [], []
-    if user != "Administrator":
-        pref = get_user_report_preference_record(user)
-        if pref:
-            p = pref[0]
-            zones_pref = p.get("zone", [])
-            regions_pref = p.get("region", [])
 
-    # 2. Filters build karna
-    conditions = "L.creation BETWEEN %s AND %s"
-    params = [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]
+    data = get_leads(from_date, to_date, filters=filters)
+    leads = data.get("leads", [])
 
-    if zones_pref:
-        conditions += f" AND B.zone IN ({', '.join(['%s']*len(zones_pref))})"
-        params.extend(zones_pref)
-    
-    if regions_pref:
-        # Alias support (ho/headoffice) ke liye yahan extra logic add kar sakte hain
-        conditions += f" AND B.region IN ({', '.join(['%s']*len(regions_pref))})"
-        params.extend(regions_pref)
-
-    # 3. MEGA QUERY: Ek hi baar mein saara data
-    # Is query mein Lead, Product aur Branch ka join hai - Yahi sabse fast hai
-    query = f"""
-        SELECT 
-            L.status, L.name as lead_id, L.lead_name, 
-            COALESCE(L.mobile_no, L.phone, '-') as contact,
-            L.source, LP.product as product_code, LP.product_name, 
-            LP.product_amount as amount, E.employee_name, E.employee_number, 
-            E.designation, L.sol_id, B.branch, B.district, B.region, B.zone, L.creation
-        FROM `tabLead` L
-        LEFT JOIN `tabLead Product` LP ON LP.parent = L.name
-        LEFT JOIN `tabEmployee` E ON E.user_id = L.lead_owner
-        LEFT JOIN `tabSahayog Branch` B ON B.sol_id = L.sol_id
-        WHERE {conditions}
-        ORDER BY L.creation DESC
-    """
-    
-    leads = frappe.db.sql(query, tuple(params), as_dict=1)
-
-    # 4. CSV Writing (Fast Stream)
     headers = [
         "Sr.No.", "Status", "Lead ID", "Customer", "Contact",
         "Source", "Product Code", "Product Name", "Amount",
@@ -383,34 +345,61 @@ def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
         "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
     ]
 
+    # ---------- CREATE CSV IN MEMORY (FAST) ----------
     output = io.StringIO()
     writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+
     writer.writerow(headers)
 
     for i, l in enumerate(leads):
+        b = l.get("branch_info", {})
         writer.writerow([
-            i + 1, l.status, l.lead_id, l.lead_name or "", l.contact,
-            l.source or "", l.product_code or "-", l.product_name or "-", 
-            l.amount or 0, l.employee_name or "-", l.employee_number or "-", 
-            l.designation or "-", l.sol_id or "-", l.branch or "-", 
-            l.district or "-", l.region or "-", l.zone or "-",
+            i + 1,
+            l.status,
+            l.name,
+            l.lead_name or "",
+            l.contact,
+            l.source or "",
+            l.product_code,
+            l.product_name,
+            l.amount,
+            l.employee_name,
+            l.employee_id,
+            l.designation,
+            l.sol_id or "-",
+            b.get("branch", "-"),
+            b.get("district", "-"),
+            b.get("region", "-"),
+            b.get("zone", "-"),
             format_date(l.creation, "dd-mm-yyyy")
         ])
 
     csv_content = output.getvalue()
     output.close()
 
-    # 5. File Save Logic
-    filename = f"crm_leads_{from_date}_to_{to_date}.{'zip' if format == 'zip' else 'csv'}"
-    
+    # ---------- HANDLE FORMAT ----------
     if format == "zip":
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr(filename.replace(".zip", ".csv"), csv_content)
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+            compresslevel=6  # balanced speed + compression
+        ) as zip_file:
+            zip_file.writestr(
+                f"crm_leads_{from_date}_to_{to_date}.csv",
+                csv_content
+            )
+
         file_content = zip_buffer.getvalue()
+        filename = f"crm_leads_{from_date}_to_{to_date}.zip"
+
     else:
         file_content = csv_content
-
+        filename = f"crm_leads_{from_date}_to_{to_date}.csv"
+    frappe.log_error("EXPORT FORMAT DEBUG", f"Format Received: {format}")
+    # ---------- SAVE FILE ----------
     file_doc = frappe.get_doc({
         "doctype": "File",
         "file_name": filename,
@@ -418,13 +407,27 @@ def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
         "is_private": 1
     }).insert(ignore_permissions=True)
 
-    # Status update aur Notification
-    frappe.cache().set_value(f"export_status_{user}", {"status": "completed", "file_url": file_doc.file_url}, expires_in_sec=600)
-    notify_user(user, f"Export Ready: <a href='{file_doc.file_url}'>Download {filename}</a>")
+    status_data = {
+        "status": "completed",
+        "file_url": file_doc.file_url,
+        "row_count": len(leads),
+        "from_date": from_date,
+        "to_date": to_date
+    }
+
+    frappe.cache().set_value(
+        f"export_status_{user}",
+        status_data,
+        expires_in_sec=600
+    )
+
+    notify_user(
+        user,
+        f"Export Ready: {filename}. "
+        f"<a href='{file_doc.file_url}' target='_blank'>Download</a>"
+    )
+
     frappe.db.commit()
-    
-    
-    
     
 @frappe.whitelist()
 def check_export_status():
