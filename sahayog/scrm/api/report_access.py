@@ -143,9 +143,9 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     if "region" in filters:
        ui_regions = {norm(x) for x in filters.get("region", [])}
        if not ui_regions:
-        regions_pref = set()
-    else:
-        regions_pref = regions_pref.intersection(ui_regions)
+           regions_pref = set()
+       else:
+           regions_pref = regions_pref.intersection(ui_regions)
 
     # SOL ID
     if "sol_id" in filters:
