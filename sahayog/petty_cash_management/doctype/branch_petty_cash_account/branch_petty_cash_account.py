@@ -259,6 +259,60 @@ class BranchPettyCashAccount(Document):
         if self.unsettled_cash > THRESHOLD:
             print(f"⚠️ ALERT: Branch {self.branch} is holding ₹{self.unsettled_cash}")
 
+    # def on_update(self):
+    #     """
+    #     Triggered every time the document is saved.
+    #     If the go_live_date was changed, recalculate the unsettled cash immediately.
+    #     """
+    #     if not self.is_new() and self.has_value_changed('go_live_date'):
+    #         # Import our specific function
+    #         from sahayog.petty_cash_management.api.auto_cash_withdrawal_sync import sync_single_branch_withdrawal
+            
+    #         # Execute it INSTANTLY, completely skipping the background queue
+    #         sync_single_branch_withdrawal(self.name)
+
+
+    def on_update(self):
+        """
+        Triggered every time the document is saved.
+        If the go_live_date was changed, recalculate the unsettled cash immediately.
+        """
+        # We check if this is not a new document and if the date actually changed
+        if not self.is_new() and self.has_value_changed('go_live_date'):
+            # Only import when needed to avoid circular imports
+            from sahayog.petty_cash_management.api.auto_cash_withdrawal_sync import sync_single_branch_withdrawal
+            
+            # Enqueue it to run immediately in the background so it doesn't freeze the save button
+            frappe.enqueue(
+                sync_single_branch_withdrawal, 
+                branch_account_name=self.name, 
+                now=frappe.flags.in_test or frappe.flags.in_migrate
+            )
+            
+            # Show a friendly message to the user
+            # frappe.msgprint(
+            #     msg=f"Go-Live Date changed. Recalculating unsettled cash for {self.branch} in the background...",
+            #     title="Sync Triggered",
+            #     indicator="blue",
+            #     alert=True
+            # )
+            frappe.msgprint(
+                msg=f"""
+                Go-Live Date changed. Recalculating unsettled cash for {self.branch} in the background...
+                <script>
+                    setTimeout(function() {{
+                        window.location.reload();
+                    }}, 2500);
+                </script>
+                """,
+                title="Sync Triggered",
+                indicator="blue",
+                alert=True
+            )
+
+
+
+
 
 
 @frappe.whitelist()
