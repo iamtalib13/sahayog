@@ -24,6 +24,7 @@
   "last_synced_fund_date",
   "section_break_dsps",
   "gl_sub_code",
+  "go_live_date",
   "status"
  ],
  "fields": [
@@ -145,12 +146,19 @@
    "fieldname": "is_fund_source",
    "fieldtype": "Check",
    "label": "Is Fund Source (HO)"
+  },
+  {
+   "default": "2026-04-01",
+   "fieldname": "go_live_date",
+   "fieldtype": "Date",
+   "label": "Go-Live Date",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-16 16:38:19.695265",
+ "modified": "2026-03-18 13:24:15.005019",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
