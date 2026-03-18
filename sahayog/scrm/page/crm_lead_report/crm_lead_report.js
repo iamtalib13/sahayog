@@ -1525,7 +1525,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
     },
 
-    async applyFilters() {
+    async applyFilters(format = "csv") {
       // Safety check: though button is hidden, we block the function too
       if (this.totalLeadsInReport === 0) {
         this.showNoLeadsMessage();
@@ -1549,6 +1549,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             from_date: fromDate,
             to_date: toDate,
             filters: this.selected,
+            format: format,
           },
         });
         if (res.message?.status === "queued") {
