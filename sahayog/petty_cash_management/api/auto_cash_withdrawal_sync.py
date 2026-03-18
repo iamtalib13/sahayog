@@ -217,9 +217,94 @@ def sync_finacle_withdrawals():
     finally:
         conn.close()
 
+
+
+# Note: Removed 'create_withdrawal_entry' function as it is no longer needed.
+
+
 # bench execute sahayog.petty_cash_management.api.auto_cash_withdrawal_sync.sync_finacle_withdrawals
 
 
 
 
-# Note: Removed 'create_withdrawal_entry' function as it is no longer needed.
+
+
+def sync_single_branch_withdrawal(branch_account_name):
+    """
+    Recalculates unsettled cash for a SINGLE branch.
+    Triggered when the Go-Live Date is manually changed in the UI.
+    """
+    from frappe.utils import flt
+    
+    # Get the specific wallet
+    w = frappe.get_doc("Branch Petty Cash Account", branch_account_name)
+    
+    if not w.gl_sub_code or w.status != "Active": 
+        return
+        
+    conn = db_connection()
+    if not conn: return
+
+    try:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        branch_go_live_date = w.go_live_date or '2026-04-01'
+
+        # --- STEP 1: FETCH TOTAL WITHDRAWALS FROM FINACLE (SUM 'D') ---
+        sql_finacle = """
+            SELECT SUM(tran_amt) as total_withdrawal
+            FROM (
+                SELECT h.tran_amt
+                FROM tbaadm.gam g
+                JOIN tbaadm.htd h ON g.acid = h.acid
+                WHERE g.foracid = %s 
+                  AND h.part_tran_type = 'D' 
+                  AND h.del_flg = 'N'
+                  AND h.tran_date >= %s
+                
+                UNION ALL
+                
+                SELECT d.tran_amt
+                FROM tbaadm.gam g
+                JOIN tbaadm.dtd d ON g.acid = d.acid
+                WHERE g.foracid = %s 
+                  AND d.part_tran_type = 'D' 
+                  AND d.del_flg = 'N'
+                  AND d.tran_date >= %s
+            ) as combined
+        """
+        
+        cursor.execute(sql_finacle, (w.gl_sub_code, branch_go_live_date, w.gl_sub_code, branch_go_live_date))
+        result = cursor.fetchone()
+        total_withdrawals_finacle = flt(result['total_withdrawal']) if result else 0.0
+
+        # --- STEP 2: FETCH TOTAL EXPENSES FROM FRAPPE (SUM 'Expense') ---
+        total_expenses_frappe = frappe.db.sql("""
+            SELECT COALESCE(SUM(amount), 0)
+            FROM `tabPetty Cash Transaction`
+            WHERE branch = %s 
+              AND transaction_type = 'Expense' 
+              AND docstatus = 1
+              AND transaction_date >= %s
+        """, (w.branch, branch_go_live_date))[0][0]
+
+        total_expenses_frappe = flt(total_expenses_frappe)
+
+        # --- STEP 3: CALCULATE AND UPDATE ---
+        new_unsettled_cash = total_withdrawals_finacle - total_expenses_frappe
+        
+        # Use db_set to avoid triggering on_update again (infinite loop)
+        w.db_set("unsettled_cash", new_unsettled_cash)
+        frappe.db.commit()
+
+        # Let the real-time websocket alert the user when done
+        frappe.publish_realtime(
+            event='msgprint',
+            message=f"Cash balance for {w.branch} has been successfully updated based on new Go-Live Date.",
+            user=frappe.session.user
+        )
+
+    except Exception as e:
+        frappe.log_error(f"Single Sync Error ({branch_account_name}): {str(e)}", "Petty Cash Sync")
+    
+    finally:
+        conn.close()
