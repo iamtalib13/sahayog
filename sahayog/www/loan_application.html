@@ -2650,7 +2650,7 @@
             setTimeout(() => lucide.createIcons(), 50);
           },
 
-          setView(view) {
+          setView(view, replaceUrl = false) {
             this.currentView = view;
             this.currentSection = "info";
             this.showStickyKpi = false;
@@ -2660,6 +2660,7 @@
                 this.selectedApp = null;
               }
             }, 100);
+            this.syncCurrentViewUrl(replaceUrl);
             setTimeout(() => lucide.createIcons(), 50);
           },
 
@@ -2670,6 +2671,44 @@
           setSection(section) {
             this.currentSection = section;
             setTimeout(() => lucide.createIcons(), 50);
+          },
+
+          syncCurrentViewUrl(replaceUrl = false) {
+            const url = new URL(window.location.href);
+            url.searchParams.set("view", this.currentView);
+            if (this.currentView === "details" && this.selectedApp?.name) {
+              url.searchParams.set("name", this.selectedApp.name);
+            } else {
+              url.searchParams.delete("name");
+            }
+            window.history[replaceUrl ? "replaceState" : "pushState"](
+              {},
+              "",
+              `${url.pathname}${url.search}`,
+            );
+          },
+
+          restoreViewFromUrl() {
+            const url = new URL(window.location.href);
+            const view = url.searchParams.get("view") || "applications";
+            const name = url.searchParams.get("name");
+
+            if (view === "dashboard" || view === "applications") {
+              this.setView(view, true);
+              return;
+            }
+
+            if (view === "create") {
+              this.newApplication(true);
+              return;
+            }
+
+            if (view === "details" && name) {
+              this.viewDetails(name, true);
+              return;
+            }
+
+            this.setView("applications", true);
           },
 
           async fetchApplications() {
@@ -2791,7 +2830,7 @@
             }
           },
 
-          async viewDetails(name) {
+          async viewDetails(name, replaceUrl = false) {
             try {
               const response = await fetch(
                 `/api/method/sahayog.api.loan_application.get_loan_application?name=${name}`,
@@ -2802,13 +2841,14 @@
                 this.isEditing = false;
                 this.currentSection = "info";
                 this.currentView = "details";
+                this.syncCurrentViewUrl(replaceUrl);
                 setTimeout(() => lucide.createIcons(), 50);
               }
             } catch (e) {
               console.error(e);
             }
           },
-          newApplication() {
+          newApplication(replaceUrl = false) {
             // Reset form
             this.currentSection = 'info';
             this.newApp = {
@@ -2842,6 +2882,7 @@
             this.fetchBranches();
             this.fetchUsers();
             this.currentView = "create";
+            this.syncCurrentViewUrl(replaceUrl);
             setTimeout(() => lucide.createIcons(), 50);
           },
 
@@ -3457,8 +3498,12 @@
             this.fetchBranches();
             this.fetchUsers();
             this.initScrollObserver();
+            this.restoreViewFromUrl();
             window.addEventListener("resize", () => {
               this.isMobile = window.innerWidth < 768;
+            });
+            window.addEventListener("popstate", () => {
+              this.restoreViewFromUrl();
             });
             // Close inline dropdowns when clicking outside
             document.addEventListener("click", (e) => {

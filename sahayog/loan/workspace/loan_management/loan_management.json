@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Loan Management",
  "links": [],
- "modified": "2026-03-20 17:22:09.814309",
+ "modified": "2026-03-20 17:27:14.586860",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Management",
@@ -30,7 +30,7 @@
    "doc_view": "List",
    "label": "Portal",
    "type": "URL",
-   "url": "/loan_application"
+   "url": "/loan_application?view=dashboard"
   },
   {
    "color": "Grey",
