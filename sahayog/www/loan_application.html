@@ -1820,7 +1820,14 @@
                     </div>
                     <div class="member-meta-row">
                       <label class="info-label">Occupation</label>
-                      <input type="text" v-model="newApp.occupation" class="info-input" />
+                      <select v-model="newApp.occupation" class="info-input">
+                        <option value="">Select Occupation</option>
+                        <option value="Salaried">Salaried</option>
+                        <option value="Self-employed">Self-employed</option>
+                        <option value="Agriculturist">Agriculturist</option>
+                        <option value="Business">Business</option>
+                        <option value="Others">Others</option>
+                      </select>
                     </div>
                   </aside>
 
