@@ -45,7 +45,6 @@
   "ornaments_section",
   "ornaments_list",
   "security_details_section",
-  "gold_rate_per_gram",
   "total_gross_weight",
   "total_deduction",
   "column_break_2",
@@ -211,13 +210,6 @@
    "fieldname": "security_details_section",
    "fieldtype": "Section Break",
    "label": "Gold Valuation"
-  },
-  {
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "description": "Current market price of gold per gram.",
-   "fieldname": "gold_rate_per_gram",
-   "fieldtype": "Currency",
-   "label": "Valuation Rate Per Gram"
   },
   {
    "depends_on": "eval:doc.security_type=='Gold'",
@@ -664,6 +656,7 @@
    "label": "Date"
   },
   {
+   "depends_on": "eval:doc.loan_type",
    "fieldname": "nomination_section",
    "fieldtype": "Section Break",
    "label": "Nomination"
@@ -747,9 +740,11 @@
    "label": "Loan Account Number"
   },
   {
+   "description": "Final approved loan amount based on eligibility and system rules.",
    "fieldname": "sanctioned_loan_amount",
    "fieldtype": "Currency",
-   "label": "Sanctioned Loan Amount"
+   "label": "Sanctioned Loan Amount",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -768,7 +763,7 @@
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-20 11:41:31.002950",
+ "modified": "2026-03-20 16:24:58.073346",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
