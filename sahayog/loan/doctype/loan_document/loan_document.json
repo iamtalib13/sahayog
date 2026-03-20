@@ -46,8 +46,7 @@
    "fieldname": "document_file",
    "fieldtype": "Attach",
    "in_list_view": 1,
-   "label": " Document File ",
-   "mandatory_depends_on": "eval:doc.document_type"
+   "label": " Document File "
   },
   {
    "depends_on": "eval;doc.verified_by",
