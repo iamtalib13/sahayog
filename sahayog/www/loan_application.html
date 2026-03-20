@@ -945,6 +945,88 @@
         font-weight: 700;
         text-transform: uppercase;
       }
+      .member-layout {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+      }
+      .member-profile {
+        border: 1px solid var(--sidebar-border);
+        border-radius: 10px;
+        padding: 1rem;
+        background: #f8fafc;
+        min-width: 0;
+      }
+      .member-avatar-wrap {
+        position: relative;
+        width: 128px;
+        margin: 0 auto 0.85rem auto;
+      }
+      .member-avatar {
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e2e8f0;
+        color: var(--text-muted);
+        font-weight: 700;
+        overflow: hidden;
+      }
+      .member-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .member-avatar-upload {
+        position: absolute;
+        right: -2px;
+        bottom: -2px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid var(--sidebar-border);
+        background: white;
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
+      }
+      .member-meta-row {
+        margin-top: 0.6rem;
+      }
+      .member-profile .info-input {
+        box-sizing: border-box;
+      }
+      .member-layout > section {
+        min-width: 0;
+      }
+      .member-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.25rem;
+      }
+      .member-form-grid > div {
+        min-width: 0;
+      }
+      .member-form-grid .info-input,
+      .member-form-grid .inline-select-input {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .member-form-grid .info-separator {
+        grid-column: 1 / -1;
+        margin: 0.2rem 0 0.1rem 0;
+      }
+      .address-input {
+        min-height: 72px;
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+        resize: vertical;
+      }
 
       @media (max-width: 768px) {
         .info-card {
@@ -953,6 +1035,12 @@
         .info-grid {
           grid-template-columns: 1fr;
           gap: 0.85rem;
+        }
+        .member-layout {
+          grid-template-columns: 1fr;
+        }
+        .member-form-grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -1591,11 +1679,15 @@
                 font-weight: 600;
                 font-size: 13px;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
               "
               :style="{ background: currentSection === 'info' ? 'white' : 'transparent', color: currentSection === 'info' ? 'var(--accent)' : 'var(--text-muted)' }"
             >
-              <i data-lucide="user" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
-              Member Details
+              <span><i data-lucide="user" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>Member Details</span>
+              <span :style="{ width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', background: isCreateSectionComplete('info') ? '#dcfce7' : '#fee2e2', color: isCreateSectionComplete('info') ? '#15803d' : '#dc2626' }">[[ isCreateSectionComplete('info') ? '✓' : '!' ]]</span>
             </div>
             <div
               @click="currentSection = 'loan_details'"
@@ -1607,11 +1699,15 @@
                 font-weight: 600;
                 font-size: 13px;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
               "
               :style="{ background: currentSection === 'loan_details' ? 'white' : 'transparent', color: currentSection === 'loan_details' ? 'var(--accent)' : 'var(--text-muted)' }"
             >
-              <i data-lucide="banknote" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
-              Loan Details
+              <span><i data-lucide="banknote" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>Loan Details</span>
+              <span :style="{ width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', background: isCreateSectionComplete('loan_details') ? '#dcfce7' : '#fee2e2', color: isCreateSectionComplete('loan_details') ? '#15803d' : '#dc2626' }">[[ isCreateSectionComplete('loan_details') ? '✓' : '!' ]]</span>
             </div>
             <div
               @click="currentSection = 'gold_details'"
@@ -1623,11 +1719,15 @@
                 font-weight: 600;
                 font-size: 13px;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
               "
               :style="{ background: currentSection === 'gold_details' ? 'white' : 'transparent', color: currentSection === 'gold_details' ? 'var(--accent)' : 'var(--text-muted)' }"
             >
-              <i data-lucide="coins" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
-              Gold Details
+              <span><i data-lucide="coins" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>Gold Details</span>
+              <span :style="{ width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', background: isCreateSectionComplete('gold_details') ? '#dcfce7' : '#fee2e2', color: isCreateSectionComplete('gold_details') ? '#15803d' : '#dc2626' }">[[ isCreateSectionComplete('gold_details') ? '✓' : '!' ]]</span>
             </div>
             <div
               @click="currentSection = 'nominee_details'"
@@ -1639,11 +1739,15 @@
                 font-weight: 600;
                 font-size: 13px;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
               "
               :style="{ background: currentSection === 'nominee_details' ? 'white' : 'transparent', color: currentSection === 'nominee_details' ? 'var(--accent)' : 'var(--text-muted)' }"
             >
-              <i data-lucide="users" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
-              Nominee Details
+              <span><i data-lucide="users" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>Nominee Details</span>
+              <span :style="{ width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', background: isCreateSectionComplete('nominee_details') ? '#dcfce7' : '#fee2e2', color: isCreateSectionComplete('nominee_details') ? '#15803d' : '#dc2626' }">[[ isCreateSectionComplete('nominee_details') ? '✓' : '!' ]]</span>
             </div>
             <div
               @click="currentSection = 'sanction_details'"
@@ -1655,11 +1759,15 @@
                 font-weight: 600;
                 font-size: 13px;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
               "
               :style="{ background: currentSection === 'sanction_details' ? 'white' : 'transparent', color: currentSection === 'sanction_details' ? 'var(--accent)' : 'var(--text-muted)' }"
             >
-              <i data-lucide="file-check-2" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>
-              Sanction Details
+              <span><i data-lucide="file-check-2" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;"></i>Sanction Details</span>
+              <span :style="{ width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', background: isCreateSectionComplete('sanction_details') ? '#dcfce7' : '#fee2e2', color: isCreateSectionComplete('sanction_details') ? '#15803d' : '#dc2626' }">[[ isCreateSectionComplete('sanction_details') ? '✓' : '!' ]]</span>
             </div>
           </div>
 
@@ -1668,112 +1776,131 @@
             <form @submit.prevent="submitNewApplication">
               <!-- Member Details Section -->
               <div v-if="currentSection === 'info'">
-                <h4 style="margin: 0 0 1.25rem 0; font-size: 14px; font-weight: 700; color: var(--text-main);">Member Details</h4>
-                <div class="info-grid" style="margin-bottom: 1.25rem;">
-                  <div>
-                    <label class="info-label">Branch</label>
-                    <div class="inline-select-input" @click="openDropdownPopup('branch_code', branches, 'Select Branch')" style="border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem 0.65rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                      <span>[[ newApp.branch_code || 'Select Branch' ]]</span>
-                      <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
+                <div class="member-layout">
+                  <aside class="member-profile">
+                    <h4 style="margin: 0 0 0.85rem 0; font-size: 14px; font-weight: 700; color: var(--text-main);">Member Details</h4>
+                    <div class="member-avatar-wrap">
+                      <div class="member-avatar">
+                        <img v-if="newApp.customer_photo_preview || newApp.customer_photo" :src="newApp.customer_photo_preview || newApp.customer_photo" alt="Customer photo" />
+                        <span v-else>[[ (newApp.customer_name || 'M').charAt(0).toUpperCase() ]]</span>
+                      </div>
+                      <label for="customer-photo-input" class="member-avatar-upload" title="Upload Photo">
+                        <i data-lucide="upload" style="width: 12px; height: 12px;"></i>
+                      </label>
+                      <input id="customer-photo-input" type="file" accept="image/*" @change="onCustomerPhotoChange" style="display: none;" />
                     </div>
-                  </div>
-                  <div>
-                    <label class="info-label">Application No.</label>
-                    <input type="text" value="Auto-generated on save" readonly class="info-input" />
-                  </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Customer Name</label>
+                      <input type="text" v-model="newApp.customer_name" required class="info-input" />
+                    </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Mobile No</label>
+                      <input type="tel" v-model="newApp.mobile_number" required pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" class="info-input" />
+                    </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Email ID</label>
+                      <input type="email" v-model="newApp.email_id" class="info-input" />
+                    </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Date of Birth</label>
+                      <input type="date" v-model="newApp.date_of_birth" required class="info-input" />
+                    </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Annual Income</label>
+                      <input type="number" v-model="newApp.annual_income" class="info-input" />
+                    </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Gender</label>
+                      <input type="text" v-model="newApp.gender" class="info-input" />
+                    </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Father's / Husband's Name</label>
+                      <input type="text" v-model="newApp.father_husband_name" class="info-input" />
+                    </div>
+                    <div class="member-meta-row">
+                      <label class="info-label">Occupation</label>
+                      <input type="text" v-model="newApp.occupation" class="info-input" />
+                    </div>
+                  </aside>
 
-                  <hr class="info-separator" />
+                  <section>
+                    <div class="info-grid member-form-grid">
+                      <div>
+                        <label class="info-label">Branch</label>
+                        <div class="inline-select-input" @click="openDropdownPopup('branch_code', branches, 'Select Branch')" style="border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem 0.65rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                          <span>[[ newApp.branch_code || 'Select Branch' ]]</span>
+                          <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="info-label">Application No.</label>
+                        <input type="text" value="Auto-generated on save" readonly class="info-input" />
+                      </div>
+                      <div>
+                        <label class="info-label">Membership No.</label>
+                        <input type="text" v-model="newApp.membership_no" class="info-input" />
+                      </div>
+                      <div>
+                        <label class="info-label">CIF ID (Finacle)</label>
+                        <input type="text" v-model="newApp.cif_id" class="info-input" />
+                      </div>
 
-                  <div>
-                    <label class="info-label">Membership No.</label>
-                    <input type="text" v-model="newApp.membership_no" class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Customer Name</label>
-                    <input type="text" v-model="newApp.customer_name" required class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Father's / Husband's Name</label>
-                    <input type="text" v-model="newApp.father_husband_name" class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Gender</label>
-                    <input type="text" v-model="newApp.gender" class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Date of Birth</label>
-                    <input type="date" v-model="newApp.date_of_birth" required class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Occupation</label>
-                    <input type="text" v-model="newApp.occupation" class="info-input" />
-                  </div>
-                  <div class="info-field-full">
-                    <label class="info-label">Permanent Address</label>
-                    <input type="text" v-model="newApp.permanent_address" class="info-input" />
-                  </div>
-                  <div class="info-field-full">
-                    <label class="info-label">Correspondence Address</label>
-                    <input type="text" v-model="newApp.correspondence_address" class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Mobile Number</label>
-                    <input type="tel" v-model="newApp.mobile_number" required pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Email ID</label>
-                    <input type="email" v-model="newApp.email_id" class="info-input" />
-                  </div>
-                  <div>
-                    <label class="info-label">Annual Income</label>
-                    <input type="number" v-model="newApp.annual_income" class="info-input" />
-                  </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 0.75rem 0;">
-                  <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main);">KYC Details</h4>
-                  <button type="button" @click="addKycRow" style="padding: 0.45rem 0.85rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">+ Add Row</button>
-                </div>
-                <div class="kyc-table-wrap" style="margin-bottom: 1.5rem;">
-                  <table class="kyc-details-table">
-                    <thead>
-                      <tr>
-                        <th>Document Type</th>
-                        <th>Document Number</th>
-                        <th>Status</th>
-                        <th>Attachment</th>
-                        <th style="width: 64px;">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="(doc, idx) in (newApp.kyc_documents || [])" :key="'new-info-kyc-' + idx">
-                        <td>
-                          <div class="inline-select-input" @click="openDocDropdownPopup(idx, ['', 'Aadhaar Card', 'PAN Card'], 'Select Document Type')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                            <span>[[ doc.document_type || 'Select' ]]</span>
-                            <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                          </div>
-                        </td>
-                        <td>
-                          <input type="text" v-model="doc.document_number" class="info-input" style="font-size: 12px;" :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)" @input="doc.document_type === 'PAN Card' ? doc.document_number = doc.document_number.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : (doc.document_type === 'Aadhaar Card' ? doc.document_number = doc.document_number.replace(/[^0-9]/g, '').slice(0, 12) : '')" :inputmode="doc.document_type === 'Aadhaar Card' ? 'numeric' : 'text'" />
-                        </td>
-                        <td>
-                          <div class="inline-select-input" @click="openDocStatusDropdownPopup(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                            <span>[[ doc.status || 'Pending' ]]</span>
-                            <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                          </div>
-                        </td>
-                        <td>
-                          <input type="file" @change="(e) => handleFileUpload(e, idx)" style="width: 100%; font-size: 11px;" />
-                        </td>
-                        <td>
-                          <button type="button" @click="removeKycRow(idx)" style="border: none; background: transparent; color: #ef4444; font-size: 12px; font-weight: 700; cursor: pointer;">Remove</button>
-                        </td>
-                      </tr>
-                      <tr v-if="!(newApp.kyc_documents && newApp.kyc_documents.length)">
-                        <td colspan="5" style="text-align: center; color: var(--text-muted);">No KYC records added yet</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                      <hr class="info-separator" />
+                      <div>
+                        <label class="info-label">Permanent Address</label>
+                        <textarea v-model="newApp.permanent_address" class="info-input address-input" rows="2"></textarea>
+                      </div>
+                      <div>
+                        <label class="info-label">Correspondence Address</label>
+                        <textarea v-model="newApp.correspondence_address" class="info-input address-input" rows="2"></textarea>
+                      </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 0.75rem 0;">
+                      <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main);">KYC Details</h4>
+                      <button type="button" @click="addKycRow" style="padding: 0.45rem 0.85rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">+ Add Row</button>
+                    </div>
+                    <div class="kyc-table-wrap" style="margin-bottom: 1.5rem;">
+                      <table class="kyc-details-table">
+                        <thead>
+                          <tr>
+                            <th>Document Type</th>
+                            <th>Document Number</th>
+                            <th>Status</th>
+                            <th>Attachment</th>
+                            <th style="width: 64px;">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(doc, idx) in (newApp.kyc_documents || [])" :key="'new-info-kyc-' + idx">
+                            <td>
+                              <div class="inline-select-input" @click="openDocDropdownPopup(idx, ['', 'Aadhaar Card', 'PAN Card'], 'Select Document Type')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                                <span>[[ doc.document_type || 'Select' ]]</span>
+                                <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
+                              </div>
+                            </td>
+                            <td>
+                              <input type="text" v-model="doc.document_number" class="info-input" style="font-size: 12px;" :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)" @input="doc.document_type === 'PAN Card' ? doc.document_number = doc.document_number.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : (doc.document_type === 'Aadhaar Card' ? doc.document_number = doc.document_number.replace(/[^0-9]/g, '').slice(0, 12) : '')" :inputmode="doc.document_type === 'Aadhaar Card' ? 'numeric' : 'text'" />
+                            </td>
+                            <td>
+                              <div class="inline-select-input" @click="openDocStatusDropdownPopup(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
+                                <span>[[ doc.status || 'Pending' ]]</span>
+                                <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
+                              </div>
+                            </td>
+                            <td>
+                              <input type="file" @change="(e) => handleFileUpload(e, idx)" style="width: 100%; font-size: 11px;" />
+                            </td>
+                            <td>
+                              <button type="button" @click="removeKycRow(idx)" style="border: none; background: transparent; color: #ef4444; font-size: 12px; font-weight: 700; cursor: pointer;">Remove</button>
+                            </td>
+                          </tr>
+                          <tr v-if="!(newApp.kyc_documents && newApp.kyc_documents.length)">
+                            <td colspan="5" style="text-align: center; color: var(--text-muted);">No KYC records added yet</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
                 </div>
 
             </div>
@@ -2414,7 +2541,11 @@
             loan_type: "",
             branch_code: "",
             membership_no: "",
+            cif_id: "",
             customer_name: "",
+            customer_photo: "",
+            customer_photo_file: null,
+            customer_photo_preview: "",
             father_husband_name: "",
             gender: "",
             mobile_number: "",
@@ -2537,6 +2668,35 @@
             return false;
           },
 
+          hasCreateFieldValue(value) {
+            return value !== null && value !== undefined && String(value).trim() !== "";
+          },
+
+          isCreateSectionComplete(section) {
+            if (section === "info") {
+              const hasKycRow = (this.newApp.kyc_documents || []).some(
+                (doc) => this.hasCreateFieldValue(doc.document_type) && this.hasCreateFieldValue(doc.document_number),
+              );
+              return (
+                this.hasCreateFieldValue(this.newApp.customer_name) &&
+                this.hasCreateFieldValue(this.newApp.mobile_number) &&
+                this.hasCreateFieldValue(this.newApp.date_of_birth) &&
+                this.hasCreateFieldValue(this.newApp.branch_code) &&
+                this.hasCreateFieldValue(this.newApp.permanent_address) &&
+                this.hasCreateFieldValue(this.newApp.correspondence_address) &&
+                hasKycRow
+              );
+            }
+            if (section === "loan_details") {
+              return (
+                this.hasCreateFieldValue(this.newApp.loan_type) &&
+                this.hasCreateFieldValue(this.newApp.loan_amount) &&
+                this.hasCreateFieldValue(this.newApp.tenure_months)
+              );
+            }
+            return false;
+          },
+
           getStatusColor(status) {
             const colors = {
               Draft: "#64748b",
@@ -2589,9 +2749,21 @@
             this.newApp = {
               loan_type: "",
               branch_code: "",
+              membership_no: "",
+              cif_id: "",
               customer_name: "",
+              customer_photo: "",
+              customer_photo_file: null,
+              customer_photo_preview: "",
+              father_husband_name: "",
+              gender: "",
               mobile_number: "",
+              email_id: "",
               date_of_birth: "",
+              occupation: "",
+              permanent_address: "",
+              correspondence_address: "",
+              annual_income: "",
               cibil_score: "",
               loan_amount: "",
               tenure_months: "",
@@ -2799,6 +2971,14 @@
               this.newApp.kyc_documents[idx].file = file;
               // Add a local preview URL
               this.newApp.kyc_documents[idx].local_preview = URL.createObjectURL(file);
+            }
+          },
+
+          onCustomerPhotoChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+              this.newApp.customer_photo_file = file;
+              this.newApp.customer_photo_preview = URL.createObjectURL(file);
             }
           },
 
@@ -3017,6 +3197,17 @@
               }
 
               // Upload any pending files
+              if (this.newApp.customer_photo_file) {
+                try {
+                  const photoUrl = await this.uploadFile(this.newApp.customer_photo_file);
+                  if (photoUrl) {
+                    this.newApp.customer_photo = photoUrl;
+                  }
+                } catch (e) {
+                  console.error("Customer photo upload error:", e);
+                }
+              }
+
               for (let i = 0; i < this.newApp.kyc_documents.length; i++) {
                 const doc = this.newApp.kyc_documents[i];
                 if (doc.file) {
@@ -3043,6 +3234,8 @@
 
               // Ensure doctype is set for KYC documents
               const submitData = { ...this.newApp };
+              submitData.customer_photo_file = undefined;
+              submitData.customer_photo_preview = undefined;
               if (submitData.kyc_documents) {
                 submitData.kyc_documents = submitData.kyc_documents.map(doc => ({
                   ...doc,
