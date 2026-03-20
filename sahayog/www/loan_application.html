@@ -1835,9 +1835,29 @@
                     <div class="info-grid member-form-grid">
                       <div>
                         <label class="info-label">Branch</label>
-                        <div class="inline-select-input" @click="openDropdownPopup('branch_code', branches, 'Select Branch')" style="border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem 0.65rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                          <span>[[ newApp.branch_code || 'Select Branch' ]]</span>
-                          <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
+                        <div style="position: relative;">
+                          <input
+                            type="text"
+                            v-model="newApp.branch_code"
+                            class="info-input"
+                            placeholder="Select Branch"
+                            autocomplete="off"
+                            @focus="toggleInlineDropdown('branch', branches.map(branch => branch.name || branch))"
+                            @input="activeInlineDropdown = 'branch'; inlineDropdownOptions = branches.map(branch => branch.name || branch)"
+                            @blur="closeInlineDropdown()"
+                          />
+                          <div
+                            v-if="activeInlineDropdown === 'branch' && getFilteredInlineOptions('branch').length"
+                            style="position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 180px; overflow-y: auto; background: white; border: 1px solid var(--sidebar-border); border-radius: 8px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12); z-index: 20;"
+                          >
+                            <div
+                              v-for="option in getFilteredInlineOptions('branch')"
+                              @mousedown.prevent="selectInlineOption('branch', option)"
+                              style="padding: 0.55rem 0.7rem; font-size: 13px; cursor: pointer; color: var(--text-main); border-bottom: 1px solid #f1f5f9;"
+                            >
+                              [[ option ]]
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div>
@@ -1937,9 +1957,29 @@
                 </div>
                 <div>
                   <label style="font-size: 13px; font-weight: 600; color: var(--text-main);">Branch Code *</label>
-                  <div class="inline-select-input" @click="openDropdownPopup('branch_code', branches, 'Select Branch')" style="margin-top: 4px; border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                    <span>[[ newApp.branch_code || 'Select Branch' ]]</span>
-                    <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
+                  <div style="position: relative; margin-top: 4px;">
+                    <input
+                      type="text"
+                      v-model="newApp.branch_code"
+                      style="width: 100%; padding: 0.5rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; background: white; box-sizing: border-box;"
+                      placeholder="Select Branch"
+                      autocomplete="off"
+                      @focus="toggleInlineDropdown('branch', branches.map(branch => branch.name || branch))"
+                      @input="activeInlineDropdown = 'branch'; inlineDropdownOptions = branches.map(branch => branch.name || branch)"
+                      @blur="closeInlineDropdown()"
+                    />
+                    <div
+                      v-if="activeInlineDropdown === 'branch' && getFilteredInlineOptions('branch').length"
+                      style="position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 180px; overflow-y: auto; background: white; border: 1px solid var(--sidebar-border); border-radius: 8px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12); z-index: 20;"
+                    >
+                      <div
+                        v-for="option in getFilteredInlineOptions('branch')"
+                        @mousedown.prevent="selectInlineOption('branch', option)"
+                        style="padding: 0.55rem 0.7rem; font-size: 13px; cursor: pointer; color: var(--text-main); border-bottom: 1px solid #f1f5f9;"
+                      >
+                        [[ option ]]
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -2813,6 +2853,19 @@
               this.activeInlineDropdown = field;
               this.inlineDropdownOptions = options;
             }
+          },
+
+          closeInlineDropdown() {
+            setTimeout(() => {
+              this.activeInlineDropdown = "";
+            }, 150);
+          },
+
+          getFilteredInlineOptions(field) {
+            const query = field === "branch" ? (this.newApp.branch_code || "").toLowerCase() : "";
+            return this.inlineDropdownOptions.filter((option) =>
+              !query || option.toLowerCase().includes(query),
+            );
           },
 
           selectInlineOption(field, value, docField, idx) {
