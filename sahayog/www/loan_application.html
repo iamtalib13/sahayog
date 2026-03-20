@@ -960,13 +960,13 @@
       }
       .member-avatar-wrap {
         position: relative;
-        width: 128px;
+        width: 126px;
         margin: 0 auto 0.85rem auto;
       }
       .member-avatar {
-        width: 128px;
-        height: 128px;
-        border-radius: 50%;
+        width: 126px;
+        height: 162px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1451,10 +1451,10 @@
                 <tbody>
                   <tr v-for="(doc, idx) in (selectedApp.kyc_documents || [])" :key="'info-kyc-' + idx">
                     <td>
-                      <div v-if="isEditing" class="inline-select-input" @click="openEditKycDropdown(idx, ['Aadhaar Card', 'PAN Card', 'Passport', 'Driving License', 'Voter ID', 'Other'], 'Select Document Type')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                        <span>[[ doc.document_type || 'Select' ]]</span>
-                        <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                      </div>
+                      <select v-if="isEditing" v-model="doc.document_type" class="info-input" style="font-size: 12px;">
+                        <option value="">Select</option>
+                        <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                      </select>
                       <span v-else>[[ doc.document_type || '-' ]]</span>
                     </td>
                     <td>
@@ -1462,10 +1462,9 @@
                       <span v-else>[[ doc.document_number || '-' ]]</span>
                     </td>
                     <td>
-                      <div v-if="isEditing" class="inline-select-input" @click="openEditKycStatusDropdown(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                        <span>[[ doc.status || 'Select' ]]</span>
-                        <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                      </div>
+                      <select v-if="isEditing" v-model="doc.status" class="info-input" style="font-size: 12px;">
+                        <option v-for="status in kycStatusOptions" :value="status">[[ status ]]</option>
+                      </select>
                       <span v-else class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b') }">[[ doc.status || 'Pending' ]]</span>
                     </td>
                     <td>
@@ -1508,10 +1507,10 @@
                 style="border-top: 1px solid #f1f5f9"
               >
                 <td style="padding: 0.75rem 1rem">
-                  <div v-if="isEditing" class="inline-select-input" @click="openEditKycDropdown(idx, ['Aadhaar Card', 'PAN Card', 'Passport', 'Driving License', 'Voter ID', 'Other'], 'Select Document Type')" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                    <span>[[ doc.document_type || 'Select' ]]</span>
-                    <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                  </div>
+                  <select v-if="isEditing" v-model="doc.document_type" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; background: white;">
+                    <option value="">Select</option>
+                    <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                  </select>
                   <span v-else>[[ doc.document_type ]]</span>
                 </td>
                 <td style="padding: 0.75rem 1rem">
@@ -1519,10 +1518,9 @@
                   <span v-else>[[ doc.document_number ]]</span>
                 </td>
                 <td style="padding: 0.75rem 1rem">
-                  <div v-if="isEditing" class="inline-select-input" @click="openEditKycStatusDropdown(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                    <span>[[ doc.status || 'Select' ]]</span>
-                    <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                  </div>
+                  <select v-if="isEditing" v-model="doc.status" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; background: white;">
+                    <option v-for="status in kycStatusOptions" :value="status">[[ status ]]</option>
+                  </select>
                   <span v-else class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b') }">[[ doc.status ]]</span>
                 </td>
                 <td style="padding: 0.75rem 1rem">
@@ -1571,10 +1569,10 @@
 
               <div style="margin-bottom: 0.75rem;">
                 <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Type</label>
-                <div v-if="isEditing" class="inline-select-input" @click="openEditKycDropdown(idx, ['Aadhaar Card', 'PAN Card', 'Passport', 'Driving License', 'Voter ID', 'Other'], 'Select Document Type')" style="border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                  <span>[[ doc.document_type || 'Select' ]]</span>
-                  <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
-                </div>
+                <select v-if="isEditing" v-model="doc.document_type" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; background: white;">
+                  <option value="">Select</option>
+                  <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                </select>
                 <div v-else style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_type ]]</div>
               </div>
 
@@ -1586,10 +1584,9 @@
 
               <div style="margin-bottom: 0.75rem;">
                 <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Status</label>
-                <div v-if="isEditing" class="inline-select-input" @click="openEditKycStatusDropdown(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid var(--sidebar-border); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                  <span>[[ doc.status || 'Select' ]]</span>
-                  <i data-lucide="chevron-down" style="width: 14px; height: 14px"></i>
-                </div>
+                <select v-if="isEditing" v-model="doc.status" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; background: white;">
+                  <option v-for="status in kycStatusOptions" :value="status">[[ status ]]</option>
+                </select>
                 <span v-else class="status-pill" :style="{ background: (doc.status === 'Verified' ? '#22c55e15' : '#64748b15'), color: (doc.status === 'Verified' ? '#22c55e' : '#64748b'), padding: '6px 12px', fontSize: '12px', fontWeight: '700' }">[[ doc.status ]]</span>
               </div>
 
@@ -1781,8 +1778,7 @@
                     <h4 style="margin: 0 0 0.85rem 0; font-size: 14px; font-weight: 700; color: var(--text-main);">Member Details</h4>
                     <div class="member-avatar-wrap">
                       <div class="member-avatar">
-                        <img v-if="newApp.customer_photo_preview || newApp.customer_photo" :src="newApp.customer_photo_preview || newApp.customer_photo" alt="Customer photo" />
-                        <span v-else>[[ (newApp.customer_name || 'M').charAt(0).toUpperCase() ]]</span>
+                        <img :src="newApp.customer_photo_preview || newApp.customer_photo || '/assets/sahayog/images/user-edit.png'" alt="Customer photo" />
                       </div>
                       <label for="customer-photo-input" class="member-avatar-upload" title="Upload Photo">
                         <i data-lucide="upload" style="width: 12px; height: 12px;"></i>
@@ -1811,7 +1807,12 @@
                     </div>
                     <div class="member-meta-row">
                       <label class="info-label">Gender</label>
-                      <input type="text" v-model="newApp.gender" class="info-input" />
+                      <select v-model="newApp.gender" class="info-input">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
                     </div>
                     <div class="member-meta-row">
                       <label class="info-label">Father's / Husband's Name</label>
@@ -1857,41 +1858,41 @@
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 0.75rem 0;">
                       <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main);">KYC Details</h4>
-                      <button type="button" @click="addKycRow" style="padding: 0.45rem 0.85rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">+ Add Row</button>
                     </div>
                     <div class="kyc-table-wrap" style="margin-bottom: 1.5rem;">
                       <table class="kyc-details-table">
                         <thead>
                           <tr>
+                            <th style="width: 44px; text-align: center;">
+                              <input type="checkbox" :checked="areAllNewKycRowsSelected()" @change="toggleAllNewKycRows($event)" />
+                            </th>
                             <th>Document Type</th>
                             <th>Document Number</th>
                             <th>Status</th>
                             <th>Attachment</th>
-                            <th style="width: 64px;">Action</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr v-for="(doc, idx) in (newApp.kyc_documents || [])" :key="'new-info-kyc-' + idx">
+                            <td style="text-align: center;">
+                              <input type="checkbox" v-model="doc.selected" />
+                            </td>
                             <td>
-                              <div class="inline-select-input" @click="openDocDropdownPopup(idx, ['', 'Aadhaar Card', 'PAN Card'], 'Select Document Type')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                                <span>[[ doc.document_type || 'Select' ]]</span>
-                                <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                              </div>
+                              <select v-model="doc.document_type" class="info-input" style="font-size: 12px;">
+                                <option value="">Select</option>
+                                <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                              </select>
                             </td>
                             <td>
                               <input type="text" v-model="doc.document_number" class="info-input" style="font-size: 12px;" :maxlength="doc.document_type === 'PAN Card' ? 10 : (doc.document_type === 'Aadhaar Card' ? 12 : 50)" @input="doc.document_type === 'PAN Card' ? doc.document_number = doc.document_number.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : (doc.document_type === 'Aadhaar Card' ? doc.document_number = doc.document_number.replace(/[^0-9]/g, '').slice(0, 12) : '')" :inputmode="doc.document_type === 'Aadhaar Card' ? 'numeric' : 'text'" />
                             </td>
                             <td>
-                              <div class="inline-select-input" @click="openDocStatusDropdownPopup(idx, ['Pending', 'Verified', 'Rejected'], 'Select Status')" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;">
-                                <span>[[ doc.status || 'Pending' ]]</span>
-                                <i data-lucide="chevron-down" style="width: 12px; height: 12px"></i>
-                              </div>
+                              <select v-model="doc.status" class="info-input" style="font-size: 12px;">
+                                <option v-for="status in kycStatusOptions" :value="status">[[ status ]]</option>
+                              </select>
                             </td>
                             <td>
                               <input type="file" @change="(e) => handleFileUpload(e, idx)" style="width: 100%; font-size: 11px;" />
-                            </td>
-                            <td>
-                              <button type="button" @click="removeKycRow(idx)" style="border: none; background: transparent; color: #ef4444; font-size: 12px; font-weight: 700; cursor: pointer;">Remove</button>
                             </td>
                           </tr>
                           <tr v-if="!(newApp.kyc_documents && newApp.kyc_documents.length)">
@@ -1899,6 +1900,10 @@
                           </tr>
                         </tbody>
                       </table>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; margin-top: -1rem; margin-bottom: 1.5rem; padding-top: 0.5rem;">
+                      <button type="button" @click="addKycRow" style="padding: 0.45rem 0.9rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Add</button>
+                      <button v-if="hasSelectedNewKycRows()" type="button" @click="deleteSelectedKycRows" style="padding: 0.45rem 0.9rem; background: #fff; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Delete</button>
                     </div>
                   </section>
                 </div>
@@ -2530,6 +2535,19 @@
           loanTypes: [],
           branches: [],
           users: [],
+          kycDocumentTypes: [
+            "Aadhaar Card",
+            "PAN Card",
+            "Photograph",
+            "Address Proof",
+            "Income Document",
+            "Passport",
+            "Voter ID",
+            "Electricity Bill",
+            "Utility Bill",
+            "Bank Statement",
+          ],
+          kycStatusOptions: ["Pending", "Verified", "Rejected"],
           showUserDropdown: false,
           userSearchQuery: "",
           activeUserDropdownIdx: -1,
@@ -2959,9 +2977,41 @@
               document_file: "",
               file_name: "",
               file: null,
+              selected: false,
               status: "Pending",
               verified_by: "",
             });
+          },
+
+          areAllNewKycRowsSelected() {
+            return !!(
+              this.newApp.kyc_documents &&
+              this.newApp.kyc_documents.length &&
+              this.newApp.kyc_documents.every((doc) => !!doc.selected)
+            );
+          },
+
+          toggleAllNewKycRows(event) {
+            const checked = !!event.target.checked;
+            if (this.newApp.kyc_documents) {
+              this.newApp.kyc_documents.forEach((doc) => {
+                doc.selected = checked;
+              });
+            }
+          },
+
+          deleteSelectedKycRows() {
+            if (!this.newApp.kyc_documents) return;
+            this.newApp.kyc_documents = this.newApp.kyc_documents.filter(
+              (doc) => !doc.selected,
+            );
+          },
+
+          hasSelectedNewKycRows() {
+            return !!(
+              this.newApp.kyc_documents &&
+              this.newApp.kyc_documents.some((doc) => !!doc.selected)
+            );
           },
 
           handleFileUpload(event, idx) {
@@ -3240,6 +3290,7 @@
                 submitData.kyc_documents = submitData.kyc_documents.map(doc => ({
                   ...doc,
                   doctype: "Loan Document",
+                  selected: undefined,
                   file: undefined, // Remove file object, only send file_url
                   local_preview: undefined, // Remove local preview URL
                 }));
