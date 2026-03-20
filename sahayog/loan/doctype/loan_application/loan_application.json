@@ -38,7 +38,6 @@
   "nomination_section",
   "nominee_name",
   "relation_with_applicant",
-  "nominee_confirmation",
   "column_break_uwii",
   "nominee_age",
   "nominee_address",
@@ -76,6 +75,7 @@
   "loan_account_no",
   "sanction_section",
   "eligible_loan_amount",
+  "sanctioned_loan_amount",
   "ltv_percent",
   "interest_rate",
   "valuation_charges",
@@ -693,12 +693,6 @@
    "label": "Address"
   },
   {
-   "default": "0",
-   "fieldname": "nominee_confirmation",
-   "fieldtype": "Check",
-   "label": "Nominee Confirmation"
-  },
-  {
    "fieldname": "for_office_use_only_section",
    "fieldtype": "Section Break",
    "label": "For Office Use Only"
@@ -751,6 +745,11 @@
    "fieldname": "loan_account_number",
    "fieldtype": "Data",
    "label": "Loan Account Number"
+  },
+  {
+   "fieldname": "sanctioned_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Sanctioned Loan Amount"
   }
  ],
  "grid_page_length": 50,
@@ -769,7 +768,7 @@
    "link_fieldname": "loan_application"
   }
  ],
- "modified": "2026-03-20 10:54:18.407255",
+ "modified": "2026-03-20 11:41:31.002950",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
