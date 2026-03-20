@@ -75,62 +75,80 @@ frappe.ui.form.on("Loan Application", {
 
     // 4. KYC Table Real-time Validation (Stop Infinite Inputting)
     if (frm.fields_dict.kyc_documents && frm.fields_dict.kyc_documents.grid) {
-      $(frm.fields_dict.kyc_documents.grid.wrapper).on("keypress", 'input[data-fieldname="document_number"]', function (e) {
-        let grid_row = $(this).closest(".grid-row");
-        let row_id = grid_row.attr("data-name");
-        let row = frappe.get_doc("Loan Document", row_id);
-        let val = $(this).val();
+      $(frm.fields_dict.kyc_documents.grid.wrapper).on(
+        "keypress",
+        'input[data-fieldname="document_number"]',
+        function (e) {
+          let grid_row = $(this).closest(".grid-row");
+          let row_id = grid_row.attr("data-name");
+          let row = frappe.get_doc("Loan Document", row_id);
+          let val = $(this).val();
 
-        if (row && row.document_type === "Aadhaar Card") {
-          // Aadhaar: 12 digits numeric
-          if (e.which < 48 || e.which > 57 || val.length >= 12) {
-            e.preventDefault();
-            return false;
+          if (row && row.document_type === "Aadhaar Card") {
+            // Aadhaar: 12 digits numeric
+            if (e.which < 48 || e.which > 57 || val.length >= 12) {
+              e.preventDefault();
+              return false;
+            }
+          } else if (row && row.document_type === "PAN Card") {
+            // PAN: 10 chars, strict alphanumeric
+            if (val.length >= 10) {
+              e.preventDefault();
+              return false;
+            }
+            let char = String.fromCharCode(e.which).toUpperCase();
+            let i = val.length;
+            // Format: LLLLL NNNN L
+            if (i < 5 || i === 9) {
+              // 0-4 and 9 are Letters
+              if (!/[A-Z]/.test(char)) {
+                e.preventDefault();
+                return false;
+              }
+            } else if (i >= 5 && i <= 8) {
+              // 5-8 are Digits
+              if (!/\d/.test(char)) {
+                e.preventDefault();
+                return false;
+              }
+            }
           }
-        } else if (row && row.document_type === "PAN Card") {
-          // PAN: 10 chars, strict alphanumeric
-          if (val.length >= 10) {
-            e.preventDefault();
-            return false;
-          }
-          let char = String.fromCharCode(e.which).toUpperCase();
-          let i = val.length;
-          // Format: LLLLL NNNN L
-          if (i < 5 || i === 9) { // 0-4 and 9 are Letters
-            if (!/[A-Z]/.test(char)) { e.preventDefault(); return false; }
-          } else if (i >= 5 && i <= 8) { // 5-8 are Digits
-            if (!/\d/.test(char)) { e.preventDefault(); return false; }
-          }
-        }
-      });
+        },
+      );
 
       // Handle Paste for KYC (Auto-trim)
-      $(frm.fields_dict.kyc_documents.grid.wrapper).on("paste", 'input[data-fieldname="document_number"]', function () {
-        let $input = $(this);
-        let grid_row = $input.closest(".grid-row");
-        let row_id = grid_row.attr("data-name");
-        let row = frappe.get_doc("Loan Document", row_id);
+      $(frm.fields_dict.kyc_documents.grid.wrapper).on(
+        "paste",
+        'input[data-fieldname="document_number"]',
+        function () {
+          let $input = $(this);
+          let grid_row = $input.closest(".grid-row");
+          let row_id = grid_row.attr("data-name");
+          let row = frappe.get_doc("Loan Document", row_id);
 
-        setTimeout(() => {
-          let val = $input.val().toUpperCase();
-          if (row && row.document_type === "Aadhaar Card") {
-            $input.val(val.replace(/\D/g, "").slice(0, 12));
-          } else if (row && row.document_type === "PAN Card") {
-            $input.val(val.slice(0, 10));
-          }
-          $input.trigger("change");
-        }, 100);
-      });
+          setTimeout(() => {
+            let val = $input.val().toUpperCase();
+            if (row && row.document_type === "Aadhaar Card") {
+              $input.val(val.replace(/\D/g, "").slice(0, 12));
+            } else if (row && row.document_type === "PAN Card") {
+              $input.val(val.slice(0, 10));
+            }
+            $input.trigger("change");
+          }, 100);
+        },
+      );
     }
   },
-// customer name auto-capitalization
+  // customer name auto-capitalization
   customer_name: function (frm) {
     if (frm.doc.customer_name) {
       let capitalized = frm.doc.customer_name
         .split(" ")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map(
+          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
         .join(" ");
-      
+
       if (frm.doc.customer_name !== capitalized) {
         frm.set_value("customer_name", capitalized);
       }
@@ -154,9 +172,12 @@ frappe.ui.form.on("Loan Application", {
   gold_rate_per_gram: function (frm) {
     frm.trigger("recalculate_all");
   },
-  
-  date_of_birth: function(frm) {
-    if (frm.doc.date_of_birth && frappe.datetime.get_today() < frm.doc.date_of_birth) {
+
+  date_of_birth: function (frm) {
+    if (
+      frm.doc.date_of_birth &&
+      frappe.datetime.get_today() < frm.doc.date_of_birth
+    ) {
       frappe.msgprint(__("Date of Birth cannot be in the future."));
       frm.set_value("date_of_birth", "");
     }
@@ -180,11 +201,13 @@ frappe.ui.form.on("Loan Application", {
       t_ded = 0,
       t_nw = 0,
       t_val = 0;
-    let rate = flt(frm.doc.gold_rate_per_gram);
+    
     let ltv = flt(frm.doc.ltv_percent) || 75;
 
     // Ornament Logic
     (frm.doc.ornaments_list || []).forEach((d) => {
+      let rate = flt(d.valuation_rate_per_gram); 
+
       d.net_weight = flt(d.gross_weight) - flt(d.deduction);
       d.valuation = d.net_weight * rate;
       d.eligible_amount = d.valuation * (ltv / 100);
@@ -204,13 +227,22 @@ frappe.ui.form.on("Loan Application", {
       frm.set_value("eligible_loan_amount", t_val * (ltv / 100));
     }
 
-    // Payout Calculation
-    let fee_amt =
-      flt(frm.doc.loan_amount) * (flt(frm.doc.processing_fee) / 100);
+    // ✅ Sanctioned Amount
+    let sanctioned_amount = Math.min(
+      flt(frm.doc.loan_amount),
+      flt(frm.doc.eligible_loan_amount),
+    );
+
+    frm.set_value("sanctioned_loan_amount", sanctioned_amount);
+
+    // ✅ Charges on sanctioned amount
+    let fee_amt = sanctioned_amount * (flt(frm.doc.processing_fee) / 100);
+
     let total_deductions =
       fee_amt + flt(frm.doc.valuation_charges) + flt(frm.doc.stamp_duty);
-    frm.set_value("final_payout", flt(frm.doc.loan_amount) - total_deductions);
 
+    // ✅ Final Disbursement
+    frm.set_value("final_payout", sanctioned_amount - total_deductions);
     frm.refresh_field("ornaments_list");
   },
 
@@ -244,6 +276,9 @@ frappe.ui.form.on("Loan Ornament", {
   deduction: function (frm) {
     frm.trigger("recalculate_all");
   },
+  valuation_rate_per_gram: function (frm) {
+    frm.trigger("recalculate_all");
+  },
   ornaments_list_remove: function (frm) {
     frm.trigger("recalculate_all");
   },
@@ -264,17 +299,20 @@ frappe.ui.form.on("Loan Document", {
     } else if (row.document_type === "PAN Card") {
       // Auto-capitalize and limit to 10 characters
       let filtered = val.toUpperCase().slice(0, 10);
-      
-      // Basic formatting as user types: 
+
+      // Basic formatting as user types:
       // 1-5: Letters, 6-9: Digits, 10: Letter
       let correct = "";
       for (let i = 0; i < filtered.length; i++) {
         let char = filtered[i];
-        if (i < 5) { // First 5 should be letters
+        if (i < 5) {
+          // First 5 should be letters
           if (/[A-Z]/.test(char)) correct += char;
-        } else if (i < 9) { // Next 4 should be digits
+        } else if (i < 9) {
+          // Next 4 should be digits
           if (/\d/.test(char)) correct += char;
-        } else { // Last 1 should be letter
+        } else {
+          // Last 1 should be letter
           if (/[A-Z]/.test(char)) correct += char;
         }
       }
@@ -283,5 +321,41 @@ frappe.ui.form.on("Loan Document", {
         frappe.model.set_value(cdt, cdn, "document_number", correct);
       }
     }
+  },
+});
+
+frappe.ui.form.on("Loan Ornament", {
+  purity: function (frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+
+    if (!row.purity) return;
+
+    frappe.call({
+      method: "frappe.client.get_list",
+      args: {
+        doctype: "Gold Rate",
+        filters: {
+          gold_karat: row.purity,
+          is_active: 1,
+        },
+        fields: ["rate_per_gram"],
+        order_by: "date desc",
+        limit_page_length: 1,
+      },
+      callback: function (r) {
+        if (r.message && r.message.length) {
+          frappe.model.set_value(
+            cdt,
+            cdn,
+            "valuation_rate_per_gram",
+            r.message[0].rate_per_gram,
+          );
+
+          frm.trigger("recalculate_all");
+        } else {
+          frappe.msgprint(__("No active gold rate found for selected purity"));
+        }
+      },
+    });
   },
 });

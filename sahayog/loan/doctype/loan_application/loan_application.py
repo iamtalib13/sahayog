@@ -106,25 +106,54 @@ class LoanApplication(Document):
             self.rule_engine_status = "Passed" if score >= 40 else "Referred for Review"
 
     def calculate_payouts(self):
-        if not self.loan_type: return
+        if not self.loan_type:
+            return
+
         policy = frappe.get_doc("Loan Type", self.loan_type)
+
+        # ✅ GOLD LOAN LOGIC
         if self.security_type == "Gold" and self.ornaments_list:
+            t_gw = 0
+            t_ded = 0
+            t_nw = 0
             t_val = 0
             ltv = flt(self.ltv_percent) or flt(policy.ltv_percent) or 75
-            rate = flt(self.gold_rate_per_gram)
+            
             for d in self.ornaments_list:
+                rate = flt(d.valuation_rate_per_gram)
                 d.net_weight = flt(d.gross_weight) - flt(d.deduction)
                 d.valuation = d.net_weight * rate
+                
+                t_gw += flt(d.gross_weight)
+                t_ded += flt(d.deduction)
+                t_nw += d.net_weight
                 t_val += d.valuation
+            
+            self.total_gross_weight = t_gw
+            self.total_deduction = t_ded
+            self.total_net_weight = t_nw
             self.total_valuation = t_val
             self.eligible_loan_amount = t_val * (ltv / 100)
 
-        fees = (flt(self.loan_amount) * flt(self.processing_fee) / 100) + flt(self.valuation_charges)
-        self.final_payout = flt(self.loan_amount) - fees
+        # ✅ SANCTIONED AMOUNT (FOR ALL LOANS)
+        self.sanctioned_loan_amount = min(
+            flt(self.loan_amount),
+            flt(self.eligible_loan_amount)
+        )
 
+        # ✅ CHARGES (on sanctioned amount)
+        fees = (
+            flt(self.sanctioned_loan_amount) * flt(self.processing_fee) / 100
+        ) + flt(self.valuation_charges) + flt(self.stamp_duty)
+
+        # ✅ FINAL DISBURSEMENT
+        self.final_payout = flt(self.sanctioned_loan_amount) - fees
+        
     def validate_kyc_documents(self):
         types = []
         for d in self.kyc_documents:
             if d.document_type in types:
                 frappe.throw(_("Duplicate KYC Type: {0}").format(d.document_type))
             types.append(d.document_type)
+            
+  
