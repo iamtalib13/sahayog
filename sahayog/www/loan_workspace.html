@@ -1,17 +1,15 @@
 {% extends "templates/web.html" %}
 
 {% block header %}
-<div class="loan-workspace-header bg-white border-bottom py-3 shadow-sm">
+<div class="loan-workspace-header bg-white border-bottom py-2 shadow-sm">
     <div class="container-fluid d-flex justify-content-between align-items-center">
         <div>
             <h5 class="mb-0 fw-bold text-dark">Loan Hub</h5>
             <small class="text-muted small">Manage loan applications</small>
         </div>
-        <div class="header-actions">
-            <button class="btn btn-indigo btn-sm rounded-pill px-3 shadow-sm" onclick="frappe.set_route('List', 'Loan Application', 'List')">
-                <i class="fa fa-plus me-1"></i> New Application
-            </button>
-        </div>
+        <button class="btn btn-indigo btn-sm rounded-pill px-3 shadow-sm" onclick="window.location.href='/app/loan-application/new-loan-application-1'">
+            <i class="fa fa-plus me-1"></i> New
+        </button>
     </div>
 </div>
 {% endblock %}
@@ -19,13 +17,13 @@
 {% block content %}
 <div id="loan-workspace-container" class="p-3">
     
-    <!-- Compact Shortcut Card -->
+    <!-- Compact Clickable Shortcut Card -->
     <div class="row g-3 mb-4 justify-content-center">
         <div class="col-12 col-md-3">
-            <div class="card border-0 shadow-sm shortcut-card pointer" onclick="frappe.set_route('List', 'Loan Application')">
+            <div class="card border-0 shadow-sm shortcut-card pointer" onclick="window.location.href='/app/loan-application'">
                 <div class="card-body p-4 text-center">
                     <div class="icon-box mb-3 mx-auto bg-indigo shadow-sm">
-                        <i class="fa fa-file-invoice"></i>
+                        <i class="fa fa-file-text-o"></i>
                     </div>
                     <h6 class="fw-bold mb-1 text-dark">Loan Application</h6>
                     
@@ -71,15 +69,15 @@
     body { background-color: var(--indigo-light); }
 
     .ls-1 { letter-spacing: 1px; }
-    .pointer { cursor: pointer; }
+    .pointer { cursor: pointer !important; }
     .rounded-lg { border-radius: 12px; }
     .extra-small { font-size: 0.6rem; }
     
     .btn-indigo { background: var(--indigo-primary); color: white; border: none; }
     .btn-indigo:hover { background: var(--indigo-dark); color: white; }
     
-    .shortcut-card { transition: all 0.2s ease; border-radius: 16px; border: 1px solid #e3e6f0 !important; background: white; }
-    .shortcut-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important; border-color: var(--indigo-primary) !important; }
+    .shortcut-card { transition: all 0.2s ease; border-radius: 16px; border: 1px solid #e3e6f0 !important; background: white; cursor: pointer; }
+    .shortcut-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; border-color: var(--indigo-primary) !important; }
     
     .icon-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.2rem; }
     .bg-indigo { background: var(--indigo-primary); color: white; }
@@ -133,7 +131,7 @@
                 }
 
                 tbody.innerHTML = r.message.map(app => `
-                    <tr class="pointer" onclick="frappe.set_route('Form', 'Loan Application', '${app.name}')">
+                    <tr class="pointer" onclick="window.location.href='/app/loan-application/${app.name}'">
                         <td class="ps-3">
                             <div class="fw-bold text-dark small">${app.customer_name}</div>
                             <small class="text-muted extra-small">${app.name}</small>
