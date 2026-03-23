@@ -33,7 +33,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Document Type",
-   "options": "\nAadhaar Card\nPAN Card\nPhotograph\nAddress Proof\nIncome Document\nPassport\nVoter ID\nElectricity Bill\nUtility Bill\nBank Statement",
+   "options": "\nAadhaar Card\nPAN Card\nPhotograph\nAddress Proof\nIncome Document\nPassport\nVoter ID\nElectricity Bill\nUtility Bill\nBank Statement\nOrnament Image\nPackage Image\nPledge(Group) Image\nValuation Report Image\nNominee Image\nGuarantor Image",
    "reqd": 1
   },
   {
@@ -60,8 +60,8 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-18 15:44:48.136835",
- "modified_by": "Administrator",
+ "modified": "2026-03-23 17:32:42.775360",
+ "modified_by": "8751@sahayog.com",
  "module": "Loan",
  "name": "Loan Document",
  "owner": "Administrator",
