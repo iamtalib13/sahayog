@@ -6,11 +6,20 @@ import re
 
 class LoanApplication(Document):
     def validate(self):
+        self.set_branch_code_from_employee()
         self.validate_workflow_requirements()
         self.validate_basic_fields()
         if self.loan_type:
             self.run_rule_engine()
         self.calculate_payouts()
+
+    def set_branch_code_from_employee(self):
+        if "Branch Loan User" not in frappe.get_roles(frappe.session.user):
+            return
+
+        branch_code = get_current_user_branch_code()
+        if branch_code:
+            self.branch_code = branch_code
 
     def validate_workflow_requirements(self):
         # Initial status setup
@@ -140,3 +149,15 @@ def add_workflow_comment(docname, comment):
         doc.add_comment("Comment", comment)
         return True
     return False
+
+
+@frappe.whitelist()
+def get_current_user_branch_code():
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        ["name", "sol_id"],
+        as_dict=True,
+    )
+
+    return employee.sol_id if employee and employee.sol_id else None

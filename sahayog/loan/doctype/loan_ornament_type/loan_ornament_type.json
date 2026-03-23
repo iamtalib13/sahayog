@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "autoname": "field:ornament_type",
- "creation": "2026-03-12 14:00:00.000000",
+ "creation": "2026-03-12 14:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -24,7 +24,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-12 14:00:00.000000",
+ "modified": "2026-03-23 13:55:40.856550",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Ornament Type",
@@ -42,8 +42,18 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

@@ -20,6 +20,15 @@ frappe.ui.form.on("Loan Application", {
   },
 
   refresh: function (frm) {
+    frm.trigger("apply_branch_user_rules");
+
+    if (!frm.custom_home_button_added) {
+      frm.add_custom_button(__("Home"), function () {
+        frappe.set_route("/app/loan-management");
+      });
+      frm.custom_home_button_added = true;
+    }
+
     // 1. Workflow Logic (Handled by Frappe Workflow)
     frm.trigger("render_workflow_tracker");
     frm.trigger("set_status_indicator");
@@ -118,6 +127,29 @@ frappe.ui.form.on("Loan Application", {
         },
       );
     }
+  },
+
+  onload: function (frm) {
+    frm.trigger("apply_branch_user_rules");
+  },
+
+  apply_branch_user_rules: function (frm) {
+    const is_branch_loan_user = frappe.user.has_role("Branch Loan User");
+
+    frm.set_df_property("branch_code", "read_only", is_branch_loan_user ? 1 : 0);
+
+    if (!is_branch_loan_user || !frm.is_new() || frm.doc.branch_code) {
+      return;
+    }
+
+    frappe.call({
+      method: "sahayog.loan.doctype.loan_application.loan_application.get_current_user_branch_code",
+      callback: function (r) {
+        if (r.message && !frm.doc.branch_code) {
+          frm.set_value("branch_code", r.message);
+        }
+      },
+    });
   },
 
   render_workflow_tracker: function (frm) {

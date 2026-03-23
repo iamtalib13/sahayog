@@ -117,11 +117,10 @@
       body {
         margin: 0;
         display: flex;
-        height: 100vh;
-        background: var(--bg-main);
+        min-height: 100vh;
+        background: transparent;
         color: var(--text-main);
         font-family: "Inter", sans-serif;
-        overflow: hidden;
       }
       [v-cloak] {
         display: none;
@@ -225,7 +224,6 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
       }
 
       /* Dashboard Specific Styles */
@@ -3515,6 +3513,28 @@
         };
       }
       PetiteVue.createApp(App()).mount("body");
+
+      // Dynamic Iframe Height Communication
+      function sendHeight() {
+        const height = document.documentElement.scrollHeight;
+        window.parent.postMessage({
+          type: 'frappe-page-resize',
+          height: height
+        }, '*');
+      }
+
+      window.addEventListener('load', sendHeight);
+      window.addEventListener('resize', sendHeight);
+
+      // Observe DOM changes to catch dynamic content loading
+      if (window.MutationObserver) {
+        const observer = new MutationObserver(sendHeight);
+        observer.observe(document.body, {
+          attributes: true,
+          childList: true,
+          subtree: true
+        });
+      }
     </script>
   </body>
 </html>

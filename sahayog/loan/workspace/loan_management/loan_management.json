@@ -1,0 +1,47 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"ehW21nkDIF\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Loan Application Workspace\",\"col\":12}}]",
+ "creation": "2026-03-16 13:45:45.389333",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Loan Application Workspace",
+   "label": "Loan Application Workspace"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "liabilities",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Loan Management",
+ "links": [],
+ "modified": "2026-03-23 14:05:36.615650",
+ "modified_by": "Administrator",
+ "module": "Loan",
+ "name": "Loan Management",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Branch Loan User"
+  },
+  {
+   "role": "Credit Loan User"
+  },
+  {
+   "role": "CPC Loan User"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 95.0,
+ "shortcuts": [],
+ "title": "Loan Management"
+}
