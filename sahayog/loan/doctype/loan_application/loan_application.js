@@ -7,7 +7,10 @@ frappe.ui.form.on("Loan Application", {
           frm.selected_workflow_action,
         ]),
         () => resolve(),
-        () => reject(),
+        () => {
+          frappe.validated = false;
+          reject();
+        }
       );
     });
   },

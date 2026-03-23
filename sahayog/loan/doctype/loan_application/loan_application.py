@@ -45,20 +45,15 @@ class LoanApplication(Document):
             frappe.throw(_("At least one KYC Document is required."))
         self.validate_kyc_documents()
 
-        # # Tenure Validation
-        # if not self.tenure_months or flt(self.tenure_months) <= 0:
-        #     frappe.throw(_("Please enter a valid Tenure (Months) to calculate eligibility."))
-
     def run_rule_engine(self):
         if not self.loan_type: return
         policy = frappe.get_doc("Loan Type", self.loan_type)
         age = date_diff(nowdate(), self.date_of_birth) / 365.25
-        age_at_maturity = age + (flt(self.tenure_months) / 12)
         self.eligible_loan_amount = 0
 
         # Layer 1: Gates
         if age < (flt(policy.min_age) or 21):
-            if not (age >= 18 and self.has_co_applicant):
+            if not (age >= 18 and getattr(self, "has_co_applicant", False)):
                 self.rule_engine_status = _("Rejected: Min age required")
                 return
 
@@ -136,12 +131,19 @@ class LoanApplication(Document):
 
         # ✅ FINAL DISBURSEMENT
         self.final_payout = flt(self.sanctioned_loan_amount) - fees
-        
+
     def validate_kyc_documents(self):
         types = []
         for d in self.kyc_documents:
             if d.document_type in types:
                 frappe.throw(_("Duplicate KYC Type: {0}").format(d.document_type))
             types.append(d.document_type)
-            
-  
+
+@frappe.whitelist()
+def add_workflow_comment(docname, comment):
+    """Explicitly add a comment to the document timeline."""
+    if docname and comment:
+        doc = frappe.get_doc("Loan Application", docname)
+        doc.add_comment("Comment", comment)
+        return True
+    return False
