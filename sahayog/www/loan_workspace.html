@@ -1,0 +1,163 @@
+{% extends "templates/web.html" %}
+
+{% block header %}
+<div class="loan-workspace-header bg-white border-bottom py-2 shadow-sm">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0 fw-bold text-dark">Loan Hub</h5>
+            <small class="text-muted small">Manage loan applications</small>
+        </div>
+        <button class="btn btn-indigo btn-sm rounded-pill px-3 shadow-sm" onclick="window.location.href='/app/loan-application/new-loan-application-1'">
+            <i class="fa fa-plus me-1"></i> New
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="loan-workspace-container" class="p-3">
+    
+    <!-- Compact Clickable Shortcut Card -->
+    <div class="row g-3 mb-4 justify-content-center">
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm shortcut-card pointer" onclick="window.location.href='/app/loan-application'">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-box mb-3 mx-auto bg-indigo shadow-sm">
+                        <i class="fa fa-file-text-o"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1 text-dark">Loan Application</h6>
+                    
+                    <div class="mt-3">
+                        <h3 class="mb-0 fw-bold text-indigo" id="count-loan-application">0</h3>
+                        <small class="text-muted text-uppercase fw-bold ls-1 extra-small">Total Records</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simplified Activity Table -->
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-indigo-light">
+                    <tr>
+                        <th class="ps-3 border-0 text-indigo small fw-bold">APPLICANT</th>
+                        <th class="border-0 text-end text-indigo small fw-bold">AMOUNT</th>
+                        <th class="border-0 text-center text-indigo small fw-bold">STATUS</th>
+                        <th class="border-0 pe-3"></th>
+                    </tr>
+                </thead>
+                <tbody id="loan-application-table">
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted small">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --indigo-primary: #4e73df;
+        --indigo-dark: #224abe;
+        --indigo-light: #f8f9fc;
+    }
+
+    .navbar, .web-footer { display: none !important; }
+    body { background-color: var(--indigo-light); }
+
+    .ls-1 { letter-spacing: 1px; }
+    .pointer { cursor: pointer !important; }
+    .rounded-lg { border-radius: 12px; }
+    .extra-small { font-size: 0.6rem; }
+    
+    .btn-indigo { background: var(--indigo-primary); color: white; border: none; }
+    .btn-indigo:hover { background: var(--indigo-dark); color: white; }
+    
+    .shortcut-card { transition: all 0.2s ease; border-radius: 16px; border: 1px solid #e3e6f0 !important; background: white; cursor: pointer; }
+    .shortcut-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; border-color: var(--indigo-primary) !important; }
+    
+    .icon-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.2rem; }
+    .bg-indigo { background: var(--indigo-primary); color: white; }
+    .bg-indigo-light { background: var(--indigo-light); }
+    .text-indigo { color: var(--indigo-primary) !important; }
+    
+    .status-badge { padding: 3px 8px; font-size: 0.6rem; font-weight: 700; border-radius: 4px; text-transform: uppercase; display: inline-block; }
+    .st-draft { background: #eaecf4; color: #5a5c69; }
+    .st-approved { background: #1cc88a; color: white; }
+    .st-review { background: #f6c23e; color: white; }
+    .st-rejected { background: #e74a3b; color: white; }
+    .st-disbursed { background: #36b9cc; color: white; }
+
+    @media (max-width: 768px) {
+        .icon-box { width: 40px; height: 40px; font-size: 1rem; }
+        h3 { font-size: 1.5rem; }
+    }
+</style>
+
+<script>
+    frappe.ready(function() {
+        updateCounts();
+        updateTable();
+    });
+
+    function updateCounts() {
+        frappe.call({
+            method: 'frappe.client.get_count',
+            args: { doctype: 'Loan Application' },
+            callback: function(r) {
+                const el = document.getElementById('count-loan-application');
+                if (el) el.innerText = r.message || 0;
+            }
+        });
+    }
+
+    function updateTable() {
+        frappe.call({
+            method: 'frappe.client.get_list',
+            args: {
+                doctype: 'Loan Application',
+                fields: ['name', 'customer_name', 'loan_amount', 'status'],
+                order_by: 'creation desc',
+                limit_page_length: 5
+            },
+            callback: function(r) {
+                const tbody = document.getElementById('loan-application-table');
+                if (!r.message || r.message.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted small">No records found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = r.message.map(app => `
+                    <tr class="pointer" onclick="window.location.href='/app/loan-application/${app.name}'">
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark small">${app.customer_name}</div>
+                            <small class="text-muted extra-small">${app.name}</small>
+                        </td>
+                        <td class="text-end fw-bold text-dark small">
+                            ₹${parseFloat(app.loan_amount || 0).toLocaleString('en-IN')}
+                        </td>
+                        <td class="text-center">
+                            <span class="status-badge ${getStatusClass(app.status)}">${app.status}</span>
+                        </td>
+                        <td class="pe-3 text-end">
+                            <i class="fa fa-chevron-right text-muted extra-small"></i>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        });
+    }
+
+    function getStatusClass(status) {
+        if (status === 'Draft') return 'st-draft';
+        if (status === 'Under Review') return 'st-review';
+        if (status === 'Approved') return 'st-approved';
+        if (status === 'Rejected') return 'st-rejected';
+        if (status === 'Disbursed') return 'st-disbursed';
+        return 'st-draft';
+    }
+</script>
+{% endblock %}
