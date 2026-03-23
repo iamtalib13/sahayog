@@ -19,6 +19,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                   color: #24292f;
                   background: #f4f5f6;
                   padding: 16px;
+				  border-radius: 8px;
                 }
                 
                 /* --- Custom Scrollbar for all lists and panes --- */
