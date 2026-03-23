@@ -5,7 +5,7 @@
     <div class="container-fluid d-flex justify-content-between align-items-center">
         <div>
             <h4 class="mb-0 fw-bold text-dark">Loan Operations</h4>
-            <small class="text-muted">Direct Access to Loan Modules</small>
+            <small class="text-muted">Direct Access to Loan Module</small>
         </div>
         <button class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm" onclick="frappe.set_route('List', 'Loan Application', 'List')">
             <i class="fa fa-plus me-1"></i> New Application
@@ -17,57 +17,21 @@
 {% block content %}
 <div id="loan-workspace-container" class="p-3 p-md-4">
     
-    <!-- Main Shortcut Cards -->
-    <div class="row g-3 mb-5">
+    <!-- Main Shortcut Card -->
+    <div class="row g-3 mb-5 justify-content-center">
         <!-- Loan Application Card -->
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card border-0 shadow-sm shortcut-card h-100 pointer" onclick="frappe.set_route('List', 'Loan Application')">
-                <div class="card-body p-4 text-center">
-                    <div class="icon-circle mb-3 mx-auto bg-blue-soft">
+                <div class="card-body p-5 text-center">
+                    <div class="icon-circle mb-4 mx-auto bg-blue-soft">
                         <i class="fa fa-file-invoice"></i>
                     </div>
-                    <h5 class="fw-bold mb-1 text-dark">Loan Application</h5>
-                    <p class="text-muted small mb-3">Process new loan requests</p>
+                    <h4 class="fw-bold mb-2 text-dark">Loan Application</h4>
+                    <p class="text-muted small mb-4">Process and track new loan requests</p>
                     
-                    <div class="count-display py-2 px-3 rounded-pill d-inline-block">
-                        <h2 class="mb-0 fw-bold text-primary" id="count-loan-application">0</h2>
-                        <small class="text-muted text-uppercase fw-bold ls-1">Total Records</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Loan Disbursement Card -->
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm shortcut-card h-100 pointer" onclick="frappe.set_route('List', 'Loan Disbursement')">
-                <div class="card-body p-4 text-center">
-                    <div class="icon-circle mb-3 mx-auto bg-green-soft">
-                        <i class="fa fa-hand-holding-usd"></i>
-                    </div>
-                    <h5 class="fw-bold mb-1 text-dark">Disbursement</h5>
-                    <p class="text-muted small mb-3">Manage funds release</p>
-                    
-                    <div class="count-display py-2 px-3 rounded-pill d-inline-block">
-                        <h2 class="mb-0 fw-bold text-success" id="count-loan-disbursement">0</h2>
-                        <small class="text-muted text-uppercase fw-bold ls-1">Total Records</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Loan Repayment Card -->
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm shortcut-card h-100 pointer" onclick="frappe.set_route('List', 'Loan Repayment')">
-                <div class="card-body p-4 text-center">
-                    <div class="icon-circle mb-3 mx-auto bg-orange-soft">
-                        <i class="fa fa-undo-alt"></i>
-                    </div>
-                    <h5 class="fw-bold mb-1 text-dark">Repayment</h5>
-                    <p class="text-muted small mb-3">Track EMI collections</p>
-                    
-                    <div class="count-display py-2 px-3 rounded-pill d-inline-block">
-                        <h2 class="mb-0 fw-bold text-warning" id="count-loan-repayment">0</h2>
-                        <small class="text-muted text-uppercase fw-bold ls-1">Total Records</small>
+                    <div class="count-display py-3 px-4 rounded-pill d-inline-block shadow-sm">
+                        <h1 class="mb-0 fw-bold text-primary" id="count-loan-application">0</h1>
+                        <small class="text-muted text-uppercase fw-bold ls-1">Total Applications</small>
                     </div>
                 </div>
             </div>
@@ -105,15 +69,13 @@
     .pointer { cursor: pointer; }
     .rounded-lg { border-radius: 15px; }
     
-    .shortcut-card { transition: all 0.3s ease; border-radius: 20px; border: 1px solid #f1f3f5 !important; }
-    .shortcut-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; border-color: #0d6efd !important; }
+    .shortcut-card { transition: all 0.3s ease; border-radius: 25px; border: 1px solid #f1f3f5 !important; }
+    .shortcut-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(0,0,0,0.08) !important; border-color: #0d6efd !important; }
     
-    .icon-circle { width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; border-radius: 15px; font-size: 1.4rem; }
+    .icon-circle { width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 20px; font-size: 1.8rem; }
     .bg-blue-soft { background: #e7f5ff; color: #228be6; }
-    .bg-green-soft { background: #ebfbee; color: #40c057; }
-    .bg-orange-soft { background: #fff4e6; color: #fd7e14; }
     
-    .count-display { background: #f8f9fa; border: 1px solid #e9ecef; min-width: 130px; }
+    .count-display { background: #fff; border: 1px solid #e9ecef; min-width: 180px; }
     
     .status-pill { padding: 4px 10px; font-size: 0.65rem; font-weight: 700; border-radius: 50rem; text-transform: uppercase; display: inline-block; }
     .st-draft { background: #f1f3f5; color: #495057; }
@@ -121,6 +83,11 @@
     .st-approved { background: #e3faf3; color: #0ca678; }
     .st-rejected { background: #fff5f5; color: #fa5252; }
     .st-disbursed { background: #e7f5ff; color: #228be6; }
+
+    @media (max-width: 768px) {
+        .icon-circle { width: 60px; height: 60px; font-size: 1.5rem; }
+        h1 { font-size: 2.5rem; }
+    }
 </style>
 
 <script>
@@ -130,18 +97,13 @@
     });
 
     function updateCounts() {
-        const doctypes = ['Loan Application', 'Loan Disbursement', 'Loan Repayment'];
-        
-        doctypes.forEach(doctype => {
-            frappe.call({
-                method: 'frappe.client.get_count',
-                args: { doctype: doctype },
-                callback: function(r) {
-                    const id = 'count-' + doctype.toLowerCase().replace(/ /g, '-');
-                    const el = document.getElementById(id);
-                    if (el) el.innerText = r.message || 0;
-                }
-            });
+        frappe.call({
+            method: 'frappe.client.get_count',
+            args: { doctype: 'Loan Application' },
+            callback: function(r) {
+                const el = document.getElementById('count-loan-application');
+                if (el) el.innerText = r.message || 0;
+            }
         });
     }
 
