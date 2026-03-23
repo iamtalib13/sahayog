@@ -12,7 +12,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
         page.main.html(` 
             <style>
 			.page-container {
-			margin-top: 111px !important;
+			margin-top: 66px !important;
 			}
                 * { box-sizing: border-box; }
                 #perm-root { 
@@ -101,7 +101,8 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                                     
                                     <div class="perm-card-top">
                                         <div class="perm-card-name" v-html="highlight(emp.employee_name, searchQuery)"></div>
-                                        <span class="perm-tag-badge">[[ emp.designation ]]</span>
+                                        
+										<span class="perm-tag-badge">[[ getShortTag(emp.designation) ]]</span>
                                     </div>
                                     <div class="perm-card-email" v-html="highlight(emp.user_id, searchQuery)"></div>
                                 </div> 
@@ -209,6 +210,13 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                 this.selectedEmp = emp;
                 this.checkRoleStatus(emp.user_id);
             },
+
+			getShortTag(designation) {
+                if (designation === "Branch Manager") return "BM";
+                if (designation === "Branch Operation Manager") return "BOM";
+                return designation;
+            },
+
 
             checkRoleStatus(user_id) {
                 this.isUpdating = true;
