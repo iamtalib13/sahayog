@@ -6,35 +6,23 @@ import re
 
 class LoanApplication(Document):
     def validate(self):
-        self.validate_status_with_docstatus()
+        self.validate_workflow_requirements()
         self.validate_basic_fields()
         if self.loan_type:
             self.run_rule_engine()
         self.calculate_payouts()
 
-    def validate_status_with_docstatus(self):
+    def validate_workflow_requirements(self):
         # Initial status setup
         if self.is_new() and not self.status:
             self.status = "Draft"
         
-        # Submission check (DocStatus 1)
-        # Requirement: Approved, Disbursed, or Closed -> DocStatus 1
-        if self.docstatus == 1:
-            if self.status not in ["Approved", "Disbursed", "Closed"]:
-                frappe.throw(_("Status must be 'Approved', 'Disbursed', or 'Closed' to submit. Current status: {0}").format(self.status))
-        
-        # Saved check (DocStatus 0)
-        # Requirement: Draft, Under Review, or Rejected -> DocStatus 0
-        if self.docstatus == 0:
-            if self.status in ["Approved", "Disbursed", "Closed"]:
-                # If user tries to save as Approved, but it's not submitted yet
-                # We let them save as 'Approved' but warn them it needs to be submitted
-                # unless you want to auto-submit which is risky.
-                pass
-
-    def on_submit(self):
-        if self.status not in ["Approved", "Disbursed", "Closed"]:
-            frappe.throw(_("Cannot submit an unapproved application."))
+        # Validation for Credit Decision Stage
+        if self.status == "Credit Decision":
+            if not getattr(self, "gold_valuation_sheet", None):
+                frappe.throw(_("Gold Valuation Sheet is required for Credit Decision"))
+            if not getattr(self, "disclaimer", 0):
+                frappe.throw(_("Please accept the disclaimer before proceeding."))
 
     def validate_basic_fields(self):
         # Mobile Validation

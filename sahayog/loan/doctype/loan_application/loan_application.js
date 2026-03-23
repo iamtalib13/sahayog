@@ -1,48 +1,18 @@
 frappe.ui.form.on("Loan Application", {
+  before_workflow_action: async function (frm) {
+    // Return the promise here!
+    return new Promise((resolve, reject) => {
+      frappe.dom.unfreeze();
+      frappe.confirm(
+        `<b>Are you sure you want to <u>${frm.selected_workflow_action}</u>?</b>`,
+        () => resolve(), // Yes → proceed
+        () => reject("❌ Action cancelled by user."), // No → abort transition
+      );
+    });
+  },
   refresh: function (frm) {
-    // 1. Workflow Button Logic
-    if (frm.doc.docstatus === 0) {
-      if (frm.doc.status === "Draft") {
-        frm.add_custom_button(__("Send to Credit Team"), () => {
-          frm.set_value("status", "Under Review");
-          frm.save();
-        });
-      }
-      if (frm.doc.status === "Under Review") {
-        frm.add_custom_button(
-          __("Approve Application"),
-          () => {
-            frm.set_value("status", "Approved");
-            frm.save();
-          },
-          __("Actions"),
-        );
-        frm.add_custom_button(
-          __("Reject Application"),
-          () => {
-            frm.set_value("status", "Rejected");
-            frm.save();
-          },
-          __("Actions"),
-        );
-      }
-    }
-
-    // 2. Field Restrictions based on Stage
-    if (frm.doc.status !== "Draft" && frm.doc.docstatus === 0) {
-      // frm.set_df_property("customer_name", "read_only", 1);
-      // frm.set_df_property("mobile_number", "read_only", 1);
-      // frm.set_df_property("loan_amount", "read_only", 1);
-      // frm.set_df_property("loan_type", "read_only", 1);
-    }
-
-    // 3. UI Styling for Status
-    if (frm.doc.status === "Approved")
-      frm.page.set_indicator("Approved", "green");
-    else if (frm.doc.status === "Rejected")
-      frm.page.set_indicator("Rejected", "red");
-    else if (frm.doc.status === "Under Review")
-      frm.page.set_indicator("Under Review", "orange");
+    // 1. Workflow Logic (Handled by Frappe Workflow)
+    frm.trigger("render_workflow_tracker");
 
     // Mobile Number Restriction - Only Numbers (10 digits)
     if (frm.fields_dict.mobile_number && frm.fields_dict.mobile_number.$input) {
@@ -139,6 +109,98 @@ frappe.ui.form.on("Loan Application", {
       );
     }
   },
+
+  render_workflow_tracker: function (frm) {
+    const states = [
+      { label: "Branch", sub: "Draft", status: "Draft", role: "Branch User" },
+      { label: "Credit", sub: "Check", status: "Credit Check", role: "Credit User" },
+      { label: "Branch", sub: "Valuation", status: "Valuation Pending", role: "Branch User" },
+      { label: "Credit", sub: "Decision", status: "Credit Decision", role: "Credit User" },
+      { label: "CPC", sub: "Processing", status: "CPC Processing", role: "CPC User" },
+      { label: "Final", sub: "Outcome", status: ["Approved", "Rejected"], role: "" },
+    ];
+
+    let current_status = frm.doc.status;
+    let current_index = states.findIndex((s) =>
+      Array.isArray(s.status)
+        ? s.status.includes(current_status)
+        : s.status === current_status,
+    );
+
+    // Get current pending role
+    let pending_role = states[current_index]?.role || "";
+    let is_final = ["Approved", "Rejected"].includes(current_status);
+
+    let tracker_html = `
+      <div class="workflow-tracker-wrapper" style="margin-bottom: 25px;">
+        <div class="workflow-tracker-container" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 10px; background: #fff; border-radius: 12px; border: 1px solid #d1d8dd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+          ${states
+            .map((state, index) => {
+              let is_completed = index < current_index;
+              let is_active = index === current_index;
+              
+              let color = "#6c757d"; // Default Gray
+              let circle_bg = "#fff";
+              let circle_border = "#d1d8dd";
+              let text_weight = is_active ? "bold" : "normal";
+
+              if (is_completed) {
+                color = "#28a745"; // Green for completed
+                circle_bg = "#28a745";
+                circle_border = "#28a745";
+              } else if (is_active) {
+                color = "var(--blue-500)"; // Blue for active
+                circle_bg = "var(--blue-500)";
+                circle_border = "var(--blue-500)";
+              }
+
+              // Special handling for Rejected state
+              if (current_status === "Rejected" && index === states.length - 1) {
+                color = circle_bg = circle_border = "#dc3545";
+              }
+
+              return `
+              <div class="tracker-step" style="flex: 1; text-align: center; position: relative; min-width: 80px;">
+                <div class="step-circle" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid ${circle_border}; background: ${circle_bg}; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; color: ${is_active || is_completed ? "#fff" : "#adb5bd"}; font-size: 13px; font-weight: bold; z-index: 2; position: relative; transition: all 0.3s ease;">
+                  ${is_completed ? "✓" : index + 1}
+                </div>
+                <div class="step-labels" style="line-height: 1.2;">
+                  <div class="main-label" style="font-size: 12px; font-weight: ${text_weight}; color: ${is_active || is_completed ? "#212529" : "#868e96"};">${state.label}</div>
+                  <div class="sub-label" style="font-size: 10px; color: ${is_active ? color : "#adb5bd"}; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">${state.sub}</div>
+                </div>
+                ${
+                  index < states.length - 1
+                    ? `<div class="step-line" style="position: absolute; top: 14px; left: 50%; width: 100%; height: 2px; background: ${is_completed ? "#28a745" : "#e9ecef"}; z-index: 1;"></div>`
+                    : ""
+                }
+              </div>
+            `;
+            })
+            .join("")}
+        </div>
+        
+        ${!is_final ? `
+          <div class="pending-status-bar" style="margin-top: 10px; padding: 8px 15px; background: ${current_status.includes('Reject') ? '#fff5f5' : '#e7f5ff'}; border-radius: 6px; display: flex; align-items: center; border-left: 4px solid ${current_status.includes('Reject') ? '#ff6b6b' : '#339af0'};">
+            <span style="font-size: 12px; color: #495057;">
+              <i class="fa fa-clock-o" style="margin-right: 5px;"></i> 
+              Current Status: <b>${current_status}</b> 
+              ${pending_role ? ` | <i class="fa fa-user" style="margin-left: 10px; margin-right: 5px;"></i> Pending Action By: <span class="label label-primary" style="background: ${current_status.includes('Reject') ? '#ff6b6b' : '#339af0'}; padding: 2px 8px; border-radius: 4px; color: #fff; font-size: 10px;">${pending_role}</span>` : ''}
+            </span>
+          </div>
+        ` : `
+          <div class="final-status-bar" style="margin-top: 10px; padding: 10px 15px; background: ${current_status === 'Approved' ? '#ebfbee' : '#fff5f5'}; border-radius: 6px; text-align: center; border: 1px dashed ${current_status === 'Approved' ? '#40c057' : '#ff6b6b'};">
+            <span style="font-size: 13px; font-weight: bold; color: ${current_status === 'Approved' ? '#2f9e44' : '#e03131'};">
+              <i class="fa ${current_status === 'Approved' ? 'fa-check-circle' : 'fa-times-circle'}"></i> 
+              Application ${current_status}
+            </span>
+          </div>
+        `}
+      </div>
+    `;
+
+    frm.set_intro(tracker_html);
+  },
+
   // customer name auto-capitalization
   customer_name: function (frm) {
     if (frm.doc.customer_name) {

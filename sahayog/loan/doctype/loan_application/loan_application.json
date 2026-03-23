@@ -95,6 +95,9 @@
   "internal_ops_tab",
   "ops_section",
   "status",
+  "gold_valuation_sheet",
+  "disclaimer",
+  "remarks",
   "case_id",
   "applicant_signature",
   "date",
@@ -474,11 +477,31 @@
    "fieldtype": "Section Break"
   },
   {
+   "default": "Draft",
    "description": "Current lifecycle stage of this application.",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nDraft\nUnder Review\nApproved\nRejected\nDisbursed\nClosed"
+   "options": "Draft\nCredit Check\nValuation Pending\nCredit Decision\nCPC Processing\nApproved\nRejected"
+  },
+  {
+   "depends_on": "eval:doc.status == 'Credit Decision'",
+   "fieldname": "gold_valuation_sheet",
+   "fieldtype": "Attach",
+   "label": "Gold Valuation Sheet"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.status == 'Credit Decision'",
+   "fieldname": "disclaimer",
+   "fieldtype": "Check",
+   "label": "Disclaimer"
+  },
+  {
+   "depends_on": "eval:doc.status == 'Rejected'",
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   },
   {
    "description": "Unique internal case reference ID.",
@@ -751,19 +774,8 @@
  "image_field": "customer_photo",
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "group": "Disbursement Transaction",
-   "link_doctype": "Loan Disbursement",
-   "link_fieldname": "loan_application"
-  },
-  {
-   "group": "Repayment Transaction",
-   "link_doctype": "Loan Repayment",
-   "link_fieldname": "loan_application"
-  }
- ],
- "modified": "2026-03-20 16:24:58.073346",
+ "links": [],
+ "modified": "2026-03-23 12:15:56.767728",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
@@ -794,23 +806,28 @@
   },
   {
    "color": "Orange",
-   "title": "Under Review"
+   "title": "Credit Check"
   },
   {
    "color": "Blue",
+   "title": "Valuation Pending"
+  },
+  {
+   "color": "Cyan",
+   "title": "Credit Decision"
+  },
+  {
+   "color": "Yellow",
+   "title": "CPC Processing"
+  },
+  {
+   "color": "Green",
    "title": "Approved"
   },
   {
    "color": "Red",
    "title": "Rejected"
-  },
-  {
-   "color": "Green",
-   "title": "Disbursed"
-  },
-  {
-   "color": "Purple",
-   "title": "Closed"
   }
- ]
+ ],
+ "track_changes": 1
 }
