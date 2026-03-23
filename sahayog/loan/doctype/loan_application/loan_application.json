@@ -42,6 +42,14 @@
   "nominee_age",
   "nominee_address",
   "asset_security_tab",
+  "loan_details_section",
+  "loan_amount",
+  "purpose_of_loan",
+  "existing_loan",
+  "column_break_otrt",
+  "tenure_months",
+  "mode_of_repayment",
+  "loan_account_no",
   "ornaments_section",
   "ornaments_list",
   "security_details_section",
@@ -64,14 +72,6 @@
   "credit_appraisal",
   "rule_engine_status",
   "loan_sanction_tab",
-  "loan_details_section",
-  "loan_amount",
-  "purpose_of_loan",
-  "existing_loan",
-  "column_break_otrt",
-  "tenure_months",
-  "mode_of_repayment",
-  "loan_account_no",
   "sanction_section",
   "eligible_loan_amount",
   "sanctioned_loan_amount",
@@ -83,15 +83,6 @@
   "stamp_duty",
   "final_payout",
   "remaining_balance",
-  "photos_tab",
-  "photos_section",
-  "ornament_image",
-  "package_image",
-  "5_nominee_photo",
-  "column_break_ph",
-  "pledge_group_image",
-  "valuation_report_image",
-  "6_guarantor_photo",
   "internal_ops_tab",
   "ops_section",
   "status",
@@ -361,13 +352,15 @@
    "description": "Actual loan amount requested by the applicant.",
    "fieldname": "loan_amount",
    "fieldtype": "Currency",
-   "label": "Loan Amount Requested"
+   "label": "Loan Amount Requested",
+   "reqd": 1
   },
   {
    "description": "Number of months for loan repayment.",
    "fieldname": "tenure_months",
    "fieldtype": "Int",
-   "label": "Repayment Tenure (in Months)"
+   "label": "Repayment Tenure (in Months)",
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.security_type=='Gold'",
@@ -421,49 +414,6 @@
    "fieldtype": "Currency",
    "label": "Outstanding Balance",
    "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.loan_type=='Gold Loan'",
-   "fieldname": "photos_tab",
-   "fieldtype": "Tab Break",
-   "label": "Photos"
-  },
-  {
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "fieldname": "photos_section",
-   "fieldtype": "Section Break"
-  },
-  {
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "description": "Clear photo of the specific ornaments.",
-   "fieldname": "ornament_image",
-   "fieldtype": "Attach",
-   "label": "1. Ornament Image"
-  },
-  {
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "description": "Photo of the sealed packet/bag.",
-   "fieldname": "package_image",
-   "fieldtype": "Attach",
-   "label": "2. Package Image"
-  },
-  {
-   "fieldname": "column_break_ph",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "description": "Group photo of all items being pledged.",
-   "fieldname": "pledge_group_image",
-   "fieldtype": "Attach",
-   "label": "3. Pledge(Group) Image"
-  },
-  {
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "description": "Photo of the signed valuation certificate.",
-   "fieldname": "valuation_report_image",
-   "fieldtype": "Attach",
-   "label": "4. Valuation Report Image"
   },
   {
    "depends_on": "eval:doc.branch_code",
@@ -561,12 +511,14 @@
   {
    "fieldname": "membership_no",
    "fieldtype": "Data",
-   "label": "Sabhasad/Membership No."
+   "label": "Sabhasad/Membership No.",
+   "reqd": 1
   },
   {
    "fieldname": "father_husband_name",
    "fieldtype": "Data",
-   "label": "Father\u2019s / Husband\u2019s Name"
+   "label": "Father\u2019s / Husband\u2019s Name",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_qdcs",
@@ -583,13 +535,15 @@
    "fieldname": "marital_status",
    "fieldtype": "Select",
    "label": "Marital Status",
-   "options": "\nMarried\nUnmarried\nWidowed"
+   "options": "\nMarried\nUnmarried\nWidowed",
+   "reqd": 1
   },
   {
    "fieldname": "occupation",
    "fieldtype": "Select",
    "label": "Occupation",
-   "options": "\nSalaried\nSelf-employed\nAgriculturist\nBusiness\nOthers"
+   "options": "\nSalaried\nSelf-employed\nAgriculturist\nBusiness\nOthers",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_luoa",
@@ -604,7 +558,8 @@
   {
    "fieldname": "permanent_address",
    "fieldtype": "Small Text",
-   "label": "Permanent Address"
+   "label": "Permanent Address",
+   "reqd": 1
   },
   {
    "fieldname": "correspondence_address",
@@ -623,7 +578,8 @@
   {
    "fieldname": "annual_income",
    "fieldtype": "Currency",
-   "label": "Annual Income (Approx)"
+   "label": "Annual Income (Approx)",
+   "reqd": 1
   },
   {
    "fieldname": "loan_details_section",
@@ -638,34 +594,29 @@
    "fieldname": "purpose_of_loan",
    "fieldtype": "Select",
    "label": "Purpose of Loan",
-   "options": "\nAgriculture\nBusiness\nEducation\nMedical\nEmergency\nOther"
+   "options": "\nAgriculture\nBusiness\nEducation\nMedical\nEmergency\nOther",
+   "reqd": 1
   },
   {
    "fieldname": "mode_of_repayment",
    "fieldtype": "Select",
    "label": "Mode of Repayment",
-   "options": "\nMonthly EMI\nBullet Repayment"
+   "options": "\nMonthly EMI\nBullet Repayment",
+   "reqd": 1
   },
   {
    "fieldname": "existing_loan",
    "fieldtype": "Select",
    "label": "Any Existing Loan with Society?",
-   "options": "\nYes\nNo"
+   "options": "\nYes\nNo",
+   "reqd": 1
   },
   {
+   "depends_on": "eval:doc.existing_loan==\"Yes\"",
    "fieldname": "loan_account_no",
    "fieldtype": "Data",
-   "label": "Loan A/c No."
-  },
-  {
-   "fieldname": "5_nominee_photo",
-   "fieldtype": "Attach Image",
-   "label": "5. Nominee Photo"
-  },
-  {
-   "fieldname": "6_guarantor_photo",
-   "fieldtype": "Attach Image",
-   "label": "6. Guarantor Photo"
+   "label": "Loan A/c No.",
+   "mandatory_depends_on": "eval:doc.existing_loan==\"Yes\""
   },
   {
    "fieldname": "applicant_signature",
@@ -686,17 +637,20 @@
   {
    "fieldname": "nominee_name",
    "fieldtype": "Data",
-   "label": "Name of Nominee"
+   "label": "Name of Nominee",
+   "reqd": 1
   },
   {
    "fieldname": "relation_with_applicant",
    "fieldtype": "Data",
-   "label": "Relation with Applicant"
+   "label": "Relation with Applicant",
+   "reqd": 1
   },
   {
    "fieldname": "nominee_age",
    "fieldtype": "Int",
-   "label": "Age"
+   "label": "Age",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_uwii",
@@ -705,7 +659,8 @@
   {
    "fieldname": "nominee_address",
    "fieldtype": "Small Text",
-   "label": "Address"
+   "label": "Address",
+   "reqd": 1
   },
   {
    "fieldname": "for_office_use_only_section",
@@ -774,8 +729,8 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-23 13:03:22.274483",
- "modified_by": "Administrator",
+ "modified": "2026-03-23 17:30:46.194287",
+ "modified_by": "8751@sahayog.com",
  "module": "Loan",
  "name": "Loan Application",
  "naming_rule": "Expression (old style)",
