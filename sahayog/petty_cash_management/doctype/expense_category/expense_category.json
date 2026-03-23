@@ -48,6 +48,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Category Name",
+   "read_only": 1,
    "unique": 1
   },
   {
@@ -60,7 +61,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-16 16:39:12.343017",
+ "modified": "2026-03-23 15:59:37.426793",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
