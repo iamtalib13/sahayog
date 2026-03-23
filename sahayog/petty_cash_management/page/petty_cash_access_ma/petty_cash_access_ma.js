@@ -72,11 +72,11 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                 .perm-card-name { font-size: 14px; font-weight: 600; color: #1f2328; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                 .perm-card-email { font-size: 12px; color: #57606a; }
                 
-                /* Colorful Tags - Perfectly Centered Text */
+                /* Colorful Tags - Perfectly Centered Text & Increased Size */
                 .perm-tag-badge { 
                     display: inline-flex; align-items: center; justify-content: center;
-                    font-size: 11px; font-weight: 600; padding: 0 8px; height: 20px; 
-                    line-height: 1; border-radius: 12px; 
+                    font-size: 13px; font-weight: 600; padding: 0 12px; height: 26px; 
+                    line-height: 1; border-radius: 13px; 
                 }
                 .tag-bm { background: #e8fdf0; color: #2f9d58; border: 1px solid #A6EFC0; }
                 .tag-bom { background: #e7f5ff; color: #007be0; border: 1px solid #A7D7FD; }
@@ -185,9 +185,9 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                                         </div>
                                     </div>
                                 </div>
-                                <!-- NEW Right Corner Badge -->
+                                <!-- Right Corner Badge (now relies entirely on the global class) -->
                                 <div style="margin-top: 4px;">
-                                    <span class="perm-tag-badge" :class="getTagClass(selectedEmp.designation)" style="font-size: 13px; height: 26px; padding: 0 12px;">
+                                    <span class="perm-tag-badge" :class="getTagClass(selectedEmp.designation)">
                                         [[ getShortTag(selectedEmp.designation) ]]
                                     </span>
                                 </div>
@@ -243,13 +243,13 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
             },
 
             getShortTag(designation) {
-                if (designation === "BRANCH MANAGER") return "BM";
+                if (designation === "Branch Manager") return "BM";
                 if (designation === "Branch Operation Manager") return "BOM";
                 return designation;
             },
 
             getTagClass(designation) {
-                if (designation === "BRANCH MANAGER") return "tag-bm";
+                if (designation === "Branch Manager") return "tag-bm";
                 if (designation === "Branch Operation Manager") return "tag-bom";
                 return "";
             },
