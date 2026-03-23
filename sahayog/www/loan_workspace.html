@@ -26,7 +26,12 @@
                     <div class="panel-head">
                         <div>
                             <p class="panel-kicker">Workflow queue</p>
-                            <h3 class="panel-title">Loan application status</h3>
+                            <div class="panel-title-row">
+                                <h3 class="panel-title">Loan application status</h3>
+                                <button id="pending-action-pill" class="pending-action-pill" type="button" data-action="set-filter" data-filter="Role Pending" style="display: none;">
+                                    Pending Action (<span id="pending-action-count">0</span>)
+                                </button>
+                            </div>
                         </div>
                         <div class="panel-head-actions">
                             <div class="panel-note" id="filter-note">Showing all applications</div>
@@ -245,6 +250,40 @@
         color: var(--workspace-ink-soft);
         font-size: 0.9rem;
         text-align: right;
+    }
+
+    .panel-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .pending-action-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #f1b0b7;
+        border-radius: 999px;
+        padding: 4px 10px;
+        background: #fff1f3;
+        color: #c92a2a;
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+    }
+
+    .pending-action-pill.is-clear {
+        border-color: #b7ebc6;
+        background: #ebfbee;
+        color: #2b8a3e;
+    }
+
+    .pending-action-pill.is-active {
+        background: #c92a2a;
+        border-color: #c92a2a;
+        color: #fff;
     }
 
     .status-filter-bar {
@@ -722,29 +761,10 @@
     function renderSummary() {
         const total = Number(state.counts.All || 0);
         const draft = Number(state.counts.Draft || 0);
-        const approved = Number(state.counts.Approved || 0);
-        const rejected = Number(state.counts.Rejected || 0);
-        const inProgress = ["Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing"]
-            .reduce(function (sum, key) {
-                return sum + Number(state.counts[key] || 0);
-            }, 0);
+        const pendingCount = getRolePendingCount();
 
-        // Role-based pending count calculation
-        let pendingCount = total;
-        if (USER_ROLES.includes("Branch Loan User")) {
-            pendingCount = draft;
-        } else if (USER_ROLES.includes("Credit Loan User")) {
-            pendingCount = Number(state.counts["Credit Check"] || 0) + Number(state.counts["Valuation Pending"] || 0);
-        } else if (USER_ROLES.includes("CPC Loan User")) {
-            pendingCount = Number(state.counts["Credit Decision"] || 0) + Number(state.counts["CPC Processing"] || 0);
-        }
-
-        setText("metric-pending", pendingCount);
-        setText("metric-draft", draft);
-        setText("metric-progress", inProgress);
-        setText("metric-approved", approved);
         setText("filter-note", getFilterDescription(state.activeFilter));
-
+        renderPendingActionPill(pendingCount);
         syncMetricSelection();
     }
 
@@ -752,6 +772,31 @@
         document.querySelectorAll(".metric-card").forEach(function (card) {
             card.classList.toggle("is-active", card.dataset.filter === state.activeFilter);
         });
+
+        const pendingPill = document.getElementById("pending-action-pill");
+        if (pendingPill) {
+            pendingPill.classList.toggle("is-active", state.activeFilter === "Role Pending");
+        }
+    }
+
+    function renderPendingActionPill(pendingCount) {
+        const pendingPill = document.getElementById("pending-action-pill");
+        if (!pendingPill) return;
+
+        const shouldShow = USER_ROLES.includes("Branch Loan User") || USER_ROLES.includes("Credit Loan User") || USER_ROLES.includes("CPC Loan User");
+        const countElement = document.getElementById("pending-action-count");
+
+        pendingPill.style.display = shouldShow ? "inline-flex" : "none";
+        pendingPill.classList.toggle("is-clear", pendingCount === 0);
+        pendingPill.classList.toggle("is-active", state.activeFilter === "Role Pending");
+
+        if (pendingCount > 0) {
+            pendingPill.innerHTML = `Pending Action (<span id="pending-action-count">${pendingCount}</span>)`;
+            pendingPill.dataset.filter = "Role Pending";
+        } else {
+            pendingPill.textContent = "No action pending";
+            pendingPill.dataset.filter = "All";
+        }
     }
 
     function renderStatusFilters() {
@@ -868,6 +913,7 @@
     function matchesFilter(application) {
         const filterKey = state.activeFilter;
         if (filterKey === "All") return true;
+        if (filterKey === "Role Pending") return matchesRolePending(application);
 
         return application.status === filterKey;
     }
@@ -891,13 +937,45 @@
         if (filterKey === "All") {
             return Number(state.counts.All || 0);
         }
+        if (filterKey === "Role Pending") {
+            return getRolePendingCount();
+        }
 
         return Number(state.counts[filterKey] || 0);
     }
 
     function getFilterDescription(filterKey) {
         if (filterKey === "All") return "Showing all applications";
+        if (filterKey === "Role Pending") return "Showing applications pending at your role";
         return `Showing ${filterKey.toLowerCase()} applications`;
+    }
+
+    function getRolePendingCount() {
+        if (USER_ROLES.includes("Branch Loan User")) {
+            return Number(state.counts.Draft || 0);
+        }
+        if (USER_ROLES.includes("Credit Loan User")) {
+            return Number(state.counts["Credit Check"] || 0) + Number(state.counts["Valuation Pending"] || 0);
+        }
+        if (USER_ROLES.includes("CPC Loan User")) {
+            return Number(state.counts["Credit Decision"] || 0) + Number(state.counts["CPC Processing"] || 0);
+        }
+
+        return 0;
+    }
+
+    function matchesRolePending(application) {
+        if (USER_ROLES.includes("Branch Loan User")) {
+            return application.status === "Draft";
+        }
+        if (USER_ROLES.includes("Credit Loan User")) {
+            return ["Credit Check", "Valuation Pending"].includes(application.status);
+        }
+        if (USER_ROLES.includes("CPC Loan User")) {
+            return ["Credit Decision", "CPC Processing"].includes(application.status);
+        }
+
+        return false;
     }
 
     function getToneClass(status) {
