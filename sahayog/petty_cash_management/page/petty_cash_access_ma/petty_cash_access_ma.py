@@ -1,5 +1,19 @@
 import frappe
 
+# @frappe.whitelist()
+# def get_eligible_employees():
+#     """Fetch employees matching the specific designations who have a linked User ID."""
+#     employees = frappe.get_all(
+#         "Employee",
+#         filters={
+#             "designation": ["in", ["Branch Operation Manager", "Branch Manager"]],
+#             "user_id": ["is", "set"] # Ensure they have a linked user account
+#         },
+#         fields=["name", "employee_name", "designation", "user_id"],
+#         order_by="employee_name asc"
+#     )
+#     return employees
+
 @frappe.whitelist()
 def get_eligible_employees():
     """Fetch employees matching the specific designations who have a linked User ID."""
@@ -7,15 +21,21 @@ def get_eligible_employees():
         "Employee",
         filters={
             "designation": ["in", ["Branch Operation Manager", "Branch Manager"]],
-            "user_id": ["is", "set"] # Ensure they have a linked user account
+            "user_id": ["is", "set"]
         },
-        fields=["name", "employee_name", "designation", "user_id"],
+        fields=["name", "employee_name", "designation", "user_id", "sahayog_branch"],
         order_by="employee_name asc"
     )
+    
+    # Fetch branch names for each employee
+    for emp in employees:
+        if emp.sahayog_branch:
+            branch_name = frappe.db.get_value("Sahayog Branch", emp.sahayog_branch, "branch")
+            emp.branch_name = branch_name or "Unknown"
+        else:
+            emp.branch_name = "N/A"
+            
     return employees
-
-
-
 
 
 @frappe.whitelist()
