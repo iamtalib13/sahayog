@@ -1,163 +1,986 @@
 {% extends "templates/web.html" %}
+{% set full_width = 1 %}
 
 {% block header %}
-<div class="loan-workspace-header bg-white border-bottom py-2 shadow-sm">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
+<div class="loan-workspace-topbar">
+    <div class="workspace-topbar-inner">
         <div>
-            <h5 class="mb-0 fw-bold text-dark">Loan Hub</h5>
-            <small class="text-muted small">Manage loan applications</small>
+            <p class="workspace-topbar-eyebrow">Loan Workspace</p>
+            <h2 class="workspace-topbar-title">Loan operations desk</h2>
         </div>
-        <button class="btn btn-indigo btn-sm rounded-pill px-3 shadow-sm" onclick="window.location.href='/app/loan-application/new-loan-application-1'">
-            <i class="fa fa-plus me-1"></i> New
-        </button>
+        <div class="workspace-topbar-actions">
+            <button class="workspace-btn workspace-btn-ghost" type="button" data-route="/app/loan-application">
+                Open Register
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block content %}
-<div id="loan-workspace-container" class="p-3">
-    
-    <!-- Compact Clickable Shortcut Card -->
-    <div class="row g-3 mb-4 justify-content-center">
-        <div class="col-12 col-md-3">
-            <div class="card border-0 shadow-sm shortcut-card pointer" onclick="window.location.href='/app/loan-application'">
-                <div class="card-body p-4 text-center">
-                    <div class="icon-box mb-3 mx-auto bg-indigo shadow-sm">
-                        <i class="fa fa-file-text-o"></i>
+<div id="loan-workspace-page" class="loan-workspace-page">
+    <div class="workspace-shell">
+        <section class="workspace-layout">
+            <div class="workspace-main-column">
+                <section class="workspace-panel">
+                    <div class="panel-head">
+                        <div>
+                            <p class="panel-kicker">Workflow queue</p>
+                            <h3 class="panel-title">Loan application status</h3>
+                        </div>
+                        <div class="panel-head-actions">
+                            <div class="panel-note" id="filter-note">Showing all applications</div>
+                            <button id="create-application-btn" class="workspace-btn workspace-btn-primary" type="button" data-route="/app/loan-application/new-loan-application-1" style="display: none;">
+                                +New Application
+                            </button>
+                            <button class="workspace-btn workspace-btn-subtle" type="button" data-action="refresh-workspace">
+                                Refresh
+                            </button>
+                        </div>
                     </div>
-                    <h6 class="fw-bold mb-1 text-dark">Loan Application</h6>
-                    
-                    <div class="mt-3">
-                        <h3 class="mb-0 fw-bold text-indigo" id="count-loan-application">0</h3>
-                        <small class="text-muted text-uppercase fw-bold ls-1 extra-small">Total Records</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <div class="status-filter-bar" id="status-filter-bar"></div>
+                </section>
 
-    <!-- Simplified Activity Table -->
-    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-indigo-light">
-                    <tr>
-                        <th class="ps-3 border-0 text-indigo small fw-bold">APPLICANT</th>
-                        <th class="border-0 text-end text-indigo small fw-bold">AMOUNT</th>
-                        <th class="border-0 text-center text-indigo small fw-bold">STATUS</th>
-                        <th class="border-0 pe-3"></th>
-                    </tr>
-                </thead>
-                <tbody id="loan-application-table">
-                    <tr>
-                        <td colspan="4" class="text-center py-4 text-muted small">Loading...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                <section class="workspace-panel">
+                    <div class="panel-head">
+                        <div>
+                            <p class="panel-kicker">Recent files</p>
+                            <h3 class="panel-title">Loan Applications list</h3>
+                        </div>
+                        <label class="search-box" for="application-search">
+                            <i class="fa fa-search" aria-hidden="true"></i>
+                            <input id="application-search" type="search" placeholder="Search by customer, branch, mobile, or file ID">
+                        </label>
+                    </div>
+
+                    <div class="application-list-head">
+                        <span>Applicant</span>
+                        <span>Product</span>
+                        <span>Amount</span>
+                        <span>Status</span>
+                        <span>Updated</span>
+                    </div>
+
+                    <div id="application-list" class="application-list">
+                        <div class="empty-state">
+                            <strong>Loading applications...</strong>
+                            <span>Please wait while the workspace pulls the latest loan files.</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
     </div>
 </div>
 
 <style>
     :root {
-        --indigo-primary: #4e73df;
-        --indigo-dark: #224abe;
-        --indigo-light: #f8f9fc;
+        --workspace-ink: #1f272e;
+        --workspace-ink-soft: #687280;
+        --workspace-panel: #ffffff;
+        --workspace-border: #d1d8dd;
+        --workspace-accent: #4c5cc3;
+        --workspace-accent-soft: #eef2ff;
+        --workspace-warn: #f39c12;
+        --workspace-danger: #e24c4b;
+        --workspace-success: #2e8b57;
     }
 
-    .navbar, .web-footer { display: none !important; }
-    body { background-color: var(--indigo-light); }
+    .navbar,
+    .web-footer {
+        display: none !important;
+    }
 
-    .ls-1 { letter-spacing: 1px; }
-    .pointer { cursor: pointer !important; }
-    .rounded-lg { border-radius: 12px; }
-    .extra-small { font-size: 0.6rem; }
-    
-    .btn-indigo { background: var(--indigo-primary); color: white; border: none; }
-    .btn-indigo:hover { background: var(--indigo-dark); color: white; }
-    
-    .shortcut-card { transition: all 0.2s ease; border-radius: 16px; border: 1px solid #e3e6f0 !important; background: white; cursor: pointer; }
-    .shortcut-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; border-color: var(--indigo-primary) !important; }
-    
-    .icon-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.2rem; }
-    .bg-indigo { background: var(--indigo-primary); color: white; }
-    .bg-indigo-light { background: var(--indigo-light); }
-    .text-indigo { color: var(--indigo-primary) !important; }
-    
-    .status-badge { padding: 3px 8px; font-size: 0.6rem; font-weight: 700; border-radius: 4px; text-transform: uppercase; display: inline-block; }
-    .st-draft { background: #eaecf4; color: #5a5c69; }
-    .st-approved { background: #1cc88a; color: white; }
-    .st-review { background: #f6c23e; color: white; }
-    .st-rejected { background: #e74a3b; color: white; }
-    .st-disbursed { background: #36b9cc; color: white; }
+    body {
+        background: transparent;
+        color: var(--workspace-ink);
+        font-family: inherit;
+    }
 
-    @media (max-width: 768px) {
-        .icon-box { width: 40px; height: 40px; font-size: 1rem; }
-        h3 { font-size: 1.5rem; }
+    .loan-workspace-topbar {
+        background: var(--workspace-panel);
+        border-bottom: 1px solid var(--workspace-border);
+    }
+
+    .workspace-topbar-inner,
+    .workspace-shell {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 0 24px;
+    }
+
+    .page-content-wrapper {
+        padding-top: 0;
+    }
+
+    .workspace-topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 0;
+    }
+
+    .workspace-topbar-eyebrow,
+    .workspace-eyebrow,
+    .panel-kicker {
+        margin: 0 0 6px;
+        color: var(--workspace-ink-soft);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .workspace-topbar-title,
+    .workspace-hero h1,
+    .panel-title {
+        margin: 0;
+        font-family: inherit;
+    }
+
+    .workspace-topbar-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .workspace-topbar-actions,
+    .workspace-hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .workspace-btn {
+        border: 1px solid var(--workspace-border);
+        border-radius: 6px;
+        padding: 9px 14px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .workspace-btn:hover,
+    .workspace-btn:focus-visible {
+        outline: none;
+    }
+
+    .workspace-btn-primary {
+        background: var(--workspace-accent);
+        color: #fff;
+    }
+
+    .workspace-btn-ghost {
+        background: var(--workspace-panel);
+        color: var(--workspace-ink);
+    }
+
+    .workspace-btn-subtle {
+        background: var(--workspace-panel);
+        color: var(--workspace-ink);
+    }
+
+    .panel-head-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .loan-workspace-page {
+        padding: 20px 0 32px;
+    }
+
+    .workspace-shell {
+        display: grid;
+        gap: 16px;
+    }
+
+    .workspace-panel {
+        background: var(--workspace-panel);
+        border: 1px solid var(--workspace-border);
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .workspace-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+    }
+
+    .workspace-main-column {
+        display: grid;
+        gap: 16px;
+    }
+
+    .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .panel-head.compact {
+        margin-bottom: 16px;
+    }
+
+    .panel-note {
+        color: var(--workspace-ink-soft);
+        font-size: 0.9rem;
+        text-align: right;
+    }
+
+    .status-filter-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+
+    .status-filter {
+        border: 1px solid var(--workspace-border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        background: var(--workspace-panel);
+        cursor: pointer;
+    }
+
+    .status-filter.is-selected {
+        border-color: var(--workspace-accent);
+        background: var(--workspace-accent-soft);
+    }
+
+    .status-filter:hover,
+    .status-filter:focus-visible,
+    .application-row:hover,
+    .application-row:focus-visible {
+        outline: none;
+        border-color: #b8c2cc;
+    }
+
+    .status-filter-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .status-filter-label {
+        font-weight: 700;
+    }
+
+    .status-filter-count {
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    .status-filter-note {
+        display: block;
+        margin-top: 8px;
+        color: var(--workspace-ink-soft);
+        font-size: 0.82rem;
+        line-height: 1.45;
+    }
+
+    .search-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: min(100%, 360px);
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--workspace-border);
+        background: var(--workspace-panel);
+    }
+
+    .search-box input {
+        border: 0;
+        background: transparent;
+        width: 100%;
+        outline: none;
+        color: var(--workspace-ink);
+    }
+
+    .application-list-head,
+    .application-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(120px, 0.95fr) minmax(120px, 0.85fr) minmax(130px, 0.8fr) minmax(110px, 0.85fr);
+        gap: 14px;
+        align-items: center;
+    }
+
+    .application-list-head {
+        padding: 0 18px 10px;
+        color: var(--workspace-ink-soft);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .application-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .application-row {
+        border-radius: 10px;
+        border: 1px solid var(--workspace-border);
+        background: var(--workspace-panel);
+        padding: 16px;
+        cursor: pointer;
+    }
+
+    .application-row-main strong {
+        display: block;
+        font-size: 1rem;
+    }
+
+    .application-row-sub,
+    .application-row-meta,
+    .application-row-secondary {
+        color: var(--workspace-ink-soft);
+        font-size: 0.9rem;
+        line-height: 1.45;
+    }
+
+    .application-row-amount {
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .empty-state {
+        display: grid;
+        justify-items: center;
+        gap: 6px;
+        text-align: center;
+        padding: 42px 18px;
+        color: var(--workspace-ink-soft);
+        border: 1px dashed var(--workspace-border);
+        border-radius: 10px;
+        background: transparent;
+    }
+
+    .tone-neutral {
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+    }
+
+    .tone-draft {
+        background: rgba(163, 132, 83, 0.2);
+        color: #8a5c16;
+    }
+
+    .tone-review {
+        background: rgba(221, 155, 46, 0.18);
+        color: #9a630c;
+    }
+
+    .tone-approved {
+        background: rgba(47, 143, 88, 0.18);
+        color: var(--workspace-success);
+    }
+
+    .tone-rejected {
+        background: rgba(195, 81, 59, 0.18);
+        color: var(--workspace-danger);
+    }
+
+    @media (max-width: 1100px) {
+        .workspace-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 780px) {
+        .workspace-topbar-inner,
+        .panel-head,
+        .workspace-topbar-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .workspace-shell,
+        .workspace-topbar-inner {
+            padding: 0 16px;
+        }
+
+        .application-list-head {
+            display: none;
+        }
+
+        .application-row {
+            grid-template-columns: 1fr;
+        }
+
+        .status-filter-bar {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <script>
-    frappe.ready(function() {
-        updateCounts();
-        updateTable();
+    const STATUS_CARDS = [
+        { key: "All", label: "All Files", note: "Entire workspace volume", tone: "tone-neutral" },
+        { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "tone-draft" },
+        { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "tone-review" },
+        { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "tone-review" },
+        { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "tone-review" },
+        { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "tone-review" },
+        { key: "Approved", label: "Approved", note: "Ready for sanction execution", tone: "tone-approved" },
+        { key: "Rejected", label: "Rejected", note: "Closed without approval", tone: "tone-rejected" }
+    ];
+
+    const TEMPLATE_USER_ROLES = {{ user_roles | json }};
+    let USER_ROLES = [];
+
+    const state = {
+        activeFilter: "All",
+        searchText: "",
+        applications: [],
+        counts: {},
+        userBranchCode: null
+    };
+
+    frappe.ready(async function () {
+        USER_ROLES = await resolveUserRoles();
+        state.userBranchCode = await resolveUserBranchCode();
+        setupRoleUI();
+        bindWorkspaceEvents();
+        renderStatusFilters();
+        loadWorkspace();
     });
 
-    function updateCounts() {
-        frappe.call({
-            method: 'frappe.client.get_count',
-            args: { doctype: 'Loan Application' },
-            callback: function(r) {
-                const el = document.getElementById('count-loan-application');
-                if (el) el.innerText = r.message || 0;
+    async function resolveUserRoles() {
+        const bootRoles = (window.frappe && frappe.boot && frappe.boot.user && Array.isArray(frappe.boot.user.roles) && frappe.boot.user.roles) || [];
+        const clientRoles = (window.frappe && Array.isArray(frappe.user_roles) && frappe.user_roles) || [];
+
+        if (bootRoles.length) return bootRoles;
+        if (clientRoles.length) return clientRoles;
+
+        try {
+            const apiRoles = await apiCall("frappe.core.doctype.user.user.get_roles", {
+                uid: frappe.session && frappe.session.user
+            });
+
+            if (Array.isArray(apiRoles) && apiRoles.length) {
+                return apiRoles;
+            }
+        } catch (error) {
+            console.error("Loan Workspace role API failed", error);
+        }
+
+        return TEMPLATE_USER_ROLES || [];
+    }
+
+    async function resolveUserBranchCode() {
+        if (!USER_ROLES.includes("Branch Loan User")) {
+            return null;
+        }
+
+        try {
+            const employees = await apiCall("frappe.client.get_list", {
+                doctype: "Employee",
+                filters: {
+                    user_id: frappe.session && frappe.session.user
+                },
+                fields: ["name", "sol_id"],
+                limit_page_length: 1
+            });
+
+            const employee = Array.isArray(employees) ? employees[0] : null;
+            const branchCode = employee && employee.sol_id ? employee.sol_id : null;
+
+            console.log("Loan Workspace branch check", {
+                session_user: frappe.session ? frappe.session.user : null,
+                employee: employee || null,
+                branch_code: branchCode
+            });
+
+            return branchCode;
+        } catch (error) {
+            console.error("Loan Workspace branch lookup failed", error);
+            return null;
+        }
+    }
+
+    function setupRoleUI() {
+        const createButton = document.getElementById("create-application-btn");
+        const hasBranchRole = USER_ROLES.includes("Branch Loan User");
+        if (createButton) {
+            createButton.style.display = hasBranchRole ? "inline-flex" : "none";
+        }
+
+        console.log("Loan Workspace role check", {
+            button_found: !!createButton,
+            template_user_roles: TEMPLATE_USER_ROLES,
+            frappe_boot_user_roles: window.frappe && frappe.boot && frappe.boot.user ? frappe.boot.user.roles : null,
+            frappe_user_roles: window.frappe && Array.isArray(frappe.user_roles) ? frappe.user_roles : null,
+            user_roles: USER_ROLES,
+            has_branch_loan_user: hasBranchRole,
+            create_button_visible: !!(createButton && createButton.style.display !== "none")
+        });
+
+        state.activeFilter = "All";
+    }
+
+    function bindWorkspaceEvents() {
+        const page = document.getElementById("loan-workspace-page");
+        const searchInput = document.getElementById("application-search");
+
+        if (searchInput) {
+            searchInput.addEventListener("input", function (event) {
+                state.searchText = (event.target.value || "").trim().toLowerCase();
+                renderApplications();
+            });
+        }
+
+        if (!page) return;
+
+        page.addEventListener("click", function (event) {
+            if (event.target.closest("input, textarea, select")) {
+                return;
+            }
+
+            const actionEl = event.target.closest("[data-action]");
+            if (actionEl) {
+                handleAction(actionEl);
+                return;
+            }
+
+            const routeEl = event.target.closest("[data-route]");
+            if (routeEl) {
+                navigateTo(routeEl.dataset.route);
+            }
+        });
+
+        page.addEventListener("keydown", function (event) {
+            if (event.key !== "Enter" && event.key !== " ") {
+                return;
+            }
+
+            const trigger = event.target.closest("[data-route], [data-action]");
+            if (!trigger) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (trigger.dataset.action) {
+                handleAction(trigger);
+                return;
+            }
+
+            if (trigger.dataset.route) {
+                navigateTo(trigger.dataset.route);
             }
         });
     }
 
-    function updateTable() {
-        frappe.call({
-            method: 'frappe.client.get_list',
-            args: {
-                doctype: 'Loan Application',
-                fields: ['name', 'customer_name', 'loan_amount', 'status'],
-                order_by: 'creation desc',
-                limit_page_length: 5
-            },
-            callback: function(r) {
-                const tbody = document.getElementById('loan-application-table');
-                if (!r.message || r.message.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted small">No records found.</td></tr>';
-                    return;
+    async function loadWorkspace() {
+        setLoadingState();
+
+        try {
+            const [counts, applications] = await Promise.all([
+                fetchCounts(),
+                fetchApplications()
+            ]);
+
+            state.counts = counts;
+            state.applications = applications || [];
+
+            renderSummary();
+            renderStatusFilters();
+            renderApplications();
+            renderLatestApplication();
+        } catch (error) {
+            console.error("Loan workspace load failed", error);
+            renderErrorState();
+        }
+    }
+
+    function setLoadingState() {
+        const list = document.getElementById("application-list");
+        if (list) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <strong>Loading applications...</strong>
+                    <span>Please wait while the workspace pulls the latest loan files.</span>
+                </div>
+            `;
+        }
+    }
+
+    function handleAction(element) {
+        const action = element.dataset.action;
+
+        if (action === "set-filter") {
+            state.activeFilter = element.dataset.filter || "All";
+            syncMetricSelection();
+            renderStatusFilters();
+            renderApplications();
+            return;
+        }
+
+        if (action === "refresh-workspace") {
+            loadWorkspace();
+        }
+    }
+
+    function navigateTo(route) {
+        if (!route) return;
+        if (window.parent && window.parent !== window) {
+            try {
+                window.parent.location.assign(route);
+                return;
+            } catch (error) {
+                console.warn("Parent navigation failed, falling back to current window.", error);
+            }
+        }
+
+        window.location.assign(route);
+    }
+
+    function apiCall(method, args) {
+        return new Promise(function (resolve, reject) {
+            frappe.call({
+                method: method,
+                args: args,
+                callback: function (response) {
+                    if (response && response.exc) {
+                        reject(response.exc);
+                        return;
+                    }
+                    resolve(response ? response.message : null);
+                },
+                error: function (error) {
+                    reject(error);
                 }
-
-                tbody.innerHTML = r.message.map(app => `
-                    <tr class="pointer" onclick="window.location.href='/app/loan-application/${app.name}'">
-                        <td class="ps-3">
-                            <div class="fw-bold text-dark small">${app.customer_name}</div>
-                            <small class="text-muted extra-small">${app.name}</small>
-                        </td>
-                        <td class="text-end fw-bold text-dark small">
-                            ₹${parseFloat(app.loan_amount || 0).toLocaleString('en-IN')}
-                        </td>
-                        <td class="text-center">
-                            <span class="status-badge ${getStatusClass(app.status)}">${app.status}</span>
-                        </td>
-                        <td class="pe-3 text-end">
-                            <i class="fa fa-chevron-right text-muted extra-small"></i>
-                        </td>
-                    </tr>
-                `).join('');
-            }
+            });
         });
     }
 
-    function getStatusClass(status) {
-        if (status === 'Draft') return 'st-draft';
-        if (status === 'Under Review') return 'st-review';
-        if (status === 'Approved') return 'st-approved';
-        if (status === 'Rejected') return 'st-rejected';
-        if (status === 'Disbursed') return 'st-disbursed';
-        return 'st-draft';
+    async function fetchCounts() {
+        const statuses = ["Draft", "Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing", "Approved", "Rejected"];
+        const results = await Promise.all(
+            ["All"].concat(statuses).map(function (status) {
+                const filters = getLoanApplicationFilters(status === "All" ? null : status);
+                return apiCall("frappe.client.get_count", {
+                    doctype: "Loan Application",
+                    filters: filters
+                });
+            })
+        );
+
+        const counts = { All: results[0] || 0 };
+        statuses.forEach(function (status, index) {
+            counts[status] = results[index + 1] || 0;
+        });
+        return counts;
+    }
+
+    function fetchApplications() {
+        return apiCall("frappe.client.get_list", {
+            doctype: "Loan Application",
+            filters: getLoanApplicationFilters(),
+            fields: ["name", "customer_name", "mobile_number", "branch_code", "loan_type", "loan_amount", "status", "modified"],
+            order_by: "modified desc",
+            limit_page_length: 30
+        });
+    }
+
+    function getLoanApplicationFilters(status) {
+        const filters = {};
+
+        if (status) {
+            filters.status = status;
+        }
+
+        if (USER_ROLES.includes("Branch Loan User") && state.userBranchCode) {
+            filters.branch_code = state.userBranchCode;
+        }
+
+        return filters;
+    }
+
+    function renderSummary() {
+        const total = Number(state.counts.All || 0);
+        const draft = Number(state.counts.Draft || 0);
+        const approved = Number(state.counts.Approved || 0);
+        const rejected = Number(state.counts.Rejected || 0);
+        const inProgress = ["Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing"]
+            .reduce(function (sum, key) {
+                return sum + Number(state.counts[key] || 0);
+            }, 0);
+
+        // Role-based pending count calculation
+        let pendingCount = total;
+        if (USER_ROLES.includes("Branch Loan User")) {
+            pendingCount = draft;
+        } else if (USER_ROLES.includes("Credit Loan User")) {
+            pendingCount = Number(state.counts["Credit Check"] || 0) + Number(state.counts["Valuation Pending"] || 0);
+        } else if (USER_ROLES.includes("CPC Loan User")) {
+            pendingCount = Number(state.counts["Credit Decision"] || 0) + Number(state.counts["CPC Processing"] || 0);
+        }
+
+        setText("metric-pending", pendingCount);
+        setText("metric-draft", draft);
+        setText("metric-progress", inProgress);
+        setText("metric-approved", approved);
+        setText("filter-note", getFilterDescription(state.activeFilter));
+
+        syncMetricSelection();
+    }
+
+    function syncMetricSelection() {
+        document.querySelectorAll(".metric-card").forEach(function (card) {
+            card.classList.toggle("is-active", card.dataset.filter === state.activeFilter);
+        });
+    }
+
+    function renderStatusFilters() {
+        const container = document.getElementById("status-filter-bar");
+        if (!container) return;
+
+        container.innerHTML = STATUS_CARDS.map(function (item) {
+            const count = getFilterCount(item.key);
+            const selectedClass = item.key === state.activeFilter ? "is-selected" : "";
+
+            return `
+                <article class="status-filter ${selectedClass}" data-action="set-filter" data-filter="${escapeAttribute(item.key)}" tabindex="0" role="button">
+                    <div class="status-filter-top">
+                        <span class="status-filter-label">${escapeHtml(item.label)}</span>
+                        <span class="status-filter-count">${count}</span>
+                    </div>
+                    <span class="status-filter-note">${escapeHtml(item.note)}</span>
+                </article>
+            `;
+        }).join("");
+
+        setText("filter-note", getFilterDescription(state.activeFilter));
+    }
+
+    function renderApplications() {
+        const list = document.getElementById("application-list");
+        if (!list) return;
+
+        const filtered = state.applications.filter(function (application) {
+            return matchesFilter(application) && matchesSearch(application);
+        });
+
+        if (!filtered.length) {
+            const message = state.applications.length
+                ? "No application matched the selected filter or search text."
+                : "No loan applications are available right now.";
+
+            list.innerHTML = `
+                <div class="empty-state">
+                    <strong>No records found</strong>
+                    <span>${escapeHtml(message)}</span>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = filtered.map(function (application) {
+            const name = escapeHtml(application.name || "Untitled");
+            const customer = escapeHtml(application.customer_name || "Unnamed applicant");
+            const branch = escapeHtml(application.branch_code || "No branch");
+            const mobile = escapeHtml(application.mobile_number || "No mobile");
+            const loanType = escapeHtml(application.loan_type || "Loan product not set");
+            const status = application.status || "Draft";
+
+            return `
+                <article class="application-row" data-route="/app/loan-application/${encodeURIComponent(application.name || "")}" tabindex="0" role="link">
+                    <div class="application-row-main">
+                        <strong>${customer}</strong>
+                        <div class="application-row-sub">${name}</div>
+                        <div class="application-row-secondary">${branch} · ${mobile}</div>
+                    </div>
+                    <div class="application-row-meta">${loanType}</div>
+                    <div class="application-row-amount">${formatCurrency(application.loan_amount)}</div>
+                    <div><span class="status-pill ${getToneClass(status)}">${escapeHtml(status)}</span></div>
+                    <div class="application-row-meta">${formatDate(application.modified)}</div>
+                </article>
+            `;
+        }).join("");
+    }
+
+    function renderLatestApplication() {
+        const latest = state.applications[0];
+
+        if (!latest) {
+            setText("latest-application-title", "No recent applications");
+            setText("latest-application-text", "Create a new file to start the loan workflow.");
+            setText("workspace-last-sync", "No recent sync");
+            setLatestStatus("Awaiting data", "tone-neutral");
+            return;
+        }
+
+        const openPipeline = getFilterCount("Draft") + getFilterCount("In Progress");
+        const title = latest.customer_name || latest.name || "Latest application";
+        const description = `${latest.loan_type || "Loan product pending"} · ${formatCurrency(latest.loan_amount)} · ${latest.branch_code || "No branch"}`;
+
+        setText("latest-application-title", title);
+        setText("latest-application-text", `${description}. ${openPipeline} file(s) currently sit in draft or processing queues.`);
+        setText("workspace-last-sync", `Synced ${formatDate(latest.modified)}`);
+        setLatestStatus(latest.status || "Draft", getToneClass(latest.status));
+
+        const latestCard = document.getElementById("latest-application-card");
+        if (latestCard) {
+            latestCard.dataset.route = `/app/loan-application/${encodeURIComponent(latest.name || "")}`;
+        }
+    }
+
+    function renderErrorState() {
+        const list = document.getElementById("application-list");
+        if (list) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <strong>Workspace failed to load</strong>
+                    <span>Counts or recent applications could not be fetched. Use refresh to try again.</span>
+                </div>
+            `;
+        }
+
+        setText("latest-application-title", "Unable to load workspace");
+        setText("latest-application-text", "Server response did not complete. Please refresh the workspace.");
+        setText("workspace-last-sync", "Sync failed");
+        setLatestStatus("Error", "tone-rejected");
+    }
+
+    function matchesFilter(application) {
+        const filterKey = state.activeFilter;
+        if (filterKey === "All") return true;
+
+        return application.status === filterKey;
+    }
+
+    function matchesSearch(application) {
+        if (!state.searchText) return true;
+
+        const haystack = [
+            application.name,
+            application.customer_name,
+            application.mobile_number,
+            application.branch_code,
+            application.loan_type,
+            application.status
+        ].join(" ").toLowerCase();
+
+        return haystack.includes(state.searchText);
+    }
+
+    function getFilterCount(filterKey) {
+        if (filterKey === "All") {
+            return Number(state.counts.All || 0);
+        }
+
+        return Number(state.counts[filterKey] || 0);
+    }
+
+    function getFilterDescription(filterKey) {
+        if (filterKey === "All") return "Showing all applications";
+        return `Showing ${filterKey.toLowerCase()} applications`;
+    }
+
+    function getToneClass(status) {
+        if (status === "Draft") return "tone-draft";
+        if (["Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing"].includes(status)) return "tone-review";
+        if (status === "Approved") return "tone-approved";
+        if (status === "Rejected") return "tone-rejected";
+        return "tone-neutral";
+    }
+
+    function setLatestStatus(text, toneClass) {
+        const element = document.getElementById("latest-application-status");
+        if (!element) return;
+
+        element.className = `status-pill ${toneClass}`;
+        element.textContent = text;
+    }
+
+    function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    function formatCurrency(value) {
+        const amount = Number(value || 0);
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+        }).format(amount);
+    }
+
+    function formatDate(value) {
+        if (!value) return "Unknown";
+
+        const parsed = new Date(String(value).replace(" ", "T"));
+        if (Number.isNaN(parsed.getTime())) {
+            return value;
+        }
+
+        return new Intl.DateTimeFormat("en-IN", {
+            day: "2-digit",
+            month: "short",
+            hour: "numeric",
+            minute: "2-digit"
+        }).format(parsed);
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function escapeAttribute(value) {
+        return escapeHtml(value);
+    }
+
+    // Dynamic Iframe Height Communication
+    function sendHeight() {
+        const height = document.documentElement.scrollHeight;
+        window.parent.postMessage({
+            type: 'frappe-page-resize',
+            height: height
+        }, '*');
+    }
+
+    window.addEventListener('load', sendHeight);
+    window.addEventListener('resize', sendHeight);
+
+    // Observe DOM changes to catch dynamic content loading
+    if (window.MutationObserver) {
+        const observer = new MutationObserver(sendHeight);
+        observer.observe(document.body, {
+            attributes: true,
+            childList: true,
+            subtree: true
+        });
     }
 </script>
 {% endblock %}
