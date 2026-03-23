@@ -119,14 +119,18 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                             <div v-if="!selectedEmp">
                                 <h3>Access Configuration</h3>
                             </div>
-                            <div v-else style="display: flex; flex-direction: column; gap: 4px;">
-                                <h3 style="margin: 0;">Access Configuration</h3>
-                                <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
-                                    <span><strong>Employee:</strong> [[ selectedEmp.employee_name ]]</span>
-                                    <span style="color: #d0d7de;">|</span>
-                                    <span><strong>User ID:</strong> [[ selectedEmp.user_id ]]</span>
-                                </div>
-                            </div>
+<div v-else style="display: flex; flex-direction: column; gap: 4px;">
+    <h3 style="margin: 0;">Access Configuration</h3>
+    <div style="font-size: 13px; color: #57606a; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 4px;">
+        <span><strong>Employee:</strong> [[ selectedEmp.employee_name ]]</span>
+        <span style="color: #d0d7de;">|</span>
+        <span><strong>User ID:</strong> [[ selectedEmp.user_id ]]</span>
+        <span style="color: #d0d7de;">|</span>
+        <span><strong>Branch ID:</strong> [[ selectedEmp.sahayog_branch || 'N/A' ]]</span>
+        <span style="color: #d0d7de;">|</span>
+        <span><strong>Branch Name:</strong> [[ selectedEmp.branch_name || 'N/A' ]]</span>
+    </div>
+</div>
                         </div>
 
                         <div class="perm-pane-content"> 
@@ -212,8 +216,8 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
             },
 
 			getShortTag(designation) {
-                if (designation === "Branch Manager") return "BM";
-                if (designation === "Branch Operation Manager") return "BOM";
+                if (designation === "BRANCH MANAGER") return "BM";
+                if (designation === "Branch Operation Manager" || "Branch Operation Manager") return "BOM";
                 return designation;
             },
 
