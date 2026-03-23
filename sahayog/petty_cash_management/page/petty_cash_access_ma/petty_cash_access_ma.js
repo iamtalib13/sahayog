@@ -19,8 +19,14 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                   color: #24292f;
                   background: #f4f5f6;
                   padding: 16px;
-				  border-radius: 8px;
                 }
+                
+                /* --- Custom Scrollbar for all lists and panes --- */
+                #perm-root ::-webkit-scrollbar { width: 6px; height: 6px; }
+                #perm-root ::-webkit-scrollbar-track { background: transparent; }
+                #perm-root ::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 10px; }
+                #perm-root ::-webkit-scrollbar-thumb:hover { background: #aeb6c0; }
+
                 .perm-layout { 
                   display: flex; height: 100%; border: 1px solid #d0d7de; border-radius: 8px;
                   background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden;
@@ -57,7 +63,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                 /* Avatar */
                 .perm-avatar { 
                     width: 36px; height: 36px; border-radius: 50%; background: #e1e4e8; color: #24292f;
-                    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
+                    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;
                 }
 
                 /* Card Typography */
@@ -66,8 +72,12 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                 .perm-card-name { font-size: 14px; font-weight: 600; color: #1f2328; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                 .perm-card-email { font-size: 12px; color: #57606a; }
                 
-                /* Colorful Tags */
-                .perm-tag-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; }
+                /* Colorful Tags - Perfectly Centered Text */
+                .perm-tag-badge { 
+                    display: inline-flex; align-items: center; justify-content: center;
+                    font-size: 11px; font-weight: 600; padding: 0 8px; height: 20px; 
+                    line-height: 1; border-radius: 12px; 
+                }
                 .tag-bm { background: #e8fdf0; color: #2f9d58; border: 1px solid #A6EFC0; }
                 .tag-bom { background: #e7f5ff; color: #007be0; border: 1px solid #A7D7FD; }
                 
@@ -79,8 +89,9 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                 .perm-sidebar-empty svg { width: 48px; height: 48px; margin-bottom: 16px; color: #d0d7de; }
 
                 /* Profile Header in Right Sidebar */
+                .profile-header-container { display: flex; justify-content: space-between; align-items: flex-start; }
                 .profile-header { display: flex; gap: 16px; align-items: center; }
-                .profile-avatar { width: 48px; height: 48px; border-radius: 8px; background: #0969da; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; }
+                .profile-avatar { width: 48px; height: 48px; border-radius: 8px; background: #0969da; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; flex-shrink: 0; }
                 .profile-details h3 { margin: 0 0 6px 0; font-size: 18px; color: #1f2328; }
                 .profile-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: #57606a; }
                 .meta-item { display: flex; align-items: center; gap: 4px; }
@@ -93,7 +104,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                 .perm-fdesc { font-size: 13px; color: #57606a; margin: 0; max-width: 80%; line-height: 1.4; }
 
                 /* Toggle Switch */
-                .perm-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+                .perm-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;}
                 .perm-toggle input { opacity: 0; width: 0; height: 0; }
                 .perm-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d8dd; transition: .3s; border-radius: 24px; }
                 .perm-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
@@ -157,20 +168,28 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
 
                         <!-- State 2: Selected -->
                         <div v-else style="display: flex; flex-direction: column; height: 100%;">
-                            <div class="perm-pane-header profile-header">
-                                <div class="profile-avatar">[[ getInitials(selectedEmp.employee_name) ]]</div>
-                                <div class="profile-details">
-                                    <h3>[[ selectedEmp.employee_name ]]</h3>
-                                    <div class="profile-meta">
-                                        <div class="meta-item">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                            [[ selectedEmp.user_id ]]
-                                        </div>
-                                        <div class="meta-item">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                                            [[ selectedEmp.sahayog_branch || 'N/A' ]] - [[ selectedEmp.branch_name || 'N/A' ]]
+                            <div class="perm-pane-header profile-header-container">
+                                <div class="profile-header">
+                                    <div class="profile-avatar">[[ getInitials(selectedEmp.employee_name) ]]</div>
+                                    <div class="profile-details">
+                                        <h3>[[ selectedEmp.employee_name ]]</h3>
+                                        <div class="profile-meta">
+                                            <div class="meta-item">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                                [[ selectedEmp.user_id ]]
+                                            </div>
+                                            <div class="meta-item">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                                                [[ selectedEmp.sahayog_branch || 'N/A' ]] - [[ selectedEmp.branch_name || 'N/A' ]]
+                                            </div>
                                         </div>
                                     </div>
+                                </div>
+                                <!-- NEW Right Corner Badge -->
+                                <div style="margin-top: 4px;">
+                                    <span class="perm-tag-badge" :class="getTagClass(selectedEmp.designation)" style="font-size: 13px; height: 26px; padding: 0 12px;">
+                                        [[ getShortTag(selectedEmp.designation) ]]
+                                    </span>
                                 </div>
                             </div>
 
