@@ -566,6 +566,7 @@ fixtures = [
                     "Tickets Dashboard",
                     "Finacle Dashboard",
                     "IT Dashboard",
+                    "Petty Cash Dashboard Widget",
                 ],
             ]
         ],
