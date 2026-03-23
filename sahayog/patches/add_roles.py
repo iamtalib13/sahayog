@@ -142,6 +142,9 @@ def execute():
         "Workspace Manager",
         "Share User",
         "Share Admin",
+        "Branch Loan User",
+        "Credit Loan User",
+        "CPC Loan User"
     ]
 
     for role in roles:

@@ -6,35 +6,23 @@ import re
 
 class LoanApplication(Document):
     def validate(self):
-        self.validate_status_with_docstatus()
+        self.validate_workflow_requirements()
         self.validate_basic_fields()
         if self.loan_type:
             self.run_rule_engine()
         self.calculate_payouts()
 
-    def validate_status_with_docstatus(self):
+    def validate_workflow_requirements(self):
         # Initial status setup
         if self.is_new() and not self.status:
             self.status = "Draft"
         
-        # Submission check (DocStatus 1)
-        # Requirement: Approved, Disbursed, or Closed -> DocStatus 1
-        if self.docstatus == 1:
-            if self.status not in ["Approved", "Disbursed", "Closed"]:
-                frappe.throw(_("Status must be 'Approved', 'Disbursed', or 'Closed' to submit. Current status: {0}").format(self.status))
-        
-        # Saved check (DocStatus 0)
-        # Requirement: Draft, Under Review, or Rejected -> DocStatus 0
-        if self.docstatus == 0:
-            if self.status in ["Approved", "Disbursed", "Closed"]:
-                # If user tries to save as Approved, but it's not submitted yet
-                # We let them save as 'Approved' but warn them it needs to be submitted
-                # unless you want to auto-submit which is risky.
-                pass
-
-    def on_submit(self):
-        if self.status not in ["Approved", "Disbursed", "Closed"]:
-            frappe.throw(_("Cannot submit an unapproved application."))
+        # Validation for Credit Decision Stage
+        if self.status == "Credit Decision":
+            if not getattr(self, "gold_valuation_sheet", None):
+                frappe.throw(_("Gold Valuation Sheet is required for Credit Decision"))
+            if not getattr(self, "disclaimer", 0):
+                frappe.throw(_("Please accept the disclaimer before proceeding."))
 
     def validate_basic_fields(self):
         # Mobile Validation
@@ -57,20 +45,15 @@ class LoanApplication(Document):
             frappe.throw(_("At least one KYC Document is required."))
         self.validate_kyc_documents()
 
-        # # Tenure Validation
-        # if not self.tenure_months or flt(self.tenure_months) <= 0:
-        #     frappe.throw(_("Please enter a valid Tenure (Months) to calculate eligibility."))
-
     def run_rule_engine(self):
         if not self.loan_type: return
         policy = frappe.get_doc("Loan Type", self.loan_type)
         age = date_diff(nowdate(), self.date_of_birth) / 365.25
-        age_at_maturity = age + (flt(self.tenure_months) / 12)
         self.eligible_loan_amount = 0
 
         # Layer 1: Gates
         if age < (flt(policy.min_age) or 21):
-            if not (age >= 18 and self.has_co_applicant):
+            if not (age >= 18 and getattr(self, "has_co_applicant", False)):
                 self.rule_engine_status = _("Rejected: Min age required")
                 return
 
@@ -148,12 +131,19 @@ class LoanApplication(Document):
 
         # ✅ FINAL DISBURSEMENT
         self.final_payout = flt(self.sanctioned_loan_amount) - fees
-        
+
     def validate_kyc_documents(self):
         types = []
         for d in self.kyc_documents:
             if d.document_type in types:
                 frappe.throw(_("Duplicate KYC Type: {0}").format(d.document_type))
             types.append(d.document_type)
-            
-  
+
+@frappe.whitelist()
+def add_workflow_comment(docname, comment):
+    """Explicitly add a comment to the document timeline."""
+    if docname and comment:
+        doc = frappe.get_doc("Loan Application", docname)
+        doc.add_comment("Comment", comment)
+        return True
+    return False
