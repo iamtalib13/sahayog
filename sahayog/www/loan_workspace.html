@@ -1,0 +1,197 @@
+{% extends "templates/web.html" %}
+
+{% block header %}
+<div class="loan-workspace-header bg-white border-bottom py-3 shadow-sm">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">Loan Operations</h4>
+            <small class="text-muted">Direct Access to Loan Modules</small>
+        </div>
+        <button class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm" onclick="frappe.set_route('List', 'Loan Application', 'List')">
+            <i class="fa fa-plus me-1"></i> New Application
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="loan-workspace-container" class="p-3 p-md-4">
+    
+    <!-- Main Shortcut Cards -->
+    <div class="row g-3 mb-5">
+        <!-- Loan Application Card -->
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm shortcut-card h-100 pointer" onclick="frappe.set_route('List', 'Loan Application')">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-circle mb-3 mx-auto bg-blue-soft">
+                        <i class="fa fa-file-invoice"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1 text-dark">Loan Application</h5>
+                    <p class="text-muted small mb-3">Process new loan requests</p>
+                    
+                    <div class="count-display py-2 px-3 rounded-pill d-inline-block">
+                        <h2 class="mb-0 fw-bold text-primary" id="count-loan-application">0</h2>
+                        <small class="text-muted text-uppercase fw-bold ls-1">Total Records</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loan Disbursement Card -->
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm shortcut-card h-100 pointer" onclick="frappe.set_route('List', 'Loan Disbursement')">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-circle mb-3 mx-auto bg-green-soft">
+                        <i class="fa fa-hand-holding-usd"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1 text-dark">Disbursement</h5>
+                    <p class="text-muted small mb-3">Manage funds release</p>
+                    
+                    <div class="count-display py-2 px-3 rounded-pill d-inline-block">
+                        <h2 class="mb-0 fw-bold text-success" id="count-loan-disbursement">0</h2>
+                        <small class="text-muted text-uppercase fw-bold ls-1">Total Records</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loan Repayment Card -->
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm shortcut-card h-100 pointer" onclick="frappe.set_route('List', 'Loan Repayment')">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-circle mb-3 mx-auto bg-orange-soft">
+                        <i class="fa fa-undo-alt"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1 text-dark">Repayment</h5>
+                    <p class="text-muted small mb-3">Track EMI collections</p>
+                    
+                    <div class="count-display py-2 px-3 rounded-pill d-inline-block">
+                        <h2 class="mb-0 fw-bold text-warning" id="count-loan-repayment">0</h2>
+                        <small class="text-muted text-uppercase fw-bold ls-1">Total Records</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-white py-3 border-0 border-bottom">
+            <h6 class="mb-0 fw-bold">Recent Applications</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 border-0 text-muted small fw-bold">APPLICANT</th>
+                        <th class="border-0 text-muted small fw-bold">PRODUCT</th>
+                        <th class="border-0 text-end text-muted small fw-bold">AMOUNT</th>
+                        <th class="border-0 text-center text-muted small fw-bold">STATUS</th>
+                        <th class="border-0 pe-4"></th>
+                    </tr>
+                </thead>
+                <tbody id="loan-application-table">
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted small">Loading recent applications...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ls-1 { letter-spacing: 1px; }
+    .pointer { cursor: pointer; }
+    .rounded-lg { border-radius: 15px; }
+    
+    .shortcut-card { transition: all 0.3s ease; border-radius: 20px; border: 1px solid #f1f3f5 !important; }
+    .shortcut-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; border-color: #0d6efd !important; }
+    
+    .icon-circle { width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; border-radius: 15px; font-size: 1.4rem; }
+    .bg-blue-soft { background: #e7f5ff; color: #228be6; }
+    .bg-green-soft { background: #ebfbee; color: #40c057; }
+    .bg-orange-soft { background: #fff4e6; color: #fd7e14; }
+    
+    .count-display { background: #f8f9fa; border: 1px solid #e9ecef; min-width: 130px; }
+    
+    .status-pill { padding: 4px 10px; font-size: 0.65rem; font-weight: 700; border-radius: 50rem; text-transform: uppercase; display: inline-block; }
+    .st-draft { background: #f1f3f5; color: #495057; }
+    .st-review { background: #fff4e6; color: #fd7e14; }
+    .st-approved { background: #e3faf3; color: #0ca678; }
+    .st-rejected { background: #fff5f5; color: #fa5252; }
+    .st-disbursed { background: #e7f5ff; color: #228be6; }
+</style>
+
+<script>
+    frappe.ready(function() {
+        updateCounts();
+        updateTable();
+    });
+
+    function updateCounts() {
+        const doctypes = ['Loan Application', 'Loan Disbursement', 'Loan Repayment'];
+        
+        doctypes.forEach(doctype => {
+            frappe.call({
+                method: 'frappe.client.get_count',
+                args: { doctype: doctype },
+                callback: function(r) {
+                    const id = 'count-' + doctype.toLowerCase().replace(/ /g, '-');
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = r.message || 0;
+                }
+            });
+        });
+    }
+
+    function updateTable() {
+        frappe.call({
+            method: 'frappe.client.get_list',
+            args: {
+                doctype: 'Loan Application',
+                fields: ['name', 'customer_name', 'loan_type', 'loan_amount', 'status'],
+                order_by: 'creation desc',
+                limit_page_length: 5
+            },
+            callback: function(r) {
+                const tbody = document.getElementById('loan-application-table');
+                if (!r.message || r.message.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted small">No applications found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = r.message.map(app => `
+                    <tr class="pointer" onclick="frappe.set_route('Form', 'Loan Application', '${app.name}')">
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark small">${app.customer_name}</div>
+                            <small class="text-muted extra-small">${app.name}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border rounded-pill extra-small">${app.loan_type}</span>
+                        </td>
+                        <td class="text-end fw-bold text-primary small">
+                            ₹${parseFloat(app.loan_amount || 0).toLocaleString('en-IN')}
+                        </td>
+                        <td class="text-center">
+                            <span class="status-pill ${getStatusClass(app.status)}">${app.status}</span>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <i class="fa fa-chevron-right text-muted extra-small"></i>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        });
+    }
+
+    function getStatusClass(status) {
+        if (status === 'Draft') return 'st-draft';
+        if (status === 'Under Review') return 'st-review';
+        if (status === 'Approved') return 'st-approved';
+        if (status === 'Rejected') return 'st-rejected';
+        if (status === 'Disbursed') return 'st-disbursed';
+        return 'st-draft';
+    }
+</script>
+{% endblock %}
