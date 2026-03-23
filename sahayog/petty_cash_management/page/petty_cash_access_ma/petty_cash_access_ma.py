@@ -1,8 +1,20 @@
 import frappe
 
+def validate_access():
+    """Ensure the user has one of the required roles to use this module."""
+    if frappe.session.user == "Administrator":
+        return True
+        
+    allowed_roles = ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
+    user_roles = frappe.get_roles(frappe.session.user)
+    
+    if not any(role in user_roles for role in allowed_roles):
+        frappe.throw("You do not have permission to access Petty Cash Management configurations.", frappe.PermissionError)
+
 @frappe.whitelist()
 def get_eligible_employees():
-    """Fetch employees matching the specific designations who have a linked User ID."""
+    validate_access()
+    
     employees = frappe.get_all(
         "Employee",
         filters={
@@ -13,7 +25,6 @@ def get_eligible_employees():
         order_by="employee_name asc"
     )
     
-    # Fetch branch names for each employee
     for emp in employees:
         if emp.sahayog_branch:
             branch_name = frappe.db.get_value("Sahayog Branch", emp.sahayog_branch, "branch")
@@ -23,19 +34,19 @@ def get_eligible_employees():
             
     return employees
 
-
 @frappe.whitelist()
 def get_employee_role_status(user_id):
-    """Check if the linked user already has the Branch User role."""
+    validate_access()
+    
     if not user_id:
         return False
     has_role = frappe.db.exists("Has Role", {"parent": user_id, "role": "Branch User"})
     return bool(has_role)
 
-
 @frappe.whitelist()
 def toggle_branch_user_role(user_id, enable):
-    """Instantly add or remove the Branch User role for the given User ID."""
+    validate_access()
+    
     if not user_id:
         frappe.throw("No User ID linked to this employee.")
         
@@ -49,8 +60,9 @@ def toggle_branch_user_role(user_id, enable):
         user.remove_roles("Branch User")
         status = "removed"
 
-    # Clear any system messages (like "User Permission Cleared") to prevent frontend modals
+    # Clear any system messages to prevent frontend modals
     if hasattr(frappe.local, 'message_log'):
         frappe.local.message_log = []
 
     return {"status": status}
+    
