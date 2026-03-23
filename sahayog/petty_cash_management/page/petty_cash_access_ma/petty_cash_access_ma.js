@@ -243,13 +243,13 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
             },
 
             getShortTag(designation) {
-                if (designation === "Branch Manager") return "BM";
+                if (designation === "BRANCH MANAGER") return "BM";
                 if (designation === "Branch Operation Manager") return "BOM";
                 return designation;
             },
 
             getTagClass(designation) {
-                if (designation === "Branch Manager") return "tag-bm";
+                if (designation === "BRANCH MANAGER") return "tag-bm";
                 if (designation === "Branch Operation Manager") return "tag-bom";
                 return "";
             },
