@@ -16,13 +16,6 @@ class LoanApplication(Document):
         # Initial status setup
         if self.is_new() and not self.status:
             self.status = "Draft"
-        
-        # Validation for Credit Decision Stage
-        if self.status == "Credit Decision":
-            if not getattr(self, "gold_valuation_sheet", None):
-                frappe.throw(_("Gold Valuation Sheet is required for Credit Decision"))
-            if not getattr(self, "disclaimer", 0):
-                frappe.throw(_("Please accept the disclaimer before proceeding."))
 
     def validate_basic_fields(self):
         # Mobile Validation
