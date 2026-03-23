@@ -1,18 +1,25 @@
 frappe.ui.form.on("Loan Application", {
-  before_workflow_action: async function (frm) {
-    // Return the promise here!
+  before_workflow_action: function (frm) {
+    frappe.dom.unfreeze();
     return new Promise((resolve, reject) => {
-      frappe.dom.unfreeze();
       frappe.confirm(
-        `<b>Are you sure you want to <u>${frm.selected_workflow_action}</u>?</b>`,
-        () => resolve(), // Yes → proceed
-        () => reject("❌ Action cancelled by user."), // No → abort transition
+        __("Are you sure you want to proceed with <b>{0}</b>?", [
+          frm.selected_workflow_action,
+        ]),
+        () => resolve(),
+        () => reject(),
       );
     });
   },
+
+  after_workflow_action: function (frm) {
+    frm.reload_doc();
+  },
+
   refresh: function (frm) {
     // 1. Workflow Logic (Handled by Frappe Workflow)
     frm.trigger("render_workflow_tracker");
+    frm.trigger("set_status_indicator");
 
     // Mobile Number Restriction - Only Numbers (10 digits)
     if (frm.fields_dict.mobile_number && frm.fields_dict.mobile_number.$input) {
@@ -111,6 +118,7 @@ frappe.ui.form.on("Loan Application", {
   },
 
   render_workflow_tracker: function (frm) {
+    frm.set_intro(null); // Clear previous tracker to prevent duplicates
     const states = [
       { label: "Branch", sub: "Draft", status: "Draft", role: "Branch User" },
       { label: "Credit", sub: "Check", status: "Credit Check", role: "Credit User" },
@@ -199,6 +207,21 @@ frappe.ui.form.on("Loan Application", {
     `;
 
     frm.set_intro(tracker_html);
+  },
+
+  set_status_indicator: function (frm) {
+    const status_colors = {
+      Draft: "gray",
+      "Credit Check": "orange",
+      "Valuation Pending": "blue",
+      "Credit Decision": "cyan",
+      "CPC Processing": "yellow",
+      Approved: "green",
+      Rejected: "red",
+    };
+    if (status_colors[frm.doc.status]) {
+      frm.page.set_indicator(frm.doc.status, status_colors[frm.doc.status]);
+    }
   },
 
   // customer name auto-capitalization
