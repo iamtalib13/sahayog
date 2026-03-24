@@ -201,13 +201,33 @@ frappe.ui.form.on("Loan Application", {
             }
             $input.trigger("change");
           }, 100);
-        },
+        }
       );
     }
+    // 5. Restrict Date of Birth to a range (e.g., 18 to 100 years ago)
+    let today = frappe.datetime.get_today();
+    let max_dob = frappe.datetime.add_months(today, -18 * 12);
+    let min_dob = frappe.datetime.add_months(today, -100 * 12);
+    
+    frm.set_df_property("date_of_birth", "options", {
+      max_date: max_dob,
+      min_date: min_dob,
+    });
   },
 
   onload: function (frm) {
     frm.trigger("apply_branch_user_rules");
+
+    // Pre-populate KYC Documents for new applications
+    if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
+      const default_docs = ["Aadhaar Card", "PAN Card"];
+      default_docs.forEach((doc_type) => {
+        let row = frm.add_child("kyc_documents");
+        row.document_type = doc_type;
+        row.status = "Pending";
+      });
+      frm.refresh_field("kyc_documents");
+    }
   },
 
   apply_branch_user_rules: function (frm) {
@@ -371,12 +391,44 @@ frappe.ui.form.on("Loan Application", {
   },
 
   date_of_birth: function (frm) {
-    if (
-      frm.doc.date_of_birth &&
-      frappe.datetime.get_today() < frm.doc.date_of_birth
-    ) {
-      frappe.msgprint(__("Date of Birth cannot be in the future."));
-      frm.set_value("date_of_birth", "");
+    if (frm.doc.date_of_birth) {
+      let today = frappe.datetime.get_today();
+      let dob = frm.doc.date_of_birth;
+
+      if (dob > today) {
+        frappe.msgprint(__("Date of Birth cannot be in the future."));
+        frm.set_value("date_of_birth", "");
+        return;
+      }
+
+      let age = frappe.datetime.get_diff(today, dob) / 365.25;
+      if (age < 18) {
+        frappe.msgprint({
+          title: __("Invalid Age"),
+          indicator: "red",
+          message: __("Applicant must be at least 18 years old. Selection cleared."),
+        });
+        frm.set_value("date_of_birth", "");
+        return;
+      }
+
+      if (frm.doc.loan_type) {
+        frappe.db.get_value("Loan Type", frm.doc.loan_type, "max_age_at_maturity", (r) => {
+          let max_age = r.max_age_at_maturity || 60;
+          let tenure_years = (flt(frm.doc.tenure_months) || 0) / 12;
+          if (age + tenure_years > max_age) {
+            frappe.msgprint({
+              title: __("Age Limit Warning"),
+              indicator: "orange",
+              message: __("Applicant age ({0}) + Tenure ({1} yrs) exceeds Max Age at Maturity ({2}) for this product.", [
+                Math.floor(age),
+                tenure_years.toFixed(1),
+                max_age
+              ]),
+            });
+          }
+        });
+      }
     }
   },
 
@@ -446,6 +498,31 @@ frappe.ui.form.on("Loan Application", {
   validate: function (frm) {
     // Skip validations if in Draft state
     if (frm.doc.status === "Draft") return;
+
+    // Credit Decision specific logic
+    if (frm.doc.status === "Credit Decision" && frm.doc.security_type === "Gold") {
+      // 1. Ensure Ornaments List is not empty
+      if (!frm.doc.ornaments_list || frm.doc.ornaments_list.length === 0) {
+        frappe.throw(__("Ornaments List is mandatory when status is Credit Decision."));
+      }
+
+      // 2. Ensure Disclaimer is checked
+      if (!frm.doc.disclaimer) {
+        frappe.throw(__("The Member Declaration checkbox is mandatory when status is Credit Decision."));
+      }
+
+      // 3. Ensure Ornament Image exists in KYC Documents
+      let has_ornament_image = (frm.doc.kyc_documents || []).some(
+        (d) => d.document_type === "Ornament Image"
+      );
+      if (!has_ornament_image) {
+        let row = frm.add_child("kyc_documents");
+        row.document_type = "Ornament Image";
+        row.status = "Pending";
+        frm.refresh_field("kyc_documents");
+        frappe.msgprint(__("Added 'Ornament Image' row to KYC Documents."));
+      }
+    }
 
     if (frm.doc.customer_name && /[^a-zA-Z\s]/.test(frm.doc.customer_name)) {
       frappe.throw(

@@ -25,6 +25,31 @@ class LoanApplication(Document):
         # Initial status setup
         if self.is_new() and not self.status:
             self.status = "Draft"
+        
+        # Add default KYC documents if empty
+        if self.is_new() and not self.kyc_documents:
+            default_docs = ["Aadhaar Card", "PAN Card"]
+            for doc_type in default_docs:
+                self.append("kyc_documents", {
+                    "document_type": doc_type,
+                    "status": "Pending"
+                })
+
+        # Credit Decision Logic
+        if self.status == "Credit Decision" and self.security_type == "Gold":
+            if not self.ornaments_list:
+                frappe.throw(_("Ornaments List is mandatory when status is 'Credit Decision'."))
+            
+            if not self.disclaimer:
+                frappe.throw(_("The Member Declaration (Disclaimer) checkbox is mandatory when status is 'Credit Decision'."))
+            
+            # Add Ornament Image to KYC if not present
+            has_ornament_image = any(d.document_type == "Ornament Image" for d in self.kyc_documents)
+            if not has_ornament_image:
+                self.append("kyc_documents", {
+                    "document_type": "Ornament Image",
+                    "status": "Pending"
+                })
 
     def validate_basic_fields(self):
         # Mobile Validation
@@ -39,8 +64,19 @@ class LoanApplication(Document):
             self.customer_name = self.customer_name.title()
 
         # DOB Validation
-        if self.date_of_birth and getdate(self.date_of_birth) > getdate():
-            frappe.throw(_("Date of Birth cannot be in the future."))
+        if self.date_of_birth:
+            age = date_diff(nowdate(), self.date_of_birth) / 365.25
+            if age < 18:
+                frappe.throw(_("Applicant must be at least 18 years old."))
+            
+            if self.loan_type:
+                policy = frappe.get_doc("Loan Type", self.loan_type)
+                max_age = flt(policy.max_age_at_maturity) or 60
+                tenure_years = (flt(self.tenure_months) or 0) / 12
+                if age + tenure_years > max_age:
+                    frappe.msgprint(_("Warning: Total age at maturity ({0}) exceeds policy limit ({1}) for {2}.").format(
+                        round(age + tenure_years, 1), max_age, self.loan_type
+                    ))
 
         # KYC Check
         if not self.kyc_documents:
