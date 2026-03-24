@@ -35,6 +35,17 @@
                         @input="onSearchInput($event)"
                         placeholder="Search by customer, branch, mobile, or file ID"
                     >
+                    <button
+                        type="button"
+                        class="lw-search-filter-toggle"
+                        :class="{ active: mobileFiltersOpen }"
+                        v-if="activeView === 'cards'"
+                        @click="toggleMobileFilters()"
+                        :aria-expanded="mobileFiltersOpen ? 'true' : 'false'"
+                        aria-label="Toggle filters"
+                    >
+                        <img src="https://cdn-icons-png.flaticon.com/128/3126/3126528.png" alt="" aria-hidden="true">
+                    </button>
                 </label>
             </div>
 
@@ -53,6 +64,27 @@
 
     <div class="lw-content-shell">
         <main class="lw-shell">
+            <section v-if="activeView === 'cards' && mobileFiltersOpen" class="lw-mobile-filter-panel" aria-label="Quick filters">
+                <div class="lw-mobile-filter-panel-head">
+                    <strong>Quick Filters</strong>
+                    <button type="button" class="lw-mobile-filter-close" @click="closeMobileFilters()">Close</button>
+                </div>
+                <div class="lw-mobile-filter-grid">
+                    <button
+                        v-for="card in statusCards()"
+                        :key="`mobile-${card.key}`"
+                        type="button"
+                        class="lw-mobile-filter-card"
+                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
+                        :disabled="card.disabled"
+                        @click="card.disabled ? null : setFilter(card.key)"
+                    >
+                        <span class="lw-mobile-filter-label">[[ card.label ]]</span>
+                        <span class="lw-mobile-filter-count">[[ card.count ]]</span>
+                    </button>
+                </div>
+            </section>
+
             <section class="lw-card-view" v-if="activeView === 'cards'">
                 <section class="lw-filter-grid">
                     <article
@@ -224,6 +256,15 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <div class="lw-mobile-action-bar">
+        <button type="button" class="lw-mobile-action lw-mobile-action-primary" @click="openNewApplication()">
+            + New Application
+        </button>
+        <button type="button" class="lw-mobile-action lw-mobile-action-secondary" @click="setView(activeView === 'calendar' ? 'cards' : 'calendar')">
+            [[ activeView === 'calendar' ? 'View Applications' : 'View Calendar' ]]
+        </button>
     </div>
 </div>
 
@@ -513,12 +554,46 @@
         border: 1px solid var(--lw-border);
     }
 
+    .lw-search-filter-toggle {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border: 1px solid var(--lw-border);
+        border-radius: 10px;
+        background: linear-gradient(180deg, #ffffff, #f3f6f9);
+        color: var(--lw-muted);
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+        flex: 0 0 auto;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .lw-search-filter-toggle img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        display: block;
+        flex: 0 0 auto;
+    }
+
+    .lw-search-filter-toggle.active {
+        border-color: var(--lw-accent);
+        color: var(--lw-accent);
+        box-shadow: 0 0 0 3px rgba(65, 125, 129, 0.1);
+    }
+
     .lw-search i {
         color: var(--lw-muted);
     }
 
     .lw-search input {
-        width: 100%;
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
         height: 100%;
         border: 0;
         outline: none;
@@ -1445,6 +1520,104 @@
         color: var(--lw-ink);
     }
 
+    .lw-mobile-filter-panel {
+        display: none;
+    }
+
+    .lw-mobile-filter-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .lw-mobile-filter-panel-head strong {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--lw-ink);
+    }
+
+    .lw-mobile-filter-close {
+        border: 1px solid var(--lw-border);
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--lw-ink);
+        border-radius: 10px;
+        padding: 7px 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .lw-mobile-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .lw-mobile-filter-card {
+        display: grid;
+        gap: 6px;
+        align-content: start;
+        justify-items: start;
+        border-radius: 16px;
+        padding: 12px;
+        min-width: 0;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .lw-mobile-filter-label {
+        font-size: 0.72rem;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .lw-mobile-filter-count {
+        font-size: 1.02rem;
+        line-height: 1.15;
+        font-weight: 800;
+    }
+
+    .lw-mobile-filter-card.disabled,
+    .lw-mobile-filter-card:disabled {
+        cursor: not-allowed;
+        opacity: 0.68;
+        filter: grayscale(1);
+        box-shadow: none;
+    }
+
+    .lw-mobile-action-bar {
+        display: none;
+    }
+
+    .lw-mobile-action {
+        border: 0;
+        border-radius: 16px;
+        min-height: 48px;
+        padding: 0 14px;
+        font-size: 0.96rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .lw-mobile-action-primary {
+        background: linear-gradient(135deg, #1f7a72, #2d9a89);
+        color: #fff;
+        box-shadow: 0 14px 28px rgba(31, 122, 114, 0.24);
+    }
+
+    .lw-mobile-action-secondary {
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--lw-ink);
+        border: 1px solid var(--lw-border);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    }
+
     @media (max-width: 1120px) {
         .lw-card-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1469,8 +1642,7 @@
         }
 
         .lw-topbar-actions {
-            display: grid;
-            gap: 10px;
+            display: none;
         }
 
         .lw-toolbar-center {
@@ -1488,7 +1660,8 @@
         }
 
         .lw-topbar-left {
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
             flex-wrap: wrap;
             gap: 10px;
         }
@@ -1498,7 +1671,7 @@
         }
 
         .lw-view-toggle {
-            width: 100%;
+            display: none;
         }
 
         .lw-view-toggle .lw-chip {
@@ -1515,6 +1688,7 @@
         .lw-search {
             min-height: 40px;
             padding: 0 12px;
+            gap: 8px;
         }
 
         .lw-card-grid {
@@ -1575,11 +1749,11 @@
         }
 
         .lw-topbar-inner {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1fr;
         }
 
         .lw-topbar-left {
-            grid-column: 1 / -1;
+            grid-column: 1;
             width: 100%;
         }
 
@@ -1591,12 +1765,7 @@
         }
 
         .lw-topbar-actions {
-            grid-column: 2;
-            width: 100%;
-            display: flex;
-            align-items: stretch;
-            justify-content: flex-end;
-            gap: 0;
+            display: none;
         }
 
         .lw-toolbar-right {
@@ -1617,12 +1786,22 @@
 
         .lw-search-header {
             width: 100%;
+            gap: 8px;
             min-width: 0;
+        }
+
+        .lw-search-filter-toggle {
+            display: inline-flex;
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            border-radius: 12px;
+            font-size: 0.95rem;
         }
 
         .lw-brand-logo {
             width: auto;
-            height: 38px;
+            height: 42px;
         }
 
         .lw-card-meta {
@@ -1648,21 +1827,44 @@
         }
 
         .lw-bottom-filter-nav {
+            display: none;
+        }
+
+        .lw-mobile-filter-panel {
+            display: block;
+            margin: 4px 0 12px;
+            padding: 12px;
+            border: 1px solid var(--lw-border);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(14px) saturate(150%);
+            -webkit-backdrop-filter: blur(14px) saturate(150%);
+        }
+
+        .lw-content-shell {
+            padding-bottom: 154px;
+        }
+
+        .lw-mobile-action-bar {
             position: fixed;
             left: 0;
             right: 0;
             bottom: 0;
-            z-index: 45;
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-            background: rgba(247, 249, 252, 0.94);
+            z-index: 48;
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+            gap: 10px;
+            padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(247, 249, 252, 0.96));
             border-top: 1px solid var(--lw-border);
-            box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 -16px 32px rgba(15, 23, 42, 0.1);
             backdrop-filter: blur(18px) saturate(150%);
             -webkit-backdrop-filter: blur(18px) saturate(150%);
-            scroll-snap-type: x proximity;
+        }
+
+        .lw-mobile-action {
+            min-height: 50px;
         }
 
         .lw-bottom-filter-item {
@@ -1783,6 +1985,26 @@
             font-size: 0.7rem;
         }
     }
+
+    @media (max-width: 420px) {
+        .lw-mobile-action-bar {
+            grid-template-columns: 1fr;
+        }
+
+        .lw-mobile-filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .lw-search {
+            min-height: 44px;
+        }
+
+        .lw-search-filter-toggle {
+            width: 40px;
+            height: 40px;
+            flex-basis: 40px;
+        }
+    }
 </style>
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
@@ -1815,6 +2037,7 @@
             errorText: "",
             calendarMonthCursor: null,
             selectedCalendarDateKey: "",
+            mobileFiltersOpen: false,
 
             isValidWorkspaceView(viewName) {
                 return ["cards", "calendar"].includes(viewName);
@@ -1932,6 +2155,18 @@
                 this.syncWorkspaceUrl();
             },
 
+            toggleMobileFilters() {
+                this.mobileFiltersOpen = !this.mobileFiltersOpen;
+            },
+
+            closeMobileFilters() {
+                this.mobileFiltersOpen = false;
+            },
+
+            mobileViewToggleLabel() {
+                return this.activeView === "calendar" ? "View Applications" : "View Calendar";
+            },
+
             async resolveUserRoles() {
                 const bootRoles = (window.frappe && frappe.boot && frappe.boot.user && Array.isArray(frappe.boot.user.roles) && frappe.boot.user.roles) || [];
                 const clientRoles = (window.frappe && Array.isArray(frappe.user_roles) && frappe.user_roles) || [];
@@ -2020,6 +2255,7 @@
                 this.activeFilter = filterKey;
                 this.selectedCalendarDateKey = "";
                 this.activeView = "cards";
+                this.closeMobileFilters();
                 this.syncWorkspaceUrl();
             },
 
@@ -2032,6 +2268,7 @@
                     this.activeFilter = "Role Pending";
                     this.selectedCalendarDateKey = "";
                 }
+                this.closeMobileFilters();
                 this.syncWorkspaceUrl();
             },
 
@@ -2041,6 +2278,7 @@
                 this.selectedCalendarDateKey = cell.dateKey;
                 this.activeFilter = "All";
                 this.activeView = "cards";
+                this.closeMobileFilters();
                 this.syncWorkspaceUrl();
             },
 
