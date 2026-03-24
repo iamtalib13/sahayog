@@ -39,8 +39,19 @@ class LoanApplication(Document):
             self.customer_name = self.customer_name.title()
 
         # DOB Validation
-        if self.date_of_birth and getdate(self.date_of_birth) > getdate():
-            frappe.throw(_("Date of Birth cannot be in the future."))
+        if self.date_of_birth:
+            age = date_diff(nowdate(), self.date_of_birth) / 365.25
+            if age < 18:
+                frappe.throw(_("Applicant must be at least 18 years old."))
+            
+            if self.loan_type:
+                policy = frappe.get_doc("Loan Type", self.loan_type)
+                max_age = flt(policy.max_age_at_maturity) or 60
+                tenure_years = (flt(self.tenure_months) or 0) / 12
+                if age + tenure_years > max_age:
+                    frappe.msgprint(_("Warning: Total age at maturity ({0}) exceeds policy limit ({1}) for {2}.").format(
+                        round(age + tenure_years, 1), max_age, self.loan_type
+                    ))
 
         # KYC Check
         if not self.kyc_documents:

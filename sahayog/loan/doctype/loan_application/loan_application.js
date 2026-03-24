@@ -124,9 +124,18 @@ frappe.ui.form.on("Loan Application", {
             }
             $input.trigger("change");
           }, 100);
-        },
+        }
       );
     }
+    // 5. Restrict Date of Birth to a range (e.g., 18 to 100 years ago)
+    let today = frappe.datetime.get_today();
+    let max_dob = frappe.datetime.add_months(today, -18 * 12);
+    let min_dob = frappe.datetime.add_months(today, -100 * 12);
+    
+    frm.set_df_property("date_of_birth", "options", {
+      max_date: max_dob,
+      min_date: min_dob,
+    });
   },
 
   onload: function (frm) {
@@ -294,12 +303,44 @@ frappe.ui.form.on("Loan Application", {
   },
 
   date_of_birth: function (frm) {
-    if (
-      frm.doc.date_of_birth &&
-      frappe.datetime.get_today() < frm.doc.date_of_birth
-    ) {
-      frappe.msgprint(__("Date of Birth cannot be in the future."));
-      frm.set_value("date_of_birth", "");
+    if (frm.doc.date_of_birth) {
+      let today = frappe.datetime.get_today();
+      let dob = frm.doc.date_of_birth;
+
+      if (dob > today) {
+        frappe.msgprint(__("Date of Birth cannot be in the future."));
+        frm.set_value("date_of_birth", "");
+        return;
+      }
+
+      let age = frappe.datetime.get_diff(today, dob) / 365.25;
+      if (age < 18) {
+        frappe.msgprint({
+          title: __("Invalid Age"),
+          indicator: "red",
+          message: __("Applicant must be at least 18 years old. Selection cleared."),
+        });
+        frm.set_value("date_of_birth", "");
+        return;
+      }
+
+      if (frm.doc.loan_type) {
+        frappe.db.get_value("Loan Type", frm.doc.loan_type, "max_age_at_maturity", (r) => {
+          let max_age = r.max_age_at_maturity || 60;
+          let tenure_years = (flt(frm.doc.tenure_months) || 0) / 12;
+          if (age + tenure_years > max_age) {
+            frappe.msgprint({
+              title: __("Age Limit Warning"),
+              indicator: "orange",
+              message: __("Applicant age ({0}) + Tenure ({1} yrs) exceeds Max Age at Maturity ({2}) for this product.", [
+                Math.floor(age),
+                tenure_years.toFixed(1),
+                max_age
+              ]),
+            });
+          }
+        });
+      }
     }
   },
 
