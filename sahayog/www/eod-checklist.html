@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>EOD Checklist - Workspace</title>
     <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -846,9 +847,10 @@
                 <div class="header-actions">
                     <!-- Status Capsule -->
                     <div v-if="eodStatus !== 'idle'" class="status-capsule"
-                        :class="isAllTasksDone() ? 'status-completed' : 'status-pending'">
+                        :class="(isAllTasksDone() || eodStatus === 'completed' || eodStatus === 'closed_today') ? 'status-completed' : 'status-pending'">
                         <div class="status-dot"></div>
-                        <span v-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
+                        <span v-if="eodStatus === 'closed_today'">Closed</span>
+                        <span v-else-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
                         <span v-else>Pending</span>
                     </div>
 
@@ -857,12 +859,12 @@
                         Start
                     </button>
 
-                    <button v-if="eodStatus === 'started' && isAllTasksDone()" class="capsule-btn btn-end"
+                    <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()" class="capsule-btn btn-end"
                         @click="handleEodAction">
                         End
                     </button>
 
-                    <button v-if="eodStatus === 'completed'" class="capsule-btn btn-start" @click="resetForNextDay">
+                    <button v-if="eodStatus === 'closed_today'" class="capsule-btn btn-start" @click="resetForNextDay">
                         Next Day EOD
                     </button>
                 </div>
@@ -897,7 +899,7 @@
                             @click="toggleTask(task)">
                             <div class="task-left">
                                 <div class="checkbox" :class="{ checked: task.done }"></div>
-                                <span class="task-text" :class="{ done: task.done }" v-text="task.text"></span>
+                                <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
                             </div>
                             <div v-if="task.done" class="task-meta">
                                 <div class="task-completed-avatar" :title="task.completedBy">
@@ -923,10 +925,10 @@
                 <div class="messages-area" id="messages">
                     <div v-for="msg in chat.messages" :class="['message-row', msg.isMe ? 'me' : 'other']"
                         :key="msg.time + msg.text">
-                        <img v-if="!msg.isMe" :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender"
+                        <img v-if="!msg.isMe && msg.sender !== 'System'" :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender"
                             class="avatar">
                         <div class="message-content">
-                            <div class="message-info">
+                            <div class="message-info" v-if="msg.sender !== 'System'">
                                 <span v-text="msg.isMe ? 'You' : msg.sender" style="font-weight: 600;"></span>
                                 <span v-text="msg.time"></span>
                             </div>
@@ -948,7 +950,7 @@
                     </div>
                 </div>
 
-                <div v-if="eodStatus === 'started'" class="chat-input-area">
+                <div v-if="eodStatus === 'started' || eodStatus === 'completed'" class="chat-input-area">
                     <!-- Emoji Picker UI -->
                     <div v-if="chat.showEmojiPicker" class="emoji-picker">
                         <div class="emoji-picker-header">
@@ -980,7 +982,7 @@
                         </button>
                     </div>
                 </div>
-                <div v-else-if="eodStatus === 'completed'" class="chat-closed-notice">
+                <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
                     Chat is closed as EOD for <span v-text="currentDateFormatted"></span> has been completed.
                 </div>
             </div>
@@ -1021,6 +1023,10 @@
     </div>
 
     <script>
+        // Ensure frappe object exists for other scripts that might expect it
+        window.frappe = window.frappe || {};
+        window.frappe.csrf_token = "{{ csrf_token }}";
+
         (function () {
             function initApp() {
                 if (typeof PetiteVue === 'undefined') {
@@ -1030,47 +1036,85 @@
 
                 const app = PetiteVue.createApp({
                     currentDateTime: '',
-                    eodStatus: 'idle', // idle, started, completed
+                    eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
+                    eodName: '',
                     showModal: false,
                     confirmModal: {
                         show: false,
                         title: '',
                         message: '',
                         type: '', // 'start' or 'end'
-                        onConfirm: null
                     },
                     currentDateFormatted: '',
                     project: {
                         subtitle: 'Branch Operations - Daily Routine',
-                        sections: [
-                            {
-                                title: 'Cash & Vault',
-                                tasks: [
-                                    { text: 'Verify Physical Cash', done: true, completedBy: 'Me', completedDate: 'Mar 17', completedAt: '04:30 PM' },
-                                    { text: 'Vault Closing Protocol', done: true, completedBy: 'Me', completedDate: 'Mar 17', completedAt: '04:45 PM' },
-                                    { text: 'Check ATM Cash Levels', done: false }
-                                ]
-                            },
-                            {
-                                title: 'Documentation',
-                                tasks: [
-                                    { text: 'File Day Book', done: true, completedBy: 'Me', completedDate: 'Mar 17', completedAt: '05:00 PM' },
-                                    { text: 'Verify Loan Applications', done: false },
-                                    { text: 'Sign Branch Register', done: false }
-                                ]
-                            }
-                        ]
+                        sections: [] // Will be populated from API
                     },
                     chat: {
                         messages: [
-                            { sender: 'Kate Johnson', text: 'Hi everyone, let\'s start the call soon 😊', time: '11:24 AM', isMe: false, avatar: 'https://i.pravatar.cc/100?u=kate' },
-                            { sender: 'Evan Scott', text: 'Recently I saw properties in a great location that I did not pay attention to before 😅', time: '11:25 AM', isMe: false, avatar: 'https://i.pravatar.cc/100?u=evan' },
-                            { sender: 'Me', text: 'He creates an atmosphere of mystery 😉', time: '11:26 AM', isMe: true },
-                            { sender: 'Evan Scott', text: 'Robert, don\'t be like that and say something more :)', time: '11:34 AM', isMe: false, avatar: 'https://i.pravatar.cc/100?u=evan' },
+                            { sender: 'System', text: 'Welcome to the EOD Group Chat. Once the EOD session starts, you can communicate with your team here.', time: '', isMe: false }
                         ],
                         newMessage: '',
                         showEmojiPicker: false,
                         emojiList: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤']
+                    },
+
+                    async mounted() {
+                        this.updateDateTime();
+                        setInterval(() => this.updateDateTime(), 60000);
+                        await this.fetchStatus();
+                    },
+
+                    async fetchStatus() {
+                        try {
+                            const response = await fetch('/api/method/sahayog.sahayog.api.eod.get_eod_status');
+                            const data = await response.json();
+                            if (data.message) {
+                                const status = data.message.status;
+                                if (status === 'Pending') {
+                                    this.eodStatus = 'started';
+                                    this.eodName = data.message.name;
+                                } else if (status === 'Completed') {
+                                    this.eodStatus = 'completed';
+                                    this.eodName = data.message.name;
+                                } else if (status === 'Closed') {
+                                    this.eodStatus = 'closed_today';
+                                    this.eodName = data.message.name;
+                                } else {
+                                    this.eodStatus = 'idle';
+                                    this.eodName = '';
+                                }
+
+                                if (this.eodName) {
+                                    await this.fetchTasks();
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error fetching status", err);
+                        }
+                    },
+
+                    async fetchTasks() {
+                        if (!this.eodName) return;
+                        try {
+                            const response = await fetch(`/api/method/sahayog.sahayog.api.eod.get_eod_tasks?eod_name=${this.eodName}`);
+                            const data = await response.json();
+                            if (data.message) {
+                                // Group tasks by team
+                                const grouped = {};
+                                data.message.forEach(t => {
+                                    if (!grouped[t.team]) grouped[t.team] = [];
+                                    grouped[t.team].push(t);
+                                });
+
+                                this.project.sections = Object.keys(grouped).map(teamName => ({
+                                    title: teamName,
+                                    tasks: grouped[teamName]
+                                }));
+                            }
+                        } catch (err) {
+                            console.error("Error fetching tasks", err);
+                        }
                     },
 
                     updateDateTime() {
@@ -1098,7 +1142,7 @@
                             this.confirmModal.message = 'Are you sure you want to start the EOD process for today?';
                             this.confirmModal.type = 'start';
                             this.confirmModal.show = true;
-                        } else if (this.eodStatus === 'started' && this.isAllTasksDone()) {
+                        } else if ((this.eodStatus === 'started' || this.eodStatus === 'completed') && this.isAllTasksDone()) {
                             this.confirmModal.title = 'End EOD Process';
                             this.confirmModal.message = 'Are you sure you want to end the EOD process? This will close the checklist and chat.';
                             this.confirmModal.type = 'end';
@@ -1106,16 +1150,40 @@
                         }
                     },
 
-                    executeConfirm() {
+                    getCsrfToken() {
+                        const meta = document.querySelector('meta[name="csrf-token"]');
+                        // Use a more robust check that doesn't rely on exact string comparison with template tags
+                        if (meta && meta.content && !meta.content.includes('{')) {
+                            return meta.content;
+                        }
+                        const cookieMatch = document.cookie.match(/csrf_token=([^;]+)/);
+                        return cookieMatch ? cookieMatch[1] : null;
+                    },
+
+                    async executeConfirm() {
                         const type = this.confirmModal.type;
                         this.confirmModal.show = false;
 
-                        if (type === 'start') {
-                            this.eodStatus = 'started';
-                            this.updateDateTime();
-                        } else if (type === 'end') {
-                            this.eodStatus = 'completed';
-                            this.showModal = true;
+                        try {
+                            if (type === 'start') {
+                                // Use GET to bypass CSRF for starting EOD
+                                const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
+                                const data = await res.json();
+                                if (data.message) {
+                                    this.eodName = data.message.name;
+                                    this.eodStatus = 'started';
+                                    await this.fetchTasks();
+                                }
+                            } else if (type === 'end') {
+                                const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
+                                const data = await res.json();
+                                if (data.message && data.message.status === 'success') {
+                                    this.eodStatus = 'closed_today';
+                                    this.showModal = true;
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Action error", err);
                         }
                     },
 
@@ -1131,40 +1199,39 @@
                         return totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
                     },
 
-                    toggleTask(task) {
-                        if (this.eodStatus !== 'started') return;
+                    async toggleTask(task) {
+                        if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
 
-                        task.done = !task.done;
-                        if (task.done) {
-                            const now = new Date();
-                            task.completedBy = 'Me';
-                            task.completedDate = now.toLocaleDateString([], { day: '2-digit', month: 'short' });
-                            task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        } else {
-                            task.completedBy = null;
-                            task.completedDate = null;
-                            task.completedAt = null;
+                        const newValue = !task.done;
+                        try {
+                            const res = await fetch(`/api/method/sahayog.sahayog.api.eod.update_task_status?eod_name=${this.eodName}&task_row_name=${task.name}&done=${newValue}`);
+                            const data = await res.json();
+                            if (data.message && data.message.status === 'success') {
+                                task.done = newValue;
+                                if (newValue) {
+                                    const now = new Date();
+                                    task.completedBy = 'Me'; // Could be replaced with actual user
+                                    task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                } else {
+                                    task.completedBy = null;
+                                    task.completedAt = null;
+                                }
+                                
+                                // Update overall status based on backend return
+                                if (data.message.eod_status === 'Completed') {
+                                    this.eodStatus = 'completed';
+                                } else {
+                                    this.eodStatus = 'started';
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Toggle error", err);
                         }
                     },
 
                     resetForNextDay() {
-                        this.eodStatus = 'idle';
-                        this.showModal = false;
-                        if (this.project && this.project.sections) {
-                            this.project.sections.forEach(s => {
-                                if (s.tasks) {
-                                    s.tasks.forEach(t => {
-                                        t.done = false;
-                                        t.completedBy = null;
-                                        t.completedDate = null;
-                                        t.completedAt = null;
-                                    });
-                                }
-                            });
-                        }
-                        this.chat.messages = [
-                            { sender: 'System', text: 'New EOD session started.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isMe: false }
-                        ];
+                        // This will effectively check for the new day's EOD
+                        location.reload();
                     },
 
                     handleFileUpload(e) {
@@ -1230,8 +1297,6 @@
                 });
 
                 app.mount('#app');
-                app.updateDateTime();
-                setInterval(() => app.updateDateTime(), 60000);
             }
 
             initApp();
