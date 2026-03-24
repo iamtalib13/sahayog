@@ -58,7 +58,7 @@
                         v-for="card in statusCards()"
                         :key="card.key"
                         class="lw-status-card"
-                        :class="[card.tone, { selected: activeFilter === card.key }]"
+                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount }]"
                         @click="setFilter(card.key)"
                         tabindex="0"
                         role="button"
@@ -415,9 +415,11 @@
 
     .lw-status-card,
     .lw-card {
-        background: rgba(255, 255, 255, 0.94);
-        border: 1px solid var(--lw-border);
-        box-shadow: var(--lw-shadow);
+        background: rgba(255, 255, 255, 0.68);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
     }
 
     .lw-toolbar-center {
@@ -616,7 +618,10 @@
 
     .lw-status-card.selected {
         border-color: var(--lw-accent);
-        background: var(--lw-accent-soft);
+        background: rgba(232, 243, 243, 0.72);
+        box-shadow: 0 18px 42px rgba(65, 125, 129, 0.14);
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
     }
 
     .lw-status-card-head {
@@ -689,16 +694,42 @@
         color: var(--lw-rejected-text);
     }
 
+    .lw-status-card.zero-count {
+        background: rgba(243, 244, 246, 0.72);
+        border-color: rgba(229, 231, 235, 0.95);
+        color: #9ca3af;
+        box-shadow: none;
+        opacity: 0.9;
+        backdrop-filter: blur(14px) saturate(120%);
+        -webkit-backdrop-filter: blur(14px) saturate(120%);
+    }
+
+    .lw-status-card.zero-count .lw-status-note {
+        color: #9ca3af;
+    }
+
+    .lw-status-card.zero-count .lw-status-count {
+        color: #9ca3af;
+    }
+
+    .lw-status-card.zero-count.selected {
+        background: rgba(243, 244, 246, 0.72);
+        border-color: rgba(229, 231, 235, 0.95);
+        color: #9ca3af;
+    }
+
     .status-card-tone-pending {
-        background: linear-gradient(135deg, #b20000, #ff0000);
+        background: linear-gradient(135deg, rgba(178, 0, 0, 0.88), rgba(255, 0, 0, 0.84));
         border-color: #b20000;
         color: #fff;
         box-shadow: 0 0 3px rgba(178, 0, 0, 0.35);
         animation: lw-pending-card-glow 1.5s infinite;
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
     }
 
     .lw-status-card.status-card-tone-pending.selected {
-        background: linear-gradient(135deg, #b20000, #ff0000);
+        background: linear-gradient(135deg, rgba(178, 0, 0, 0.88), rgba(255, 0, 0, 0.84));
         border-color: #b20000;
         color: #fff;
     }
@@ -1731,13 +1762,13 @@
 
             matchesRolePending(application) {
                 if (this.userRoles.includes("Branch Loan User")) {
-                    return application.status === "Draft";
+                    return ["Draft", "Valuation Pending"].includes(application.status);
                 }
                 if (this.userRoles.includes("Credit Loan User")) {
-                    return ["Credit Check", "Valuation Pending"].includes(application.status);
+                    return ["Credit Check", "Credit Decision"].includes(application.status);
                 }
                 if (this.userRoles.includes("CPC Loan User")) {
-                    return ["Credit Decision", "CPC Processing"].includes(application.status);
+                    return application.status === "CPC Processing";
                 }
 
                 return false;
@@ -1745,13 +1776,13 @@
 
             pendingCount() {
                 if (this.userRoles.includes("Branch Loan User")) {
-                    return Number(this.counts.Draft || 0);
+                    return Number(this.counts.Draft || 0) + Number(this.counts["Valuation Pending"] || 0);
                 }
                 if (this.userRoles.includes("Credit Loan User")) {
-                    return Number(this.counts["Credit Check"] || 0) + Number(this.counts["Valuation Pending"] || 0);
+                    return Number(this.counts["Credit Check"] || 0) + Number(this.counts["Credit Decision"] || 0);
                 }
                 if (this.userRoles.includes("CPC Loan User")) {
-                    return Number(this.counts["Credit Decision"] || 0) + Number(this.counts["CPC Processing"] || 0);
+                    return Number(this.counts["CPC Processing"] || 0);
                 }
                 return 0;
             },
@@ -1764,7 +1795,8 @@
                 const rolePending = this.pendingCount();
                 return WORKSPACE_STATUS_CARDS.map((card) => ({
                     ...card,
-                    count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0)
+                    count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0),
+                    zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0
                 }));
             },
 
