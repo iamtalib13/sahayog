@@ -1,1064 +1,1815 @@
 {% extends "templates/web.html" %}
 {% set full_width = 1 %}
 
-{% block header %}
-<div class="loan-workspace-topbar">
-    <div class="workspace-topbar-inner">
-        <div>
-            <p class="workspace-topbar-eyebrow">Loan Workspace</p>
-            <h2 class="workspace-topbar-title">Loan operations desk</h2>
-        </div>
-        <div class="workspace-topbar-actions">
-            <button class="workspace-btn workspace-btn-ghost" type="button" data-route="/app/loan-application">
-                Open Register
-            </button>
-        </div>
-    </div>
-</div>
-{% endblock %}
+{% block navbar %}{% endblock %}
 
 {% block content %}
-<div id="loan-workspace-page" class="loan-workspace-page">
-    <div class="workspace-shell">
-        <section class="workspace-layout">
-            <div class="workspace-main-column">
-                <section class="workspace-panel">
-                    <div class="panel-head">
-                        <div>
-                            <p class="panel-kicker">Workflow queue</p>
-                            <div class="panel-title-row">
-                                <h3 class="panel-title">Loan application status</h3>
-                                <button id="pending-action-pill" class="pending-action-pill" type="button" data-action="set-filter" data-filter="Role Pending" style="display: none;">
-                                    Pending Action (<span id="pending-action-count">0</span>)
-                                </button>
+<div id="loan-workspace-app" class="loan-workspace-page" v-scope="LoanWorkspace()" @vue:mounted="mounted()" v-cloak>
+    <header class="lw-topbar" aria-label="Loan workspace header">
+        <div class="lw-topbar-inner">
+            <div class="lw-topbar-left">
+                <div class="lw-brand">
+                    <img
+                        class="lw-brand-logo"
+                        src="/assets/sahayog/images/sahayog_logo_2025.png"
+                        alt="Sahayog"
+                    >
+                </div>
+                <div class="lw-view-toggle">
+                    <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'cards' }" type="button" @click="setView('cards')">
+                        Card view
+                    </button>
+                    <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'calendar' }" type="button" @click="setView('calendar')">
+                        Calendar
+                    </button>
+                </div>
+            </div>
+
+            <div class="lw-topbar-meta">
+                <label class="lw-search lw-search-header" for="application-search">
+                    <i class="fa fa-search" aria-hidden="true"></i>
+                    <input
+                        id="application-search"
+                        type="search"
+                        v-model="searchText"
+                        placeholder="Search by customer, branch, mobile, or file ID"
+                    >
+                </label>
+            </div>
+
+            <div class="lw-topbar-actions">
+                <div class="lw-toolbar-center">
+                    <button class="lw-pending-pill" type="button" @click="setFilter('Role Pending')" :class="[pendingToneClass(), { active: activeFilter === 'Role Pending' }]">
+                        Pending Action ([[ pendingCount() ]])
+                    </button>
+                </div>
+
+                <div class="lw-toolbar-right">
+                    <button class="lw-chip lw-chip-primary" type="button" v-if="canCreate" @click="openNewApplication()">
+                        + New Application
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="lw-content-shell">
+        <main class="lw-shell">
+            <section class="lw-filter-grid" v-if="activeView === 'cards'">
+                <article
+                    v-for="card in statusCards()"
+                    :key="card.key"
+                    class="lw-status-card"
+                    :class="[card.tone, { selected: activeFilter === card.key }]"
+                    @click="setFilter(card.key)"
+                    tabindex="0"
+                    role="button"
+                >
+                    <div class="lw-status-card-head">
+                        <span class="lw-status-label">[[ card.label ]]</span>
+                        <span class="lw-status-count">[[ card.count ]]</span>
+                    </div>
+                    <span class="lw-status-note">[[ card.note ]]</span>
+                </article>
+            </section>
+
+            <div class="lw-section-separator" v-if="activeView === 'cards'"></div>
+
+            <div class="lw-card-section-head" v-if="activeView === 'cards'">
+                <h3>Loan Applications - [[ loading ? '...' : filteredApplications().length ]]</h3>
+            </div>
+
+            <section class="lw-card-grid" v-if="activeView === 'cards'">
+                <article
+                    v-for="app in filteredApplications()"
+                    :key="app.name"
+                    class="lw-card"
+                    :class="cardToneClass(app.status)"
+                    tabindex="0"
+                    role="link"
+                    @click="openApplication(app)"
+                    @keydown.enter.prevent="openApplication(app)"
+                    @keydown.space.prevent="openApplication(app)"
+                >
+                    <div class="lw-card-top">
+                        <div class="lw-card-head-copy">
+                            <div class="lw-card-title-row">
+                                <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
+                                <div class="lw-card-title-copy">
+                                    <span class="lw-card-id">[[ app.name || 'Untitled' ]]</span>
+                                    <h4>[[ app.customer_name || 'Unnamed applicant' ]]</h4>
+                                </div>
                             </div>
                         </div>
-                        <div class="panel-head-actions">
-                            <div class="panel-note" id="filter-note">Showing all applications</div>
-                            <button id="create-application-btn" class="workspace-btn workspace-btn-primary" type="button" data-route="/app/loan-application/new-loan-application-1" style="display: none;">
-                                +New Application
-                            </button>
-                            <button class="workspace-btn workspace-btn-subtle" type="button" data-action="refresh-workspace">
-                                Refresh
-                            </button>
-                        </div>
+                        <span class="lw-status-pill" :class="toneClass(app.status)">
+                            [[ app.status || 'Draft' ]]
+                        </span>
                     </div>
-                    <div class="status-filter-bar" id="status-filter-bar"></div>
-                </section>
 
-                <section class="workspace-panel">
-                    <div class="panel-head">
+                    <p class="lw-card-amount">[[ formatCurrency(app.loan_amount) ]]</p>
+                    <p class="lw-card-product">[[ app.loan_type || 'Loan product not set' ]]</p>
+
+                    <div class="lw-progress-row">
+                        <span class="lw-progress-label">[[ formatDate(app.modified) ]]</span>
+                        <span class="lw-progress-track"></span>
+                        <span class="lw-progress-label">[[ app.branch_code || 'No branch' ]]</span>
+                    </div>
+
+                    <div class="lw-card-meta">
                         <div>
-                            <p class="panel-kicker">Recent files</p>
-                            <h3 class="panel-title">Loan Applications list</h3>
+                            <span class="lw-meta-label">Mobile</span>
+                            <strong>[[ app.mobile_number || 'No mobile' ]]</strong>
                         </div>
-                        <label class="search-box" for="application-search">
-                            <i class="fa fa-search" aria-hidden="true"></i>
-                            <input id="application-search" type="search" placeholder="Search by customer, branch, mobile, or file ID">
-                        </label>
-                    </div>
-
-                    <div class="application-list-head">
-                        <span>Applicant</span>
-                        <span>Product</span>
-                        <span>Amount</span>
-                        <span>Status</span>
-                        <span>Updated</span>
-                    </div>
-
-                    <div id="application-list" class="application-list">
-                        <div class="empty-state">
-                            <strong>Loading applications...</strong>
-                            <span>Please wait while the workspace pulls the latest loan files.</span>
+                        <div>
+                            <span class="lw-meta-label">Updated</span>
+                            <strong>[[ formatDate(app.modified) ]]</strong>
                         </div>
                     </div>
-                </section>
-            </div>
-        </section>
+                </article>
+
+                <article v-if="!loading && filteredApplications().length === 0" class="lw-empty">
+                    <strong>No records found</strong>
+                    <span>[[ emptyStateText() ]]</span>
+                </article>
+
+                <article v-if="loading" class="lw-empty">
+                    <strong>Loading applications...</strong>
+                    <span>Please wait while the workspace pulls the latest loan files.</span>
+                </article>
+            </section>
+
+            <section v-if="activeView === 'calendar'" class="lw-calendar-view">
+                <div class="lw-calendar-shell">
+                    <div class="lw-calendar-toolbar">
+                        <div class="lw-calendar-copy">
+                            <div class="lw-calendar-copy-head">
+                                <h3>Loan Applications</h3>
+                                <div v-if="calendarMonthApplications().length" class="lw-calendar-coins">
+                                    <button
+                                        v-for="app in calendarMonthApplications()"
+                                        :key="app.name"
+                                        type="button"
+                                        class="lw-calendar-coin"
+                                        :title="calendarCoinTitle(app)"
+                                        @click="openApplication(app)"
+                                    >
+                                        <img src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
+                                    </button>
+                                </div>
+                            </div>
+                            <span>[[ calendarTitle() ]] · [[ calendarMonthApplications().length ]] records</span>
+                        </div>
+
+                        <div class="lw-calendar-controls">
+                            <button type="button" class="lw-calendar-nav" @click="shiftCalendarMonth(-1)">Prev</button>
+                            <button type="button" class="lw-calendar-nav lw-calendar-nav-today" @click="setCalendarToday()">Today</button>
+                            <button type="button" class="lw-calendar-nav" @click="shiftCalendarMonth(1)">Next</button>
+                        </div>
+                    </div>
+
+                    <div class="lw-calendar-grid">
+                        <div class="lw-calendar-weekday" v-for="day in calendarWeekdays()">[[ day ]]</div>
+
+                        <div class="lw-calendar-week" v-for="week in calendarWeeks()">
+                            <article
+                                v-for="cell in week"
+                                :key="cell.key"
+                                class="lw-calendar-day"
+                                :class="{ outside: cell.outside, today: cell.today }"
+                                role="button"
+                                tabindex="0"
+                                @click="openCalendarDay(cell)"
+                                @keydown.enter.prevent="openCalendarDay(cell)"
+                                @keydown.space.prevent="openCalendarDay(cell)"
+                            >
+                                <div class="lw-calendar-day-number">[[ cell.day ]]</div>
+                                <div v-if="cell.count > 0" class="lw-calendar-day-count-wrap">
+                                    <button type="button" class="lw-calendar-day-count" @click.stop="openCalendarDay(cell)">
+                                        [[ cell.count ]]
+                                    </button>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 </div>
 
 <style>
     :root {
-        --workspace-ink: #1f272e;
-        --workspace-ink-soft: #687280;
-        --workspace-panel: #ffffff;
-        --workspace-border: #d1d8dd;
-        --workspace-accent: #4c5cc3;
-        --workspace-accent-soft: #eef2ff;
-        --workspace-warn: #f39c12;
-        --workspace-danger: #e24c4b;
-        --workspace-success: #2e8b57;
+        --lw-ink: #1f2730;
+        --lw-muted: #687280;
+        --lw-panel: #ffffff;
+        --lw-border: #d7dde4;
+        --lw-border-soft: #e6eaef;
+        --lw-accent: #417d81;
+        --lw-accent-soft: #e8f3f3;
+        --lw-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        --lw-neutral-bg: #f8f9fb;
+        --lw-neutral-border: #d7dce2;
+        --lw-neutral-text: #5f6b76;
+        --lw-draft-bg: #f3f4f6;
+        --lw-draft-border: #cfd4da;
+        --lw-draft-text: #5f6b76;
+        --lw-credit-bg: #eef6ff;
+        --lw-credit-border: #b9d7fb;
+        --lw-credit-text: #1d5fa7;
+        --lw-valuation-bg: #fff4e6;
+        --lw-valuation-border: #f5c98f;
+        --lw-valuation-text: #b35c00;
+        --lw-decision-bg: #f3ecff;
+        --lw-decision-border: #d1b8fa;
+        --lw-decision-text: #6f42c1;
+        --lw-cpc-bg: #eafaf5;
+        --lw-cpc-border: #aee5d1;
+        --lw-cpc-text: #0f8b6d;
+        --lw-approved-bg: #edf8f1;
+        --lw-approved-border: #b8dfc4;
+        --lw-approved-text: #2e8b57;
+        --lw-rejected-bg: #fff1f1;
+        --lw-rejected-border: #efc0c0;
+        --lw-rejected-text: #c92a2a;
     }
 
     .navbar,
+    .page-header-wrapper,
+    .page-header,
     .web-footer {
         display: none !important;
     }
 
     body {
-        background: transparent;
-        color: var(--workspace-ink);
+        margin: 0;
+        background:
+            radial-gradient(circle at top left, rgba(76, 92, 195, 0.08), transparent 34%),
+            radial-gradient(circle at top right, rgba(46, 139, 87, 0.08), transparent 26%),
+            linear-gradient(180deg, #f6f7fa 0%, #edf1f4 100%);
+        color: var(--lw-ink);
         font-family: inherit;
     }
 
-    .loan-workspace-topbar {
-        background: var(--workspace-panel);
-        border-bottom: 1px solid var(--workspace-border);
-    }
-
-    .workspace-topbar-inner,
-    .workspace-shell {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-        padding: 0 24px;
+    [v-cloak] {
+        display: none;
     }
 
     .page-content-wrapper {
-        padding-top: 0;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    .workspace-topbar-inner {
+    .page_content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .lw-topbar {
+        border-bottom: 1px solid var(--lw-border);
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(12px);
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        border-radius: 0;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+    }
+
+    .lw-topbar-inner {
+        width: 100%;
+        max-width: none;
+        margin: 0 auto;
+        padding: 14px 24px;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16px;
+        min-height: 68px;
+        --lw-header-control-height: 42px;
+    }
+
+    .lw-topbar-left {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 18px 0;
+        gap: 8px;
+        min-width: 0;
     }
 
-    .workspace-topbar-eyebrow,
-    .workspace-eyebrow,
-    .panel-kicker {
-        margin: 0 0 6px;
-        color: var(--workspace-ink-soft);
-        font-size: 0.75rem;
+    .lw-brand {
+        display: flex;
+        align-items: center;
+        gap: 0;
+    }
+
+    .lw-brand-logo {
+        display: block;
+        height: var(--lw-header-control-height);
+        width: auto;
+        max-width: min(220px, 50vw);
+        object-fit: contain;
+    }
+
+    .lw-topbar-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .lw-view-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        min-width: 0;
+    }
+
+    .lw-view-toggle .lw-chip {
+        background: #f7f8fb;
+        border-color: #dde3ea;
+        color: #5f6975;
+        font-weight: 600;
+        padding: 9px 13px;
+        box-shadow: none;
+        min-height: var(--lw-header-control-height);
+    }
+
+    .lw-view-toggle .lw-chip-active {
+        background: #eef2f7;
+        border-color: #cfd7e0;
+        color: #1f2730;
+    }
+
+    .lw-topbar-meta {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .lw-eyebrow,
+    .lw-kicker,
+    .lw-meta-label {
+        margin: 0;
+        color: var(--lw-muted);
+        font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
 
-    .workspace-topbar-title,
-    .workspace-hero h1,
-    .panel-title {
+    .lw-title,
+    .lw-card-head-copy h4 {
         margin: 0;
         font-family: inherit;
     }
 
-    .workspace-topbar-title {
-        font-size: 1.5rem;
-        font-weight: 600;
+    .lw-title {
+        font-size: 1.45rem;
+        font-weight: 700;
     }
 
-    .workspace-topbar-actions,
-    .workspace-hero-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+    .lw-search-header {
+        width: min(100%, clamp(360px, 42vw, 720px));
+        max-width: 100%;
     }
 
-    .workspace-btn {
-        border: 1px solid var(--workspace-border);
-        border-radius: 6px;
-        padding: 9px 14px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        line-height: 1.4;
-    }
-
-    .workspace-btn:hover,
-    .workspace-btn:focus-visible {
+    .lw-chip:hover,
+    .lw-chip:focus-visible,
+    .lw-status-card:hover,
+    .lw-status-card:focus-visible,
+    .lw-card:hover,
+    .lw-card:focus-visible {
         outline: none;
-    }
-
-    .workspace-btn-primary {
-        background: var(--workspace-accent);
-        color: #fff;
-    }
-
-    .workspace-btn-ghost {
-        background: var(--workspace-panel);
-        color: var(--workspace-ink);
-    }
-
-    .workspace-btn-subtle {
-        background: var(--workspace-panel);
-        color: var(--workspace-ink);
-    }
-
-    .panel-head-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 25px rgba(15, 23, 42, 0.06);
     }
 
     .loan-workspace-page {
-        padding: 20px 0 32px;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        min-height: 100vh;
     }
 
-    .workspace-shell {
+    .lw-content-shell {
+        padding: 18px 24px 28px;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+    }
+
+    .lw-shell {
         display: grid;
         gap: 16px;
+        min-width: 0;
+        min-height: 0;
+        flex: 1;
+        height: 100%;
     }
 
-    .workspace-panel {
-        background: var(--workspace-panel);
-        border: 1px solid var(--workspace-border);
+    .lw-status-card,
+    .lw-card {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid var(--lw-border);
+        box-shadow: var(--lw-shadow);
+    }
+
+    .lw-toolbar-center {
+        display: flex;
+        justify-content: center;
+    }
+
+    .lw-toolbar-right {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .lw-chip {
+        border: 1px solid var(--lw-border);
+        background: #fff;
+        color: var(--lw-ink);
         border-radius: 12px;
-        padding: 20px;
-    }
-
-    .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 999px;
-        padding: 6px 12px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-    }
-
-    .workspace-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 16px;
-        align-items: start;
-    }
-
-    .workspace-main-column {
-        display: grid;
-        gap: 16px;
-    }
-
-    .panel-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 16px;
-    }
-
-    .panel-head.compact {
-        margin-bottom: 16px;
-    }
-
-    .panel-note {
-        color: var(--workspace-ink-soft);
-        font-size: 0.9rem;
-        text-align: right;
-    }
-
-    .panel-title-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .pending-action-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border: 1px solid #f1b0b7;
-        border-radius: 999px;
-        padding: 4px 10px;
-        background: #fff1f3;
-        color: #c92a2a;
-        font-size: 0.8rem;
+        padding: 10px 14px;
+        font-size: 0.86rem;
         font-weight: 600;
-        line-height: 1.2;
         cursor: pointer;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
     }
 
-    .pending-action-pill.is-clear {
-        border-color: #b7ebc6;
-        background: #ebfbee;
-        color: #2b8a3e;
+    .lw-chip-active {
+        background: #111827;
+        color: #fff;
+        border-color: #111827;
     }
 
-    .pending-action-pill.is-active {
-        background: #c92a2a;
-        border-color: #c92a2a;
+    .lw-chip-warning {
+        background: #fff7e6;
+        border-color: #f4cf8d;
+        color: #a56300;
+    }
+
+    .lw-chip-primary {
+        background: linear-gradient(135deg, #417d81, #58a1a5);
+        border-color: transparent;
         color: #fff;
     }
 
-    .status-filter-bar {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
+    .lw-chip:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
 
-    .status-filter {
-        border: 1px solid var(--workspace-border);
-        border-radius: 10px;
-        padding: 14px 16px;
-        background: var(--workspace-panel);
-        cursor: pointer;
-    }
-
-    .status-filter.is-selected {
-        border-color: var(--workspace-accent);
-        background: var(--workspace-accent-soft);
-    }
-
-    .status-filter:hover,
-    .status-filter:focus-visible,
-    .application-row:hover,
-    .application-row:focus-visible {
-        outline: none;
-        border-color: #b8c2cc;
-    }
-
-    .status-filter-top {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .status-filter-label {
-        font-weight: 700;
-    }
-
-    .status-filter-count {
-        font-size: 1.125rem;
-        font-weight: 600;
-    }
-
-    .status-filter-note {
-        display: block;
-        margin-top: 8px;
-        color: var(--workspace-ink-soft);
-        font-size: 0.82rem;
-        line-height: 1.45;
-    }
-
-    .search-box {
+    .lw-search {
+        width: 100%;
+        min-width: 0;
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        min-width: min(100%, 360px);
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid var(--workspace-border);
-        background: var(--workspace-panel);
+        padding: 0 14px;
+        min-height: var(--lw-header-control-height);
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid var(--lw-border);
     }
 
-    .search-box input {
-        border: 0;
-        background: transparent;
+    .lw-search i {
+        color: var(--lw-muted);
+    }
+
+    .lw-search input {
         width: 100%;
+        height: 100%;
+        border: 0;
         outline: none;
-        color: var(--workspace-ink);
+        background: transparent;
+        color: var(--lw-ink);
+        font: inherit;
     }
 
-    .application-list-head,
-    .application-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1.5fr) minmax(120px, 0.95fr) minmax(120px, 0.85fr) minmax(130px, 0.8fr) minmax(110px, 0.85fr);
-        gap: 14px;
-        align-items: center;
-    }
-
-    .application-list-head {
-        padding: 0 18px 10px;
-        color: var(--workspace-ink-soft);
-        font-size: 0.75rem;
+    .lw-pending-pill {
+        border: 1px solid transparent;
+        background: #f8fafc;
+        color: var(--lw-ink);
+        border-radius: 12px;
+        padding: 0 14px;
+        min-height: var(--lw-header-control-height);
+        font-size: 0.86rem;
         font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
     }
 
-    .application-list {
+    .lw-search input {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .lw-pending-pill.pending-alert {
+        background-color: #b20000;
+        color: #ffffff;
+        border-color: #b20000;
+        animation: lw-pending-glow 1500ms infinite;
+    }
+
+    .lw-pending-pill.pending-alert.active {
+        background-color: #ff0000;
+        color: #fff;
+        border-color: #ff0000;
+    }
+
+    .lw-pending-pill.pending-clear {
+        background: #eefaf3;
+        color: #18794e;
+        border-color: #b6e3c5;
+    }
+
+    .lw-pending-pill.pending-clear.active {
+        background: #1f8f5f;
+        color: #fff;
+        border-color: #1f8f5f;
+    }
+
+    .lw-pending-pill.active {
+        box-shadow: 0 10px 20px rgba(31, 41, 55, 0.12);
+    }
+
+    @keyframes lw-pending-glow {
+        0%, 100% {
+            transform: translateY(0);
+            box-shadow: 0 0 3px #b20000;
+        }
+        50% {
+            transform: translateY(0);
+            box-shadow: 0 0 24px #ff0000;
+            background-color: #ff0000;
+            border-color: #ff0000;
+        }
+    }
+
+    @-webkit-keyframes lw-pending-glow {
+        0%, 100% {
+            box-shadow: 0 0 3px #b20000;
+            background-color: #b20000;
+        }
+        50% {
+            box-shadow: 0 0 24px #ff0000;
+            background-color: #ff0000;
+        }
+    }
+
+    @-moz-keyframes lw-pending-glow {
+        0%, 100% {
+            box-shadow: 0 0 3px #b20000;
+            background-color: #b20000;
+        }
+        50% {
+            box-shadow: 0 0 24px #ff0000;
+            background-color: #ff0000;
+        }
+    }
+
+    @-o-keyframes lw-pending-glow {
+        0%, 100% {
+            box-shadow: 0 0 3px #b20000;
+            background-color: #b20000;
+        }
+        50% {
+            box-shadow: 0 0 24px #ff0000;
+            background-color: #ff0000;
+        }
+    }
+
+    @keyframes lw-pending-glow {
+        0%, 100% {
+            box-shadow: 0 0 3px #b20000;
+            background-color: #b20000;
+        }
+        50% {
+            box-shadow: 0 0 24px #ff0000;
+            background-color: #ff0000;
+        }
+    }
+
+    .lw-filter-grid {
         display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
         gap: 12px;
     }
 
-    .application-row {
-        border-radius: 10px;
-        border: 1px solid var(--workspace-border);
-        background: var(--workspace-panel);
-        padding: 16px;
+    .lw-status-card {
+        position: relative;
+        border-radius: 18px;
+        padding: 10px 14px 8px;
+        cursor: pointer;
+        display: grid;
+        gap: 4px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .lw-status-card.selected {
+        border-color: var(--lw-accent);
+        background: var(--lw-accent-soft);
+    }
+
+    .lw-status-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .lw-status-label {
+        font-weight: 800;
+    }
+
+    .lw-status-count {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .lw-status-note {
+        color: var(--lw-muted);
+        font-size: 0.76rem;
+        line-height: 1.25;
+    }
+
+    .status-card-tone-neutral {
+        background: var(--lw-neutral-bg);
+        border-color: var(--lw-neutral-border);
+        color: var(--lw-neutral-text);
+    }
+
+    .status-card-tone-draft {
+        background: var(--lw-draft-bg);
+        border-color: var(--lw-draft-border);
+        color: var(--lw-draft-text);
+    }
+
+    .status-card-tone-credit-check {
+        background: var(--lw-credit-bg);
+        border-color: var(--lw-credit-border);
+        color: var(--lw-credit-text);
+    }
+
+    .status-card-tone-valuation {
+        background: var(--lw-valuation-bg);
+        border-color: var(--lw-valuation-border);
+        color: var(--lw-valuation-text);
+    }
+
+    .status-card-tone-credit-decision {
+        background: var(--lw-decision-bg);
+        border-color: var(--lw-decision-border);
+        color: var(--lw-decision-text);
+    }
+
+    .status-card-tone-cpc {
+        background: var(--lw-cpc-bg);
+        border-color: var(--lw-cpc-border);
+        color: var(--lw-cpc-text);
+    }
+
+    .status-card-tone-approved {
+        background: var(--lw-approved-bg);
+        border-color: var(--lw-approved-border);
+        color: var(--lw-approved-text);
+    }
+
+    .status-card-tone-rejected {
+        background: var(--lw-rejected-bg);
+        border-color: var(--lw-rejected-border);
+        color: var(--lw-rejected-text);
+    }
+
+    .lw-section-separator {
+        height: 1px;
+        width: 100%;
+        background: var(--lw-border-soft);
+        margin: 0;
+    }
+
+    .lw-card-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: -16px;
+    }
+
+    .lw-card-section-head h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--lw-ink);
+        letter-spacing: -0.01em;
+    }
+
+    .lw-calendar-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-height: 0;
+        height: 100%;
+    }
+
+    .lw-calendar-view {
+        display: flex;
+        min-height: 0;
+    }
+
+    .lw-calendar-view > .lw-calendar-shell {
+        flex: 1;
+    }
+
+    .lw-calendar-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 4px 0 2px;
+    }
+
+    .lw-calendar-copy {
+        display: grid;
+        gap: 4px;
+    }
+
+    .lw-calendar-copy-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .lw-calendar-copy h3 {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: var(--lw-ink);
+    }
+
+    .lw-calendar-copy span {
+        color: var(--lw-muted);
+        font-size: 0.86rem;
+    }
+
+    .lw-calendar-coins {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-width: 100%;
+        justify-content: flex-end;
+    }
+
+    .lw-calendar-coin {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid rgba(202, 162, 58, 0.42);
+        border-radius: 999px;
+        background: linear-gradient(135deg, #f8e08a, #d0a93a);
+        box-shadow: 0 0 4px rgba(202, 162, 58, 0.35);
+        overflow: hidden;
+        cursor: pointer;
+        flex: 0 0 auto;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .lw-calendar-coin img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    .lw-calendar-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .lw-calendar-nav {
+        border: 1px solid var(--lw-border);
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--lw-ink);
+        border-radius: 12px;
+        padding: 9px 12px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        cursor: pointer;
+        min-height: 42px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .lw-calendar-nav-today {
+        border-color: var(--lw-accent);
+        color: var(--lw-accent);
+        background: var(--lw-accent-soft);
+    }
+
+    .lw-calendar-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        grid-template-rows: auto repeat(6, minmax(0, 1fr));
+        min-height: 0;
+        flex: 1;
+        align-content: stretch;
+        height: 100%;
+    }
+
+    .lw-calendar-weekday {
+        color: var(--lw-muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 0 10px;
+    }
+
+    .lw-calendar-week {
+        display: contents;
+    }
+
+    .lw-calendar-day {
+        position: relative;
+        min-height: 0;
+        height: 100%;
+        border: 1px solid var(--lw-border);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        display: grid;
+        gap: 8px;
+        align-content: start;
+        box-shadow: var(--lw-shadow);
+        overflow: hidden;
+        place-items: center;
         cursor: pointer;
     }
 
-    .application-row-main strong {
-        display: block;
-        font-size: 1rem;
+    .lw-calendar-day-number {
+        position: absolute;
+        top: 10px;
+        left: 12px;
+        color: var(--lw-ink);
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1;
+        z-index: 1;
     }
 
-    .application-row-sub,
-    .application-row-meta,
-    .application-row-secondary {
-        color: var(--workspace-ink-soft);
-        font-size: 0.9rem;
-        line-height: 1.45;
+    .lw-calendar-day.outside {
+        opacity: 0.45;
+        background: rgba(255, 255, 255, 0.62);
+        box-shadow: none;
     }
 
-    .application-row-amount {
+    .lw-calendar-day.today {
+        border-color: var(--lw-accent);
+        background: var(--lw-accent-soft);
+    }
+
+    .lw-calendar-day-count-wrap {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .lw-calendar-day-count {
+        min-width: 56px;
+        height: 56px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #9f7a12, #f5d46a, #fff0ab);
+        color: #3a2a00;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        font-weight: 800;
+        box-shadow: 0 0 3px rgba(159, 122, 18, 0.45);
+        animation: lw-calendar-ring-glow 1.5s infinite;
+    }
+
+    @keyframes lw-calendar-ring-glow {
+        0%, 100% {
+            box-shadow: 0 0 3px rgba(159, 122, 18, 0.45);
+        }
+        50% {
+            box-shadow: 0 0 40px rgba(255, 208, 64, 0.95);
+        }
+    }
+
+    .lw-card-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        width: 100%;
+        max-width: none;
+        margin-top: -16px;
+    }
+
+    .lw-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+        cursor: pointer;
+        min-height: 250px;
+        width: 100%;
+    }
+
+    .lw-card::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 4px;
+        background: var(--lw-border);
+    }
+
+    .card-tone-draft {
+        background: var(--lw-draft-bg);
+        border-color: var(--lw-draft-border);
+    }
+
+    .card-tone-draft::after {
+        background: linear-gradient(90deg, #959dac, #c9ced4);
+    }
+
+    .card-tone-credit-check {
+        background: var(--lw-credit-bg);
+        border-color: var(--lw-credit-border);
+    }
+
+    .card-tone-credit-check::after {
+        background: linear-gradient(90deg, #4c8ed8, #77aee6);
+    }
+
+    .card-tone-valuation {
+        background: var(--lw-valuation-bg);
+        border-color: var(--lw-valuation-border);
+    }
+
+    .card-tone-valuation::after {
+        background: linear-gradient(90deg, #e39d38, #f5b864);
+    }
+
+    .card-tone-credit-decision {
+        background: var(--lw-decision-bg);
+        border-color: var(--lw-decision-border);
+    }
+
+    .card-tone-credit-decision::after {
+        background: linear-gradient(90deg, #8b5cf6, #b18bf9);
+    }
+
+    .card-tone-cpc {
+        background: var(--lw-cpc-bg);
+        border-color: var(--lw-cpc-border);
+    }
+
+    .card-tone-cpc::after {
+        background: linear-gradient(90deg, #18a37a, #4dc69f);
+    }
+
+    .card-tone-approved {
+        background: var(--lw-approved-bg);
+        border-color: var(--lw-approved-border);
+    }
+
+    .card-tone-approved::after {
+        background: linear-gradient(90deg, #2e8b57, #58b47a);
+    }
+
+    .card-tone-rejected {
+        background: var(--lw-rejected-bg);
+        border-color: var(--lw-rejected-border);
+    }
+
+    .card-tone-rejected::after {
+        background: linear-gradient(90deg, #db3e49, #f07d84);
+    }
+
+    .card-tone-neutral {
+        background: #fff;
+        border-color: var(--lw-neutral-border);
+    }
+
+    .card-tone-neutral::after {
+        background: linear-gradient(90deg, #d0d5db, #adb7c2);
+    }
+
+    .lw-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .lw-card-head-copy {
+        display: grid;
+        gap: 4px;
+    }
+
+    .lw-card-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .lw-card-title-copy {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .lw-card-mini-logo {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+        flex: 0 0 auto;
+    }
+
+    .lw-card-id {
+        color: var(--lw-muted);
+        font-size: 0.82rem;
         font-weight: 700;
-        font-size: 1rem;
     }
 
-    .empty-state {
+    .lw-card-head-copy h4 {
+        font-size: 1rem;
+        line-height: 1.35;
+        font-weight: 800;
+    }
+
+    .lw-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .tone-neutral {
+        background: #f1f5f9;
+        color: #52606d;
+        border-color: #d7dce2;
+    }
+
+    .tone-draft {
+        background: var(--lw-draft-bg);
+        color: var(--lw-draft-text);
+        border-color: var(--lw-draft-border);
+    }
+
+    .tone-credit-check {
+        background: var(--lw-credit-bg);
+        color: var(--lw-credit-text);
+        border-color: var(--lw-credit-border);
+    }
+
+    .tone-valuation {
+        background: var(--lw-valuation-bg);
+        color: var(--lw-valuation-text);
+        border-color: var(--lw-valuation-border);
+    }
+
+    .tone-credit-decision {
+        background: var(--lw-decision-bg);
+        color: var(--lw-decision-text);
+        border-color: var(--lw-decision-border);
+    }
+
+    .tone-cpc {
+        background: var(--lw-cpc-bg);
+        color: var(--lw-cpc-text);
+        border-color: var(--lw-cpc-border);
+    }
+
+    .tone-approved {
+        background: var(--lw-approved-bg);
+        color: var(--lw-approved-text);
+        border-color: var(--lw-approved-border);
+    }
+
+    .tone-rejected {
+        background: var(--lw-rejected-bg);
+        color: var(--lw-rejected-text);
+        border-color: var(--lw-rejected-border);
+    }
+
+    .lw-card-amount {
+        margin: 0;
+        font-size: clamp(1.2rem, 2vw, 1.5rem);
+        font-weight: 900;
+        letter-spacing: -0.02em;
+    }
+
+    .lw-card-product {
+        margin: 0;
+        color: var(--lw-muted);
+        line-height: 1.5;
+        min-height: 42px;
+    }
+
+    .lw-progress-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .lw-progress-label {
+        color: var(--lw-muted);
+        font-size: 0.74rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .lw-progress-track {
+        height: 2px;
+        background: linear-gradient(90deg, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.16));
+        border-radius: 999px;
+    }
+
+    .lw-card-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: auto;
+    }
+
+    .lw-card-meta div {
+        display: grid;
+        gap: 2px;
+    }
+
+    .lw-card-meta strong {
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
+
+    .lw-empty {
+        grid-column: 1 / -1;
         display: grid;
         justify-items: center;
         gap: 6px;
         text-align: center;
         padding: 42px 18px;
-        color: var(--workspace-ink-soft);
-        border: 1px dashed var(--workspace-border);
-        border-radius: 10px;
-        background: transparent;
+        border: 1px dashed var(--lw-border);
+        border-radius: 18px;
+        color: var(--lw-muted);
+        background: rgba(255, 255, 255, 0.66);
     }
 
-    .tone-neutral {
-        background: rgba(255, 255, 255, 0.18);
-        color: #fff;
+    .lw-empty strong {
+        color: var(--lw-ink);
     }
 
-    .tone-draft {
-        background: rgba(163, 132, 83, 0.2);
-        color: #8a5c16;
-    }
-
-    .tone-review {
-        background: rgba(221, 155, 46, 0.18);
-        color: #9a630c;
-    }
-
-    .tone-approved {
-        background: rgba(47, 143, 88, 0.18);
-        color: var(--workspace-success);
-    }
-
-    .tone-rejected {
-        background: rgba(195, 81, 59, 0.18);
-        color: var(--workspace-danger);
-    }
-
-    @media (max-width: 1100px) {
-        .workspace-layout {
-            grid-template-columns: 1fr;
+    @media (max-width: 1120px) {
+        .lw-card-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
     }
 
-    @media (max-width: 780px) {
-        .workspace-topbar-inner,
-        .panel-head,
-        .workspace-topbar-actions {
+    @media (max-width: 860px) {
+        .loan-workspace-page {
+            padding: 16px;
+        }
+
+        .lw-topbar-inner {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .lw-topbar-left,
+        .lw-topbar-meta,
+        .lw-topbar-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .lw-search-header {
+            width: 100%;
+        }
+
+        .lw-card-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .lw-calendar-grid {
+            gap: 8px;
+        }
+
+        .lw-calendar-day {
+            padding: 8px;
+        }
+
+        .lw-calendar-day-number {
+            top: 8px;
+            left: 10px;
+            font-size: 0.74rem;
+        }
+
+        .lw-calendar-day-count {
+            min-width: 48px;
+            height: 48px;
+            font-size: 1.15rem;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .lw-card-section-head {
+            margin-top: 0;
+        }
+
+        .lw-card-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .lw-card {
+            width: 100%;
+        }
+
+        .lw-topbar-inner {
+            padding: 14px 16px;
+        }
+
+        .lw-topbar-meta {
+            width: 100%;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        .lw-view-toggle {
+            width: 100%;
+        }
+
+        .lw-search-header {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .lw-brand-logo {
+            width: 40px;
+            height: 40px;
+        }
+
+        .lw-card-meta {
+            grid-template-columns: 1fr;
+        }
+
+        .lw-card {
+            min-height: 0;
+        }
+
+        .lw-calendar-toolbar {
             flex-direction: column;
-            align-items: stretch;
+            align-items: flex-start;
         }
 
-        .workspace-shell,
-        .workspace-topbar-inner {
-            padding: 0 16px;
+        .lw-calendar-weekday {
+            padding: 0 4px;
+            font-size: 0.64rem;
         }
 
-        .application-list-head {
-            display: none;
+        .lw-calendar-day {
+            min-height: 88px;
+            padding: 6px;
+            gap: 6px;
+            border-radius: 14px;
         }
 
-        .application-row {
-            grid-template-columns: 1fr;
+        .lw-calendar-day-number {
+            top: 6px;
+            left: 8px;
+            font-size: 0.7rem;
         }
 
-        .status-filter-bar {
-            grid-template-columns: 1fr;
+        .lw-calendar-day-count {
+            min-width: 42px;
+            height: 42px;
+            font-size: 1rem;
         }
     }
 </style>
 
+<script src="/assets/sahayog/js/petite-vue.iife.js"></script>
 <script>
-    const STATUS_CARDS = [
-        { key: "All", label: "All Files", note: "Entire workspace volume", tone: "tone-neutral" },
-        { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "tone-draft" },
-        { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "tone-review" },
-        { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "tone-review" },
-        { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "tone-review" },
-        { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "tone-review" },
-        { key: "Approved", label: "Approved", note: "Ready for sanction execution", tone: "tone-approved" },
-        { key: "Rejected", label: "Rejected", note: "Closed without approval", tone: "tone-rejected" }
+    const TEMPLATE_USER_ROLES = {{ (user_roles or []) | json }};
+    const WORKSPACE_STATUS_CARDS = [
+        { key: "All", label: "All Files", note: "Entire workspace volume", tone: "status-card-tone-neutral" },
+        { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "status-card-tone-draft" },
+        { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "status-card-tone-credit-check" },
+        { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "status-card-tone-valuation" },
+        { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "status-card-tone-credit-decision" },
+        { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "status-card-tone-cpc" },
+        { key: "Approved", label: "Approved", note: "Ready for sanction execution", tone: "status-card-tone-approved" },
+        { key: "Rejected", label: "Rejected", note: "Closed without approval", tone: "status-card-tone-rejected" }
     ];
 
-    const TEMPLATE_USER_ROLES = {{ user_roles | json }};
-    let USER_ROLES = [];
+    function LoanWorkspace() {
+        return {
+            $delimiters: ["[[", "]]"],
 
-    const state = {
-        activeFilter: "All",
-        searchText: "",
-        applications: [],
-        counts: {},
-        userBranchCode: null
-    };
+            userRoles: [],
+            userBranchCode: null,
+            canCreate: false,
+            activeFilter: "All",
+            activeView: "cards",
+            searchText: "",
+            loading: true,
+            applications: [],
+            counts: { All: 0 },
+            errorText: "",
+            calendarMonthCursor: null,
+            selectedCalendarDateKey: "",
 
-    frappe.ready(async function () {
-        USER_ROLES = await resolveUserRoles();
-        state.userBranchCode = await resolveUserBranchCode();
-        setupRoleUI();
-        bindWorkspaceEvents();
-        renderStatusFilters();
-        loadWorkspace();
-    });
+            async resolveUserRoles() {
+                const bootRoles = (window.frappe && frappe.boot && frappe.boot.user && Array.isArray(frappe.boot.user.roles) && frappe.boot.user.roles) || [];
+                const clientRoles = (window.frappe && Array.isArray(frappe.user_roles) && frappe.user_roles) || [];
 
-    async function resolveUserRoles() {
-        const bootRoles = (window.frappe && frappe.boot && frappe.boot.user && Array.isArray(frappe.boot.user.roles) && frappe.boot.user.roles) || [];
-        const clientRoles = (window.frappe && Array.isArray(frappe.user_roles) && frappe.user_roles) || [];
+                if (bootRoles.length) return bootRoles;
+                if (clientRoles.length) return clientRoles;
 
-        if (bootRoles.length) return bootRoles;
-        if (clientRoles.length) return clientRoles;
+                try {
+                    const apiRoles = await this.apiCall("frappe.core.doctype.user.user.get_roles", {
+                        uid: frappe.session && frappe.session.user
+                    });
 
-        try {
-            const apiRoles = await apiCall("frappe.core.doctype.user.user.get_roles", {
-                uid: frappe.session && frappe.session.user
-            });
-
-            if (Array.isArray(apiRoles) && apiRoles.length) {
-                return apiRoles;
-            }
-        } catch (error) {
-            console.error("Loan Workspace role API failed", error);
-        }
-
-        return TEMPLATE_USER_ROLES || [];
-    }
-
-    async function resolveUserBranchCode() {
-        if (!USER_ROLES.includes("Branch Loan User")) {
-            return null;
-        }
-
-        try {
-            const employees = await apiCall("frappe.client.get_list", {
-                doctype: "Employee",
-                filters: {
-                    user_id: frappe.session && frappe.session.user
-                },
-                fields: ["name", "sol_id"],
-                limit_page_length: 1
-            });
-
-            const employee = Array.isArray(employees) ? employees[0] : null;
-            const branchCode = employee && employee.sol_id ? employee.sol_id : null;
-
-            console.log("Loan Workspace branch check", {
-                session_user: frappe.session ? frappe.session.user : null,
-                employee: employee || null,
-                branch_code: branchCode
-            });
-
-            return branchCode;
-        } catch (error) {
-            console.error("Loan Workspace branch lookup failed", error);
-            return null;
-        }
-    }
-
-    function setupRoleUI() {
-        const createButton = document.getElementById("create-application-btn");
-        const hasBranchRole = USER_ROLES.includes("Branch Loan User");
-        if (createButton) {
-            createButton.style.display = hasBranchRole ? "inline-flex" : "none";
-        }
-
-        console.log("Loan Workspace role check", {
-            button_found: !!createButton,
-            template_user_roles: TEMPLATE_USER_ROLES,
-            frappe_boot_user_roles: window.frappe && frappe.boot && frappe.boot.user ? frappe.boot.user.roles : null,
-            frappe_user_roles: window.frappe && Array.isArray(frappe.user_roles) ? frappe.user_roles : null,
-            user_roles: USER_ROLES,
-            has_branch_loan_user: hasBranchRole,
-            create_button_visible: !!(createButton && createButton.style.display !== "none")
-        });
-
-        state.activeFilter = "All";
-    }
-
-    function bindWorkspaceEvents() {
-        const page = document.getElementById("loan-workspace-page");
-        const searchInput = document.getElementById("application-search");
-
-        if (searchInput) {
-            searchInput.addEventListener("input", function (event) {
-                state.searchText = (event.target.value || "").trim().toLowerCase();
-                renderApplications();
-            });
-        }
-
-        if (!page) return;
-
-        page.addEventListener("click", function (event) {
-            if (event.target.closest("input, textarea, select")) {
-                return;
-            }
-
-            const actionEl = event.target.closest("[data-action]");
-            if (actionEl) {
-                handleAction(actionEl);
-                return;
-            }
-
-            const routeEl = event.target.closest("[data-route]");
-            if (routeEl) {
-                navigateTo(routeEl.dataset.route);
-            }
-        });
-
-        page.addEventListener("keydown", function (event) {
-            if (event.key !== "Enter" && event.key !== " ") {
-                return;
-            }
-
-            const trigger = event.target.closest("[data-route], [data-action]");
-            if (!trigger) {
-                return;
-            }
-
-            event.preventDefault();
-
-            if (trigger.dataset.action) {
-                handleAction(trigger);
-                return;
-            }
-
-            if (trigger.dataset.route) {
-                navigateTo(trigger.dataset.route);
-            }
-        });
-    }
-
-    async function loadWorkspace() {
-        setLoadingState();
-
-        try {
-            const [counts, applications] = await Promise.all([
-                fetchCounts(),
-                fetchApplications()
-            ]);
-
-            state.counts = counts;
-            state.applications = applications || [];
-
-            renderSummary();
-            renderStatusFilters();
-            renderApplications();
-            renderLatestApplication();
-        } catch (error) {
-            console.error("Loan workspace load failed", error);
-            renderErrorState();
-        }
-    }
-
-    function setLoadingState() {
-        const list = document.getElementById("application-list");
-        if (list) {
-            list.innerHTML = `
-                <div class="empty-state">
-                    <strong>Loading applications...</strong>
-                    <span>Please wait while the workspace pulls the latest loan files.</span>
-                </div>
-            `;
-        }
-    }
-
-    function handleAction(element) {
-        const action = element.dataset.action;
-
-        if (action === "set-filter") {
-            state.activeFilter = element.dataset.filter || "All";
-            syncMetricSelection();
-            renderStatusFilters();
-            renderApplications();
-            return;
-        }
-
-        if (action === "refresh-workspace") {
-            loadWorkspace();
-        }
-    }
-
-    function navigateTo(route) {
-        if (!route) return;
-        if (window.parent && window.parent !== window) {
-            try {
-                window.parent.location.assign(route);
-                return;
-            } catch (error) {
-                console.warn("Parent navigation failed, falling back to current window.", error);
-            }
-        }
-
-        window.location.assign(route);
-    }
-
-    function apiCall(method, args) {
-        return new Promise(function (resolve, reject) {
-            frappe.call({
-                method: method,
-                args: args,
-                callback: function (response) {
-                    if (response && response.exc) {
-                        reject(response.exc);
-                        return;
+                    if (Array.isArray(apiRoles) && apiRoles.length) {
+                        return apiRoles;
                     }
-                    resolve(response ? response.message : null);
-                },
-                error: function (error) {
-                    reject(error);
+                } catch (error) {
+                    console.error("Loan workspace role API failed", error);
                 }
-            });
-        });
-    }
 
-    async function fetchCounts() {
-        const statuses = ["Draft", "Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing", "Approved", "Rejected"];
-        const results = await Promise.all(
-            ["All"].concat(statuses).map(function (status) {
-                const filters = getLoanApplicationFilters(status === "All" ? null : status);
-                return apiCall("frappe.client.get_count", {
-                    doctype: "Loan Application",
-                    filters: filters
+                return TEMPLATE_USER_ROLES || [];
+            },
+
+            async resolveUserBranchCode() {
+                if (!this.userRoles.includes("Branch Loan User")) {
+                    return null;
+                }
+
+                try {
+                    const employees = await this.apiCall("frappe.client.get_list", {
+                        doctype: "Employee",
+                        filters: {
+                            user_id: frappe.session && frappe.session.user
+                        },
+                        fields: ["name", "sol_id"],
+                        limit_page_length: 1
+                    });
+
+                    const employee = Array.isArray(employees) ? employees[0] : null;
+                    return employee && employee.sol_id ? employee.sol_id : null;
+                } catch (error) {
+                    console.error("Loan workspace branch lookup failed", error);
+                    return null;
+                }
+            },
+
+            async mounted() {
+                window.loanWorkspaceVm = this;
+                this.userRoles = await this.resolveUserRoles();
+                this.userBranchCode = await this.resolveUserBranchCode();
+                this.canCreate = this.userRoles.includes("Branch Loan User");
+                this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+                await this.loadWorkspace();
+            },
+
+            async loadWorkspace() {
+                this.loading = true;
+                this.errorText = "";
+
+                try {
+                    const [counts, applications] = await Promise.all([
+                        this.fetchCounts(),
+                        this.fetchApplications()
+                    ]);
+
+                    this.counts = counts;
+                    this.applications = Array.isArray(applications) ? applications : [];
+                } catch (error) {
+                    console.error("Loan workspace load failed", error);
+                    this.errorText = "Workspace failed to load";
+                    this.applications = [];
+                    this.counts = { All: 0 };
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            refreshWorkspace() {
+                this.loadWorkspace();
+            },
+
+            setFilter(filterKey) {
+                this.activeFilter = filterKey;
+                this.activeView = "cards";
+            },
+
+            setView(viewName) {
+                this.activeView = viewName;
+                if (viewName === "calendar") {
+                    this.activeFilter = "All";
+                    this.selectedCalendarDateKey = "";
+                }
+            },
+
+            openCalendarDay(cell) {
+                if (!cell || !cell.dateKey) return;
+
+                this.selectedCalendarDateKey = cell.dateKey;
+                this.activeFilter = "All";
+                this.activeView = "cards";
+            },
+
+            setCalendarToday() {
+                this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+            },
+
+            shiftCalendarMonth(offset) {
+                const current = this.getCalendarMonthDate();
+                current.setMonth(current.getMonth() + offset, 1);
+                current.setHours(0, 0, 0, 0);
+                this.calendarMonthCursor = current.getTime();
+            },
+
+            getCalendarMonthDate() {
+                if (!this.calendarMonthCursor) {
+                    return this.startOfMonth(new Date());
+                }
+
+                return new Date(this.calendarMonthCursor);
+            },
+
+            startOfMonth(date) {
+                const monthStart = new Date(date);
+                monthStart.setDate(1);
+                monthStart.setHours(0, 0, 0, 0);
+                return monthStart;
+            },
+
+            calendarTitle() {
+                return new Intl.DateTimeFormat("en-IN", {
+                    month: "long",
+                    year: "numeric"
+                }).format(this.getCalendarMonthDate());
+            },
+
+            calendarMonthApplications() {
+                const monthDate = this.getCalendarMonthDate();
+                const monthIndex = monthDate.getMonth();
+                const year = monthDate.getFullYear();
+
+                return this.filteredApplications().filter((application) => {
+                    const key = this.calendarDateKeyFromValue(application.modified);
+                    if (!key) return false;
+
+                    const parsed = new Date(String(application.modified || "").replace(" ", "T"));
+                    return !Number.isNaN(parsed.getTime()) && parsed.getMonth() === monthIndex && parsed.getFullYear() === year;
                 });
-            })
-        );
+            },
 
-        const counts = { All: results[0] || 0 };
-        statuses.forEach(function (status, index) {
-            counts[status] = results[index + 1] || 0;
-        });
-        return counts;
+            calendarCoinTitle(app) {
+                return [
+                    app.name || "Untitled",
+                    app.customer_name || "Unnamed applicant",
+                    this.formatCurrency(app.loan_amount)
+                ].join(" · ");
+            },
+
+            calendarWeekdays() {
+                return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            },
+
+            calendarDateKey(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                return `${year}-${month}-${day}`;
+            },
+
+            calendarDateKeyFromValue(value) {
+                if (!value) return "";
+
+                const parsed = new Date(String(value).replace(" ", "T"));
+                if (Number.isNaN(parsed.getTime())) {
+                    return "";
+                }
+
+                return this.calendarDateKey(parsed);
+            },
+
+            calendarApplications() {
+                return this.filteredApplications().slice().sort((left, right) => {
+                    const leftTime = new Date(String(left.modified || "").replace(" ", "T")).getTime() || 0;
+                    const rightTime = new Date(String(right.modified || "").replace(" ", "T")).getTime() || 0;
+                    return rightTime - leftTime;
+                });
+            },
+
+            calendarApplicationsByDate() {
+                const grouped = {};
+
+                this.calendarApplications().forEach((app) => {
+                    const key = this.calendarDateKeyFromValue(app.modified);
+                    if (!key) return;
+
+                    if (!grouped[key]) {
+                        grouped[key] = [];
+                    }
+
+                    grouped[key].push(app);
+                });
+
+                return grouped;
+            },
+
+            calendarCells() {
+                const monthDate = this.getCalendarMonthDate();
+                const year = monthDate.getFullYear();
+                const monthIndex = monthDate.getMonth();
+                const firstOfMonth = new Date(year, monthIndex, 1);
+                const mondayOffset = (firstOfMonth.getDay() + 6) % 7;
+                const startDate = new Date(year, monthIndex, 1 - mondayOffset);
+                const todayKey = this.calendarDateKey(new Date());
+                const appsByDate = this.calendarApplicationsByDate();
+                const cells = [];
+
+                for (let index = 0; index < 42; index += 1) {
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + index);
+
+                    const key = this.calendarDateKey(date);
+                    const apps = appsByDate[key] || [];
+
+                    cells.push({
+                        key: `${key}-${index}`,
+                        dateKey: key,
+                        day: date.getDate(),
+                        outside: date.getMonth() !== monthIndex,
+                        today: key === todayKey,
+                        count: apps.length
+                    });
+                }
+
+                return cells;
+            },
+
+            calendarWeeks() {
+                const cells = this.calendarCells();
+                const weeks = [];
+
+                for (let index = 0; index < cells.length; index += 7) {
+                    weeks.push(cells.slice(index, index + 7));
+                }
+
+                return weeks;
+            },
+
+            openNewApplication() {
+                this.navigateTo("/app/loan-application/new-loan-application-1");
+            },
+
+            openApplication(app) {
+                if (!app || !app.name) return;
+                this.navigateTo(`/app/loan-application/${encodeURIComponent(app.name)}`);
+            },
+
+            navigateTo(route) {
+                if (!route) return;
+
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.location.assign(route);
+                        return;
+                    } catch (error) {
+                        console.warn("Parent navigation failed, falling back to current window.", error);
+                    }
+                }
+
+                window.location.assign(route);
+            },
+
+            async fetchCounts() {
+                const statuses = ["Draft", "Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing", "Approved", "Rejected"];
+                const results = await Promise.all(
+                    ["All"].concat(statuses).map((status) => {
+                        const filters = this.getLoanApplicationFilters(status === "All" ? null : status);
+                        return this.apiCall("frappe.client.get_count", {
+                            doctype: "Loan Application",
+                            filters
+                        });
+                    })
+                );
+
+                const counts = { All: results[0] || 0 };
+                statuses.forEach((status, index) => {
+                    counts[status] = results[index + 1] || 0;
+                });
+                return counts;
+            },
+
+            fetchApplications() {
+                return this.apiCall("frappe.client.get_list", {
+                    doctype: "Loan Application",
+                    filters: this.getLoanApplicationFilters(),
+                    fields: ["name", "customer_name", "mobile_number", "branch_code", "loan_type", "loan_amount", "status", "modified"],
+                    order_by: "modified desc",
+                    limit_page_length: 30
+                });
+            },
+
+            getLoanApplicationFilters(status) {
+                const filters = {};
+
+                if (status) {
+                    filters.status = status;
+                }
+
+                if (this.userRoles.includes("Branch Loan User") && this.userBranchCode) {
+                    filters.branch_code = this.userBranchCode;
+                }
+
+                return filters;
+            },
+
+            filteredApplications() {
+                return this.applications.filter((application) => this.matchesFilter(application) && this.matchesSearch(application) && this.matchesCalendarSelection(application));
+            },
+
+            matchesFilter(application) {
+                if (this.activeFilter === "All") return true;
+                if (this.activeFilter === "Role Pending") return this.matchesRolePending(application);
+                return application.status === this.activeFilter;
+            },
+
+            matchesSearch(application) {
+                if (!this.searchText) return true;
+
+                const haystack = [
+                    application.name,
+                    application.customer_name,
+                    application.mobile_number,
+                    application.branch_code,
+                    application.loan_type,
+                    application.status
+                ].join(" ").toLowerCase();
+
+                return haystack.includes(this.searchText.toLowerCase());
+            },
+
+            matchesCalendarSelection(application) {
+                if (!this.selectedCalendarDateKey) return true;
+                return this.calendarDateKeyFromValue(application.modified) === this.selectedCalendarDateKey;
+            },
+
+            matchesRolePending(application) {
+                if (this.userRoles.includes("Branch Loan User")) {
+                    return application.status === "Draft";
+                }
+                if (this.userRoles.includes("Credit Loan User")) {
+                    return ["Credit Check", "Valuation Pending"].includes(application.status);
+                }
+                if (this.userRoles.includes("CPC Loan User")) {
+                    return ["Credit Decision", "CPC Processing"].includes(application.status);
+                }
+
+                return false;
+            },
+
+            pendingCount() {
+                if (this.userRoles.includes("Branch Loan User")) {
+                    return Number(this.counts.Draft || 0);
+                }
+                if (this.userRoles.includes("Credit Loan User")) {
+                    return Number(this.counts["Credit Check"] || 0) + Number(this.counts["Valuation Pending"] || 0);
+                }
+                if (this.userRoles.includes("CPC Loan User")) {
+                    return Number(this.counts["Credit Decision"] || 0) + Number(this.counts["CPC Processing"] || 0);
+                }
+                return 0;
+            },
+
+            pendingToneClass() {
+                return this.pendingCount() > 0 ? "pending-alert" : "pending-clear";
+            },
+
+            statusCards() {
+                const rolePending = this.pendingCount();
+                return WORKSPACE_STATUS_CARDS.map((card) => ({
+                    ...card,
+                    count: card.key === "All" ? Number(this.counts.All || 0) : (card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0))
+                }));
+            },
+
+            emptyStateText() {
+                if (this.loading) return "Please wait while the workspace pulls the latest loan files.";
+                if (this.errorText) return "Counts or recent applications could not be fetched. Use refresh to try again.";
+                return this.applications.length
+                    ? "No application matched the selected filter or search text."
+                    : "No loan applications are available right now.";
+            },
+
+            apiCall(method, args) {
+                return new Promise((resolve, reject) => {
+                    frappe.call({
+                        method: method,
+                        args: args,
+                        callback: function (response) {
+                            if (response && response.exc) {
+                                reject(response.exc);
+                                return;
+                            }
+                            resolve(response ? response.message : null);
+                        },
+                        error: function (error) {
+                            reject(error);
+                        }
+                    });
+                });
+            },
+
+            toneClass(status) {
+                if (status === "Draft") return "tone-draft";
+                if (status === "Credit Check") return "tone-credit-check";
+                if (status === "Valuation Pending") return "tone-valuation";
+                if (status === "Credit Decision") return "tone-credit-decision";
+                if (status === "CPC Processing") return "tone-cpc";
+                if (status === "Approved") return "tone-approved";
+                if (status === "Rejected") return "tone-rejected";
+                return "tone-neutral";
+            },
+
+            cardToneClass(status) {
+                if (status === "Draft") return "card-tone-draft";
+                if (status === "Credit Check") return "card-tone-credit-check";
+                if (status === "Valuation Pending") return "card-tone-valuation";
+                if (status === "Credit Decision") return "card-tone-credit-decision";
+                if (status === "CPC Processing") return "card-tone-cpc";
+                if (status === "Approved") return "card-tone-approved";
+                if (status === "Rejected") return "card-tone-rejected";
+                return "card-tone-neutral";
+            },
+
+            formatCurrency(value) {
+                const amount = Number(value || 0);
+                return new Intl.NumberFormat("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                    maximumFractionDigits: 0
+                }).format(amount);
+            },
+
+            formatDate(value) {
+                if (!value) return "Unknown";
+
+                const parsed = new Date(String(value).replace(" ", "T"));
+                if (Number.isNaN(parsed.getTime())) {
+                    return value;
+                }
+
+                return new Intl.DateTimeFormat("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "numeric",
+                    minute: "2-digit"
+                }).format(parsed);
+            }
+        };
     }
 
-    function fetchApplications() {
-        return apiCall("frappe.client.get_list", {
-            doctype: "Loan Application",
-            filters: getLoanApplicationFilters(),
-            fields: ["name", "customer_name", "mobile_number", "branch_code", "loan_type", "loan_amount", "status", "modified"],
-            order_by: "modified desc",
-            limit_page_length: 30
-        });
-    }
-
-    function getLoanApplicationFilters(status) {
-        const filters = {};
-
-        if (status) {
-            filters.status = status;
-        }
-
-        if (USER_ROLES.includes("Branch Loan User") && state.userBranchCode) {
-            filters.branch_code = state.userBranchCode;
-        }
-
-        return filters;
-    }
-
-    function renderSummary() {
-        const total = Number(state.counts.All || 0);
-        const draft = Number(state.counts.Draft || 0);
-        const pendingCount = getRolePendingCount();
-
-        setText("filter-note", getFilterDescription(state.activeFilter));
-        renderPendingActionPill(pendingCount);
-        syncMetricSelection();
-    }
-
-    function syncMetricSelection() {
-        document.querySelectorAll(".metric-card").forEach(function (card) {
-            card.classList.toggle("is-active", card.dataset.filter === state.activeFilter);
-        });
-
-        const pendingPill = document.getElementById("pending-action-pill");
-        if (pendingPill) {
-            pendingPill.classList.toggle("is-active", state.activeFilter === "Role Pending");
-        }
-    }
-
-    function renderPendingActionPill(pendingCount) {
-        const pendingPill = document.getElementById("pending-action-pill");
-        if (!pendingPill) return;
-
-        const shouldShow = USER_ROLES.includes("Branch Loan User") || USER_ROLES.includes("Credit Loan User") || USER_ROLES.includes("CPC Loan User");
-        const countElement = document.getElementById("pending-action-count");
-
-        pendingPill.style.display = shouldShow ? "inline-flex" : "none";
-        pendingPill.classList.toggle("is-clear", pendingCount === 0);
-        pendingPill.classList.toggle("is-active", state.activeFilter === "Role Pending");
-
-        if (pendingCount > 0) {
-            pendingPill.innerHTML = `Pending Action (<span id="pending-action-count">${pendingCount}</span>)`;
-            pendingPill.dataset.filter = "Role Pending";
-        } else {
-            pendingPill.textContent = "No action pending";
-            pendingPill.dataset.filter = "All";
-        }
-    }
-
-    function renderStatusFilters() {
-        const container = document.getElementById("status-filter-bar");
-        if (!container) return;
-
-        container.innerHTML = STATUS_CARDS.map(function (item) {
-            const count = getFilterCount(item.key);
-            const selectedClass = item.key === state.activeFilter ? "is-selected" : "";
-
-            return `
-                <article class="status-filter ${selectedClass}" data-action="set-filter" data-filter="${escapeAttribute(item.key)}" tabindex="0" role="button">
-                    <div class="status-filter-top">
-                        <span class="status-filter-label">${escapeHtml(item.label)}</span>
-                        <span class="status-filter-count">${count}</span>
-                    </div>
-                    <span class="status-filter-note">${escapeHtml(item.note)}</span>
-                </article>
-            `;
-        }).join("");
-
-        setText("filter-note", getFilterDescription(state.activeFilter));
-    }
-
-    function renderApplications() {
-        const list = document.getElementById("application-list");
-        if (!list) return;
-
-        const filtered = state.applications.filter(function (application) {
-            return matchesFilter(application) && matchesSearch(application);
-        });
-
-        if (!filtered.length) {
-            const message = state.applications.length
-                ? "No application matched the selected filter or search text."
-                : "No loan applications are available right now.";
-
-            list.innerHTML = `
-                <div class="empty-state">
-                    <strong>No records found</strong>
-                    <span>${escapeHtml(message)}</span>
-                </div>
-            `;
-            return;
-        }
-
-        list.innerHTML = filtered.map(function (application) {
-            const name = escapeHtml(application.name || "Untitled");
-            const customer = escapeHtml(application.customer_name || "Unnamed applicant");
-            const branch = escapeHtml(application.branch_code || "No branch");
-            const mobile = escapeHtml(application.mobile_number || "No mobile");
-            const loanType = escapeHtml(application.loan_type || "Loan product not set");
-            const status = application.status || "Draft";
-
-            return `
-                <article class="application-row" data-route="/app/loan-application/${encodeURIComponent(application.name || "")}" tabindex="0" role="link">
-                    <div class="application-row-main">
-                        <strong>${customer}</strong>
-                        <div class="application-row-sub">${name}</div>
-                        <div class="application-row-secondary">${branch} · ${mobile}</div>
-                    </div>
-                    <div class="application-row-meta">${loanType}</div>
-                    <div class="application-row-amount">${formatCurrency(application.loan_amount)}</div>
-                    <div><span class="status-pill ${getToneClass(status)}">${escapeHtml(status)}</span></div>
-                    <div class="application-row-meta">${formatDate(application.modified)}</div>
-                </article>
-            `;
-        }).join("");
-    }
-
-    function renderLatestApplication() {
-        const latest = state.applications[0];
-
-        if (!latest) {
-            setText("latest-application-title", "No recent applications");
-            setText("latest-application-text", "Create a new file to start the loan workflow.");
-            setText("workspace-last-sync", "No recent sync");
-            setLatestStatus("Awaiting data", "tone-neutral");
-            return;
-        }
-
-        const openPipeline = getFilterCount("Draft") + getFilterCount("In Progress");
-        const title = latest.customer_name || latest.name || "Latest application";
-        const description = `${latest.loan_type || "Loan product pending"} · ${formatCurrency(latest.loan_amount)} · ${latest.branch_code || "No branch"}`;
-
-        setText("latest-application-title", title);
-        setText("latest-application-text", `${description}. ${openPipeline} file(s) currently sit in draft or processing queues.`);
-        setText("workspace-last-sync", `Synced ${formatDate(latest.modified)}`);
-        setLatestStatus(latest.status || "Draft", getToneClass(latest.status));
-
-        const latestCard = document.getElementById("latest-application-card");
-        if (latestCard) {
-            latestCard.dataset.route = `/app/loan-application/${encodeURIComponent(latest.name || "")}`;
-        }
-    }
-
-    function renderErrorState() {
-        const list = document.getElementById("application-list");
-        if (list) {
-            list.innerHTML = `
-                <div class="empty-state">
-                    <strong>Workspace failed to load</strong>
-                    <span>Counts or recent applications could not be fetched. Use refresh to try again.</span>
-                </div>
-            `;
-        }
-
-        setText("latest-application-title", "Unable to load workspace");
-        setText("latest-application-text", "Server response did not complete. Please refresh the workspace.");
-        setText("workspace-last-sync", "Sync failed");
-        setLatestStatus("Error", "tone-rejected");
-    }
-
-    function matchesFilter(application) {
-        const filterKey = state.activeFilter;
-        if (filterKey === "All") return true;
-        if (filterKey === "Role Pending") return matchesRolePending(application);
-
-        return application.status === filterKey;
-    }
-
-    function matchesSearch(application) {
-        if (!state.searchText) return true;
-
-        const haystack = [
-            application.name,
-            application.customer_name,
-            application.mobile_number,
-            application.branch_code,
-            application.loan_type,
-            application.status
-        ].join(" ").toLowerCase();
-
-        return haystack.includes(state.searchText);
-    }
-
-    function getFilterCount(filterKey) {
-        if (filterKey === "All") {
-            return Number(state.counts.All || 0);
-        }
-        if (filterKey === "Role Pending") {
-            return getRolePendingCount();
-        }
-
-        return Number(state.counts[filterKey] || 0);
-    }
-
-    function getFilterDescription(filterKey) {
-        if (filterKey === "All") return "Showing all applications";
-        if (filterKey === "Role Pending") return "Showing applications pending at your role";
-        return `Showing ${filterKey.toLowerCase()} applications`;
-    }
-
-    function getRolePendingCount() {
-        if (USER_ROLES.includes("Branch Loan User")) {
-            return Number(state.counts.Draft || 0);
-        }
-        if (USER_ROLES.includes("Credit Loan User")) {
-            return Number(state.counts["Credit Check"] || 0) + Number(state.counts["Valuation Pending"] || 0);
-        }
-        if (USER_ROLES.includes("CPC Loan User")) {
-            return Number(state.counts["Credit Decision"] || 0) + Number(state.counts["CPC Processing"] || 0);
-        }
-
-        return 0;
-    }
-
-    function matchesRolePending(application) {
-        if (USER_ROLES.includes("Branch Loan User")) {
-            return application.status === "Draft";
-        }
-        if (USER_ROLES.includes("Credit Loan User")) {
-            return ["Credit Check", "Valuation Pending"].includes(application.status);
-        }
-        if (USER_ROLES.includes("CPC Loan User")) {
-            return ["Credit Decision", "CPC Processing"].includes(application.status);
-        }
-
-        return false;
-    }
-
-    function getToneClass(status) {
-        if (status === "Draft") return "tone-draft";
-        if (["Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing"].includes(status)) return "tone-review";
-        if (status === "Approved") return "tone-approved";
-        if (status === "Rejected") return "tone-rejected";
-        return "tone-neutral";
-    }
-
-    function setLatestStatus(text, toneClass) {
-        const element = document.getElementById("latest-application-status");
-        if (!element) return;
-
-        element.className = `status-pill ${toneClass}`;
-        element.textContent = text;
-    }
-
-    function setText(id, value) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = value;
-        }
-    }
-
-    function formatCurrency(value) {
-        const amount = Number(value || 0);
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            maximumFractionDigits: 0
-        }).format(amount);
-    }
-
-    function formatDate(value) {
-        if (!value) return "Unknown";
-
-        const parsed = new Date(String(value).replace(" ", "T"));
-        if (Number.isNaN(parsed.getTime())) {
-            return value;
-        }
-
-        return new Intl.DateTimeFormat("en-IN", {
-            day: "2-digit",
-            month: "short",
-            hour: "numeric",
-            minute: "2-digit"
-        }).format(parsed);
-    }
-
-    function escapeHtml(value) {
-        return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-    }
-
-    function escapeAttribute(value) {
-        return escapeHtml(value);
-    }
-
-    // Dynamic Iframe Height Communication
-    function sendHeight() {
-        const height = document.documentElement.scrollHeight;
-        window.parent.postMessage({
-            type: 'frappe-page-resize',
-            height: height
-        }, '*');
-    }
-
-    window.addEventListener('load', sendHeight);
-    window.addEventListener('resize', sendHeight);
-
-    // Observe DOM changes to catch dynamic content loading
-    if (window.MutationObserver) {
-        const observer = new MutationObserver(sendHeight);
-        observer.observe(document.body, {
-            attributes: true,
-            childList: true,
-            subtree: true
-        });
-    }
+    frappe.ready(function () {
+        PetiteVue.createApp({
+            $delimiters: ["[[", "]]"]
+        }).mount("#loan-workspace-app");
+    });
 </script>
 {% endblock %}
