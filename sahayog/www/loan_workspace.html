@@ -31,7 +31,8 @@
                     <input
                         id="application-search"
                         type="search"
-                        v-model="searchText"
+                        :value="searchText"
+                        @input="onSearchInput($event)"
                         placeholder="Search by customer, branch, mobile, or file ID"
                     >
                 </label>
@@ -39,9 +40,6 @@
 
             <div class="lw-topbar-actions">
                 <div class="lw-toolbar-center">
-                    <button class="lw-pending-pill" type="button" @click="setFilter('Role Pending')" :class="[pendingToneClass(), { active: activeFilter === 'Role Pending' }]">
-                        Pending Action ([[ pendingCount() ]])
-                    </button>
                 </div>
 
                 <div class="lw-toolbar-right">
@@ -55,87 +53,111 @@
 
     <div class="lw-content-shell">
         <main class="lw-shell">
-            <section class="lw-filter-grid" v-if="activeView === 'cards'">
-                <article
-                    v-for="card in statusCards()"
-                    :key="card.key"
-                    class="lw-status-card"
-                    :class="[card.tone, { selected: activeFilter === card.key }]"
-                    @click="setFilter(card.key)"
-                    tabindex="0"
-                    role="button"
-                >
-                    <div class="lw-status-card-head">
-                        <span class="lw-status-label">[[ card.label ]]</span>
-                        <span class="lw-status-count">[[ card.count ]]</span>
-                    </div>
-                    <span class="lw-status-note">[[ card.note ]]</span>
-                </article>
-            </section>
+            <section class="lw-card-view" v-if="activeView === 'cards'">
+                <section class="lw-filter-grid">
+                    <article
+                        v-for="card in statusCards()"
+                        :key="card.key"
+                        class="lw-status-card"
+                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount }]"
+                        @click="setFilter(card.key)"
+                        tabindex="0"
+                        role="button"
+                    >
+                        <div class="lw-status-card-head">
+                            <span class="lw-status-label">[[ card.label ]]</span>
+                            <span class="lw-status-count">[[ card.count ]]</span>
+                        </div>
+                        <span class="lw-status-note">[[ card.note ]]</span>
+                    </article>
+                </section>
 
-            <div class="lw-section-separator" v-if="activeView === 'cards'"></div>
+                <div class="lw-section-separator"></div>
 
-            <div class="lw-card-section-head" v-if="activeView === 'cards'">
-                <h3>Loan Applications - [[ loading ? '...' : filteredApplications().length ]]</h3>
-            </div>
+                <div class="lw-card-section-head">
+                    <h3>Loan Applications - [[ activeSelectionLabel() ]] - [[ loading ? '...' : filteredApplications().length ]]</h3>
+                </div>
 
-            <section class="lw-card-grid" v-if="activeView === 'cards'">
-                <article
-                    v-for="app in filteredApplications()"
-                    :key="app.name"
-                    class="lw-card"
-                    :class="cardToneClass(app.status)"
-                    tabindex="0"
-                    role="link"
-                    @click="openApplication(app)"
-                    @keydown.enter.prevent="openApplication(app)"
-                    @keydown.space.prevent="openApplication(app)"
-                >
-                    <div class="lw-card-top">
-                        <div class="lw-card-head-copy">
-                            <div class="lw-card-title-row">
-                                <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
-                                <div class="lw-card-title-copy">
-                                    <span class="lw-card-id">[[ app.name || 'Untitled' ]]</span>
-                                    <h4>[[ app.customer_name || 'Unnamed applicant' ]]</h4>
+                <section class="lw-card-grid">
+                    <article
+                        v-for="app in filteredApplications()"
+                        :key="app.name"
+                        class="lw-card"
+                        :class="cardToneClass(app.status)"
+                        tabindex="0"
+                        role="link"
+                        @click="openApplication(app)"
+                        @keydown.enter.prevent="openApplication(app)"
+                        @keydown.space.prevent="openApplication(app)"
+                    >
+                        <div class="lw-card-top">
+                            <div class="lw-card-head-copy">
+                                <div class="lw-card-title-row">
+                                    <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
+                                    <div class="lw-card-title-copy">
+                                        <span class="lw-card-id">[[ app.name || 'Untitled' ]]</span>
+                                        <h4>[[ app.customer_name || 'Unnamed applicant' ]]</h4>
+                                    </div>
                                 </div>
                             </div>
+                            <div class="lw-card-status-stack">
+                                <span class="lw-status-pill" :class="toneClass(app.status)">
+                                    [[ app.status || 'Draft' ]]
+                                </span>
+                                <p class="lw-card-product">[[ app.loan_type || 'Loan product not set' ]]</p>
+                            </div>
                         </div>
-                        <span class="lw-status-pill" :class="toneClass(app.status)">
-                            [[ app.status || 'Draft' ]]
-                        </span>
-                    </div>
 
-                    <p class="lw-card-amount">[[ formatCurrency(app.loan_amount) ]]</p>
-                    <p class="lw-card-product">[[ app.loan_type || 'Loan product not set' ]]</p>
+                        <p class="lw-card-amount">[[ formatCurrency(app.loan_amount) ]]</p>
 
-                    <div class="lw-progress-row">
-                        <span class="lw-progress-label">[[ formatDate(app.modified) ]]</span>
-                        <span class="lw-progress-track"></span>
-                        <span class="lw-progress-label">[[ app.branch_code || 'No branch' ]]</span>
-                    </div>
-
-                    <div class="lw-card-meta">
-                        <div>
-                            <span class="lw-meta-label">Mobile</span>
-                            <strong>[[ app.mobile_number || 'No mobile' ]]</strong>
+                        <div class="lw-progress-row">
+                            <span class="lw-progress-label">[[ formatDate(app.modified) ]]</span>
+                            <span class="lw-progress-track"></span>
+                            <span class="lw-progress-label">[[ app.branch_code || 'No branch' ]]</span>
                         </div>
-                        <div>
-                            <span class="lw-meta-label">Updated</span>
-                            <strong>[[ formatDate(app.modified) ]]</strong>
+
+                        <div class="lw-card-branch">
+                            <span class="lw-meta-label">Branch</span>
+                            <strong>[[ app.branch_name || 'Branch name not found' ]]</strong>
                         </div>
-                    </div>
-                </article>
 
-                <article v-if="!loading && filteredApplications().length === 0" class="lw-empty">
-                    <strong>No records found</strong>
-                    <span>[[ emptyStateText() ]]</span>
-                </article>
+                        <div class="lw-card-meta">
+                            <div>
+                                <span class="lw-meta-label">Mobile</span>
+                                <strong>[[ app.mobile_number || 'No mobile' ]]</strong>
+                            </div>
+                            <div>
+                                <span class="lw-meta-label">Updated</span>
+                                <strong>[[ formatDate(app.modified) ]]</strong>
+                            </div>
+                        </div>
+                    </article>
 
-                <article v-if="loading" class="lw-empty">
-                    <strong>Loading applications...</strong>
-                    <span>Please wait while the workspace pulls the latest loan files.</span>
-                </article>
+                    <article v-if="!loading && filteredApplications().length === 0" class="lw-empty">
+                        <strong>No records found</strong>
+                        <span>[[ emptyStateText() ]]</span>
+                    </article>
+
+                    <article v-if="loading" class="lw-empty">
+                        <strong>Loading applications...</strong>
+                        <span>Please wait while the workspace pulls the latest loan files.</span>
+                    </article>
+                </section>
+
+                <nav class="lw-bottom-filter-nav" aria-label="Loan application filters">
+                    <button
+                        v-for="card in statusCards()"
+                        :key="`bottom-${card.key}`"
+                        type="button"
+                        class="lw-bottom-filter-item"
+                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount }]"
+                        :title="card.note"
+                        @click="setFilter(card.key)"
+                    >
+                        <span class="lw-bottom-filter-label">[[ card.label ]]</span>
+                        <span class="lw-bottom-filter-count">[[ card.count ]]</span>
+                    </button>
+                </nav>
             </section>
 
             <section v-if="activeView === 'calendar'" class="lw-calendar-view">
@@ -407,7 +429,7 @@
 
     .lw-shell {
         display: grid;
-        gap: 16px;
+        gap: 0;
         min-width: 0;
         min-height: 0;
         flex: 1;
@@ -416,9 +438,11 @@
 
     .lw-status-card,
     .lw-card {
-        background: rgba(255, 255, 255, 0.94);
-        border: 1px solid var(--lw-border);
-        box-shadow: var(--lw-shadow);
+        background: rgba(255, 255, 255, 0.68);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
     }
 
     .lw-toolbar-center {
@@ -605,6 +629,46 @@
         gap: 12px;
     }
 
+    .lw-bottom-filter-nav {
+        display: none;
+    }
+
+    .lw-bottom-filter-item {
+        display: grid;
+        gap: 2px;
+        align-content: start;
+        justify-items: start;
+        border-radius: 16px;
+        padding: 10px 12px;
+        min-width: 0;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .lw-bottom-filter-label {
+        font-size: 0.72rem;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .lw-bottom-filter-count {
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1.15;
+    }
+
+    .lw-bottom-filter-item.selected {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+    }
+
+    .lw-bottom-filter-item.zero-count {
+        opacity: 0.72;
+    }
+
     .lw-status-card {
         position: relative;
         border-radius: 18px;
@@ -617,7 +681,10 @@
 
     .lw-status-card.selected {
         border-color: var(--lw-accent);
-        background: var(--lw-accent-soft);
+        background: rgba(232, 243, 243, 0.72);
+        box-shadow: 0 18px 42px rgba(65, 125, 129, 0.14);
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
     }
 
     .lw-status-card-head {
@@ -690,6 +757,59 @@
         color: var(--lw-rejected-text);
     }
 
+    .lw-status-card.zero-count {
+        background: rgba(243, 244, 246, 0.72);
+        border-color: rgba(229, 231, 235, 0.95);
+        color: #9ca3af;
+        box-shadow: none;
+        opacity: 0.9;
+        backdrop-filter: blur(14px) saturate(120%);
+        -webkit-backdrop-filter: blur(14px) saturate(120%);
+    }
+
+    .lw-status-card.zero-count .lw-status-note {
+        color: #9ca3af;
+    }
+
+    .lw-status-card.zero-count .lw-status-count {
+        color: #9ca3af;
+    }
+
+    .lw-status-card.zero-count.selected {
+        background: rgba(243, 244, 246, 0.72);
+        border-color: rgba(229, 231, 235, 0.95);
+        color: #9ca3af;
+    }
+
+    .status-card-tone-pending {
+        background: linear-gradient(135deg, rgba(178, 0, 0, 0.88), rgba(255, 0, 0, 0.84));
+        border-color: #b20000;
+        color: #fff;
+        box-shadow: 0 0 3px rgba(178, 0, 0, 0.35);
+        animation: lw-pending-card-glow 1.5s infinite;
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
+    }
+
+    .lw-status-card.status-card-tone-pending.selected {
+        background: linear-gradient(135deg, rgba(178, 0, 0, 0.88), rgba(255, 0, 0, 0.84));
+        border-color: #b20000;
+        color: #fff;
+    }
+
+    .status-card-tone-pending .lw-status-note {
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    @keyframes lw-pending-card-glow {
+        0%, 100% {
+            box-shadow: 0 0 3px rgba(178, 0, 0, 0.35);
+        }
+        50% {
+            box-shadow: 0 0 28px rgba(255, 0, 0, 0.95);
+        }
+    }
+
     .lw-section-separator {
         height: 1px;
         width: 100%;
@@ -697,12 +817,20 @@
         margin: 0;
     }
 
+    .lw-card-view {
+        display: block;
+        min-width: 0;
+        width: 100%;
+        padding-top: 4px;
+    }
+
     .lw-card-section-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        margin-top: -16px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 
     .lw-card-section-head h3 {
@@ -921,7 +1049,7 @@
         gap: 14px;
         width: 100%;
         max-width: none;
-        margin-top: -16px;
+        margin-top: 0;
     }
 
     .lw-card {
@@ -934,6 +1062,13 @@
         cursor: pointer;
         min-height: 250px;
         width: 100%;
+        transform-origin: center bottom;
+        will-change: transform, box-shadow;
+        transition:
+            transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+            box-shadow 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+            border-color 0.28s ease,
+            filter 0.28s ease;
     }
 
     .lw-card::after {
@@ -944,6 +1079,47 @@
         bottom: 0;
         height: 4px;
         background: var(--lw-border);
+    }
+
+    .lw-card::before {
+        content: "";
+        position: absolute;
+        inset: -45% -35%;
+        pointer-events: none;
+        background:
+            radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.42), transparent 28%),
+            radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.22), transparent 24%),
+            linear-gradient(
+                130deg,
+                transparent 36%,
+                rgba(255, 255, 255, 0.16) 46%,
+                rgba(255, 255, 255, 0.72) 50%,
+                rgba(255, 255, 255, 0.18) 54%,
+                transparent 64%
+            );
+        opacity: 0;
+        transform: translateX(-38%) skewX(-10deg) rotate(0.001deg);
+        transition: opacity 0.28s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        mix-blend-mode: soft-light;
+        filter: blur(0.5px);
+    }
+
+    .lw-card:hover,
+    .lw-card:focus-visible {
+        outline: none;
+        transform: translateY(-12px) scale(1.015);
+        box-shadow:
+            0 26px 56px rgba(15, 23, 42, 0.16),
+            0 8px 20px rgba(65, 125, 129, 0.12),
+            0 0 0 1px rgba(255, 255, 255, 0.22) inset,
+            inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+        filter: saturate(1.06) brightness(1.02);
+    }
+
+    .lw-card:hover::before,
+    .lw-card:focus-visible::before {
+        opacity: 1;
+        transform: translateX(36%) skewX(-10deg) rotate(0.001deg);
     }
 
     .card-tone-draft {
@@ -1136,6 +1312,17 @@
         min-height: 42px;
     }
 
+    .lw-card-branch {
+        display: grid;
+        gap: 2px;
+    }
+
+    .lw-card-branch strong {
+        font-size: 0.94rem;
+        line-height: 1.45;
+        letter-spacing: -0.01em;
+    }
+
     .lw-progress-row {
         display: grid;
         grid-template-columns: auto 1fr auto;
@@ -1171,6 +1358,20 @@
     .lw-card-meta strong {
         font-size: 0.88rem;
         line-height: 1.4;
+    }
+
+    .lw-card-status-stack {
+        display: grid;
+        justify-items: end;
+        gap: 8px;
+        align-content: start;
+    }
+
+    .lw-card-status-stack .lw-card-product {
+        min-height: 0;
+        text-align: right;
+        font-size: 0.86rem;
+        max-width: 16ch;
     }
 
     .lw-empty {
@@ -1213,8 +1414,53 @@
             width: 100%;
         }
 
+        .lw-topbar-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .lw-toolbar-center {
+            display: none;
+        }
+
+        .lw-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .lw-chip-primary {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .lw-topbar-left {
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .lw-brand-logo {
+            max-width: min(180px, 56vw);
+        }
+
+        .lw-view-toggle {
+            width: 100%;
+        }
+
+        .lw-view-toggle .lw-chip {
+            flex: 1 1 0;
+            justify-content: center;
+            min-width: 0;
+            padding: 9px 10px;
+        }
+
         .lw-search-header {
             width: 100%;
+        }
+
+        .lw-search {
+            min-height: 40px;
+            padding: 0 12px;
         }
 
         .lw-card-grid {
@@ -1247,6 +1493,15 @@
             margin-top: 0;
         }
 
+        .lw-filter-grid,
+        .lw-section-separator {
+            display: none;
+        }
+
+        .lw-content-shell {
+            padding: 14px 14px 118px;
+        }
+
         .lw-card-grid {
             grid-template-columns: 1fr;
         }
@@ -1255,18 +1510,55 @@
             width: 100%;
         }
 
+        .lw-card:hover,
+        .lw-card:focus-visible {
+            transform: translateY(-8px) scale(1.01);
+        }
+
         .lw-topbar-inner {
-            padding: 14px 16px;
+            padding: 12px 14px;
+            gap: 10px;
+        }
+
+        .lw-topbar-inner {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .lw-topbar-left {
+            grid-column: 1 / -1;
+            width: 100%;
         }
 
         .lw-topbar-meta {
+            grid-column: 1;
             width: 100%;
             justify-content: flex-start;
-            gap: 10px;
+            gap: 0;
+        }
+
+        .lw-topbar-actions {
+            grid-column: 2;
+            width: 100%;
+            display: flex;
+            align-items: stretch;
+            justify-content: flex-end;
+            gap: 0;
+        }
+
+        .lw-toolbar-right {
+            width: 100%;
+        }
+
+        .lw-chip-primary {
+            width: 100%;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 10px;
         }
 
         .lw-view-toggle {
             width: 100%;
+            gap: 8px;
         }
 
         .lw-search-header {
@@ -1275,45 +1567,160 @@
         }
 
         .lw-brand-logo {
-            width: 40px;
-            height: 40px;
+            width: auto;
+            height: 38px;
         }
 
         .lw-card-meta {
             grid-template-columns: 1fr;
         }
 
+        .lw-card-branch strong {
+            font-size: 0.9rem;
+        }
+
+        .lw-card-status-stack .lw-card-product {
+            max-width: none;
+        }
+
         .lw-card {
             min-height: 0;
         }
 
+        .lw-bottom-filter-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 45;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+            background: rgba(247, 249, 252, 0.94);
+            border-top: 1px solid var(--lw-border);
+            box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(18px) saturate(150%);
+            -webkit-backdrop-filter: blur(18px) saturate(150%);
+            scroll-snap-type: x proximity;
+        }
+
+        .lw-bottom-filter-item {
+            flex: 0 0 auto;
+            min-width: 96px;
+            scroll-snap-align: start;
+        }
+
         .lw-calendar-toolbar {
             flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .lw-calendar-shell {
+            height: auto;
+        }
+
+        .lw-calendar-view {
+            display: block;
+        }
+
+        .lw-calendar-copy {
+            gap: 6px;
+        }
+
+        .lw-calendar-copy-head {
             align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .lw-calendar-coins {
+            justify-content: flex-start;
+            gap: 4px;
+        }
+
+        .lw-calendar-coin {
+            width: 30px;
+            height: 30px;
+        }
+
+        .lw-calendar-controls {
+            width: 100%;
+        }
+
+        .lw-calendar-nav {
+            flex: 1 1 0;
+            min-width: 0;
+            min-height: 38px;
+            padding: 8px 10px;
+            font-size: 0.78rem;
+        }
+
+        .lw-calendar-grid {
+            gap: 4px;
+            height: auto;
+            flex: none;
+            align-content: start;
+            grid-template-rows: auto repeat(6, minmax(54px, auto));
         }
 
         .lw-calendar-weekday {
-            padding: 0 4px;
-            font-size: 0.64rem;
+            padding: 0 2px;
+            font-size: 0.58rem;
+            letter-spacing: 0.02em;
         }
 
         .lw-calendar-day {
-            min-height: 88px;
-            padding: 6px;
-            gap: 6px;
-            border-radius: 14px;
+            min-height: 54px;
+            padding: 4px;
+            gap: 4px;
+            border-radius: 12px;
+            place-items: stretch;
         }
 
         .lw-calendar-day-number {
-            top: 6px;
-            left: 8px;
-            font-size: 0.7rem;
+            top: 4px;
+            left: 6px;
+            font-size: 0.64rem;
+        }
+
+        .lw-calendar-day-count-wrap {
+            align-items: center;
+            justify-content: center;
         }
 
         .lw-calendar-day-count {
-            min-width: 42px;
-            height: 42px;
-            font-size: 1rem;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 6px;
+            font-size: 0.78rem;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .lw-calendar-copy h3 {
+            font-size: 0.98rem;
+        }
+
+        .lw-calendar-copy span {
+            font-size: 0.8rem;
+        }
+
+        .lw-calendar-nav {
+            padding: 7px 8px;
+            font-size: 0.74rem;
+        }
+
+        .lw-calendar-day {
+            min-height: 48px;
+            padding: 3px;
+            border-radius: 10px;
+        }
+
+        .lw-calendar-day-count {
+            min-width: 24px;
+            height: 24px;
+            font-size: 0.7rem;
         }
     }
 </style>
@@ -1322,7 +1729,7 @@
 <script>
     const TEMPLATE_USER_ROLES = {{ (user_roles or []) | json }};
     const WORKSPACE_STATUS_CARDS = [
-        { key: "All", label: "All Files", note: "Entire workspace volume", tone: "status-card-tone-neutral" },
+    { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-pending" },
         { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "status-card-tone-draft" },
         { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "status-card-tone-credit-check" },
         { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "status-card-tone-valuation" },
@@ -1339,7 +1746,7 @@
             userRoles: [],
             userBranchCode: null,
             canCreate: false,
-            activeFilter: "All",
+            activeFilter: "Role Pending",
             activeView: "cards",
             searchText: "",
             loading: true,
@@ -1348,6 +1755,122 @@
             errorText: "",
             calendarMonthCursor: null,
             selectedCalendarDateKey: "",
+
+            isValidWorkspaceView(viewName) {
+                return ["cards", "calendar"].includes(viewName);
+            },
+
+            isValidWorkspaceFilter(filterKey) {
+                if (filterKey === "All" || filterKey === "Role Pending") {
+                    return true;
+                }
+
+                return WORKSPACE_STATUS_CARDS.some((card) => card.key === filterKey);
+            },
+
+            defaultFilterForView(viewName) {
+                return viewName === "calendar" ? "All" : "Role Pending";
+            },
+
+            activeSelectionLabel() {
+                return this.getFilterLabel(this.activeFilter);
+            },
+
+            getFilterLabel(filterKey) {
+                const card = WORKSPACE_STATUS_CARDS.find((entry) => entry.key === filterKey);
+                return card ? card.label : (filterKey || "All");
+            },
+
+            getWorkspaceMonthValue() {
+                if (!this.calendarMonthCursor) return "";
+
+                const date = new Date(this.calendarMonthCursor);
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                return `${date.getFullYear()}-${month}`;
+            },
+
+            applyWorkspaceStateFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const viewParam = params.get("view");
+                const filterParam = params.get("filter");
+                const monthParam = params.get("month");
+                const dateParam = params.get("date");
+                const searchParam = params.get("q");
+
+                if (this.isValidWorkspaceView(viewParam)) {
+                    this.activeView = viewParam;
+                }
+
+                if (searchParam !== null) {
+                    this.searchText = searchParam;
+                }
+
+                if (monthParam) {
+                    const [year, month] = monthParam.split("-").map((value) => Number(value));
+                    if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+                        const monthDate = new Date(year, month - 1, 1);
+                        monthDate.setHours(0, 0, 0, 0);
+                        this.calendarMonthCursor = monthDate.getTime();
+                    }
+                }
+
+                if (this.activeView === "calendar") {
+                    this.activeFilter = "All";
+                } else if (this.isValidWorkspaceFilter(filterParam)) {
+                    this.activeFilter = filterParam;
+                } else {
+                    this.activeFilter = this.defaultFilterForView(this.activeView);
+                }
+
+                if (dateParam) {
+                    this.selectedCalendarDateKey = dateParam;
+                    this.activeView = "cards";
+                    this.activeFilter = "All";
+                }
+            },
+
+            syncWorkspaceUrl() {
+                if (typeof window === "undefined" || !window.history || !window.location) {
+                    return;
+                }
+
+                const params = new URLSearchParams();
+                const viewName = this.isValidWorkspaceView(this.activeView) ? this.activeView : "cards";
+                const filterKey = viewName === "calendar"
+                    ? "All"
+                    : (this.isValidWorkspaceFilter(this.activeFilter)
+                        ? this.activeFilter
+                        : this.defaultFilterForView(viewName));
+                const searchValue = String(this.searchText || "").trim();
+                const monthValue = this.getWorkspaceMonthValue();
+
+                params.set("view", viewName);
+                params.set("filter", filterKey);
+
+                if (searchValue) {
+                    params.set("q", searchValue);
+                }
+
+                if (viewName === "calendar" && monthValue) {
+                    params.set("month", monthValue);
+                }
+
+                if (this.selectedCalendarDateKey) {
+                    params.set("date", this.selectedCalendarDateKey);
+                }
+
+                const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash || ""}`;
+                const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash || ""}`;
+
+                if (nextUrl !== currentUrl) {
+                    window.history.replaceState({}, "", nextUrl);
+                }
+            },
+
+            onSearchInput(event) {
+                this.searchText = event && event.target ? event.target.value : "";
+                this.syncWorkspaceUrl();
+            },
 
             async resolveUserRoles() {
                 const bootRoles = (window.frappe && frappe.boot && frappe.boot.user && Array.isArray(frappe.boot.user.roles) && frappe.boot.user.roles) || [];
@@ -1399,7 +1922,11 @@
                 this.userRoles = await this.resolveUserRoles();
                 this.userBranchCode = await this.resolveUserBranchCode();
                 this.canCreate = this.userRoles.includes("Branch Loan User");
-                this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+                this.applyWorkspaceStateFromUrl();
+                if (!this.calendarMonthCursor) {
+                    this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+                }
+                this.syncWorkspaceUrl();
                 await this.loadWorkspace();
             },
 
@@ -1414,7 +1941,7 @@
                     ]);
 
                     this.counts = counts;
-                    this.applications = Array.isArray(applications) ? applications : [];
+                    this.applications = await this.enrichApplicationsWithBranchNames(Array.isArray(applications) ? applications : []);
                 } catch (error) {
                     console.error("Loan workspace load failed", error);
                     this.errorText = "Workspace failed to load";
@@ -1431,7 +1958,9 @@
 
             setFilter(filterKey) {
                 this.activeFilter = filterKey;
+                this.selectedCalendarDateKey = "";
                 this.activeView = "cards";
+                this.syncWorkspaceUrl();
             },
 
             setView(viewName) {
@@ -1439,7 +1968,11 @@
                 if (viewName === "calendar") {
                     this.activeFilter = "All";
                     this.selectedCalendarDateKey = "";
+                } else {
+                    this.activeFilter = "Role Pending";
+                    this.selectedCalendarDateKey = "";
                 }
+                this.syncWorkspaceUrl();
             },
 
             openCalendarDay(cell) {
@@ -1448,10 +1981,12 @@
                 this.selectedCalendarDateKey = cell.dateKey;
                 this.activeFilter = "All";
                 this.activeView = "cards";
+                this.syncWorkspaceUrl();
             },
 
             setCalendarToday() {
                 this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+                this.syncWorkspaceUrl();
             },
 
             shiftCalendarMonth(offset) {
@@ -1459,6 +1994,7 @@
                 current.setMonth(current.getMonth() + offset, 1);
                 current.setHours(0, 0, 0, 0);
                 this.calendarMonthCursor = current.getTime();
+                this.syncWorkspaceUrl();
             },
 
             getCalendarMonthDate() {
@@ -1647,6 +2183,54 @@
                 });
             },
 
+            normalizeBranchCode(value) {
+                return String(value ?? "").trim();
+            },
+
+            async enrichApplicationsWithBranchNames(applications) {
+                if (!Array.isArray(applications) || !applications.length) {
+                    return [];
+                }
+
+                const branchCodes = Array.from(new Set(
+                    applications
+                        .map((application) => this.normalizeBranchCode(application.branch_code))
+                        .filter(Boolean)
+                ));
+
+                if (!branchCodes.length) {
+                    return applications;
+                }
+
+                try {
+                    const branches = await this.apiCall("frappe.client.get_list", {
+                        doctype: "Sahayog Branch",
+                        filters: [["name", "in", branchCodes]],
+                        fields: ["name", "branch"],
+                        limit_page_length: branchCodes.length
+                    });
+
+                    const branchMap = new Map();
+                    (Array.isArray(branches) ? branches : []).forEach((branch) => {
+                        const branchCode = this.normalizeBranchCode(branch.name);
+                        if (branchCode) {
+                            branchMap.set(branchCode, branch.branch || "");
+                        }
+                    });
+
+                    return applications.map((application) => {
+                        const branchCode = this.normalizeBranchCode(application.branch_code);
+                        return {
+                            ...application,
+                            branch_name: branchMap.get(branchCode) || application.branch_name || ""
+                        };
+                    });
+                } catch (error) {
+                    console.error("Loan workspace branch name lookup failed", error);
+                    return applications;
+                }
+            },
+
             getLoanApplicationFilters(status) {
                 const filters = {};
 
@@ -1679,6 +2263,7 @@
                     application.customer_name,
                     application.mobile_number,
                     application.branch_code,
+                    application.branch_name,
                     application.loan_type,
                     application.status
                 ].join(" ").toLowerCase();
@@ -1693,13 +2278,13 @@
 
             matchesRolePending(application) {
                 if (this.userRoles.includes("Branch Loan User")) {
-                    return application.status === "Draft";
+                    return ["Draft", "Valuation Pending"].includes(application.status);
                 }
                 if (this.userRoles.includes("Credit Loan User")) {
-                    return ["Credit Check", "Valuation Pending"].includes(application.status);
+                    return ["Credit Check", "Credit Decision"].includes(application.status);
                 }
                 if (this.userRoles.includes("CPC Loan User")) {
-                    return ["Credit Decision", "CPC Processing"].includes(application.status);
+                    return application.status === "CPC Processing";
                 }
 
                 return false;
@@ -1707,13 +2292,13 @@
 
             pendingCount() {
                 if (this.userRoles.includes("Branch Loan User")) {
-                    return Number(this.counts.Draft || 0);
+                    return Number(this.counts.Draft || 0) + Number(this.counts["Valuation Pending"] || 0);
                 }
                 if (this.userRoles.includes("Credit Loan User")) {
-                    return Number(this.counts["Credit Check"] || 0) + Number(this.counts["Valuation Pending"] || 0);
+                    return Number(this.counts["Credit Check"] || 0) + Number(this.counts["Credit Decision"] || 0);
                 }
                 if (this.userRoles.includes("CPC Loan User")) {
-                    return Number(this.counts["Credit Decision"] || 0) + Number(this.counts["CPC Processing"] || 0);
+                    return Number(this.counts["CPC Processing"] || 0);
                 }
                 return 0;
             },
@@ -1726,7 +2311,8 @@
                 const rolePending = this.pendingCount();
                 return WORKSPACE_STATUS_CARDS.map((card) => ({
                     ...card,
-                    count: card.key === "All" ? Number(this.counts.All || 0) : (card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0))
+                    count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0),
+                    zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0
                 }));
             },
 
