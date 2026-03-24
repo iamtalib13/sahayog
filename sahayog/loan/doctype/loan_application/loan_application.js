@@ -51,9 +51,50 @@ frappe.ui.form.on("Loan Application", {
         });
     },
 
+  // after_workflow_action: function (frm) {
+  //   frm.reload_doc();
+  // },
+
   after_workflow_action: function (frm) {
-    frm.reload_doc();
-  },
+        // --- NEW: Auto-add documents when moving to CPC Processing ---
+        if (frm.doc.status === "CPC Processing") {
+            let documents_to_add = ["Loan Agreement", "Sanction Letter"];
+            let rows_added = false;
+
+            documents_to_add.forEach(doc_type => {
+                // Check if this document type already exists to prevent duplicates
+                let exists = frm.doc.kyc_documents.some(row => row.document_type === doc_type);
+                
+                if (!exists) {
+                    // Append new row to the child table
+                    let row = frm.add_child("kyc_documents");
+                    row.document_type = doc_type;
+                    row.status = "Pending"; // Assuming there is a "status" field in Loan Document child table
+                    rows_added = true;
+                }
+            });
+
+            // If we added rows, refresh the field and immediately save the document
+            if (rows_added) {
+                frm.refresh_field("kyc_documents");
+                
+                // Save the document quietly without triggering validation errors again
+                frm.save().then(() => {
+                    frappe.msgprint({
+                        title: __('Documents Added'),
+                        indicator: 'green',
+                        message: __('Required CPC documents (Loan Agreement, Sanction Letter) have been automatically added.')
+                    });
+                });
+            } else {
+                frm.reload_doc();
+            }
+        } else {
+            // Default behavior for other workflow actions
+            frm.reload_doc();
+        }
+        // --- END NEW AUTO-APPEND ---
+    },
 
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
