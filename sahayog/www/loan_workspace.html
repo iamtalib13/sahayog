@@ -55,87 +55,89 @@
 
     <div class="lw-content-shell">
         <main class="lw-shell">
-            <section class="lw-filter-grid" v-if="activeView === 'cards'">
-                <article
-                    v-for="card in statusCards()"
-                    :key="card.key"
-                    class="lw-status-card"
-                    :class="[card.tone, { selected: activeFilter === card.key }]"
-                    @click="setFilter(card.key)"
-                    tabindex="0"
-                    role="button"
-                >
-                    <div class="lw-status-card-head">
-                        <span class="lw-status-label">[[ card.label ]]</span>
-                        <span class="lw-status-count">[[ card.count ]]</span>
-                    </div>
-                    <span class="lw-status-note">[[ card.note ]]</span>
-                </article>
-            </section>
+            <section class="lw-card-view" v-if="activeView === 'cards'">
+                <section class="lw-filter-grid">
+                    <article
+                        v-for="card in statusCards()"
+                        :key="card.key"
+                        class="lw-status-card"
+                        :class="[card.tone, { selected: activeFilter === card.key }]"
+                        @click="setFilter(card.key)"
+                        tabindex="0"
+                        role="button"
+                    >
+                        <div class="lw-status-card-head">
+                            <span class="lw-status-label">[[ card.label ]]</span>
+                            <span class="lw-status-count">[[ card.count ]]</span>
+                        </div>
+                        <span class="lw-status-note">[[ card.note ]]</span>
+                    </article>
+                </section>
 
-            <div class="lw-section-separator" v-if="activeView === 'cards'"></div>
+                <div class="lw-section-separator"></div>
 
-            <div class="lw-card-section-head" v-if="activeView === 'cards'">
-                <h3>Loan Applications - [[ loading ? '...' : filteredApplications().length ]]</h3>
-            </div>
+                <div class="lw-card-section-head">
+                    <h3>Loan Applications - [[ loading ? '...' : filteredApplications().length ]]</h3>
+                </div>
 
-            <section class="lw-card-grid" v-if="activeView === 'cards'">
-                <article
-                    v-for="app in filteredApplications()"
-                    :key="app.name"
-                    class="lw-card"
-                    :class="cardToneClass(app.status)"
-                    tabindex="0"
-                    role="link"
-                    @click="openApplication(app)"
-                    @keydown.enter.prevent="openApplication(app)"
-                    @keydown.space.prevent="openApplication(app)"
-                >
-                    <div class="lw-card-top">
-                        <div class="lw-card-head-copy">
-                            <div class="lw-card-title-row">
-                                <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
-                                <div class="lw-card-title-copy">
-                                    <span class="lw-card-id">[[ app.name || 'Untitled' ]]</span>
-                                    <h4>[[ app.customer_name || 'Unnamed applicant' ]]</h4>
+                <section class="lw-card-grid">
+                    <article
+                        v-for="app in filteredApplications()"
+                        :key="app.name"
+                        class="lw-card"
+                        :class="cardToneClass(app.status)"
+                        tabindex="0"
+                        role="link"
+                        @click="openApplication(app)"
+                        @keydown.enter.prevent="openApplication(app)"
+                        @keydown.space.prevent="openApplication(app)"
+                    >
+                        <div class="lw-card-top">
+                            <div class="lw-card-head-copy">
+                                <div class="lw-card-title-row">
+                                    <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
+                                    <div class="lw-card-title-copy">
+                                        <span class="lw-card-id">[[ app.name || 'Untitled' ]]</span>
+                                        <h4>[[ app.customer_name || 'Unnamed applicant' ]]</h4>
+                                    </div>
                                 </div>
                             </div>
+                            <span class="lw-status-pill" :class="toneClass(app.status)">
+                                [[ app.status || 'Draft' ]]
+                            </span>
                         </div>
-                        <span class="lw-status-pill" :class="toneClass(app.status)">
-                            [[ app.status || 'Draft' ]]
-                        </span>
-                    </div>
 
-                    <p class="lw-card-amount">[[ formatCurrency(app.loan_amount) ]]</p>
-                    <p class="lw-card-product">[[ app.loan_type || 'Loan product not set' ]]</p>
+                        <p class="lw-card-amount">[[ formatCurrency(app.loan_amount) ]]</p>
+                        <p class="lw-card-product">[[ app.loan_type || 'Loan product not set' ]]</p>
 
-                    <div class="lw-progress-row">
-                        <span class="lw-progress-label">[[ formatDate(app.modified) ]]</span>
-                        <span class="lw-progress-track"></span>
-                        <span class="lw-progress-label">[[ app.branch_code || 'No branch' ]]</span>
-                    </div>
-
-                    <div class="lw-card-meta">
-                        <div>
-                            <span class="lw-meta-label">Mobile</span>
-                            <strong>[[ app.mobile_number || 'No mobile' ]]</strong>
+                        <div class="lw-progress-row">
+                            <span class="lw-progress-label">[[ formatDate(app.modified) ]]</span>
+                            <span class="lw-progress-track"></span>
+                            <span class="lw-progress-label">[[ app.branch_code || 'No branch' ]]</span>
                         </div>
-                        <div>
-                            <span class="lw-meta-label">Updated</span>
-                            <strong>[[ formatDate(app.modified) ]]</strong>
+
+                        <div class="lw-card-meta">
+                            <div>
+                                <span class="lw-meta-label">Mobile</span>
+                                <strong>[[ app.mobile_number || 'No mobile' ]]</strong>
+                            </div>
+                            <div>
+                                <span class="lw-meta-label">Updated</span>
+                                <strong>[[ formatDate(app.modified) ]]</strong>
+                            </div>
                         </div>
-                    </div>
-                </article>
+                    </article>
 
-                <article v-if="!loading && filteredApplications().length === 0" class="lw-empty">
-                    <strong>No records found</strong>
-                    <span>[[ emptyStateText() ]]</span>
-                </article>
+                    <article v-if="!loading && filteredApplications().length === 0" class="lw-empty">
+                        <strong>No records found</strong>
+                        <span>[[ emptyStateText() ]]</span>
+                    </article>
 
-                <article v-if="loading" class="lw-empty">
-                    <strong>Loading applications...</strong>
-                    <span>Please wait while the workspace pulls the latest loan files.</span>
-                </article>
+                    <article v-if="loading" class="lw-empty">
+                        <strong>Loading applications...</strong>
+                        <span>Please wait while the workspace pulls the latest loan files.</span>
+                    </article>
+                </section>
             </section>
 
             <section v-if="activeView === 'calendar'" class="lw-calendar-view">
@@ -407,7 +409,7 @@
 
     .lw-shell {
         display: grid;
-        gap: 16px;
+        gap: 0;
         min-width: 0;
         min-height: 0;
         flex: 1;
@@ -697,12 +699,20 @@
         margin: 0;
     }
 
+    .lw-card-view {
+        display: block;
+        min-width: 0;
+        width: 100%;
+        padding-top: 4px;
+    }
+
     .lw-card-section-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        margin-top: -16px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 
     .lw-card-section-head h3 {
@@ -921,7 +931,7 @@
         gap: 14px;
         width: 100%;
         max-width: none;
-        margin-top: -16px;
+        margin-top: 0;
     }
 
     .lw-card {
@@ -1322,7 +1332,7 @@
 <script>
     const TEMPLATE_USER_ROLES = {{ (user_roles or []) | json }};
     const WORKSPACE_STATUS_CARDS = [
-        { key: "All", label: "All Files", note: "Entire workspace volume", tone: "status-card-tone-neutral" },
+        { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-neutral" },
         { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "status-card-tone-draft" },
         { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "status-card-tone-credit-check" },
         { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "status-card-tone-valuation" },
@@ -1339,7 +1349,7 @@
             userRoles: [],
             userBranchCode: null,
             canCreate: false,
-            activeFilter: "All",
+            activeFilter: "Role Pending",
             activeView: "cards",
             searchText: "",
             loading: true,
@@ -1431,6 +1441,7 @@
 
             setFilter(filterKey) {
                 this.activeFilter = filterKey;
+                this.selectedCalendarDateKey = "";
                 this.activeView = "cards";
             },
 
@@ -1438,6 +1449,9 @@
                 this.activeView = viewName;
                 if (viewName === "calendar") {
                     this.activeFilter = "All";
+                    this.selectedCalendarDateKey = "";
+                } else {
+                    this.activeFilter = "Role Pending";
                     this.selectedCalendarDateKey = "";
                 }
             },
@@ -1726,7 +1740,7 @@
                 const rolePending = this.pendingCount();
                 return WORKSPACE_STATUS_CARDS.map((card) => ({
                     ...card,
-                    count: card.key === "All" ? Number(this.counts.All || 0) : (card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0))
+                    count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0)
                 }));
             },
 
