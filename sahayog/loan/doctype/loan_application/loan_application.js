@@ -15,20 +15,20 @@ frappe.ui.form.on("Loan Application", {
   //   });
   // },
 
-  before_workflow_action: function (frm) {
+ before_workflow_action: function (frm) {
         frappe.dom.unfreeze();
         return new Promise((resolve, reject) => {
             
-            // --- NEW: Custom Validation for "Accept" at "Credit Check" ---
+            // ==========================================
+            // 1. CREDIT CHECK VALIDATION
+            // ==========================================
             if (frm.doc.status === "Credit Check" && frm.selected_workflow_action === "Accept") {
                 let missing_fields = [];
                 
-                // Check if fields are empty or zero
                 if (!frm.doc.cibil_score) missing_fields.push("CIBIL Score");
                 if (!frm.doc.dedup) missing_fields.push("Dedup");
                 if (!frm.doc.credit_appraisal) missing_fields.push("Credit Appraisal");
 
-                // If any field is missing, halt the workflow
                 if (missing_fields.length > 0) {
                     frappe.msgprint({
                         title: __('Missing Mandatory Fields'),
@@ -37,13 +37,52 @@ frappe.ui.form.on("Loan Application", {
                     });
                     
                     frappe.validated = false;
-                    reject(); // Terminate workflow action immediately
+                    reject(); 
                     return;
                 }
             }
-            // --- END NEW VALIDATION ---
 
-            // Existing confirmation logic 
+            // ==========================================
+            // 2. CPC PROCESSING VERIFICATION
+            // ==========================================
+            if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
+                let required_docs = ["Loan Agreement", "Sanction Letter"];
+                let errors = [];
+
+                required_docs.forEach(doc_type => {
+                    let row = (frm.doc.kyc_documents || []).find(d => d.document_type === doc_type);
+
+                    if (!row) {
+                        errors.push(`<b>${doc_type}</b> row is missing from KYC Documents.`);
+                    } else {
+                        // Assuming your attachment field is named "document_url" or "file". Update as needed!
+                        let file_field = row.document_file || row.file || row.document; 
+                        
+                        if (!file_field) { 
+                            errors.push(`Please attach the document file for <b>${doc_type}</b>.`);
+                        }
+                        
+                        // Check if status is explicitly Verified
+                        if (row.status !== "Verified") {
+                            errors.push(`Status for <b>${doc_type}</b> must be "Verified".`);
+                        }
+                    }
+                });
+
+                if (errors.length > 0) {
+                    frappe.msgprint({
+                        title: __('CPC Verification Pending'),
+                        indicator: 'red',
+                        message: __('Cannot approve the application yet. Please resolve the following:<br><br><ul><li>' + errors.join('</li><li>') + '</li></ul>')
+                    });
+                    
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+            }
+
+            // Existing Workflow Confirmation
             frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
                 () => { resolve(); },
                 () => { frappe.validated = false; reject(); }
@@ -51,50 +90,43 @@ frappe.ui.form.on("Loan Application", {
         });
     },
 
-  // after_workflow_action: function (frm) {
-  //   frm.reload_doc();
-  // },
-
-  after_workflow_action: function (frm) {
-        // --- NEW: Auto-add documents when moving to CPC Processing ---
+    after_workflow_action: function (frm) {
+        // ==========================================
+        // 3. AUTO-ADD CPC DOCUMENTS
+        // ==========================================
         if (frm.doc.status === "CPC Processing") {
             let documents_to_add = ["Loan Agreement", "Sanction Letter"];
             let rows_added = false;
 
             documents_to_add.forEach(doc_type => {
-                // Check if this document type already exists to prevent duplicates
-                let exists = frm.doc.kyc_documents.some(row => row.document_type === doc_type);
+                let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
                 
                 if (!exists) {
-                    // Append new row to the child table
                     let row = frm.add_child("kyc_documents");
                     row.document_type = doc_type;
-                    row.status = "Pending"; // Assuming there is a "status" field in Loan Document child table
+                    row.status = "Pending"; // Sets initial status
                     rows_added = true;
                 }
             });
 
-            // If we added rows, refresh the field and immediately save the document
             if (rows_added) {
                 frm.refresh_field("kyc_documents");
                 
-                // Save the document quietly without triggering validation errors again
+                // Save automatically so the new rows hit the database
                 frm.save().then(() => {
                     frappe.msgprint({
-                        title: __('Documents Added'),
+                        title: __('CPC Documents Added'),
                         indicator: 'green',
-                        message: __('Required CPC documents (Loan Agreement, Sanction Letter) have been automatically added.')
+                        message: __('Loan Agreement and Sanction Letter rows have been automatically added to the documents table.')
                     });
                 });
             } else {
                 frm.reload_doc();
             }
         } else {
-            // Default behavior for other workflow actions
             frm.reload_doc();
         }
-        // --- END NEW AUTO-APPEND ---
-    },
+      },
 
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
