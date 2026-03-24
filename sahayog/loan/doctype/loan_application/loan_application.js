@@ -1,23 +1,100 @@
 frappe.ui.form.on("Loan Application", {
+  // before_workflow_action: function (frm) {
+  //   frappe.dom.unfreeze();
+  //   return new Promise((resolve, reject) => {
+  //     frappe.confirm(
+  //       __("Are you sure you want to proceed with <b>{0}</b>?", [
+  //         frm.selected_workflow_action,
+  //       ]),
+  //       () => resolve(),
+  //       () => {
+  //         frappe.validated = false;
+  //         reject();
+  //       }
+  //     );
+  //   });
+  // },
+
   before_workflow_action: function (frm) {
-    frappe.dom.unfreeze();
-    return new Promise((resolve, reject) => {
-      frappe.confirm(
-        __("Are you sure you want to proceed with <b>{0}</b>?", [
-          frm.selected_workflow_action,
-        ]),
-        () => resolve(),
-        () => {
-          frappe.validated = false;
-          reject();
-        }
-      );
-    });
-  },
+        frappe.dom.unfreeze();
+        return new Promise((resolve, reject) => {
+            
+            // --- NEW: Custom Validation for "Accept" at "Credit Check" ---
+            if (frm.doc.status === "Credit Check" && frm.selected_workflow_action === "Accept") {
+                let missing_fields = [];
+                
+                // Check if fields are empty or zero
+                if (!frm.doc.cibil_score) missing_fields.push("CIBIL Score");
+                if (!frm.doc.dedup) missing_fields.push("Dedup");
+                if (!frm.doc.credit_appraisal) missing_fields.push("Credit Appraisal");
+
+                // If any field is missing, halt the workflow
+                if (missing_fields.length > 0) {
+                    frappe.msgprint({
+                        title: __('Missing Mandatory Fields'),
+                        indicator: 'red',
+                        message: __('Please enter values for the following fields before accepting:<br><br><ul><li><b>' + missing_fields.join('</b></li><li><b>') + '</b></li></ul>')
+                    });
+                    
+                    frappe.validated = false;
+                    reject(); // Terminate workflow action immediately
+                    return;
+                }
+            }
+            // --- END NEW VALIDATION ---
+
+            // Existing confirmation logic 
+            frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
+                () => { resolve(); },
+                () => { frappe.validated = false; reject(); }
+            );
+        });
+    },
+
+  // after_workflow_action: function (frm) {
+  //   frm.reload_doc();
+  // },
 
   after_workflow_action: function (frm) {
-    frm.reload_doc();
-  },
+        // --- NEW: Auto-add documents when moving to CPC Processing ---
+        if (frm.doc.status === "CPC Processing") {
+            let documents_to_add = ["Loan Agreement", "Sanction Letter"];
+            let rows_added = false;
+
+            documents_to_add.forEach(doc_type => {
+                // Check if this document type already exists to prevent duplicates
+                let exists = frm.doc.kyc_documents.some(row => row.document_type === doc_type);
+                
+                if (!exists) {
+                    // Append new row to the child table
+                    let row = frm.add_child("kyc_documents");
+                    row.document_type = doc_type;
+                    row.status = "Pending"; // Assuming there is a "status" field in Loan Document child table
+                    rows_added = true;
+                }
+            });
+
+            // If we added rows, refresh the field and immediately save the document
+            if (rows_added) {
+                frm.refresh_field("kyc_documents");
+                
+                // Save the document quietly without triggering validation errors again
+                frm.save().then(() => {
+                    frappe.msgprint({
+                        title: __('Documents Added'),
+                        indicator: 'green',
+                        message: __('Required CPC documents (Loan Agreement, Sanction Letter) have been automatically added.')
+                    });
+                });
+            } else {
+                frm.reload_doc();
+            }
+        } else {
+            // Default behavior for other workflow actions
+            frm.reload_doc();
+        }
+        // --- END NEW AUTO-APPEND ---
+    },
 
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
