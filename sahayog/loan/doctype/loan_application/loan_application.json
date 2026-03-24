@@ -115,10 +115,74 @@
    "label": "Applicant Info"
   },
   {
+   "fieldname": "product_selection_section",
+   "fieldtype": "Section Break",
+   "label": "Product Selection"
+  },
+  {
+   "description": "Select the loan scheme (e.g., DD Loan, Gold Loan).",
+   "fieldname": "loan_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Loan Product",
+   "link_filters": "[[\"Loan Type\",\"is_active\",\"=\",1]]",
+   "options": "Loan Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ps",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Gold",
+   "depends_on": "eval:doc.loan_type==\"Gold Loan\"",
+   "description": "Type of collateral provided (e.g., Gold).",
+   "fieldname": "security_type",
+   "fieldtype": "Link",
+   "label": "Security Type",
+   "mandatory_depends_on": "eval:doc.loan_type==\"Gold Loan\"",
+   "options": "Loan Security Type"
+  },
+  {
    "depends_on": "eval:doc.loan_type",
    "fieldname": "customer_details_section",
    "fieldtype": "Section Break",
    "label": "Branch & Sabhasad/Member Details"
+  },
+  {
+   "description": "Unique Customer Identification File (CIF) ID.",
+   "fieldname": "cif_id",
+   "fieldtype": "Data",
+   "label": "CIF ID"
+  },
+  {
+   "description": "The branch where the application was initiated.",
+   "fieldname": "branch_code",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Sahayog Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "application_no",
+   "fieldtype": "Data",
+   "label": "Application No.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "membership_no",
+   "fieldtype": "Data",
+   "label": "Sabhasad/Membership No."
+  },
+  {
+   "fieldname": "annual_income",
+   "fieldtype": "Currency",
+   "label": "Annual Income (Approx)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_luoa",
+   "fieldtype": "Column Break"
   },
   {
    "description": "Full legal name of the applicant.",
@@ -137,10 +201,29 @@
    "reqd": 1
   },
   {
-   "description": "Unique Customer Identification File (CIF) ID.",
-   "fieldname": "cif_id",
+   "fieldname": "father_husband_name",
    "fieldtype": "Data",
-   "label": "CIF ID"
+   "label": "Father\u2019s / Husband\u2019s Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "occupation",
+   "fieldtype": "Select",
+   "label": "Occupation",
+   "options": "\nSalaried\nSelf-employed\nAgriculturist\nBusiness\nOthers",
+   "reqd": 1
+  },
+  {
+   "description": "Applicant Profile Photo (for identity verification)",
+   "fieldname": "customer_photo",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Customer Profile Photo",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_qdcs",
+   "fieldtype": "Column Break"
   },
   {
    "description": "Applicant's date of birth as per KYC.",
@@ -149,6 +232,46 @@
    "in_list_view": 1,
    "label": "Date of Birth",
    "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "marital_status",
+   "fieldtype": "Select",
+   "label": "Marital Status",
+   "options": "\nMarried\nUnmarried\nWidowed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "label": "Email ID"
+  },
+  {
+   "depends_on": "eval:doc.loan_type",
+   "fieldname": "section_break_ndll",
+   "fieldtype": "Section Break",
+   "label": "Address"
+  },
+  {
+   "fieldname": "permanent_address",
+   "fieldtype": "Small Text",
+   "label": "Permanent Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_pmpc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "correspondence_address",
+   "fieldtype": "Small Text",
+   "label": "Correspondence Address"
   },
   {
    "depends_on": "eval:doc.date_of_birth",
@@ -164,38 +287,73 @@
    "options": "Loan Document"
   },
   {
+   "depends_on": "eval:doc.loan_type",
+   "fieldname": "nomination_section",
+   "fieldtype": "Section Break",
+   "label": "Nomination"
+  },
+  {
+   "fieldname": "nominee_name",
+   "fieldtype": "Data",
+   "label": "Name of Nominee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "relation_with_applicant",
+   "fieldtype": "Data",
+   "label": "Relation with Applicant",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_uwii",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nominee_age",
+   "fieldtype": "Int",
+   "label": "Age",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nominee_address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "reqd": 1
+  },
+  {
    "depends_on": "eval:doc.loan_type=='Gold Loan'",
    "fieldname": "asset_security_tab",
    "fieldtype": "Tab Break",
    "label": "Asset & Security"
   },
   {
-   "fieldname": "product_selection_section",
+   "fieldname": "loan_details_section",
    "fieldtype": "Section Break",
-   "label": "Product Selection"
+   "label": "Loan Details"
   },
   {
-   "description": "Select the loan scheme (e.g., DD Loan, Gold Loan).",
-   "fieldname": "loan_type",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Loan Product",
-   "link_filters": "[[\"Loan Type\",\"is_active\",\"=\",1]]",
-   "options": "Loan Type",
+   "description": "Actual loan amount requested by the applicant.",
+   "fieldname": "loan_amount",
+   "fieldtype": "Currency",
+   "label": "Loan Amount Requested",
    "reqd": 1
   },
   {
-   "default": "Gold",
-   "depends_on": "eval:doc.loan_type==\"Gold Loan\"",
-   "description": "Type of collateral provided (e.g., Gold).",
-   "fieldname": "security_type",
-   "fieldtype": "Link",
-   "label": "Security Type",
-   "mandatory_depends_on": "eval:doc.loan_type==\"Gold Loan\"",
-   "options": "Loan Security Type"
+   "fieldname": "purpose_of_loan",
+   "fieldtype": "Select",
+   "label": "Purpose of Loan",
+   "options": "\nAgriculture\nBusiness\nEducation\nMedical\nEmergency\nOther",
+   "reqd": 1
   },
   {
-   "fieldname": "column_break_ps",
+   "fieldname": "existing_loan",
+   "fieldtype": "Select",
+   "label": "Any Existing Loan with Society?",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_otrt",
    "fieldtype": "Column Break"
   },
   {
@@ -244,15 +402,22 @@
    "depends_on": "eval:doc.security_type==\"Gold\" && ![\"Draft\",\"Credit Check\"].includes(doc.status)",
    "fieldname": "ornaments_section",
    "fieldtype": "Section Break",
-   "label": "Individual Ornaments"
+   "label": "Scoring Result"
   },
   {
-   "depends_on": "eval:doc.security_type=='Gold'",
-   "description": "List every gold item with its specific weight and purity.",
-   "fieldname": "ornaments_list",
-   "fieldtype": "Table",
-   "label": "Ornaments List",
-   "options": "Loan Ornament"
+   "fieldname": "dedup",
+   "fieldtype": "Text",
+   "label": "Dedup"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Notes from the credit underwriting team.",
+   "fieldname": "credit_appraisal",
+   "fieldtype": "Small Text",
+   "label": "Credit Remarks"
   },
   {
    "depends_on": "eval:doc.loan_type=='DD Loan'",
@@ -349,18 +514,11 @@
    "read_only": 1
   },
   {
-   "description": "Actual loan amount requested by the applicant.",
-   "fieldname": "loan_amount",
+   "description": "Final approved loan amount based on eligibility and system rules.",
+   "fieldname": "sanctioned_loan_amount",
    "fieldtype": "Currency",
-   "label": "Loan Amount Requested",
-   "reqd": 1
-  },
-  {
-   "description": "Number of months for loan repayment.",
-   "fieldname": "tenure_months",
-   "fieldtype": "Int",
-   "label": "Repayment Tenure (in Months)",
-   "reqd": 1
+   "label": "Sanctioned Loan Amount",
+   "read_only": 1
   },
   {
    "depends_on": "eval:doc.security_type=='Gold'",
@@ -371,21 +529,10 @@
    "label": "Applied LTV (%)"
   },
   {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
-  },
-  {
    "description": "Annual interest percentage pulled from the product scheme.",
    "fieldname": "interest_rate",
    "fieldtype": "Percent",
    "label": "Interest Rate (%)",
-   "read_only": 1
-  },
-  {
-   "description": "One-time administrative fee percentage.",
-   "fieldname": "processing_fee",
-   "fieldtype": "Percent",
-   "label": "Processing Fee (%)",
    "read_only": 1
   },
   {
@@ -394,6 +541,17 @@
    "fieldname": "valuation_charges",
    "fieldtype": "Currency",
    "label": "Valuation Charges"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "One-time administrative fee percentage.",
+   "fieldname": "processing_fee",
+   "fieldtype": "Percent",
+   "label": "Processing Fee (%)",
+   "read_only": 1
   },
   {
    "description": "Legal/government tax applicable on the loan.",
@@ -460,12 +618,14 @@
    "read_only": 1
   },
   {
-   "description": "The branch where the application was initiated.",
-   "fieldname": "branch_code",
-   "fieldtype": "Link",
-   "label": "Branch",
-   "options": "Sahayog Branch",
-   "reqd": 1
+   "fieldname": "applicant_signature",
+   "fieldtype": "Data",
+   "label": "Signature of Applicant"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
   },
   {
    "fieldname": "column_break_7",
@@ -683,13 +843,23 @@
    "label": "Verified Gold Weight & Purity"
   },
   {
-   "fieldname": "recommended_loan_amount",
-   "fieldtype": "Currency",
-   "label": "Recommended Loan Amount"
+   "fieldname": "loan_sanctioned_by",
+   "fieldtype": "Data",
+   "label": "Loan Sanctioned by "
+  },
+  {
+   "fieldname": "loan_account_number",
+   "fieldtype": "Data",
+   "label": "Loan Account Number"
   },
   {
    "fieldname": "column_break_vlvq",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "recommended_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Recommended Loan Amount"
   },
   {
    "fieldname": "margin_maintained",
@@ -700,11 +870,6 @@
    "fieldname": "repayment_mode_office",
    "fieldtype": "Data",
    "label": "Repayment Mode"
-  },
-  {
-   "fieldname": "loan_sanctioned_by",
-   "fieldtype": "Data",
-   "label": "Loan Sanctioned by "
   },
   {
    "fieldname": "sanction_date",
