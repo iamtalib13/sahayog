@@ -469,6 +469,15 @@ override_doctype_dashboards = {
 # 	"sahayog.auth.validate"
 # ]
 
+exempt_from_csrf = [
+    "sahayog.api.eod.start_eod",
+    "sahayog.api.eod.update_task_status",
+    "sahayog.api.eod.close_eod",
+    "sahayog.sahayog.api.eod.start_eod",
+    "sahayog.sahayog.api.eod.update_task_status",
+    "sahayog.sahayog.api.eod.close_eod"
+]
+
 # Automatically update python controller files with type annotations for this app.
 # export_python_type_annotations = True
 
