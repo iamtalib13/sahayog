@@ -90,10 +90,9 @@ class LoanApplication(Document):
         self.eligible_loan_amount = 0
 
         # Layer 1: Gates
-        if age < (flt(policy.min_age) or 21):
-            if not (age >= 18 and getattr(self, "has_co_applicant", False)):
-                self.rule_engine_status = _("Rejected: Min age required")
-                return
+        if age < 18:
+            self.rule_engine_status = _("Rejected: Min age required (18)")
+            return
 
         # Layer 2: Scoring
         score = 0
