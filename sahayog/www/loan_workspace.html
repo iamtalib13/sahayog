@@ -39,9 +39,6 @@
 
             <div class="lw-topbar-actions">
                 <div class="lw-toolbar-center">
-                    <button class="lw-pending-pill" type="button" @click="setFilter('Role Pending')" :class="[pendingToneClass(), { active: activeFilter === 'Role Pending' }]">
-                        Pending Action ([[ pendingCount() ]])
-                    </button>
                 </div>
 
                 <div class="lw-toolbar-right">
@@ -692,6 +689,33 @@
         color: var(--lw-rejected-text);
     }
 
+    .status-card-tone-pending {
+        background: linear-gradient(135deg, #b20000, #ff0000);
+        border-color: #b20000;
+        color: #fff;
+        box-shadow: 0 0 3px rgba(178, 0, 0, 0.35);
+        animation: lw-pending-card-glow 1.5s infinite;
+    }
+
+    .lw-status-card.status-card-tone-pending.selected {
+        background: linear-gradient(135deg, #b20000, #ff0000);
+        border-color: #b20000;
+        color: #fff;
+    }
+
+    .status-card-tone-pending .lw-status-note {
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    @keyframes lw-pending-card-glow {
+        0%, 100% {
+            box-shadow: 0 0 3px rgba(178, 0, 0, 0.35);
+        }
+        50% {
+            box-shadow: 0 0 28px rgba(255, 0, 0, 0.95);
+        }
+    }
+
     .lw-section-separator {
         height: 1px;
         width: 100%;
@@ -1332,7 +1356,7 @@
 <script>
     const TEMPLATE_USER_ROLES = {{ (user_roles or []) | json }};
     const WORKSPACE_STATUS_CARDS = [
-        { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-neutral" },
+    { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-pending" },
         { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "status-card-tone-draft" },
         { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "status-card-tone-credit-check" },
         { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "status-card-tone-valuation" },
