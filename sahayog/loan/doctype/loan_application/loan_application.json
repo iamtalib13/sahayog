@@ -511,8 +511,7 @@
   {
    "fieldname": "membership_no",
    "fieldtype": "Data",
-   "label": "Sabhasad/Membership No.",
-   "reqd": 1
+   "label": "Sabhasad/Membership No."
   },
   {
    "fieldname": "father_husband_name",
@@ -729,7 +728,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-23 17:30:46.194287",
+ "modified": "2026-03-24 14:29:59.716715",
  "modified_by": "8751@sahayog.com",
  "module": "Loan",
  "name": "Loan Application",
