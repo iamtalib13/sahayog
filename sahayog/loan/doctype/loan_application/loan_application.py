@@ -28,7 +28,7 @@ class LoanApplication(Document):
         
         # Add default KYC documents if empty
         if self.is_new() and not self.kyc_documents:
-            default_docs = ["Aadhaar Card", "PAN Card", "Ornament Image"]
+            default_docs = ["Aadhaar Card", "PAN Card"]
             for doc_type in default_docs:
                 self.append("kyc_documents", {
                     "document_type": doc_type,
