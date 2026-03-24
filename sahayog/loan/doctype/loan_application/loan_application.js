@@ -422,6 +422,26 @@ frappe.ui.form.on("Loan Application", {
     // Skip validations if in Draft state
     if (frm.doc.status === "Draft") return;
 
+    // Valuation Pending specific logic
+    if (frm.doc.status === "Valuation Pending" && frm.doc.security_type === "Gold") {
+      // 1. Ensure Ornaments List is not empty
+      if (!frm.doc.ornaments_list || frm.doc.ornaments_list.length === 0) {
+        frappe.throw(__("Ornaments List is mandatory when status is Valuation Pending."));
+      }
+
+      // 2. Ensure Ornament Image exists in KYC Documents
+      let has_ornament_image = (frm.doc.kyc_documents || []).some(
+        (d) => d.document_type === "Ornament Image"
+      );
+      if (!has_ornament_image) {
+        let row = frm.add_child("kyc_documents");
+        row.document_type = "Ornament Image";
+        row.status = "Pending";
+        frm.refresh_field("kyc_documents");
+        frappe.msgprint(__("Added 'Ornament Image' row to KYC Documents."));
+      }
+    }
+
     if (frm.doc.customer_name && /[^a-zA-Z\s]/.test(frm.doc.customer_name)) {
       frappe.throw(
         __("Customer Name should only contain alphabets and spaces."),

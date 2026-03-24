@@ -35,6 +35,19 @@ class LoanApplication(Document):
                     "status": "Pending"
                 })
 
+        # Valuation Pending Logic
+        if self.status == "Valuation Pending" and self.security_type == "Gold":
+            if not self.ornaments_list:
+                frappe.throw(_("Ornaments List is mandatory when status is 'Valuation Pending'."))
+            
+            # Add Ornament Image to KYC if not present
+            has_ornament_image = any(d.document_type == "Ornament Image" for d in self.kyc_documents)
+            if not has_ornament_image:
+                self.append("kyc_documents", {
+                    "document_type": "Ornament Image",
+                    "status": "Pending"
+                })
+
     def validate_basic_fields(self):
         # Mobile Validation
         if self.mobile_number:
