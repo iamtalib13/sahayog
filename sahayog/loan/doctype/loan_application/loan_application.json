@@ -199,7 +199,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.security_type=='Gold'",
+   "depends_on": "eval:doc.security_type==\"Gold\" && ![\"Draft\",\"Credit Check\"].includes(doc.status)",
    "fieldname": "security_details_section",
    "fieldtype": "Section Break",
    "label": "Gold Valuation"
@@ -241,7 +241,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.security_type=='Gold'",
+   "depends_on": "eval:doc.security_type==\"Gold\" && ![\"Draft\",\"Credit Check\"].includes(doc.status)",
    "fieldname": "ornaments_section",
    "fieldtype": "Section Break",
    "label": "Individual Ornaments"
@@ -416,7 +416,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.branch_code",
+   "depends_on": "eval:doc.status==\"CPC Processing\" || doc.status==\"Approved\"",
    "fieldname": "internal_ops_tab",
    "fieldtype": "Tab Break",
    "label": "Ops & Internal"
@@ -728,8 +728,8 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-24 14:29:59.716715",
- "modified_by": "8751@sahayog.com",
+ "modified": "2026-03-24 15:32:45.147936",
+ "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
  "naming_rule": "Expression (old style)",
