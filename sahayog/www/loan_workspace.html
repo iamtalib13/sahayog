@@ -59,10 +59,13 @@
                         v-for="card in statusCards()"
                         :key="card.key"
                         class="lw-status-card"
-                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount }]"
-                        @click="setFilter(card.key)"
-                        tabindex="0"
+                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
+                        @click="card.disabled ? null : setFilter(card.key)"
+                        :tabindex="card.disabled ? -1 : 0"
+                        :aria-disabled="card.disabled ? 'true' : 'false'"
                         role="button"
+                        @keydown.enter.prevent="card.disabled ? null : setFilter(card.key)"
+                        @keydown.space.prevent="card.disabled ? null : setFilter(card.key)"
                     >
                         <div class="lw-status-card-head">
                             <span class="lw-status-label">[[ card.label ]]</span>
@@ -71,6 +74,10 @@
                         <span class="lw-status-note">[[ card.note ]]</span>
                     </article>
                 </section>
+
+                <div v-if="showPendingEmptyMessage()" class="lw-pending-empty" aria-live="polite">
+                    Koi bhi pending application nahi hai aapke liye.
+                </div>
 
                 <div class="lw-section-separator"></div>
 
@@ -150,7 +157,8 @@
                         :key="`bottom-${card.key}`"
                         type="button"
                         class="lw-bottom-filter-item"
-                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount }]"
+                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
+                        :disabled="card.disabled"
                         :title="card.note"
                         @click="setFilter(card.key)"
                     >
@@ -669,6 +677,15 @@
         opacity: 0.72;
     }
 
+    .lw-bottom-filter-item.disabled,
+    .lw-bottom-filter-item:disabled {
+        cursor: not-allowed;
+        opacity: 0.72;
+        filter: grayscale(1);
+        box-shadow: none;
+        pointer-events: none;
+    }
+
     .lw-status-card {
         position: relative;
         border-radius: 18px;
@@ -781,6 +798,31 @@
         color: #9ca3af;
     }
 
+    .lw-status-card.disabled {
+        cursor: not-allowed;
+        pointer-events: none;
+        opacity: 0.72;
+        filter: grayscale(1);
+        box-shadow: none;
+    }
+
+    .lw-status-card.status-card-tone-pending.disabled,
+    .lw-status-card.status-card-tone-pending.zero-count {
+        animation: none;
+        background: rgba(243, 244, 246, 0.78);
+        border-color: rgba(229, 231, 235, 0.95);
+        color: #9ca3af;
+        box-shadow: none;
+        opacity: 0.78;
+    }
+
+    .lw-status-card.status-card-tone-pending.disabled .lw-status-note,
+    .lw-status-card.status-card-tone-pending.disabled .lw-status-count,
+    .lw-status-card.status-card-tone-pending.zero-count .lw-status-note,
+    .lw-status-card.status-card-tone-pending.zero-count .lw-status-count {
+        color: #9ca3af;
+    }
+
     .status-card-tone-pending {
         background: linear-gradient(135deg, rgba(178, 0, 0, 0.88), rgba(255, 0, 0, 0.84));
         border-color: #b20000;
@@ -815,6 +857,18 @@
         width: 100%;
         background: var(--lw-border-soft);
         margin: 0;
+    }
+
+    .lw-pending-empty {
+        margin: 10px 0 0;
+        padding: 12px 14px;
+        border: 1px dashed var(--lw-border);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.74);
+        color: var(--lw-muted);
+        font-size: 0.92rem;
+        font-weight: 600;
+        line-height: 1.4;
     }
 
     .lw-card-view {
@@ -1579,6 +1633,12 @@
             font-size: 0.9rem;
         }
 
+        .lw-pending-empty {
+            margin-top: 8px;
+            padding: 10px 12px;
+            font-size: 0.86rem;
+        }
+
         .lw-card-status-stack .lw-card-product {
             max-width: none;
         }
@@ -2307,12 +2367,21 @@
                 return this.pendingCount() > 0 ? "pending-alert" : "pending-clear";
             },
 
+            showPendingEmptyMessage() {
+                return this.activeView === "cards" && this.hasPendingQueue() && this.pendingCount() === 0;
+            },
+
+            hasPendingQueue() {
+                return this.userRoles.includes("Branch Loan User") || this.userRoles.includes("Credit Loan User") || this.userRoles.includes("CPC Loan User");
+            },
+
             statusCards() {
                 const rolePending = this.pendingCount();
                 return WORKSPACE_STATUS_CARDS.map((card) => ({
                     ...card,
                     count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0),
-                    zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0
+                    zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0,
+                    disabled: card.key === "Role Pending" ? rolePending === 0 : false
                 }));
             },
 
