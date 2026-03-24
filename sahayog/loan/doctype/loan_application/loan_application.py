@@ -35,10 +35,13 @@ class LoanApplication(Document):
                     "status": "Pending"
                 })
 
-        # Valuation Pending Logic
-        if self.status == "Valuation Pending" and self.security_type == "Gold":
+        # Credit Decision Logic
+        if self.status == "Credit Decision" and self.security_type == "Gold":
             if not self.ornaments_list:
-                frappe.throw(_("Ornaments List is mandatory when status is 'Valuation Pending'."))
+                frappe.throw(_("Ornaments List is mandatory when status is 'Credit Decision'."))
+            
+            if not self.disclaimer:
+                frappe.throw(_("The Member Declaration (Disclaimer) checkbox is mandatory when status is 'Credit Decision'."))
             
             # Add Ornament Image to KYC if not present
             has_ornament_image = any(d.document_type == "Ornament Image" for d in self.kyc_documents)

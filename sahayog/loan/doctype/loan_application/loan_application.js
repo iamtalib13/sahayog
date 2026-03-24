@@ -422,14 +422,19 @@ frappe.ui.form.on("Loan Application", {
     // Skip validations if in Draft state
     if (frm.doc.status === "Draft") return;
 
-    // Valuation Pending specific logic
-    if (frm.doc.status === "Valuation Pending" && frm.doc.security_type === "Gold") {
+    // Credit Decision specific logic
+    if (frm.doc.status === "Credit Decision" && frm.doc.security_type === "Gold") {
       // 1. Ensure Ornaments List is not empty
       if (!frm.doc.ornaments_list || frm.doc.ornaments_list.length === 0) {
-        frappe.throw(__("Ornaments List is mandatory when status is Valuation Pending."));
+        frappe.throw(__("Ornaments List is mandatory when status is Credit Decision."));
       }
 
-      // 2. Ensure Ornament Image exists in KYC Documents
+      // 2. Ensure Disclaimer is checked
+      if (!frm.doc.disclaimer) {
+        frappe.throw(__("The Member Declaration checkbox is mandatory when status is Credit Decision."));
+      }
+
+      // 3. Ensure Ornament Image exists in KYC Documents
       let has_ornament_image = (frm.doc.kyc_documents || []).some(
         (d) => d.document_type === "Ornament Image"
       );
