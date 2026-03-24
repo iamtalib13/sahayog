@@ -25,6 +25,15 @@ class LoanApplication(Document):
         # Initial status setup
         if self.is_new() and not self.status:
             self.status = "Draft"
+        
+        # Add default KYC documents if empty
+        if self.is_new() and not self.kyc_documents:
+            default_docs = ["Aadhaar Card", "PAN Card", "Ornament Image"]
+            for doc_type in default_docs:
+                self.append("kyc_documents", {
+                    "document_type": doc_type,
+                    "status": "Pending"
+                })
 
     def validate_basic_fields(self):
         # Mobile Validation

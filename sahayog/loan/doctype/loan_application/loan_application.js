@@ -140,6 +140,17 @@ frappe.ui.form.on("Loan Application", {
 
   onload: function (frm) {
     frm.trigger("apply_branch_user_rules");
+
+    // Pre-populate KYC Documents for new applications
+    if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
+      const default_docs = ["Aadhaar Card", "PAN Card", "Ornament Image"];
+      default_docs.forEach((doc_type) => {
+        let row = frm.add_child("kyc_documents");
+        row.document_type = doc_type;
+        row.status = "Pending";
+      });
+      frm.refresh_field("kyc_documents");
+    }
   },
 
   apply_branch_user_rules: function (frm) {
