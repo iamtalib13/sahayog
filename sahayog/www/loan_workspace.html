@@ -31,7 +31,8 @@
                     <input
                         id="application-search"
                         type="search"
-                        v-model="searchText"
+                        :value="searchText"
+                        @input="onSearchInput($event)"
                         placeholder="Search by customer, branch, mobile, or file ID"
                     >
                 </label>
@@ -74,7 +75,7 @@
                 <div class="lw-section-separator"></div>
 
                 <div class="lw-card-section-head">
-                    <h3>Loan Applications - [[ loading ? '...' : filteredApplications().length ]]</h3>
+                    <h3>Loan Applications - [[ activeSelectionLabel() ]] - [[ loading ? '...' : filteredApplications().length ]]</h3>
                 </div>
 
                 <section class="lw-card-grid">
@@ -142,6 +143,21 @@
                         <span>Please wait while the workspace pulls the latest loan files.</span>
                     </article>
                 </section>
+
+                <nav class="lw-bottom-filter-nav" aria-label="Loan application filters">
+                    <button
+                        v-for="card in statusCards()"
+                        :key="`bottom-${card.key}`"
+                        type="button"
+                        class="lw-bottom-filter-item"
+                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount }]"
+                        :title="card.note"
+                        @click="setFilter(card.key)"
+                    >
+                        <span class="lw-bottom-filter-label">[[ card.label ]]</span>
+                        <span class="lw-bottom-filter-count">[[ card.count ]]</span>
+                    </button>
+                </nav>
             </section>
 
             <section v-if="activeView === 'calendar'" class="lw-calendar-view">
@@ -611,6 +627,46 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
         gap: 12px;
+    }
+
+    .lw-bottom-filter-nav {
+        display: none;
+    }
+
+    .lw-bottom-filter-item {
+        display: grid;
+        gap: 2px;
+        align-content: start;
+        justify-items: start;
+        border-radius: 16px;
+        padding: 10px 12px;
+        min-width: 0;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .lw-bottom-filter-label {
+        font-size: 0.72rem;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .lw-bottom-filter-count {
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1.15;
+    }
+
+    .lw-bottom-filter-item.selected {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+    }
+
+    .lw-bottom-filter-item.zero-count {
+        opacity: 0.72;
     }
 
     .lw-status-card {
@@ -1358,8 +1414,53 @@
             width: 100%;
         }
 
+        .lw-topbar-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .lw-toolbar-center {
+            display: none;
+        }
+
+        .lw-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .lw-chip-primary {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .lw-topbar-left {
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .lw-brand-logo {
+            max-width: min(180px, 56vw);
+        }
+
+        .lw-view-toggle {
+            width: 100%;
+        }
+
+        .lw-view-toggle .lw-chip {
+            flex: 1 1 0;
+            justify-content: center;
+            min-width: 0;
+            padding: 9px 10px;
+        }
+
         .lw-search-header {
             width: 100%;
+        }
+
+        .lw-search {
+            min-height: 40px;
+            padding: 0 12px;
         }
 
         .lw-card-grid {
@@ -1392,6 +1493,15 @@
             margin-top: 0;
         }
 
+        .lw-filter-grid,
+        .lw-section-separator {
+            display: none;
+        }
+
+        .lw-content-shell {
+            padding: 14px 14px 118px;
+        }
+
         .lw-card-grid {
             grid-template-columns: 1fr;
         }
@@ -1406,17 +1516,49 @@
         }
 
         .lw-topbar-inner {
-            padding: 14px 16px;
+            padding: 12px 14px;
+            gap: 10px;
+        }
+
+        .lw-topbar-inner {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .lw-topbar-left {
+            grid-column: 1 / -1;
+            width: 100%;
         }
 
         .lw-topbar-meta {
+            grid-column: 1;
             width: 100%;
             justify-content: flex-start;
-            gap: 10px;
+            gap: 0;
+        }
+
+        .lw-topbar-actions {
+            grid-column: 2;
+            width: 100%;
+            display: flex;
+            align-items: stretch;
+            justify-content: flex-end;
+            gap: 0;
+        }
+
+        .lw-toolbar-right {
+            width: 100%;
+        }
+
+        .lw-chip-primary {
+            width: 100%;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 10px;
         }
 
         .lw-view-toggle {
             width: 100%;
+            gap: 8px;
         }
 
         .lw-search-header {
@@ -1425,8 +1567,8 @@
         }
 
         .lw-brand-logo {
-            width: 40px;
-            height: 40px;
+            width: auto;
+            height: 38px;
         }
 
         .lw-card-meta {
@@ -1445,33 +1587,140 @@
             min-height: 0;
         }
 
+        .lw-bottom-filter-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 45;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+            background: rgba(247, 249, 252, 0.94);
+            border-top: 1px solid var(--lw-border);
+            box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(18px) saturate(150%);
+            -webkit-backdrop-filter: blur(18px) saturate(150%);
+            scroll-snap-type: x proximity;
+        }
+
+        .lw-bottom-filter-item {
+            flex: 0 0 auto;
+            min-width: 96px;
+            scroll-snap-align: start;
+        }
+
         .lw-calendar-toolbar {
             flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .lw-calendar-shell {
+            height: auto;
+        }
+
+        .lw-calendar-view {
+            display: block;
+        }
+
+        .lw-calendar-copy {
+            gap: 6px;
+        }
+
+        .lw-calendar-copy-head {
             align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .lw-calendar-coins {
+            justify-content: flex-start;
+            gap: 4px;
+        }
+
+        .lw-calendar-coin {
+            width: 30px;
+            height: 30px;
+        }
+
+        .lw-calendar-controls {
+            width: 100%;
+        }
+
+        .lw-calendar-nav {
+            flex: 1 1 0;
+            min-width: 0;
+            min-height: 38px;
+            padding: 8px 10px;
+            font-size: 0.78rem;
+        }
+
+        .lw-calendar-grid {
+            gap: 4px;
+            height: auto;
+            flex: none;
+            align-content: start;
+            grid-template-rows: auto repeat(6, minmax(54px, auto));
         }
 
         .lw-calendar-weekday {
-            padding: 0 4px;
-            font-size: 0.64rem;
+            padding: 0 2px;
+            font-size: 0.58rem;
+            letter-spacing: 0.02em;
         }
 
         .lw-calendar-day {
-            min-height: 88px;
-            padding: 6px;
-            gap: 6px;
-            border-radius: 14px;
+            min-height: 54px;
+            padding: 4px;
+            gap: 4px;
+            border-radius: 12px;
+            place-items: stretch;
         }
 
         .lw-calendar-day-number {
-            top: 6px;
-            left: 8px;
-            font-size: 0.7rem;
+            top: 4px;
+            left: 6px;
+            font-size: 0.64rem;
+        }
+
+        .lw-calendar-day-count-wrap {
+            align-items: center;
+            justify-content: center;
         }
 
         .lw-calendar-day-count {
-            min-width: 42px;
-            height: 42px;
-            font-size: 1rem;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 6px;
+            font-size: 0.78rem;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .lw-calendar-copy h3 {
+            font-size: 0.98rem;
+        }
+
+        .lw-calendar-copy span {
+            font-size: 0.8rem;
+        }
+
+        .lw-calendar-nav {
+            padding: 7px 8px;
+            font-size: 0.74rem;
+        }
+
+        .lw-calendar-day {
+            min-height: 48px;
+            padding: 3px;
+            border-radius: 10px;
+        }
+
+        .lw-calendar-day-count {
+            min-width: 24px;
+            height: 24px;
+            font-size: 0.7rem;
         }
     }
 </style>
@@ -1506,6 +1755,122 @@
             errorText: "",
             calendarMonthCursor: null,
             selectedCalendarDateKey: "",
+
+            isValidWorkspaceView(viewName) {
+                return ["cards", "calendar"].includes(viewName);
+            },
+
+            isValidWorkspaceFilter(filterKey) {
+                if (filterKey === "All" || filterKey === "Role Pending") {
+                    return true;
+                }
+
+                return WORKSPACE_STATUS_CARDS.some((card) => card.key === filterKey);
+            },
+
+            defaultFilterForView(viewName) {
+                return viewName === "calendar" ? "All" : "Role Pending";
+            },
+
+            activeSelectionLabel() {
+                return this.getFilterLabel(this.activeFilter);
+            },
+
+            getFilterLabel(filterKey) {
+                const card = WORKSPACE_STATUS_CARDS.find((entry) => entry.key === filterKey);
+                return card ? card.label : (filterKey || "All");
+            },
+
+            getWorkspaceMonthValue() {
+                if (!this.calendarMonthCursor) return "";
+
+                const date = new Date(this.calendarMonthCursor);
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                return `${date.getFullYear()}-${month}`;
+            },
+
+            applyWorkspaceStateFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const viewParam = params.get("view");
+                const filterParam = params.get("filter");
+                const monthParam = params.get("month");
+                const dateParam = params.get("date");
+                const searchParam = params.get("q");
+
+                if (this.isValidWorkspaceView(viewParam)) {
+                    this.activeView = viewParam;
+                }
+
+                if (searchParam !== null) {
+                    this.searchText = searchParam;
+                }
+
+                if (monthParam) {
+                    const [year, month] = monthParam.split("-").map((value) => Number(value));
+                    if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+                        const monthDate = new Date(year, month - 1, 1);
+                        monthDate.setHours(0, 0, 0, 0);
+                        this.calendarMonthCursor = monthDate.getTime();
+                    }
+                }
+
+                if (this.activeView === "calendar") {
+                    this.activeFilter = "All";
+                } else if (this.isValidWorkspaceFilter(filterParam)) {
+                    this.activeFilter = filterParam;
+                } else {
+                    this.activeFilter = this.defaultFilterForView(this.activeView);
+                }
+
+                if (dateParam) {
+                    this.selectedCalendarDateKey = dateParam;
+                    this.activeView = "cards";
+                    this.activeFilter = "All";
+                }
+            },
+
+            syncWorkspaceUrl() {
+                if (typeof window === "undefined" || !window.history || !window.location) {
+                    return;
+                }
+
+                const params = new URLSearchParams();
+                const viewName = this.isValidWorkspaceView(this.activeView) ? this.activeView : "cards";
+                const filterKey = viewName === "calendar"
+                    ? "All"
+                    : (this.isValidWorkspaceFilter(this.activeFilter)
+                        ? this.activeFilter
+                        : this.defaultFilterForView(viewName));
+                const searchValue = String(this.searchText || "").trim();
+                const monthValue = this.getWorkspaceMonthValue();
+
+                params.set("view", viewName);
+                params.set("filter", filterKey);
+
+                if (searchValue) {
+                    params.set("q", searchValue);
+                }
+
+                if (viewName === "calendar" && monthValue) {
+                    params.set("month", monthValue);
+                }
+
+                if (this.selectedCalendarDateKey) {
+                    params.set("date", this.selectedCalendarDateKey);
+                }
+
+                const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash || ""}`;
+                const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash || ""}`;
+
+                if (nextUrl !== currentUrl) {
+                    window.history.replaceState({}, "", nextUrl);
+                }
+            },
+
+            onSearchInput(event) {
+                this.searchText = event && event.target ? event.target.value : "";
+                this.syncWorkspaceUrl();
+            },
 
             async resolveUserRoles() {
                 const bootRoles = (window.frappe && frappe.boot && frappe.boot.user && Array.isArray(frappe.boot.user.roles) && frappe.boot.user.roles) || [];
@@ -1557,7 +1922,11 @@
                 this.userRoles = await this.resolveUserRoles();
                 this.userBranchCode = await this.resolveUserBranchCode();
                 this.canCreate = this.userRoles.includes("Branch Loan User");
-                this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+                this.applyWorkspaceStateFromUrl();
+                if (!this.calendarMonthCursor) {
+                    this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+                }
+                this.syncWorkspaceUrl();
                 await this.loadWorkspace();
             },
 
@@ -1591,6 +1960,7 @@
                 this.activeFilter = filterKey;
                 this.selectedCalendarDateKey = "";
                 this.activeView = "cards";
+                this.syncWorkspaceUrl();
             },
 
             setView(viewName) {
@@ -1602,6 +1972,7 @@
                     this.activeFilter = "Role Pending";
                     this.selectedCalendarDateKey = "";
                 }
+                this.syncWorkspaceUrl();
             },
 
             openCalendarDay(cell) {
@@ -1610,10 +1981,12 @@
                 this.selectedCalendarDateKey = cell.dateKey;
                 this.activeFilter = "All";
                 this.activeView = "cards";
+                this.syncWorkspaceUrl();
             },
 
             setCalendarToday() {
                 this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
+                this.syncWorkspaceUrl();
             },
 
             shiftCalendarMonth(offset) {
@@ -1621,6 +1994,7 @@
                 current.setMonth(current.getMonth() + offset, 1);
                 current.setHours(0, 0, 0, 0);
                 this.calendarMonthCursor = current.getTime();
+                this.syncWorkspaceUrl();
             },
 
             getCalendarMonthDate() {
