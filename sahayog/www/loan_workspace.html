@@ -4,6 +4,20 @@
 {% block navbar %}{% endblock %}
 
 {% block content %}
+<script>
+    document.body.classList.add("lw-workspace-loading");
+</script>
+<div class="lw-loading-screen" aria-live="polite" aria-busy="true">
+    <div class="lw-loading-card">
+        <div class="lw-loading-icon-wrap" aria-hidden="true">
+            <img class="lw-loading-icon" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="">
+        </div>
+        <div class="lw-loading-copy">
+            <strong>Loading workspace</strong>
+            <span>Please wait while your loan applications are prepared.</span>
+        </div>
+    </div>
+</div>
 <div id="loan-workspace-app" class="loan-workspace-page" v-scope="LoanWorkspace()" @vue:mounted="mounted()" v-cloak>
     <header class="lw-topbar" aria-label="Loan workspace header">
         <div class="lw-topbar-inner">
@@ -17,14 +31,6 @@
                         src="/assets/sahayog/images/sahayog_logo_2025.png"
                         alt="Sahayog"
                     >
-                </div>
-                <div class="lw-view-toggle">
-                    <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'cards' }" type="button" @click="setView('cards')">
-                        Card view
-                    </button>
-                    <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'calendar' }" type="button" @click="setView('calendar')">
-                        Calendar
-                    </button>
                 </div>
             </div>
 
@@ -53,10 +59,15 @@
             </div>
 
             <div class="lw-topbar-actions">
-                <div class="lw-toolbar-center">
-                </div>
-
                 <div class="lw-toolbar-right">
+                    <div class="lw-view-toggle">
+                        <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'cards' }" type="button" @click="setView('cards')">
+                            Card
+                        </button>
+                        <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'calendar' }" type="button" @click="setView('calendar')">
+                            Calendar
+                        </button>
+                    </div>
                     <button class="lw-chip lw-chip-primary" type="button" v-if="canCreate" @click="openNewApplication()">
                         + New Application
                     </button>
@@ -145,6 +156,8 @@
                                     <div class="lw-card-title-copy">
                                         <span class="lw-card-id">[[ app.name || 'Untitled' ]]</span>
                                         <h4>[[ app.customer_name || 'Unnamed applicant' ]]</h4>
+                                        <span class="lw-card-mobile">[[ app.mobile_number || 'No mobile' ]]</span>
+                                        <p class="lw-card-amount">[[ formatCurrency(app.loan_amount) ]]</p>
                                     </div>
                                 </div>
                             </div>
@@ -153,30 +166,7 @@
                                     [[ app.status || 'Draft' ]]
                                 </span>
                                 <p class="lw-card-product">[[ app.loan_type || 'Loan product not set' ]]</p>
-                            </div>
-                        </div>
-
-                        <p class="lw-card-amount">[[ formatCurrency(app.loan_amount) ]]</p>
-
-                        <div class="lw-progress-row">
-                            <span class="lw-progress-label">[[ formatDate(app.modified) ]]</span>
-                            <span class="lw-progress-track"></span>
-                            <span class="lw-progress-label">[[ app.branch_code || 'No branch' ]]</span>
-                        </div>
-
-                        <div class="lw-card-branch">
-                            <span class="lw-meta-label">Branch</span>
-                            <strong>[[ app.branch_name || 'Branch name not found' ]]</strong>
-                        </div>
-
-                        <div class="lw-card-meta">
-                            <div>
-                                <span class="lw-meta-label">Mobile</span>
-                                <strong>[[ app.mobile_number || 'No mobile' ]]</strong>
-                            </div>
-                            <div>
-                                <span class="lw-meta-label">Updated</span>
-                                <strong>[[ formatDate(app.modified) ]]</strong>
+                                <span class="lw-card-branch-name">[[ app.branch_name || 'Branch name not found' ]]</span>
                             </div>
                         </div>
                     </article>
@@ -340,6 +330,98 @@
         display: none;
     }
 
+    body.lw-workspace-loading #loan-workspace-app {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .lw-loading-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background:
+            radial-gradient(circle at top left, rgba(76, 92, 195, 0.12), transparent 28%),
+            radial-gradient(circle at top right, rgba(46, 139, 87, 0.12), transparent 24%),
+            linear-gradient(180deg, rgba(246, 247, 250, 0.98), rgba(237, 241, 244, 0.98));
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    body:not(.lw-workspace-loading) .lw-loading-screen {
+        display: none;
+    }
+
+    .lw-loading-card {
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        padding: 22px 24px;
+        border: 1px solid rgba(215, 221, 228, 0.9);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.12);
+        text-align: center;
+        min-width: min(320px, 100%);
+    }
+
+    .lw-loading-icon-wrap {
+        width: 72px;
+        height: 72px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #fff5c2, #f3cf69, #c9971b);
+        box-shadow: 0 0 0 6px rgba(245, 212, 106, 0.18), 0 16px 32px rgba(159, 122, 18, 0.18);
+        animation: lw-loader-pulse 1.2s ease-in-out infinite;
+    }
+
+    .lw-loading-icon {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        animation: lw-loader-spin 1.05s linear infinite;
+        filter: drop-shadow(0 2px 3px rgba(58, 42, 0, 0.18));
+    }
+
+    .lw-loading-copy {
+        display: grid;
+        gap: 4px;
+    }
+
+    .lw-loading-copy strong {
+        color: var(--lw-ink);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .lw-loading-copy span {
+        color: var(--lw-muted);
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
+
+    @keyframes lw-loader-spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes lw-loader-pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.04);
+        }
+    }
+
     .page-content-wrapper {
         margin: 0 !important;
         padding: 0 !important;
@@ -433,25 +515,32 @@
     .lw-view-toggle {
         display: flex;
         align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
+        gap: 0;
+        flex-wrap: nowrap;
         min-width: 0;
+        padding: 2px;
+        border-radius: 8px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
     }
 
     .lw-view-toggle .lw-chip {
-        background: #f7f8fb;
-        border-color: #dde3ea;
-        color: #5f6975;
+        border: 0;
+        background: transparent;
+        color: var(--lw-muted);
         font-weight: 600;
-        padding: 9px 13px;
+        padding: 0.35rem 0.75rem;
         box-shadow: none;
-        min-height: var(--lw-header-control-height);
+        min-height: 0;
+        border-radius: 6px;
+        font-size: 0.8rem;
     }
 
     .lw-view-toggle .lw-chip-active {
-        background: #eef2f7;
-        border-color: #cfd7e0;
-        color: #1f2730;
+        background: #fff;
+        color: var(--lw-accent);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
     .lw-topbar-meta {
@@ -545,6 +634,8 @@
     .lw-toolbar-right {
         display: flex;
         justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
     }
 
     .lw-chip {
@@ -572,9 +663,15 @@
     }
 
     .lw-chip-primary {
-        background: linear-gradient(135deg, #417d81, #58a1a5);
+        background: var(--lw-accent);
         border-color: transparent;
         color: #fff;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        min-height: 0;
+        box-shadow: none;
     }
 
     .lw-chip:disabled {
@@ -582,6 +679,11 @@
         cursor: not-allowed;
         transform: none;
         box-shadow: none;
+    }
+
+    .lw-chip-primary:hover,
+    .lw-chip-primary:focus-visible {
+        box-shadow: 0 6px 16px rgba(65, 125, 129, 0.18);
     }
 
     .lw-search {
@@ -1228,11 +1330,11 @@
         position: relative;
         overflow: hidden;
         border-radius: 20px;
-        padding: 16px;
+        padding: 12px;
         display: grid;
-        gap: 12px;
+        gap: 8px;
         cursor: pointer;
-        min-height: 250px;
+        min-height: 0;
         width: 100%;
         transform-origin: center bottom;
         will-change: transform, box-shadow;
@@ -1370,43 +1472,43 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        gap: 12px;
+        gap: 8px;
     }
 
     .lw-card-head-copy {
         display: grid;
-        gap: 4px;
+        gap: 2px;
     }
 
     .lw-card-title-row {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         min-width: 0;
     }
 
     .lw-card-title-copy {
         display: grid;
-        gap: 4px;
+        gap: 2px;
         min-width: 0;
     }
 
     .lw-card-mini-logo {
-        width: 36px;
-        height: 36px;
+        width: 30px;
+        height: 30px;
         object-fit: contain;
         flex: 0 0 auto;
     }
 
     .lw-card-id {
         color: var(--lw-muted);
-        font-size: 0.82rem;
+        font-size: 0.78rem;
         font-weight: 700;
     }
 
     .lw-card-head-copy h4 {
-        font-size: 1rem;
-        line-height: 1.35;
+        font-size: 0.92rem;
+        line-height: 1.25;
         font-weight: 800;
     }
 
@@ -1415,8 +1517,8 @@
         align-items: center;
         gap: 6px;
         border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 0.76rem;
+        padding: 5px 8px;
+        font-size: 0.7rem;
         font-weight: 700;
         white-space: nowrap;
         border: 1px solid transparent;
@@ -1472,7 +1574,7 @@
 
     .lw-card-amount {
         margin: 0;
-        font-size: clamp(1.2rem, 2vw, 1.5rem);
+        font-size: clamp(1.05rem, 1.8vw, 1.3rem);
         font-weight: 900;
         letter-spacing: -0.02em;
     }
@@ -1480,69 +1582,41 @@
     .lw-card-product {
         margin: 0;
         color: var(--lw-muted);
-        line-height: 1.5;
-        min-height: 42px;
+        line-height: 1.3;
+        min-height: 0;
     }
 
-    .lw-card-branch {
-        display: grid;
-        gap: 2px;
-    }
-
-    .lw-card-branch strong {
-        font-size: 0.94rem;
-        line-height: 1.45;
-        letter-spacing: -0.01em;
-    }
-
-    .lw-progress-row {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .lw-progress-label {
-        color: var(--lw-muted);
-        font-size: 0.74rem;
+    .lw-card-branch-name {
+        color: var(--lw-ink);
+        font-size: 0.82rem;
         font-weight: 700;
-        white-space: nowrap;
+        line-height: 1.25;
     }
 
-    .lw-progress-track {
-        height: 2px;
-        background: linear-gradient(90deg, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.16));
-        border-radius: 999px;
+    .lw-card-mobile {
+        color: var(--lw-muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 1.25;
     }
 
-    .lw-card-meta {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        margin-top: auto;
-    }
-
-    .lw-card-meta div {
-        display: grid;
-        gap: 2px;
-    }
-
-    .lw-card-meta strong {
-        font-size: 0.88rem;
-        line-height: 1.4;
+    .lw-card-title-copy .lw-card-amount {
+        font-size: 1.05rem;
+        line-height: 1.1;
+        margin-top: 2px;
     }
 
     .lw-card-status-stack {
         display: grid;
         justify-items: end;
-        gap: 8px;
+        gap: 5px;
         align-content: start;
     }
 
     .lw-card-status-stack .lw-card-product {
         min-height: 0;
         text-align: right;
-        font-size: 0.86rem;
+        font-size: 0.8rem;
         max-width: 16ch;
     }
 
@@ -1945,6 +2019,8 @@
 
         .lw-card {
             min-height: 0;
+            padding: 10px;
+            gap: 6px;
         }
 
         .lw-bottom-filter-nav {
@@ -2373,7 +2449,13 @@
                 }
                 this.syncMobileFilterScrollLock();
                 this.syncWorkspaceUrl();
-                await this.loadWorkspace();
+                try {
+                    await this.loadWorkspace();
+                } finally {
+                    if (typeof document !== "undefined" && document.body) {
+                        document.body.classList.remove("lw-workspace-loading");
+                    }
+                }
             },
 
             async loadWorkspace() {
