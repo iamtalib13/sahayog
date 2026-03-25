@@ -27,7 +27,7 @@ frappe.ui.form.on("Loan Application", {
                 
                 if (!frm.doc.cibil_score) missing_fields.push("CIBIL Score");
                 if (!frm.doc.dedup) missing_fields.push("Dedup");
-                if (!frm.doc.credit_appraisal) missing_fields.push("Credit Appraisal");
+                if (!frm.doc.credit_appraisal) missing_fields.push("Credit Remarks");
 
                 if (missing_fields.length > 0) {
                     frappe.msgprint({
@@ -414,6 +414,27 @@ frappe.ui.form.on("Loan Application", {
       });
     }
   },
+
+
+  cibil_score: function(frm) {
+    if (frm.doc.cibil_score) {
+        // A valid CIBIL score must be between 300 and 900
+        // Exception: Allow exactly 0 or -1 as these are sometimes used by bureaus to indicate "No Credit History"
+        if (frm.doc.cibil_score !== 0 && frm.doc.cibil_score !== -1 && (frm.doc.cibil_score < 300 || frm.doc.cibil_score > 900)) {
+            frappe.msgprint({
+                title: __('Invalid CIBIL Score'),
+                indicator: 'orange',
+                message: __('CIBIL Score must be between <b>300 and 900</b>.')
+            });
+            // Automatically clear the invalid value
+            frm.set_value('cibil_score', '');
+        } else {
+            // If it's valid, trigger the recalculate function to update the risk score immediately
+            frm.trigger('recalculate_all'); 
+        }
+    }
+},
+
 
   loan_amount: function (frm) {
     frm.trigger("recalculate_all");
