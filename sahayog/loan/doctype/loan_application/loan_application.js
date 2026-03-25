@@ -85,65 +85,139 @@ frappe.ui.form.on("Loan Application", {
             // ==========================================
             // 2. CPC PROCESSING VERIFICATION (ALL ROWS + REGEX CHECKS)
             // ==========================================
+            // if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
+            //     let errors = [];
+
+            //     // Check if the table is completely empty
+            //     if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+            //         errors.push("No documents found. Please add the required documents.");
+            //     } else {
+            //         // Loop through EVERY row in the child table
+            //         frm.doc.kyc_documents.forEach((row, index) => {
+            //             let doc_name = row.document_type || `Row ${index + 1}`;
+                        
+            //             // 1. Check for file attachment
+            //             let file_field = row.document_file || row.file || row.document; 
+            //             if (!file_field) { 
+            //                 errors.push(`Missing file attachment for <b>${doc_name}</b>.`);
+            //             }
+                        
+            //             // 2. Check if status is explicitly Verified
+            //             if (row.status !== "Verified") {
+            //                 errors.push(`Status for <b>${doc_name}</b> must be "Verified".`);
+            //             }
+
+            //             // 3. NEW: Strict Pattern Validation for Aadhaar and PAN
+            //             if (row.document_type === "Aadhaar Card") {
+            //                 if (!row.document_number) {
+            //                     errors.push(`Document Number is required for <b>Aadhaar Card</b>.`);
+            //                 } else {
+            //                     // Regex: Exactly 12 digits, numbers only
+            //                     let aadhaar_regex = /^\d{12}$/;
+            //                     if (!aadhaar_regex.test(row.document_number)) {
+            //                         errors.push(`Document Number for <b>Aadhaar Card</b> must be exactly 12 digits (numbers only).`);
+            //                     }
+            //                 }
+            //             } 
+            //             else if (row.document_type === "PAN Card") {
+            //                 if (!row.document_number) {
+            //                     errors.push(`Document Number is required for <b>PAN Card</b>.`);
+            //                 } else {
+            //                     // Regex: 5 Letters (A-Z), 4 Digits (0-9), 1 Letter (A-Z) - case insensitive
+            //                     let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
+            //                     if (!pan_regex.test(row.document_number)) {
+            //                         errors.push(`Document Number for <b>PAN Card</b> is invalid. It must be 5 letters, 4 numbers, and 1 letter (e.g., ABCDE1234F).`);
+            //                     }
+            //                 }
+            //             }
+            //         });
+            //     }
+
+            //     // If any errors exist, halt the workflow
+            //     if (errors.length > 0) {
+            //         frappe.msgprint({
+            //             title: __('Pending Document Verification'),
+            //             indicator: 'red',
+            //             message: __('Cannot approve. Please resolve the following issues in the KYC Documents table:<br><br><ul><li>' + errors.join('</li><li>') + '</li></ul>')
+            //         });
+                    
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+            // }
+
+
+                        // ==========================================
+            // 2. CPC PROCESSING VERIFICATION (AUTO-VERIFY)
+            // ==========================================
             if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
-                let errors = [];
+                let missing_errors = [];
+                let changes_made = false;
 
-                // Check if the table is completely empty
                 if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
-                    errors.push("No documents found. Please add the required documents.");
+                    missing_errors.push("No documents found in the KYC table.");
                 } else {
-                    // Loop through EVERY row in the child table
-                    frm.doc.kyc_documents.forEach((row, index) => {
+                    // Loop through EVERY row
+                    $.each(frm.doc.kyc_documents, function(index, row) {
                         let doc_name = row.document_type || `Row ${index + 1}`;
+                        let row_is_valid = true;
                         
-                        // 1. Check for file attachment
-                        let file_field = row.document_file || row.file || row.document; 
-                        if (!file_field) { 
-                            errors.push(`Missing file attachment for <b>${doc_name}</b>.`);
-                        }
-                        
-                        // 2. Check if status is explicitly Verified
-                        if (row.status !== "Verified") {
-                            errors.push(`Status for <b>${doc_name}</b> must be "Verified".`);
-                        }
-
-                        // 3. NEW: Strict Pattern Validation for Aadhaar and PAN
-                        if (row.document_type === "Aadhaar Card") {
+                        // Condition A: Aadhaar Card & PAN Card
+                        if (row.document_type === "Aadhaar Card" || row.document_type === "PAN Card") {
+                            if (!row.document_file) {
+                                missing_errors.push(`Missing attachment for <b>${doc_name}</b>.`);
+                                row_is_valid = false;
+                            }
                             if (!row.document_number) {
-                                errors.push(`Document Number is required for <b>Aadhaar Card</b>.`);
-                            } else {
-                                // Regex: Exactly 12 digits, numbers only
-                                let aadhaar_regex = /^\d{12}$/;
-                                if (!aadhaar_regex.test(row.document_number)) {
-                                    errors.push(`Document Number for <b>Aadhaar Card</b> must be exactly 12 digits (numbers only).`);
-                                }
+                                missing_errors.push(`Missing Document Number for <b>${doc_name}</b>.`);
+                                row_is_valid = false;
                             }
                         } 
-                        else if (row.document_type === "PAN Card") {
-                            if (!row.document_number) {
-                                errors.push(`Document Number is required for <b>PAN Card</b>.`);
-                            } else {
-                                // Regex: 5 Letters (A-Z), 4 Digits (0-9), 1 Letter (A-Z) - case insensitive
-                                let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
-                                if (!pan_regex.test(row.document_number)) {
-                                    errors.push(`Document Number for <b>PAN Card</b> is invalid. It must be 5 letters, 4 numbers, and 1 letter (e.g., ABCDE1234F).`);
-                                }
+                        // Condition B: All other document types
+                        else {
+                            if (!row.document_file) {
+                                missing_errors.push(`Missing attachment for <b>${doc_name}</b>.`);
+                                row_is_valid = false;
+                            }
+                        }
+
+                        // Auto-Verify if valid!
+                        if (row_is_valid) {
+                            if (row.status !== "Verified") {
+                                frappe.model.set_value(row.doctype, row.name, "status", "Verified");
+                                changes_made = true;
                             }
                         }
                     });
                 }
 
-                // If any errors exist, halt the workflow
-                if (errors.length > 0) {
+                if (missing_errors.length > 0) {
                     frappe.msgprint({
-                        title: __('Pending Document Verification'),
+                        title: __('Cannot Approve: Missing Details'),
                         indicator: 'red',
-                        message: __('Cannot approve. Please resolve the following issues in the KYC Documents table:<br><br><ul><li>' + errors.join('</li><li>') + '</li></ul>')
+                        message: __('Please attach files and enter missing numbers before approving:<br><br><ul><li>' + missing_errors.join('</li><li>') + '</li></ul>')
                     });
                     
+                    if (changes_made) {
+                        frm.refresh_field("kyc_documents");
+                    }
+                    
                     frappe.validated = false;
-                    reject();
+                    reject(); 
                     return;
+                }
+
+                // FIX: If we made changes and there are no errors, forcefully save the document 
+                // BEFORE the workflow action completes, ensuring the Verified statuses are permanently captured.
+                if (changes_made) {
+                    frm.save('Save', () => {
+                        frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
+                            () => { resolve(); },
+                            () => { frappe.validated = false; reject(); }
+                        );
+                    });
+                    return; // Prevent the default confirmation below from running twice
                 }
             }
 
