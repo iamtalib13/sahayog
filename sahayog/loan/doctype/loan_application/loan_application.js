@@ -45,35 +45,100 @@ frappe.ui.form.on("Loan Application", {
             // ==========================================
             // 2. CPC PROCESSING VERIFICATION
             // ==========================================
+            // if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
+            //     let required_docs = ["Loan Agreement", "Sanction Letter"];
+            //     let errors = [];
+
+            //     required_docs.forEach(doc_type => {
+            //         let row = (frm.doc.kyc_documents || []).find(d => d.document_type === doc_type);
+
+            //         if (!row) {
+            //             errors.push(`<b>${doc_type}</b> row is missing from KYC Documents.`);
+            //         } else {
+            //             // Assuming your attachment field is named "document_url" or "file". Update as needed!
+            //             let file_field = row.document_file || row.file || row.document; 
+                        
+            //             if (!file_field) { 
+            //                 errors.push(`Please attach the document file for <b>${doc_type}</b>.`);
+            //             }
+                        
+            //             // Check if status is explicitly Verified
+            //             if (row.status !== "Verified") {
+            //                 errors.push(`Status for <b>${doc_type}</b> must be "Verified".`);
+            //             }
+            //         }
+            //     });
+
+            //     if (errors.length > 0) {
+            //         frappe.msgprint({
+            //             title: __('CPC Verification Pending'),
+            //             indicator: 'red',
+            //             message: __('Cannot approve the application yet. Please resolve the following:<br><br><ul><li>' + errors.join('</li><li>') + '</li></ul>')
+            //         });
+                    
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+            // }
+
+            // ==========================================
+            // 2. CPC PROCESSING VERIFICATION (ALL ROWS + REGEX CHECKS)
+            // ==========================================
             if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
-                let required_docs = ["Loan Agreement", "Sanction Letter"];
                 let errors = [];
 
-                required_docs.forEach(doc_type => {
-                    let row = (frm.doc.kyc_documents || []).find(d => d.document_type === doc_type);
-
-                    if (!row) {
-                        errors.push(`<b>${doc_type}</b> row is missing from KYC Documents.`);
-                    } else {
-                        // Assuming your attachment field is named "document_url" or "file". Update as needed!
+                // Check if the table is completely empty
+                if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+                    errors.push("No documents found. Please add the required documents.");
+                } else {
+                    // Loop through EVERY row in the child table
+                    frm.doc.kyc_documents.forEach((row, index) => {
+                        let doc_name = row.document_type || `Row ${index + 1}`;
+                        
+                        // 1. Check for file attachment
                         let file_field = row.document_file || row.file || row.document; 
-                        
                         if (!file_field) { 
-                            errors.push(`Please attach the document file for <b>${doc_type}</b>.`);
+                            errors.push(`Missing file attachment for <b>${doc_name}</b>.`);
                         }
                         
-                        // Check if status is explicitly Verified
+                        // 2. Check if status is explicitly Verified
                         if (row.status !== "Verified") {
-                            errors.push(`Status for <b>${doc_type}</b> must be "Verified".`);
+                            errors.push(`Status for <b>${doc_name}</b> must be "Verified".`);
                         }
-                    }
-                });
 
+                        // 3. NEW: Strict Pattern Validation for Aadhaar and PAN
+                        if (row.document_type === "Aadhaar Card") {
+                            if (!row.document_number) {
+                                errors.push(`Document Number is required for <b>Aadhaar Card</b>.`);
+                            } else {
+                                // Regex: Exactly 12 digits, numbers only
+                                let aadhaar_regex = /^\d{12}$/;
+                                if (!aadhaar_regex.test(row.document_number)) {
+                                    errors.push(`Document Number for <b>Aadhaar Card</b> must be exactly 12 digits (numbers only).`);
+                                }
+                            }
+                        } 
+                        else if (row.document_type === "PAN Card") {
+                            if (!row.document_number) {
+                                errors.push(`Document Number is required for <b>PAN Card</b>.`);
+                            } else {
+                                // Regex: 5 Letters (A-Z), 4 Digits (0-9), 1 Letter (A-Z) - case insensitive
+                                let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
+                                if (!pan_regex.test(row.document_number)) {
+                                    errors.push(`Document Number for <b>PAN Card</b> is invalid. It must be 5 letters, 4 numbers, and 1 letter (e.g., ABCDE1234F).`);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // If any errors exist, halt the workflow
                 if (errors.length > 0) {
                     frappe.msgprint({
-                        title: __('CPC Verification Pending'),
+                        title: __('Pending Document Verification'),
                         indicator: 'red',
-                        message: __('Cannot approve the application yet. Please resolve the following:<br><br><ul><li>' + errors.join('</li><li>') + '</li></ul>')
+                        message: __('Cannot approve. Please resolve the following issues in the KYC Documents table:<br><br><ul><li>' + errors.join('</li><li>') + '</li></ul>')
                     });
                     
                     frappe.validated = false;
@@ -81,6 +146,9 @@ frappe.ui.form.on("Loan Application", {
                     return;
                 }
             }
+
+
+
 
             // Existing Workflow Confirmation
             frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
