@@ -82,8 +82,8 @@ frappe.ui.form.on("Loan Application", {
             //     }
             // }
 
-                        // ==========================================
-            // 2. CPC PROCESSING VERIFICATION (ALL ROWS + SPECIFIC CHECKS)
+            // ==========================================
+            // 2. CPC PROCESSING VERIFICATION (ALL ROWS + REGEX CHECKS)
             // ==========================================
             if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
                 let errors = [];
@@ -96,21 +96,38 @@ frappe.ui.form.on("Loan Application", {
                     frm.doc.kyc_documents.forEach((row, index) => {
                         let doc_name = row.document_type || `Row ${index + 1}`;
                         
-                        // 1. Check for file attachment (applies to ALL rows)
+                        // 1. Check for file attachment
                         let file_field = row.document_file || row.file || row.document; 
                         if (!file_field) { 
                             errors.push(`Missing file attachment for <b>${doc_name}</b>.`);
                         }
                         
-                        // 2. Check if status is explicitly Verified (applies to ALL rows)
+                        // 2. Check if status is explicitly Verified
                         if (row.status !== "Verified") {
                             errors.push(`Status for <b>${doc_name}</b> must be "Verified".`);
                         }
 
-                        // 3. NEW: Check document_number specifically for Aadhaar and PAN
-                        if (["Aadhaar Card", "PAN Card"].includes(row.document_type)) {
+                        // 3. NEW: Strict Pattern Validation for Aadhaar and PAN
+                        if (row.document_type === "Aadhaar Card") {
                             if (!row.document_number) {
-                                errors.push(`Document Number is required for <b>${doc_name}</b>.`);
+                                errors.push(`Document Number is required for <b>Aadhaar Card</b>.`);
+                            } else {
+                                // Regex: Exactly 12 digits, numbers only
+                                let aadhaar_regex = /^\d{12}$/;
+                                if (!aadhaar_regex.test(row.document_number)) {
+                                    errors.push(`Document Number for <b>Aadhaar Card</b> must be exactly 12 digits (numbers only).`);
+                                }
+                            }
+                        } 
+                        else if (row.document_type === "PAN Card") {
+                            if (!row.document_number) {
+                                errors.push(`Document Number is required for <b>PAN Card</b>.`);
+                            } else {
+                                // Regex: 5 Letters (A-Z), 4 Digits (0-9), 1 Letter (A-Z) - case insensitive
+                                let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
+                                if (!pan_regex.test(row.document_number)) {
+                                    errors.push(`Document Number for <b>PAN Card</b> is invalid. It must be 5 letters, 4 numbers, and 1 letter (e.g., ABCDE1234F).`);
+                                }
                             }
                         }
                     });
@@ -129,6 +146,7 @@ frappe.ui.form.on("Loan Application", {
                     return;
                 }
             }
+
 
 
 
