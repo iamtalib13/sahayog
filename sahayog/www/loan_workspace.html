@@ -8,6 +8,9 @@
     <header class="lw-topbar" aria-label="Loan workspace header">
         <div class="lw-topbar-inner">
             <div class="lw-topbar-left">
+                <button type="button" class="lw-back-button" @click="goBackHome()" aria-label="Go back to Sahayog Home">
+                    <img src="https://cdn-icons-png.flaticon.com/128/2732/2732652.png" alt="" aria-hidden="true">
+                </button>
                 <div class="lw-brand">
                     <img
                         class="lw-brand-logo"
@@ -380,6 +383,29 @@
         align-items: center;
         gap: 8px;
         min-width: 0;
+    }
+
+    .lw-back-button {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        border: 1px solid var(--lw-border);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.94);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+        flex: 0 0 auto;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .lw-back-button img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        display: block;
     }
 
     .lw-brand {
@@ -1710,6 +1736,11 @@
             gap: 10px;
         }
 
+        .lw-back-button {
+            width: 40px;
+            height: 40px;
+        }
+
         .lw-brand-logo {
             max-width: min(180px, 56vw);
         }
@@ -1836,6 +1867,9 @@
         .lw-topbar-left {
             grid-column: 1;
             width: 100%;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            gap: 8px;
         }
 
         .lw-topbar-meta {
@@ -1883,6 +1917,12 @@
         .lw-brand-logo {
             width: auto;
             height: 42px;
+        }
+
+        .lw-back-button {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
         }
 
         .lw-card-meta {
@@ -2264,6 +2304,13 @@
                 }
 
                 document.body.style.overflow = this.mobileFiltersOpen ? "hidden" : "";
+            },
+
+            goBackHome() {
+                const confirmed = window.confirm("Do you want to go back to Sahayog Home?");
+                if (!confirmed) return;
+
+                window.location.assign("/app/sahayog-home");
             },
 
             mobileViewToggleLabel() {
