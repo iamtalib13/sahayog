@@ -64,26 +64,32 @@
 
     <div class="lw-content-shell">
         <main class="lw-shell">
-            <section v-if="activeView === 'cards' && mobileFiltersOpen" class="lw-mobile-filter-panel" aria-label="Quick filters">
-                <div class="lw-mobile-filter-panel-head">
-                    <strong>Quick Filters</strong>
-                    <button type="button" class="lw-mobile-filter-close" @click="closeMobileFilters()">Close</button>
-                </div>
-                <div class="lw-mobile-filter-grid">
-                    <button
-                        v-for="card in statusCards()"
-                        :key="`mobile-${card.key}`"
-                        type="button"
-                        class="lw-mobile-filter-card"
-                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
-                        :disabled="card.disabled"
-                        @click="card.disabled ? null : setFilter(card.key)"
-                    >
-                        <span class="lw-mobile-filter-label">[[ card.label ]]</span>
-                        <span class="lw-mobile-filter-count">[[ card.count ]]</span>
-                    </button>
-                </div>
-            </section>
+            <div
+                v-if="activeView === 'cards' && mobileFiltersOpen"
+                class="lw-mobile-filter-overlay"
+                @click.self="closeMobileFilters()"
+            >
+                <section class="lw-mobile-filter-panel" aria-label="Quick filters" role="dialog" aria-modal="true">
+                    <div class="lw-mobile-filter-panel-head">
+                        <strong>Quick Filters</strong>
+                        <button type="button" class="lw-mobile-filter-close" @click="closeMobileFilters()">Close</button>
+                    </div>
+                    <div class="lw-mobile-filter-grid">
+                        <button
+                            v-for="card in statusCards()"
+                            :key="`mobile-${card.key}`"
+                            type="button"
+                            class="lw-mobile-filter-card"
+                            :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
+                            :disabled="card.disabled"
+                            @click="card.disabled ? null : setFilter(card.key)"
+                        >
+                            <span class="lw-mobile-filter-label">[[ card.label ]]</span>
+                            <span class="lw-mobile-filter-count">[[ card.count ]]</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
 
             <section class="lw-card-view" v-if="activeView === 'cards'">
                 <section class="lw-filter-grid">
@@ -198,6 +204,8 @@
                         <span class="lw-bottom-filter-count">[[ card.count ]]</span>
                     </button>
                 </nav>
+
+                <div class="lw-mobile-bottom-spacer" aria-hidden="true"></div>
             </section>
 
             <section v-if="activeView === 'calendar'" class="lw-calendar-view">
@@ -313,6 +321,10 @@
 
     body {
         margin: 0;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
         background:
             radial-gradient(circle at top left, rgba(76, 92, 195, 0.08), transparent 34%),
             radial-gradient(circle at top right, rgba(46, 139, 87, 0.08), transparent 26%),
@@ -342,8 +354,12 @@
         position: sticky;
         top: 0;
         z-index: 30;
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
         border-radius: 0;
         box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+        box-sizing: border-box;
     }
 
     .lw-topbar-inner {
@@ -467,6 +483,7 @@
         flex-direction: column;
         align-items: stretch;
         min-height: 100vh;
+        scroll-behavior: smooth;
     }
 
     .lw-content-shell {
@@ -1524,6 +1541,10 @@
         display: none;
     }
 
+    .lw-mobile-filter-overlay {
+        display: none;
+    }
+
     .lw-mobile-filter-panel-head {
         display: flex;
         align-items: center;
@@ -1594,6 +1615,10 @@
         display: none;
     }
 
+    .lw-mobile-bottom-spacer {
+        display: none;
+    }
+
     .lw-mobile-action {
         border: 0;
         border-radius: 16px;
@@ -1626,7 +1651,26 @@
 
     @media (max-width: 860px) {
         .loan-workspace-page {
-            padding: 16px;
+            padding: 0 16px 16px;
+        }
+
+        html,
+        body,
+        .page-content-wrapper,
+        .page_content,
+        .loan-workspace-page {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar,
+        .page-content-wrapper::-webkit-scrollbar,
+        .page_content::-webkit-scrollbar,
+        .loan-workspace-page::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            display: none;
         }
 
         .lw-topbar-inner {
@@ -1691,6 +1735,42 @@
             gap: 8px;
         }
 
+        .lw-mobile-filter-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 45;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 72px 14px 18px;
+            background: rgba(15, 23, 42, 0.36);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .lw-mobile-filter-panel {
+            display: block;
+            width: min(100%, 560px);
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            margin: 0;
+            padding: 14px;
+            border: 1px solid var(--lw-border);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+            transform-origin: top center;
+            animation: lw-mobile-filter-pop 180ms ease-out;
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+        }
+
+        .lw-mobile-filter-panel::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            display: none;
+        }
+
         .lw-card-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -1727,7 +1807,8 @@
         }
 
         .lw-content-shell {
-            padding: 14px 14px 118px;
+            padding: 14px 14px calc(154px + env(safe-area-inset-bottom) + 40px);
+            scroll-padding-bottom: calc(154px + env(safe-area-inset-bottom) + 40px);
         }
 
         .lw-card-grid {
@@ -1842,10 +1923,6 @@
             -webkit-backdrop-filter: blur(14px) saturate(150%);
         }
 
-        .lw-content-shell {
-            padding-bottom: 154px;
-        }
-
         .lw-mobile-action-bar {
             position: fixed;
             left: 0;
@@ -1861,6 +1938,11 @@
             box-shadow: 0 -16px 32px rgba(15, 23, 42, 0.1);
             backdrop-filter: blur(18px) saturate(150%);
             -webkit-backdrop-filter: blur(18px) saturate(150%);
+        }
+
+        .lw-mobile-bottom-spacer {
+            display: block;
+            height: calc(180px + env(safe-area-inset-bottom));
         }
 
         .lw-mobile-action {
@@ -2003,6 +2085,17 @@
             width: 40px;
             height: 40px;
             flex-basis: 40px;
+        }
+    }
+
+    @keyframes lw-mobile-filter-pop {
+        from {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
     }
 </style>
@@ -2157,10 +2250,20 @@
 
             toggleMobileFilters() {
                 this.mobileFiltersOpen = !this.mobileFiltersOpen;
+                this.syncMobileFilterScrollLock();
             },
 
             closeMobileFilters() {
                 this.mobileFiltersOpen = false;
+                this.syncMobileFilterScrollLock();
+            },
+
+            syncMobileFilterScrollLock() {
+                if (typeof document === "undefined" || !document.body) {
+                    return;
+                }
+
+                document.body.style.overflow = this.mobileFiltersOpen ? "hidden" : "";
             },
 
             mobileViewToggleLabel() {
@@ -2221,6 +2324,7 @@
                 if (!this.calendarMonthCursor) {
                     this.calendarMonthCursor = this.startOfMonth(new Date()).getTime();
                 }
+                this.syncMobileFilterScrollLock();
                 this.syncWorkspaceUrl();
                 await this.loadWorkspace();
             },
@@ -2619,7 +2723,7 @@
                     ...card,
                     count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0),
                     zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0,
-                    disabled: card.key === "Role Pending" ? rolePending === 0 : false
+                    disabled: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0
                 }));
             },
 
