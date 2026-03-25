@@ -35,6 +35,17 @@ class LoanApplication(Document):
                     "status": "Pending"
                 })
 
+        # Valuation Pending Logic
+        if self.status == "Valuation Pending" and self.security_type == "Gold":
+            valuation_docs = ["Valuation Report Image", "Ornament Image"]
+            existing_docs = [d.document_type for d in self.kyc_documents]
+            for doc_type in valuation_docs:
+                if doc_type not in existing_docs:
+                    self.append("kyc_documents", {
+                        "document_type": doc_type,
+                        "status": "Pending"
+                    })
+
         # Credit Decision Logic
         if self.status == "Credit Decision" and self.security_type == "Gold":
             if not self.ornaments_list:
@@ -50,6 +61,17 @@ class LoanApplication(Document):
                     "document_type": "Ornament Image",
                     "status": "Pending"
                 })
+
+        # CPC Processing Logic
+        if self.status == "CPC Processing":
+            required_docs = ["Loan Agreement", "Sanction Letter"]
+            existing_docs = [d.document_type for d in self.kyc_documents]
+            for doc_type in required_docs:
+                if doc_type not in existing_docs:
+                    self.append("kyc_documents", {
+                        "document_type": doc_type,
+                        "status": "Pending"
+                    })
 
     def validate_basic_fields(self):
         # Mobile Validation
