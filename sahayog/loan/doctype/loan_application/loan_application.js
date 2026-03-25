@@ -27,7 +27,7 @@ frappe.ui.form.on("Loan Application", {
                 
                 if (!frm.doc.cibil_score) missing_fields.push("CIBIL Score");
                 if (!frm.doc.dedup) missing_fields.push("Dedup");
-                if (!frm.doc.credit_appraisal) missing_fields.push("Credit Appraisal");
+                if (!frm.doc.credit_appraisal) missing_fields.push("Credit Remarks");
 
                 if (missing_fields.length > 0) {
                     frappe.msgprint({
