@@ -313,6 +313,29 @@ frappe.ui.form.on("Loan Application", {
       max_date: max_dob,
       min_date: min_dob,
     });
+
+    // --- NEW: Status Field Permissions ---
+        // Check if the current user is 'Administrator' OR has the 'Credit Loan User' role to edit the 'status' field
+        let is_admin = frappe.session.user === 'Administrator';
+        let is_credit_user = frappe.user.has_role('Credit Loan User');
+        
+        // If they are neither, make the 'status' field in the child table read-only
+        if (!is_admin && !is_credit_user) {
+            // This applies to the entire child table column
+            frm.set_df_property('kyc_documents', 'reqd', 0); // Optional: ensure it isn't strictly required if they can't edit it
+            
+            // Loop through existing rows to lock the field immediately
+            $.each(frm.doc.kyc_documents || [], function(i, d) {
+                // Lock the field on the form
+                frm.fields_dict.kyc_documents.grid.update_docfield_property('status', 'read_only', 1);
+            });
+        } else {
+             // Ensure it remains editable for authorized users
+            $.each(frm.doc.kyc_documents || [], function(i, d) {
+                frm.fields_dict.kyc_documents.grid.update_docfield_property('status', 'read_only', 0);
+            });
+        }
+        // --- END NEW STATUS PERMISSIONS ---
   },
 
   onload: function (frm) {
