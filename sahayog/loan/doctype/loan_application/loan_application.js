@@ -211,6 +211,136 @@ frappe.ui.form.on("Loan Application", {
             //     }
             // }
 
+            // ==========================================
+            // 0. DRAFT TO CREDIT CHECK VALIDATION
+            // ==========================================
+            // Assuming your workflow action to move from Draft to Credit Check is "Submit Case"
+            if (frm.doc.status === "Draft" && frm.selected_workflow_action === "Submit Case") {
+                let doc_errors = [];
+                let has_aadhaar = false;
+                let has_pan = false;
+                let has_app_form = false;
+
+                // Ensure table has rows
+                if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+                    frappe.msgprint({
+                        title: __('Missing Mandatory Documents'),
+                        indicator: 'red',
+                        message: __('You must add Aadhaar Card, PAN Card, and Application Form to the KYC table.')
+                    });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+
+                // Loop through the table to find and validate the required documents
+                $.each(frm.doc.kyc_documents, function(index, row) {
+                    if (row.document_type === "Aadhaar Card") {
+                        has_aadhaar = true;
+                        if (!row.document_file || !row.document_number) {
+                            doc_errors.push(`<b>Aadhaar Card</b>: Must have both a Document Number and an Attachment.`);
+                        }
+                    } 
+                    else if (row.document_type === "PAN Card") {
+                        has_pan = true;
+                        if (!row.document_file || !row.document_number) {
+                            doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
+                        }
+                    } 
+                    else if (row.document_type === "Application Form") {
+                        has_app_form = true;
+                        if (!row.document_file) {
+                            doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
+                        }
+                    }
+                });
+
+                // Check if any of the required document rows are completely missing from the table
+                if (!has_aadhaar) doc_errors.push(`<b>Aadhaar Card</b> row is missing from the table.`);
+                if (!has_pan) doc_errors.push(`<b>PAN Card</b> row is missing from the table.`);
+                if (!has_app_form) doc_errors.push(`<b>Application Form</b> row is missing from the table.`);
+
+                // If any errors exist, block the submission
+                if (doc_errors.length > 0) {
+                    frappe.msgprint({
+                        title: __('Cannot Submit Case'),
+                        indicator: 'red',
+                        message: __('Please resolve the following issues before submitting:<br><br><ul style="margin-bottom: 0;"><li>' + doc_errors.join('</li><li>') + '</li></ul>')
+                    });
+                    
+                    frappe.validated = false;
+                    reject(); 
+                    return;
+                }
+            }
+
+            // // ==========================================
+            // // 1.5 VALUATION PENDING TO CREDIT DECISION VALIDATION
+            // // ==========================================
+            // // Assuming your workflow action to move from Valuation Pending to Credit Decision is "Submit Post Valuation"
+            // if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
+                
+            //     // Find the specific row for Account Open Form
+            //     let acc_open_row = (frm.doc.kyc_documents || []).find(d => d.document_type === "Account Open Form");
+
+            //     if (!acc_open_row) {
+            //         frappe.msgprint({
+            //             title: __('Missing Document Row'),
+            //             indicator: 'red',
+            //             message: __('The <b>Account Open Form</b> row is completely missing from the KYC table.')
+            //         });
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+
+            //     // Check if the attachment actually exists
+            //     if (!acc_open_row.document_file) {
+            //         frappe.msgprint({
+            //             title: __('Missing Attachment'),
+            //             indicator: 'red',
+            //             message: __('You must upload the file attachment for the <b>Account Open Form</b> before proceeding.')
+            //         });
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+            // }
+
+            // ==========================================
+            // VALUATION PENDING TO CREDIT DECISION VALIDATION
+            // ==========================================
+            // Replace "Submit Post Valuation" with the EXACT name of your workflow action button
+            if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
+                
+                let acc_open_row = (frm.doc.kyc_documents || []).find(d => d.document_type === "Account Open Form");
+
+                if (!acc_open_row) {
+                    frappe.msgprint({
+                        title: __('Missing Document Row'),
+                        indicator: 'red',
+                        message: __('The <b>Account Open Form</b> row is missing from the KYC table.')
+                    });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+
+                if (!acc_open_row.document_file) {
+                    frappe.msgprint({
+                        title: __('Missing Attachment'),
+                        indicator: 'red',
+                        message: __('You must upload the file attachment for the <b>Account Open Form</b> before submitting.')
+                    });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+            }
+
+
+
+
 
 
 
@@ -260,6 +390,68 @@ frappe.ui.form.on("Loan Application", {
         }
       },
 
+
+    //     after_workflow_action: function (frm) {
+    //     let rows_added = false;
+
+    //     // ==========================================
+    //     // 3a. AUTO-ADD: VALUATION PENDING
+    //     // ==========================================
+    //     if (frm.doc.status === "Valuation Pending") {
+    //         let doc_type = "Account Open Form";
+    //         let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+            
+    //         if (!exists) {
+    //             let row = frm.add_child("kyc_documents");
+    //             row.document_type = doc_type;
+    //             row.status = "Pending";
+    //             rows_added = true;
+                
+    //             frappe.msgprint({
+    //                 title: __('Document Added'),
+    //                 indicator: 'green',
+    //                 message: __('<b>Account Open Form</b> row has been automatically added.')
+    //             });
+    //         }
+    //     }
+
+    //     // ==========================================
+    //     // 3b. AUTO-ADD: CPC PROCESSING
+    //     // ==========================================
+    //     if (frm.doc.status === "CPC Processing") {
+    //         let documents_to_add = ["Loan Agreement", "Sanction Letter"];
+
+    //         documents_to_add.forEach(doc_type => {
+    //             let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+                
+    //             if (!exists) {
+    //                 let row = frm.add_child("kyc_documents");
+    //                 row.document_type = doc_type;
+    //                 row.status = "Pending"; 
+    //                 rows_added = true;
+    //             }
+    //         });
+
+    //         if (rows_added) {
+    //             frappe.msgprint({
+    //                 title: __('CPC Documents Added'),
+    //                 indicator: 'green',
+    //                 message: __('Loan Agreement and Sanction Letter rows have been automatically added.')
+    //             });
+    //         }
+    //     }
+
+    //     // If we added any rows in either state, refresh and save immediately
+    //     if (rows_added) {
+    //         frm.refresh_field("kyc_documents");
+    //         frm.save();
+    //     } else {
+    //         frm.reload_doc();
+    //     }
+    // },
+
+
+
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
 
@@ -272,6 +464,33 @@ frappe.ui.form.on("Loan Application", {
         frappe.set_route("/app/loan-management");
       });
       frm.custom_home_button_added = true;
+    }
+
+
+    // ==========================================
+    // AUTO-ADD: ACCOUNT OPEN FORM
+    // ==========================================
+    // If we are in Valuation Pending, ensure the Account Open Form exists
+    if (frm.doc.status === "Valuation Pending") {
+      let doc_type = "Account Open Form";
+      let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+      
+      if (!exists) {
+          let row = frm.add_child("kyc_documents");
+          row.document_type = doc_type;
+          row.status = "Pending";
+          
+          frm.refresh_field("kyc_documents");
+          
+          frappe.msgprint({
+              title: __('Document Required'),
+              indicator: 'blue',
+              message: __('An <b>Account Open Form</b> row has been added. Please attach the document before proceeding.')
+          });
+          
+          // Optionally auto-save so it persists even if they leave the page
+          frm.save(); 
+      }
     }
 
     // 1. Workflow Logic (Handled by Frappe Workflow)
@@ -407,10 +626,77 @@ frappe.ui.form.on("Loan Application", {
 
   onload: function (frm) {
     frm.trigger("apply_branch_user_rules");
+// ==========================================
+    // FORCE PUBLIC FILES & HIDE VUE UPLOADER UI
+    // ==========================================
+    if (!frappe.ui.OriginalFileUploader) {
+        frappe.ui.OriginalFileUploader = frappe.ui.FileUploader;
+    }
+
+    frappe.ui.FileUploader = class CustomFileUploader extends frappe.ui.OriginalFileUploader {
+        constructor(opts) {
+            // Only apply these strict rules if we are on the Loan Application form
+            let is_loan_app = frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Loan Application';
+
+            // 1. Force the backend to save as Public
+            if (is_loan_app && opts) {
+                opts.make_attachments_public = true;
+                opts.is_private = 0;
+            }
+            
+            super(opts);
+            
+            // 2. Aggressively hide the Private UI elements using an interval to beat Vue's re-rendering
+            if (is_loan_app) {
+                let hide_ui_interval = setInterval(() => {
+                    if (this.dialog && this.dialog.$wrapper) {
+                        let $wrapper = this.dialog.$wrapper;
+
+                        // A. Hide the "Set all private" footer button
+                        $wrapper.find('.btn-modal-secondary').each(function() {
+                            if ($(this).text().toLowerCase().includes('private')) {
+                                $(this).hide();
+                            }
+                        });
+
+                        // B. Hide the "Private" checkbox and ensure it stays unchecked
+                        $wrapper.find('label.frappe-checkbox').each(function() {
+                            if ($(this).text().trim().toLowerCase() === 'private') {
+                                let $input = $(this).find('input');
+                                if ($input.length && $input.is(':checked')) {
+                                    $input.prop('checked', false);
+                                    // Trigger Vue's native event to register the uncheck
+                                    $input[0].dispatchEvent(new Event('change'));
+                                }
+                                $(this).hide(); // Hide the label completely
+                            }
+                        });
+
+                        // C. Hide the yellow warning alert ("This file is public...")
+                        $wrapper.find('.alert-warning').each(function() {
+                            if ($(this).text().toLowerCase().includes('public')) {
+                                $(this).hide();
+                            }
+                        });
+                    }
+                }, 100); // Scans every 100ms while the modal is open
+
+                // 3. Clean up the interval when the modal is closed so we don't leak memory
+                if (this.dialog) {
+                    let original_onhide = this.dialog.onhide;
+                    this.dialog.onhide = () => {
+                        clearInterval(hide_ui_interval);
+                        if (original_onhide) original_onhide();
+                    };
+                }
+            }
+        }
+    };
+    // ==========================================
 
     // Pre-populate KYC Documents for new applications
     if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
-      const default_docs = ["Aadhaar Card", "PAN Card"];
+      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form"];
       default_docs.forEach((doc_type) => {
         let row = frm.add_child("kyc_documents");
         row.document_type = doc_type;
@@ -862,7 +1148,7 @@ frappe.ui.form.on("Loan Document", {
   status: function(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     
-    if (row.status === "Verified" || "Rejected") {
+    if (row.status === "Verified" || row.status === "Rejected") {
         // Set the logged-in user's email/ID
         frappe.model.set_value(cdt, cdn, "verified_by", frappe.session.user);
         
@@ -949,3 +1235,4 @@ frappe.ui.form.on("Loan Ornament", {
     });
   },
 });
+
