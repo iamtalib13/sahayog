@@ -247,7 +247,9 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
     
     try:
         finacle_settings = frappe.get_single("Finacle Settings")
-        mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+        # mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+        mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+
         # "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
         loan_sol_id = loan_account_id[:4] 
@@ -431,7 +433,9 @@ def create_finacle_retail_customer(
     
     try:
         finacle_settings = frappe.get_single("Finacle Settings")
-        mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+        # mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+        mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+
         # "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
         # dob_obj = datetime.strptime(str(date_of_birth), '%Y-%m-%d')
