@@ -234,17 +234,57 @@ frappe.ui.form.on("Loan Application", {
                 }
 
                 // Loop through the table to find and validate the required documents
+                // $.each(frm.doc.kyc_documents, function(index, row) {
+                //     if (row.document_type === "Aadhaar Card") {
+                //         has_aadhaar = true;
+                //         if (!row.document_file || !row.document_number) {
+                //             doc_errors.push(`<b>Aadhaar Card</b>: Must have both a Document Number and an Attachment.`);
+                //         }
+                //     } 
+                //     else if (row.document_type === "PAN Card") {
+                //         has_pan = true;
+                //         if (!row.document_file || !row.document_number) {
+                //             doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
+                //         } else {
+                //             // Strict 10-character alphanumeric check for PAN (5 Letters, 4 Digits, 1 Letter)
+                //             let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
+                //             if (!pan_regex.test(row.document_number)) {
+                //                 doc_errors.push(`<b>PAN Card</b>: Document Number is incomplete or invalid. Please enter a full valid PAN (e.g., ABCDE1234F).`);
+                //             }
+                //         }
+                //     } 
+                //     else if (row.document_type === "Application Form") {
+                //         has_app_form = true;
+                //         if (!row.document_file) {
+                //             doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
+                //         }
+                //     }
+                // });
+
+                                // Loop through the table to find and validate the required documents
                 $.each(frm.doc.kyc_documents, function(index, row) {
                     if (row.document_type === "Aadhaar Card") {
                         has_aadhaar = true;
                         if (!row.document_file || !row.document_number) {
                             doc_errors.push(`<b>Aadhaar Card</b>: Must have both a Document Number and an Attachment.`);
+                        } else {
+                            // Strict 12-digit numeric check for Aadhaar
+                            let aadhaar_regex = /^\d{12}$/;
+                            if (!aadhaar_regex.test(row.document_number)) {
+                                doc_errors.push(`<b>Aadhaar Card</b>: Document Number is incomplete. It must be exactly 12 digits.`);
+                            }
                         }
                     } 
                     else if (row.document_type === "PAN Card") {
                         has_pan = true;
                         if (!row.document_file || !row.document_number) {
                             doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
+                        } else {
+                            // Strict 10-character alphanumeric check for PAN (5 Letters, 4 Digits, 1 Letter)
+                            let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
+                            if (!pan_regex.test(row.document_number)) {
+                                doc_errors.push(`<b>PAN Card</b>: Document Number is incomplete or invalid. Please enter a full valid PAN (e.g., ABCDE1234F).`);
+                            }
                         }
                     } 
                     else if (row.document_type === "Application Form") {
@@ -254,6 +294,7 @@ frappe.ui.form.on("Loan Application", {
                         }
                     }
                 });
+
 
                 // Check if any of the required document rows are completely missing from the table
                 if (!has_aadhaar) doc_errors.push(`<b>Aadhaar Card</b> row is missing from the table.`);
