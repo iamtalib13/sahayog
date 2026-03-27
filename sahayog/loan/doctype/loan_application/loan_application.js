@@ -606,8 +606,9 @@ frappe.ui.form.on("Loan Application", {
     // Only 'Administrator' OR 'CPC Loan User' can edit the 'status' field
     let is_admin = frappe.session.user === 'Administrator';
     let is_cpc_user = frappe.user.has_role('CPC Loan User');
+    let is_credit_user = frappe.user.has_role('Credit Loan User');
     
-    if (!is_admin && !is_cpc_user) {
+    if (!is_admin && !is_cpc_user && !is_credit_user) {
         frm.set_df_property('kyc_documents', 'reqd', 0); 
         
         // Lock the field on the form for unauthorized users
