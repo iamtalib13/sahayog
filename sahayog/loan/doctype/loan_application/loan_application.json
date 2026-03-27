@@ -754,14 +754,12 @@
   {
    "fieldname": "credit_sanctioned_by",
    "fieldtype": "Data",
-   "label": "Credit Sanctioned By",
-   "read_only": 1
+   "label": "Credit Sanctioned By"
   },
   {
    "fieldname": "cpc_sanctioned_by",
    "fieldtype": "Data",
-   "label": "CPC Sanctioned By",
-   "read_only": 1
+   "label": "CPC Sanctioned By"
   },
   {
    "fieldname": "column_break_cukc",
@@ -773,7 +771,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-27 15:09:26.757438",
+ "modified": "2026-03-27 16:17:57.877417",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
