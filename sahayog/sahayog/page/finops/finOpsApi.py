@@ -31,7 +31,8 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
         elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
             mig_url = finacle_settings.finacle_url
         else:
-            mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
             frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
         if not mig_url:
@@ -240,10 +241,14 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
 @frappe.whitelist()
 def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id, 
                                 disbursement_date=None, remarks="Loan Disbursement"):
+
+
+            # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
     
     try:
         finacle_settings = frappe.get_single("Finacle Settings")
-        mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+        mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+        # "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
         loan_sol_id = loan_account_id[:4] 
         oper_sol_id = operative_account_id[:4]
@@ -423,9 +428,11 @@ def create_finacle_retail_customer(
     customer_rating="SAT", risk_rating="3", free_text_label=None, free_code2="BE", free_code3="OTH",
     free_code6="F60", free_code8="10483"
 ):
+    
     try:
         finacle_settings = frappe.get_single("Finacle Settings")
-        mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+        mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+        # "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
         # dob_obj = datetime.strptime(str(date_of_birth), '%Y-%m-%d')
         # formatted_dob = dob_obj.strftime('%Y-%m-%dT00:00:00.000')
