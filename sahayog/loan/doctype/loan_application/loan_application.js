@@ -211,6 +211,70 @@ frappe.ui.form.on("Loan Application", {
             //     }
             // }
 
+            // ==========================================
+            // 0. DRAFT TO CREDIT CHECK VALIDATION
+            // ==========================================
+            // Assuming your workflow action to move from Draft to Credit Check is "Submit Case"
+            if (frm.doc.status === "Draft" && frm.selected_workflow_action === "Submit Case") {
+                let doc_errors = [];
+                let has_aadhaar = false;
+                let has_pan = false;
+                let has_app_form = false;
+
+                // Ensure table has rows
+                if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+                    frappe.msgprint({
+                        title: __('Missing Mandatory Documents'),
+                        indicator: 'red',
+                        message: __('You must add Aadhaar Card, PAN Card, and Application Form to the KYC table.')
+                    });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+
+                // Loop through the table to find and validate the required documents
+                $.each(frm.doc.kyc_documents, function(index, row) {
+                    if (row.document_type === "Aadhaar Card") {
+                        has_aadhaar = true;
+                        if (!row.document_file || !row.document_number) {
+                            doc_errors.push(`<b>Aadhaar Card</b>: Must have both a Document Number and an Attachment.`);
+                        }
+                    } 
+                    else if (row.document_type === "PAN Card") {
+                        has_pan = true;
+                        if (!row.document_file || !row.document_number) {
+                            doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
+                        }
+                    } 
+                    else if (row.document_type === "Application Form") {
+                        has_app_form = true;
+                        if (!row.document_file) {
+                            doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
+                        }
+                    }
+                });
+
+                // Check if any of the required document rows are completely missing from the table
+                if (!has_aadhaar) doc_errors.push(`<b>Aadhaar Card</b> row is missing from the table.`);
+                if (!has_pan) doc_errors.push(`<b>PAN Card</b> row is missing from the table.`);
+                if (!has_app_form) doc_errors.push(`<b>Application Form</b> row is missing from the table.`);
+
+                // If any errors exist, block the submission
+                if (doc_errors.length > 0) {
+                    frappe.msgprint({
+                        title: __('Cannot Submit Case'),
+                        indicator: 'red',
+                        message: __('Please resolve the following issues before submitting:<br><br><ul style="margin-bottom: 0;"><li>' + doc_errors.join('</li><li>') + '</li></ul>')
+                    });
+                    
+                    frappe.validated = false;
+                    reject(); 
+                    return;
+                }
+            }
+
+
 
 
 
