@@ -539,7 +539,6 @@
   },
   {
    "description": "Loan-to-Value percentage applied to the collateral.",
-   "fetch_from": "loan_type.ltv_percent",
    "fieldname": "ltv_percent",
    "fieldtype": "Percent",
    "label": "Applied LTV (%)"

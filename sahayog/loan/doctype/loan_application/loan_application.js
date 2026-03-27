@@ -1109,14 +1109,7 @@ frappe.ui.form.on("Loan Application", {
   },
 
   loan_type: function (frm) {
-    if (frm.doc.loan_type) {
-      frappe.db.get_doc("Loan Type", frm.doc.loan_type).then((policy) => {
-        frm.set_value("interest_rate", policy.interest_rate);
-        frm.set_value("processing_fee", policy.processing_fee);
-        frm.set_value("valuation_charges", policy.valuation_charges);
-        frm.trigger("recalculate_all");
-      });
-    }
+    frm.trigger("recalculate_all");
   },
 
 
@@ -1207,8 +1200,6 @@ frappe.ui.form.on("Loan Application", {
       t_ded = 0,
       t_nw = 0,
       t_val = 0;
-    
-    let ltv = flt(frm.doc.ltv_percent) || 75;
 
     // Ornament Logic
     (frm.doc.ornaments_list || []).forEach((d) => {
@@ -1216,7 +1207,6 @@ frappe.ui.form.on("Loan Application", {
 
       d.net_weight = flt(d.gross_weight) - flt(d.deduction);
       d.valuation = d.net_weight * rate;
-      d.eligible_amount = d.valuation * (ltv / 100);
 
       t_gw += flt(d.gross_weight);
       t_ded += flt(d.deduction);
@@ -1228,30 +1218,6 @@ frappe.ui.form.on("Loan Application", {
     frm.set_value("total_deduction", t_ded);
     frm.set_value("total_net_weight", t_nw);
     frm.set_value("total_valuation", t_val);
-
-    if (frm.doc.security_type === "Gold") {
-      frm.set_value("eligible_loan_amount", t_val * (ltv / 100));
-    }
-
-    // ✅ Sanctioned Amount
-    let sanctioned_amount = Math.min(
-      flt(frm.doc.loan_amount),
-      flt(frm.doc.eligible_loan_amount),
-    );
-
-    frm.set_value("sanctioned_loan_amount", sanctioned_amount);
-
-    // ✅ Charges on sanctioned amount
-    let fee_amt = sanctioned_amount * (flt(frm.doc.processing_fee) / 100);
-
-    let total_deductions =
-      fee_amt + flt(frm.doc.valuation_charges) + flt(frm.doc.stamp_duty);
-
-    // ✅ Final Disbursement
-    frm.set_value("final_payout", sanctioned_amount - total_deductions);
-
-    // Toggle Valuer mandatory
-    let is_branch_team = frappe.user.has_role("Branch Loan User") || frappe.user.has_role("Branch Manager");
     frm.refresh_field("ornaments_list");
   },
 

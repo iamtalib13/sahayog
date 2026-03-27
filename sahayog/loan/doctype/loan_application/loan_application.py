@@ -5,17 +5,6 @@ from frappe import _
 import re
 
 class LoanApplication(Document):
-    def before_save(self):
-        if not self.loan_type:
-            return
-
-        if self.interest_rate not in (None, ""):
-            return
-
-        interest_rate = frappe.db.get_value("Loan Type", self.loan_type, "interest_rate")
-        if interest_rate is not None:
-            self.interest_rate = interest_rate
-
     def validate(self):
         self.set_branch_code_from_employee()
         self.validate_workflow_requirements()
@@ -130,7 +119,6 @@ class LoanApplication(Document):
         if not self.loan_type: return
         policy = frappe.get_doc("Loan Type", self.loan_type)
         age = date_diff(nowdate(), self.date_of_birth) / 365.25
-        self.eligible_loan_amount = 0
 
         # Layer 1: Gates
         if age < 18:
@@ -158,12 +146,6 @@ class LoanApplication(Document):
 
         # Layer 3: Eligibility
         multiplier = flt(policy.dds_multiplier) or 12
-        dds_cap = flt(self.avg_monthly_dds) * multiplier * (flt(self.tenure_months) / 12)
-        product_cap = flt(policy.maximum_loan_amount)
-        
-        if self.security_type != "Gold":
-            final_eligible = min(dds_cap, product_cap)
-            self.eligible_loan_amount = max(0, final_eligible)
 
         if "Rejected" not in str(self.rule_engine_status):
             self.rule_engine_status = "Passed" if score >= 40 else "Referred for Review"
@@ -172,45 +154,26 @@ class LoanApplication(Document):
         if not self.loan_type:
             return
 
-        policy = frappe.get_doc("Loan Type", self.loan_type)
-
-        # ✅ GOLD LOAN LOGIC
         if self.security_type == "Gold" and self.ornaments_list:
             t_gw = 0
             t_ded = 0
             t_nw = 0
             t_val = 0
-            ltv = flt(self.ltv_percent) or flt(policy.ltv_percent) or 75
-            
+
             for d in self.ornaments_list:
                 rate = flt(d.valuation_rate_per_gram)
                 d.net_weight = flt(d.gross_weight) - flt(d.deduction)
                 d.valuation = d.net_weight * rate
-                
+
                 t_gw += flt(d.gross_weight)
                 t_ded += flt(d.deduction)
                 t_nw += d.net_weight
                 t_val += d.valuation
-            
+
             self.total_gross_weight = t_gw
             self.total_deduction = t_ded
             self.total_net_weight = t_nw
             self.total_valuation = t_val
-            self.eligible_loan_amount = t_val * (ltv / 100)
-
-        # ✅ SANCTIONED AMOUNT (FOR ALL LOANS)
-        self.sanctioned_loan_amount = min(
-            flt(self.loan_amount),
-            flt(self.eligible_loan_amount)
-        )
-
-        # ✅ CHARGES (on sanctioned amount)
-        fees = (
-            flt(self.sanctioned_loan_amount) * flt(self.processing_fee) / 100
-        ) + flt(self.valuation_charges) + flt(self.stamp_duty)
-
-        # ✅ FINAL DISBURSEMENT
-        self.final_payout = flt(self.sanctioned_loan_amount) - fees
 
     def validate_kyc_documents(self):
         types = []
