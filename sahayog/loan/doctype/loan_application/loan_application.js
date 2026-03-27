@@ -405,7 +405,7 @@ frappe.ui.form.on("Loan Application", {
 
     // Pre-populate KYC Documents for new applications
     if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
-      const default_docs = ["Aadhaar Card", "PAN Card"];
+      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form"];
       default_docs.forEach((doc_type) => {
         let row = frm.add_child("kyc_documents");
         row.document_type = doc_type;
