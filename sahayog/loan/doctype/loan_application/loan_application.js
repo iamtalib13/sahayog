@@ -83,143 +83,133 @@ frappe.ui.form.on("Loan Application", {
             // }
 
             // ==========================================
-            // 2. CPC PROCESSING VERIFICATION (ALL ROWS + REGEX CHECKS)
-            // ==========================================
-            // if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
-            //     let errors = [];
-
-            //     // Check if the table is completely empty
-            //     if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
-            //         errors.push("No documents found. Please add the required documents.");
-            //     } else {
-            //         // Loop through EVERY row in the child table
-            //         frm.doc.kyc_documents.forEach((row, index) => {
-            //             let doc_name = row.document_type || `Row ${index + 1}`;
-                        
-            //             // 1. Check for file attachment
-            //             let file_field = row.document_file || row.file || row.document; 
-            //             if (!file_field) { 
-            //                 errors.push(`Missing file attachment for <b>${doc_name}</b>.`);
-            //             }
-                        
-            //             // 2. Check if status is explicitly Verified
-            //             if (row.status !== "Verified") {
-            //                 errors.push(`Status for <b>${doc_name}</b> must be "Verified".`);
-            //             }
-
-            //             // 3. NEW: Strict Pattern Validation for Aadhaar and PAN
-            //             if (row.document_type === "Aadhaar Card") {
-            //                 if (!row.document_number) {
-            //                     errors.push(`Document Number is required for <b>Aadhaar Card</b>.`);
-            //                 } else {
-            //                     // Regex: Exactly 12 digits, numbers only
-            //                     let aadhaar_regex = /^\d{12}$/;
-            //                     if (!aadhaar_regex.test(row.document_number)) {
-            //                         errors.push(`Document Number for <b>Aadhaar Card</b> must be exactly 12 digits (numbers only).`);
-            //                     }
-            //                 }
-            //             } 
-            //             else if (row.document_type === "PAN Card") {
-            //                 if (!row.document_number) {
-            //                     errors.push(`Document Number is required for <b>PAN Card</b>.`);
-            //                 } else {
-            //                     // Regex: 5 Letters (A-Z), 4 Digits (0-9), 1 Letter (A-Z) - case insensitive
-            //                     let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
-            //                     if (!pan_regex.test(row.document_number)) {
-            //                         errors.push(`Document Number for <b>PAN Card</b> is invalid. It must be 5 letters, 4 numbers, and 1 letter (e.g., ABCDE1234F).`);
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     }
-
-            //     // If any errors exist, halt the workflow
-            //     if (errors.length > 0) {
-            //         frappe.msgprint({
-            //             title: __('Pending Document Verification'),
-            //             indicator: 'red',
-            //             message: __('Cannot approve. Please resolve the following issues in the KYC Documents table:<br><br><ul><li>' + errors.join('</li><li>') + '</li></ul>')
-            //         });
-                    
-            //         frappe.validated = false;
-            //         reject();
-            //         return;
-            //     }
-            // }
-
-
-                        // ==========================================
-            // 2. CPC PROCESSING VERIFICATION (AUTO-VERIFY)
+            // 2. CPC PROCESSING VERIFICATION (STRICT MANUAL CHECK)
             // ==========================================
             if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
-                let missing_errors = [];
-                let changes_made = false;
+                let errors = [];
 
                 if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
-                    missing_errors.push("No documents found in the KYC table.");
-                } else {
-                    // Loop through EVERY row
-                    $.each(frm.doc.kyc_documents, function(index, row) {
-                        let doc_name = row.document_type || `Row ${index + 1}`;
-                        let row_is_valid = true;
-                        
-                        // Condition A: Aadhaar Card & PAN Card
-                        if (row.document_type === "Aadhaar Card" || row.document_type === "PAN Card") {
-                            if (!row.document_file) {
-                                missing_errors.push(`Missing attachment for <b>${doc_name}</b>.`);
-                                row_is_valid = false;
-                            }
-                            if (!row.document_number) {
-                                missing_errors.push(`Missing Document Number for <b>${doc_name}</b>.`);
-                                row_is_valid = false;
-                            }
-                        } 
-                        // Condition B: All other document types
-                        else {
-                            if (!row.document_file) {
-                                missing_errors.push(`Missing attachment for <b>${doc_name}</b>.`);
-                                row_is_valid = false;
-                            }
-                        }
-
-                        // Auto-Verify if valid!
-                        if (row_is_valid) {
-                            if (row.status !== "Verified") {
-                                frappe.model.set_value(row.doctype, row.name, "status", "Verified");
-                                changes_made = true;
-                            }
-                        }
-                    });
-                }
-
-                if (missing_errors.length > 0) {
                     frappe.msgprint({
-                        title: __('Cannot Approve: Missing Details'),
+                        title: __('Missing Documents'),
                         indicator: 'red',
-                        message: __('Please attach files and enter missing numbers before approving:<br><br><ul><li>' + missing_errors.join('</li><li>') + '</li></ul>')
+                        message: __('No documents found in the KYC table.')
                     });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                } 
+
+                // Loop through EVERY row and perform strict validations
+                $.each(frm.doc.kyc_documents, function(index, row) {
+                    let doc_name = row.document_type || `Row ${index + 1}`;
                     
-                    if (changes_made) {
-                        frm.refresh_field("kyc_documents");
+                    // 1. Check for Document Attachment (Mandatory for ALL rows)
+                    if (!row.document_file) {
+                        errors.push(`<b>${doc_name}</b>: Missing document attachment.`);
                     }
+
+                    // 2. Check for Document Number (Mandatory ONLY for Aadhaar & PAN)
+                    if (row.document_type === "Aadhaar Card" || row.document_type === "PAN Card") {
+                        if (!row.document_number) {
+                            errors.push(`<b>${doc_name}</b>: Missing Document Number.`);
+                        }
+                    }
+
+                    // 3. Check Manual Verification Status (Mandatory for ALL rows)
+                    if (row.status !== "Verified") {
+                        errors.push(`<b>${doc_name}</b>: Status has not been marked as 'Verified'.`);
+                    }
+                });
+
+                // If ANY validation failed on ANY row, block the approval
+                if (errors.length > 0) {
+                    frappe.msgprint({
+                        title: __('Cannot Approve: Pending Validations'),
+                        indicator: 'red',
+                        message: __('Please resolve the following issues before approving:<br><br><ul style="margin-bottom: 0;"><li>' + errors.join('</li><li>') + '</li></ul>')
+                    });
                     
                     frappe.validated = false;
                     reject(); 
                     return;
                 }
-
-                // FIX: If we made changes and there are no errors, forcefully save the document 
-                // BEFORE the workflow action completes, ensuring the Verified statuses are permanently captured.
-                if (changes_made) {
-                    frm.save('Save', () => {
-                        frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
-                            () => { resolve(); },
-                            () => { frappe.validated = false; reject(); }
-                        );
-                    });
-                    return; // Prevent the default confirmation below from running twice
-                }
             }
+
+
+
+
+            // ==========================================
+            // 2. CPC PROCESSING VERIFICATION (AUTO-VERIFY)
+            // ==========================================
+            // if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
+            //     let missing_errors = [];
+            //     let changes_made = false;
+
+            //     if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+            //         missing_errors.push("No documents found in the KYC table.");
+            //     } else {
+            //         // Loop through EVERY row
+            //         $.each(frm.doc.kyc_documents, function(index, row) {
+            //             let doc_name = row.document_type || `Row ${index + 1}`;
+            //             let row_is_valid = true;
+                        
+            //             // Condition A: Aadhaar Card & PAN Card
+            //             if (row.document_type === "Aadhaar Card" || row.document_type === "PAN Card") {
+            //                 if (!row.document_file) {
+            //                     missing_errors.push(`Missing attachment for <b>${doc_name}</b>.`);
+            //                     row_is_valid = false;
+            //                 }
+            //                 if (!row.document_number) {
+            //                     missing_errors.push(`Missing Document Number for <b>${doc_name}</b>.`);
+            //                     row_is_valid = false;
+            //                 }
+            //             } 
+            //             // Condition B: All other document types
+            //             else {
+            //                 if (!row.document_file) {
+            //                     missing_errors.push(`Missing attachment for <b>${doc_name}</b>.`);
+            //                     row_is_valid = false;
+            //                 }
+            //             }
+
+            //             // Auto-Verify if valid!
+            //             if (row_is_valid) {
+            //                 if (row.status !== "Verified") {
+            //                     frappe.model.set_value(row.doctype, row.name, "status", "Verified");
+            //                     changes_made = true;
+            //                 }
+            //             }
+            //         });
+            //     }
+
+            //     if (missing_errors.length > 0) {
+            //         frappe.msgprint({
+            //             title: __('Cannot Approve: Missing Details'),
+            //             indicator: 'red',
+            //             message: __('Please attach files and enter missing numbers before approving:<br><br><ul><li>' + missing_errors.join('</li><li>') + '</li></ul>')
+            //         });
+                    
+            //         if (changes_made) {
+            //             frm.refresh_field("kyc_documents");
+            //         }
+                    
+            //         frappe.validated = false;
+            //         reject(); 
+            //         return;
+            //     }
+
+            //     // FIX: If we made changes and there are no errors, forcefully save the document 
+            //     // BEFORE the workflow action completes, ensuring the Verified statuses are permanently captured.
+            //     if (changes_made) {
+            //         frm.save('Save', () => {
+            //             frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
+            //                 () => { resolve(); },
+            //                 () => { frappe.validated = false; reject(); }
+            //             );
+            //         });
+            //         return; // Prevent the default confirmation below from running twice
+            //     }
+            // }
 
 
 
@@ -388,28 +378,26 @@ frappe.ui.form.on("Loan Application", {
       min_date: min_dob,
     });
 
-    // --- NEW: Status Field Permissions ---
-        // Check if the current user is 'Administrator' OR has the 'Credit Loan User' role to edit the 'status' field
-        let is_admin = frappe.session.user === 'Administrator';
-        let is_credit_user = frappe.user.has_role('Credit Loan User');
+        // --- NEW: Status Field Permissions ---
+    // Only 'Administrator' OR 'CPC Loan User' can edit the 'status' field
+    let is_admin = frappe.session.user === 'Administrator';
+    let is_cpc_user = frappe.user.has_role('CPC Loan User');
+    
+    if (!is_admin && !is_cpc_user) {
+        frm.set_df_property('kyc_documents', 'reqd', 0); 
         
-        // If they are neither, make the 'status' field in the child table read-only
-        if (!is_admin && !is_credit_user) {
-            // This applies to the entire child table column
-            frm.set_df_property('kyc_documents', 'reqd', 0); // Optional: ensure it isn't strictly required if they can't edit it
-            
-            // Loop through existing rows to lock the field immediately
-            $.each(frm.doc.kyc_documents || [], function(i, d) {
-                // Lock the field on the form
-                frm.fields_dict.kyc_documents.grid.update_docfield_property('status', 'read_only', 1);
-            });
-        } else {
-             // Ensure it remains editable for authorized users
-            $.each(frm.doc.kyc_documents || [], function(i, d) {
-                frm.fields_dict.kyc_documents.grid.update_docfield_property('status', 'read_only', 0);
-            });
-        }
-        // --- END NEW STATUS PERMISSIONS ---
+        // Lock the field on the form for unauthorized users
+        $.each(frm.doc.kyc_documents || [], function(i, d) {
+            frm.fields_dict.kyc_documents.grid.update_docfield_property('status', 'read_only', 1);
+        });
+    } else {
+         // Ensure it remains editable for authorized users
+        $.each(frm.doc.kyc_documents || [], function(i, d) {
+            frm.fields_dict.kyc_documents.grid.update_docfield_property('status', 'read_only', 0);
+        });
+    }
+    // --- END NEW STATUS PERMISSIONS ---
+
   },
 
   onload: function (frm) {
@@ -778,6 +766,24 @@ frappe.ui.form.on("Loan Ornament", {
 
 // KYC Standardized Input
 frappe.ui.form.on("Loan Document", {
+  // --- NEW: Auto-stamp user when status changes ---
+  status: function(frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+    
+    if (row.status === "Verified" || "Rejected") {
+        // Set the logged-in user's email/ID
+        frappe.model.set_value(cdt, cdn, "verified_by", frappe.session.user);
+        
+        // Optional: Also set the verification date to today (if you want to automate your 'verification_date' column)
+        frappe.model.set_value(cdt, cdn, "verification_date", frappe.datetime.get_today());
+    } else {
+        // If they change it back to Pending or Rejected, clear the user stamp
+        frappe.model.set_value(cdt, cdn, "verified_by", "");
+        frappe.model.set_value(cdt, cdn, "verification_date", "");
+    }
+  },
+
+
   document_number: function (frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     let val = row.document_number || "";
