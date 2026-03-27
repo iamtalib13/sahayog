@@ -564,7 +564,7 @@
   {
    "description": "One-time administrative fee percentage.",
    "fieldname": "processing_fee",
-   "fieldtype": "Percent",
+   "fieldtype": "Currency",
    "label": "Processing Fee (%)"
   },
   {
@@ -736,7 +736,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-27 18:39:54.963860",
+ "modified": "2026-03-27 18:47:15.983188",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",

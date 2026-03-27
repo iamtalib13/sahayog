@@ -1309,13 +1309,6 @@ frappe.ui.form.on("Loan Application", {
     if (frm.doc.mobile_number && !/^\d{10}$/.test(frm.doc.mobile_number)) {
       frappe.throw(__("Mobile Number must be exactly 10 digits."));
     }
-    if (flt(frm.doc.loan_amount) > flt(frm.doc.eligible_loan_amount) + 0.01) {
-      frappe.msgprint({
-        title: __("Over Limit"),
-        message: __("Requested amount exceeds eligibility. Please adjust."),
-        indicator: "orange",
-      });
-    }
   },
 });
 
@@ -1428,4 +1421,3 @@ frappe.ui.form.on("Loan Ornament", {
     });
   },
 });
-
