@@ -509,7 +509,9 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
             mig_url = finacle_settings.finacle_url
         else:
             # return {"status": "ERROR", "message": "No Finacle URL found in settings."}
-            mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+
             frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
         # 2. Logic for Dates and IDs
@@ -685,6 +687,8 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
     except Exception as e:
         frappe.log_error(title="Finacle Disbursement Error", message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
+
+
 
 # Wrapper for Postman testing
 @frappe.whitelist()
