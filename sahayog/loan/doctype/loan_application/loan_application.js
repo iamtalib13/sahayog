@@ -621,6 +621,73 @@ frappe.ui.form.on("Loan Application", {
 
   onload: function (frm) {
     frm.trigger("apply_branch_user_rules");
+// ==========================================
+    // FORCE PUBLIC FILES & HIDE VUE UPLOADER UI
+    // ==========================================
+    if (!frappe.ui.OriginalFileUploader) {
+        frappe.ui.OriginalFileUploader = frappe.ui.FileUploader;
+    }
+
+    frappe.ui.FileUploader = class CustomFileUploader extends frappe.ui.OriginalFileUploader {
+        constructor(opts) {
+            // Only apply these strict rules if we are on the Loan Application form
+            let is_loan_app = frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Loan Application';
+
+            // 1. Force the backend to save as Public
+            if (is_loan_app && opts) {
+                opts.make_attachments_public = true;
+                opts.is_private = 0;
+            }
+            
+            super(opts);
+            
+            // 2. Aggressively hide the Private UI elements using an interval to beat Vue's re-rendering
+            if (is_loan_app) {
+                let hide_ui_interval = setInterval(() => {
+                    if (this.dialog && this.dialog.$wrapper) {
+                        let $wrapper = this.dialog.$wrapper;
+
+                        // A. Hide the "Set all private" footer button
+                        $wrapper.find('.btn-modal-secondary').each(function() {
+                            if ($(this).text().toLowerCase().includes('private')) {
+                                $(this).hide();
+                            }
+                        });
+
+                        // B. Hide the "Private" checkbox and ensure it stays unchecked
+                        $wrapper.find('label.frappe-checkbox').each(function() {
+                            if ($(this).text().trim().toLowerCase() === 'private') {
+                                let $input = $(this).find('input');
+                                if ($input.length && $input.is(':checked')) {
+                                    $input.prop('checked', false);
+                                    // Trigger Vue's native event to register the uncheck
+                                    $input[0].dispatchEvent(new Event('change'));
+                                }
+                                $(this).hide(); // Hide the label completely
+                            }
+                        });
+
+                        // C. Hide the yellow warning alert ("This file is public...")
+                        $wrapper.find('.alert-warning').each(function() {
+                            if ($(this).text().toLowerCase().includes('public')) {
+                                $(this).hide();
+                            }
+                        });
+                    }
+                }, 100); // Scans every 100ms while the modal is open
+
+                // 3. Clean up the interval when the modal is closed so we don't leak memory
+                if (this.dialog) {
+                    let original_onhide = this.dialog.onhide;
+                    this.dialog.onhide = () => {
+                        clearInterval(hide_ui_interval);
+                        if (original_onhide) original_onhide();
+                    };
+                }
+            }
+        }
+    };
+    // ==========================================
 
     // Pre-populate KYC Documents for new applications
     if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
@@ -1076,3 +1143,4 @@ frappe.ui.form.on("Loan Ornament", {
     });
   },
 });
+
