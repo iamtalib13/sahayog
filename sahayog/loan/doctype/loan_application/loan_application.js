@@ -499,13 +499,50 @@ frappe.ui.form.on("Loan Application", {
 
 
 
-            // Existing Workflow Confirmation
+            // // Existing Workflow Confirmation
+            // frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
+            //     () => { resolve(); },
+            //     () => { frappe.validated = false; reject(); }
+            // );
+
+
+    //     });
+    // },
+
+                         // ==========================================
+            // FINAL WORKFLOW CONFIRMATION & DB AUTO-STAMPING
+            // ==========================================
             frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
-                () => { resolve(); },
-                () => { frappe.validated = false; reject(); }
+                () => { 
+                    // If we are Approving in either of these states, trigger the DB stamp
+                    if (frm.selected_workflow_action === "Approve" && 
+                       (frm.doc.status === "Credit Decision" || frm.doc.status === "CPC Processing")) {
+                        
+                        frappe.call({
+                            doc: frm.doc,
+                            method: "stamp_sanctioned_user",
+                            args: {
+                                status: frm.doc.status
+                            },
+                            callback: function(r) {
+                                // Once the DB successfully saves the user ID, allow the workflow to finish
+                                resolve();
+                            }
+                        });
+                    } else {
+                        // If it's not an Approval step, just proceed normally
+                        resolve();
+                    }
+                },
+                () => { 
+                    frappe.validated = false; 
+                    reject(); 
+                }
             );
         });
     },
+
+
 
     after_workflow_action: function (frm) {
         // ==========================================
