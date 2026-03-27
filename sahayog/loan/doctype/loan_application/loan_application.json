@@ -57,6 +57,7 @@
   "security_details_section",
   "total_gross_weight",
   "total_deduction",
+  "valuer",
   "column_break_2",
   "total_net_weight",
   "total_valuation",
@@ -730,6 +731,12 @@
   {
    "fieldname": "section_break_ufxn",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "valuer",
+   "fieldtype": "Link",
+   "label": "Valuer",
+   "options": "Valuer Master"
   }
  ],
  "grid_page_length": 50,
@@ -737,7 +744,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-25 12:00:46.503887",
+ "modified": "2026-03-27 10:40:02.761883",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
