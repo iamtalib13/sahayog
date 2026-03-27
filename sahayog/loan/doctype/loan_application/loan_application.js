@@ -311,27 +311,57 @@ frappe.ui.form.on("Loan Application", {
             // VALUATION PENDING TO CREDIT DECISION VALIDATION
             // ==========================================
             // Replace "Submit Post Valuation" with the EXACT name of your workflow action button
+            // if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
+                
+            //     let acc_open_row = (frm.doc.kyc_documents || []).find(d => d.document_type === "Account Open Form");
+
+            //     if (!acc_open_row) {
+            //         frappe.msgprint({
+            //             title: __('Missing Document Row'),
+            //             indicator: 'red',
+            //             message: __('The <b>Account Open Form</b> row is missing from the KYC table.')
+            //         });
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+
+            //     if (!acc_open_row.document_file) {
+            //         frappe.msgprint({
+            //             title: __('Missing Attachment'),
+            //             indicator: 'red',
+            //             message: __('You must upload the file attachment for the <b>Account Open Form</b> before submitting.')
+            //         });
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+            // }
+
             if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
                 
-                let acc_open_row = (frm.doc.kyc_documents || []).find(d => d.document_type === "Account Open Form");
+                let required_docs = ["Account Open Form", "Valuation Report Image", "Ornament Image"];
+                let val_errors = [];
 
-                if (!acc_open_row) {
-                    frappe.msgprint({
-                        title: __('Missing Document Row'),
-                        indicator: 'red',
-                        message: __('The <b>Account Open Form</b> row is missing from the KYC table.')
-                    });
-                    frappe.validated = false;
-                    reject();
-                    return;
-                }
+                // Loop through the required documents list
+                required_docs.forEach(doc_type => {
+                    let row = (frm.doc.kyc_documents || []).find(d => d.document_type === doc_type);
 
-                if (!acc_open_row.document_file) {
+                    if (!row) {
+                        val_errors.push(`<b>${doc_type}</b> row is missing from the KYC table.`);
+                    } else if (!row.document_file) {
+                        val_errors.push(`Missing file attachment for <b>${doc_type}</b>.`);
+                    }
+                });
+
+                // If any of the 3 documents are missing or lack attachments, block the action
+                if (val_errors.length > 0) {
                     frappe.msgprint({
-                        title: __('Missing Attachment'),
+                        title: __('Missing Required Documents'),
                         indicator: 'red',
-                        message: __('You must upload the file attachment for the <b>Account Open Form</b> before submitting.')
+                        message: __('Please resolve the following before submitting:<br><br><ul style="margin-bottom: 0;"><li>' + val_errors.join('</li><li>') + '</li></ul>')
                     });
+                    
                     frappe.validated = false;
                     reject();
                     return;
@@ -606,8 +636,9 @@ frappe.ui.form.on("Loan Application", {
     // Only 'Administrator' OR 'CPC Loan User' can edit the 'status' field
     let is_admin = frappe.session.user === 'Administrator';
     let is_cpc_user = frappe.user.has_role('CPC Loan User');
+    let is_credit_user = frappe.user.has_role('Credit Loan User');
     
-    if (!is_admin && !is_cpc_user) {
+    if (!is_admin && !is_cpc_user && !is_credit_user) {
         frm.set_df_property('kyc_documents', 'reqd', 0); 
         
         // Lock the field on the form for unauthorized users
