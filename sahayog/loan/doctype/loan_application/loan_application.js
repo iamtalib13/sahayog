@@ -274,6 +274,72 @@ frappe.ui.form.on("Loan Application", {
                 }
             }
 
+            // // ==========================================
+            // // 1.5 VALUATION PENDING TO CREDIT DECISION VALIDATION
+            // // ==========================================
+            // // Assuming your workflow action to move from Valuation Pending to Credit Decision is "Submit Post Valuation"
+            // if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
+                
+            //     // Find the specific row for Account Open Form
+            //     let acc_open_row = (frm.doc.kyc_documents || []).find(d => d.document_type === "Account Open Form");
+
+            //     if (!acc_open_row) {
+            //         frappe.msgprint({
+            //             title: __('Missing Document Row'),
+            //             indicator: 'red',
+            //             message: __('The <b>Account Open Form</b> row is completely missing from the KYC table.')
+            //         });
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+
+            //     // Check if the attachment actually exists
+            //     if (!acc_open_row.document_file) {
+            //         frappe.msgprint({
+            //             title: __('Missing Attachment'),
+            //             indicator: 'red',
+            //             message: __('You must upload the file attachment for the <b>Account Open Form</b> before proceeding.')
+            //         });
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+            // }
+
+            // ==========================================
+            // VALUATION PENDING TO CREDIT DECISION VALIDATION
+            // ==========================================
+            // Replace "Submit Post Valuation" with the EXACT name of your workflow action button
+            if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
+                
+                let acc_open_row = (frm.doc.kyc_documents || []).find(d => d.document_type === "Account Open Form");
+
+                if (!acc_open_row) {
+                    frappe.msgprint({
+                        title: __('Missing Document Row'),
+                        indicator: 'red',
+                        message: __('The <b>Account Open Form</b> row is missing from the KYC table.')
+                    });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+
+                if (!acc_open_row.document_file) {
+                    frappe.msgprint({
+                        title: __('Missing Attachment'),
+                        indicator: 'red',
+                        message: __('You must upload the file attachment for the <b>Account Open Form</b> before submitting.')
+                    });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+            }
+
+
+
 
 
 
@@ -324,6 +390,68 @@ frappe.ui.form.on("Loan Application", {
         }
       },
 
+
+    //     after_workflow_action: function (frm) {
+    //     let rows_added = false;
+
+    //     // ==========================================
+    //     // 3a. AUTO-ADD: VALUATION PENDING
+    //     // ==========================================
+    //     if (frm.doc.status === "Valuation Pending") {
+    //         let doc_type = "Account Open Form";
+    //         let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+            
+    //         if (!exists) {
+    //             let row = frm.add_child("kyc_documents");
+    //             row.document_type = doc_type;
+    //             row.status = "Pending";
+    //             rows_added = true;
+                
+    //             frappe.msgprint({
+    //                 title: __('Document Added'),
+    //                 indicator: 'green',
+    //                 message: __('<b>Account Open Form</b> row has been automatically added.')
+    //             });
+    //         }
+    //     }
+
+    //     // ==========================================
+    //     // 3b. AUTO-ADD: CPC PROCESSING
+    //     // ==========================================
+    //     if (frm.doc.status === "CPC Processing") {
+    //         let documents_to_add = ["Loan Agreement", "Sanction Letter"];
+
+    //         documents_to_add.forEach(doc_type => {
+    //             let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+                
+    //             if (!exists) {
+    //                 let row = frm.add_child("kyc_documents");
+    //                 row.document_type = doc_type;
+    //                 row.status = "Pending"; 
+    //                 rows_added = true;
+    //             }
+    //         });
+
+    //         if (rows_added) {
+    //             frappe.msgprint({
+    //                 title: __('CPC Documents Added'),
+    //                 indicator: 'green',
+    //                 message: __('Loan Agreement and Sanction Letter rows have been automatically added.')
+    //             });
+    //         }
+    //     }
+
+    //     // If we added any rows in either state, refresh and save immediately
+    //     if (rows_added) {
+    //         frm.refresh_field("kyc_documents");
+    //         frm.save();
+    //     } else {
+    //         frm.reload_doc();
+    //     }
+    // },
+
+
+
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
 
@@ -332,6 +460,33 @@ frappe.ui.form.on("Loan Application", {
         frappe.set_route("/app/loan-management");
       });
       frm.custom_home_button_added = true;
+    }
+
+
+    // ==========================================
+    // AUTO-ADD: ACCOUNT OPEN FORM
+    // ==========================================
+    // If we are in Valuation Pending, ensure the Account Open Form exists
+    if (frm.doc.status === "Valuation Pending") {
+      let doc_type = "Account Open Form";
+      let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+      
+      if (!exists) {
+          let row = frm.add_child("kyc_documents");
+          row.document_type = doc_type;
+          row.status = "Pending";
+          
+          frm.refresh_field("kyc_documents");
+          
+          frappe.msgprint({
+              title: __('Document Required'),
+              indicator: 'blue',
+              message: __('An <b>Account Open Form</b> row has been added. Please attach the document before proceeding.')
+          });
+          
+          // Optionally auto-save so it persists even if they leave the page
+          frm.save(); 
+      }
     }
 
     // 1. Workflow Logic (Handled by Frappe Workflow)
