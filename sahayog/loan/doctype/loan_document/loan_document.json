@@ -11,7 +11,8 @@
   "document_file",
   "status",
   "verified_by",
-  "verification_date"
+  "verification_date",
+  "remark"
  ],
  "fields": [
   {
@@ -54,13 +55,19 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Verification Date"
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Remark"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-27 11:54:10.110332",
+ "modified": "2026-03-27 13:47:07.688198",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Document",
