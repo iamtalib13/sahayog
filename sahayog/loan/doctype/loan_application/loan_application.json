@@ -33,14 +33,15 @@
   "permanent_address",
   "column_break_pmpc",
   "correspondence_address",
-  "kyc_section",
-  "kyc_documents",
   "nomination_section",
   "nominee_name",
   "relation_with_applicant",
   "column_break_uwii",
   "nominee_age",
   "nominee_address",
+  "kyc_section",
+  "kyc_documents",
+  "kyc_docs",
   "section_break_ufxn",
   "disclaimer",
   "asset_security_tab",
@@ -57,7 +58,6 @@
   "security_details_section",
   "total_gross_weight",
   "total_deduction",
-  "valuer",
   "column_break_2",
   "total_net_weight",
   "total_valuation",
@@ -87,11 +87,6 @@
   "stamp_duty",
   "final_payout",
   "remaining_balance",
-  "section_break_nxxl",
-  "column_break_ebdo",
-  "credit_sanctioned_by",
-  "column_break_cukc",
-  "cpc_sanctioned_by",
   "internal_ops_tab",
   "ops_section",
   "status",
@@ -534,18 +529,15 @@
    "description": "Maximum loan amount allowed based on all constraints.",
    "fieldname": "eligible_loan_amount",
    "fieldtype": "Currency",
-   "label": "Final Eligible Amount",
-   "read_only": 1
+   "label": "Final Eligible Amount"
   },
   {
    "description": "Final approved loan amount based on eligibility and system rules.",
    "fieldname": "sanctioned_loan_amount",
    "fieldtype": "Currency",
-   "label": "Sanctioned Loan Amount",
-   "read_only": 1
+   "label": "Sanctioned Loan Amount"
   },
   {
-   "depends_on": "eval:doc.security_type=='Gold'",
    "description": "Loan-to-Value percentage applied to the collateral.",
    "fetch_from": "loan_type.ltv_percent",
    "fieldname": "ltv_percent",
@@ -556,8 +548,7 @@
    "description": "Annual interest percentage pulled from the product scheme.",
    "fieldname": "interest_rate",
    "fieldtype": "Percent",
-   "label": "Interest Rate (%)",
-   "read_only": 1
+   "label": "Interest Rate (%)"
   },
   {
    "depends_on": "eval:doc.security_type=='Gold'",
@@ -574,8 +565,7 @@
    "description": "One-time administrative fee percentage.",
    "fieldname": "processing_fee",
    "fieldtype": "Percent",
-   "label": "Processing Fee (%)",
-   "read_only": 1
+   "label": "Processing Fee (%)"
   },
   {
    "description": "Legal/government tax applicable on the loan.",
@@ -587,15 +577,13 @@
    "description": "The net amount the customer will receive (Loan - Fees).",
    "fieldname": "final_payout",
    "fieldtype": "Currency",
-   "label": "Final Disbursement Value",
-   "read_only": 1
+   "label": "Final Disbursement Value"
   },
   {
    "description": "Current amount remaining to be paid back.",
    "fieldname": "remaining_balance",
    "fieldtype": "Currency",
-   "label": "Outstanding Balance",
-   "read_only": 1
+   "label": "Outstanding Balance"
   },
   {
    "depends_on": "eval:doc.status==\"CPC Processing\" || doc.status==\"Approved\"",
@@ -623,6 +611,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.status == 'Valuation Pending'",
    "description": "I, the undersigned, hereby apply for a Gold Loan from Sahayog Multistate Credit Co-operative Society Ltd. I declare that I am a bonafide member of the Society and the information provided above is true to the best of my knowledge. I agree to pledge the gold ornaments mentioned above and to abide by the terms and conditions set forth by the Society and in accordance with the Multi-State Co-operative Societies Act, 2002, particularly Sections 61 (Lending), 63 (Security), and 64 (Recovery). I further authorize the Society to retain and sell the pledged gold in case of default as per applicable laws and recovery rules.",
    "fieldname": "disclaimer",
    "fieldtype": "Check",
@@ -737,33 +726,9 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "valuer",
-   "fieldtype": "Link",
-   "label": "Valuer",
-   "options": "Valuer Master"
-  },
-  {
-   "fieldname": "section_break_nxxl",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_ebdo",
-   "fieldtype": "Column Break",
-   "read_only": 1
-  },
-  {
-   "fieldname": "credit_sanctioned_by",
-   "fieldtype": "Data",
-   "label": "Credit Sanctioned By"
-  },
-  {
-   "fieldname": "cpc_sanctioned_by",
-   "fieldtype": "Data",
-   "label": "CPC Sanctioned By"
-  },
-  {
-   "fieldname": "column_break_cukc",
-   "fieldtype": "Column Break"
+   "fieldname": "kyc_docs",
+   "fieldtype": "HTML",
+   "label": "KYC Documents"
   }
  ],
  "grid_page_length": 50,
@@ -771,7 +736,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-27 16:17:57.877417",
+ "modified": "2026-03-27 18:39:54.963860",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
