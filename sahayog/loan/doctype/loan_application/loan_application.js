@@ -273,6 +273,7 @@ frappe.ui.form.on("Loan Application", {
     // 1. Workflow Logic (Handled by Frappe Workflow)
     frm.trigger("render_workflow_tracker");
     frm.trigger("set_status_indicator");
+    frm.trigger("render_kyc_footer");
 
     // Mobile Number Restriction - Only Numbers (10 digits)
     if (frm.fields_dict.mobile_number && frm.fields_dict.mobile_number.$input) {
@@ -457,7 +458,7 @@ frappe.ui.form.on("Loan Application", {
     let is_final = ["Approved", "Rejected"].includes(current_status);
 
     let tracker_html = `
-      <div class="workflow-tracker-wrapper" style="margin-bottom: 25px;">
+      <div class="workflow-tracker-wrapper" style="margin-bottom: 15px;">
         <div class="workflow-tracker-container" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 10px; background: #fff; border-radius: 12px; border: 1px solid #d1d8dd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
           ${states
             .map((state, index) => {
@@ -520,6 +521,29 @@ frappe.ui.form.on("Loan Application", {
             </span>
           </div>
         `}
+
+        ${(() => {
+            const attached_docs = (frm.doc.kyc_documents || []).filter(d => d.document_file);
+            if (attached_docs.length === 0) return "";
+            
+            return `
+              <div class="kyc-preview-intro" style="margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #d1d8dd; border-radius: 8px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);">
+                <div style="font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #525252; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fa fa-paperclip" style="color: var(--blue-500);"></i> Attachments Preview
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${attached_docs.map(d => `
+                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 4px 10px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 11px; font-weight: 600; color: #333;">${d.document_type}</span>
+                            <a href="${d.document_file}" target="_blank" class="btn btn-xs btn-default" style="padding: 1px 6px; font-size: 10px; height: 18px; line-height: 14px; color: var(--blue-500); border-color: #d1d8dd; background: #fff;">
+                                <i class="fa fa-eye"></i> View
+                            </a>
+                        </div>
+                    `).join('')}
+                </div>
+              </div>
+            `;
+        })()}
       </div>
     `;
 
@@ -539,6 +563,49 @@ frappe.ui.form.on("Loan Application", {
     if (status_colors[frm.doc.status]) {
       frm.page.set_indicator(frm.doc.status, status_colors[frm.doc.status]);
     }
+  },
+
+  render_kyc_footer: function (frm) {
+    if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+      $(frm.wrapper).find(".kyc-footer-summary").remove();
+      return;
+    }
+
+    const attached_docs = frm.doc.kyc_documents.filter((d) => d.document_file);
+    if (attached_docs.length === 0) {
+      $(frm.wrapper).find(".kyc-footer-summary").remove();
+      return;
+    }
+
+    let html = `
+      <div class="kyc-footer-summary" style="padding: 20px; border-top: 1px solid #d1d8dd; margin-top: 30px; background-color: #f9f9f9; border-radius: 0 0 8px 8px;">
+        <div style="font-weight: bold; margin-bottom: 15px; color: #525252; font-size: 14px; display: flex; align-items: center;">
+          <i class="fa fa-file-text-o" style="margin-right: 8px; color: var(--blue-500);"></i> KYC Document Preview
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          ${attached_docs
+            .map(
+              (d) => `
+              <div style="flex: 0 0 calc(25% - 12px); min-width: 180px; background: #fff; border: 1px solid #d1d8dd; border-radius: 6px; padding: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.2s;">
+                <div style="overflow: hidden; margin-right: 8px;">
+                  <div style="font-size: 11px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${d.document_type}">${d.document_type}</div>
+                  <div style="font-size: 10px; color: #888;">${d.document_number || "-"}</div>
+                </div>
+                <a href="${d.document_file}" target="_blank" class="btn btn-xs btn-default" style="padding: 2px 6px; font-size: 10px; color: var(--blue-500); border-color: #d1d8dd;">
+                  <i class="fa fa-eye"></i> View
+                </a>
+              </div>
+            `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+
+    // Target the absolute bottom of the form
+    $(frm.wrapper).find(".kyc-footer-summary").remove();
+    const $form_body = $(frm.wrapper).find(".form-body");
+    $form_body.append(html);
   },
 
   // customer name auto-capitalization

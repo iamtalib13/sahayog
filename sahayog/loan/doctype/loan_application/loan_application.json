@@ -618,7 +618,6 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.status == 'Valuation Pending'",
    "description": "I, the undersigned, hereby apply for a Gold Loan from Sahayog Multistate Credit Co-operative Society Ltd. I declare that I am a bonafide member of the Society and the information provided above is true to the best of my knowledge. I agree to pledge the gold ornaments mentioned above and to abide by the terms and conditions set forth by the Society and in accordance with the Multi-State Co-operative Societies Act, 2002, particularly Sections 61 (Lending), 63 (Security), and 64 (Recovery). I further authorize the Society to retain and sell the pledged gold in case of default as per applicable laws and recovery rules.",
    "fieldname": "disclaimer",
    "fieldtype": "Check",
@@ -744,7 +743,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-27 10:40:02.761883",
+ "modified": "2026-03-27 11:55:57.262860",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
