@@ -128,7 +128,7 @@
                 </section>
 
                 <div v-if="showPendingEmptyMessage()" class="lw-pending-empty" aria-live="polite">
-                    Koi bhi pending application nahi hai aapke liye.
+                    There are no pending applications for you.
                 </div>
 
                 <div class="lw-section-separator"></div>
@@ -2218,7 +2218,7 @@
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
 <script>
-    const TEMPLATE_USER_ROLES = {{ (user_roles or []) | json }};
+    const TEMPLATE_USER_ROLES = (window.parent?.frappe?.boot?.user?.roles) || [];
     const WORKSPACE_STATUS_CARDS = [
     { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-pending" },
         { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "status-card-tone-draft" },
@@ -2839,7 +2839,7 @@
             },
 
             showPendingEmptyMessage() {
-                return this.activeView === "cards" && this.hasPendingQueue() && this.pendingCount() === 0;
+                return this.activeView === "cards" && this.hasPendingQueue() && this.pendingCount() === 0&& this.activeFilter === "Role Pending";
             },
 
             hasPendingQueue() {
