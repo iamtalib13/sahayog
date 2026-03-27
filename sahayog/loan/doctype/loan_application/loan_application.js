@@ -647,10 +647,6 @@ frappe.ui.form.on("Loan Application", {
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
 
-    // Toggle Valuer mandatory
-    let is_branch_team = frappe.user.has_role("Branch Loan User") || frappe.user.has_role("Branch Manager");
-    frm.toggle_reqd("valuer", is_branch_team && frm.doc.security_type === "Gold" && (frm.doc.ornaments_list || []).length > 0);
-
     if (!frm.custom_home_button_added) {
       frm.add_custom_button(__("Home"), function () {
         frappe.set_route("/app/loan-management");
@@ -1256,8 +1252,6 @@ frappe.ui.form.on("Loan Application", {
 
     // Toggle Valuer mandatory
     let is_branch_team = frappe.user.has_role("Branch Loan User") || frappe.user.has_role("Branch Manager");
-    frm.toggle_reqd("valuer", is_branch_team && frm.doc.security_type === "Gold" && (frm.doc.ornaments_list || []).length > 0);
-
     frm.refresh_field("ornaments_list");
   },
 
@@ -1270,11 +1264,6 @@ frappe.ui.form.on("Loan Application", {
       // 1. Ensure Ornaments List is not empty
       if (!frm.doc.ornaments_list || frm.doc.ornaments_list.length === 0) {
         frappe.throw(__("Ornaments List is mandatory when status is Credit Decision."));
-      }
-
-      // 2. Ensure Valuer is not empty for branch roles
-      if (!frm.doc.valuer && (frappe.user.has_role("Branch Loan User") || frappe.user.has_role("Branch Manager"))) {
-        frappe.throw(__("Valuer is mandatory when adding valuation details."));
       }
 
       // 3. Ensure Disclaimer is checked
@@ -1292,12 +1281,6 @@ frappe.ui.form.on("Loan Application", {
         row.status = "Pending";
         frm.refresh_field("kyc_documents");
         frappe.msgprint(__("Added 'Ornament Image' row to KYC Documents."));
-      }
-    }
-
-    if (frm.doc.security_type === "Gold" && (frm.doc.ornaments_list || []).length > 0) {
-      if (!frm.doc.valuer && (frappe.user.has_role("Branch Loan User") || frappe.user.has_role("Branch Manager"))) {
-        frappe.throw(__("Valuer is mandatory when adding valuation details."));
       }
     }
 

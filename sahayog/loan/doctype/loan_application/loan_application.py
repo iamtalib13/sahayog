@@ -62,7 +62,7 @@ class LoanApplication(Document):
             if not self.ornaments_list:
                 frappe.throw(_("Ornaments List is mandatory when status is 'Credit Decision'."))
             
-            if not self.valuer:
+            if self.meta.has_field("valuer") and not self.get("valuer"):
                 frappe.throw(_("Valuer is mandatory when adding valuation details."))
             
             if not self.disclaimer:
@@ -80,7 +80,7 @@ class LoanApplication(Document):
         if self.security_type == "Gold" and self.ornaments_list:
             branch_roles = {"Branch Loan User", "Branch Manager"}
             user_roles = set(frappe.get_roles(frappe.session.user))
-            if branch_roles.intersection(user_roles) and not self.valuer:
+            if self.meta.has_field("valuer") and branch_roles.intersection(user_roles) and not self.get("valuer"):
                 frappe.throw(_("Valuer is mandatory when adding valuation details."))
 
         # CPC Processing Logic
