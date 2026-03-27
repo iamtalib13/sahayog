@@ -534,7 +534,7 @@ frappe.ui.form.on("Loan Application", {
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                     ${attached_docs.map(d => `
                         <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 4px 10px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 11px; font-weight: 600; color: #333;">${d.document_type}</span>
+                            <span style="font-size: 11px; font-weight: 600; color: #333;">${d.document_type} (${d.status || 'Pending'})</span>
                             <a href="${d.document_file}" target="_blank" class="btn btn-xs btn-default" style="padding: 1px 6px; font-size: 10px; height: 18px; line-height: 14px; color: var(--blue-500); border-color: #d1d8dd; background: #fff;">
                                 <i class="fa fa-eye"></i> View
                             </a>
