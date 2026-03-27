@@ -9,6 +9,9 @@ class LoanApplication(Document):
         if not self.loan_type:
             return
 
+        if self.interest_rate not in (None, ""):
+            return
+
         interest_rate = frappe.db.get_value("Loan Type", self.loan_type, "interest_rate")
         if interest_rate is not None:
             self.interest_rate = interest_rate
