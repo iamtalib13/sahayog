@@ -2839,7 +2839,7 @@
             },
 
             showPendingEmptyMessage() {
-                return this.activeView === "cards" && this.hasPendingQueue() && this.pendingCount() === 0;
+                return this.activeView === "cards" && this.hasPendingQueue() && this.pendingCount() === 0&& this.activeFilter === "Role Pending";
             },
 
             hasPendingQueue() {
