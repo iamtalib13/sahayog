@@ -5,6 +5,14 @@ from frappe import _
 import re
 
 class LoanApplication(Document):
+    def before_save(self):
+        if not self.loan_type:
+            return
+
+        interest_rate = frappe.db.get_value("Loan Type", self.loan_type, "interest_rate")
+        if interest_rate is not None:
+            self.interest_rate = interest_rate
+
     def validate(self):
         self.set_branch_code_from_employee()
         self.validate_workflow_requirements()
