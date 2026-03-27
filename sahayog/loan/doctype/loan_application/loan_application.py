@@ -208,6 +208,14 @@ class LoanApplication(Document):
                 frappe.throw(_("Duplicate KYC Type: {0}").format(d.document_type))
             types.append(d.document_type)
 
+    @frappe.whitelist()
+    def stamp_sanctioned_user(self, status):
+        """Directly writes the logged-in user to the DB, bypassing frontend read-only rules."""
+        if status == "Credit Decision":
+            frappe.db.set_value(self.doctype, self.name, "credit_sanctioned_by", frappe.session.user)
+        elif status == "CPC Processing":
+            frappe.db.set_value(self.doctype, self.name, "cpc_sanctioned_by", frappe.session.user)
+
 @frappe.whitelist()
 def add_workflow_comment(docname, comment):
     """Explicitly add a comment to the document timeline."""

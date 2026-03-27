@@ -87,6 +87,11 @@
   "stamp_duty",
   "final_payout",
   "remaining_balance",
+  "section_break_nxxl",
+  "column_break_ebdo",
+  "credit_sanctioned_by",
+  "column_break_cukc",
+  "cpc_sanctioned_by",
   "internal_ops_tab",
   "ops_section",
   "status",
@@ -736,6 +741,29 @@
    "fieldtype": "Link",
    "label": "Valuer",
    "options": "Valuer Master"
+  },
+  {
+   "fieldname": "section_break_nxxl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ebdo",
+   "fieldtype": "Column Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "credit_sanctioned_by",
+   "fieldtype": "Data",
+   "label": "Credit Sanctioned By"
+  },
+  {
+   "fieldname": "cpc_sanctioned_by",
+   "fieldtype": "Data",
+   "label": "CPC Sanctioned By"
+  },
+  {
+   "fieldname": "column_break_cukc",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -743,7 +771,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-27 11:55:57.262860",
+ "modified": "2026-03-27 16:17:57.877417",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",

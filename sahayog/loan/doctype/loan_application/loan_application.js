@@ -211,22 +211,127 @@ frappe.ui.form.on("Loan Application", {
             //     }
             // }
 
-            // ==========================================
+            // // ==========================================
+            // // 0. DRAFT TO CREDIT CHECK VALIDATION
+            // // ==========================================
+            // // Assuming your workflow action to move from Draft to Credit Check is "Submit Case"
+            // if (frm.doc.status === "Draft" && frm.selected_workflow_action === "Submit Case") {
+            //     let doc_errors = [];
+            //     let has_aadhaar = false;
+            //     let has_pan = false;
+            //     let has_app_form = false;
+
+            //     // Ensure table has rows
+            //     if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
+            //         frappe.msgprint({
+            //             title: __('Missing Mandatory Documents'),
+            //             indicator: 'red',
+            //             message: __('You must add Aadhaar Card, PAN Card, and Application Form to the KYC table.')
+            //         });
+            //         frappe.validated = false;
+            //         reject();
+            //         return;
+            //     }
+
+            //     // Loop through the table to find and validate the required documents
+            //     // $.each(frm.doc.kyc_documents, function(index, row) {
+            //     //     if (row.document_type === "Aadhaar Card") {
+            //     //         has_aadhaar = true;
+            //     //         if (!row.document_file || !row.document_number) {
+            //     //             doc_errors.push(`<b>Aadhaar Card</b>: Must have both a Document Number and an Attachment.`);
+            //     //         }
+            //     //     } 
+            //     //     else if (row.document_type === "PAN Card") {
+            //     //         has_pan = true;
+            //     //         if (!row.document_file || !row.document_number) {
+            //     //             doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
+            //     //         } else {
+            //     //             // Strict 10-character alphanumeric check for PAN (5 Letters, 4 Digits, 1 Letter)
+            //     //             let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
+            //     //             if (!pan_regex.test(row.document_number)) {
+            //     //                 doc_errors.push(`<b>PAN Card</b>: Document Number is incomplete or invalid. Please enter a full valid PAN (e.g., ABCDE1234F).`);
+            //     //             }
+            //     //         }
+            //     //     } 
+            //     //     else if (row.document_type === "Application Form") {
+            //     //         has_app_form = true;
+            //     //         if (!row.document_file) {
+            //     //             doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
+            //     //         }
+            //     //     }
+            //     // });
+
+            //                     // Loop through the table to find and validate the required documents
+            //     $.each(frm.doc.kyc_documents, function(index, row) {
+            //         if (row.document_type === "Aadhaar Card") {
+            //             has_aadhaar = true;
+            //             if (!row.document_file || !row.document_number) {
+            //                 doc_errors.push(`<b>Aadhaar Card</b>: Must have both a Document Number and an Attachment.`);
+            //             } else {
+            //                 // Strict 12-digit numeric check for Aadhaar
+            //                 let aadhaar_regex = /^\d{12}$/;
+            //                 if (!aadhaar_regex.test(row.document_number)) {
+            //                     doc_errors.push(`<b>Aadhaar Card</b>: Document Number is incomplete. It must be exactly 12 digits.`);
+            //                 }
+            //             }
+            //         } 
+            //         else if (row.document_type === "PAN Card") {
+            //             has_pan = true;
+            //             if (!row.document_file || !row.document_number) {
+            //                 doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
+            //             } else {
+            //                 // Strict 10-character alphanumeric check for PAN (5 Letters, 4 Digits, 1 Letter)
+            //                 let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
+            //                 if (!pan_regex.test(row.document_number)) {
+            //                     doc_errors.push(`<b>PAN Card</b>: Document Number is incomplete or invalid. Please enter a full valid PAN (e.g., ABCDE1234F).`);
+            //                 }
+            //             }
+            //         } 
+            //         else if (row.document_type === "Application Form") {
+            //             has_app_form = true;
+            //             if (!row.document_file) {
+            //                 doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
+            //             }
+            //         }
+            //     });
+
+
+            //     // Check if any of the required document rows are completely missing from the table
+            //     if (!has_aadhaar) doc_errors.push(`<b>Aadhaar Card</b> row is missing from the table.`);
+            //     if (!has_pan) doc_errors.push(`<b>PAN Card</b> row is missing from the table.`);
+            //     if (!has_app_form) doc_errors.push(`<b>Application Form</b> row is missing from the table.`);
+
+            //     // If any errors exist, block the submission
+            //     if (doc_errors.length > 0) {
+            //         frappe.msgprint({
+            //             title: __('Cannot Submit Case'),
+            //             indicator: 'red',
+            //             message: __('Please resolve the following issues before submitting:<br><br><ul style="margin-bottom: 0;"><li>' + doc_errors.join('</li><li>') + '</li></ul>')
+            //         });
+                    
+            //         frappe.validated = false;
+            //         reject(); 
+            //         return;
+            //     }
+            // }
+
+
+                        // ==========================================
             // 0. DRAFT TO CREDIT CHECK VALIDATION
             // ==========================================
-            // Assuming your workflow action to move from Draft to Credit Check is "Submit Case"
             if (frm.doc.status === "Draft" && frm.selected_workflow_action === "Submit Case") {
                 let doc_errors = [];
                 let has_aadhaar = false;
                 let has_pan = false;
                 let has_app_form = false;
+                let has_signature = false;
 
                 // Ensure table has rows
                 if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
                     frappe.msgprint({
                         title: __('Missing Mandatory Documents'),
                         indicator: 'red',
-                        message: __('You must add Aadhaar Card, PAN Card, and Application Form to the KYC table.')
+                        message: __('You must add Aadhaar Card, PAN Card, Application Form, and Customer Signature to the KYC table.')
                     });
                     frappe.validated = false;
                     reject();
@@ -234,34 +339,6 @@ frappe.ui.form.on("Loan Application", {
                 }
 
                 // Loop through the table to find and validate the required documents
-                // $.each(frm.doc.kyc_documents, function(index, row) {
-                //     if (row.document_type === "Aadhaar Card") {
-                //         has_aadhaar = true;
-                //         if (!row.document_file || !row.document_number) {
-                //             doc_errors.push(`<b>Aadhaar Card</b>: Must have both a Document Number and an Attachment.`);
-                //         }
-                //     } 
-                //     else if (row.document_type === "PAN Card") {
-                //         has_pan = true;
-                //         if (!row.document_file || !row.document_number) {
-                //             doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
-                //         } else {
-                //             // Strict 10-character alphanumeric check for PAN (5 Letters, 4 Digits, 1 Letter)
-                //             let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
-                //             if (!pan_regex.test(row.document_number)) {
-                //                 doc_errors.push(`<b>PAN Card</b>: Document Number is incomplete or invalid. Please enter a full valid PAN (e.g., ABCDE1234F).`);
-                //             }
-                //         }
-                //     } 
-                //     else if (row.document_type === "Application Form") {
-                //         has_app_form = true;
-                //         if (!row.document_file) {
-                //             doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
-                //         }
-                //     }
-                // });
-
-                                // Loop through the table to find and validate the required documents
                 $.each(frm.doc.kyc_documents, function(index, row) {
                     if (row.document_type === "Aadhaar Card") {
                         has_aadhaar = true;
@@ -280,7 +357,7 @@ frappe.ui.form.on("Loan Application", {
                         if (!row.document_file || !row.document_number) {
                             doc_errors.push(`<b>PAN Card</b>: Must have both a Document Number and an Attachment.`);
                         } else {
-                            // Strict 10-character alphanumeric check for PAN (5 Letters, 4 Digits, 1 Letter)
+                            // Strict 10-character alphanumeric check for PAN
                             let pan_regex = /^[A-Z]{5}\d{4}[A-Z]{1}$/i;
                             if (!pan_regex.test(row.document_number)) {
                                 doc_errors.push(`<b>PAN Card</b>: Document Number is incomplete or invalid. Please enter a full valid PAN (e.g., ABCDE1234F).`);
@@ -293,13 +370,19 @@ frappe.ui.form.on("Loan Application", {
                             doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
                         }
                     }
+                    else if (row.document_type === "Customer Signature") {
+                        has_signature = true;
+                        if (!row.document_file) {
+                            doc_errors.push(`<b>Customer Signature</b>: Must have an Attachment.`);
+                        }
+                    }
                 });
-
 
                 // Check if any of the required document rows are completely missing from the table
                 if (!has_aadhaar) doc_errors.push(`<b>Aadhaar Card</b> row is missing from the table.`);
                 if (!has_pan) doc_errors.push(`<b>PAN Card</b> row is missing from the table.`);
                 if (!has_app_form) doc_errors.push(`<b>Application Form</b> row is missing from the table.`);
+                if (!has_signature) doc_errors.push(`<b>Customer Signature</b> row is missing from the table.`);
 
                 // If any errors exist, block the submission
                 if (doc_errors.length > 0) {
@@ -314,6 +397,7 @@ frappe.ui.form.on("Loan Application", {
                     return;
                 }
             }
+
 
             // // ==========================================
             // // 1.5 VALUATION PENDING TO CREDIT DECISION VALIDATION
@@ -415,13 +499,50 @@ frappe.ui.form.on("Loan Application", {
 
 
 
-            // Existing Workflow Confirmation
+            // // Existing Workflow Confirmation
+            // frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
+            //     () => { resolve(); },
+            //     () => { frappe.validated = false; reject(); }
+            // );
+
+
+    //     });
+    // },
+
+                         // ==========================================
+            // FINAL WORKFLOW CONFIRMATION & DB AUTO-STAMPING
+            // ==========================================
             frappe.confirm(`Are you sure you want to proceed with ${frm.selected_workflow_action}?`,
-                () => { resolve(); },
-                () => { frappe.validated = false; reject(); }
+                () => { 
+                    // If we are Approving in either of these states, trigger the DB stamp
+                    if (frm.selected_workflow_action === "Approve" && 
+                       (frm.doc.status === "Credit Decision" || frm.doc.status === "CPC Processing")) {
+                        
+                        frappe.call({
+                            doc: frm.doc,
+                            method: "stamp_sanctioned_user",
+                            args: {
+                                status: frm.doc.status
+                            },
+                            callback: function(r) {
+                                // Once the DB successfully saves the user ID, allow the workflow to finish
+                                resolve();
+                            }
+                        });
+                    } else {
+                        // If it's not an Approval step, just proceed normally
+                        resolve();
+                    }
+                },
+                () => { 
+                    frappe.validated = false; 
+                    reject(); 
+                }
             );
         });
     },
+
+
 
     after_workflow_action: function (frm) {
         // ==========================================
@@ -768,7 +889,7 @@ frappe.ui.form.on("Loan Application", {
 
     // Pre-populate KYC Documents for new applications
     if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
-      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form"];
+      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form", "Customer Signature"];
       default_docs.forEach((doc_type) => {
         let row = frm.add_child("kyc_documents");
         row.document_type = doc_type;
