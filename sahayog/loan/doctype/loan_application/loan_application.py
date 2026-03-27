@@ -51,6 +51,9 @@ class LoanApplication(Document):
             if not self.ornaments_list:
                 frappe.throw(_("Ornaments List is mandatory when status is 'Credit Decision'."))
             
+            if not self.valuer:
+                frappe.throw(_("Valuer is mandatory when adding valuation details."))
+            
             if not self.disclaimer:
                 frappe.throw(_("The Member Declaration (Disclaimer) checkbox is mandatory when status is 'Credit Decision'."))
             
@@ -61,6 +64,13 @@ class LoanApplication(Document):
                     "document_type": "Ornament Image",
                     "status": "Pending"
                 })
+
+        # Valuer Mandatory Check for Branch Team
+        if self.security_type == "Gold" and self.ornaments_list:
+            branch_roles = {"Branch Loan User", "Branch Manager"}
+            user_roles = set(frappe.get_roles(frappe.session.user))
+            if branch_roles.intersection(user_roles) and not self.valuer:
+                frappe.throw(_("Valuer is mandatory when adding valuation details."))
 
         # CPC Processing Logic
         if self.status == "CPC Processing":
