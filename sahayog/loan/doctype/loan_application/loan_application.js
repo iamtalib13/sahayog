@@ -770,7 +770,7 @@ frappe.ui.form.on("Loan Document", {
   status: function(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     
-    if (row.status === "Verified" || "Rejected") {
+    if (row.status === "Verified" || row.status === "Rejected") {
         // Set the logged-in user's email/ID
         frappe.model.set_value(cdt, cdn, "verified_by", frappe.session.user);
         
