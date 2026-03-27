@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:valuer_name",
+ "creation": "2026-03-27 10:35:09.004681",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "valuer_name",
+  "valuer_code",
+  "branch",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "valuer_name",
+   "fieldtype": "Data",
+   "label": "Valuer Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "valuer_code",
+   "fieldtype": "Data",
+   "label": "Valuer Code"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Sahayog Branch"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-27 10:41:52.042762",
+ "modified_by": "Administrator",
+ "module": "Loan",
+ "name": "Valuer Master",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
