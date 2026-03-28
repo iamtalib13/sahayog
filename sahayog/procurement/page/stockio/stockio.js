@@ -2065,6 +2065,22 @@ class StockIOPage {
               title: __("Create Purchase Receipt (Inward)"),
               fields: [
                 {
+                  label: "Type",
+                  fieldname: "custom_po_wo",
+                  fieldtype: "Select",
+                  options: "\nPurchase Order\nWork Order",
+                  default: "Purchase Order",
+                  reqd: 1,
+                },
+                {
+                  label: "Request For",
+                  fieldname: "custom_request_for",
+                  fieldtype: "Select",
+                  options: "\nBranch\nProject\nStore",
+                  default: "Branch",
+                  reqd: 1,
+                },
+                {
                   label: "Supplier",
                   fieldname: "supplier",
                   fieldtype: "Link",
@@ -2161,6 +2177,8 @@ class StockIOPage {
                   doctype: "Purchase Receipt",
                   supplier: values.supplier,
                   set_warehouse: values.set_warehouse,
+                  custom_po_wo: values.custom_po_wo,
+                  custom_request_for: values.custom_request_for,
                   posting_date: frappe.datetime.now_date(),
                   posting_time: frappe.datetime.now_time(),
                   items: values.items,
