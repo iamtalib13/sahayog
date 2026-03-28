@@ -1036,7 +1036,7 @@
 
                 const app = PetiteVue.createApp({
                     currentDateTime: '',
-                    eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
+                    eodStatus: 'idle', // idle, started, completed, closed_today
                     eodName: '',
                     showModal: false,
                     confirmModal: {
@@ -1064,7 +1064,7 @@
                         
                         // Poll for messages
                         setInterval(() => {
-                            if (this.eodName && this.eodStatus !== 'idle') {
+                            if (this.eodName) {
                                 this.fetchChatMessages();
                             }
                         }, 5000);
@@ -1078,17 +1078,15 @@
                                 const status = data.message.status;
                                 if (status === 'Pending') {
                                     this.eodStatus = 'started';
-                                    this.eodName = data.message.name;
                                 } else if (status === 'Completed') {
                                     this.eodStatus = 'completed';
-                                    this.eodName = data.message.name;
                                 } else if (status === 'Closed') {
                                     this.eodStatus = 'closed_today';
-                                    this.eodName = data.message.name;
                                 } else {
                                     this.eodStatus = 'idle';
-                                    this.eodName = '';
                                 }
+                                
+                                this.eodName = data.message.name || '';
 
                                 if (this.eodName) {
                                     await this.fetchTasks();
@@ -1206,8 +1204,13 @@
                                 const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
                                 const data = await res.json();
                                 if (data.message) {
+                                    const status = data.message.status;
                                     this.eodName = data.message.name;
-                                    this.eodStatus = 'started';
+                                    
+                                    if (status === 'Pending') this.eodStatus = 'started';
+                                    else if (status === 'Completed') this.eodStatus = 'completed';
+                                    else if (status === 'Closed') this.eodStatus = 'closed_today';
+                                    
                                     await this.fetchTasks();
                                     await this.fetchChatMessages();
                                 }
@@ -1238,6 +1241,8 @@
                     },
 
                     async toggleTask(task) {
+                        // Strictly block if closed
+                        if (this.eodStatus === 'closed_today') return;
                         if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
 
                         const newValue = !task.done;
@@ -1275,7 +1280,6 @@
                     handleFileUpload(e) {
                         const files = e.target.files;
                         if (!files || files.length === 0) return;
-                        // Mock upload for now
                         e.target.value = '';
                     },
 
@@ -1284,6 +1288,7 @@
                     },
 
                     async sendMessage() {
+                        if (this.eodStatus === 'closed_today') return;
                         if (!this.chat.newMessage.trim()) return;
 
                         const msgText = this.chat.newMessage;

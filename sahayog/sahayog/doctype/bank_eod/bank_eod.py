@@ -18,6 +18,8 @@ class BankEOD(Document):
         self.load_tasks()
 
     def validate(self):
+        if self.get_db_value("status") == "Closed":
+            frappe.throw(_("Closed EOD record for {0} cannot be modified.").format(self.date))
         self.check_all_tasks_completed()
 
     def check_all_tasks_completed(self):

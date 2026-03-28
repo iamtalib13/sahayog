@@ -24,8 +24,13 @@ def get_eod_status():
 def start_eod():
     """Creates a new Bank EOD record for today if it doesn't exist."""
     today = nowdate()
-    if frappe.db.exists("Bank EOD", {"date": today}):
-        return get_eod_status()
+    
+    # Check if any EOD exists for today
+    existing_eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
+    if existing_eod:
+        if existing_eod.status == "Closed":
+            return existing_eod # Frontend will show it as Closed/Read-only
+        return existing_eod
     
     eod = frappe.new_doc("Bank EOD")
     eod.date = today
@@ -82,8 +87,11 @@ def update_task_status(eod_name, task_row_name, done):
         done = done.lower() == 'true'
 
     eod = frappe.get_doc("Bank EOD", eod_name)
-    updated = False
     
+    if eod.status == "Closed":
+        frappe.throw(_("Cannot update task status. EOD process for {0} is already closed.").format(eod.date))
+
+    updated = False
     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
     
     for i, row in enumerate(sorted_tasks):
@@ -94,11 +102,8 @@ def update_task_status(eod_name, task_row_name, done):
             if done and prev_status != "Completed":
                 row.completed_by = frappe.session.user
                 row.completed_on = now_datetime()
-                
-                # Chat message for completion
                 add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {frappe.session.user}.")
                 
-                # Initiate next task if available
                 if i + 1 < len(sorted_tasks):
                     next_task = sorted_tasks[i+1]
                     add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
@@ -112,7 +117,6 @@ def update_task_status(eod_name, task_row_name, done):
             break
             
     if updated:
-        # BankEOD.validate will handle setting status to 'Completed' if all tasks are done
         eod.save(ignore_permissions=True)
         frappe.db.commit()
         return {"status": "success", "eod_status": eod.status}
@@ -144,6 +148,9 @@ def send_chat_message(eod_name, text):
         return
     
     eod = frappe.get_doc("Bank EOD", eod_name)
+    if eod.status == "Closed":
+        frappe.throw(_("Cannot send chat message. EOD session for {0} is closed.").format(eod.date))
+
     add_chat_message(eod, text, sender=frappe.session.user, is_system=False)
     eod.save(ignore_permissions=True)
     frappe.db.commit()
@@ -154,6 +161,9 @@ def close_eod(eod_name):
     """Sets the Bank EOD status to 'Closed'."""
     eod = frappe.get_doc("Bank EOD", eod_name)
     
+    if eod.status == "Closed":
+        return {"status": "success", "eod_status": "Closed"}
+
     # Verify all tasks are done before closing
     all_done = all(r.status == "Completed" for r in eod.eod_tasks)
     if not all_done:
@@ -163,8 +173,6 @@ def close_eod(eod_name):
     eod.status = "Closed"
     add_chat_message(eod, "EOD process closed for today.")
     
-    # We use save() which triggers validate(). 
-    # check_all_tasks_completed in bank_eod.py is updated to respect "Closed" status.
     eod.save(ignore_permissions=True)
     frappe.db.commit()
     return {"status": "success", "eod_status": eod.status}
