@@ -924,12 +924,12 @@
 
                 <div class="messages-area" id="messages">
                     <div v-for="msg in chat.messages" :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']"
-                        :key="msg.time + msg.text">
+                        :key="msg.id">
                         <img v-if="!msg.isMe && msg.sender !== 'System'" :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender"
                             class="avatar">
                         <div class="message-content">
                             <div class="message-info" v-if="msg.sender !== 'System'">
-                                <span v-text="msg.isMe ? 'You' : msg.sender" style="font-weight: 600;"></span>
+                                <span v-text="msg.sender" style="font-weight: 600;"></span>
                                 <span v-text="msg.time"></span>
                             </div>
                             <div class="bubble">
@@ -1036,7 +1036,7 @@
 
                 const app = PetiteVue.createApp({
                     currentDateTime: '',
-                    eodStatus: 'idle', // idle, started, completed, closed_today
+                    eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
                     eodName: '',
                     showModal: false,
                     confirmModal: {
@@ -1062,9 +1062,9 @@
                         setInterval(() => this.updateDateTime(), 60000);
                         await this.fetchStatus();
                         
-                        // Poll for messages
+                        // Poll for messages every 5 seconds
                         setInterval(() => {
-                            if (this.eodName) {
+                            if (this.eodName && this.eodStatus !== 'idle') {
                                 this.fetchChatMessages();
                             }
                         }, 5000);
@@ -1078,15 +1078,17 @@
                                 const status = data.message.status;
                                 if (status === 'Pending') {
                                     this.eodStatus = 'started';
+                                    this.eodName = data.message.name;
                                 } else if (status === 'Completed') {
                                     this.eodStatus = 'completed';
+                                    this.eodName = data.message.name;
                                 } else if (status === 'Closed') {
                                     this.eodStatus = 'closed_today';
+                                    this.eodName = data.message.name;
                                 } else {
                                     this.eodStatus = 'idle';
+                                    this.eodName = '';
                                 }
-                                
-                                this.eodName = data.message.name || '';
 
                                 if (this.eodName) {
                                     await this.fetchTasks();
@@ -1106,7 +1108,8 @@
                             if (data.message) {
                                 const oldLen = this.chat.messages.length;
                                 this.chat.messages = data.message.map(m => ({
-                                    sender: m.is_system ? 'System' : m.sender,
+                                    id: m.name,
+                                    sender: m.sender_name,
                                     text: m.text,
                                     time: m.time_display,
                                     isMe: m.is_me,
@@ -1204,9 +1207,8 @@
                                 const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
                                 const data = await res.json();
                                 if (data.message) {
-                                    const status = data.message.status;
                                     this.eodName = data.message.name;
-                                    
+                                    const status = data.message.status;
                                     if (status === 'Pending') this.eodStatus = 'started';
                                     else if (status === 'Completed') this.eodStatus = 'completed';
                                     else if (status === 'Closed') this.eodStatus = 'closed_today';
@@ -1241,7 +1243,6 @@
                     },
 
                     async toggleTask(task) {
-                        // Strictly block if closed
                         if (this.eodStatus === 'closed_today') return;
                         if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
 
@@ -1296,20 +1297,18 @@
                         this.chat.showEmojiPicker = false;
 
                         try {
-                            await fetch('/api/method/sahayog.sahayog.api.eod.send_chat_message', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-Frappe-CSRF-Token': this.getCsrfToken()
-                                },
-                                body: JSON.stringify({
-                                    eod_name: this.eodName,
-                                    text: msgText
-                                })
-                            });
-                            await this.fetchChatMessages();
+                            const response = await fetch(`/api/method/sahayog.sahayog.api.eod.send_chat_message?eod_name=${this.eodName}&text=${encodeURIComponent(msgText)}`);
+                            const data = await response.json();
+                            
+                            if (data.message && data.message.status === 'success') {
+                                await this.fetchChatMessages();
+                            } else {
+                                console.error("Send error:", data.message ? data.message.message : "Unknown error");
+                                this.chat.newMessage = msgText; 
+                            }
                         } catch (err) {
                             console.error("Send message error", err);
+                            this.chat.newMessage = msgText;
                         }
                     }
                 });

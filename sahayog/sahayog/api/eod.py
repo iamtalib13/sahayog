@@ -2,6 +2,12 @@ import frappe
 from frappe import _
 from frappe.utils import nowdate, now_datetime, format_time, format_datetime
 
+def get_user_fullname(user):
+    """Helper to get user's full name."""
+    if not user or user == "System":
+        return "System"
+    return frappe.db.get_value("User", user, "full_name") or user
+
 def add_chat_message(eod_doc, text, sender="System", is_system=True):
     """Helper to add a message to the EOD chat."""
     eod_doc.append("chat_messages", {
@@ -28,8 +34,6 @@ def start_eod():
     # Check if any EOD exists for today
     existing_eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
     if existing_eod:
-        if existing_eod.status == "Closed":
-            return existing_eod # Frontend will show it as Closed/Read-only
         return existing_eod
     
     eod = frappe.new_doc("Bank EOD")
@@ -102,7 +106,8 @@ def update_task_status(eod_name, task_row_name, done):
             if done and prev_status != "Completed":
                 row.completed_by = frappe.session.user
                 row.completed_on = now_datetime()
-                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {frappe.session.user}.")
+                user_fullname = get_user_fullname(frappe.session.user)
+                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
                 
                 if i + 1 < len(sorted_tasks):
                     next_task = sorted_tasks[i+1]
@@ -131,12 +136,13 @@ def get_chat_messages(eod_name):
     
     messages = frappe.get_all("EOD Chat Message", 
         filters={"parent": eod_name}, 
-        fields=["sender", "text", "time", "is_system"],
+        fields=["name", "sender", "text", "time", "is_system"],
         order_by="time asc"
     )
     
     for msg in messages:
         msg["is_me"] = (msg["sender"] == frappe.session.user and not msg["is_system"])
+        msg["sender_name"] = "System" if msg["is_system"] else get_user_fullname(msg["sender"])
         msg["time_display"] = format_time(msg["time"], "HH:mm") if msg["time"] else ""
     
     return messages
@@ -145,16 +151,21 @@ def get_chat_messages(eod_name):
 def send_chat_message(eod_name, text):
     """API to send a manual chat message."""
     if not eod_name or not text:
-        return
+        return {"status": "error", "message": "Missing arguments"}
     
-    eod = frappe.get_doc("Bank EOD", eod_name)
-    if eod.status == "Closed":
-        frappe.throw(_("Cannot send chat message. EOD session for {0} is closed.").format(eod.date))
+    try:
+        eod = frappe.get_doc("Bank EOD", eod_name)
+        if eod.status == "Closed":
+            return {"status": "error", "message": "EOD process is closed"}
 
-    add_chat_message(eod, text, sender=frappe.session.user, is_system=False)
-    eod.save(ignore_permissions=True)
-    frappe.db.commit()
-    return {"status": "success"}
+        add_chat_message(eod, text, sender=frappe.session.user, is_system=False)
+        eod.save(ignore_permissions=True)
+        frappe.db.commit()
+        
+        return {"status": "success"}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "EOD Chat Error")
+        return {"status": "error", "message": str(e)}
 
 @frappe.whitelist(methods=["GET", "POST"])
 def close_eod(eod_name):
