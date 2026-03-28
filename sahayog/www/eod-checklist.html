@@ -460,27 +460,36 @@
         }
 
         /* Attachment Styles */
-        .attachment-preview {
+        .attachment-container {
             margin-top: 8px;
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.03);
-            border-radius: 8px;
+        }
+
+        .attachment-preview {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            gap: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .attachment-preview:hover {
+            background: rgba(0, 0, 0, 0.08);
         }
 
         .attachment-icon {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             background: var(--accent-green);
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
         }
 
         .attachment-info {
@@ -495,7 +504,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 180px;
+            max-width: 200px;
         }
 
         .attachment-size {
@@ -504,12 +513,18 @@
         }
 
         .attachment-image {
-            margin-top: 8px;
             max-width: 100%;
-            border-radius: 8px;
+            max-height: 300px;
+            border-radius: 12px;
             display: block;
             cursor: pointer;
             border: 1px solid var(--card-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .attachment-image:hover {
+            transform: scale(1.02);
         }
 
         .chat-input-area {
@@ -935,13 +950,13 @@
                             <div class="bubble">
                                 <div v-if="msg.text" v-text="msg.text"></div>
                                 <div v-if="msg.attachment" class="attachment-container">
-                                    <img v-if="msg.attachment.isImage" :src="msg.attachment.data"
-                                        class="attachment-image" @click="window.open(msg.attachment.data)">
-                                    <div v-else class="attachment-preview">
+                                    <img v-if="msg.is_image" :src="msg.attachment"
+                                        class="attachment-image" @click="window.open(msg.attachment)">
+                                    <div v-else class="attachment-preview" @click="window.open(msg.attachment)">
                                         <div class="attachment-icon">📄</div>
                                         <div class="attachment-info">
-                                            <span class="attachment-name" v-text="msg.attachment.name"></span>
-                                            <span class="attachment-size" v-text="msg.attachment.size"></span>
+                                            <span class="attachment-name" v-text="msg.file_name || 'File'"></span>
+                                            <span class="attachment-size">Click to view</span>
                                         </div>
                                     </div>
                                 </div>
@@ -963,7 +978,7 @@
                         </div>
                     </div>
 
-                    <input type="file" id="fileInput" @change="handleFileUpload" style="display: none;" multiple>
+                    <input type="file" id="fileInput" @change="handleFileUpload" style="display: none;">
                     <div class="input-floating-bar">
                         <div class="input-actions">
                             <button class="action-btn" @click="chat.showEmojiPicker = !chat.showEmojiPicker">😊</button>
@@ -1038,6 +1053,7 @@
                     currentDateTime: '',
                     eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
                     eodName: '',
+                    csrfToken: '',
                     showModal: false,
                     confirmModal: {
                         show: false,
@@ -1060,6 +1076,7 @@
                     async mounted() {
                         this.updateDateTime();
                         setInterval(() => this.updateDateTime(), 60000);
+                        await this.refreshToken();
                         await this.fetchStatus();
                         
                         // Poll for messages every 5 seconds
@@ -1068,6 +1085,19 @@
                                 this.fetchChatMessages();
                             }
                         }, 5000);
+                    },
+
+                    async refreshToken() {
+                        try {
+                            const res = await fetch('/api/method/sahayog.sahayog.api.eod.get_token');
+                            const data = await res.json();
+                            if (data.message) {
+                                this.csrfToken = data.message;
+                                window.frappe.csrf_token = data.message;
+                            }
+                        } catch (err) {
+                            console.error("Token error", err);
+                        }
                     },
 
                     async fetchStatus() {
@@ -1111,6 +1141,9 @@
                                     id: m.name,
                                     sender: m.sender_name,
                                     text: m.text,
+                                    attachment: m.attachment,
+                                    is_image: m.is_image,
+                                    file_name: m.file_name,
                                     time: m.time_display,
                                     isMe: m.is_me,
                                     isSystem: m.is_system
@@ -1190,12 +1223,10 @@
                     },
 
                     getCsrfToken() {
+                        if (this.csrfToken) return this.csrfToken;
                         const meta = document.querySelector('meta[name="csrf-token"]');
-                        if (meta && meta.content && !meta.content.includes('{')) {
-                            return meta.content;
-                        }
-                        const cookieMatch = document.cookie.match(/csrf_token=([^;]+)/);
-                        return cookieMatch ? cookieMatch[1] : null;
+                        if (meta && meta.content && !meta.content.includes('{')) return meta.content;
+                        return null;
                     },
 
                     async executeConfirm() {
@@ -1278,10 +1309,53 @@
                         location.reload();
                     },
 
-                    handleFileUpload(e) {
-                        const files = e.target.files;
-                        if (!files || files.length === 0) return;
-                        e.target.value = '';
+                    async handleFileUpload(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        // Always refresh token before upload to ensure it's valid
+                        await this.refreshToken();
+                        const csrfToken = this.getCsrfToken();
+
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('eod_name', this.eodName);
+                        if (csrfToken) formData.append('csrf_token', csrfToken);
+
+                        try {
+                            const res = await fetch('/api/method/sahayog.sahayog.api.eod.upload_file', {
+                                method: 'POST',
+                                headers: {
+                                    'X-Frappe-CSRF-Token': csrfToken
+                                },
+                                body: formData
+                            });
+                            
+                            const data = await res.json();
+                            
+                            if (data.message && data.message.status === 'success') {
+                                await fetch(`/api/method/sahayog.sahayog.api.eod.send_chat_message?eod_name=${this.eodName}&attachment=${encodeURIComponent(data.message.file_url)}`);
+                                await this.fetchChatMessages();
+                            } else {
+                                // If still failed, try one more time without headers, only in body
+                                console.log("Retrying upload...");
+                                const res2 = await fetch('/api/method/sahayog.sahayog.api.eod.upload_file', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                const data2 = await res2.json();
+                                if (data2.message && data2.message.status === 'success') {
+                                    await fetch(`/api/method/sahayog.sahayog.api.eod.send_chat_message?eod_name=${this.eodName}&attachment=${encodeURIComponent(data2.message.file_url)}`);
+                                    await this.fetchChatMessages();
+                                } else {
+                                    alert("Upload failed: " + (data2.message ? data2.message.message : "CSRF Error"));
+                                }
+                            }
+                        } catch (err) {
+                            console.error("File upload error", err);
+                        } finally {
+                            e.target.value = ''; // Reset input
+                        }
                     },
 
                     addEmoji(emoji) {
@@ -1303,7 +1377,6 @@
                             if (data.message && data.message.status === 'success') {
                                 await this.fetchChatMessages();
                             } else {
-                                console.error("Send error:", data.message ? data.message.message : "Unknown error");
                                 this.chat.newMessage = msgText; 
                             }
                         } catch (err) {

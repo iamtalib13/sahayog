@@ -8,6 +8,7 @@
  "field_order": [
   "sender",
   "text",
+  "attachment",
   "time",
   "is_system"
  ],
@@ -21,6 +22,11 @@
    "fieldname": "text",
    "fieldtype": "Text",
    "label": "Text"
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
   },
   {
    "fieldname": "time",

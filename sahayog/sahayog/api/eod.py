@@ -1,6 +1,8 @@
 import frappe
+import os
 from frappe import _
-from frappe.utils import nowdate, now_datetime, format_time, format_datetime
+from frappe.utils import nowdate, now_datetime, format_time, format_datetime, get_files_path
+from frappe.utils.file_manager import save_file
 
 def get_user_fullname(user):
     """Helper to get user's full name."""
@@ -8,11 +10,12 @@ def get_user_fullname(user):
         return "System"
     return frappe.db.get_value("User", user, "full_name") or user
 
-def add_chat_message(eod_doc, text, sender="System", is_system=True):
+def add_chat_message(eod_doc, text, sender="System", is_system=True, attachment=None):
     """Helper to add a message to the EOD chat."""
     eod_doc.append("chat_messages", {
         "sender": sender,
         "text": text,
+        "attachment": attachment,
         "time": now_datetime(),
         "is_system": is_system
     })
@@ -136,7 +139,7 @@ def get_chat_messages(eod_name):
     
     messages = frappe.get_all("EOD Chat Message", 
         filters={"parent": eod_name}, 
-        fields=["name", "sender", "text", "time", "is_system"],
+        fields=["name", "sender", "text", "attachment", "time", "is_system"],
         order_by="time asc"
     )
     
@@ -144,13 +147,17 @@ def get_chat_messages(eod_name):
         msg["is_me"] = (msg["sender"] == frappe.session.user and not msg["is_system"])
         msg["sender_name"] = "System" if msg["is_system"] else get_user_fullname(msg["sender"])
         msg["time_display"] = format_time(msg["time"], "HH:mm") if msg["time"] else ""
+        
+        if msg["attachment"]:
+            msg["is_image"] = any(msg["attachment"].lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"])
+            msg["file_name"] = msg["attachment"].split("/")[-1]
     
     return messages
 
 @frappe.whitelist(methods=["GET", "POST"])
-def send_chat_message(eod_name, text):
+def send_chat_message(eod_name, text=None, attachment=None):
     """API to send a manual chat message."""
-    if not eod_name or not text:
+    if not eod_name or (not text and not attachment):
         return {"status": "error", "message": "Missing arguments"}
     
     try:
@@ -158,7 +165,7 @@ def send_chat_message(eod_name, text):
         if eod.status == "Closed":
             return {"status": "error", "message": "EOD process is closed"}
 
-        add_chat_message(eod, text, sender=frappe.session.user, is_system=False)
+        add_chat_message(eod, text, sender=frappe.session.user, is_system=False, attachment=attachment)
         eod.save(ignore_permissions=True)
         frappe.db.commit()
         
@@ -166,6 +173,34 @@ def send_chat_message(eod_name, text):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "EOD Chat Error")
         return {"status": "error", "message": str(e)}
+
+@frappe.whitelist(methods=["POST"])
+def upload_file():
+    """Custom upload handler for EOD chat."""
+    if "file" not in frappe.request.files:
+        return {"status": "error", "message": "No file uploaded"}
+    
+    file = frappe.request.files["file"]
+    eod_name = frappe.form_dict.get("eod_name")
+    
+    try:
+        dt = "Bank EOD" if eod_name else "User"
+        dn = eod_name if eod_name else frappe.session.user
+        
+        saved_file = save_file(file.filename, file.read(), dt, dn, is_private=0)
+        return {
+            "status": "success",
+            "file_url": saved_file.file_url,
+            "file_name": saved_file.file_name
+        }
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "EOD File Upload Error")
+        return {"status": "error", "message": str(e)}
+
+@frappe.whitelist()
+def get_token():
+    """Returns a fresh CSRF token."""
+    return frappe.sessions.get_csrf_token()
 
 @frappe.whitelist(methods=["GET", "POST"])
 def close_eod(eod_name):
