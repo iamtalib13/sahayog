@@ -8,7 +8,8 @@
  "field_order": [
   "date",
   "status",
-  "eod_tasks"
+  "eod_tasks",
+  "chat_messages"
  ],
  "fields": [
   {
@@ -29,6 +30,12 @@
    "fieldtype": "Table",
    "label": "EOD Tasks",
    "options": "EOD Tasks"
+  },
+  {
+   "fieldname": "chat_messages",
+   "fieldtype": "Table",
+   "label": "Chat Messages",
+   "options": "EOD Chat Message"
   }
  ],
  "grid_page_length": 50,

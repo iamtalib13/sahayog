@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "team_name",
+  "sequence",
   "team_lead",
   "is_active"
  ],
@@ -16,6 +17,11 @@
    "fieldtype": "Data",
    "label": "Team Name",
    "unique": 1
+  },
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence"
   },
   {
    "fieldname": "team_lead",
