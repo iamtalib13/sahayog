@@ -14,6 +14,12 @@ frappe.ui.form.on("Loan Application", {
   //     );
   //   });
   // },
+  father_husband_name: function(frm) {
+        if (frm.doc.father_husband_name) {
+            let formatted = frm.doc.father_husband_name.toLowerCase().split(' ').map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
+            frm.set_value("father_husband_name", formatted);
+        }
+    },
 
  before_workflow_action: function (frm) {
         frappe.dom.unfreeze();

@@ -109,6 +109,15 @@ class LoanApplication(Document):
                     frappe.msgprint(_("Warning: Total age at maturity ({0}) exceeds policy limit ({1}) for {2}.").format(
                         round(age + tenure_years, 1), max_age, self.loan_type
                     ))
+                    
+        # Father/Husband Name Validation (Naya Code)
+        if self.father_husband_name:
+            # Sirf alphabets aur spaces allow karne ke liye (Optional validation)
+            if re.search(r"[^a-zA-Z\s]", self.father_husband_name):
+                frappe.throw(_("Father/Husband Name should only contain alphabets and spaces."))
+            
+            # Har word ka pehla letter capital karne ke liye
+            self.father_husband_name = self.father_husband_name.title()
 
         # KYC Check
         if not self.kyc_documents:
