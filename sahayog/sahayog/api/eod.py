@@ -112,13 +112,7 @@ def update_task_status(eod_name, task_row_name, done):
             break
             
     if updated:
-        # Check if all tasks are completed to update parent status
-        all_done = all(r.status == "Completed" for r in eod.eod_tasks)
-        if all_done:
-            eod.status = "Completed"
-        else:
-            eod.status = "Pending"
-            
+        # BankEOD.validate will handle setting status to 'Completed' if all tasks are done
         eod.save(ignore_permissions=True)
         frappe.db.commit()
         return {"status": "success", "eod_status": eod.status}
@@ -165,8 +159,12 @@ def close_eod(eod_name):
     if not all_done:
         frappe.throw(_("Cannot close EOD. Some tasks are still pending."))
         
+    # Manual transition to Closed
     eod.status = "Closed"
     add_chat_message(eod, "EOD process closed for today.")
+    
+    # We use save() which triggers validate(). 
+    # check_all_tasks_completed in bank_eod.py is updated to respect "Closed" status.
     eod.save(ignore_permissions=True)
     frappe.db.commit()
     return {"status": "success", "eod_status": eod.status}

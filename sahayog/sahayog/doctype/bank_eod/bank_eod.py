@@ -22,7 +22,7 @@ class BankEOD(Document):
 
     def check_all_tasks_completed(self):
         """
-        If all tasks in the child table are 'Completed', set status to 'Closed'.
+        If all tasks in the child table are 'Completed', set status to 'Completed'.
         """
         if not self.eod_tasks:
             return
@@ -30,14 +30,15 @@ class BankEOD(Document):
         all_completed = all(task.status == "Completed" for task in self.eod_tasks)
         
         if all_completed:
-            if self.status != "Closed":
-                self.status = "Closed"
-                frappe.msgprint(_("All tasks completed. Bank EOD status set to Closed."))
+            # Only auto-upgrade to Completed if it's currently Pending
+            if self.status == "Pending":
+                self.status = "Completed"
+                frappe.msgprint(_("All tasks completed. Bank EOD status set to Completed."))
         else:
-            if self.status == "Closed":
-                # Re-open if someone unchecks a task or adds a pending one
-                self.status = "Open"
-                frappe.msgprint(_("Some tasks are still pending. Bank EOD status set to Open."))
+            # If tasks are pending and status is Completed or Closed, set back to Pending
+            if self.status in ["Completed", "Closed"]:
+                self.status = "Pending"
+                frappe.msgprint(_("Some tasks are still pending. Bank EOD status set to Pending."))
 
     def load_tasks(self):
         """
