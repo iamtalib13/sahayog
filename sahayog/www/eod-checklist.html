@@ -1100,17 +1100,22 @@
                             const response = await fetch(`/api/method/sahayog.sahayog.api.eod.get_eod_tasks?eod_name=${this.eodName}`);
                             const data = await response.json();
                             if (data.message) {
-                                // Group tasks by team
-                                const grouped = {};
+                                // Group tasks by team while maintaining order
+                                const sections = [];
+                                const teamsMap = {};
+                                
                                 data.message.forEach(t => {
-                                    if (!grouped[t.team]) grouped[t.team] = [];
-                                    grouped[t.team].push(t);
+                                    if (!teamsMap[t.team]) {
+                                        teamsMap[t.team] = {
+                                            title: t.team,
+                                            tasks: []
+                                        };
+                                        sections.push(teamsMap[t.team]);
+                                    }
+                                    teamsMap[t.team].tasks.push(t);
                                 });
 
-                                this.project.sections = Object.keys(grouped).map(teamName => ({
-                                    title: teamName,
-                                    tasks: grouped[teamName]
-                                }));
+                                this.project.sections = sections;
                             }
                         } catch (err) {
                             console.error("Error fetching tasks", err);

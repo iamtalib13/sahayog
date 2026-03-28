@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "team",
+  "sequence",
   "task",
   "status",
   "completed_by",
@@ -20,6 +21,11 @@
    "in_list_view": 1,
    "label": "Team",
    "options": "EOD Team"
+  },
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence"
   },
   {
    "fieldname": "task",

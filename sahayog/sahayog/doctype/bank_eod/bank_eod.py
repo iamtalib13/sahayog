@@ -41,22 +41,34 @@ class BankEOD(Document):
 
     def load_tasks(self):
         """
-        Fetch all active EOD Checklists and populate EOD Tasks child table.
+        Fetch all active EOD Checklists and populate EOD Tasks child table,
+        ordered by Team sequence.
         """
         if self.eod_tasks:
             return
 
-        active_checklists = frappe.get_all(
-            "EOD Checklist",
-            filters={"is_active": 1},
-            fields=["name", "team"]
-        )
+        # Fetch active checklists with team sequence
+        active_checklists = frappe.db.sql("""
+            SELECT 
+                ec.name, ec.team, et.sequence
+            FROM 
+                `tabEOD Checklist` ec
+            JOIN 
+                `tabEOD Team` et ON ec.team = et.name
+            WHERE 
+                ec.is_active = 1
+            ORDER BY 
+                et.sequence ASC, et.name ASC
+        """, as_dict=True)
 
         for checklist in active_checklists:
             doc = frappe.get_doc("EOD Checklist", checklist.name)
-            for item in doc.checklist_items:
+            # Sort checklist items by sequence and idx
+            sorted_items = sorted(doc.checklist_items, key=lambda x: (x.sequence or 0, x.idx))
+            for item in sorted_items:
                 self.append("eod_tasks", {
                     "team": checklist.team,
+                    "sequence": checklist.sequence,
                     "task": item.task,
                     "status": "Pending"
                 })
@@ -64,20 +76,32 @@ class BankEOD(Document):
 @frappe.whitelist()
 def get_checklist_tasks():
     """
-    Returns a list of tasks from all active checklists.
+    Returns a list of tasks from all active checklists, ordered by sequence.
     """
     tasks = []
-    active_checklists = frappe.get_all(
-        "EOD Checklist",
-        filters={"is_active": 1},
-        fields=["name", "team"]
-    )
+    
+    # Fetch active checklists with team sequence
+    active_checklists = frappe.db.sql("""
+        SELECT 
+            ec.name, ec.team, et.sequence
+        FROM 
+            `tabEOD Checklist` ec
+        JOIN 
+            `tabEOD Team` et ON ec.team = et.name
+        WHERE 
+            ec.is_active = 1
+        ORDER BY 
+            et.sequence ASC, et.name ASC
+    """, as_dict=True)
 
     for checklist in active_checklists:
         doc = frappe.get_doc("EOD Checklist", checklist.name)
-        for item in doc.checklist_items:
+        # Sort checklist items by sequence and idx
+        sorted_items = sorted(doc.checklist_items, key=lambda x: (x.sequence or 0, x.idx))
+        for item in sorted_items:
             tasks.append({
                 "team": checklist.team,
+                "sequence": checklist.sequence,
                 "task": item.task
             })
     return tasks
