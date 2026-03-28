@@ -923,7 +923,7 @@
                 </div>
 
                 <div class="messages-area" id="messages">
-                    <div v-for="msg in chat.messages" :class="['message-row', msg.isMe ? 'me' : 'other']"
+                    <div v-for="msg in chat.messages" :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']"
                         :key="msg.time + msg.text">
                         <img v-if="!msg.isMe && msg.sender !== 'System'" :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender"
                             class="avatar">
@@ -1051,9 +1051,7 @@
                         sections: [] // Will be populated from API
                     },
                     chat: {
-                        messages: [
-                            { sender: 'System', text: 'Welcome to the EOD Group Chat. Once the EOD session starts, you can communicate with your team here.', time: '', isMe: false }
-                        ],
+                        messages: [],
                         newMessage: '',
                         showEmojiPicker: false,
                         emojiList: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤']
@@ -1063,6 +1061,13 @@
                         this.updateDateTime();
                         setInterval(() => this.updateDateTime(), 60000);
                         await this.fetchStatus();
+                        
+                        // Poll for messages
+                        setInterval(() => {
+                            if (this.eodName && this.eodStatus !== 'idle') {
+                                this.fetchChatMessages();
+                            }
+                        }, 5000);
                     },
 
                     async fetchStatus() {
@@ -1087,10 +1092,38 @@
 
                                 if (this.eodName) {
                                     await this.fetchTasks();
+                                    await this.fetchChatMessages();
                                 }
                             }
                         } catch (err) {
                             console.error("Error fetching status", err);
+                        }
+                    },
+
+                    async fetchChatMessages() {
+                        if (!this.eodName) return;
+                        try {
+                            const response = await fetch(`/api/method/sahayog.sahayog.api.eod.get_chat_messages?eod_name=${this.eodName}`);
+                            const data = await response.json();
+                            if (data.message) {
+                                const oldLen = this.chat.messages.length;
+                                this.chat.messages = data.message.map(m => ({
+                                    sender: m.is_system ? 'System' : m.sender,
+                                    text: m.text,
+                                    time: m.time_display,
+                                    isMe: m.is_me,
+                                    isSystem: m.is_system
+                                }));
+                                
+                                if (this.chat.messages.length > oldLen) {
+                                    setTimeout(() => {
+                                        const el = document.getElementById('messages');
+                                        if (el) el.scrollTop = el.scrollHeight;
+                                    }, 100);
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error fetching messages", err);
                         }
                     },
 
@@ -1157,7 +1190,6 @@
 
                     getCsrfToken() {
                         const meta = document.querySelector('meta[name="csrf-token"]');
-                        // Use a more robust check that doesn't rely on exact string comparison with template tags
                         if (meta && meta.content && !meta.content.includes('{')) {
                             return meta.content;
                         }
@@ -1171,13 +1203,13 @@
 
                         try {
                             if (type === 'start') {
-                                // Use GET to bypass CSRF for starting EOD
                                 const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
                                 const data = await res.json();
                                 if (data.message) {
                                     this.eodName = data.message.name;
                                     this.eodStatus = 'started';
                                     await this.fetchTasks();
+                                    await this.fetchChatMessages();
                                 }
                             } else if (type === 'end') {
                                 const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
@@ -1185,6 +1217,7 @@
                                 if (data.message && data.message.status === 'success') {
                                     this.eodStatus = 'closed_today';
                                     this.showModal = true;
+                                    await this.fetchChatMessages();
                                 }
                             }
                         } catch (err) {
@@ -1215,19 +1248,20 @@
                                 task.done = newValue;
                                 if (newValue) {
                                     const now = new Date();
-                                    task.completedBy = 'Me'; // Could be replaced with actual user
+                                    task.completedBy = 'Me'; 
                                     task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                 } else {
                                     task.completedBy = null;
                                     task.completedAt = null;
                                 }
                                 
-                                // Update overall status based on backend return
                                 if (data.message.eod_status === 'Completed') {
                                     this.eodStatus = 'completed';
                                 } else {
                                     this.eodStatus = 'started';
                                 }
+                                
+                                await this.fetchChatMessages();
                             }
                         } catch (err) {
                             console.error("Toggle error", err);
@@ -1235,45 +1269,13 @@
                     },
 
                     resetForNextDay() {
-                        // This will effectively check for the new day's EOD
                         location.reload();
                     },
 
                     handleFileUpload(e) {
                         const files = e.target.files;
                         if (!files || files.length === 0) return;
-
-                        Array.from(files).forEach(file => {
-                            if (file.size > 50 * 1024 * 1024) {
-                                alert(`File "${file.name}" is too large. Max size is 50MB.`);
-                                return;
-                            }
-
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                                const isImage = file.type.startsWith('image/');
-                                this.chat.messages.push({
-                                    sender: 'Me',
-                                    text: '',
-                                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                    isMe: true,
-                                    attachment: {
-                                        name: file.name,
-                                        size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-                                        data: event.target.result,
-                                        isImage: isImage
-                                    }
-                                });
-
-                                setTimeout(() => {
-                                    const el = document.getElementById('messages');
-                                    if (el) el.scrollTop = el.scrollHeight;
-                                }, 50);
-                            };
-                            reader.readAsDataURL(file);
-                        });
-
-                        // Reset input
+                        // Mock upload for now
                         e.target.value = '';
                     },
 
@@ -1281,23 +1283,29 @@
                         this.chat.newMessage += emoji;
                     },
 
-                    sendMessage() {
+                    async sendMessage() {
                         if (!this.chat.newMessage.trim()) return;
 
-                        this.chat.messages.push({
-                            sender: 'Me',
-                            text: this.chat.newMessage,
-                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            isMe: true
-                        });
-
+                        const msgText = this.chat.newMessage;
                         this.chat.newMessage = '';
                         this.chat.showEmojiPicker = false;
 
-                        setTimeout(() => {
-                            const el = document.getElementById('messages');
-                            if (el) el.scrollTop = el.scrollHeight;
-                        }, 50);
+                        try {
+                            await fetch('/api/method/sahayog.sahayog.api.eod.send_chat_message', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Frappe-CSRF-Token': this.getCsrfToken()
+                                },
+                                body: JSON.stringify({
+                                    eod_name: this.eodName,
+                                    text: msgText
+                                })
+                            });
+                            await this.fetchChatMessages();
+                        } catch (err) {
+                            console.error("Send message error", err);
+                        }
                     }
                 });
 
