@@ -14,7 +14,7 @@ def add_chat_message(eod_doc, text, sender="System", is_system=True, attachment=
     """Helper to add a message to the EOD chat."""
     eod_doc.append("chat_messages", {
         "sender": sender,
-        "text": text,
+        "text": text or "",
         "attachment": attachment,
         "time": now_datetime(),
         "is_system": is_system
