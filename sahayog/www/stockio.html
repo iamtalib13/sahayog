@@ -1,0 +1,745 @@
+{% extends "templates/web.html" %}
+{% set full_width = 1 %}
+{% set no_footer = 1 %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<!-- Google Fonts: Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<div id="stockio-loading-overlay" class="stockio-loading-overlay">
+    <div class="stockio-loading-shell" aria-label="Loading">
+        <div class="stockio-loading-favicon">
+            <img src="/assets/sahayog/images/favicon-sahayog.png" alt="Loading">
+        </div>
+        <div class="stockio-loading-text">Loading</div>
+    </div>
+</div>
+
+<div id="stockio-app" class="stockio-layout" v-scope="StockIO()" @vue:mounted="mounted()" v-cloak>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <!-- Profile Header -->
+        <div class="sidebar-header">
+            <div class="user-profile" @click="toggleUserMenu">
+                <div class="icon-area">
+                    <div class="avatar">
+                        <img :src="sidebar.header.logo" alt="Logo">
+                    </div>
+                </div>
+                <div class="label-area" v-if="!sidebarCollapsed">
+                    <div class="user-info">
+                        <div class="title">[[ sidebar.header.title ]]</div>
+                        <div class="subtitle">[[ sidebar.header.subtitle ]]</div>
+                    </div>
+                    <i class="fas fa-chevron-down chevron" :class="{ rotated: showUserMenu }"></i>
+                </div>
+            </div>
+
+            <!-- User Dropdown -->
+            <div class="user-dropdown" v-if="showUserMenu && !sidebarCollapsed">
+                <div v-for="item in sidebar.header.menuItems" 
+                     class="dropdown-item" 
+                     @click="handleMenuClick(item)">
+                    <i :class="item.icon"></i>
+                    <span>[[ item.label ]]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            <div v-for="(section, sIdx) in sidebar.sections" :key="sIdx" class="nav-section">
+                <div v-if="section.label && !sidebarCollapsed" class="section-label">
+                    <span>[[ section.label ]]</span>
+                </div>
+
+                <div class="section-items">
+                    <div v-for="item in section.items" 
+                         class="nav-item" 
+                         :class="{ active: activeItem === item.label }"
+                         @click="setPage(item)"
+                         :title="item.label">
+                        <div class="icon-area">
+                            <div class="nav-dot" :style="{ backgroundColor: item.color }"></div>
+                        </div>
+                        <div class="label-area" v-if="!sidebarCollapsed">
+                            <span class="nav-label">[[ item.label ]]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Footer -->
+        <div class="sidebar-footer">
+            <div class="nav-item theme-toggle" @click="toggleTheme()">
+                <div class="icon-area">
+                    <i :class="currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun'"></i>
+                </div>
+                <div class="label-area" v-if="!sidebarCollapsed">
+                    <span class="nav-label">[[ currentTheme === 'light' ? 'Dark Mode' : 'Light Mode' ]]</span>
+                </div>
+            </div>
+            <div class="nav-item collapse-toggle" @click="sidebarCollapsed = !sidebarCollapsed">
+                <div class="icon-area">
+                    <i :class="sidebarCollapsed ? 'fas fa-indent' : 'fas fa-outdent'"></i>
+                </div>
+                <div class="label-area" v-if="!sidebarCollapsed">
+                    <span class="nav-label">Collapse</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-area">
+        <header class="top-header">
+            <div class="header-left">
+                <h1 class="page-title">[[ activeItem ]]</h1>
+            </div>
+            <div class="header-right">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" v-model="searchText" placeholder="Search records...">
+                </div>
+                <button class="btn-create" v-if="currentView.createDoctype" @click="handleCreate()">
+                    <i class="fas fa-plus"></i>
+                    <span>Create</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="page-content">
+            <div v-if="currentView.doctype" class="list-view-container">
+                
+                <!-- List Header (Columns) -->
+                <div class="list-view-header">
+                    <div class="col-checkbox" v-if="currentView.selectable !== false">
+                        <input type="checkbox" @change="toggleSelectAll" :checked="isAllSelected">
+                    </div>
+                    <div v-else class="col-checkbox"></div>
+                    <div v-for="col in visibleColumns" :key="col.key" class="list-col" :style="{ flex: col.width || 1 }">
+                        [[ col.label ]]
+                    </div>
+                </div>
+
+                <!-- List Content -->
+                <div class="list-view-body">
+                    <!-- Skeleton Loading -->
+                    <div v-if="loading" class="skeleton-list">
+                        <div v-for="i in 8" class="skeleton-row"></div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div v-else-if="filteredRows.length === 0" class="empty-list-state">
+                        <div class="empty-visual">
+                            <i class="fas" :class="currentView.emptyIcon || 'fa-box-open'"></i>
+                        </div>
+                        <h3>[[ currentView.emptyTitle || ('No ' + activeItem + ' found') ]]</h3>
+                        <p>[[ currentView.emptyMessage || 'No records available.' ]]</p>
+                        <button v-if="currentView.createDoctype" class="btn-create mt-4" @click="handleCreate()">
+                            New [[ currentView.createLabel || activeItem ]]
+                        </button>
+                    </div>
+
+                    <!-- Rows -->
+                    <div v-else class="rows-list">
+                        <div v-for="row in filteredRows" 
+                             :key="row.name" 
+                             class="list-row"
+                             :class="{ selected: selectedRows.includes(row.name) }"
+                             @click="toggleRowSelection(row.name)">
+                            <div class="col-checkbox" v-if="currentView.selectable !== false">
+                                <input type="checkbox" :checked="selectedRows.includes(row.name)" @click.stop>
+                            </div>
+                            <div v-else class="col-checkbox"></div>
+                            
+                            <div v-for="col in visibleColumns" :key="col.key" class="list-col" :style="{ flex: col.width || 1 }">
+                                <div v-if="col.type === 'avatar'" class="row-primary">
+                                    <div class="item-avatar">[[ getAvatarText(row, col.key) ]]</div>
+                <span
+                    class="truncate record-link"
+                    :class="{ 'is-clickable': isRecordLinkColumn(col) }"
+                    @click.stop="isRecordLinkColumn(col) && openRecord(row)"
+                >[[ getFieldValue(row, col.key) ]]</span>
+                                </div>
+                                <span v-else-if="col.type === 'badge'" class="status-badge" :class="getBadgeClass(row, col.key)">
+                                    [[ getBadgeText(row, col.key) ]]
+                                </span>
+                                <span v-else :class="{ 'record-link is-clickable': isRecordLinkColumn(col) }" @click.stop="isRecordLinkColumn(col) && openRecord(row)">
+                                    [[ getFieldValue(row, col.key) ]]
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- List Footer / Pagination -->
+                <div class="list-view-footer" v-if="!loading && rows.length > 0">
+                    <span class="text-muted">Showing [[ filteredRows.length ]] of [[ rows.length ]] [[ currentView.labelPlural || activeItem.toLowerCase() ]]</span>
+                </div>
+            </div>
+
+            <div v-else class="content-container">
+                <div class="empty-state-card">
+                    <div class="empty-visual">
+                        <div class="grid-pattern"></div>
+                    </div>
+                    <h3>[[ activeItem ]] section</h3>
+                    <p>[[ currentView.emptyMessage || 'This section is managed inside StockIO.' ]]</p>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<style>
+/* =========================================
+   UI/UX & LIST VIEW REFINEMENT
+   ========================================= */
+
+:root {
+    --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+    --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+    --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+    --blue-600: #2563eb; --blue-700: #1d4ed8;
+    
+    --bg-page: var(--gray-50);
+    --bg-sidebar: #ffffff;
+    --bg-card: #ffffff;
+    --text-main: var(--gray-900);
+    --text-muted: var(--gray-500);
+    --border-color: var(--gray-200);
+    
+    --sidebar-width: 240px;
+    --sidebar-collapsed-width: 68px;
+    --header-height: 64px;
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+}
+
+.stockio-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 250, 252, 0.42);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.stockio-loading-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.stockio-loading-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.stockio-loading-favicon {
+    width: 104px;
+    height: 104px;
+    display: grid;
+    place-items: center;
+    background: transparent;
+}
+
+.stockio-loading-favicon img {
+    width: 76px;
+    height: 76px;
+    object-fit: contain;
+    opacity: 0.96;
+    animation: stockio-favicon-spin 1.25s ease-in-out infinite;
+    transform-origin: center center;
+    filter: drop-shadow(0 10px 20px rgba(15, 23, 42, 0.18));
+}
+
+.stockio-loading-text {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-700);
+}
+
+@keyframes stockio-favicon-spin {
+    from { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.08); }
+    to { transform: rotate(360deg) scale(1); }
+}
+
+[data-theme='dark'] {
+    --bg-page: #0f172a; --bg-sidebar: #111827; --bg-card: #1e293b;
+    --text-main: #f1f5f9; --text-muted: #94a3b8; --border-color: #334155;
+    --gray-100: rgba(255,255,255,0.05);
+}
+
+[data-theme='dark'] .stockio-loading-overlay {
+    background: rgba(2, 6, 23, 0.46);
+    backdrop-filter: blur(16px) saturate(130%);
+    -webkit-backdrop-filter: blur(16px) saturate(130%);
+}
+
+[data-theme='dark'] .stockio-loading-text {
+    color: #e2e8f0;
+}
+
+body { margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-page); color: var(--text-main); overflow: hidden; -webkit-font-smoothing: antialiased; font-size: 14px; }
+[v-cloak] { display: none; }
+footer.web-footer, .navbar { display: none !important; }
+
+.stockio-layout { display: flex; height: 100vh; width: 100vw; }
+
+/* SIDEBAR */
+.sidebar { width: var(--sidebar-width); background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; transition: var(--transition); z-index: 100; }
+.sidebar.collapsed { width: var(--sidebar-collapsed-width); }
+.sidebar-header { padding: 12px; position: relative; }
+.user-profile { display: flex; align-items: center; padding: 8px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); gap: 12px; }
+.user-profile:hover { background: var(--gray-100); }
+.icon-area { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.avatar { width: 32px; height: 32px; border-radius: 6px; background: transparent; overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: contain; }
+.user-info { display: flex; flex-direction: column; min-width: 0; }
+.user-info .title { font-weight: 700; font-size: 16px; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
+.user-info .subtitle { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.chevron { color: var(--gray-400); font-size: 10px; transition: transform 0.2s; }
+.chevron.rotated { transform: rotate(180deg); }
+.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+.section-label { padding: 0 8px 8px; font-size: 11px; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.06em; }
+.nav-item { display: flex; align-items: center; padding: 8px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); gap: 12px; color: var(--gray-600); }
+[data-theme='dark'] .nav-item { color: var(--gray-400); }
+.nav-item:hover { background: var(--gray-100); color: var(--text-main); }
+.nav-item.active { background: var(--blue-600); }
+.nav-item.active .nav-label { color: #ffffff !important; }
+.nav-item.active .nav-dot { background-color: #ffffff !important; transform: scale(1.1); }
+.nav-dot { width: 8px; height: 8px; border-radius: 50%; transition: var(--transition); }
+.sidebar-footer { padding: 12px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border-color); }
+
+/* MAIN AREA */
+.main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-page); }
+.top-header { height: var(--header-height); background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; flex-shrink: 0; }
+.page-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.015em; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.search-container { position: relative; width: 260px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 14px; pointer-events: none; }
+.search-input { width: 100%; padding: 8px 12px 8px 36px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--gray-100); color: var(--text-main); outline: none; font-size: 14px; transition: var(--transition); }
+.search-input:focus { border-color: var(--blue-600); background: var(--bg-card); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+.btn-create { background: var(--blue-600); color: #ffffff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: var(--transition); }
+.btn-create:hover { background: var(--blue-700); transform: translateY(-1px); }
+
+/* LIST VIEW */
+.list-view-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; margin: 24px 32px; }
+.list-view-header { display: flex; align-items: center; padding: 12px 16px; background: var(--gray-50); border-bottom: 1px solid var(--border-color); }
+[data-theme='dark'] .list-view-header { background: rgba(255,255,255,0.02); }
+.list-col { font-weight: 600; font-size: 12px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; padding: 0 12px; }
+.col-checkbox { width: 40px; display: flex; justify-content: center; }
+.col-checkbox input { width: 16px; height: 16px; border-radius: 4px; accent-color: var(--blue-600); cursor: pointer; }
+
+.list-view-body { flex: 1; overflow-y: auto; }
+.list-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s; }
+.list-row:hover { background: var(--gray-50); }
+[data-theme='dark'] .list-row:hover { background: rgba(255,255,255,0.03); }
+.list-row.selected { background: var(--gray-100); }
+[data-theme='dark'] .list-row.selected { background: rgba(255,255,255,0.05); }
+
+.row-primary { display: flex; align-items: center; gap: 12px; }
+.item-avatar { width: 28px; height: 28px; background: var(--gray-100); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--gray-600); flex-shrink: 0; }
+[data-theme='dark'] .item-avatar { background: var(--gray-800); color: var(--gray-400); }
+
+.record-link.is-clickable {
+    color: var(--blue-600);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.record-link.is-clickable:hover {
+    text-decoration: underline;
+}
+
+.status-badge { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.status-badge.active { background: #dcfce7; color: #166534; }
+.status-badge.disabled { background: #fee2e2; color: #991b1b; }
+
+.list-view-footer { padding: 12px 24px; border-top: 1px solid var(--border-color); font-size: 12px; }
+
+/* SKELETON */
+.skeleton-row { height: 52px; border-bottom: 1px solid var(--border-color); width: 100%; background: linear-gradient(90deg, transparent, var(--gray-100), transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.empty-list-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px; text-align: center; }
+.empty-list-state i { font-size: 48px; color: var(--gray-300); margin-bottom: 20px; }
+
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-4 { margin-top: 16px; }
+.text-muted { color: var(--text-muted); }
+.font-medium { font-weight: 500; }
+</style>
+
+<script src="/assets/sahayog/js/petite-vue.iife.js"></script>
+<script>
+function StockIO() {
+    return {
+        $delimiters: ['[[', ']]'],
+        sidebar: {
+            header: {
+                title: 'StockIO',
+                subtitle: frappe.session.user_fullname || 'Admin',
+                logo: '/assets/sahayog/images/favicon-sahayog.png',
+                menuItems: [
+                    { label: 'My Profile', icon: 'fas fa-user-circle' },
+                    { label: 'Logout', icon: 'fas fa-sign-out-alt', action: 'logout' }
+                ]
+            },
+            sections: [
+                { label: 'General', items: [
+                    { label: 'Analytics', color: '#6366f1' }
+                ] },
+                { label: 'Inventory', items: [
+                    { label: 'Requests', color: '#10b981', doctype: 'Employee Material Request' },
+                    { label: 'Inward', color: '#f59e0b', doctype: 'Purchase Receipt' },
+                    { label: 'Outward', color: '#ef4444', doctype: 'Stock Entry' },
+                    { label: 'Items', color: '#8b5cf6', doctype: 'Item' }
+                ]},
+                { label: 'Assets', items: [
+                    { label: 'Asset Master', color: '#8b5cf6', doctype: 'Asset' },
+                    { label: 'Movements', color: '#06b6d4', doctype: 'Asset Movement' }
+                ]}
+            ]
+        },
+
+        sectionViews: {
+            "Analytics": {
+                doctype: null,
+                createDoctype: null,
+                emptyIcon: "fa-chart-line",
+                emptyTitle: "Analytics",
+                emptyMessage: "This panel is reserved for charts and summary widgets.",
+            },
+            "Requests": {
+                doctype: "Employee Material Request",
+                createDoctype: "Employee Material Request",
+                createLabel: "Request",
+                recordLinkKey: "name",
+                labelPlural: "requests",
+                emptyIcon: "fa-clipboard-list",
+                emptyTitle: "No requests found",
+                emptyMessage: "Try another filter or create a new request.",
+                searchableFields: ["name", "owner", "status"],
+                columns: [
+                    { label: "Request", key: "name", width: 2, type: "avatar" },
+                    { label: "Owner", key: "owner", width: 1.5 },
+                    { label: "Status", key: "status", width: 1, type: "badge" },
+                    { label: "Created", key: "creation", width: 1 },
+                ],
+            },
+            "Inward": {
+                doctype: "Purchase Receipt",
+                createDoctype: "Purchase Receipt",
+                createLabel: "Receipt",
+                labelPlural: "receipts",
+                emptyIcon: "fa-truck-ramp-box",
+                emptyTitle: "No inward records found",
+                emptyMessage: "No purchase receipts match the current search.",
+                searchableFields: ["name", "supplier", "status"],
+                columns: [
+                    { label: "Receipt", key: "name", width: 2, type: "avatar" },
+                    { label: "Supplier", key: "supplier", width: 1.8 },
+                    { label: "Date", key: "posting_date", width: 1 },
+                    { label: "Status", key: "status", width: 1, type: "badge" },
+                ],
+            },
+            "Outward": {
+                doctype: "Stock Entry",
+                createDoctype: "Stock Entry",
+                createLabel: "Entry",
+                labelPlural: "entries",
+                emptyIcon: "fa-arrow-right-arrow-left",
+                emptyTitle: "No outward records found",
+                emptyMessage: "No stock entries match the current search.",
+                searchableFields: ["name", "purpose", "status"],
+                columns: [
+                    { label: "Entry", key: "name", width: 2, type: "avatar" },
+                    { label: "Purpose", key: "purpose", width: 1.8 },
+                    { label: "Date", key: "posting_date", width: 1 },
+                    { label: "Status", key: "status", width: 1, type: "badge" },
+                ],
+            },
+            "Items": {
+                doctype: "Item",
+                createDoctype: "Item",
+                createLabel: "Item",
+                recordLinkKey: "name",
+                labelPlural: "items",
+                emptyIcon: "fa-box-open",
+                emptyTitle: "No items found",
+                emptyMessage: "Try adjusting your search or create a new item to get started.",
+                searchableFields: ["name", "item_name", "item_code", "item_group", "stock_uom"],
+                columns: [
+                    { label: "ID", key: "name", width: 2, type: "avatar" },
+                    { label: "Name", key: "item_name", width: 2 },
+                    { label: "Code", key: "item_code", width: 1.5 },
+                    { label: "Group", key: "item_group", width: 1 },
+                    { label: "UOM", key: "stock_uom", width: 0.8 },
+                    { label: "Status", key: "disabled", width: 0.8, type: "badge" },
+                ],
+            },
+            "Asset Master": {
+                doctype: "Asset",
+                createDoctype: "Asset",
+                createLabel: "Asset",
+                labelPlural: "assets",
+                emptyIcon: "fa-cubes",
+                emptyTitle: "No assets found",
+                emptyMessage: "No asset master records match the current search.",
+                searchableFields: ["name", "asset_name", "custodian", "status"],
+                columns: [
+                    { label: "Asset", key: "asset_name", width: 2, type: "avatar" },
+                    { label: "Code", key: "name", width: 1.5 },
+                    { label: "Custodian", key: "custodian", width: 1.5 },
+                    { label: "Status", key: "status", width: 1, type: "badge" },
+                ],
+            },
+            "Movements": {
+                doctype: "Asset Movement",
+                createDoctype: "Asset Movement",
+                createLabel: "Movement",
+                labelPlural: "movements",
+                emptyIcon: "fa-person-walking-arrow-right",
+                emptyTitle: "No movements found",
+                emptyMessage: "No asset movement records match the current search.",
+                searchableFields: ["name", "purpose", "status", "transaction_date"],
+                columns: [
+                    { label: "Movement", key: "name", width: 2, type: "avatar" },
+                    { label: "Purpose", key: "purpose", width: 1.5 },
+                    { label: "Date", key: "transaction_date", width: 1 },
+                    { label: "Status", key: "status", width: 1, type: "badge" },
+                ],
+            },
+        },
+
+        columns: [
+            { label: 'Name', key: 'item_name', width: 2 },
+            { label: 'Code', key: 'item_code', width: 1.5 },
+            { label: 'Group', key: 'item_group', width: 1 },
+            { label: 'UOM', key: 'stock_uom', width: 0.8 },
+            { label: 'Status', key: 'disabled', width: 0.8 }
+        ],
+
+        rows: [],
+        selectedRows: [],
+        activeItem: 'Items',
+        sidebarCollapsed: localStorage.getItem('stockio_sidebar_collapsed') === 'true',
+        showUserMenu: false,
+        currentTheme: localStorage.getItem('stockio_theme') || 'light',
+        searchText: '',
+        loading: false,
+        
+        async mounted() {
+            this.applyTheme();
+            const defaultItem = this.findSidebarItem(this.activeItem) || this.findSidebarItem('Items');
+            if (defaultItem) {
+                await this.setPage(defaultItem);
+            }
+            markStockioAppReady();
+        },
+
+        async setPage(item) {
+            this.activeItem = item.label;
+            this.searchText = '';
+            this.selectedRows = [];
+            this.loading = false;
+
+            if (item.doctype) {
+                await this.fetchData(item.doctype);
+            } else {
+                this.rows = [];
+            }
+        },
+
+        async fetchData(doctype = 'Item') {
+            this.loading = true;
+            this.selectedRows = [];
+            try {
+                const res = await frappe.call({
+                    method: 'frappe.client.get_list',
+                    args: {
+                        doctype: doctype,
+                        fields: ['*'],
+                        order_by: 'creation desc',
+                        limit: 50
+                    }
+                });
+                if (res.message) {
+                    this.rows = res.message;
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        get filteredRows() {
+            if (!this.searchText) return this.rows;
+            const q = this.searchText.toLowerCase();
+            const fields = this.currentView.searchableFields || ['name', 'item_name', 'item_code'];
+            return this.rows.filter((r) =>
+                fields.some((field) => {
+                    const value = this.getFieldValue(r, field);
+                    return value && String(value).toLowerCase().includes(q);
+                }),
+            );
+        },
+
+        get isAllSelected() {
+            return this.rows.length > 0 && this.selectedRows.length === this.rows.length;
+        },
+
+        toggleSelectAll() {
+            if (this.isAllSelected) this.selectedRows = [];
+            else this.selectedRows = this.rows.map(r => r.name);
+        },
+
+        toggleRowSelection(name) {
+            const i = this.selectedRows.indexOf(name);
+            if (i > -1) this.selectedRows.splice(i, 1);
+            else this.selectedRows.push(name);
+        },
+
+        handleCreate() {
+            if (!this.currentView.createDoctype) return;
+            const doctype = this.currentView.createDoctype;
+            const slug = String(doctype)
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "");
+            window.location.href = `/app/${slug}/new`;
+        },
+
+        openRecord(row) {
+            if (!row || !row.name || !this.currentView.doctype) return;
+            const slug = String(this.currentView.doctype)
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "");
+            window.location.href = `/app/${slug}/${encodeURIComponent(row.name)}`;
+        },
+
+        isRecordLinkColumn(col) {
+            return col && col.key === (this.currentView.recordLinkKey || "name");
+        },
+
+        findSidebarItem(label) {
+            for (const section of this.sidebar.sections) {
+                const item = section.items.find((entry) => entry.label === label);
+                if (item) return item;
+            }
+            return null;
+        },
+
+        get currentView() {
+            return this.sectionViews[this.activeItem] || {
+                doctype: null,
+                createDoctype: null,
+                emptyTitle: this.activeItem,
+                emptyMessage: "This section is managed inside StockIO.",
+                columns: [],
+            };
+        },
+
+        get visibleColumns() {
+            return this.currentView.columns || [];
+        },
+
+        getFieldValue(row, key) {
+            if (!row || !key) return "";
+            const value = row[key];
+            if (value === null || value === undefined || value === "") return "-";
+            return value;
+        },
+
+        getAvatarText(row, key) {
+            const value = this.getFieldValue(row, key);
+            if (value && value !== "-") return String(value).trim().charAt(0).toUpperCase();
+            return String(this.getFieldValue(row, "name")).trim().charAt(0).toUpperCase();
+        },
+
+        getBadgeText(row, key) {
+            const value = this.getFieldValue(row, key);
+            if (key === "disabled") return row.disabled ? "Disabled" : "Enabled";
+            return value;
+        },
+
+        getBadgeClass(row, key) {
+            if (key === "disabled") return row.disabled ? "disabled" : "active";
+            const value = this.getFieldValue(row, key);
+            const normalized = String(value || "").toLowerCase();
+            if (["cancelled", "rejected", "disabled", "draft"].includes(normalized)) return "disabled";
+            return "active";
+        },
+
+        toggleUserMenu() { this.showUserMenu = !this.showUserMenu; },
+        handleMenuClick(item) {
+            if (item.action === 'logout') window.location.href = '/logout';
+            this.showUserMenu = false;
+        },
+        toggleTheme() {
+            this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('stockio_theme', this.currentTheme);
+            this.applyTheme();
+        },
+        applyTheme() { document.documentElement.setAttribute('data-theme', this.currentTheme); }
+    };
+}
+function hideStockioLoadingOverlay() {
+    const MIN_LOADING_MS = 2800;
+    const overlay = document.getElementById('stockio-loading-overlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    if (!window.stockioAppReady || !window.stockioWindowReady) return;
+
+    const elapsed = Date.now() - window.stockioLoadingStartedAt;
+    const waitMs = Math.max(0, MIN_LOADING_MS - elapsed);
+
+    if (window.stockioLoadingTimer) {
+        window.clearTimeout(window.stockioLoadingTimer);
+    }
+
+    window.stockioLoadingTimer = window.setTimeout(() => {
+        overlay.classList.add('hidden');
+        window.setTimeout(() => {
+            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 350);
+    }, waitMs);
+}
+function markStockioAppReady() {
+    window.stockioAppReady = true;
+    hideStockioLoadingOverlay();
+}
+window.stockioLoadingStartedAt = Date.now();
+window.stockioAppReady = false;
+window.stockioWindowReady = document.readyState === 'complete';
+window.stockioLoadingTimer = null;
+window.addEventListener('load', function () {
+    window.stockioWindowReady = true;
+    hideStockioLoadingOverlay();
+});
+frappe.ready(function () { PetiteVue.createApp(StockIO()).mount('#stockio-app'); });
+</script>
+{% endblock %}
