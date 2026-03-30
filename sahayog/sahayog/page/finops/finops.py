@@ -7,7 +7,8 @@ from frappe.utils.file_manager import get_file_path
 from .finOpsApi import (
     create_finacle_loan_account,
     disburse_finacle_loan_account,
-    create_finacle_retail_customer
+    create_finacle_retail_customer,
+    create_finacle_td_account 
 )
 
 # --- SECURITY HELPER ---
@@ -253,3 +254,70 @@ def read_file_data(file_url):
     except Exception as e:
         frappe.log_error("FinOps File Read Error", str(e))
         return None
+
+
+
+
+@frappe.whitelist()
+def create_td_account(file_url, operation_type=None):
+    try:
+        # check_finops_permission()
+        records = read_file_data(file_url)
+        if not records:
+            return {"status": "ERROR", "message": "File is empty or could not be read."}
+
+        success_count = 0
+        results = []
+
+        for index, row in enumerate(records):
+            try:
+                # 1. MAP EXCEL COLUMNS TO VARIABLES
+                cust_id = get_col_val(row, ['customer_id', 'Customer Id', 'Cust Id'])
+                schm_code = get_col_val(row, ['scheme_code', 'Scheme Code', 'scheme code'])
+                branch = get_col_val(row, ['branch_id', 'Branch Id', 'branch Id'])
+                dep_amt = get_col_val(row, ['deposit_amount', 'Deposit Amount', 'Initial Deposit'])
+                dep_months = get_col_val(row, ['deposit_months', 'Deposit Months', 'Months'])
+                oper_acct = get_col_val(row, ['operative_account_id', 'Operative Account Number', 'Debit Account'])
+                
+                # Optional Nominee details (with fallbacks if empty)
+                nom_name = get_col_val(row, ['nominee_name', 'Nominee Name']) or "NOMINEE"
+                nom_rel = get_col_val(row, ['nominee_rel_type', 'Nominee Relation']) or "001"
+
+                # 2. CALL API
+                api_response = create_finacle_td_account(
+                    customer_id=str(cust_id),
+                    scheme_code=str(schm_code),
+                    branch_id=str(branch),
+                    deposit_amount=str(dep_amt),
+                    deposit_months=str(dep_months),
+                    operative_account_id=str(oper_acct),
+                    nominee_name=str(nom_name),
+                    nominee_rel_type=str(nom_rel)
+                )
+
+                # 3. APPEND RESULT
+                row_result = row.copy()
+                row_result['status'] = api_response.get('status')
+                row_result['message'] = api_response.get('message')
+                row_result['account_id'] = api_response.get('account_id', '')
+                row_result['request_sent'] = api_response.get('request_sent', '') 
+                results.append(row_result)
+
+                if api_response.get('status') == 'SUCCESS':
+                    success_count += 1
+
+            except Exception as e:
+                row_result = row.copy()
+                row_result['status'] = 'ERROR'
+                row_result['message'] = str(e)
+                results.append(row_result)
+
+        return {
+            "status": "SUCCESS",
+            "message": f"Processed {len(records)} records. {success_count} successful.",
+            "data": results
+        }
+
+    except Exception as e:
+        frappe.log_error(title="FinOps TD Batch Error", message=str(e))
+        return {"status": "ERROR", "message": str(e)}
