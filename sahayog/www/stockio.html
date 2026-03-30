@@ -258,10 +258,22 @@
 
         <!-- List Footer / Pagination -->
         <div class="list-view-footer" v-if="!loading && rows.length > 0">
-          <span class="text-muted"
-            >Showing [[ filteredRows.length ]] of [[ rows.length ]] [[
-            currentView.labelPlural || activeItem.toLowerCase() ]]</span
-          >
+          <div class="footer-content">
+            <span class="text-muted"
+              >Showing [[ filteredRows.length ]] of [[ totalRows ]] [[
+              currentView.labelPlural || activeItem.toLowerCase() ]]</span
+            >
+            <button
+              v-if="hasMore"
+              class="btn-load-more"
+              @click="loadMore()"
+              :disabled="loading"
+            >
+              <i class="fas fa-spinner fa-spin" v-if="loading"></i>
+              <i class="fas fa-plus" v-else></i>
+              <span>Load More</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -673,14 +685,14 @@
 
   /* LIST VIEW */
   .list-view-container {
-    flex: 1;
     display: flex;
     flex-direction: column;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    margin: 24px 32px;
+    margin: 24px 32px 0 32px;
+    height: calc(100vh - var(--header-height) - 56px);
   }
   .list-view-header {
     display: flex;
@@ -688,6 +700,7 @@
     padding: 12px 16px;
     background: var(--gray-50);
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
   }
   [data-theme="dark"] .list-view-header {
     background: rgba(255, 255, 255, 0.02);
@@ -716,6 +729,7 @@
   .list-view-body {
     flex: 1;
     overflow-y: auto;
+    min-height: 0;
   }
   .list-row {
     display: flex;
@@ -790,6 +804,37 @@
     padding: 12px 24px;
     border-top: 1px solid var(--border-color);
     font-size: 12px;
+  }
+  .list-view-footer .footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .btn-load-more {
+    background: var(--blue-600);
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-load-more:hover:not(:disabled) {
+    background: var(--blue-700);
+    transform: translateY(-1px);
+  }
+  .btn-load-more:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-load-more i {
+    font-size: 11px;
   }
 
   /* SKELETON */
@@ -1036,6 +1081,18 @@
       currentTheme: localStorage.getItem("stockio_theme") || "light",
       searchText: "",
       loading: false,
+      page: 1,
+      pageSize: 20,
+      totalRows: 0,
+      hasMore: false,
+
+      $watch: {
+        searchText() {
+          this.page = 1;
+          this.totalRows = this.rows.length;
+          this.hasMore = false;
+        },
+      },
 
       async mounted() {
         this.applyTheme();
@@ -1052,6 +1109,9 @@
         this.activeItem = item.label;
         this.searchText = "";
         this.selectedRows = [];
+        this.page = 1;
+        this.totalRows = 0;
+        this.hasMore = false;
         this.loading = false;
 
         if (item.doctype) {
@@ -1061,26 +1121,46 @@
         }
       },
 
-      async fetchData(doctype = "Item") {
+      async fetchData(doctype = "Item", append = false) {
         this.loading = true;
-        this.selectedRows = [];
+        if (!append) {
+          this.selectedRows = [];
+          this.page = 1;
+        }
         try {
+          const start = (this.page - 1) * this.pageSize;
           const res = await frappe.call({
             method: "frappe.client.get_list",
             args: {
               doctype: doctype,
               fields: ["*"],
               order_by: "creation desc",
-              limit: 50,
+              limit: this.pageSize,
+              start: start,
             },
           });
           if (res.message) {
-            this.rows = res.message;
+            if (append) {
+              this.rows = this.rows.concat(res.message);
+            } else {
+              this.rows = res.message;
+            }
+            this.totalRows = res.message.length;
+            this.hasMore = res.message.length === this.pageSize;
+            this.page++;
           }
         } catch (e) {
           console.error(e);
         } finally {
           this.loading = false;
+        }
+      },
+
+      async loadMore() {
+        if (!this.hasMore || this.loading) return;
+        const doctype = this.currentView.doctype;
+        if (doctype) {
+          await this.fetchData(doctype, true);
         }
       },
 
