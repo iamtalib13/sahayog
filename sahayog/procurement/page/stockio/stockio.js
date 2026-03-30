@@ -810,14 +810,15 @@ class StockIOPage {
                     <td><input type="text" v-model="row.asset_name" readonly /></td>
                     <td>
                         <div class="searchable-select">
-                            <input type="text" v-model="row.target_location" 
+                            <input type="text" v-model="row.target_location_display" 
                                    @focus="activeDropdown = 'target_loc_' + idx; fetchLocations()" 
                                    @click="activeDropdown = 'target_loc_' + idx"
-                                   placeholder="Location..." />
+                                   @input="row.target_location = $event.target.value"
+                                   placeholder="Location...." />
                             <div class="dropdown-list" v-show="activeDropdown === 'target_loc_' + idx">
-                                <div class="dropdown-item" v-for="l in masterData.locations.filter(x => !row.target_location || x.name.toLowerCase().includes(row.target_location.toLowerCase()))"
-                                     @click="row.target_location = l.name; activeDropdown = null">
-                                    {{ l.name }}
+                                <div class="dropdown-item" v-for="l in masterData.locations.filter(x => !row.target_location_display || x.display.toLowerCase().includes(row.target_location_display.toLowerCase()) || x.name.toLowerCase().includes(row.target_location_display.toLowerCase()))"
+                                     @click="row.target_location = l.name; row.target_location_display = l.display; row.target_location_type = l.type; activeDropdown = null">
+                                    {{ l.display }}
                                 </div>
                             </div>
                         </div>
@@ -836,7 +837,7 @@ class StockIOPage {
                             </div>
                         </div>
                     </td>
-                    <td><input type="text" v-model="row.source_location" readonly /></td>
+                    <td><input type="text" v-model="row.source_location_display" readonly /></td>
                     <td><input type="text" v-model="row.from_employee" readonly /></td>
                     <td><button class="btn btn-danger-ghost btn-sm" @click="removeAssetRow(idx)">&times;</button></td>
                   </tr>
@@ -1891,7 +1892,9 @@ class StockIOPage {
 
       fetchLocations() {
         if (this.masterData.locations.length) return;
-        frappe.call({
+
+        // Fetch from standard Location
+        const p1 = frappe.call({
           method: "frappe.client.get_list",
           args: {
             doctype: "Location",
@@ -1899,9 +1902,36 @@ class StockIOPage {
             limit_page_length: 5000,
             order_by: "name asc",
           },
-          callback: (r) => {
-            if (r.message) this.masterData.locations = r.message;
+        });
+
+        // Fetch from Sahayog Branch
+        const p2 = frappe.call({
+          method: "frappe.client.get_list",
+          args: {
+            doctype: "Sahayog Branch",
+            fields: ["name as name", "branch as branch_name"],
+            limit_page_length: 5000,
+            order_by: "branch asc",
           },
+        });
+
+        Promise.all([p1, p2]).then(([r1, r2]) => {
+          let locs = [];
+          if (r1 && r1.message) {
+            r1.message.forEach((l) => {
+              locs.push({ name: l.name, type: "Location", display: l.name });
+            });
+          }
+          if (r2 && r2.message) {
+            r2.message.forEach((b) => {
+              locs.push({
+                name: b.name,
+                type: "Sahayog Branch",
+                display: `${b.branch_name} (${b.name})`,
+              });
+            });
+          }
+          this.masterData.locations = locs;
         });
       },
 
@@ -1947,12 +1977,31 @@ class StockIOPage {
         frappe.db.get_value(
           "Asset",
           asset.name,
-          ["item_name", "asset_name", "location", "custodian"],
+          ["item_name", "asset_name", "location", "custodian", "location_type"],
           (r) => {
             if (r) {
               row.asset_name = r.item_name || r.asset_name || "";
               row.source_location = r.location || "";
+              row.source_location_type = r.location_type || "Sahayog Branch";
               row.from_employee = r.custodian || "";
+
+              if (
+                row.source_location_type === "Sahayog Branch" &&
+                row.source_location
+              ) {
+                frappe.db.get_value(
+                  "Sahayog Branch",
+                  row.source_location,
+                  "branch",
+                  (b) => {
+                    row.source_location_display = b
+                      ? `${b.branch} (${row.source_location})`
+                      : row.source_location;
+                  },
+                );
+              } else {
+                row.source_location_display = row.source_location;
+              }
             }
           },
         );
@@ -2177,8 +2226,6 @@ class StockIOPage {
                   doctype: "Purchase Receipt",
                   supplier: values.supplier,
                   set_warehouse: values.set_warehouse,
-                  custom_po_wo: values.custom_po_wo,
-                  custom_request_for: values.custom_request_for,
                   posting_date: frappe.datetime.now_date(),
                   posting_time: frappe.datetime.now_time(),
                   items: values.items,
@@ -2456,11 +2503,28 @@ class StockIOPage {
                   reqd: 1,
                 },
                 {
+                  label: "Location Type",
+                  fieldname: "location_type",
+                  fieldtype: "Select",
+                  options: "Location\nSahayog Branch",
+                  default: "Sahayog Branch",
+                  reqd: 1,
+                },
+                {
                   label: "Location",
                   fieldname: "location",
-                  fieldtype: "Link",
-                  options: "Location",
+                  fieldtype: "Dynamic Link",
+                  options: "location_type",
                   reqd: 1,
+                  get_query: function () {
+                    if (
+                      dialog.get_value("location_type") === "Sahayog Branch"
+                    ) {
+                      return {
+                        search_field: "branch",
+                      };
+                    }
+                  },
                 },
                 {
                   label: "Custodian",
@@ -3430,7 +3494,10 @@ class StockIOPage {
                 callback: (r) => {
                   if (r.message) {
                     d.hide();
-                    frappe.show_alert({ message: __("Asset Movement {0} created", [r.message]), indicator: "green" });
+                    frappe.show_alert({
+                      message: __("Asset Movement {0} created", [r.message]),
+                      indicator: "green",
+                    });
                     setTimeout(() => {
                       frappe.set_route("Form", "Asset Movement", r.message);
                     }, 500);

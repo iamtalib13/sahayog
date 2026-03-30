@@ -22,3 +22,4 @@ sahayog.patches.fixtures.create_asset_state_workflow
 sahayog.patches.rename_report_preference_records
 sahayog.patches.fix_amount_of_fraud
 sahayog.patches.custom_fields.add_business_performance_fields
+sahayog.patches.set_asset_location_to_sahayog_branch
