@@ -506,6 +506,7 @@ document.head.appendChild(style);
                 { id: 'cif_creation', label: 'CIF Creation' },
                 { id: 'loan_account', label: 'Loan Account' },
                 { id: 'loan_disbursement', label: 'Disbursement' },
+                { id: 'td_account', label: 'TD Account' }
             ],
 
             // Computed
@@ -637,7 +638,8 @@ document.head.appendChild(style);
                     const apiMethods = {
                         loan_account: "sahayog.sahayog.page.finops.finops.create_loan_account",
                         loan_disbursement: "sahayog.sahayog.page.finops.finops.process_loan_disbursement",
-                        cif_creation: "sahayog.sahayog.page.finops.finops.create_cif"
+                        cif_creation: "sahayog.sahayog.page.finops.finops.create_cif",
+                        td_account: "sahayog.sahayog.page.finops.finops.create_td_account"
                     };
 
                     const r = await frappe.call({

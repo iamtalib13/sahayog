@@ -724,3 +724,221 @@ def create_finacle_retail_customer(
         frappe.log_error(title="Finacle RetCust Creation Error", message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
 
+
+
+@frappe.whitelist()
+def create_finacle_td_account(customer_id, scheme_code, branch_id, deposit_amount, 
+                              deposit_months, operative_account_id, 
+                              nominee_name="NOMINEE", nominee_rel_type="001",
+                              nominee_addr1="ADDR1", nominee_city="GON28", 
+                              nominee_state="MH", nominee_zip="441614", nominee_reg_num="10005"):
+    try:
+        # 1. Fetch Finacle Settings & URL
+        finacle_settings = frappe.get_single("Finacle Settings")
+        
+        mig_url = None
+        if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
+            mig_url = finacle_settings.mig_url
+        elif hasattr(finacle_settings, 'url') and finacle_settings.url:
+            mig_url = finacle_settings.url
+        elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
+            mig_url = finacle_settings.finacle_url
+        else:
+            mig_url= 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
+            frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
+
+        if not mig_url:
+             return {"status": "ERROR", "message": "No Finacle URL found."}
+
+        # 2. Logic for Dates and Format
+        request_uuid = str(uuid.uuid4())
+        
+        # Message Date (Timestamp for Header)
+        if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
+            msg_date_obj = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
+        else:
+            msg_date_obj = datetime.now()
+        
+        formatted_message_date = msg_date_obj.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+
+        # 3. Construct XML Payload
+        xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
+<FIXML xsi:schemaLocation="http://www.finacle.com/fixml TDAcctAdd.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Header>
+        <RequestHeader>
+            <MessageKey>
+                <RequestUUID>{request_uuid}</RequestUUID>
+                <ServiceRequestId>TDAcctAdd</ServiceRequestId>
+                <ServiceRequestVersion>10.2</ServiceRequestVersion>
+                <ChannelId>COR</ChannelId>
+                <LanguageId></LanguageId>
+            </MessageKey>
+            <RequestMessageInfo>
+                <BankId>01</BankId>
+                <TimeZone></TimeZone>
+                <EntityId></EntityId>
+                <EntityType></EntityType>
+                <ArmCorrelationId></ArmCorrelationId>
+                <MessageDateTime>{formatted_message_date}</MessageDateTime>
+            </RequestMessageInfo>
+            <Security>
+                <Token>
+                    <PasswordToken>
+                        <UserId></UserId>
+                        <Password></Password>
+                    </PasswordToken>
+                </Token>
+                <FICertToken></FICertToken>
+                <RealUserLoginSessionId></RealUserLoginSessionId>
+                <RealUser></RealUser>
+                <RealUserPwd></RealUserPwd>
+                <SSOTransferToken></SSOTransferToken>
+            </Security>
+        </RequestHeader>
+    </Header>
+    <Body>
+        <TDAcctAddRequest>
+            <TDAcctAddRq>
+                <CustId>
+                    <CustId>{customer_id}</CustId>
+                </CustId>
+                <TDAcctId>
+                    <AcctType>
+                        <SchmCode>{scheme_code}</SchmCode>
+                    </AcctType>
+                    <AcctCurr>INR</AcctCurr>
+                    <BankInfo>
+                        <BranchId>{branch_id}</BranchId>
+                    </BankInfo>
+                </TDAcctId>
+                <TDAcctGenInfo>
+                    <AcctStmtMode>N</AcctStmtMode>
+                    <DespatchMode>N</DespatchMode>
+                </TDAcctGenInfo>
+                <InitialDeposit>
+                    <amountValue>{deposit_amount}</amountValue>
+                    <currencyCode>INR</currencyCode>
+                </InitialDeposit>
+                <DepositTerm>
+                    <Months>{deposit_months}</Months>
+                    <Days></Days>
+                </DepositTerm>
+                <RepayAcctId>
+                    <AcctId>{operative_account_id}</AcctId>
+                    <AcctType/>
+                    <BankInfo/>
+                </RepayAcctId>
+                <RenewalDtls>
+                    <AutoCloseOnMaturityFlg>Y</AutoCloseOnMaturityFlg>
+                    <AutoRenewalflg>N</AutoRenewalflg>
+                    <RenewalTerm>
+                        <Days></Days>
+                        <Months></Months>
+                    </RenewalTerm>
+                    <RenewalSchm/>
+                    <GenLedgerSubHead/>
+                    <RenewalOption>M</RenewalOption>
+                    <RenewalAmt/>
+                    <RenewalAddnlAmt/>
+                </RenewalDtls>
+                <NomineeInfoRec>
+                    <RegNum>{nominee_reg_num}</RegNum>
+                    <NomineeName>{nominee_name}</NomineeName>
+                    <RelType>{nominee_rel_type}</RelType>
+                    <NomineeContactInfo>
+                        <PostAddr>
+                            <Addr1>{nominee_addr1}</Addr1>
+                            <City>{nominee_city}</City>
+                            <StateProv>{nominee_state}</StateProv>
+                            <PostalCode>{nominee_zip}</PostalCode>
+                            <Country>IN</Country>
+                        </PostAddr>
+                    </NomineeContactInfo>
+                    <NomineePercent>
+                        <value>100</value>
+                    </NomineePercent>
+                </NomineeInfoRec>
+                <TrnDtls>
+                    <TrnType>T</TrnType>
+                    <DebitAcctId>
+                        <AcctId>{operative_account_id}</AcctId>
+                        <AcctType/>
+                        <BankInfo/>
+                    </DebitAcctId>
+                </TrnDtls>
+            </TDAcctAddRq>
+            <TDAcctAdd_CustomData>
+                <XFERIND>O</XFERIND>
+                <TRANCREMODE>O</TRANCREMODE>
+                <INTCRACCT>{operative_account_id}</INTCRACCT>
+                <MODEOFOPERATION>1</MODEOFOPERATION>
+            </TDAcctAdd_CustomData>
+        </TDAcctAddRequest>
+    </Body>
+</FIXML>'''
+
+        # 4. Log & Send
+        frappe.log_error(title=f"Finacle TD Creation Req {request_uuid}", message=xml_request)
+
+        headers = {'Content-Type': 'application/xml'}
+        response = requests.post(mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
+
+        frappe.log_error(title=f"Finacle TD Creation Res {response.status_code}", message=response.text)
+
+        # 5. Parse Response
+        if response.status_code == 200:
+            try:
+                response_dict = xmltodict.parse(response.text)
+                fixml = get_xml_dict(response_dict.get('FIXML'))
+                body = get_xml_dict(fixml.get('Body'))
+                
+                # Check for Finacle business exceptions (Errors)
+                if 'Error' in body:
+                    error_node = get_xml_dict(body['Error'])
+                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
+                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
+                    
+                    return {
+                        "status": "FAILED",
+                        "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+                
+                # Check Success block
+                header = get_xml_dict(fixml.get('Header'))
+                response_header = get_xml_dict(header.get('ResponseHeader'))
+                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
+                
+                if host_transaction.get('Status') == 'SUCCESS':
+                    add_response = get_xml_dict(body.get('TDAcctAddResponse'))
+                    rs = get_xml_dict(add_response.get('TDAcctAddRs'))
+                    td_acct_id_node = get_xml_dict(rs.get('TDAcctId'))
+                    acct_id = td_acct_id_node.get('AcctId')
+                    
+                    return {
+                        "status": "SUCCESS",
+                        "account_id": acct_id,
+                        "message": "Term Deposit Account created successfully."
+                    }
+                else:
+                    return {
+                        "status": "FAILED",
+                        "message": f"Transaction failed. Host Status: {host_transaction.get('Status')}",
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+
+            except Exception as e:
+                frappe.log_error(title="Finacle TD XML Parse Error", message=f"{str(e)}\n\nResponse:\n{response.text}")
+                return {"status": "ERROR", "message": f"Error parsing response XML: {str(e)}"}
+        else:
+            return {
+                "status": "ERROR", 
+                "message": f"HTTP Error {response.status_code}", 
+                "full_response": response.text
+            }
+
+    except Exception as e:
+        frappe.log_error(title="Finacle TD Creation Error", message=str(e))
+        return {"status": "ERROR", "message": f"Internal Error: {str(e)}"}
