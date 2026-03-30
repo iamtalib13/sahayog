@@ -2177,8 +2177,6 @@ class StockIOPage {
                   doctype: "Purchase Receipt",
                   supplier: values.supplier,
                   set_warehouse: values.set_warehouse,
-                  custom_po_wo: values.custom_po_wo,
-                  custom_request_for: values.custom_request_for,
                   posting_date: frappe.datetime.now_date(),
                   posting_time: frappe.datetime.now_time(),
                   items: values.items,
@@ -2459,8 +2457,11 @@ class StockIOPage {
                   label: "Location",
                   fieldname: "location",
                   fieldtype: "Link",
-                  options: "Location",
+                  options: "Sahayog Branch",
                   reqd: 1,
+                  get_query: () => ({
+                    search_field: "branch",
+                  }),
                 },
                 {
                   label: "Custodian",
@@ -3430,7 +3431,10 @@ class StockIOPage {
                 callback: (r) => {
                   if (r.message) {
                     d.hide();
-                    frappe.show_alert({ message: __("Asset Movement {0} created", [r.message]), indicator: "green" });
+                    frappe.show_alert({
+                      message: __("Asset Movement {0} created", [r.message]),
+                      indicator: "green",
+                    });
                     setTimeout(() => {
                       frappe.set_route("Form", "Asset Movement", r.message);
                     }, 500);
