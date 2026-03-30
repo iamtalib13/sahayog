@@ -260,7 +260,7 @@
         <div class="list-view-footer" v-if="!loading && rows.length > 0">
           <div class="footer-content">
             <span class="text-muted"
-              >Showing [[ filteredRows.length ]] of [[ totalRows ]] [[
+              >Showing [[ loadedRows ]] of [[ totalRows ]] [[
               currentView.labelPlural || activeItem.toLowerCase() ]]</span
             >
             <button
@@ -1084,13 +1084,14 @@
       page: 1,
       pageSize: 20,
       totalRows: 0,
+      loadedRows: 0,
       hasMore: false,
 
       $watch: {
         searchText() {
           this.page = 1;
-          this.totalRows = this.rows.length;
-          this.hasMore = false;
+          this.loadedRows = this.rows.length;
+          this.hasMore = this.loadedRows < this.totalRows;
         },
       },
 
@@ -1111,6 +1112,7 @@
         this.selectedRows = [];
         this.page = 1;
         this.totalRows = 0;
+        this.loadedRows = 0;
         this.hasMore = false;
         this.loading = false;
 
@@ -1126,9 +1128,10 @@
         if (!append) {
           this.selectedRows = [];
           this.page = 1;
+          this.loadedRows = 0;
         }
         try {
-          const start = (this.page - 1) * this.pageSize;
+          const start = append ? this.loadedRows : 0;
           const res = await frappe.call({
             method: "frappe.client.get_list",
             args: {
@@ -1145,9 +1148,18 @@
             } else {
               this.rows = res.message;
             }
-            this.totalRows = res.message.length;
-            this.hasMore = res.message.length === this.pageSize;
-            this.page++;
+            this.loadedRows += res.message.length;
+            // Get total count by fetching once with limit 1
+            if (!append && this.totalRows === 0) {
+              const countRes = await frappe.call({
+                method: "frappe.client.get_count",
+                args: {
+                  doctype: doctype,
+                },
+              });
+              this.totalRows = countRes.message || 0;
+            }
+            this.hasMore = this.loadedRows < this.totalRows;
           }
         } catch (e) {
           console.error(e);
