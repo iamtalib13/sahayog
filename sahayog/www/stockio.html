@@ -7,6 +7,11 @@
   href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
   rel="stylesheet"
 />
+<!-- Font Awesome -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
 
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
   <div class="stockio-loading-shell" aria-label="Loading">
@@ -555,6 +560,37 @@
     flex-direction: column;
     gap: 4px;
     border-top: 1px solid var(--border-color);
+  }
+
+  /* User Dropdown */
+  .user-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 12px;
+    right: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+  }
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--text-main);
+    font-size: 13px;
+  }
+  .dropdown-item:hover {
+    background: var(--gray-100);
+  }
+  .dropdown-item i {
+    width: 16px;
+    color: var(--text-muted);
   }
 
   /* MAIN AREA */
