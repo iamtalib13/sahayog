@@ -1362,7 +1362,6 @@
                     //         console.error("Toggle error", err);
                     //     }
                     // },
-
                     async toggleTask(task) {
                         if (this.eodStatus === 'closed_today') return;
                         if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
@@ -1390,15 +1389,20 @@
                                 }
 
                                 await this.fetchChatMessages();
-                            } else if (data.message && data.message.status === 'error') {
-                                // NEW: Show error to the user if they don't have permission
-                                alert(data.message.message);
                             }
+                            // --- NEW PERMISSION ERROR MODAL LOGIC ---
+                            else if (data.message && data.message.status === 'error') {
+                                this.confirmModal.title = 'Access Denied';
+                                this.confirmModal.message = data.message.message; // e.g., 'Permission denied. You are not a member of the L1 team.'
+                                this.confirmModal.type = 'info'; // Shows the "!" icon and hides the Cancel button
+                                this.confirmModal.show = true;
+                            }
+                            // --- END NEW LOGIC ---
+
                         } catch (err) {
                             console.error("Toggle error", err);
                         }
                     },
-
                     // resetForNextDay() {
                     //     location.reload();
                     // },
