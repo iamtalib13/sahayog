@@ -86,50 +86,65 @@ def get_eod_tasks(eod_name):
 
     return tasks
 
-@frappe.whitelist(methods=["GET", "POST"])
-def update_task_status(eod_name, task_row_name, done):
-    """Updates the status of a specific task in Bank EOD."""
-    # Convert 'true'/'false' strings to boolean if sent via GET
-    if isinstance(done, str):
-        done = done.lower() == 'true'
+# @frappe.whitelist(methods=["GET", "POST"])
+# def update_task_status(eod_name, task_row_name, done):
+#     """Updates the status of a specific task in Bank EOD."""
+#     # Convert 'true'/'false' strings to boolean if sent via GET
+#     if isinstance(done, str):
+#         done = done.lower() == 'true'
 
-    eod = frappe.get_doc("Bank EOD", eod_name)
+#     eod = frappe.get_doc("Bank EOD", eod_name)
     
-    if eod.status == "Closed":
-        frappe.throw(_("Cannot update task status. EOD process for {0} is already closed.").format(eod.date))
+#     if eod.status == "Closed":
+#         frappe.throw(_("Cannot update task status. EOD process for {0} is already closed.").format(eod.date))
 
-    updated = False
-    sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+#     updated = False
+#     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
     
-    for i, row in enumerate(sorted_tasks):
-        if row.name == task_row_name:
-            prev_status = row.status
-            row.status = "Completed" if done else "Pending"
+#     # for i, row in enumerate(sorted_tasks):
+#     #     if row.name == task_row_name:
+#     #         prev_status = row.status
+#     #         row.status = "Completed" if done else "Pending"
             
-            if done and prev_status != "Completed":
-                row.completed_by = frappe.session.user
-                row.completed_on = now_datetime()
-                user_fullname = get_user_fullname(frappe.session.user)
-                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
+#     #         if done and prev_status != "Completed":
+#     #             row.completed_by = frappe.session.user
+#     #             row.completed_on = now_datetime()
+#     #             user_fullname = get_user_fullname(frappe.session.user)
+#     #             add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
                 
-                if i + 1 < len(sorted_tasks):
-                    next_task = sorted_tasks[i+1]
-                    add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
+#     #             if i + 1 < len(sorted_tasks):
+#     #                 next_task = sorted_tasks[i+1]
+#     #                 add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
             
-            elif not done and prev_status == "Completed":
-                row.completed_by = None
-                row.completed_on = None
-                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
+#     #         elif not done and prev_status == "Completed":
+#     #             row.completed_by = None
+#     #             row.completed_on = None
+#     #             add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
 
-            updated = True
-            break
+#     #         updated = True
+#     #         break
             
-    if updated:
-        eod.save(ignore_permissions=True)
-        frappe.db.commit()
-        return {"status": "success", "eod_status": eod.status}
+
+#     for i, row in enumerate(sorted_tasks):
+#         if row.name == task_row_name:
+#             # NEW: Validate if the user is a team member, lead, or Administrator
+#             if frappe.session.user != "Administrator":
+#                 is_member = frappe.db.exists("Team Members", {"parent": row.team, "user": frappe.session.user})
+#                 is_lead = frappe.db.exists("EOD Team", {"name": row.team, "team_lead": frappe.session.user})
+                
+#                 if not (is_member or is_lead):
+#                     return {"status": "error", "message": f"Permission denied. You are not a member of the {row.team} team."}
+
+#             # Existing status update logic continues below
+#             prev_status = row.status
+#             row.status = "Completed" if done else "Pending"
+
+#     if updated:
+#         eod.save(ignore_permissions=True)
+#         frappe.db.commit()
+#         return {"status": "success", "eod_status": eod.status}
         
-    return {"status": "error", "message": "Task not found"}
+#     return {"status": "error", "message": "Task not found"}
 
 @frappe.whitelist()
 def get_chat_messages(eod_name):
@@ -222,3 +237,63 @@ def close_eod(eod_name):
     eod.save(ignore_permissions=True)
     frappe.db.commit()
     return {"status": "success", "eod_status": eod.status}
+
+
+@frappe.whitelist(methods=["GET", "POST"])
+def update_task_status(eod_name, task_row_name, done):
+    """Updates the status of a specific task in Bank EOD."""
+    # Convert 'true'/'false' strings to boolean if sent via GET
+    if isinstance(done, str):
+        done = done.lower() == 'true'
+
+    eod = frappe.get_doc("Bank EOD", eod_name)
+    
+    if eod.status == "Closed":
+        frappe.throw(_("Cannot update task status. EOD process for {0} is already closed.").format(eod.date))
+
+    updated = False
+    sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    
+    for i, row in enumerate(sorted_tasks):
+        if row.name == task_row_name:
+            
+            # --- START OF NEW PERMISSION CHECK ---
+            if frappe.session.user != "Administrator":
+                is_member = frappe.db.exists("Team Members", {"parent": row.team, "user": frappe.session.user})
+                
+                # Check if user is the team lead (Optional: assuming you have a team_lead field in EOD Team)
+                is_lead = False 
+                if frappe.get_meta("EOD Team").has_field("team_lead"):
+                    is_lead = frappe.db.exists("EOD Team", {"name": row.team, "team_lead": frappe.session.user})
+                
+                if not (is_member or is_lead):
+                    return {"status": "error", "message": f"Permission denied. You are not a member of the {row.team} team."}
+            # --- END OF NEW PERMISSION CHECK ---
+
+            prev_status = row.status
+            row.status = "Completed" if done else "Pending"
+            
+            if done and prev_status != "Completed":
+                row.completed_by = frappe.session.user
+                row.completed_on = now_datetime()
+                user_fullname = get_user_fullname(frappe.session.user)
+                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
+                
+                if i + 1 < len(sorted_tasks):
+                    next_task = sorted_tasks[i+1]
+                    add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
+            
+            elif not done and prev_status == "Completed":
+                row.completed_by = None
+                row.completed_on = None
+                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
+                
+            updated = True
+            break
+            
+    if updated:
+        eod.save(ignore_permissions=True)
+        frappe.db.commit()
+        return {"status": "success", "eod_status": eod.status}
+        
+    return {"status": "error", "message": "Task not found"}
