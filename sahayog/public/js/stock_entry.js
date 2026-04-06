@@ -138,7 +138,7 @@ frappe.ui.form.on("Stock Entry", {
       $('button:contains("Get Items From")').hide();
       $('button:contains("Create")').hide();
       $('button:contains("Preview")').hide();
-      frm.set_df_property("from_warehouse", "read_only", 1);
+      // frm.set_df_property("from_warehouse", "read_only", 1);
     }, 200);
   },
   set_warehouse: function (frm) {
@@ -165,14 +165,14 @@ frappe.ui.form.on("Stock Entry", {
     if (frm.doc.custom_material_request) {
       frm.set_value(
         "custom_material_request_doctype",
-        "Employee Material Request"
+        "Employee Material Request",
       );
 
       frm.add_custom_button("View EMR Items", async () => {
         // Fetch EMMR document
         const emmr_doc = await frappe.db.get_doc(
           "Employee Material Request",
-          frm.doc.custom_material_request
+          frm.doc.custom_material_request,
         );
 
         const from_warehouse = "from_warehouse";
@@ -644,7 +644,7 @@ frappe.ui.form.on("Stock Entry", {
                 // NEW: GET EDITED TRANSFER QTY
                 qty: d.$wrapper
                   .find(
-                    `.transfer-qty-input[data-item="${$(this).data("item")}"]`
+                    `.transfer-qty-input[data-item="${$(this).data("item")}"]`,
                   )
                   .val(),
               });
@@ -695,7 +695,7 @@ frappe.ui.form.on("Stock Entry", {
 
             if (duplicate_items.length) {
               frappe.msgprint(
-                `<b>Already Added:</b> ${duplicate_items.join(", ")}`
+                `<b>Already Added:</b> ${duplicate_items.join(", ")}`,
               );
             }
 

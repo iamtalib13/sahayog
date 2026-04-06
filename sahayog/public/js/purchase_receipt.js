@@ -3,44 +3,29 @@ frappe.ui.form.on("Purchase Receipt", {
     if (frappe.session.user !== "Administrator") {
       frm.trigger("hide_rejected_quantity_and_button");
     }
-    // Apply UI customizations
     frm.trigger("customize_ui");
     frm.trigger("hide_fields");
     frm.trigger("set_page_title");
     frm.trigger("set_warehouse");
-    hide_rejected_qty_column(frm);
+    frm.trigger("hide_rejected_qty_column");
   },
 
   onload: function (frm) {
-    // Set title on form load
     frm.trigger("set_page_title");
-    hide_rejected_qty_column(frm);
+    frm.trigger("set_warehouse");
   },
 
   set_page_title: function (frm) {
-    // Set custom title for the form
-    const custom_title = "Inward Form";
-
     if (frm.page && frm.page.set_title) {
-      frm.page.set_title(custom_title);
-    }
-
-    // Alternative method for current page
-    const cur_page = frappe.ui.get_cur_page();
-    if (cur_page && cur_page.set_title) {
-      cur_page.set_title(custom_title);
+      frm.page.set_title("Inward Form");
     }
   },
 
   customize_ui: function (frm) {
-    // Hide sidebar elements
     frm.trigger("hide_sidebar");
-
-    // Additional UI customizations can be added here
   },
 
   hide_sidebar: function (frm) {
-    // Hide sidebar toggle button and sidebar section
     setTimeout(() => {
       $("span.sidebar-toggle-btn").hide();
       $(".col-lg-2.layout-side-section").hide();
@@ -48,30 +33,22 @@ frappe.ui.form.on("Purchase Receipt", {
   },
 
   hide_fields: function (frm) {
-    // Fields & Tabs to hide for non-Admin users
     const fields_to_hide = [
-      // Tabs
       "address_and_contact_tab",
       "terms_tab",
       "more_info_tab",
       "connections_tab",
-
-      // Custom fields
       "custom_store_incharge",
       "supplier_delivery_note",
       "apply_putaway_rule",
       "is_return",
       "set_posting_time",
-
-      // Standard fields
       "cost_center",
       "project",
       "currency_and_price_list",
       "scan_barcode",
       "rejected_warehouse",
       "is_subcontracted",
-
-      // Sections
       "taxes_charges_section",
       "taxes_section",
       "totals",
@@ -83,79 +60,63 @@ frappe.ui.form.on("Purchase Receipt", {
     ];
 
     fields_to_hide.forEach((fieldname) => {
-      // Hide metadata field
       frm.set_df_property(fieldname, "hidden", true);
-
-      // Hide tab button if it's a Tab Break
       $(`#purchase-receipt-${fieldname}-tab`).hide();
-
-      console.log("Hidden field/tab:", fieldname);
     });
   },
 
   hide_rejected_quantity_and_button: function (frm) {
     setTimeout(() => {
-      // Hide header
       $('[data-fieldname="rejected_qty"]')
         .closest('.grid-header-row,[class^="col"]')
         .hide();
-      // Hide cells
       $('[data-fieldname="rejected_qty"]').hide();
-
-      // Hide "Get Items From" button by its data-label/text
       $('button[data-label*="Get Items From"]').hide();
-
-      // Hide "Create" button (dropdown and single)
       $('button[data-label*="Create"]').hide();
-
-      // Hide "Preview" button
       $('button[data-label*="Preview"]').hide();
-
-      //hide view stock button
       $('button[data-label*="View"]').hide();
-
-      //hide status button
       $('button[data-label*="Status"]').hide();
-
-      // Optionally: Hide by exact button text if data-label not set
       $('button:contains("Get Items From")').hide();
       $('button:contains("Create")').hide();
       $('button:contains("Preview")').hide();
       $('button:contains("View")').hide();
       $('button:contains("Status")').hide();
-      frm.set_df_property("set_warehouse", "read_only", 1);
+      if (frm.doc.set_warehouse) {
+        frm.set_df_property("set_warehouse", "read_only", 1);
+      }
     }, 200);
   },
+
   set_warehouse: function (frm) {
-    if (frm.is_new()) {
+    if (frm.doc.__islocal && !frm.doc.set_warehouse && !frm._warehouse_fetched) {
+      frm._warehouse_fetched = true;
       frappe.call({
         method: "sahayog.procurement.api.stock_entry_report.get_user_warehouse",
         callback: function (r) {
-          if (r.message) {
-            let warehouse = r.message.warehouse;
-            let item_department = r.message.item_department;
-
-            console.log("Warehouse:", warehouse);
-            // set values on the form
-            frm.set_value("set_warehouse", warehouse);
+          if (r.message && r.message.warehouse) {
+            frm.set_df_property("set_warehouse", "hidden", false);
+            frm.set_value("set_warehouse", r.message.warehouse);
+            frm.set_df_property("set_warehouse", "read_only", 1);
           }
+        },
+        error: function (err) {
+          console.error("Failed to fetch warehouse:", err);
+          frm._warehouse_fetched = false;
         },
       });
     }
   },
+
   hide_rejected_qty_column: function (frm) {
     if (!frm.fields_dict.items) return;
 
-    // Listen for every grid render event
-    frm.fields_dict.items.grid.on("render", function () {
-      // Hide the "Rejected Quantity" header cell
+    setTimeout(() => {
       frm.fields_dict["items"].$wrapper
         .find('th[data-fieldname="rejected_qty"]')
         .hide();
-      // Hide all "Rejected Quantity" cells in every row
       frm.fields_dict["items"].$wrapper
         .find('td[data-fieldname="rejected_qty"]')
         .hide();
-    });
+    }, 100);
   },
 });
