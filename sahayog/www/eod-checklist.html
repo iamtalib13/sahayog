@@ -845,7 +845,9 @@
     </style>
 </head>
 
-<body id="app" v-cloak>
+<!-- <body id="app" v-cloak> -->
+
+<body id="app" v-cloak @vue:mounted="mounted()">
     <div class="app-container">
         <!-- Sidebar: Checklist -->
         <aside class="sidebar">
@@ -1093,16 +1095,34 @@
                         emojiList: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤']
                     },
 
+                    // async mounted() {
+                    //     this.updateDateTime();
+                    //     setInterval(() => this.updateDateTime(), 60000);
+                    //     await this.refreshToken();
+                    //     await this.fetchStatus();
+
+                    //     // Poll for messages every 5 seconds
+                    //     setInterval(() => {
+                    //         if (this.eodName && this.eodStatus !== 'idle') {
+                    //             this.fetchChatMessages();
+                    //         }
+                    //     }, 5000);
+                    // },
+
                     async mounted() {
                         this.updateDateTime();
                         setInterval(() => this.updateDateTime(), 60000);
                         await this.refreshToken();
+
+                        // Initial fetch on page load (this skips the 'Start' button if already started)
                         await this.fetchStatus();
 
-                        // Poll for messages every 5 seconds
+                        // Real-time synchronization loop (runs every 5 seconds)
                         setInterval(() => {
                             if (this.eodName && this.eodStatus !== 'idle') {
-                                this.fetchChatMessages();
+                                this.fetchChatMessages(); // Syncs the chat
+                                this.fetchTasks();        // Syncs checked/unchecked tasks by other teams
+                                this.fetchStatus();       // Syncs the global status (e.g. if a manager closes EOD)
                             }
                         }, 5000);
                     },
