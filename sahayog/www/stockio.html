@@ -253,6 +253,28 @@
               </div>
             </div>
           </div>
+
+          <!-- Custom Chart Section -->
+          <div class="analytics-chart-container mt-4">
+            <div class="chart-header">
+              <h3>Request Distribution by Status</h3>
+            </div>
+            
+            <div class="custom-bar-chart">
+              <div v-for="bar in getChartBars" :key="bar.label" class="bar-group">
+                <div class="bar-info">
+                  <span class="bar-label">[[ bar.label ]]</span>
+                  <span class="bar-count">[[ bar.value ]]</span>
+                </div>
+                <div class="bar-track">
+                  <div 
+                    class="bar-fill" 
+                    :style="{ width: bar.percentage + '%', backgroundColor: bar.color }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- List Header (Columns) -->
@@ -943,6 +965,60 @@
     padding: 24px;
     overflow-y: auto;
   }
+  .analytics-chart-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .chart-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .chart-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+  
+  /* CUSTOM BAR CHART */
+  .custom-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .bar-group {
+    width: 100%;
+  }
+  .bar-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .bar-label {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .bar-count {
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .bar-track {
+    height: 10px;
+    background: var(--gray-100);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   .analytics-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1296,6 +1372,25 @@
         cancelled: 0,
       },
 
+      get getChartBars() {
+        const stats = this.requestStats;
+        const total = Object.values(stats).reduce((acc, val) => acc + val, 0) || 1;
+        const items = [
+          { label: "Draft", value: stats.draft, color: "#64748b" },
+          { label: "Pending Reporting", value: stats.pendingReporting, color: "#d97706" },
+          { label: "Pending HO Approval", value: stats.pendingHO, color: "#dc2626" },
+          { label: "Approved", value: stats.approved, color: "#16a34a" },
+          { label: "Completed", value: stats.completed, color: "#15803d" },
+          { label: "Rejected", value: stats.rejected, color: "#be123c" },
+          { label: "Cancelled", value: stats.cancelled, color: "#94a3b8" }
+        ];
+
+        return items.map(i => ({
+          ...i,
+          percentage: (i.value / total) * 100
+        }));
+      },
+
       $watch: {
         searchText() {
           this.page = 1;
@@ -1399,7 +1494,6 @@
 
       async fetchRequestStats() {
         try {
-          console.log("Fetching request stats...");
           const res = await frappe.call({
             method: "frappe.client.get_list",
             args: {
@@ -1408,9 +1502,7 @@
               limit_page_length: 5000,
             },
           });
-          console.log("Response:", res);
           const requests = res.message || [];
-          console.log("Requests found:", requests.length);
           this.requestStats = {
             draft: requests.filter((r) => r.status === "Draft").length,
             pendingReporting: requests.filter(
@@ -1423,7 +1515,6 @@
             rejected: requests.filter((r) => r.status === "Rejected").length,
             cancelled: requests.filter((r) => r.status === "Cancelled").length,
           };
-          console.log("Calculated stats:", JSON.parse(JSON.stringify(this.requestStats)));
         } catch (e) {
           console.error("Error fetching request stats:", e);
         }
