@@ -14,229 +14,265 @@ def get_xml_dict(obj):
         return obj[0] if obj else {}
     return obj if isinstance(obj, dict) else {}
 
-@frappe.whitelist()
-def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount, 
-                                loan_period_months, installment_start_date, 
-                                num_installments, operative_account_id, 
-                                account_open_date=None):
-    try:
-        # 1. Fetch Finacle Settings & URL
-        finacle_settings = frappe.get_single("Finacle Settings")
+# @frappe.whitelist()
+# def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount, 
+#                                 loan_period_months, installment_start_date, 
+#                                 num_installments, operative_account_id, 
+#                                 account_open_date=None):
+#     try:
+#         # 1. Fetch Finacle Settings & URL
+#         finacle_settings = frappe.get_single("Finacle Settings")
         
-        mig_url = None
-        if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
-            mig_url = finacle_settings.mig_url
-        elif hasattr(finacle_settings, 'url') and finacle_settings.url:
-            mig_url = finacle_settings.url
-        elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
-            mig_url = finacle_settings.finacle_url
-        else:
-            # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
-            mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
-            frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
+#         mig_url = None
+#         if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
+#             mig_url = finacle_settings.mig_url
+#         elif hasattr(finacle_settings, 'url') and finacle_settings.url:
+#             mig_url = finacle_settings.url
+#         elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
+#             mig_url = finacle_settings.finacle_url
+#         else:
+#             # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+#             mig_url = "https://smcuat.sahayog.net.in:35000/fininfra/ui/SSOLogin.jsp"
+#             # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+#             frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
-        if not mig_url:
-             return {"status": "ERROR", "message": "No Finacle URL found."}
+#         if not mig_url:
+#              return {"status": "ERROR", "message": "No Finacle URL found."}
 
-        # 2. Logic for Dates and Format
-        request_uuid = str(uuid.uuid4())
+#                 # 2. Logic for Dates and Format
+#         request_uuid = str(uuid.uuid4())
         
-        # Message Date (Timestamp for Header)
-        if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
-            msg_date_obj = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
-        else:
-            msg_date_obj = datetime.now()
+#         # Message Date (Timestamp for Header)
+#         if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
+#             msg_date_obj = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
+#         else:
+#             msg_date_obj = datetime.now()
         
-        formatted_message_date = msg_date_obj.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+#         formatted_message_date = msg_date_obj.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
 
-        # Handle Account Open Date
-        acct_open_dt_tag = ""
-        if account_open_date:
-            try:
-                open_dt_obj = datetime.strptime(str(account_open_date), '%Y-%m-%d')
-                formatted_open_date = open_dt_obj.strftime('%Y-%m-%dT00:00:00.000')
-                acct_open_dt_tag = f"<AcctOpenDt>{formatted_open_date}</AcctOpenDt>"
-            except ValueError:
-                return {"status": "ERROR", "message": "Invalid account_open_date format. Use YYYY-MM-DD"}
 
-        # Handle Installment Start Date
-        try:
-            inst_start_dt_obj = datetime.strptime(str(installment_start_date), '%Y-%m-%d')
-            formatted_inst_date = inst_start_dt_obj.strftime('%Y-%m-%dT%H:%M:%S.000')
-        except ValueError:
-            return {"status": "ERROR", "message": "Invalid installment_start_date format. Use YYYY-MM-DD"}
-
-        # 3. Construct XML
-        xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
-<FIXML xsi:schemaLocation="http://www.finacle.com/fixml LoanAcctAdd.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <Header>
-        <RequestHeader>
-            <MessageKey>
-                <RequestUUID>{request_uuid}</RequestUUID>
-                <ServiceRequestId>LoanAcctAdd</ServiceRequestId>
-                <ServiceRequestVersion>10.2</ServiceRequestVersion>
-                <ChannelId>COR</ChannelId>
-                <LanguageId></LanguageId>
-            </MessageKey>
-            <RequestMessageInfo>
-                <BankId>01</BankId>
-                <TimeZone></TimeZone>
-                <EntityId></EntityId>
-                <EntityType></EntityType>
-                <ArmCorrelationId></ArmCorrelationId>
-                <MessageDateTime>{formatted_message_date}</MessageDateTime>
-            </RequestMessageInfo>
-            <Security>
-                <Token>
-                    <PasswordToken>
-                        <UserId></UserId>
-                        <Password></Password>
-                    </PasswordToken>
-                </Token>
-                <FICertToken></FICertToken>
-                <RealUserLoginSessionId></RealUserLoginSessionId>
-                <RealUser></RealUser>
-                <RealUserPwd></RealUserPwd>
-                <SSOTransferToken></SSOTransferToken>
-            </Security>
-        </RequestHeader>
-    </Header>
-    <Body>
-        <LoanAcctAddRequest>
-            <LoanAcctAddRq>
-                <CustId>
-                    <CustId>{customer_id}</CustId>
-                </CustId>
-                <LoanAcctId>
-                    {acct_open_dt_tag} 
-                    <AcctType>
-                        <SchmCode>{scheme_code}</SchmCode>
-                    </AcctType>
-                    <AcctCurr>INR</AcctCurr>
-                    <BankInfo>
-                        <BranchId>{branch_id}</BranchId>
-                    </BankInfo>
-                </LoanAcctId>
-                <LoanAcctGenInfo>
-                    <AcctStmtMode>N</AcctStmtMode>
-                    <DespatchMode>N</DespatchMode>
-                </LoanAcctGenInfo>
-                <LoanGenDetails>
-                    <LoanPeriodMonths>{loan_period_months}</LoanPeriodMonths>
-                    <LoanPeriodDays>0</LoanPeriodDays>
-                    <RePmtMethod>N</RePmtMethod>
-                    <OperAcctId>
-                        <AcctId>{operative_account_id}</AcctId>
-                    </OperAcctId>
-                    <HoldInOperAcctFlg>N</HoldInOperAcctFlg>
-                    <PmtPlan>
-                        <EqInstallDetails>
-                            <EqInstallFlg>Y</EqInstallFlg>
-                            <EqInstallType>R</EqInstallType>
-                            <EqInstallFormula>P</EqInstallFormula>
-                        </EqInstallDetails>
-                        <RepmtRec>
-                            <InstallmentId>EIDEM</InstallmentId>
-                            <InstallStartDt>{formatted_inst_date}</InstallStartDt>
-                            <InstallFreq>
-                                <Type>M</Type>
-                                <StartDt>14</StartDt>
-                                <HolStat>N</HolStat>
-                            </InstallFreq>
-                            <IntFreq>
-                                <Type>M</Type>
-                                <StartDt>14</StartDt>
-                                <HolStat>N</HolStat>
-                            </IntFreq>
-                            <NoOfInstall>{num_installments}</NoOfInstall>
-                            <IntStartDt>{formatted_inst_date}</IntStartDt>
-                        </RepmtRec>
-                        <NumOfAdvInst>0</NumOfAdvInst>
-                    </PmtPlan>
-                    <LoanAmt>
-                        <amountValue>{loan_amount}</amountValue>
-                        <currencyCode>INR</currencyCode>
-                    </LoanAmt>
-                </LoanGenDetails>
-                <AdvanceEICollFlg>R</AdvanceEICollFlg>
-                <AdvNoEiInstallments>0</AdvNoEiInstallments>
-                <TotalInstallments>{num_installments}</TotalInstallments>
-            </LoanAcctAddRq>
-        </LoanAcctAddRequest>
-    </Body>
-</FIXML>'''
-
-        # 4. Log & Send
-        frappe.log_error(title=f"Finacle Loan Creation Req {request_uuid}", message=xml_request)
-
-        headers = {'Content-Type': 'application/xml'}
-        response = requests.post(mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
-
-        frappe.log_error(title=f"Finacle Loan Creation Res {response.status_code}", message=response.text)
-
-        # 5. Parse Response
-        if response.status_code == 200:
-            try:
-                response_dict = xmltodict.parse(response.text)
-                fixml = get_xml_dict(response_dict.get('FIXML'))
-                body = get_xml_dict(fixml.get('Body'))
+#         # Handle Account Open Date
+#         acct_open_dt_tag = ""
+#         custom_data_tag = ""
+#         if account_open_date:
+#             try:
+#                 open_dt_obj = datetime.strptime(str(account_open_date), '%Y-%m-%d')
                 
-                # CHECK FOR ERROR
-                if 'Error' in body:
-                    error_node = get_xml_dict(body['Error'])
-                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
-                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
+#                 # Standard Tag Format (Goes inside LoanAcctGenInfo)
+#                 formatted_open_date = open_dt_obj.strftime('%Y-%m-%dT00:00:00.000')
+#                 acct_open_dt_tag = f"<AcctOpenDt>{formatted_open_date}</AcctOpenDt>"
+                
+#                 # Custom Data Tag Format (DD-MM-YYYY format, outside LoanAcctRq)
+#                 custom_date_str = open_dt_obj.strftime('%d-%m-%Y')
+#                 custom_data_tag = f"""<LoanAcctAdd_CustomData>
+#                 <AcctGeneralInfo>
+#                     <AcctBasic>
+#                         <ACCTOPNDATE>{custom_date_str}</ACCTOPNDATE>
+#                     </AcctBasic>
+#                 </AcctGeneralInfo>
+#             </LoanAcctAdd_CustomData>"""
+#             except ValueError:
+#                 return {"status": "ERROR", "message": "Invalid account_open_date format. Use YYYY-MM-DD"}
+
+
+#         # Handle Installment Start Date
+#         try:
+#             inst_start_dt_obj = datetime.strptime(str(installment_start_date), '%Y-%m-%d')
+#             formatted_inst_date = inst_start_dt_obj.strftime('%Y-%m-%dT%H:%M:%S.000')
+#         except ValueError:
+#             return {"status": "ERROR", "message": "Invalid installment_start_date format. Use YYYY-MM-DD"}
+
+
+#         # 3. Construct XML
+#         xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
+# <FIXML xsi:schemaLocation="http://www.finacle.com/fixml LoanAcctAdd.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+#     <Header>
+#         <RequestHeader>
+#             <MessageKey>
+#                 <RequestUUID>{request_uuid}</RequestUUID>
+#                 <ServiceRequestId>LoanAcctAdd</ServiceRequestId>
+#                 <ServiceRequestVersion>10.2</ServiceRequestVersion>
+#                 <ChannelId>COR</ChannelId>
+#                 <LanguageId></LanguageId>
+#             </MessageKey>
+#             <RequestMessageInfo>
+#                 <BankId>01</BankId>
+#                 <TimeZone></TimeZone>
+#                 <EntityId></EntityId>
+#                 <EntityType></EntityType>
+#                 <ArmCorrelationId></ArmCorrelationId>
+#                 <MessageDateTime>{formatted_message_date}</MessageDateTime>
+#             </RequestMessageInfo>
+#             <Security>
+#                 <Token>
+#                     <PasswordToken>
+#                         <UserId></UserId>
+#                         <Password></Password>
+#                     </PasswordToken>
+#                 </Token>
+#                 <FICertToken></FICertToken>
+#                 <RealUserLoginSessionId></RealUserLoginSessionId>
+#                 <RealUser></RealUser>
+#                 <RealUserPwd></RealUserPwd>
+#                 <SSOTransferToken></SSOTransferToken>
+#             </Security>
+#         </RequestHeader>
+#     </Header>
+#     <Body>
+#         <LoanAcctAddRequest>
+#             <LoanAcctAddRq>
+#                 <CustId>
+#                     <CustId>{customer_id}</CustId>
+#                 </CustId>
+#                 <LoanAcctId>
+#                     <AcctType>
+#                         <SchmCode>{scheme_code}</SchmCode>
+#                     </AcctType>
+#                     <AcctCurr>INR</AcctCurr>
+#                     <BankInfo>
+#                         <BranchId>{branch_id}</BranchId>
+#                     </BankInfo>
+#                 </LoanAcctId>
+#                 <LoanAcctGenInfo>
+#                     {acct_open_dt_tag}
+#                     <AcctStmtMode>N</AcctStmtMode>
+#                     <DespatchMode>N</DespatchMode>
+#                 </LoanAcctGenInfo>
+#                 <LoanGenDetails>
+#                     <LoanPeriodMonths>{loan_period_months}</LoanPeriodMonths>
+#                     <LoanPeriodDays>0</LoanPeriodDays>
+#                     <RePmtMethod>N</RePmtMethod>
+#                     <OperAcctId>
+#                         <AcctId>{operative_account_id}</AcctId>
+#                     </OperAcctId>
+#                     <HoldInOperAcctFlg>N</HoldInOperAcctFlg>
+#                     <PmtPlan>
+#                         <EqInstallDetails>
+#                             <EqInstallFlg>Y</EqInstallFlg>
+#                             <EqInstallType>R</EqInstallType>
+#                             <EqInstallFormula>P</EqInstallFormula>
+#                         </EqInstallDetails>
+#                         <RepmtRec>
+#                             <InstallmentId>EIDEM</InstallmentId>
+#                             <InstallStartDt>{formatted_inst_date}</InstallStartDt>
+#                             <InstallFreq>
+#                                 <Type>M</Type>
+#                                 <StartDt>14</StartDt>
+#                                 <HolStat>N</HolStat>
+#                             </InstallFreq>
+#                             <IntFreq>
+#                                 <Type>M</Type>
+#                                 <StartDt>14</StartDt>
+#                                 <HolStat>N</HolStat>
+#                             </IntFreq>
+#                             <NoOfInstall>{num_installments}</NoOfInstall>
+#                             <IntStartDt>{formatted_inst_date}</IntStartDt>
+#                         </RepmtRec>
+#                         <NumOfAdvInst>0</NumOfAdvInst>
+#                     </PmtPlan>
+#                     <LoanAmt>
+#                         <amountValue>{loan_amount}</amountValue>
+#                         <currencyCode>INR</currencyCode>
+#                     </LoanAmt>
+#                 </LoanGenDetails>
+#                 <AdvanceEICollFlg>R</AdvanceEICollFlg>
+#                 <AdvNoEiInstallments>0</AdvNoEiInstallments>
+#                 <TotalInstallments>{num_installments}</TotalInstallments>
+#             </LoanAcctAddRq>
+#             {custom_data_tag}
+#         </LoanAcctAddRequest>
+#     </Body>
+# </FIXML>'''
+
+#         # 4. Log & Send
+#         frappe.log_error(title=f"Finacle Loan Creation Req {request_uuid}", message=xml_request)
+
+#         headers = {'Content-Type': 'application/xml'}
+#         response = requests.post(mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
+
+#         frappe.log_error(title=f"Finacle Loan Creation Res {response.status_code}", message=response.text)
+
+#         # 5. Parse Response
+#         # if response.status_code == 200:
+#         #     try:
+#         #         response_dict = xmltodict.parse(response.text)
+#         #         fixml = get_xml_dict(response_dict.get('FIXML'))
+#         #         body = get_xml_dict(fixml.get('Body'))
+
+#         # 5. Parse Response
+#         if response.status_code == 200:
+#             try:
+#                 response_dict = xmltodict.parse(response.text)
+#             except Exception as e:
+#                 # If Finacle sends back an HTML page or malformed garbage instead of XML
+#                 frappe.log_error(title="Finacle Malformed Response", message=response.text)
+#                 return {
+#                     "status": "ERROR", 
+#                     "message": f"Finacle returned an invalid response (not XML). Check Error Logs. Details: {str(e)}", 
+#                     "full_response": response.text,
+#                     "request_sent": xml_request
+#                 }
+
+#             try:
+#                 fixml = get_xml_dict(response_dict.get('FIXML'))
+#                 body = get_xml_dict(fixml.get('Body'))
+                
+#                 # CHECK FOR ERROR
+#                 if 'Error' in body:
+#                     error_node = get_xml_dict(body['Error'])
+#                     exception_node = get_xml_dict(error_node.get('FIBusinessException'))
+#                     error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
                     
-                    return {
-                        "status": "FAILED",
-                        "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
-                        "full_response": response.text,
-                        "request_sent": xml_request
-                    }
+#                     return {
+#                         "status": "FAILED",
+#                         "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
+#                         "full_response": response.text,
+#                         "request_sent": xml_request
+#                     }
                 
-                # CHECK SUCCESS
-                header = get_xml_dict(fixml.get('Header'))
-                response_header = get_xml_dict(header.get('ResponseHeader'))
-                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
+#                 # CHECK SUCCESS
+#                 header = get_xml_dict(fixml.get('Header'))
+#                 response_header = get_xml_dict(header.get('ResponseHeader'))
+#                 host_transaction = get_xml_dict(response_header.get('HostTransaction'))
                 
-                if host_transaction.get('Status') == 'SUCCESS':
-                    add_response = get_xml_dict(body.get('LoanAcctAddResponse'))
-                    rs = get_xml_dict(add_response.get('LoanAcctAddRs'))
-                    acct_id = get_xml_dict(rs.get('AcctId'))
+#                 if host_transaction.get('Status') == 'SUCCESS':
+#                     add_response = get_xml_dict(body.get('LoanAcctAddResponse'))
+#                     rs = get_xml_dict(add_response.get('LoanAcctAddRs'))
+#                     acct_id = get_xml_dict(rs.get('AcctId'))
                     
-                    return {
-                        "status": "SUCCESS",
-                        "account_id": acct_id.get('AcctId'),
-                        "open_date": rs.get('AcctOpenDt'),
-                        "message": "Loan Account Created Successfully",
-                        "full_response": response.text,
-                        "request_sent": xml_request
-                    }
-                else:
-                    return {
-                        "status": "FAILED", 
-                        "message": "Host Transaction Failed (Unknown Error)", 
-                        "full_response": response.text,
-                        "request_sent": xml_request
-                    }
-            except Exception as e:
-                return {
-                    "status": "ERROR", 
-                    "message": f"Parsing Logic Error: {str(e)}", 
-                    "full_response": response.text,
-                    "request_sent": xml_request
-                }
-        else:
-            return {
-                "status": "ERROR", 
-                "message": f"HTTP {response.status_code}", 
-                "full_response": response.text,
-                "request_sent": xml_request
-            }
+#                     return {
+#                         "status": "SUCCESS",
+#                         "account_id": acct_id.get('AcctId'),
+#                         "open_date": rs.get('AcctOpenDt'),
+#                         "message": "Loan Account Created Successfully",
+#                         "full_response": response.text,
+#                         "request_sent": xml_request
+#                     }
+#                 else:
+#                     return {
+#                         "status": "FAILED", 
+#                         "message": "Host Transaction Failed (Unknown Error)", 
+#                         "full_response": response.text,
+#                         "request_sent": xml_request
+#                     }
+#             except Exception as e:
+#                 return {
+#                     "status": "ERROR", 
+#                     "message": f"Parsing Logic Error: {str(e)}", 
+#                     "full_response": response.text,
+#                     "request_sent": xml_request
+#                 }
+#         else:
+#             return {
+#                 "status": "ERROR", 
+#                 "message": f"HTTP {response.status_code}", 
+#                 "full_response": response.text,
+#                 "request_sent": xml_request
+#             }
 
-    except Exception as e:
-        frappe.log_error(title="Finacle Code Error", message=frappe.get_traceback())
-        return {"status": "ERROR", "message": str(e)}
+#     except Exception as e:
+#         frappe.log_error(title="Finacle Code Error", message=frappe.get_traceback())
+#         return {"status": "ERROR", "message": str(e)}
 
 @frappe.whitelist()
 def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id, 
@@ -942,3 +978,262 @@ def create_finacle_td_account(customer_id, scheme_code, branch_id, deposit_amoun
     except Exception as e:
         frappe.log_error(title="Finacle TD Creation Error", message=str(e))
         return {"status": "ERROR", "message": f"Internal Error: {str(e)}"}
+    
+
+
+
+
+
+
+
+
+@frappe.whitelist()
+def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount, 
+                                loan_period_months, installment_start_date, 
+                                num_installments, operative_account_id, 
+                                account_open_date=None):
+    try:
+        # 1. Fetch Finacle Settings & URL
+        finacle_settings = frappe.get_single("Finacle Settings")
+        
+        mig_url = None
+        if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
+            mig_url = finacle_settings.mig_url
+        elif hasattr(finacle_settings, 'url') and finacle_settings.url:
+            mig_url = finacle_settings.url
+        elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
+            mig_url = finacle_settings.finacle_url
+        else:
+            # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
+            frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
+
+        if not mig_url:
+             return {"status": "ERROR", "message": "No Finacle URL found."}
+
+        # 2. Logic for Dates and Format
+        request_uuid = str(uuid.uuid4())
+        
+        # Message Date (Timestamp for Header)
+        if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
+            msg_date_obj = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
+        else:
+            msg_date_obj = datetime.now()
+        
+        formatted_message_date = msg_date_obj.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+
+        # Handle Account Open Date
+        acct_open_dt_tag = ""
+        # NEW: Custom Data Tag Format (Formats to DD-MM-YYYY)
+        custom_data_tag = ""
+        if account_open_date:
+            try:
+                # Parses the YYYY-MM-DD coming from the Excel file
+                open_dt_obj = datetime.strptime(str(account_open_date), '%Y-%m-%d')
+                
+                # Standard Tag Format (For inside LoanAcctId)
+                formatted_open_date = open_dt_obj.strftime('%Y-%m-%dT00:00:00.000')
+                acct_open_dt_tag = f"<AcctOpenDt>{formatted_open_date}</AcctOpenDt>"
+                
+                # Custom Data Tag Format (DD-MM-YYYY, outside LoanAcctAddRq)
+                custom_date_str = open_dt_obj.strftime('%d-%m-%Y')
+                custom_data_tag = f"""<LoanAcctAdd_CustomData>
+                <AcctGeneralInfo>
+                    <AcctBasic>
+                        <ACCTOPNDATE>{custom_date_str}</ACCTOPNDATE>
+                    </AcctBasic>
+                </AcctGeneralInfo>
+            </LoanAcctAdd_CustomData>"""
+            except ValueError:
+                return {"status": "ERROR", "message": "Invalid account_open_date format. Use YYYY-MM-DD"}
+
+        # Handle Installment Start Date
+        try:
+            inst_start_dt_obj = datetime.strptime(str(installment_start_date), '%Y-%m-%d')
+            formatted_inst_date = inst_start_dt_obj.strftime('%Y-%m-%dT%H:%M:%S.000')
+        except ValueError:
+            return {"status": "ERROR", "message": "Invalid installment_start_date format. Use YYYY-MM-DD"}
+
+        # 3. Construct XML
+        xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
+<FIXML xsi:schemaLocation="http://www.finacle.com/fixml LoanAcctAdd.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Header>
+        <RequestHeader>
+            <MessageKey>
+                <RequestUUID>{request_uuid}</RequestUUID>
+                <ServiceRequestId>LoanAcctAdd</ServiceRequestId>
+                <ServiceRequestVersion>10.2</ServiceRequestVersion>
+                <ChannelId>COR</ChannelId>
+                <LanguageId></LanguageId>
+            </MessageKey>
+            <RequestMessageInfo>
+                <BankId>01</BankId>
+                <TimeZone></TimeZone>
+                <EntityId></EntityId>
+                <EntityType></EntityType>
+                <ArmCorrelationId></ArmCorrelationId>
+                <MessageDateTime>{formatted_message_date}</MessageDateTime>
+            </RequestMessageInfo>
+            <Security>
+                <Token>
+                    <PasswordToken>
+                        <UserId></UserId>
+                        <Password></Password>
+                    </PasswordToken>
+                </Token>
+                <FICertToken></FICertToken>
+                <RealUserLoginSessionId></RealUserLoginSessionId>
+                <RealUser></RealUser>
+                <RealUserPwd></RealUserPwd>
+                <SSOTransferToken></SSOTransferToken>
+            </Security>
+        </RequestHeader>
+    </Header>
+    <Body>
+        <LoanAcctAddRequest>
+            <LoanAcctAddRq>
+                <CustId>
+                    <CustId>{customer_id}</CustId>
+                </CustId>
+                <LoanAcctId>
+                    {acct_open_dt_tag}
+                    <AcctType>
+                        <SchmCode>{scheme_code}</SchmCode>
+                    </AcctType>
+                    <AcctCurr>INR</AcctCurr>
+                    <BankInfo>
+                        <BranchId>{branch_id}</BranchId>
+                    </BankInfo>
+                </LoanAcctId>
+                <LoanAcctGenInfo>
+                    <AcctStmtMode>N</AcctStmtMode>
+                    <DespatchMode>N</DespatchMode>
+                </LoanAcctGenInfo>
+                <LoanGenDetails>
+                    <LoanPeriodMonths>{loan_period_months}</LoanPeriodMonths>
+                    <LoanPeriodDays>0</LoanPeriodDays>
+                    <RePmtMethod>N</RePmtMethod>
+                    <OperAcctId>
+                        <AcctId>{operative_account_id}</AcctId>
+                    </OperAcctId>
+                    <HoldInOperAcctFlg>N</HoldInOperAcctFlg>
+                    <PmtPlan>
+                        <EqInstallDetails>
+                            <EqInstallFlg>Y</EqInstallFlg>
+                            <EqInstallType>R</EqInstallType>
+                            <EqInstallFormula>P</EqInstallFormula>
+                        </EqInstallDetails>
+                        <RepmtRec>
+                            <InstallmentId>EIDEM</InstallmentId>
+                            <InstallStartDt>{formatted_inst_date}</InstallStartDt>
+                            <InstallFreq>
+                                <Type>M</Type>
+                                <StartDt>14</StartDt>
+                                <HolStat>N</HolStat>
+                            </InstallFreq>
+                            <IntFreq>
+                                <Type>M</Type>
+                                <StartDt>14</StartDt>
+                                <HolStat>N</HolStat>
+                            </IntFreq>
+                            <NoOfInstall>{num_installments}</NoOfInstall>
+                            <IntStartDt>{formatted_inst_date}</IntStartDt>
+                        </RepmtRec>
+                        <NumOfAdvInst>0</NumOfAdvInst>
+                    </PmtPlan>
+                    <LoanAmt>
+                        <amountValue>{loan_amount}</amountValue>
+                        <currencyCode>INR</currencyCode>
+                    </LoanAmt>
+                </LoanGenDetails>
+                <AdvanceEICollFlg>R</AdvanceEICollFlg>
+                <AdvNoEiInstallments>0</AdvNoEiInstallments>
+                <TotalInstallments>{num_installments}</TotalInstallments>
+            </LoanAcctAddRq>
+            {custom_data_tag}
+        </LoanAcctAddRequest>
+    </Body>
+</FIXML>'''
+
+        # 4. Log & Send
+        frappe.log_error(title=f"Finacle Loan Creation Req {request_uuid}", message=xml_request)
+
+        headers = {'Content-Type': 'application/xml'}
+        response = requests.post(mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
+
+        frappe.log_error(title=f"Finacle Loan Creation Res {response.status_code}", message=response.text)
+
+        # 5. Parse Response
+        if response.status_code == 200:
+            try:
+                response_dict = xmltodict.parse(response.text)
+            except Exception as e:
+                # Catch malformed HTML/Garbage from Finacle to prevent crash
+                frappe.log_error(title="Finacle Malformed Response", message=response.text)
+                return {
+                    "status": "ERROR", 
+                    "message": f"Finacle returned an invalid response (not XML). Details: {str(e)}", 
+                    "full_response": response.text,
+                    "request_sent": xml_request
+                }
+
+            try:
+                fixml = get_xml_dict(response_dict.get('FIXML'))
+                body = get_xml_dict(fixml.get('Body'))
+                
+                # CHECK FOR ERROR
+                if 'Error' in body:
+                    error_node = get_xml_dict(body['Error'])
+                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
+                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
+                    
+                    return {
+                        "status": "FAILED",
+                        "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+                
+                # CHECK SUCCESS
+                header = get_xml_dict(fixml.get('Header'))
+                response_header = get_xml_dict(header.get('ResponseHeader'))
+                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
+                
+                if host_transaction.get('Status') == 'SUCCESS':
+                    add_response = get_xml_dict(body.get('LoanAcctAddResponse'))
+                    rs = get_xml_dict(add_response.get('LoanAcctAddRs'))
+                    acct_id = get_xml_dict(rs.get('AcctId'))
+                    
+                    return {
+                        "status": "SUCCESS",
+                        "account_id": acct_id.get('AcctId'),
+                        "open_date": rs.get('AcctOpenDt'),
+                        "message": "Loan Account Created Successfully",
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+                else:
+                    return {
+                        "status": "FAILED", 
+                        "message": "Host Transaction Failed (Unknown Error)", 
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+            except Exception as e:
+                return {
+                    "status": "ERROR", 
+                    "message": f"Parsing Logic Error: {str(e)}", 
+                    "full_response": response.text,
+                    "request_sent": xml_request
+                }
+        else:
+            return {
+                "status": "ERROR", 
+                "message": f"HTTP {response.status_code}", 
+                "full_response": response.text,
+                "request_sent": xml_request
+            }
+
+    except Exception as e:
+        frappe.log_error(title="Finacle Code Error", message=frappe.get_traceback())
+        return {"status": "ERROR", "message": str(e)}
