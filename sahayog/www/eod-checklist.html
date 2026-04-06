@@ -519,7 +519,7 @@
             display: block;
             cursor: pointer;
             border: 1px solid var(--card-border);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             transition: transform 0.2s;
         }
 
@@ -845,7 +845,9 @@
     </style>
 </head>
 
-<body id="app" v-cloak>
+<!-- <body id="app" v-cloak> -->
+
+<body id="app" v-cloak @vue:mounted="mounted()">
     <div class="app-container">
         <!-- Sidebar: Checklist -->
         <aside class="sidebar">
@@ -874,8 +876,8 @@
                         Start
                     </button>
 
-                    <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()" class="capsule-btn btn-end"
-                        @click="handleEodAction">
+                    <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
+                        class="capsule-btn btn-end" @click="handleEodAction">
                         End
                     </button>
 
@@ -938,10 +940,10 @@
                 </div>
 
                 <div class="messages-area" id="messages">
-                    <div v-for="msg in chat.messages" :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']"
-                        :key="msg.id">
-                        <img v-if="!msg.isMe && msg.sender !== 'System'" :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender"
-                            class="avatar">
+                    <div v-for="msg in chat.messages"
+                        :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']" :key="msg.id">
+                        <img v-if="!msg.isMe && msg.sender !== 'System'"
+                            :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender" class="avatar">
                         <div class="message-content">
                             <div class="message-info" v-if="msg.sender !== 'System'">
                                 <span v-text="msg.sender" style="font-weight: 600;"></span>
@@ -950,8 +952,8 @@
                             <div class="bubble">
                                 <div v-if="msg.text" v-text="msg.text"></div>
                                 <div v-if="msg.attachment" class="attachment-container">
-                                    <img v-if="msg.is_image" :src="msg.attachment"
-                                        class="attachment-image" @click="window.open(msg.attachment)">
+                                    <img v-if="msg.is_image" :src="msg.attachment" class="attachment-image"
+                                        @click="window.open(msg.attachment)">
                                     <div v-else class="attachment-preview" @click="window.open(msg.attachment)">
                                         <div class="attachment-icon">📄</div>
                                         <div class="attachment-info">
@@ -973,7 +975,7 @@
                             <span style="cursor: pointer;" @click="chat.showEmojiPicker = false">✕</span>
                         </div>
                         <div class="emoji-grid">
-                            <span v-for="emoji in chat.emojiList" :key="emoji" class="emoji-item" 
+                            <span v-for="emoji in chat.emojiList" :key="emoji" class="emoji-item"
                                 @click="addEmoji(emoji)" v-text="emoji"></span>
                         </div>
                     </div>
@@ -1025,7 +1027,7 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+    <!-- <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
         <div class="modal-content">
             <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">?</div>
             <div class="modal-title" v-text="confirmModal.title"></div>
@@ -1033,6 +1035,26 @@
             <div class="modal-footer">
                 <button class="btn-modal-cancel" @click="confirmModal.show = false">Cancel</button>
                 <button class="btn-modal-confirm" :class="confirmModal.type" @click="executeConfirm">Confirm</button>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- Confirmation Modal -->
+    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+        <div class="modal-content">
+            <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">
+                <span v-if="confirmModal.type === 'info'">!</span>
+                <span v-else>?</span>
+            </div>
+            <div class="modal-title" v-text="confirmModal.title"></div>
+            <div class="modal-body" v-text="confirmModal.message"></div>
+            <div class="modal-footer">
+                <button v-if="confirmModal.type !== 'info'" class="btn-modal-cancel"
+                    @click="confirmModal.show = false">Cancel</button>
+                <button class="btn-modal-confirm" :class="confirmModal.type" @click="executeConfirm">
+                    <span v-if="confirmModal.type === 'info'">Okay</span>
+                    <span v-else>Confirm</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1073,16 +1095,34 @@
                         emojiList: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤']
                     },
 
+                    // async mounted() {
+                    //     this.updateDateTime();
+                    //     setInterval(() => this.updateDateTime(), 60000);
+                    //     await this.refreshToken();
+                    //     await this.fetchStatus();
+
+                    //     // Poll for messages every 5 seconds
+                    //     setInterval(() => {
+                    //         if (this.eodName && this.eodStatus !== 'idle') {
+                    //             this.fetchChatMessages();
+                    //         }
+                    //     }, 5000);
+                    // },
+
                     async mounted() {
                         this.updateDateTime();
                         setInterval(() => this.updateDateTime(), 60000);
                         await this.refreshToken();
+
+                        // Initial fetch on page load (this skips the 'Start' button if already started)
                         await this.fetchStatus();
-                        
-                        // Poll for messages every 5 seconds
+
+                        // Real-time synchronization loop (runs every 5 seconds)
                         setInterval(() => {
                             if (this.eodName && this.eodStatus !== 'idle') {
-                                this.fetchChatMessages();
+                                this.fetchChatMessages(); // Syncs the chat
+                                this.fetchTasks();        // Syncs checked/unchecked tasks by other teams
+                                this.fetchStatus();       // Syncs the global status (e.g. if a manager closes EOD)
                             }
                         }, 5000);
                     },
@@ -1148,7 +1188,7 @@
                                     isMe: m.is_me,
                                     isSystem: m.is_system
                                 }));
-                                
+
                                 if (this.chat.messages.length > oldLen) {
                                     setTimeout(() => {
                                         const el = document.getElementById('messages');
@@ -1170,7 +1210,7 @@
                                 // Group tasks by team while maintaining order
                                 const sections = [];
                                 const teamsMap = {};
-                                
+
                                 data.message.forEach(t => {
                                     if (!teamsMap[t.team]) {
                                         teamsMap[t.team] = {
@@ -1229,12 +1269,50 @@
                         return null;
                     },
 
+                    // async executeConfirm() {
+                    //     const type = this.confirmModal.type;
+                    //     this.confirmModal.show = false;
+
+                    //     try {
+                    //         if (type === 'start') {
+                    //             const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
+                    //             const data = await res.json();
+                    //             if (data.message) {
+                    //                 this.eodName = data.message.name;
+                    //                 const status = data.message.status;
+                    //                 if (status === 'Pending') this.eodStatus = 'started';
+                    //                 else if (status === 'Completed') this.eodStatus = 'completed';
+                    //                 else if (status === 'Closed') this.eodStatus = 'closed_today';
+
+                    //                 await this.fetchTasks();
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         } else if (type === 'end') {
+                    //             const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
+                    //             const data = await res.json();
+                    //             if (data.message && data.message.status === 'success') {
+                    //                 this.eodStatus = 'closed_today';
+                    //                 this.showModal = true;
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Action error", err);
+                    //     }
+                    // },
+
                     async executeConfirm() {
                         const type = this.confirmModal.type;
                         this.confirmModal.show = false;
 
+                        // NEW: Do nothing else if this was just an informational message
+                        if (type === 'info') {
+                            return;
+                        }
+
                         try {
                             if (type === 'start') {
+                                // ... existing start logic ...
                                 const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
                                 const data = await res.json();
                                 if (data.message) {
@@ -1243,7 +1321,7 @@
                                     if (status === 'Pending') this.eodStatus = 'started';
                                     else if (status === 'Completed') this.eodStatus = 'completed';
                                     else if (status === 'Closed') this.eodStatus = 'closed_today';
-                                    
+
                                     await this.fetchTasks();
                                     await this.fetchChatMessages();
                                 }
@@ -1273,6 +1351,37 @@
                         return totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
                     },
 
+                    // async toggleTask(task) {
+                    //     if (this.eodStatus === 'closed_today') return;
+                    //     if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
+
+                    //     const newValue = !task.done;
+                    //     try {
+                    //         const res = await fetch(`/api/method/sahayog.sahayog.api.eod.update_task_status?eod_name=${this.eodName}&task_row_name=${task.name}&done=${newValue}`);
+                    //         const data = await res.json();
+                    //         if (data.message && data.message.status === 'success') {
+                    //             task.done = newValue;
+                    //             if (newValue) {
+                    //                 const now = new Date();
+                    //                 task.completedBy = 'Me'; 
+                    //                 task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    //             } else {
+                    //                 task.completedBy = null;
+                    //                 task.completedAt = null;
+                    //             }
+
+                    //             if (data.message.eod_status === 'Completed') {
+                    //                 this.eodStatus = 'completed';
+                    //             } else {
+                    //                 this.eodStatus = 'started';
+                    //             }
+
+                    //             await this.fetchChatMessages();
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Toggle error", err);
+                    //     }
+                    // },
                     async toggleTask(task) {
                         if (this.eodStatus === 'closed_today') return;
                         if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
@@ -1281,32 +1390,50 @@
                         try {
                             const res = await fetch(`/api/method/sahayog.sahayog.api.eod.update_task_status?eod_name=${this.eodName}&task_row_name=${task.name}&done=${newValue}`);
                             const data = await res.json();
+
                             if (data.message && data.message.status === 'success') {
                                 task.done = newValue;
                                 if (newValue) {
                                     const now = new Date();
-                                    task.completedBy = 'Me'; 
+                                    task.completedBy = 'Me';
                                     task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                 } else {
                                     task.completedBy = null;
                                     task.completedAt = null;
                                 }
-                                
+
                                 if (data.message.eod_status === 'Completed') {
                                     this.eodStatus = 'completed';
                                 } else {
                                     this.eodStatus = 'started';
                                 }
-                                
+
                                 await this.fetchChatMessages();
                             }
+                            // --- NEW PERMISSION ERROR MODAL LOGIC ---
+                            else if (data.message && data.message.status === 'error') {
+                                this.confirmModal.title = 'Access Denied';
+                                this.confirmModal.message = data.message.message; // e.g., 'Permission denied. You are not a member of the L1 team.'
+                                this.confirmModal.type = 'info'; // Shows the "!" icon and hides the Cancel button
+                                this.confirmModal.show = true;
+                            }
+                            // --- END NEW LOGIC ---
+
                         } catch (err) {
                             console.error("Toggle error", err);
                         }
                     },
+                    // resetForNextDay() {
+                    //     location.reload();
+                    // },
 
                     resetForNextDay() {
-                        location.reload();
+                        this.showModal = false; // Hide the success modal if it was open
+
+                        this.confirmModal.title = 'EOD Completed';
+                        this.confirmModal.message = 'Current day EOD is complete. Please come back tomorrow to start a new checklist!';
+                        this.confirmModal.type = 'info';
+                        this.confirmModal.show = true;
                     },
 
                     async handleFileUpload(e) {
@@ -1330,9 +1457,9 @@
                                 },
                                 body: formData
                             });
-                            
+
                             const data = await res.json();
-                            
+
                             if (data.message && data.message.status === 'success') {
                                 await fetch(`/api/method/sahayog.sahayog.api.eod.send_chat_message?eod_name=${this.eodName}&attachment=${encodeURIComponent(data.message.file_url)}`);
                                 await this.fetchChatMessages();
@@ -1373,11 +1500,11 @@
                         try {
                             const response = await fetch(`/api/method/sahayog.sahayog.api.eod.send_chat_message?eod_name=${this.eodName}&text=${encodeURIComponent(msgText)}`);
                             const data = await response.json();
-                            
+
                             if (data.message && data.message.status === 'success') {
                                 await this.fetchChatMessages();
                             } else {
-                                this.chat.newMessage = msgText; 
+                                this.chat.newMessage = msgText;
                             }
                         } catch (err) {
                             console.error("Send message error", err);
