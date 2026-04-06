@@ -1098,7 +1098,7 @@
       sidebar: {
         header: {
           title: "StockIO",
-          subtitle: frappe.session.user_fullname || "Admin",
+          subtitle: "{{ frappe.get_fullname(frappe.session.user) }}" || "Admin",
           logo: "/assets/sahayog/images/favicon-sahayog.png",
           menuItems: [
             { label: "My Profile", icon: "fas fa-user-circle" },
