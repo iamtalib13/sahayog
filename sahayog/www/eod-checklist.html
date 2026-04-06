@@ -1025,7 +1025,7 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+    <!-- <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
         <div class="modal-content">
             <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">?</div>
             <div class="modal-title" v-text="confirmModal.title"></div>
@@ -1033,6 +1033,26 @@
             <div class="modal-footer">
                 <button class="btn-modal-cancel" @click="confirmModal.show = false">Cancel</button>
                 <button class="btn-modal-confirm" :class="confirmModal.type" @click="executeConfirm">Confirm</button>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- Confirmation Modal -->
+    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+        <div class="modal-content">
+            <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">
+                <span v-if="confirmModal.type === 'info'">!</span>
+                <span v-else>?</span>
+            </div>
+            <div class="modal-title" v-text="confirmModal.title"></div>
+            <div class="modal-body" v-text="confirmModal.message"></div>
+            <div class="modal-footer">
+                <button v-if="confirmModal.type !== 'info'" class="btn-modal-cancel"
+                    @click="confirmModal.show = false">Cancel</button>
+                <button class="btn-modal-confirm" :class="confirmModal.type" @click="executeConfirm">
+                    <span v-if="confirmModal.type === 'info'">Okay</span>
+                    <span v-else>Confirm</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1229,12 +1249,50 @@
                         return null;
                     },
 
+                    // async executeConfirm() {
+                    //     const type = this.confirmModal.type;
+                    //     this.confirmModal.show = false;
+
+                    //     try {
+                    //         if (type === 'start') {
+                    //             const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
+                    //             const data = await res.json();
+                    //             if (data.message) {
+                    //                 this.eodName = data.message.name;
+                    //                 const status = data.message.status;
+                    //                 if (status === 'Pending') this.eodStatus = 'started';
+                    //                 else if (status === 'Completed') this.eodStatus = 'completed';
+                    //                 else if (status === 'Closed') this.eodStatus = 'closed_today';
+
+                    //                 await this.fetchTasks();
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         } else if (type === 'end') {
+                    //             const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
+                    //             const data = await res.json();
+                    //             if (data.message && data.message.status === 'success') {
+                    //                 this.eodStatus = 'closed_today';
+                    //                 this.showModal = true;
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Action error", err);
+                    //     }
+                    // },
+
                     async executeConfirm() {
                         const type = this.confirmModal.type;
                         this.confirmModal.show = false;
 
+                        // NEW: Do nothing else if this was just an informational message
+                        if (type === 'info') {
+                            return;
+                        }
+
                         try {
                             if (type === 'start') {
+                                // ... existing start logic ...
                                 const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
                                 const data = await res.json();
                                 if (data.message) {
@@ -1341,8 +1399,17 @@
                         }
                     },
 
+                    // resetForNextDay() {
+                    //     location.reload();
+                    // },
+
                     resetForNextDay() {
-                        location.reload();
+                        this.showModal = false; // Hide the success modal if it was open
+
+                        this.confirmModal.title = 'EOD Completed';
+                        this.confirmModal.message = 'Current day EOD is complete. Please come back tomorrow to start a new checklist!';
+                        this.confirmModal.type = 'info';
+                        this.confirmModal.show = true;
                     },
 
                     async handleFileUpload(e) {
