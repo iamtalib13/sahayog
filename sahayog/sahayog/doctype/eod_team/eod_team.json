@@ -9,7 +9,8 @@
   "team_name",
   "sequence",
   "team_lead",
-  "is_active"
+  "is_active",
+  "team_members"
  ],
  "fields": [
   {
@@ -34,12 +35,18 @@
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active"
+  },
+  {
+   "fieldname": "team_members",
+   "fieldtype": "Table",
+   "label": "Team Members",
+   "options": "Team Members"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-17 11:59:18.691579",
+ "modified": "2026-04-06 16:21:38.126689",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "EOD Team",
