@@ -153,9 +153,110 @@
     </header>
 
     <section class="page-content">
-      <div v-if="currentView.doctype" class="list-view-container">
+      <div
+        v-if="currentView.doctype || activeItem === 'Analytics'"
+        class="list-view-container"
+      >
+        <!-- Analytics Dashboard -->
+        <div v-if="activeItem === 'Analytics'" class="analytics-dashboard">
+          <div class="analytics-cards">
+            <div
+              class="analytics-card card-draft"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-file"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.draft ]]</div>
+                <div class="card-label">Draft</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-pending-reporting"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">
+                  [[ requestStats.pendingReporting ]]
+                </div>
+                <div class="card-label">Pending Reporting</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-pending-ho"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-hourglass-half"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.pendingHO ]]</div>
+                <div class="card-label">Pending HO Approval</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-approved"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.approved ]]</div>
+                <div class="card-label">Approved</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-completed"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-check-double"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.completed ]]</div>
+                <div class="card-label">Completed</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-rejected"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-times-circle"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.rejected ]]</div>
+                <div class="card-label">Rejected</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-cancelled"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-ban"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.cancelled ]]</div>
+                <div class="card-label">Cancelled</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- List Header (Columns) -->
-        <div class="list-view-header">
+        <div v-else class="list-view-header">
           <div class="col-checkbox" v-if="currentView.selectable !== false">
             <input
               type="checkbox"
@@ -837,6 +938,105 @@
     font-size: 11px;
   }
 
+  /* ANALYTICS DASHBOARD */
+  .analytics-dashboard {
+    padding: 24px;
+    overflow-y: auto;
+  }
+  .analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .analytics-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .card-draft .card-icon {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  .card-approved .card-icon {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  .card-pending-reporting .card-icon {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  .card-pending-ho .card-icon {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  .card-completed .card-icon {
+    background: #f0fdf4;
+    color: #15803d;
+  }
+  .card-rejected .card-icon {
+    background: #fff1f2;
+    color: #be123c;
+  }
+  .card-cancelled .card-icon {
+    background: #f8fafc;
+    color: #64748b;
+  }
+  .card-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+  }
+  .card-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  [data-theme="dark"] .card-draft .card-icon {
+    background: #374151;
+    color: #9ca3af;
+  }
+  [data-theme="dark"] .card-approved .card-icon {
+    background: rgba(22, 163, 74, 0.2);
+    color: #22c55e;
+  }
+  [data-theme="dark"] .card-pending-reporting .card-icon {
+    background: rgba(217, 119, 6, 0.2);
+    color: #f59e0b;
+  }
+  [data-theme="dark"] .card-pending-ho .card-icon {
+    background: rgba(220, 38, 38, 0.2);
+    color: #ef4444;
+  }
+
   /* SKELETON */
   .skeleton-row {
     height: 52px;
@@ -1086,12 +1286,26 @@
       totalRows: 0,
       loadedRows: 0,
       hasMore: false,
+      requestStats: {
+        draft: 0,
+        pendingReporting: 0,
+        pendingHO: 0,
+        approved: 0,
+        completed: 0,
+        rejected: 0,
+        cancelled: 0,
+      },
 
       $watch: {
         searchText() {
           this.page = 1;
           this.loadedRows = this.rows.length;
           this.hasMore = this.loadedRows < this.totalRows;
+        },
+        activeItem() {
+          if (this.activeItem === "Analytics") {
+            this.fetchRequestStats();
+          }
         },
       },
 
@@ -1102,6 +1316,9 @@
           this.findSidebarItem("Items");
         if (defaultItem) {
           await this.setPage(defaultItem);
+        }
+        if (this.activeItem === "Analytics") {
+          await this.fetchRequestStats();
         }
         markStockioAppReady();
       },
@@ -1115,6 +1332,10 @@
         this.loadedRows = 0;
         this.hasMore = false;
         this.loading = false;
+
+        if (item.label === "Analytics") {
+          await this.fetchRequestStats();
+        }
 
         if (item.doctype) {
           await this.fetchData(item.doctype);
@@ -1173,6 +1394,45 @@
         const doctype = this.currentView.doctype;
         if (doctype) {
           await this.fetchData(doctype, true);
+        }
+      },
+
+      async fetchRequestStats() {
+        try {
+          console.log("Fetching request stats...");
+          const res = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Employee Material Request",
+              fields: ["status"],
+              limit_page_length: 5000,
+            },
+          });
+          console.log("Response:", res);
+          const requests = res.message || [];
+          console.log("Requests found:", requests.length);
+          this.requestStats = {
+            draft: requests.filter((r) => r.status === "Draft").length,
+            pendingReporting: requests.filter(
+              (r) => r.status === "Pending Reporting Person",
+            ).length,
+            pendingHO: requests.filter((r) => r.status === "Pending HO Approval")
+              .length,
+            approved: requests.filter((r) => r.status === "Approved").length,
+            completed: requests.filter((r) => r.status === "Completed").length,
+            rejected: requests.filter((r) => r.status === "Rejected").length,
+            cancelled: requests.filter((r) => r.status === "Cancelled").length,
+          };
+          console.log("Calculated stats:", JSON.parse(JSON.stringify(this.requestStats)));
+        } catch (e) {
+          console.error("Error fetching request stats:", e);
+        }
+      },
+
+      navigateTo(section) {
+        const item = this.findSidebarItem(section);
+        if (item) {
+          this.setPage(item);
         }
       },
 
