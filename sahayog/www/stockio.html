@@ -1497,9 +1497,21 @@
 
       async mounted() {
         this.applyTheme();
-        // Set user name dynamically from client-side session
-        this.sidebar.header.subtitle =
-          frappe.session.user_fullname || frappe.session.user || "Admin";
+        // Fetch user's full name from User doctype
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+              doctype: "User",
+              filters: { name: frappe.session.user },
+              fieldname: "full_name",
+            },
+          });
+          this.sidebar.header.subtitle =
+            (res.message && res.message.full_name) || frappe.session.user || "Admin";
+        } catch (e) {
+          this.sidebar.header.subtitle = frappe.session.user || "Admin";
+        }
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
           this.findSidebarItem("Items");
