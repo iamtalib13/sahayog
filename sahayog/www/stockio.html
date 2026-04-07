@@ -990,6 +990,14 @@
     background: #fee2e2;
     color: #991b1b;
   }
+  .status-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  [data-theme="dark"] .status-badge.pending {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
 
   .list-view-footer {
     padding: 12px 24px;
@@ -1892,6 +1900,7 @@
         if (key === "disabled") return row.disabled ? "disabled" : "active";
         const value = this.getFieldValue(row, key);
         const normalized = String(value || "").toLowerCase();
+        if (normalized.includes("pending")) return "pending";
         if (["cancelled", "rejected", "disabled", "draft"].includes(normalized))
           return "disabled";
         return "active";
