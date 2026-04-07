@@ -64,6 +64,53 @@
       </div>
     </div>
 
+    <!-- Profile Modal -->
+    <div class="profile-modal-overlay" v-if="showProfileModal" @click.self="showProfileModal = false">
+      <div class="profile-modal">
+        <div class="profile-modal-header">
+          <h3>My Profile</h3>
+          <button class="profile-close" @click="showProfileModal = false">&times;</button>
+        </div>
+        <div class="profile-modal-body">
+          <div v-if="profileData" class="profile-details">
+            <div class="profile-row">
+              <span class="profile-label">First Name</span>
+              <span class="profile-value">[[ profileData.first_name || '-' ]]</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Date of Joining</span>
+              <span class="profile-value">[[ profileData.date_of_joining || '-' ]]</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Branch</span>
+              <span class="profile-value">[[ profileData.branch || '-' ]]</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Region</span>
+              <span class="profile-value">[[ profileData.custom_region || '-' ]]</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Zone</span>
+              <span class="profile-value">[[ profileData.custom_zone || '-' ]]</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Designation</span>
+              <span class="profile-value">[[ profileData.designation || '-' ]]</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Department</span>
+              <span class="profile-value">[[ profileData.department || '-' ]]</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Reports To</span>
+              <span class="profile-value">[[ profileData.reports_to || '-' ]]</span>
+            </div>
+          </div>
+          <div v-else class="profile-loading">Loading profile...</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <div
@@ -1231,6 +1278,88 @@
     font-weight: 600;
     color: var(--text-main);
   }
+
+  /* PROFILE MODAL */
+  .profile-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .profile-modal {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    width: 480px;
+    max-width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+  .profile-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .profile-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .profile-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-muted);
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .profile-close:hover {
+    color: var(--text-main);
+  }
+  .profile-modal-body {
+    padding: 24px;
+  }
+  .profile-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .profile-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .profile-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .profile-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    text-align: right;
+    word-break: break-word;
+  }
+  .profile-loading {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px;
+    font-size: 14px;
+  }
 </style>
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
@@ -1445,6 +1574,8 @@
       sidebarCollapsed:
         localStorage.getItem("stockio_sidebar_collapsed") === "true",
       showUserMenu: false,
+      showProfileModal: false,
+      profileData: null,
       currentTheme: localStorage.getItem("stockio_theme") || "light",
       searchText: "",
       loading: false,
@@ -1766,8 +1897,39 @@
         this.showUserMenu = !this.showUserMenu;
       },
       handleMenuClick(item) {
-        if (item.action === "logout") window.location.href = "/logout";
         this.showUserMenu = false;
+        if (item.action === "logout") {
+          window.location.href = "/logout";
+        } else if (item.label === "My Profile") {
+          this.openProfile();
+        }
+      },
+
+      async openProfile() {
+        this.showProfileModal = true;
+        this.profileData = null;
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+              doctype: "Employee",
+              filters: { user_id: frappe.session.user },
+              fieldname: [
+                "first_name",
+                "date_of_joining",
+                "branch",
+                "custom_region",
+                "custom_zone",
+                "designation",
+                "department",
+                "reports_to",
+              ],
+            },
+          });
+          this.profileData = res.message || null;
+        } catch (e) {
+          console.error("Failed to fetch profile:", e);
+        }
       },
       toggleTheme() {
         this.currentTheme = this.currentTheme === "dark" ? "light" : "dark";
