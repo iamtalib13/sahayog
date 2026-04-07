@@ -1063,6 +1063,99 @@
             font-size: 11px;
             margin-top: 2px;
         }
+
+        /* Enhanced Team Members List Styles */
+        .team-members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .member-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border: 1px solid var(--card-border);
+            padding: 8px 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s;
+        }
+
+        .member-card:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .member-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #eef2ff;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .member-email {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-remove-member {
+            background: transparent;
+            color: #ef4444;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .btn-remove-member:hover {
+            background: #fee2e2;
+        }
+
+        /* Ensure datalist input looks neat */
+        input[list] {
+            cursor: text;
+        }
+
+        input[list]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+
+        input[list]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -1346,31 +1439,34 @@
             </div>
 
             <!-- Team Members Section -->
+            <!-- Team Members Section -->
             <div class="manage-section">
                 <h3>Team Members</h3>
-                <div class="manage-list">
-                    <div v-for="(m, i) in manageModal.members" :key="i" class="manage-row">
-                        <input type="text" class="manage-input" v-model="m.user" disabled>
-                        <button class="btn-sm btn-sm-del" @click="manageModal.members.splice(i, 1)">✕</button>
+
+                <!-- The beautifully styled grid of added members -->
+                <div class="team-members-grid">
+                    <div v-for="(m, i) in manageModal.members" :key="i" class="member-card">
+                        <div class="member-info">
+                            <!-- Generate a quick visual avatar from the first letter of their email -->
+                            <div class="member-avatar" v-text="m.user.charAt(0).toUpperCase()"></div>
+                            <span class="member-email" :title="m.user" v-text="m.user"></span>
+                        </div>
+                        <button class="btn-remove-member" @click="manageModal.members.splice(i, 1)"
+                            title="Remove user">✕</button>
                     </div>
                 </div>
-                <!-- <div class="manage-row">
-                    <input type="text" class="manage-input" v-model="manageModal.newUser"
-                        placeholder="Enter System User ID/Email">
-                    <button class="btn-sm" @click="addMember">Add</button>
-                </div> -->
-                <div class="manage-row">
-                    <!-- The input field tied to the datalist -->
-                    <input type="text" list="user-search-list" class="manage-input" v-model="manageModal.newUser"
-                        placeholder="Type to search System Users...">
 
-                    <!-- The browser's native autocomplete dropdown -->
+                <!-- The Input Row -->
+                <div class="manage-row" style="margin-top: 12px;">
+                    <input type="text" list="user-search-list" class="manage-input" v-model="manageModal.newUser"
+                        placeholder="Search & add system user...">
+
                     <datalist id="user-search-list">
                         <option v-for="u in manageModal.systemUsers" :key="u.name" :value="u.name" v-text="u.full_name">
                         </option>
                     </datalist>
 
-                    <button class="btn-sm" @click="addMember">Add</button>
+                    <button class="btn-sm" style="background: var(--accent-green);" @click="addMember">Add User</button>
                 </div>
             </div>
 
