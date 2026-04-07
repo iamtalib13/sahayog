@@ -1195,7 +1195,7 @@
     </div> -->
 
     <!-- Confirmation Modal -->
-    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+    <!-- <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
         <div class="modal-content">
             <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">
                 <span v-if="confirmModal.type === 'info'">!</span>
@@ -1212,7 +1212,38 @@
                 </button>
             </div>
         </div>
+    </div> -->
+
+    <!-- Confirmation / Alert Modal -->
+    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+        <div class="modal-content">
+            <!-- Dynamic Icon -->
+            <div class="success-icon"
+                :style="confirmModal.type === 'success' ? 'background: var(--accent-green);' : 'background: var(--text-primary); font-size: 30px;'">
+                <span v-if="confirmModal.type === 'info'">!</span>
+                <span v-else-if="confirmModal.type === 'success'">✓</span>
+                <span v-else>?</span>
+            </div>
+
+            <div class="modal-title" v-text="confirmModal.title"></div>
+            <div class="modal-body" v-text="confirmModal.message"></div>
+
+            <div class="modal-footer">
+                <!-- Hide Cancel button for info/success alerts -->
+                <button v-if="confirmModal.type !== 'info' && confirmModal.type !== 'success'" class="btn-modal-cancel"
+                    @click="confirmModal.show = false">Cancel</button>
+
+                <!-- Dynamic Confirm Button -->
+                <button class="btn-modal-confirm" :class="confirmModal.type === 'success' ? 'start' : confirmModal.type"
+                    @click="executeConfirm">
+                    <span v-if="confirmModal.type === 'info' || confirmModal.type === 'success'">Got it</span>
+                    <span v-else>Confirm</span>
+                </button>
+            </div>
+        </div>
     </div>
+
+
     <!-- Manage Team & Tasks Modal -->
     <div v-if="manageModal.show" class="modal-overlay" @click.self="manageModal.show = false">
         <div class="modal-content modal-large">
@@ -1582,18 +1613,56 @@
                     //     }
                     // },
 
+                    // async executeConfirm() {
+                    //     const type = this.confirmModal.type;
+                    //     this.confirmModal.show = false;
+
+                    //     // NEW: Do nothing else if this was just an informational message
+                    //     if (type === 'info') {
+                    //         return;
+                    //     }
+
+                    //     try {
+                    //         if (type === 'start') {
+                    //             // ... existing start logic ...
+                    //             const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
+                    //             const data = await res.json();
+                    //             if (data.message) {
+                    //                 this.eodName = data.message.name;
+                    //                 const status = data.message.status;
+                    //                 if (status === 'Pending') this.eodStatus = 'started';
+                    //                 else if (status === 'Completed') this.eodStatus = 'completed';
+                    //                 else if (status === 'Closed') this.eodStatus = 'closed_today';
+
+                    //                 await this.fetchTasks();
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         } else if (type === 'end') {
+                    //             const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
+                    //             const data = await res.json();
+                    //             if (data.message && data.message.status === 'success') {
+                    //                 this.eodStatus = 'closed_today';
+                    //                 this.showModal = true;
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Action error", err);
+                    //     }
+                    // },
                     async executeConfirm() {
                         const type = this.confirmModal.type;
                         this.confirmModal.show = false;
 
-                        // NEW: Do nothing else if this was just an informational message
-                        if (type === 'info') {
+                        // Do nothing else if this was just an info or success message
+                        if (type === 'info' || type === 'success') {
                             return;
                         }
 
                         try {
                             if (type === 'start') {
                                 // ... existing start logic ...
+
                                 const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
                                 const data = await res.json();
                                 if (data.message) {
@@ -1926,6 +1995,31 @@
                         this.manageModal.newTaskText = '';
                         this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
                     },
+                    // async saveManageData() {
+                    //     await this.refreshToken();
+                    //     const formData = new FormData();
+                    //     formData.append('team_name', this.manageModal.teamName);
+                    //     formData.append('checklist_name', this.manageModal.checklistName || '');
+                    //     formData.append('members', JSON.stringify(this.manageModal.members));
+                    //     formData.append('tasks', JSON.stringify(this.manageModal.tasks));
+
+                    //     try {
+                    //         const res = await fetch('/api/method/sahayog.sahayog.api.eod.save_manager_data', {
+                    //             method: 'POST',
+                    //             body: formData,
+                    //             headers: { 'X-Frappe-CSRF-Token': this.getCsrfToken() }
+                    //         });
+                    //         const data = await res.json();
+                    //         if (data.message && data.message.status === 'success') {
+                    //             this.manageModal.show = false;
+                    //             // Reset fields
+                    //             this.manageModal.newUser = '';
+                    //             this.manageModal.newTaskText = '';
+                    //             alert('Settings saved successfully. Task changes will apply to tomorrow\'s EOD.');
+                    //         }
+                    //     } catch (e) { console.error(e); }
+                    // },
+
                     async saveManageData() {
                         await this.refreshToken();
                         const formData = new FormData();
@@ -1943,13 +2037,20 @@
                             const data = await res.json();
                             if (data.message && data.message.status === 'success') {
                                 this.manageModal.show = false;
-                                // Reset fields
                                 this.manageModal.newUser = '';
                                 this.manageModal.newTaskText = '';
-                                alert('Settings saved successfully. Task changes will apply to tomorrow\'s EOD.');
+
+                                // --- NEW BEAUTIFUL SUCCESS MODAL ---
+                                this.confirmModal.title = 'Settings Saved';
+                                this.confirmModal.message = "Your team members and checklist tasks have been updated successfully. Task sequence changes will apply to tomorrow's EOD.";
+                                this.confirmModal.type = 'success';
+                                this.confirmModal.show = true;
+                                // -----------------------------------
                             }
                         } catch (e) { console.error(e); }
                     },
+
+
                 });
 
                 app.mount('#app');
