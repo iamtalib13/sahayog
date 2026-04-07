@@ -300,53 +300,144 @@ def update_task_status(eod_name, task_row_name, done):
     return {"status": "error", "message": "Task not found"}
 
 
+# @frappe.whitelist()
+# def check_eod_access():
+#     """Checks roles and returns access flags."""
+#     user_roles = frappe.get_roles(frappe.session.user)
+#     return {
+#         "has_access": "EOD Checklist Manager" in user_roles or "EOD Checklist Member" in user_roles or "Administrator" in user_roles,
+#         "is_manager": "EOD Checklist Manager" in user_roles or "Administrator" in user_roles
+#     }
+
+# @frappe.whitelist()
+# def get_manager_data():
+#     """Gets the team and active checklist for the logged-in manager."""
+#     user = frappe.session.user
+    
+#     # Find the team managed by this user
+#     team_name = frappe.db.get_value("EOD Team", {"team_lead": user}, "name")
+#     if not team_name:
+#         return {"status": "error", "message": "You are not assigned as a team_lead for any EOD Team."}
+        
+#     team_doc = frappe.get_doc("EOD Team", team_name)
+#     members = [{"user": m.user} for m in team_doc.team_members if m.user]
+    
+#     # Find the active checklist for this team
+#     checklist_name = frappe.db.get_value("EOD Checklist", {"team": team_name, "is_active": 1}, "name")
+#     tasks = []
+    
+#     if checklist_name:
+#         chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
+#         tasks = [{"task": t.task, "sequence": t.sequence or t.idx} for t in chk_doc.checklist_items]
+        
+#     return {
+#         "status": "success",
+#         "team_name": team_name,
+#         "checklist_name": checklist_name,
+#         "members": members,
+#         "tasks": sorted(tasks, key=lambda x: int(x["sequence"]))
+#     }
+
+
+# @frappe.whitelist(methods=["POST"])
+# def save_manager_data(team_name, checklist_name, members, tasks):
+#     """Saves the members and tasks back to the master doctypes."""
+#     members = json.loads(members)
+#     tasks = json.loads(tasks)
+    
+#     # Update Team Members
+#     team_doc = frappe.get_doc("EOD Team", team_name)
+#     team_doc.set("team_members", [])
+#     for m in members:
+#         if m.get("user"):
+#             team_doc.append("team_members", {"user": m.get("user")})
+#     team_doc.save(ignore_permissions=True)
+    
+#     # Update Checklist Tasks
+#     if checklist_name:
+#         chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
+#         chk_doc.set("checklist_items", [])
+#         for t in tasks:
+#             if t.get("task"):
+#                 chk_doc.append("checklist_items", {
+#                     "task": t.get("task"),
+#                     "sequence": t.get("sequence")
+#                 })
+#         chk_doc.save(ignore_permissions=True)
+        
+#     frappe.db.commit()
+#     return {"status": "success"}
+
+
+
 @frappe.whitelist()
 def check_eod_access():
     """Checks roles and returns access flags."""
-    user_roles = frappe.get_roles(frappe.session.user)
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    
+    # Absolute override for Admin / System Manager
+    if user == "Administrator" or "System Manager" in roles:
+        return {"has_access": True, "is_manager": True}
+        
     return {
-        "has_access": "EOD Checklist Manager" in user_roles or "EOD Checklist Member" in user_roles or "Administrator" in user_roles,
-        "is_manager": "EOD Checklist Manager" in user_roles or "Administrator" in user_roles
+        "has_access": "EOD Checklist Manager" in roles or "EOD Checklist Member" in roles,
+        "is_manager": "EOD Checklist Manager" in roles
     }
 
 @frappe.whitelist()
 def get_manager_data():
-    """Gets the team and active checklist for the logged-in manager."""
+    """Gets the team and active checklist. Safely handles Admin access."""
     user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_admin = (user == "Administrator" or "System Manager" in roles)
     
-    # Find the team managed by this user
-    team_name = frappe.db.get_value("EOD Team", {"team_lead": user}, "name")
+    # Safely get team_name from frontend (handles 'null', empty strings, etc.)
+    team_name = frappe.form_dict.get("team_name")
+    if team_name in ["null", "undefined", "", "[object MouseEvent]", "None"]:
+        team_name = None
+        
+    # 1. If no team_name passed, find the team this user leads
     if not team_name:
-        return {"status": "error", "message": "You are not assigned as a team_lead for any EOD Team."}
+        team_name = frappe.db.get_value("EOD Team", {"team_lead": user}, "name")
+        
+    # 2. If still no team_name, but user is Admin, send back all teams to pick from
+    if not team_name:
+        if is_admin:
+            all_teams = frappe.get_all("EOD Team", fields=["name"])
+            return {"status": "admin_select", "teams": all_teams}
+        else:
+            return {"status": "error", "message": "You are not assigned as a team lead."}
+            
+    # 3. Load the data for the resolved team_name
+    if not frappe.db.exists("EOD Team", team_name):
+        return {"status": "error", "message": f"Team '{team_name}' does not exist."}
         
     team_doc = frappe.get_doc("EOD Team", team_name)
-    members = [{"user": m.user} for m in team_doc.team_members if m.user]
+    members = [{"user": m.user} for m in team_doc.get("team_members", []) if m.user]
     
-    # Find the active checklist for this team
     checklist_name = frappe.db.get_value("EOD Checklist", {"team": team_name, "is_active": 1}, "name")
     tasks = []
     
     if checklist_name:
         chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
-        tasks = [{"task": t.task, "sequence": t.sequence or t.idx} for t in chk_doc.checklist_items]
+        tasks = [{"task": t.task, "sequence": t.sequence or t.idx} for t in chk_doc.get("checklist_items", [])]
         
     return {
         "status": "success",
         "team_name": team_name,
         "checklist_name": checklist_name,
         "members": members,
-        "tasks": sorted(tasks, key=lambda x: int(x["sequence"]))
+        "tasks": sorted(tasks, key=lambda x: int(x.get("sequence") or 0))
     }
 
-
-
-
-
 @frappe.whitelist(methods=["POST"])
-def save_manager_data(team_name, checklist_name, members, tasks):
-    """Saves the members and tasks back to the master doctypes."""
-    members = json.loads(members)
-    tasks = json.loads(tasks)
+def save_manager_data():
+    """Saves the updated team members and checklist tasks."""
+    team_name = frappe.form_dict.get("team_name")
+    checklist_name = frappe.form_dict.get("checklist_name")
+    members = json.loads(frappe.form_dict.get("members", "[]"))
+    tasks = json.loads(frappe.form_dict.get("tasks", "[]"))
     
     # Update Team Members
     team_doc = frappe.get_doc("EOD Team", team_name)
