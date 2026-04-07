@@ -297,3 +297,15 @@ def update_task_status(eod_name, task_row_name, done):
         return {"status": "success", "eod_status": eod.status}
         
     return {"status": "error", "message": "Task not found"}
+
+
+@frappe.whitelist()
+def check_eod_access():
+    """Checks if the logged-in user has the required roles to view the EOD page."""
+    user_roles = frappe.get_roles(frappe.session.user)
+    has_access = (
+        "EOD Checklist Manager" in user_roles or 
+        "EOD Checklist Member" in user_roles or 
+        "Administrator" in user_roles
+    )
+    return has_access
