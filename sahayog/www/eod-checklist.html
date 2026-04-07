@@ -1264,6 +1264,35 @@
         </div>
     </div>
 
+    <!-- Admin Team Selection Modal -->
+    <div v-if="adminSelectModal.show" class="modal-overlay" @click.self="adminSelectModal.show = false">
+        <div class="modal-content">
+            <div class="lock-icon-wrapper" style="background: #eef2ff; color: #3b82f6;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </div>
+            <div class="modal-title">Select a Team</div>
+            <div class="modal-body" style="margin-bottom: 24px;">
+                <p style="margin-top: 0;">As an Administrator, please select which EOD Team you want to manage.</p>
+
+                <select v-model="adminSelectModal.selectedTeam"
+                    style="width: 100%; padding: 14px; border: 2px solid var(--card-border); border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-primary); outline: none; background: #f8f9fb; cursor: pointer;">
+                    <option v-for="team in adminSelectModal.teams" :value="team.name" v-text="team.name"></option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" @click="adminSelectModal.show = false">Cancel</button>
+                <button class="btn-modal-confirm start" style="background: #3b82f6;"
+                    @click="confirmAdminTeamSelect">Continue</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Ensure frappe object exists for other scripts that might expect it
         window.frappe = window.frappe || {};
@@ -1304,6 +1333,12 @@
                     project: {
                         subtitle: 'Branch Operations - Daily Routine',
                         sections: [] // Will be populated from API
+                    },
+                    // --- NEW STATE FOR ADMIN SELECT ---
+                    adminSelectModal: {
+                        show: false,
+                        teams: [],
+                        selectedTeam: ''
                     },
                     chat: {
                         messages: [],
@@ -1774,9 +1809,59 @@
                     //     } catch (e) { console.error(e); }
                     // },
 
+                    // async openManageModal(teamName = null) {
+                    //     try {
+                    //         // Strictly force invalid variables to null so the API handles it cleanly
+                    //         if (typeof teamName !== 'string') {
+                    //             teamName = null;
+                    //         }
+
+                    //         const url = teamName
+                    //             ? `/api/method/sahayog.sahayog.api.eod.get_manager_data?team_name=${encodeURIComponent(teamName)}`
+                    //             : '/api/method/sahayog.sahayog.api.eod.get_manager_data';
+
+                    //         const res = await fetch(url);
+                    //         const data = await res.json();
+
+                    //         if (data.message.status === 'success') {
+                    //             this.manageModal.teamName = data.message.team_name;
+                    //             this.manageModal.checklistName = data.message.checklist_name || '';
+                    //             this.manageModal.members = data.message.members || [];
+                    //             this.manageModal.tasks = data.message.tasks || [];
+                    //             this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                    //             this.manageModal.show = true;
+
+                    //         } else if (data.message.status === 'admin_select') {
+                    //             const teams = data.message.teams;
+                    //             if (!teams || teams.length === 0) {
+                    //                 alert("No EOD Teams exist in the database yet.");
+                    //                 return;
+                    //             }
+
+                    //             let promptText = "Admin Access: Enter the number of the team to manage:\n\n";
+                    //             teams.forEach((t, i) => {
+                    //                 promptText += `${i + 1}. ${t.name}\n`;
+                    //             });
+
+                    //             const choice = prompt(promptText);
+                    //             if (!choice) return;
+
+                    //             const index = parseInt(choice) - 1;
+                    //             if (!isNaN(index) && index >= 0 && index < teams.length) {
+                    //                 this.openManageModal(teams[index].name);
+                    //             } else {
+                    //                 alert("Invalid selection.");
+                    //             }
+                    //         } else {
+                    //             alert(data.message.message || "Error accessing team data.");
+                    //         }
+                    //     } catch (e) {
+                    //         console.error("Manage Modal Error:", e);
+                    //     }
+                    // },
+
                     async openManageModal(teamName = null) {
                         try {
-                            // Strictly force invalid variables to null so the API handles it cleanly
                             if (typeof teamName !== 'string') {
                                 teamName = null;
                             }
@@ -1803,25 +1888,26 @@
                                     return;
                                 }
 
-                                let promptText = "Admin Access: Enter the number of the team to manage:\n\n";
-                                teams.forEach((t, i) => {
-                                    promptText += `${i + 1}. ${t.name}\n`;
-                                });
+                                // --- NEW: Show beautiful UI Modal instead of prompt() ---
+                                this.adminSelectModal.teams = teams;
+                                this.adminSelectModal.selectedTeam = teams[0].name; // Default to first team
+                                this.adminSelectModal.show = true;
 
-                                const choice = prompt(promptText);
-                                if (!choice) return;
-
-                                const index = parseInt(choice) - 1;
-                                if (!isNaN(index) && index >= 0 && index < teams.length) {
-                                    this.openManageModal(teams[index].name);
-                                } else {
-                                    alert("Invalid selection.");
-                                }
                             } else {
                                 alert(data.message.message || "Error accessing team data.");
                             }
                         } catch (e) {
                             console.error("Manage Modal Error:", e);
+                        }
+                    },
+
+                    confirmAdminTeamSelect() {
+                        if (this.adminSelectModal.selectedTeam) {
+                            // Hide the selection modal
+                            this.adminSelectModal.show = false;
+
+                            // Re-run the main function with the safely selected team name
+                            this.openManageModal(this.adminSelectModal.selectedTeam);
                         }
                     },
 
