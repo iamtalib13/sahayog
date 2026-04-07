@@ -1903,7 +1903,12 @@
       handleMenuClick(item) {
         this.showUserMenu = false;
         if (item.action === "logout") {
-          window.location.href = "/logout";
+          frappe.call({
+            method: "logout",
+            callback: function () {
+              window.location.href = "/login";
+            },
+          });
         } else if (item.label === "My Profile") {
           this.openProfile();
         }
