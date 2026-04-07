@@ -908,6 +908,66 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
+
+        .manage-section {
+            text-align: left;
+            margin-bottom: 24px;
+            background: #f8f9fb;
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .manage-section h3 {
+            font-size: 14px;
+            margin: 0 0 12px 0;
+            color: var(--text-primary);
+        }
+
+        .manage-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .manage-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .seq-input {
+            width: 60px;
+            flex: none;
+            text-align: center;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: var(--text-primary);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-sm-del {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .modal-large {
+            max-width: 600px !important;
+        }
+
+        .manage-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 
@@ -959,6 +1019,11 @@
                         <!-- Action Buttons -->
                         <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
                             Start
+                        </button>
+                        <!-- Action Buttons -->
+                        <button v-if="isManager" class="capsule-btn" style="background: #eef2ff; color: #3b82f6;"
+                            @click="openManageModal">
+                            ⚙️ Manage Team
                         </button>
 
                         <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
@@ -1148,6 +1213,56 @@
             </div>
         </div>
     </div>
+    <!-- Manage Team & Tasks Modal -->
+    <div v-if="manageModal.show" class="modal-overlay" @click.self="manageModal.show = false">
+        <div class="modal-content modal-large">
+            <div class="modal-title" style="margin-bottom: 24px;">Manage: <span v-text="manageModal.teamName"></span>
+            </div>
+
+            <!-- Team Members Section -->
+            <div class="manage-section">
+                <h3>Team Members</h3>
+                <div class="manage-list">
+                    <div v-for="(m, i) in manageModal.members" :key="i" class="manage-row">
+                        <input type="text" class="manage-input" v-model="m.user" disabled>
+                        <button class="btn-sm btn-sm-del" @click="manageModal.members.splice(i, 1)">✕</button>
+                    </div>
+                </div>
+                <div class="manage-row">
+                    <input type="text" class="manage-input" v-model="manageModal.newUser"
+                        placeholder="Enter System User ID/Email">
+                    <button class="btn-sm" @click="addMember">Add</button>
+                </div>
+            </div>
+
+            <!-- Tasks Section -->
+            <div class="manage-section" v-if="manageModal.checklistName">
+                <h3>Checklist Tasks (Next EOD)</h3>
+                <div class="manage-list">
+                    <div v-for="(t, i) in manageModal.tasks" :key="i" class="manage-row">
+                        <input type="number" class="manage-input seq-input" v-model="t.sequence" placeholder="Seq">
+                        <input type="text" class="manage-input" v-model="t.task" placeholder="Task description">
+                        <button class="btn-sm btn-sm-del" @click="manageModal.tasks.splice(i, 1)">✕</button>
+                    </div>
+                </div>
+                <div class="manage-row">
+                    <input type="number" class="manage-input seq-input" v-model="manageModal.newTaskSeq"
+                        placeholder="Seq">
+                    <input type="text" class="manage-input" v-model="manageModal.newTaskText"
+                        placeholder="New task description">
+                    <button class="btn-sm" @click="addTask">Add</button>
+                </div>
+            </div>
+            <div class="manage-section" v-else style="color:#ef4444; font-size:13px;">
+                No active checklist found for this team.
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" @click="manageModal.show = false">Cancel</button>
+                <button class="btn-modal-confirm start" @click="saveManageData">Save Changes</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Ensure frappe object exists for other scripts that might expect it
@@ -1163,6 +1278,17 @@
 
                 const app = PetiteVue.createApp({
                     hasAccess: null,
+                    isManager: false,  // <-- ADD THIS
+                    manageModal: {     // <-- ADD THIS BLOCK
+                        show: false,
+                        teamName: '',
+                        checklistName: '',
+                        members: [],
+                        tasks: [],
+                        newUser: '',
+                        newTaskText: '',
+                        newTaskSeq: 1
+                    },
                     currentDateTime: '',
                     eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
                     eodName: '',
@@ -1219,11 +1345,12 @@
                     // },
 
                     async mounted() {
-                        // 1. Check if the user has permission first
                         try {
                             const accessRes = await fetch('/api/method/sahayog.sahayog.api.eod.check_eod_access');
                             const accessData = await accessRes.json();
-                            this.hasAccess = accessData.message === true;
+                            // Update this to use the new object structure from backend
+                            this.hasAccess = accessData.message.has_access === true;
+                            this.isManager = accessData.message.is_manager === true;
                         } catch (e) {
                             this.hasAccess = false;
                         }
@@ -1629,7 +1756,63 @@
                             console.error("Send message error", err);
                             this.chat.newMessage = msgText;
                         }
-                    }
+                    },
+                    async openManageModal() {
+                        try {
+                            const res = await fetch('/api/method/sahayog.sahayog.api.eod.get_manager_data');
+                            const data = await res.json();
+                            if (data.message.status === 'success') {
+                                this.manageModal.teamName = data.message.team_name;
+                                this.manageModal.checklistName = data.message.checklist_name;
+                                this.manageModal.members = data.message.members;
+                                this.manageModal.tasks = data.message.tasks;
+                                this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                                this.manageModal.show = true;
+                            } else {
+                                alert(data.message.message);
+                            }
+                        } catch (e) { console.error(e); }
+                    },
+
+
+                    addMember() {
+                        if (!this.manageModal.newUser) return;
+                        this.manageModal.members.push({ user: this.manageModal.newUser });
+                        this.manageModal.newUser = '';
+                    },
+                    addTask() {
+                        if (!this.manageModal.newTaskText) return;
+                        this.manageModal.tasks.push({
+                            task: this.manageModal.newTaskText,
+                            sequence: this.manageModal.newTaskSeq
+                        });
+                        this.manageModal.newTaskText = '';
+                        this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                    },
+                    async saveManageData() {
+                        await this.refreshToken();
+                        const formData = new FormData();
+                        formData.append('team_name', this.manageModal.teamName);
+                        formData.append('checklist_name', this.manageModal.checklistName || '');
+                        formData.append('members', JSON.stringify(this.manageModal.members));
+                        formData.append('tasks', JSON.stringify(this.manageModal.tasks));
+
+                        try {
+                            const res = await fetch('/api/method/sahayog.sahayog.api.eod.save_manager_data', {
+                                method: 'POST',
+                                body: formData,
+                                headers: { 'X-Frappe-CSRF-Token': this.getCsrfToken() }
+                            });
+                            const data = await res.json();
+                            if (data.message && data.message.status === 'success') {
+                                this.manageModal.show = false;
+                                // Reset fields
+                                this.manageModal.newUser = '';
+                                this.manageModal.newTaskText = '';
+                                alert('Settings saved successfully. Task changes will apply to tomorrow\'s EOD.');
+                            }
+                        } catch (e) { console.error(e); }
+                    },
                 });
 
                 app.mount('#app');
