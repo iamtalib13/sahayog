@@ -1757,21 +1757,72 @@
                             this.chat.newMessage = msgText;
                         }
                     },
-                    async openManageModal() {
+                    // async openManageModal() {
+                    //     try {
+                    //         const res = await fetch('/api/method/sahayog.sahayog.api.eod.get_manager_data');
+                    //         const data = await res.json();
+                    //         if (data.message.status === 'success') {
+                    //             this.manageModal.teamName = data.message.team_name;
+                    //             this.manageModal.checklistName = data.message.checklist_name;
+                    //             this.manageModal.members = data.message.members;
+                    //             this.manageModal.tasks = data.message.tasks;
+                    //             this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                    //             this.manageModal.show = true;
+                    //         } else {
+                    //             alert(data.message.message);
+                    //         }
+                    //     } catch (e) { console.error(e); }
+                    // },
+
+                    async openManageModal(teamName = null) {
                         try {
-                            const res = await fetch('/api/method/sahayog.sahayog.api.eod.get_manager_data');
+                            // Strictly force invalid variables to null so the API handles it cleanly
+                            if (typeof teamName !== 'string') {
+                                teamName = null;
+                            }
+
+                            const url = teamName
+                                ? `/api/method/sahayog.sahayog.api.eod.get_manager_data?team_name=${encodeURIComponent(teamName)}`
+                                : '/api/method/sahayog.sahayog.api.eod.get_manager_data';
+
+                            const res = await fetch(url);
                             const data = await res.json();
+
                             if (data.message.status === 'success') {
                                 this.manageModal.teamName = data.message.team_name;
-                                this.manageModal.checklistName = data.message.checklist_name;
-                                this.manageModal.members = data.message.members;
-                                this.manageModal.tasks = data.message.tasks;
+                                this.manageModal.checklistName = data.message.checklist_name || '';
+                                this.manageModal.members = data.message.members || [];
+                                this.manageModal.tasks = data.message.tasks || [];
                                 this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
                                 this.manageModal.show = true;
+
+                            } else if (data.message.status === 'admin_select') {
+                                const teams = data.message.teams;
+                                if (!teams || teams.length === 0) {
+                                    alert("No EOD Teams exist in the database yet.");
+                                    return;
+                                }
+
+                                let promptText = "Admin Access: Enter the number of the team to manage:\n\n";
+                                teams.forEach((t, i) => {
+                                    promptText += `${i + 1}. ${t.name}\n`;
+                                });
+
+                                const choice = prompt(promptText);
+                                if (!choice) return;
+
+                                const index = parseInt(choice) - 1;
+                                if (!isNaN(index) && index >= 0 && index < teams.length) {
+                                    this.openManageModal(teams[index].name);
+                                } else {
+                                    alert("Invalid selection.");
+                                }
                             } else {
-                                alert(data.message.message);
+                                alert(data.message.message || "Error accessing team data.");
                             }
-                        } catch (e) { console.error(e); }
+                        } catch (e) {
+                            console.error("Manage Modal Error:", e);
+                        }
                     },
 
 
