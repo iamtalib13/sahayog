@@ -1241,7 +1241,7 @@
       sidebar: {
         header: {
           title: "StockIO",
-          subtitle: "{{ frappe.get_fullname(frappe.session.user) }}" || "Admin",
+          subtitle: "",
           logo: "/assets/sahayog/images/favicon-sahayog.png",
           menuItems: [
             { label: "My Profile", icon: "fas fa-user-circle" },
@@ -1497,6 +1497,9 @@
 
       async mounted() {
         this.applyTheme();
+        // Set user name dynamically from client-side session
+        this.sidebar.header.subtitle =
+          frappe.session.user_fullname || frappe.session.user || "Admin";
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
           this.findSidebarItem("Items");
