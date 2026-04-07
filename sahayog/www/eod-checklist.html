@@ -842,172 +842,598 @@
             font-weight: 600;
             border-top: 1px solid #ffedd5;
         }
+
+        /* --- Access Denied Styles --- */
+        .access-denied-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            background-color: var(--bg-color);
+        }
+
+        .access-denied-card {
+            background: white;
+            padding: 48px 40px;
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            max-width: 420px;
+            border: 1px solid var(--card-border);
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .lock-icon-wrapper {
+            width: 88px;
+            height: 88px;
+            background: #fff0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: #ef4444;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.2);
+        }
+
+        .access-denied-card h2 {
+            margin: 0 0 12px 0;
+            font-size: 24px;
+            color: var(--text-primary);
+            font-weight: 800;
+        }
+
+        .access-denied-card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .btn-return {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-return:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .manage-section {
+            text-align: left;
+            margin-bottom: 24px;
+            background: #f8f9fb;
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .manage-section h3 {
+            font-size: 14px;
+            margin: 0 0 12px 0;
+            color: var(--text-primary);
+        }
+
+        .manage-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .manage-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .seq-input {
+            width: 60px;
+            flex: none;
+            text-align: center;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: var(--text-primary);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-sm-del {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .modal-large {
+            max-width: 600px !important;
+        }
+
+        .manage-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        /* --- Autocomplete Search Styles --- */
+        .search-container {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 4px;
+        }
+
+        .search-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .search-item-name {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .search-item-email {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 42px;
+            /* Pushes it just below the input box */
+            left: 0;
+            width: calc(100% - 65px);
+            /* Matches input width, minus the Add button */
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .search-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .search-item-name {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .search-item-email {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* Enhanced Team Members List Styles */
+        .team-members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .member-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border: 1px solid var(--card-border);
+            padding: 8px 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s;
+        }
+
+        .member-card:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .member-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #eef2ff;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .member-email {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-remove-member {
+            background: transparent;
+            color: #ef4444;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .btn-remove-member:hover {
+            background: #fee2e2;
+        }
+
+        /* Ensure datalist input looks neat */
+        input[list] {
+            cursor: text;
+        }
+
+        input[list]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+
+        input[list]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        /* Custom Search Dropdown (Tooltip) Styles */
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .styled-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+            max-height: 260px;
+            overflow-y: auto;
+            z-index: 9999;
+            padding: 8px;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--message-me-bg);
+            /* Soft light blue/gray */
+            transform: translateX(4px);
+        }
+
+        .dropdown-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-green), #96c93d);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0, 176, 155, 0.2);
+        }
+
+        .dropdown-user-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dropdown-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dropdown-email {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .dropdown-empty {
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 
 <!-- <body id="app" v-cloak> -->
 
 <body id="app" v-cloak @vue:mounted="mounted()">
-    <div class="app-container">
-        <!-- Sidebar: Checklist -->
-        <aside class="sidebar">
-            <div class="header">
-                <div class="title-group">
-                    <div class="app-icon">S</div>
-                    <div class="title">
-                        <h1>EOD Checklist</h1>
-                        <div class="current-timestamp" v-text="currentDateTime"></div>
-                        <p v-text="project.subtitle"></p>
+    <!-- 1. SHOW THIS IF ACCESS IS DENIED -->
+    <div v-if="hasAccess === false" class="access-denied-container">
+        <div class="access-denied-card">
+            <div class="lock-icon-wrapper">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h2>Access Restricted</h2>
+            <p>You don't have permission to view the EOD Workspace. You must be assigned as an EOD Team Lead or Team
+                Member to access this page.</p>
+            <button class="btn-return" onclick="window.location.href='/app'">Return to Dashboard</button>
+        </div>
+    </div>
+
+    <!-- 2. SHOW YOUR APP IF ACCESS IS GRANTED -->
+    <div v-if="hasAccess === true" class="app-container">
+        <div class="app-container">
+            <!-- Sidebar: Checklist -->
+            <aside class="sidebar">
+                <div class="header">
+                    <div class="title-group">
+                        <div class="app-icon">S</div>
+                        <div class="title">
+                            <h1>EOD Checklist</h1>
+                            <div class="current-timestamp" v-text="currentDateTime"></div>
+                            <p v-text="project.subtitle"></p>
+                        </div>
+                    </div>
+
+                    <div class="header-actions">
+                        <!-- Status Capsule -->
+                        <div v-if="eodStatus !== 'idle'" class="status-capsule"
+                            :class="(isAllTasksDone() || eodStatus === 'completed' || eodStatus === 'closed_today') ? 'status-completed' : 'status-pending'">
+                            <div class="status-dot"></div>
+                            <span v-if="eodStatus === 'closed_today'">Closed</span>
+                            <span v-else-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
+                            <span v-else>Pending</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
+                            Start
+                        </button>
+                        <!-- Action Buttons -->
+                        <button v-if="isManager" class="capsule-btn" style="background: #eef2ff; color: #3b82f6;"
+                            @click="openManageModal">
+                            ⚙️ Manage Team
+                        </button>
+
+                        <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
+                            class="capsule-btn btn-end" @click="handleEodAction">
+                            End
+                        </button>
+
+                        <button v-if="eodStatus === 'closed_today'" class="capsule-btn btn-start"
+                            @click="resetForNextDay">
+                            Next Day EOD
+                        </button>
                     </div>
                 </div>
 
-                <div class="header-actions">
-                    <!-- Status Capsule -->
-                    <div v-if="eodStatus !== 'idle'" class="status-capsule"
-                        :class="(isAllTasksDone() || eodStatus === 'completed' || eodStatus === 'closed_today') ? 'status-completed' : 'status-pending'">
-                        <div class="status-dot"></div>
-                        <span v-if="eodStatus === 'closed_today'">Closed</span>
-                        <span v-else-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
-                        <span v-else>Pending</span>
+                <div v-if="eodStatus === 'idle'" class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <div class="empty-state-text">EOD still not started</div>
+                </div>
+
+                <div v-if="eodStatus !== 'idle'" class="progress-section">
+                    <div class="progress-labels">
+                        <span>Task Progress</span>
+                        <span><span v-text="calculateProgress()"></span>%</span>
                     </div>
-
-                    <!-- Action Buttons -->
-                    <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
-                        Start
-                    </button>
-
-                    <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
-                        class="capsule-btn btn-end" @click="handleEodAction">
-                        End
-                    </button>
-
-                    <button v-if="eodStatus === 'closed_today'" class="capsule-btn btn-start" @click="resetForNextDay">
-                        Next Day EOD
-                    </button>
-                </div>
-            </div>
-
-            <div v-if="eodStatus === 'idle'" class="empty-state">
-                <div class="empty-state-icon">📋</div>
-                <div class="empty-state-text">EOD still not started</div>
-            </div>
-
-            <div v-if="eodStatus !== 'idle'" class="progress-section">
-                <div class="progress-labels">
-                    <span>Task Progress</span>
-                    <span><span v-text="calculateProgress()"></span>%</span>
-                </div>
-                <div class="progress-labels" style="margin-top: -8px; margin-bottom: 12px;">
-                    <span style="font-weight: 500; color: var(--text-secondary);">Daily Operations Routine</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
-                </div>
-            </div>
-
-            <div v-if="eodStatus !== 'idle'" class="checklist">
-                <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item">
-                    <div class="section-header">
-                        <span class="section-title" v-text="section.title"></span>
+                    <div class="progress-labels" style="margin-top: -8px; margin-bottom: 12px;">
+                        <span style="font-weight: 500; color: var(--text-secondary);">Daily Operations Routine</span>
                     </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
+                    </div>
+                </div>
 
-                    <div class="task-list">
-                        <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
-                            @click="toggleTask(task)">
-                            <div class="task-left">
-                                <div class="checkbox" :class="{ checked: task.done }"></div>
-                                <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
-                            </div>
-                            <div v-if="task.done" class="task-meta">
-                                <div class="task-completed-avatar" :title="task.completedBy">
-                                    <img :src="'https://i.pravatar.cc/100?u=' + task.completedBy" alt="User">
+                <div v-if="eodStatus !== 'idle'" class="checklist">
+                    <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item">
+                        <div class="section-header">
+                            <span class="section-title" v-text="section.title"></span>
+                        </div>
+
+                        <div class="task-list">
+                            <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
+                                @click="toggleTask(task)">
+                                <div class="task-left">
+                                    <div class="checkbox" :class="{ checked: task.done }"></div>
+                                    <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
                                 </div>
-                                <span class="task-completed-time" v-text="task.completedAt"></span>
+                                <div v-if="task.done" class="task-meta">
+                                    <div class="task-completed-avatar" :title="task.completedBy">
+                                        <img :src="'https://i.pravatar.cc/100?u=' + task.completedBy" alt="User">
+                                    </div>
+                                    <span class="task-completed-time" v-text="task.completedAt"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </aside>
+            </aside>
 
-        <!-- Main Content: Chat -->
-        <main class="chat-container">
-            <div v-if="eodStatus !== 'idle'" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
-                <div class="chat-header">
-                    <div class="chat-title">
-                        <h2>Group Chat</h2>
+            <!-- Main Content: Chat -->
+            <main class="chat-container">
+                <div v-if="eodStatus !== 'idle'" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                    <div class="chat-header">
+                        <div class="chat-title">
+                            <h2>Group Chat</h2>
+                        </div>
                     </div>
-                </div>
 
-                <div class="messages-area" id="messages">
-                    <div v-for="msg in chat.messages"
-                        :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']" :key="msg.id">
-                        <img v-if="!msg.isMe && msg.sender !== 'System'"
-                            :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender" class="avatar">
-                        <div class="message-content">
-                            <div class="message-info" v-if="msg.sender !== 'System'">
-                                <span v-text="msg.sender" style="font-weight: 600;"></span>
-                                <span v-text="msg.time"></span>
-                            </div>
-                            <div class="bubble">
-                                <div v-if="msg.text" v-text="msg.text"></div>
-                                <div v-if="msg.attachment" class="attachment-container">
-                                    <img v-if="msg.is_image" :src="msg.attachment" class="attachment-image"
-                                        @click="window.open(msg.attachment)">
-                                    <div v-else class="attachment-preview" @click="window.open(msg.attachment)">
-                                        <div class="attachment-icon">📄</div>
-                                        <div class="attachment-info">
-                                            <span class="attachment-name" v-text="msg.file_name || 'File'"></span>
-                                            <span class="attachment-size">Click to view</span>
+                    <div class="messages-area" id="messages">
+                        <div v-for="msg in chat.messages"
+                            :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']"
+                            :key="msg.id">
+                            <img v-if="!msg.isMe && msg.sender !== 'System'"
+                                :src="msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender" class="avatar">
+                            <div class="message-content">
+                                <div class="message-info" v-if="msg.sender !== 'System'">
+                                    <span v-text="msg.sender" style="font-weight: 600;"></span>
+                                    <span v-text="msg.time"></span>
+                                </div>
+                                <div class="bubble">
+                                    <div v-if="msg.text" v-text="msg.text"></div>
+                                    <div v-if="msg.attachment" class="attachment-container">
+                                        <img v-if="msg.is_image" :src="msg.attachment" class="attachment-image"
+                                            @click="window.open(msg.attachment)">
+                                        <div v-else class="attachment-preview" @click="window.open(msg.attachment)">
+                                            <div class="attachment-icon">📄</div>
+                                            <div class="attachment-info">
+                                                <span class="attachment-name" v-text="msg.file_name || 'File'"></span>
+                                                <span class="attachment-size">Click to view</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div v-if="eodStatus === 'started' || eodStatus === 'completed'" class="chat-input-area">
-                    <!-- Emoji Picker UI -->
-                    <div v-if="chat.showEmojiPicker" class="emoji-picker">
-                        <div class="emoji-picker-header">
-                            <span>Emojis</span>
-                            <span style="cursor: pointer;" @click="chat.showEmojiPicker = false">✕</span>
+                    <div v-if="eodStatus === 'started' || eodStatus === 'completed'" class="chat-input-area">
+                        <!-- Emoji Picker UI -->
+                        <div v-if="chat.showEmojiPicker" class="emoji-picker">
+                            <div class="emoji-picker-header">
+                                <span>Emojis</span>
+                                <span style="cursor: pointer;" @click="chat.showEmojiPicker = false">✕</span>
+                            </div>
+                            <div class="emoji-grid">
+                                <span v-for="emoji in chat.emojiList" :key="emoji" class="emoji-item"
+                                    @click="addEmoji(emoji)" v-text="emoji"></span>
+                            </div>
                         </div>
-                        <div class="emoji-grid">
-                            <span v-for="emoji in chat.emojiList" :key="emoji" class="emoji-item"
-                                @click="addEmoji(emoji)" v-text="emoji"></span>
+
+                        <input type="file" id="fileInput" @change="handleFileUpload" style="display: none;">
+                        <div class="input-floating-bar">
+                            <div class="input-actions">
+                                <button class="action-btn"
+                                    @click="chat.showEmojiPicker = !chat.showEmojiPicker">😊</button>
+                            </div>
+                            <input type="text" v-model="chat.newMessage" placeholder="Write your message..."
+                                @keyup.enter="sendMessage">
+                            <div class="input-actions">
+                                <button class="action-btn"
+                                    @click="document.getElementById('fileInput').click()">📎</button>
+                            </div>
+                            <button class="send-pill" @click="sendMessage">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-
-                    <input type="file" id="fileInput" @change="handleFileUpload" style="display: none;">
-                    <div class="input-floating-bar">
-                        <div class="input-actions">
-                            <button class="action-btn" @click="chat.showEmojiPicker = !chat.showEmojiPicker">😊</button>
-                        </div>
-                        <input type="text" v-model="chat.newMessage" placeholder="Write your message..."
-                            @keyup.enter="sendMessage">
-                        <div class="input-actions">
-                            <button class="action-btn" @click="document.getElementById('fileInput').click()">📎</button>
-                        </div>
-                        <button class="send-pill" @click="sendMessage">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                            </svg>
-                        </button>
+                    <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
+                        Chat is closed as EOD for <span v-text="currentDateFormatted"></span> has been completed.
                     </div>
                 </div>
-                <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
-                    Chat is closed as EOD for <span v-text="currentDateFormatted"></span> has been completed.
+                <div v-else class="chat-not-started">
+                    <div class="empty-state-icon">💬</div>
+                    <div class="empty-state-text">Start EOD process to access group chat</div>
                 </div>
-            </div>
-            <div v-else class="chat-not-started">
-                <div class="empty-state-icon">💬</div>
-                <div class="empty-state-text">Start EOD process to access group chat</div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
 
     <!-- Stunning Modal -->
@@ -1040,7 +1466,7 @@
     </div> -->
 
     <!-- Confirmation Modal -->
-    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+    <!-- <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
         <div class="modal-content">
             <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">
                 <span v-if="confirmModal.type === 'info'">!</span>
@@ -1055,6 +1481,153 @@
                     <span v-if="confirmModal.type === 'info'">Okay</span>
                     <span v-else>Confirm</span>
                 </button>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- Confirmation / Alert Modal -->
+    <div v-if="confirmModal.show" class="modal-overlay" @click.self="confirmModal.show = false">
+        <div class="modal-content">
+            <!-- Dynamic Icon -->
+            <div class="success-icon"
+                :style="confirmModal.type === 'success' ? 'background: var(--accent-green);' : 'background: var(--text-primary); font-size: 30px;'">
+                <span v-if="confirmModal.type === 'info'">!</span>
+                <span v-else-if="confirmModal.type === 'success'">✓</span>
+                <span v-else>?</span>
+            </div>
+
+            <div class="modal-title" v-text="confirmModal.title"></div>
+            <div class="modal-body" v-text="confirmModal.message"></div>
+
+            <div class="modal-footer">
+                <!-- Hide Cancel button for info/success alerts -->
+                <button v-if="confirmModal.type !== 'info' && confirmModal.type !== 'success'" class="btn-modal-cancel"
+                    @click="confirmModal.show = false">Cancel</button>
+
+                <!-- Dynamic Confirm Button -->
+                <button class="btn-modal-confirm" :class="confirmModal.type === 'success' ? 'start' : confirmModal.type"
+                    @click="executeConfirm">
+                    <span v-if="confirmModal.type === 'info' || confirmModal.type === 'success'">Got it</span>
+                    <span v-else>Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Manage Team & Tasks Modal -->
+    <div v-if="manageModal.show" class="modal-overlay" @click.self="manageModal.show = false">
+        <div class="modal-content modal-large">
+            <div class="modal-title" style="margin-bottom: 24px;">Manage: <span v-text="manageModal.teamName"></span>
+            </div>
+
+            <!-- Team Members Section -->
+            <!-- Team Members Section -->
+            <div class="manage-section">
+                <h3>Team Members</h3>
+
+                <!-- The beautifully styled grid of added members -->
+                <div class="team-members-grid">
+                    <div v-for="(m, i) in manageModal.members" :key="i" class="member-card">
+                        <div class="member-info">
+                            <!-- Generate a quick visual avatar from the first letter of their email -->
+                            <div class="member-avatar" v-text="m.user.charAt(0).toUpperCase()"></div>
+                            <span class="member-email" :title="m.user" v-text="m.user"></span>
+                        </div>
+                        <button class="btn-remove-member" @click="manageModal.members.splice(i, 1)"
+                            title="Remove user">✕</button>
+                    </div>
+                </div>
+
+                <!-- The Input Row -->
+                <!-- The Input Row with Custom Dropdown -->
+                <div class="manage-row" style="margin-top: 12px;">
+                    <div class="search-wrapper">
+                        <!-- Search Input -->
+                        <input type="text" class="manage-input" style="width: 100%; box-sizing: border-box;"
+                            v-model="manageModal.newUserSearch" @focus="manageModal.dropdownOpen = true"
+                            @blur="setTimeout(() => manageModal.dropdownOpen = false, 200)"
+                            placeholder="Type to search and add a system user...">
+
+                        <!-- Floating Custom Tooltip -->
+                        <div v-if="manageModal.dropdownOpen" class="styled-dropdown">
+
+                            <!-- Search Results -->
+                            <div v-for="u in manageModal.filteredUsers" :key="u.name" class="dropdown-item"
+                                @click="selectDropdownUser(u)">
+                                <!-- Dynamic Avatar inside Dropdown -->
+                                <div class="dropdown-avatar"
+                                    v-text="u.full_name ? u.full_name.charAt(0).toUpperCase() : u.name.charAt(0).toUpperCase()">
+                                </div>
+                                <div class="dropdown-user-info">
+                                    <div class="dropdown-name" v-text="u.full_name || u.name"></div>
+                                    <div class="dropdown-email" v-text="u.name"></div>
+                                </div>
+                            </div>
+
+                            <!-- Empty State if no match -->
+                            <div v-if="manageModal.filteredUsers.length === 0" class="dropdown-empty">
+                                No users match your search
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Section -->
+            <div class="manage-section" v-if="manageModal.checklistName">
+                <h3>Checklist Tasks (Next EOD)</h3>
+                <div class="manage-list">
+                    <div v-for="(t, i) in manageModal.tasks" :key="i" class="manage-row">
+                        <input type="number" class="manage-input seq-input" v-model="t.sequence" placeholder="Seq">
+                        <input type="text" class="manage-input" v-model="t.task" placeholder="Task description">
+                        <button class="btn-sm btn-sm-del" @click="manageModal.tasks.splice(i, 1)">✕</button>
+                    </div>
+                </div>
+                <div class="manage-row">
+                    <input type="number" class="manage-input seq-input" v-model="manageModal.newTaskSeq"
+                        placeholder="Seq">
+                    <input type="text" class="manage-input" v-model="manageModal.newTaskText"
+                        placeholder="New task description">
+                    <button class="btn-sm" @click="addTask">Add</button>
+                </div>
+            </div>
+            <div class="manage-section" v-else style="color:#ef4444; font-size:13px;">
+                No active checklist found for this team.
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" @click="manageModal.show = false">Cancel</button>
+                <button class="btn-modal-confirm start" @click="saveManageData">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Team Selection Modal -->
+    <div v-if="adminSelectModal.show" class="modal-overlay" @click.self="adminSelectModal.show = false">
+        <div class="modal-content">
+            <div class="lock-icon-wrapper" style="background: #eef2ff; color: #3b82f6;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </div>
+            <div class="modal-title">Select a Team</div>
+            <div class="modal-body" style="margin-bottom: 24px;">
+                <p style="margin-top: 0;">As an Administrator, please select which EOD Team you want to manage.</p>
+
+                <select v-model="adminSelectModal.selectedTeam"
+                    style="width: 100%; padding: 14px; border: 2px solid var(--card-border); border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-primary); outline: none; background: #f8f9fb; cursor: pointer;">
+                    <option v-for="team in adminSelectModal.teams" :value="team.name" v-text="team.name"></option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" @click="adminSelectModal.show = false">Cancel</button>
+                <button class="btn-modal-confirm start" style="background: #3b82f6;"
+                    @click="confirmAdminTeamSelect">Continue</button>
             </div>
         </div>
     </div>
@@ -1072,6 +1645,34 @@
                 }
 
                 const app = PetiteVue.createApp({
+                    hasAccess: null,
+                    isManager: false,  // <-- ADD THIS
+                    manageModal: {     // <-- ADD THIS BLOCK
+                        show: false,
+                        teamName: '',
+                        checklistName: '',
+                        members: [],
+                        tasks: [],
+                        systemUsers: [],
+                        // New Search properties:
+                        newUserSearch: '',
+                        dropdownOpen: false,
+
+                        // Instantly filters users as you type
+                        get filteredUsers() {
+                            if (!this.newUserSearch) return this.systemUsers;
+                            const search = this.newUserSearch.toLowerCase();
+                            return this.systemUsers.filter(u =>
+                                (u.full_name && u.full_name.toLowerCase().includes(search)) ||
+                                (u.name && u.name.toLowerCase().includes(search))
+                            );
+                        },
+                        searchQuery: '',
+                        searchResults: [],
+                        newUser: '',
+                        newTaskText: '',
+                        newTaskSeq: 1
+                    },
                     currentDateTime: '',
                     eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
                     eodName: '',
@@ -1087,6 +1688,12 @@
                     project: {
                         subtitle: 'Branch Operations - Daily Routine',
                         sections: [] // Will be populated from API
+                    },
+                    // --- NEW STATE FOR ADMIN SELECT ---
+                    adminSelectModal: {
+                        show: false,
+                        teams: [],
+                        selectedTeam: ''
                     },
                     chat: {
                         messages: [],
@@ -1109,20 +1716,49 @@
                     //     }, 5000);
                     // },
 
+                    // async mounted() {
+                    //     this.updateDateTime();
+                    //     setInterval(() => this.updateDateTime(), 60000);
+                    //     await this.refreshToken();
+
+                    //     // Initial fetch on page load (this skips the 'Start' button if already started)
+                    //     await this.fetchStatus();
+
+                    //     // Real-time synchronization loop (runs every 5 seconds)
+                    //     setInterval(() => {
+                    //         if (this.eodName && this.eodStatus !== 'idle') {
+                    //             this.fetchChatMessages(); // Syncs the chat
+                    //             this.fetchTasks();        // Syncs checked/unchecked tasks by other teams
+                    //             this.fetchStatus();       // Syncs the global status (e.g. if a manager closes EOD)
+                    //         }
+                    //     }, 5000);
+                    // },
+
                     async mounted() {
+                        try {
+                            const accessRes = await fetch('/api/method/sahayog.sahayog.api.eod.check_eod_access');
+                            const accessData = await accessRes.json();
+                            // Update this to use the new object structure from backend
+                            this.hasAccess = accessData.message.has_access === true;
+                            this.isManager = accessData.message.is_manager === true;
+                        } catch (e) {
+                            this.hasAccess = false;
+                        }
+
+                        // 2. Stop executing the rest of the app if they don't have access
+                        if (this.hasAccess === false) return;
+
+                        // 3. Load the app normally if access is granted
                         this.updateDateTime();
                         setInterval(() => this.updateDateTime(), 60000);
                         await this.refreshToken();
-
-                        // Initial fetch on page load (this skips the 'Start' button if already started)
                         await this.fetchStatus();
 
-                        // Real-time synchronization loop (runs every 5 seconds)
                         setInterval(() => {
                             if (this.eodName && this.eodStatus !== 'idle') {
-                                this.fetchChatMessages(); // Syncs the chat
-                                this.fetchTasks();        // Syncs checked/unchecked tasks by other teams
-                                this.fetchStatus();       // Syncs the global status (e.g. if a manager closes EOD)
+                                this.fetchChatMessages();
+                                this.fetchTasks();
+                                this.fetchStatus();
                             }
                         }, 5000);
                     },
@@ -1301,18 +1937,56 @@
                     //     }
                     // },
 
+                    // async executeConfirm() {
+                    //     const type = this.confirmModal.type;
+                    //     this.confirmModal.show = false;
+
+                    //     // NEW: Do nothing else if this was just an informational message
+                    //     if (type === 'info') {
+                    //         return;
+                    //     }
+
+                    //     try {
+                    //         if (type === 'start') {
+                    //             // ... existing start logic ...
+                    //             const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
+                    //             const data = await res.json();
+                    //             if (data.message) {
+                    //                 this.eodName = data.message.name;
+                    //                 const status = data.message.status;
+                    //                 if (status === 'Pending') this.eodStatus = 'started';
+                    //                 else if (status === 'Completed') this.eodStatus = 'completed';
+                    //                 else if (status === 'Closed') this.eodStatus = 'closed_today';
+
+                    //                 await this.fetchTasks();
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         } else if (type === 'end') {
+                    //             const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
+                    //             const data = await res.json();
+                    //             if (data.message && data.message.status === 'success') {
+                    //                 this.eodStatus = 'closed_today';
+                    //                 this.showModal = true;
+                    //                 await this.fetchChatMessages();
+                    //             }
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Action error", err);
+                    //     }
+                    // },
                     async executeConfirm() {
                         const type = this.confirmModal.type;
                         this.confirmModal.show = false;
 
-                        // NEW: Do nothing else if this was just an informational message
-                        if (type === 'info') {
+                        // Do nothing else if this was just an info or success message
+                        if (type === 'info' || type === 'success') {
                             return;
                         }
 
                         try {
                             if (type === 'start') {
                                 // ... existing start logic ...
+
                                 const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
                                 const data = await res.json();
                                 if (data.message) {
@@ -1510,7 +2184,323 @@
                             console.error("Send message error", err);
                             this.chat.newMessage = msgText;
                         }
-                    }
+                    },
+                    // async openManageModal() {
+                    //     try {
+                    //         const res = await fetch('/api/method/sahayog.sahayog.api.eod.get_manager_data');
+                    //         const data = await res.json();
+                    //         if (data.message.status === 'success') {
+                    //             this.manageModal.teamName = data.message.team_name;
+                    //             this.manageModal.checklistName = data.message.checklist_name;
+                    //             this.manageModal.members = data.message.members;
+                    //             this.manageModal.tasks = data.message.tasks;
+                    //             this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                    //             this.manageModal.show = true;
+                    //         } else {
+                    //             alert(data.message.message);
+                    //         }
+                    //     } catch (e) { console.error(e); }
+                    // },
+
+                    // async openManageModal(teamName = null) {
+                    //     try {
+                    //         // Strictly force invalid variables to null so the API handles it cleanly
+                    //         if (typeof teamName !== 'string') {
+                    //             teamName = null;
+                    //         }
+
+                    //         const url = teamName
+                    //             ? `/api/method/sahayog.sahayog.api.eod.get_manager_data?team_name=${encodeURIComponent(teamName)}`
+                    //             : '/api/method/sahayog.sahayog.api.eod.get_manager_data';
+
+                    //         const res = await fetch(url);
+                    //         const data = await res.json();
+
+                    //         if (data.message.status === 'success') {
+                    //             this.manageModal.teamName = data.message.team_name;
+                    //             this.manageModal.checklistName = data.message.checklist_name || '';
+                    //             this.manageModal.members = data.message.members || [];
+                    //             this.manageModal.tasks = data.message.tasks || [];
+                    //             this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                    //             this.manageModal.show = true;
+
+                    //         } else if (data.message.status === 'admin_select') {
+                    //             const teams = data.message.teams;
+                    //             if (!teams || teams.length === 0) {
+                    //                 alert("No EOD Teams exist in the database yet.");
+                    //                 return;
+                    //             }
+
+                    //             let promptText = "Admin Access: Enter the number of the team to manage:\n\n";
+                    //             teams.forEach((t, i) => {
+                    //                 promptText += `${i + 1}. ${t.name}\n`;
+                    //             });
+
+                    //             const choice = prompt(promptText);
+                    //             if (!choice) return;
+
+                    //             const index = parseInt(choice) - 1;
+                    //             if (!isNaN(index) && index >= 0 && index < teams.length) {
+                    //                 this.openManageModal(teams[index].name);
+                    //             } else {
+                    //                 alert("Invalid selection.");
+                    //             }
+                    //         } else {
+                    //             alert(data.message.message || "Error accessing team data.");
+                    //         }
+                    //     } catch (e) {
+                    //         console.error("Manage Modal Error:", e);
+                    //     }
+                    // },
+
+                    async openManageModal(teamName = null) {
+                        try {
+                            if (typeof teamName !== 'string') {
+                                teamName = null;
+                            }
+
+                            const url = teamName
+                                ? `/api/method/sahayog.sahayog.api.eod.get_manager_data?team_name=${encodeURIComponent(teamName)}`
+                                : '/api/method/sahayog.sahayog.api.eod.get_manager_data';
+
+                            const res = await fetch(url);
+                            const data = await res.json();
+
+                            if (data.message.status === 'success') {
+                                this.manageModal.teamName = data.message.team_name;
+                                this.manageModal.checklistName = data.message.checklist_name || '';
+                                this.manageModal.members = data.message.members || [];
+                                this.manageModal.systemUsers = data.message.system_users || [];
+                                this.manageModal.tasks = data.message.tasks || [];
+                                this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                                this.manageModal.show = true;
+
+                            } else if (data.message.status === 'admin_select') {
+                                const teams = data.message.teams;
+                                if (!teams || teams.length === 0) {
+                                    alert("No EOD Teams exist in the database yet.");
+                                    return;
+                                }
+
+                                // --- NEW: Show beautiful UI Modal instead of prompt() ---
+                                this.adminSelectModal.teams = teams;
+                                this.adminSelectModal.selectedTeam = teams[0].name; // Default to first team
+                                this.adminSelectModal.show = true;
+
+                            } else {
+                                alert(data.message.message || "Error accessing team data.");
+                            }
+                        } catch (e) {
+                            console.error("Manage Modal Error:", e);
+                        }
+                    },
+
+                    // async searchUsers() {
+                    //     if (!this.manageModal.searchQuery || this.manageModal.searchQuery.length < 2) {
+                    //         this.manageModal.searchResults = [];
+                    //         return;
+                    //     }
+
+                    //     try {
+                    //         // Call Frappe's native search API directly
+                    //         const res = await fetch(`/api/method/frappe.desk.search.search_link?txt=${encodeURIComponent(this.manageModal.searchQuery)}&doctype=User&ignore_user_permissions=0&reference_doctype=EOD Team`);
+                    //         const data = await res.json();
+
+                    //         if (data.results && data.results.length > 0) {
+                    //             // Filter out users who are already in the team
+                    //             const currentMembers = this.manageModal.members.map(m => m.user);
+                    //             this.manageModal.searchResults = data.results
+                    //                 .filter(u => !currentMembers.includes(u.value))
+                    //                 .map(u => ({
+                    //                     name: u.value,
+                    //                     full_name: u.description || u.value
+                    //                 }));
+                    //         } else {
+                    //             this.manageModal.searchResults = [];
+                    //         }
+                    //     } catch (e) {
+                    //         console.error("User search failed", e);
+                    //     }
+                    // },
+
+                    async searchUsers() {
+                        const query = this.manageModal.searchQuery;
+
+                        // Only search if user typed at least 2 characters
+                        if (!query || query.length < 2) {
+                            this.manageModal.searchResults = [];
+                            return;
+                        }
+
+                        try {
+                            // Call Frappe's native search API directly
+                            const res = await fetch(`/api/method/frappe.desk.search.search_link?txt=${encodeURIComponent(query)}&doctype=User&ignore_user_permissions=0&reference_doctype=EOD Team`);
+
+                            if (res.ok) {
+                                const data = await res.json();
+
+                                if (data.results && data.results.length > 0) {
+                                    // Extract the current member emails to prevent duplicates
+                                    const currentMembers = this.manageModal.members.map(m => m.user);
+
+                                    // Format the results for the dropdown
+                                    this.manageModal.searchResults = data.results
+                                        .filter(u => !currentMembers.includes(u.value))
+                                        .map(u => ({
+                                            name: u.value,
+                                            full_name: u.description || u.value
+                                        }));
+                                } else {
+                                    this.manageModal.searchResults = [];
+                                }
+                            }
+                        } catch (e) {
+                            console.error("User search failed", e);
+                            this.manageModal.searchResults = [];
+                        }
+                    },
+
+                    selectUser(userEmail) {
+                        // Prevent empty adds
+                        if (!userEmail || userEmail.trim() === '') return;
+
+                        // Prevent adding duplicates
+                        const alreadyExists = this.manageModal.members.find(m => m.user === userEmail);
+                        if (alreadyExists) {
+                            alert("This user is already in the team!");
+                            this.manageModal.searchQuery = '';
+                            this.manageModal.searchResults = [];
+                            return;
+                        }
+
+                        // Add the user to the visual list
+                        this.manageModal.members.push({ user: userEmail });
+
+                        // Clear the search bar and hide the dropdown
+                        this.manageModal.searchQuery = '';
+                        this.manageModal.searchResults = [];
+                    },
+
+                    selectUser(userEmail) {
+                        // Immediately add the clicked user to the local array
+                        this.manageModal.members.push({ user: userEmail });
+
+                        // Clear the search bar and hide the dropdown
+                        this.manageModal.searchQuery = '';
+                        this.manageModal.searchResults = [];
+                    },
+
+                    confirmAdminTeamSelect() {
+                        if (this.adminSelectModal.selectedTeam) {
+                            // Hide the selection modal
+                            this.adminSelectModal.show = false;
+
+                            // Re-run the main function with the safely selected team name
+                            this.openManageModal(this.adminSelectModal.selectedTeam);
+                        }
+                    },
+
+
+                    // addMember() {
+                    //     if (!this.manageModal.newUser) return;
+                    //     this.manageModal.members.push({ user: this.manageModal.newUser });
+                    //     this.manageModal.newUser = '';
+                    // },
+
+                    addMember() {
+                        if (!this.manageModal.newUser) return;
+
+                        // Prevent adding a user who is already in the list
+                        const exists = this.manageModal.members.find(m => m.user === this.manageModal.newUser);
+                        if (exists) {
+                            alert("This user is already in the team!");
+                            return;
+                        }
+
+                        this.manageModal.members.push({ user: this.manageModal.newUser });
+                        this.manageModal.newUser = '';
+                    },
+
+                    selectDropdownUser(user) {
+                        // Prevent adding someone who is already in the list
+                        const exists = this.manageModal.members.find(m => m.user === user.name);
+                        if (exists) {
+                            alert("This user is already in the team!");
+                            return;
+                        }
+
+                        // Add user instantly
+                        this.manageModal.members.push({ user: user.name });
+
+                        // Reset the search bar and close tooltip
+                        this.manageModal.newUserSearch = '';
+                        this.manageModal.dropdownOpen = false;
+                    },
+                    addTask() {
+                        if (!this.manageModal.newTaskText) return;
+                        this.manageModal.tasks.push({
+                            task: this.manageModal.newTaskText,
+                            sequence: this.manageModal.newTaskSeq
+                        });
+                        this.manageModal.newTaskText = '';
+                        this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
+                    },
+                    // async saveManageData() {
+                    //     await this.refreshToken();
+                    //     const formData = new FormData();
+                    //     formData.append('team_name', this.manageModal.teamName);
+                    //     formData.append('checklist_name', this.manageModal.checklistName || '');
+                    //     formData.append('members', JSON.stringify(this.manageModal.members));
+                    //     formData.append('tasks', JSON.stringify(this.manageModal.tasks));
+
+                    //     try {
+                    //         const res = await fetch('/api/method/sahayog.sahayog.api.eod.save_manager_data', {
+                    //             method: 'POST',
+                    //             body: formData,
+                    //             headers: { 'X-Frappe-CSRF-Token': this.getCsrfToken() }
+                    //         });
+                    //         const data = await res.json();
+                    //         if (data.message && data.message.status === 'success') {
+                    //             this.manageModal.show = false;
+                    //             // Reset fields
+                    //             this.manageModal.newUser = '';
+                    //             this.manageModal.newTaskText = '';
+                    //             alert('Settings saved successfully. Task changes will apply to tomorrow\'s EOD.');
+                    //         }
+                    //     } catch (e) { console.error(e); }
+                    // },
+
+                    async saveManageData() {
+                        await this.refreshToken();
+                        const formData = new FormData();
+                        formData.append('team_name', this.manageModal.teamName);
+                        formData.append('checklist_name', this.manageModal.checklistName || '');
+                        formData.append('members', JSON.stringify(this.manageModal.members));
+                        formData.append('tasks', JSON.stringify(this.manageModal.tasks));
+
+                        try {
+                            const res = await fetch('/api/method/sahayog.sahayog.api.eod.save_manager_data', {
+                                method: 'POST',
+                                body: formData,
+                                headers: { 'X-Frappe-CSRF-Token': this.getCsrfToken() }
+                            });
+                            const data = await res.json();
+                            if (data.message && data.message.status === 'success') {
+                                this.manageModal.show = false;
+                                this.manageModal.newUser = '';
+                                this.manageModal.newTaskText = '';
+
+                                // --- NEW BEAUTIFUL SUCCESS MODAL ---
+                                this.confirmModal.title = 'Settings Saved';
+                                this.confirmModal.message = "Your team members and checklist tasks have been updated successfully. Task sequence changes will apply to tomorrow's EOD.";
+                                this.confirmModal.type = 'success';
+                                this.confirmModal.show = true;
+                                // -----------------------------------
+                            }
+                        } catch (e) { console.error(e); }
+                    },
+
+
                 });
 
                 app.mount('#app');
