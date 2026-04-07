@@ -968,6 +968,101 @@
             overflow-y: auto;
             margin-bottom: 12px;
         }
+
+        /* --- Autocomplete Search Styles --- */
+        .search-container {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 4px;
+        }
+
+        .search-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .search-item-name {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .search-item-email {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 42px;
+            /* Pushes it just below the input box */
+            left: 0;
+            width: calc(100% - 65px);
+            /* Matches input width, minus the Add button */
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .search-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .search-item-name {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .search-item-email {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 2px;
+        }
     </style>
 </head>
 
@@ -1259,9 +1354,22 @@
                         <button class="btn-sm btn-sm-del" @click="manageModal.members.splice(i, 1)">✕</button>
                     </div>
                 </div>
-                <div class="manage-row">
+                <!-- <div class="manage-row">
                     <input type="text" class="manage-input" v-model="manageModal.newUser"
                         placeholder="Enter System User ID/Email">
+                    <button class="btn-sm" @click="addMember">Add</button>
+                </div> -->
+                <div class="manage-row">
+                    <!-- The input field tied to the datalist -->
+                    <input type="text" list="user-search-list" class="manage-input" v-model="manageModal.newUser"
+                        placeholder="Type to search System Users...">
+
+                    <!-- The browser's native autocomplete dropdown -->
+                    <datalist id="user-search-list">
+                        <option v-for="u in manageModal.systemUsers" :key="u.name" :value="u.name" v-text="u.full_name">
+                        </option>
+                    </datalist>
+
                     <button class="btn-sm" @click="addMember">Add</button>
                 </div>
             </div>
@@ -1345,6 +1453,9 @@
                         checklistName: '',
                         members: [],
                         tasks: [],
+                        systemUsers: [],
+                        searchQuery: '',
+                        searchResults: [],
                         newUser: '',
                         newTaskText: '',
                         newTaskSeq: 1
@@ -1946,6 +2057,7 @@
                                 this.manageModal.teamName = data.message.team_name;
                                 this.manageModal.checklistName = data.message.checklist_name || '';
                                 this.manageModal.members = data.message.members || [];
+                                this.manageModal.systemUsers = data.message.system_users || [];
                                 this.manageModal.tasks = data.message.tasks || [];
                                 this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
                                 this.manageModal.show = true;
@@ -1970,6 +2082,101 @@
                         }
                     },
 
+                    // async searchUsers() {
+                    //     if (!this.manageModal.searchQuery || this.manageModal.searchQuery.length < 2) {
+                    //         this.manageModal.searchResults = [];
+                    //         return;
+                    //     }
+
+                    //     try {
+                    //         // Call Frappe's native search API directly
+                    //         const res = await fetch(`/api/method/frappe.desk.search.search_link?txt=${encodeURIComponent(this.manageModal.searchQuery)}&doctype=User&ignore_user_permissions=0&reference_doctype=EOD Team`);
+                    //         const data = await res.json();
+
+                    //         if (data.results && data.results.length > 0) {
+                    //             // Filter out users who are already in the team
+                    //             const currentMembers = this.manageModal.members.map(m => m.user);
+                    //             this.manageModal.searchResults = data.results
+                    //                 .filter(u => !currentMembers.includes(u.value))
+                    //                 .map(u => ({
+                    //                     name: u.value,
+                    //                     full_name: u.description || u.value
+                    //                 }));
+                    //         } else {
+                    //             this.manageModal.searchResults = [];
+                    //         }
+                    //     } catch (e) {
+                    //         console.error("User search failed", e);
+                    //     }
+                    // },
+
+                    async searchUsers() {
+                        const query = this.manageModal.searchQuery;
+
+                        // Only search if user typed at least 2 characters
+                        if (!query || query.length < 2) {
+                            this.manageModal.searchResults = [];
+                            return;
+                        }
+
+                        try {
+                            // Call Frappe's native search API directly
+                            const res = await fetch(`/api/method/frappe.desk.search.search_link?txt=${encodeURIComponent(query)}&doctype=User&ignore_user_permissions=0&reference_doctype=EOD Team`);
+
+                            if (res.ok) {
+                                const data = await res.json();
+
+                                if (data.results && data.results.length > 0) {
+                                    // Extract the current member emails to prevent duplicates
+                                    const currentMembers = this.manageModal.members.map(m => m.user);
+
+                                    // Format the results for the dropdown
+                                    this.manageModal.searchResults = data.results
+                                        .filter(u => !currentMembers.includes(u.value))
+                                        .map(u => ({
+                                            name: u.value,
+                                            full_name: u.description || u.value
+                                        }));
+                                } else {
+                                    this.manageModal.searchResults = [];
+                                }
+                            }
+                        } catch (e) {
+                            console.error("User search failed", e);
+                            this.manageModal.searchResults = [];
+                        }
+                    },
+
+                    selectUser(userEmail) {
+                        // Prevent empty adds
+                        if (!userEmail || userEmail.trim() === '') return;
+
+                        // Prevent adding duplicates
+                        const alreadyExists = this.manageModal.members.find(m => m.user === userEmail);
+                        if (alreadyExists) {
+                            alert("This user is already in the team!");
+                            this.manageModal.searchQuery = '';
+                            this.manageModal.searchResults = [];
+                            return;
+                        }
+
+                        // Add the user to the visual list
+                        this.manageModal.members.push({ user: userEmail });
+
+                        // Clear the search bar and hide the dropdown
+                        this.manageModal.searchQuery = '';
+                        this.manageModal.searchResults = [];
+                    },
+
+                    selectUser(userEmail) {
+                        // Immediately add the clicked user to the local array
+                        this.manageModal.members.push({ user: userEmail });
+
+                        // Clear the search bar and hide the dropdown
+                        this.manageModal.searchQuery = '';
+                        this.manageModal.searchResults = [];
+                    },
+
                     confirmAdminTeamSelect() {
                         if (this.adminSelectModal.selectedTeam) {
                             // Hide the selection modal
@@ -1981,8 +2188,22 @@
                     },
 
 
+                    // addMember() {
+                    //     if (!this.manageModal.newUser) return;
+                    //     this.manageModal.members.push({ user: this.manageModal.newUser });
+                    //     this.manageModal.newUser = '';
+                    // },
+
                     addMember() {
                         if (!this.manageModal.newUser) return;
+
+                        // Prevent adding a user who is already in the list
+                        const exists = this.manageModal.members.find(m => m.user === this.manageModal.newUser);
+                        if (exists) {
+                            alert("This user is already in the team!");
+                            return;
+                        }
+
                         this.manageModal.members.push({ user: this.manageModal.newUser });
                         this.manageModal.newUser = '';
                     },
