@@ -1156,6 +1156,89 @@
         input[list]::-webkit-calendar-picker-indicator:hover {
             opacity: 1;
         }
+
+        /* Custom Search Dropdown (Tooltip) Styles */
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .styled-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+            max-height: 260px;
+            overflow-y: auto;
+            z-index: 9999;
+            padding: 8px;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--message-me-bg);
+            /* Soft light blue/gray */
+            transform: translateX(4px);
+        }
+
+        .dropdown-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-green), #96c93d);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0, 176, 155, 0.2);
+        }
+
+        .dropdown-user-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dropdown-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dropdown-email {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .dropdown-empty {
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 
@@ -1457,16 +1540,37 @@
                 </div>
 
                 <!-- The Input Row -->
+                <!-- The Input Row with Custom Dropdown -->
                 <div class="manage-row" style="margin-top: 12px;">
-                    <input type="text" list="user-search-list" class="manage-input" v-model="manageModal.newUser"
-                        placeholder="Search & add system user...">
+                    <div class="search-wrapper">
+                        <!-- Search Input -->
+                        <input type="text" class="manage-input" style="width: 100%; box-sizing: border-box;"
+                            v-model="manageModal.newUserSearch" @focus="manageModal.dropdownOpen = true"
+                            @blur="setTimeout(() => manageModal.dropdownOpen = false, 200)"
+                            placeholder="Type to search and add a system user...">
 
-                    <datalist id="user-search-list">
-                        <option v-for="u in manageModal.systemUsers" :key="u.name" :value="u.name" v-text="u.full_name">
-                        </option>
-                    </datalist>
+                        <!-- Floating Custom Tooltip -->
+                        <div v-if="manageModal.dropdownOpen" class="styled-dropdown">
 
-                    <button class="btn-sm" style="background: var(--accent-green);" @click="addMember">Add User</button>
+                            <!-- Search Results -->
+                            <div v-for="u in manageModal.filteredUsers" :key="u.name" class="dropdown-item"
+                                @click="selectDropdownUser(u)">
+                                <!-- Dynamic Avatar inside Dropdown -->
+                                <div class="dropdown-avatar"
+                                    v-text="u.full_name ? u.full_name.charAt(0).toUpperCase() : u.name.charAt(0).toUpperCase()">
+                                </div>
+                                <div class="dropdown-user-info">
+                                    <div class="dropdown-name" v-text="u.full_name || u.name"></div>
+                                    <div class="dropdown-email" v-text="u.name"></div>
+                                </div>
+                            </div>
+
+                            <!-- Empty State if no match -->
+                            <div v-if="manageModal.filteredUsers.length === 0" class="dropdown-empty">
+                                No users match your search
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1550,6 +1654,19 @@
                         members: [],
                         tasks: [],
                         systemUsers: [],
+                        // New Search properties:
+                        newUserSearch: '',
+                        dropdownOpen: false,
+
+                        // Instantly filters users as you type
+                        get filteredUsers() {
+                            if (!this.newUserSearch) return this.systemUsers;
+                            const search = this.newUserSearch.toLowerCase();
+                            return this.systemUsers.filter(u =>
+                                (u.full_name && u.full_name.toLowerCase().includes(search)) ||
+                                (u.name && u.name.toLowerCase().includes(search))
+                            );
+                        },
                         searchQuery: '',
                         searchResults: [],
                         newUser: '',
@@ -2302,6 +2419,22 @@
 
                         this.manageModal.members.push({ user: this.manageModal.newUser });
                         this.manageModal.newUser = '';
+                    },
+
+                    selectDropdownUser(user) {
+                        // Prevent adding someone who is already in the list
+                        const exists = this.manageModal.members.find(m => m.user === user.name);
+                        if (exists) {
+                            alert("This user is already in the team!");
+                            return;
+                        }
+
+                        // Add user instantly
+                        this.manageModal.members.push({ user: user.name });
+
+                        // Reset the search bar and close tooltip
+                        this.manageModal.newUserSearch = '';
+                        this.manageModal.dropdownOpen = false;
                     },
                     addTask() {
                         if (!this.manageModal.newTaskText) return;
