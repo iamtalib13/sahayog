@@ -1361,7 +1361,7 @@
                         </div>
                     </div>
 
-                    <div class="messages-area" id="messages">
+                    <!-- <div class="messages-area" id="messages">
                         <div v-for="msg in chat.messages"
                             :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']"
                             :key="msg.id">
@@ -1372,6 +1372,42 @@
                                     <span v-text="msg.sender" style="font-weight: 600;"></span>
                                     <span v-text="msg.time"></span>
                                 </div>
+                                <div class="bubble">
+                                    <div v-if="msg.text" v-text="msg.text"></div>
+                                    <div v-if="msg.attachment" class="attachment-container">
+                                        <img v-if="msg.is_image" :src="msg.attachment" class="attachment-image"
+                                            @click="window.open(msg.attachment)">
+                                        <div v-else class="attachment-preview" @click="window.open(msg.attachment)">
+                                            <div class="attachment-icon">📄</div>
+                                            <div class="attachment-info">
+                                                <span class="attachment-name" v-text="msg.file_name || 'File'"></span>
+                                                <span class="attachment-size">Click to view</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> -->
+
+                    <div class="messages-area" id="messages">
+                        <div v-for="msg in chat.messages"
+                            :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']"
+                            :key="msg.id">
+
+                            <!-- Show Avatar for Everyone except "Me" -->
+                            <img v-if="!msg.isMe"
+                                :src="msg.sender === 'System' ? 'https://ui-avatars.com/api/?name=EOD+System&background=00b09b&color=fff&rounded=true&bold=true' : (msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender)"
+                                class="avatar">
+
+                            <div class="message-content">
+                                <!-- Show Name and Time for Everyone (System included!) -->
+                                <div class="message-info">
+                                    <span v-text="msg.sender === 'System' ? 'EOD System' : msg.sender"
+                                        style="font-weight: 600;"></span>
+                                    <span v-text="msg.time"></span>
+                                </div>
+
                                 <div class="bubble">
                                     <div v-if="msg.text" v-text="msg.text"></div>
                                     <div v-if="msg.attachment" class="attachment-container">
