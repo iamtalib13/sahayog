@@ -482,33 +482,103 @@ def get_manager_data():
         "system_users": system_users
     }
 
+# @frappe.whitelist(methods=["POST"])
+# def save_manager_data():
+#     """Saves the updated team members and checklist tasks."""
+#     team_name = frappe.form_dict.get("team_name")
+#     checklist_name = frappe.form_dict.get("checklist_name")
+#     members = json.loads(frappe.form_dict.get("members", "[]"))
+#     tasks = json.loads(frappe.form_dict.get("tasks", "[]"))
+    
+#     # Update Team Members
+#     team_doc = frappe.get_doc("EOD Team", team_name)
+#     team_doc.set("team_members", [])
+#     for m in members:
+#         if m.get("user"):
+#             team_doc.append("team_members", {"user": m.get("user")})
+#     team_doc.save(ignore_permissions=True)
+    
+#     # Update Checklist Tasks
+#     if checklist_name:
+#         chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
+#         chk_doc.set("checklist_items", [])
+#         for t in tasks:
+#             if t.get("task"):
+#                 chk_doc.append("checklist_items", {
+#                     "task": t.get("task"),
+#                     "sequence": t.get("sequence")
+#                 })
+#         chk_doc.save(ignore_permissions=True)
+        
+#     frappe.db.commit()
+#     return {"status": "success"}
+
+import frappe
+import json
+
 @frappe.whitelist(methods=["POST"])
 def save_manager_data():
-    """Saves the updated team members and checklist tasks."""
-    team_name = frappe.form_dict.get("team_name")
-    checklist_name = frappe.form_dict.get("checklist_name")
-    members = json.loads(frappe.form_dict.get("members", "[]"))
-    tasks = json.loads(frappe.form_dict.get("tasks", "[]"))
+    """Saves the updated team members and checklist tasks without triggering 403s."""
+    # Capture the actual logged-in user
+    original_user = frappe.session.user
     
-    # Update Team Members
-    team_doc = frappe.get_doc("EOD Team", team_name)
-    team_doc.set("team_members", [])
-    for m in members:
-        if m.get("user"):
-            team_doc.append("team_members", {"user": m.get("user")})
-    team_doc.save(ignore_permissions=True)
-    
-    # Update Checklist Tasks
-    if checklist_name:
-        chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
-        chk_doc.set("checklist_items", [])
-        for t in tasks:
-            if t.get("task"):
-                chk_doc.append("checklist_items", {
-                    "task": t.get("task"),
-                    "sequence": t.get("sequence")
-                })
-        chk_doc.save(ignore_permissions=True)
+    try:
+        team_name = frappe.form_dict.get("team_name")
+        checklist_name = frappe.form_dict.get("checklist_name")
+        members = json.loads(frappe.form_dict.get("members", "[]"))
+        tasks = json.loads(frappe.form_dict.get("tasks", "[]"))
         
-    frappe.db.commit()
-    return {"status": "success"}
+        # 1. SECURITY VALIDATION: Check if caller is Admin or Team Lead
+        roles = frappe.get_roles(original_user)
+        is_admin = (original_user == "Administrator" or "System Manager" in roles)
+        
+        # Use ignore_permissions just to read the Team Lead field safely
+        frappe.flags.ignore_permissions = True
+        team_lead = frappe.db.get_value("EOD Team", team_name, "team_lead")
+        
+        if not is_admin:
+            if not team_lead or str(team_lead).lower() != str(original_user).lower():
+                return {"status": "error", "message": "Permission Denied: You are not the Team Lead for this team."}
+
+        # =====================================================================
+        # 2. THE FIX: Temporarily become 'Administrator' to completely bypass 
+        # Frappe's strict 403 doc and child-table save restrictions.
+        # =====================================================================
+        frappe.set_user("Administrator")
+        
+        # 3. Update Team Members
+        team_doc = frappe.get_doc("EOD Team", team_name)
+        team_doc.set("team_members", [])
+        for m in members:
+            if m.get("user"):
+                team_doc.append("team_members", {"user": m.get("user")})
+        team_doc.save(ignore_permissions=True)
+        
+        # 4. Update Checklist Tasks
+        if checklist_name:
+            chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
+            chk_doc.set("checklist_items", [])
+            for t in tasks:
+                if t.get("task"):
+                    chk_doc.append("checklist_items", {
+                        "task": t.get("task"),
+                        "sequence": t.get("sequence")
+                    })
+            chk_doc.save(ignore_permissions=True)
+            
+        frappe.db.commit()
+        return {"status": "success"}
+        
+    except frappe.exceptions.ValidationError as e:
+        frappe.db.rollback()
+        return {"status": "error", "message": f"Validation Error: {str(e)}"}
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error(frappe.get_traceback(), "EOD Save Manager Data Error")
+        return {"status": "error", "message": f"System Error: {str(e)}"}
+        
+    finally:
+        # 5. VERY IMPORTANT: Always revert the session back to the original user
+        # so the Manager doesn't stay an Admin for other requests!
+        frappe.set_user(original_user)
+        frappe.flags.ignore_permissions = False
