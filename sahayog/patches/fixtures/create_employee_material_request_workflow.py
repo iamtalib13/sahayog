@@ -158,6 +158,7 @@ def create_or_update_workflow():
                 "action": "Approve",
                 "next_state": "Pending HO Approval",
                 "allowed": "Employee",
+                "condition": "doc.reporting_person == frappe.session.user or frappe.session.user == 'Administrator'",
                 "allow_self_approval": 0,
             },
             {
@@ -165,20 +166,23 @@ def create_or_update_workflow():
                 "action": "Reject",
                 "next_state": "Rejected",
                 "allowed": "Employee",
+                "condition": "doc.reporting_person == frappe.session.user or frappe.session.user == 'Administrator'",
                 "allow_self_approval": 0,
             },
             {
                 "state": "Pending HO Approval",
                 "action": "Approve",
                 "next_state": "Approved",
-                "allowed": "Head Office Officer",
+                "allowed": "HO HOD",
+                "condition": "doc.head_office_officer == frappe.session.user or frappe.session.user == 'Administrator'",
                 "allow_self_approval": 0,
             },
             {
                 "state": "Pending HO Approval",
                 "action": "Reject",
                 "next_state": "Rejected",
-                "allowed": "Head Office Officer",
+                "allowed": "HO HOD",
+                "condition": "doc.head_office_officer == frappe.session.user or frappe.session.user == 'Administrator'",
                 "allow_self_approval": 0,
             },
             {
