@@ -1501,6 +1501,12 @@ function render_intro_html(frm, data) {
 
   // === DIV 3 (Reporting Person) Badge ===
   let rep_stat = data.reporting_person_status || "";
+  
+  // Ensure Reporting Person shows as Approved if status has moved beyond their stage
+  if (["Pending HO Approval", "Approved", "Completed"].includes(status) && (rep_stat === "Pending" || !rep_stat)) {
+    rep_stat = "Approved";
+  }
+
   let div3_badge = { label: "Not Received", class: "status-new-record" };
   if (["Pending", "Approved", "Rejected", "Skip"].includes(rep_stat)) {
     const map = {
