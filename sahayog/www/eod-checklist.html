@@ -1340,11 +1340,19 @@
                                     <div class="checkbox" :class="{ checked: task.done }"></div>
                                     <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
                                 </div>
-                                <div v-if="task.done" class="task-meta">
+                                <!-- <div v-if="task.done" class="task-meta">
                                     <div class="task-completed-avatar" :title="task.completedBy">
                                         <img :src="'https://i.pravatar.cc/100?u=' + task.completedBy" alt="User">
                                     </div>
                                     <span class="task-completed-time" v-text="task.completedAt"></span>
+                                </div> -->
+                                <div v-if="task.done" class="task-meta">
+                                    <!-- Using completed_by to match the backend! -->
+                                    <div class="task-completed-avatar" :title="task.completed_by">
+                                        <img :src="getInitialsAvatar(task.completed_by)" alt="User">
+                                    </div>
+                                    <!-- Using completed_on to match the backend! -->
+                                    <span class="task-completed-time" v-text="task.completed_on"></span>
                                 </div>
                             </div>
                         </div>
@@ -1395,13 +1403,11 @@
                             :class="['message-row', msg.isMe ? 'me' : 'other', msg.isSystem ? 'system' : '']"
                             :key="msg.id">
 
-                            <!-- Show Avatar for Everyone except "Me" -->
-                            <img v-if="!msg.isMe"
-                                :src="msg.sender === 'System' ? 'https://ui-avatars.com/api/?name=EOD+System&background=00b09b&color=fff&rounded=true&bold=true' : (msg.avatar || 'https://i.pravatar.cc/100?u=' + msg.sender)"
-                                class="avatar">
+                            <!-- Show Initials Avatar (or 'ES' for System) -->
+                            <img v-if="!msg.isMe" :src="msg.avatar || getInitialsAvatar(msg.sender)" class="avatar">
 
                             <div class="message-content">
-                                <!-- Show Name and Time for Everyone (System included!) -->
+                                <!-- Display Name and Time (System displays as 'EOD System') -->
                                 <div class="message-info">
                                     <span v-text="msg.sender === 'System' ? 'EOD System' : msg.sender"
                                         style="font-weight: 600;"></span>
@@ -1712,6 +1718,124 @@
                     currentDateTime: '',
                     eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
                     eodName: '',
+                    // 8 professional colors for the avatar backgrounds
+                    avatarColors: [
+                        '#1e40af', '#166534', '#b45309', '#6b21a8',
+                        '#9f1239', '#0f766e', '#5b21b6', '#3f6212'
+                    ],
+
+                    // Generates an instant Initials Avatar (First Name + Last Name)
+                    // getInitialsAvatar(name) {
+                    //     if (!name) return '';
+                    //     if (name === 'System') name = 'EOD System';
+
+                    //     // Clean the name (remove emails like @bank.com)
+                    //     let cleanName = name.split('@')[0].replace(/[._-]/g, ' ');
+                    //     let parts = cleanName.trim().split(' ').filter(p => p.length > 0);
+
+                    //     // Extract first letter of First and Last name
+                    //     let initials = parts[0].charAt(0).toUpperCase();
+                    //     if (parts.length > 1) {
+                    //         initials += parts[parts.length - 1].charAt(0).toUpperCase();
+                    //     } else if (cleanName.length > 1) {
+                    //         initials += cleanName.charAt(1).toUpperCase();
+                    //     }
+
+                    //     // Assign a consistent color based on the name
+                    //     let sum = 0;
+                    //     for (let i = 0; i < name.length; i++) {
+                    //         sum += name.charCodeAt(i);
+                    //     }
+                    //     let bgColor = this.avatarColors[sum % 8];
+
+                    //     // Create the SVG graphic
+                    //     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                    //         <rect width="100" height="100" fill="${bgColor}"/>
+                    //         <text x="50" y="67" font-family="Arial, sans-serif" font-size="46" font-weight="bold" fill="#ffffff" text-anchor="middle">${initials}</text>
+                    //     </svg>`;
+
+                    //     return `data:image/svg+xml;base64,${btoa(svg)}`;
+                    // },
+                    // Generates an instant, unbreakable Initials Avatar
+                    // Generates an instant, indestructible Initials Avatar
+                    // getInitialsAvatar(name) {
+                    //     // Safe fallback for null/undefined (during 5-second refreshes)
+                    //     if (!name || name === 'null' || name === 'undefined') {
+                    //         const placeholder = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e2e8f0"/></svg>`;
+                    //         // Unescape encodeURIComponent safely converts strings to Base64 without crashing on special characters
+                    //         return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(placeholder)))}`;
+                    //     }
+
+                    //     if (name === 'System') name = 'EOD System';
+
+                    //     // Clean the name and get initials safely
+                    //     let cleanName = String(name).split('@')[0].replace(/[._-]/g, ' ');
+                    //     let parts = cleanName.trim().split(' ').filter(p => p.length > 0);
+
+                    //     let initials = '?';
+                    //     if (parts.length > 0) {
+                    //         initials = parts[0].charAt(0).toUpperCase();
+                    //         if (parts.length > 1) {
+                    //             initials += parts[parts.length - 1].charAt(0).toUpperCase();
+                    //         } else if (cleanName.length > 1) {
+                    //             initials += cleanName.charAt(1).toUpperCase();
+                    //         }
+                    //     }
+
+                    //     // HARDCODED array so Vue background refreshes never lose context!
+                    //     const colors = ['#1e40af', '#166534', '#b45309', '#6b21a8', '#9f1239', '#0f766e', '#5b21b6', '#3f6212'];
+
+                    //     // Assign consistent color
+                    //     let sum = 0;
+                    //     for (let i = 0; i < cleanName.length; i++) {
+                    //         sum += cleanName.charCodeAt(i);
+                    //     }
+                    //     let bgColor = colors[sum % 8];
+
+                    //     // Create the SVG graphic
+                    //     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                    //         <rect width="100" height="100" fill="${bgColor}"/>
+                    //         <text x="50" y="67" font-family="Arial, sans-serif" font-size="46" font-weight="bold" fill="#ffffff" text-anchor="middle">${initials}</text>
+                    //     </svg>`;
+
+                    //     // Safely return Base64 image
+                    //     return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+                    // },
+                    getInitialsAvatar(name) {
+                        if (!name || name === 'null' || name === 'undefined') {
+                            const placeholder = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e2e8f0"/></svg>`;
+                            return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(placeholder)))}`;
+                        }
+
+                        if (name === 'System') name = 'EOD System';
+
+                        let cleanName = String(name).split('@')[0].replace(/[._-]/g, ' ');
+                        let parts = cleanName.trim().split(' ').filter(p => p.length > 0);
+
+                        let initials = '?';
+                        if (parts.length > 0) {
+                            initials = parts[0].charAt(0).toUpperCase();
+                            // FIXED: Only add a second letter if they actually have a Last Name! (Stops "AD")
+                            if (parts.length > 1) {
+                                initials += parts[parts.length - 1].charAt(0).toUpperCase();
+                            }
+                        }
+
+                        const colors = ['#1e40af', '#166534', '#b45309', '#6b21a8', '#9f1239', '#0f766e', '#5b21b6', '#3f6212'];
+
+                        let sum = 0;
+                        for (let i = 0; i < cleanName.length; i++) {
+                            sum += cleanName.charCodeAt(i);
+                        }
+                        let bgColor = colors[sum % 8];
+
+                        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                            <rect width="100" height="100" fill="${bgColor}"/>
+                            <text x="50" y="67" font-family="Arial, sans-serif" font-size="46" font-weight="bold" fill="#ffffff" text-anchor="middle">${initials}</text>
+                        </svg>`;
+
+                        return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+                    },
                     csrfToken: '',
                     showModal: false,
                     confirmModal: {
@@ -2092,6 +2216,48 @@
                     //         console.error("Toggle error", err);
                     //     }
                     // },
+                    // async toggleTask(task) {
+                    //     if (this.eodStatus === 'closed_today') return;
+                    //     if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
+
+                    //     const newValue = !task.done;
+                    //     try {
+                    //         const res = await fetch(`/api/method/sahayog.sahayog.api.eod.update_task_status?eod_name=${this.eodName}&task_row_name=${task.name}&done=${newValue}`);
+                    //         const data = await res.json();
+
+                    //         if (data.message && data.message.status === 'success') {
+                    //             task.done = newValue;
+                    //             if (newValue) {
+                    //                 const now = new Date();
+                    //                 task.completedBy = 'Me';
+                    //                 task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    //             } else {
+                    //                 task.completedBy = null;
+                    //                 task.completedAt = null;
+                    //             }
+
+                    //             if (data.message.eod_status === 'Completed') {
+                    //                 this.eodStatus = 'completed';
+                    //             } else {
+                    //                 this.eodStatus = 'started';
+                    //             }
+
+                    //             await this.fetchChatMessages();
+                    //         }
+                    //         // --- NEW PERMISSION ERROR MODAL LOGIC ---
+                    //         else if (data.message && data.message.status === 'error') {
+                    //             this.confirmModal.title = 'Access Denied';
+                    //             this.confirmModal.message = data.message.message; // e.g., 'Permission denied. You are not a member of the L1 team.'
+                    //             this.confirmModal.type = 'info'; // Shows the "!" icon and hides the Cancel button
+                    //             this.confirmModal.show = true;
+                    //         }
+                    //         // --- END NEW LOGIC ---
+
+                    //     } catch (err) {
+                    //         console.error("Toggle error", err);
+                    //     }
+                    // },
+
                     async toggleTask(task) {
                         if (this.eodStatus === 'closed_today') return;
                         if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
@@ -2104,12 +2270,17 @@
                             if (data.message && data.message.status === 'success') {
                                 task.done = newValue;
                                 if (newValue) {
+                                    // const now = new Date();
+                                    // // FIXED: Instantly use the actual logged-in user's name so the initials are correct!
+                                    // task.completed_by = window.frappe.session.user || 'Unknown';
+                                    // task.completed_on = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                     const now = new Date();
-                                    task.completedBy = 'Me';
-                                    task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    // FIXED: Instantly applies their Full Name from Frappe instead of their User ID!
+                                    task.completed_by = window.frappe.session.user_fullname || window.frappe.session.user || 'Unknown';
+                                    task.completed_on = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                 } else {
-                                    task.completedBy = null;
-                                    task.completedAt = null;
+                                    task.completed_by = null;
+                                    task.completed_on = null;
                                 }
 
                                 if (data.message.eod_status === 'Completed') {
@@ -2120,19 +2291,19 @@
 
                                 await this.fetchChatMessages();
                             }
-                            // --- NEW PERMISSION ERROR MODAL LOGIC ---
+                            // FIXED: Restored the Access Denied modal logic!
                             else if (data.message && data.message.status === 'error') {
                                 this.confirmModal.title = 'Access Denied';
-                                this.confirmModal.message = data.message.message; // e.g., 'Permission denied. You are not a member of the L1 team.'
-                                this.confirmModal.type = 'info'; // Shows the "!" icon and hides the Cancel button
+                                this.confirmModal.message = data.message.message;
+                                this.confirmModal.type = 'info';
                                 this.confirmModal.show = true;
                             }
-                            // --- END NEW LOGIC ---
-
                         } catch (err) {
                             console.error("Toggle error", err);
                         }
                     },
+
+
                     // resetForNextDay() {
                     //     location.reload();
                     // },
