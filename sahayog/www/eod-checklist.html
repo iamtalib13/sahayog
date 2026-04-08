@@ -2484,20 +2484,31 @@
                                 body: formData,
                                 headers: { 'X-Frappe-CSRF-Token': this.getCsrfToken() }
                             });
+
                             const data = await res.json();
+
                             if (data.message && data.message.status === 'success') {
+                                // Success! Close modal and show success alert
                                 this.manageModal.show = false;
-                                this.manageModal.newUser = '';
+                                this.manageModal.newUserSearch = '';
                                 this.manageModal.newTaskText = '';
 
-                                // --- NEW BEAUTIFUL SUCCESS MODAL ---
                                 this.confirmModal.title = 'Settings Saved';
-                                this.confirmModal.message = "Your team members and checklist tasks have been updated successfully. Task sequence changes will apply to tomorrow's EOD.";
+                                this.confirmModal.message = "Your team members and checklist tasks have been updated successfully. Changes will apply to tomorrow's EOD.";
                                 this.confirmModal.type = 'success';
                                 this.confirmModal.show = true;
-                                // -----------------------------------
+
+                            } else if (data.message && data.message.status === 'error') {
+                                // Backend rejected it! Show the error cleanly.
+                                this.confirmModal.title = 'Save Failed';
+                                this.confirmModal.message = data.message.message || "An unknown error occurred while saving.";
+                                this.confirmModal.type = 'info'; // Shows the "!" icon
+                                this.confirmModal.show = true;
                             }
-                        } catch (e) { console.error(e); }
+                        } catch (e) {
+                            console.error(e);
+                            alert("A network error occurred while trying to save.");
+                        }
                     },
 
 
