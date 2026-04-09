@@ -18,24 +18,25 @@ frappe.query_reports["Branch Stock"] = {
       frappe.db
         .get_value("Employee", { user_id: frappe.session.user }, [
           "designation",
-          "branch",
+          "sol_id",
         ])
         .then((r) => {
           const emp = r.message;
           if (emp) {
             const is_manager =
-              emp.designation && emp.designation.toLowerCase().includes("manager");
-            
-            if (emp.branch) {
-              report.set_filter_value("warehouse", emp.branch);
+              emp.designation &&
+              emp.designation.toLowerCase().includes("manager");
+
+            if (emp.sol_id) {
+              report.set_filter_value("warehouse", emp.sol_id);
             }
 
-            if (!is_manager && emp.branch) {
+            if (!is_manager && emp.sol_id) {
               const filter = report.get_filter("warehouse");
               if (filter) {
                 filter.df.get_query = () => {
                   return {
-                    filters: { name: emp.branch },
+                    filters: { name: emp.sol_id },
                   };
                 };
                 filter.refresh();
@@ -59,7 +60,7 @@ frappe.query_reports["Branch Stock"] = {
 
     function bulk_action(type) {
       const item_codes = Object.keys(
-        frappe.query_reports["Branch Stock"].selected_items
+        frappe.query_reports["Branch Stock"].selected_items,
       );
 
       if (!item_codes.length) {
@@ -90,7 +91,7 @@ frappe.query_reports["Branch Stock"] = {
               filters: { custom_warehouse_category: ["like", "Store%"] },
             }),
           },
-          { fieldtype: "Section Break" }
+          { fieldtype: "Section Break" },
         );
       } else if (type === "emmr") {
         fields.push(
@@ -112,7 +113,7 @@ frappe.query_reports["Branch Stock"] = {
               filters: { custom_warehouse_category: ["like", "Store%"] },
             }),
           },
-          { fieldtype: "Section Break" }
+          { fieldtype: "Section Break" },
         );
       }
 
@@ -238,13 +239,13 @@ frappe.query_reports["Branch Stock"] = {
                 frappe.set_route(
                   "Form",
                   "Employee Material Request",
-                  "new-employee-material-request-1"
+                  "new-employee-material-request-1",
                 );
               });
           }
         },
         "Enter Details",
-        "Create"
+        "Create",
       );
     }
   },
