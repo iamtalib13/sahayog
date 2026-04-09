@@ -301,14 +301,24 @@ def update_task_status(eod_name, task_row_name, done):
             prev_status = row.status
             # --- NEW SECURITY RESTRICTION ---
             # If a user is trying to uncheck (done is False) a completed task, verify they are the owner
+            # if not done and prev_status == "Completed":
+            #     if row.completed_by and row.completed_by != frappe.session.user:
+            #         # Returns an error which triggers your Vue.js Access Denied Modal!
+            #         return {
+            #             "status": "error", 
+            #             "message": "Access Denied: Only the team member who checked this task is allowed to uncheck it."
+            #         }
+            # --------------------------------
+
+            # --- SECURITY RESTRICTION WITH ADMIN OVERRIDE ---
+            # If trying to uncheck, verify they are the owner OR the Administrator
             if not done and prev_status == "Completed":
-                if row.completed_by and row.completed_by != frappe.session.user:
-                    # Returns an error which triggers your Vue.js Access Denied Modal!
+                if row.completed_by and row.completed_by != frappe.session.user and frappe.session.user != "Administrator":
                     return {
                         "status": "error", 
                         "message": "Access Denied: Only the team member who checked this task is allowed to uncheck it."
                     }
-            # --------------------------------
+            # ------------------------------------------------
             row.status = "Completed" if done else "Pending"
             
             if done and prev_status != "Completed":
