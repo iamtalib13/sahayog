@@ -47,6 +47,8 @@ website_route_rules = [
 
 # include js in doctype views
 doctype_js = {
+    "Item": "public/js/item_custom.js",
+    "Serial No": "public/js/serial_no_custom.js",
     "Purchase Order": "public/js/purchase_order.js",
     "Supplier Quotation": "public/js/supplier_quotation.js",
     "Request for Quotation": "public/js/request_for_quotation.js",
