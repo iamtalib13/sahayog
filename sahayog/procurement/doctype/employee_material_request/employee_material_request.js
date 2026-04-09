@@ -1004,14 +1004,16 @@ frappe.ui.form.on("Employee Material Request", {
     if (action === "self approved" || action === "self_approved") {
       frappe.dom.unfreeze();
 
-      // Restrict to Admin / Store Manager
+      // Restrict to Admin / Store Manager OR Owner
+      const isOwner = frappe.session.user === frm.doc.owner;
       if (
         !frappe.user.has_role("Administrator") &&
-        !frappe.user.has_role("Store Manager")
+        !frappe.user.has_role("Store Manager") &&
+        !isOwner
       ) {
         frappe.msgprint({
           title: "Not Allowed",
-          message: "Only Administrator or Store Manager can use Self Approved.",
+          message: "Only Owner, Administrator or Store Manager can use Self Approved.",
           indicator: "red",
         });
         frappe.validated = false;

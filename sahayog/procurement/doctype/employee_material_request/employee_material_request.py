@@ -305,9 +305,13 @@ def get_creator_employee(user_id):
 
 @frappe.whitelist()
 def self_approve_request(docname):
-    if not (frappe.session.user == "Administrator" or ("Store Manager" in frappe.get_roles())):
-        frappe.throw("Only Administrator or Store Manager can perform Self Approved.", frappe.PermissionError)
     doc = frappe.get_doc("Employee Material Request", docname)
+    is_owner = (frappe.session.user == doc.owner)
+    is_admin_or_store_manager = (frappe.session.user == "Administrator" or ("Store Manager" in frappe.get_roles()))
+    
+    if not (is_owner or is_admin_or_store_manager):
+        frappe.throw("Only Owner, Administrator or Store Manager can perform Self Approved.", frappe.PermissionError)
+    
     doc.reporting_person_status = "Skip"
     doc.ho_officer_status = "Skip"
     doc.status = "Self Approved"; doc.docstatus = 1
