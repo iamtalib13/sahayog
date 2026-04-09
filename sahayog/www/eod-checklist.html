@@ -1326,7 +1326,9 @@
     <div v-if="hasAccess === true" class="app-container">
         <div class="app-container">
             <!-- Sidebar: Checklist -->
-            <aside class="sidebar">
+            <!-- <aside class="sidebar"> -->
+            <!-- Sidebar: Checklist (Expands for Managers when EOD is closed) -->
+            <aside class="sidebar" :style="{ flex: (eodStatus === 'closed_today' && isManager) ? 1.5 : 1 }">
                 <div class="header">
                     <div class="title-group">
                         <div class="app-icon">S</div>
