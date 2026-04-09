@@ -3,8 +3,7 @@ frappe.query_reports["Case History"] = {
     {
       fieldname: "case_id",
       label: __("Case ID"),
-      fieldtype: "Link",
-      options: "Disciplinary Case",
+      fieldtype: "Data",
     },
 
     {

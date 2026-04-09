@@ -20,22 +20,28 @@ def execute(filters=None):
 
     case_id = filters.get("case_id")
 
-    # Validate case exists
-    if not frappe.db.exists("Disciplinary Case", case_id):
-        frappe.msgprint(_("Case ID {0} does not exist").format(case_id))
-        return [], [], None
+    # Validate case exists (either Disciplinary Case or Unauthorized Absence)
+    is_ua_case = case_id.startswith("UA") if case_id else False
+    
+    if is_ua_case:
+        if not frappe.db.exists("Unauthorized Absence", case_id):
+            frappe.msgprint(_("Unauthorized Absence Case ID {0} does not exist").format(case_id))
+            return [], [], None
+        case_doc = frappe.get_doc("Unauthorized Absence", case_id)
+    else:
+        if not frappe.db.exists("Disciplinary Case", case_id):
+            frappe.msgprint(_("Disciplinary Case ID {0} does not exist").format(case_id))
+            return [], [], None
+        case_doc = frappe.get_doc("Disciplinary Case", case_id)
 
     # Get columns
     columns = get_columns(filters)
 
-    # Get case details
-    case_doc = frappe.get_doc("Disciplinary Case", case_id)
-
     # Generate message/header
     message = get_case_details_message(case_doc)
 
-    # Get report data (includes Disciplinary Case + related docs)
-    data = get_report_data(filters, case_doc)
+    # Get report data
+    data = get_report_data(filters, case_doc, is_ua_case)
 
     # Sort data
     sort_data(data, filters)
@@ -178,21 +184,27 @@ def get_case_details_message(case_doc):
     return message
 
 
-def get_report_data(filters, case_doc):
+def get_report_data(filters, case_doc, is_ua_case=False):
     """Fetch and process report data"""
     case_id = filters.get("case_id")
 
-    # ✅ IMPORTANT: Add Disciplinary Case as first doctype
-    related_doctypes = [
-        "Disciplinary Case", # Parent/Main document
-        "Suspension Process", 
-        "Response to SCN",
-        "Unauthorized Absence",
-        "Reminder Of Unauthorized Absence",
-        "Domestic Enquiry",
-        "Enquiry Reminder",
-        "Case Closure",
-    ]
+    if is_ua_case:
+        related_doctypes = [
+            "Unauthorized Absence",
+            "Reminder Of Unauthorized Absence",
+            "Case Closure",
+        ]
+    else:
+        related_doctypes = [
+            "Disciplinary Case",
+            "Suspension Process",
+            "Response to SCN",
+            "Unauthorized Absence",
+            "Reminder Of Unauthorized Absence",
+            "Domestic Enquiry",
+            "Enquiry Reminder",
+            "Case Closure",
+        ]
 
     # Filter by specific doctype if selected
     if filters.get("doctype_filter") and filters.get("doctype_filter") != "All":
@@ -208,8 +220,8 @@ def get_report_data(filters, case_doc):
 
         table_cols = frappe.db.get_table_columns(doctype)
 
-        # ✅ For Disciplinary Case, use name field instead of case_id
-        if doctype == "Disciplinary Case":
+        # For the case record itself, use name instead of case_id
+        if doctype == case_doc.doctype:
             where_clause = "WHERE name = %(case_id)s"
         else:
             # Skip if no case_id field in child doctypes
@@ -332,17 +344,18 @@ def get_report_data(filters, case_doc):
 def sort_data(data, filters):
     """Sort data based on filter selection"""
     sort_by_field = "creation" if filters.get("sort_by") == "Creation Date" else "modified"
+    case_id = filters.get("case_id")
 
-    # ✅ Keep Disciplinary Case always at top, then sort others
-    disciplinary_case = [row for row in data if row.get("doctype_name") == "Disciplinary Case"]
-    other_docs = [row for row in data if row.get("doctype_name") != "Disciplinary Case"]
+    # Keep the main case record always at top, then sort others
+    main_case = [row for row in data if row.get("name") == case_id]
+    other_docs = [row for row in data if row.get("name") != case_id]
     
     # Sort other documents
     other_docs.sort(key=lambda x: (x.get(sort_by_field) is None, x.get(sort_by_field) or ""))
     
-    # Combine: Disciplinary Case first, then others
+    # Combine: Main Case first, then others
     data.clear()
-    data.extend(disciplinary_case)
+    data.extend(main_case)
     data.extend(other_docs)
     
     # Re-number serial numbers

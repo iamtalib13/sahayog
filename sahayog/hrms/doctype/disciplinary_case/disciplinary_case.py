@@ -67,16 +67,21 @@ class DisciplinaryCase(Document):
 
 @frappe.whitelist()
 def get_case_stages(case_id):
-    all_stages = [
-        "Disciplinary Case",
-        "Suspension Process",
-        "Response to SCN",
-        "Unauthorized Absence",
-        "Reminder Of Unauthorized Absence",
-        "Domestic Enquiry",
-        "Enquiry Reminder",
-        "Case Closure",
-    ]
+    if case_id and case_id.startswith("UA"):
+        all_stages = [
+            "Unauthorized Absence",
+            "Reminder Of Unauthorized Absence",
+            "Case Closure",
+        ]
+    else:
+        all_stages = [
+            "Disciplinary Case",
+            "Suspension Process",
+            "Response to SCN",
+            "Domestic Enquiry",
+            "Enquiry Reminder",
+            "Case Closure",
+        ]
 
     timeline = []
 
@@ -143,16 +148,21 @@ def get_case_stage_counts(case_id):
     if not case_id:
         return {}
 
-    dams_doctypes = [
-        "Disciplinary Case",
-        "Suspension Process",
-        "Response to SCN",
-        "Unauthorized Absence",
-        "Reminder Of Unauthorized Absence",
-        "Domestic Enquiry",
-        "Enquiry Reminder",
-        "Case Closure",
-    ]
+    if case_id and case_id.startswith("UA"):
+        dams_doctypes = [
+            "Unauthorized Absence",
+            "Reminder Of Unauthorized Absence",
+            "Case Closure",
+        ]
+    else:
+        dams_doctypes = [
+            "Disciplinary Case",
+            "Suspension Process",
+            "Response to SCN",
+            "Domestic Enquiry",
+            "Enquiry Reminder",
+            "Case Closure",
+        ]
 
     result = {}
 
