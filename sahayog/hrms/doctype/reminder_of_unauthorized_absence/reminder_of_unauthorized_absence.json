@@ -5,35 +5,37 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "reminder_of_unauthroized_absence_details_tab",
+  "date_details_section",
   "date_of_1st_letter",
   "level",
-  "remarks",
   "column_break_yufo",
   "date_of_reminder_letter",
   "amount_of_fraud",
   "hr_employee_id",
-  "document_upload",
-  "previous_record",
   "case_details_section",
   "case_id",
   "employee_id",
   "employee_name",
-  "branch_id",
-  "zone_name",
-  "issue_in_details",
-  "issue_occurrence_date",
-  "column_break_zqwy",
   "designation",
+  "branch_id",
   "branch_name",
-  "case_type",
-  "category",
+  "zone_name",
+  "column_break_zqwy",
+  "issue_occurrence_date",
   "issue_reported_to_hr",
+  "issue_in_details",
   "status",
-  "amended_from"
+  "amended_from",
+  "response_tab",
+  "response_of_reminder",
+  "status_of_response",
+  "remarks",
+  "document_upload"
  ],
  "fields": [
   {
-   "fetch_from": "previous_record.date_of_1st_letter",
+   "fetch_from": "case_id.date_of_1st_letter",
    "fieldname": "date_of_1st_letter",
    "fieldtype": "Date",
    "label": "Date of Unauthorized Absence letter",
@@ -58,6 +60,7 @@
    "read_only": 1
   },
   {
+   "fetch_from": "case_id.hr_employee_id",
    "fieldname": "hr_employee_id",
    "fieldtype": "Data",
    "label": "HR Employee ID",
@@ -82,7 +85,8 @@
    "fieldname": "case_id",
    "fieldtype": "Link",
    "label": "Case ID",
-   "options": "Disciplinary Case",
+   "options": "Unauthorized Absence",
+   "search_index": 1,
    "set_only_once": 1
   },
   {
@@ -118,13 +122,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.case_type",
-   "fieldname": "case_type",
-   "fieldtype": "Data",
-   "label": "Case Type",
-   "read_only": 1
-  },
-  {
    "fetch_from": "case_id.branch_id",
    "fieldname": "branch_id",
    "fieldtype": "Data",
@@ -132,28 +129,21 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.category",
-   "fieldname": "category",
-   "fieldtype": "Data",
-   "label": "Category",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "case_id.zone",
+   "fetch_from": "case_id.zone_name",
    "fieldname": "zone_name",
    "fieldtype": "Data",
    "label": "Zone Name",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.issue_report_to_hr",
+   "fetch_from": "case_id.issue_reported_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Date",
    "label": "Date of issue Reported to hr",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.description",
+   "fetch_from": "case_id.issue_in_details",
    "fieldname": "issue_in_details",
    "fieldtype": "Small Text",
    "label": "Issue in Details",
@@ -190,11 +180,31 @@
    "search_index": 1
   },
   {
-   "fieldname": "previous_record",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Previous Record",
-   "options": "Unauthorized Absence"
+   "fieldname": "reminder_of_unauthroized_absence_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Reminder Of Unauthroized Absence Details"
+  },
+  {
+   "fieldname": "response_tab",
+   "fieldtype": "Tab Break",
+   "label": "Response"
+  },
+  {
+   "fieldname": "date_details_section",
+   "fieldtype": "Section Break",
+   "label": "Date Details"
+  },
+  {
+   "fieldname": "response_of_reminder",
+   "fieldtype": "Select",
+   "label": "Response of Reminder",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "status_of_response",
+   "fieldtype": "Select",
+   "label": "Status of Response",
+   "options": "\nSatisfactory\nNot Satisfactory"
   }
  ],
  "grid_page_length": 50,
@@ -207,7 +217,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-01-30 11:59:33.455791",
+ "modified": "2026-04-09 12:45:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Reminder Of Unauthorized Absence",
