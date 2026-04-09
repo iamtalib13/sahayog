@@ -12,17 +12,23 @@
   "case_details_section",
   "case_id",
   "employee_id",
+  "employee_name",
+  "designation",
+  "branch_id",
+  "branch_name",
+  "region",
+  "zone_name",
+  "column_break_soxc",
   "issue_occurrence_date",
-  "issue_in_details",
+  "issue_reported_to_hr",
+  "amount_of_fraud",
   "status",
   "hr_employee_id",
   "column_break_mqjo",
-  "employee_details",
-  "amount_of_fraud",
-  "issue_reported_to_hr",
   "amended_from",
-  "remarks",
-  "document_upload"
+  "issue_in_details",
+  "document_upload",
+  "remarks"
  ],
  "fields": [
   {
@@ -134,11 +140,49 @@
    "search_index": 1
   },
   {
-   "fetch_from": "case_id.employee_name",
-   "fieldname": "employee_details",
-   "fieldtype": "HTML",
-   "label": "Employee Details",
+   "fetch_from": "employee_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
    "read_only": 1
+  },
+  {
+   "fetch_from": "employee_id.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee_id.sol_id",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee_id.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee_id.custom_region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
+  },
+  {
+   "fetch_from": "employee_id.custom_zone",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_soxc",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -156,7 +200,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-03-06 13:15:10.630349",
+ "modified": "2026-04-09 11:03:36.863642",
  "modified_by": "9517@sahayog.com",
  "module": "HRMS",
  "name": "Unauthorized Absence",
