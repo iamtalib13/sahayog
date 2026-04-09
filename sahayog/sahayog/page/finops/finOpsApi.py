@@ -284,10 +284,10 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
     try:
         finacle_settings = frappe.get_single("Finacle Settings")
         # mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
-        # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+        mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
         # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
 
-        mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+        # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
         loan_sol_id = loan_account_id[:4] 
         oper_sol_id = operative_account_id[:4]
@@ -471,7 +471,11 @@ def create_finacle_retail_customer(
     try:
         finacle_settings = frappe.get_single("Finacle Settings")
         # mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
-        mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+        # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+        # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
+        mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+
+
 
         # "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
@@ -781,6 +785,9 @@ def create_finacle_td_account(customer_id, scheme_code, branch_id, deposit_amoun
         elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
             mig_url = finacle_settings.finacle_url
         else:
+             # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+             # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
+             # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
             mig_url= 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
             frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
@@ -1005,6 +1012,7 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
         elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
             mig_url = finacle_settings.finacle_url
         else:
+            # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
             mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
             # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
             frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
