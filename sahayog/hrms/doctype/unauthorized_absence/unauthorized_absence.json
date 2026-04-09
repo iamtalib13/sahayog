@@ -171,7 +171,8 @@
    "fetch_from": "employee_id.custom_region",
    "fieldname": "region",
    "fieldtype": "Data",
-   "label": "Region"
+   "label": "Region",
+   "read_only": 1
   },
   {
    "fetch_from": "employee_id.custom_zone",
@@ -200,7 +201,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-04-09 11:03:36.863642",
+ "modified": "2026-04-09 11:34:03.548997",
  "modified_by": "9517@sahayog.com",
  "module": "HRMS",
  "name": "Unauthorized Absence",
