@@ -65,21 +65,31 @@
     </div>
 
     <!-- Profile Modal -->
-    <div class="profile-modal-overlay" v-if="showProfileModal" @click.self="showProfileModal = false">
+    <div
+      class="profile-modal-overlay"
+      v-if="showProfileModal"
+      @click.self="showProfileModal = false"
+    >
       <div class="profile-modal">
         <div class="profile-modal-header">
           <h3>My Profile</h3>
-          <button class="profile-close" @click="showProfileModal = false">&times;</button>
+          <button class="profile-close" @click="showProfileModal = false">
+            &times;
+          </button>
         </div>
         <div class="profile-modal-body">
           <div v-if="profileData" class="profile-details">
             <div class="profile-row">
               <span class="profile-label">First Name</span>
-              <span class="profile-value">[[ profileData.first_name || '-' ]]</span>
+              <span class="profile-value"
+                >[[ profileData.first_name || '-' ]]</span
+              >
             </div>
             <div class="profile-row">
               <span class="profile-label">Date of Joining</span>
-              <span class="profile-value">[[ profileData.date_of_joining || '-' ]]</span>
+              <span class="profile-value"
+                >[[ profileData.date_of_joining || '-' ]]</span
+              >
             </div>
             <div class="profile-row">
               <span class="profile-label">Branch</span>
@@ -87,23 +97,33 @@
             </div>
             <div class="profile-row">
               <span class="profile-label">Region</span>
-              <span class="profile-value">[[ profileData.custom_region || '-' ]]</span>
+              <span class="profile-value"
+                >[[ profileData.custom_region || '-' ]]</span
+              >
             </div>
             <div class="profile-row">
               <span class="profile-label">Zone</span>
-              <span class="profile-value">[[ profileData.custom_zone || '-' ]]</span>
+              <span class="profile-value"
+                >[[ profileData.custom_zone || '-' ]]</span
+              >
             </div>
             <div class="profile-row">
               <span class="profile-label">Designation</span>
-              <span class="profile-value">[[ profileData.designation || '-' ]]</span>
+              <span class="profile-value"
+                >[[ profileData.designation || '-' ]]</span
+              >
             </div>
             <div class="profile-row">
               <span class="profile-label">Department</span>
-              <span class="profile-value">[[ profileData.department || '-' ]]</span>
+              <span class="profile-value"
+                >[[ profileData.department || '-' ]]</span
+              >
             </div>
             <div class="profile-row">
               <span class="profile-label">Reports To</span>
-              <span class="profile-value">[[ profileData.reports_to || '-' ]]</span>
+              <span class="profile-value"
+                >[[ profileData.reports_to || '-' ]]</span
+              >
             </div>
           </div>
           <div v-else class="profile-loading">Loading profile...</div>
@@ -306,16 +326,20 @@
             <div class="chart-header">
               <h3>Request Distribution by Status</h3>
             </div>
-            
+
             <div class="custom-bar-chart">
-              <div v-for="bar in getChartBars" :key="bar.label" class="bar-group">
+              <div
+                v-for="bar in getChartBars"
+                :key="bar.label"
+                class="bar-group"
+              >
                 <div class="bar-info">
                   <span class="bar-label">[[ bar.label ]]</span>
                   <span class="bar-count">[[ bar.value ]]</span>
                 </div>
                 <div class="bar-track">
-                  <div 
-                    class="bar-fill" 
+                  <div
+                    class="bar-fill"
                     :style="{ width: bar.percentage + '%', backgroundColor: bar.color }"
                   ></div>
                 </div>
@@ -1059,7 +1083,7 @@
     font-weight: 600;
     color: var(--text-main);
   }
-  
+
   /* CUSTOM BAR CHART */
   .custom-bar-chart {
     display: flex;
@@ -1560,14 +1584,46 @@
           emptyMessage: "Select a report from the cards below.",
           isReportSection: true,
           reportCards: [
-            { label: "My Material Requests", icon: "fas fa-file-lines", route: "/app/query-report/My%20Material%20Requests" },
-            { label: "Store Asset Master", icon: "fas fa-file-lines", route: "/app/query-report/Store%20Asset%20Master" },
-            { label: "Store Material Request", icon: "fas fa-file-lines", route: "/app/query-report/Store%20material%20request" },
-            { label: "My Pending Approvals", icon: "fas fa-file-lines", route: "/app/query-report/My%20Pending%20Approvals" },
-            { label: "Asset Transfer", icon: "fas fa-file-lines", route: "/app/query-report/Asset%20Transfer" },
-            { label: "Consumed Items", icon: "fas fa-file-lines", route: "/app/query-report/Consumed%20Items" },
-            { label: "Branch Stock", icon: "fas fa-file-lines", route: "/app/query-report/Branch%20Stock" },
-            { label: "My Assets", icon: "fas fa-file-lines", route: "/app/query-report/My%20Assets" },
+            {
+              label: "My Material Requests",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/My%20Material%20Requests",
+            },
+            {
+              label: "Store Asset Master",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/Store%20Asset%20Master",
+            },
+            {
+              label: "Store Material Request",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/Store%20material%20request",
+            },
+            {
+              label: "My Pending Approvals",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/My%20Pending%20Approvals",
+            },
+            {
+              label: "Asset Transfer",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/Asset%20Transfer",
+            },
+            {
+              label: "Consumed Items",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/Consumed%20Items",
+            },
+            {
+              label: "Branch Stock",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/Branch%20Stock",
+            },
+            {
+              label: "My Assets",
+              icon: "fas fa-file-lines",
+              route: "/app/query-report/My%20Assets",
+            },
           ],
         },
       },
@@ -1608,20 +1664,29 @@
 
       get getChartBars() {
         const stats = this.requestStats;
-        const total = Object.values(stats).reduce((acc, val) => acc + val, 0) || 1;
+        const total =
+          Object.values(stats).reduce((acc, val) => acc + val, 0) || 1;
         const items = [
           { label: "Draft", value: stats.draft, color: "#64748b" },
-          { label: "Pending Reporting", value: stats.pendingReporting, color: "#d97706" },
-          { label: "Pending HO Approval", value: stats.pendingHO, color: "#dc2626" },
+          {
+            label: "Pending Reporting",
+            value: stats.pendingReporting,
+            color: "#d97706",
+          },
+          {
+            label: "Pending HO Approval",
+            value: stats.pendingHO,
+            color: "#dc2626",
+          },
           { label: "Approved", value: stats.approved, color: "#16a34a" },
           { label: "Completed", value: stats.completed, color: "#15803d" },
           { label: "Rejected", value: stats.rejected, color: "#be123c" },
-          { label: "Cancelled", value: stats.cancelled, color: "#94a3b8" }
+          { label: "Cancelled", value: stats.cancelled, color: "#94a3b8" },
         ];
 
-        return items.map(i => ({
+        return items.map((i) => ({
           ...i,
-          percentage: (i.value / total) * 100
+          percentage: (i.value / total) * 100,
         }));
       },
 
@@ -1651,7 +1716,9 @@
             },
           });
           this.sidebar.header.subtitle =
-            (res.message && res.message.full_name) || frappe.session.user || "Admin";
+            (res.message && res.message.full_name) ||
+            frappe.session.user ||
+            "Admin";
         } catch (e) {
           this.sidebar.header.subtitle = frappe.session.user || "Admin";
         }
@@ -1757,8 +1824,9 @@
             pendingReporting: requests.filter(
               (r) => r.status === "Pending Reporting Person",
             ).length,
-            pendingHO: requests.filter((r) => r.status === "Pending HO Approval")
-              .length,
+            pendingHO: requests.filter(
+              (r) => r.status === "Pending HO Approval",
+            ).length,
             approved: requests.filter((r) => r.status === "Approved").length,
             completed: requests.filter((r) => r.status === "Completed").length,
             rejected: requests.filter((r) => r.status === "Rejected").length,
@@ -1866,8 +1934,15 @@
 
       getFieldValue(row, key) {
         if (!row || !key) return "";
-        const value = row[key];
+        let value = row[key];
+
         if (value === null || value === undefined || value === "") return "-";
+
+        // 🔥 Handle datetime → date only
+        if (key === "creation" || key === "transaction_date") {
+          return String(value).split(" ")[0]; // YYYY-MM-DD
+        }
+
         return value;
       },
 
