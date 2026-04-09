@@ -777,6 +777,12 @@
             filter: brightness(1.1);
         }
 
+        .modal-close-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+            border: 1px solid #707991;
+        }
+
         .modal-footer {
             display: flex;
             gap: 12px;
@@ -1547,9 +1553,27 @@
                 Great job! End of Day process for <br>
                 <strong v-text="currentDateFormatted"></strong> has been successfully completed and logged.
             </div>
-            <div class="modal-footer">
+            <!-- <div class="modal-footer">
                 <button class="modal-close-btn" @click="showModal = false">View EOD</button>
                 <button class="modal-next-btn" @click="resetForNextDay">Next Day EOD</button>
+            </div> -->
+
+            <div class="modal-footer">
+                <!-- Closes the modal to let them view the closed workspace -->
+                <button class="modal-close-btn" @click="showModal = false">View Workspace</button>
+
+                <!-- The new sleek Download Report button inside the Success Modal -->
+                <button class="modal-next-btn"
+                    style="display: flex; align-items: center; justify-content: center; gap: 8px;"
+                    @click="downloadAuditReport(); showModal = false;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Report
+                </button>
             </div>
         </div>
     </div>
