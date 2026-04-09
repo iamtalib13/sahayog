@@ -1329,6 +1329,12 @@
                             End
                         </button>
 
+                        <!-- NEW: Download Report Button (Only shows when completed or closed) -->
+                        <button v-if="eodStatus === 'completed' || eodStatus === 'closed_today'" class="capsule-btn"
+                            style="background-color: #1a1d21; color: white;" @click="downloadAuditReport">
+                            📄 Download Report
+                        </button>
+
                         <button v-if="eodStatus === 'closed_today'" class="capsule-btn btn-start"
                             @click="resetForNextDay">
                             Next Day EOD
@@ -1871,6 +1877,14 @@
                             return timePart.split('.')[0]; // removes milliseconds, leaves "14:30:45"
                         }
                         return timeStr; // Returns as-is if already formatted
+                    },
+                    // Triggers the backend PDF generator and downloads it instantly
+                    downloadAuditReport() {
+                        if (!this.eodName) return;
+
+                        // Using window.open on a Frappe API endpoint returning a PDF triggers a seamless file download
+                        const pdfUrl = `/api/method/sahayog.sahayog.api.eod.download_eod_report?eod_name=${encodeURIComponent(this.eodName)}`;
+                        window.open(pdfUrl, '_blank');
                     },
                     csrfToken: '',
                     showModal: false,

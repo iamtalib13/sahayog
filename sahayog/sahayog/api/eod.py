@@ -4,6 +4,8 @@ from frappe import _
 from frappe.utils import nowdate, now_datetime, format_time, format_datetime, get_files_path
 from frappe.utils.file_manager import save_file
 import json
+from frappe.utils.pdf import get_pdf
+from frappe.utils import format_time, format_date
 
 def get_user_fullname(user):
     """Helper to get user's full name."""
@@ -629,3 +631,113 @@ def save_manager_data():
         # so the Manager doesn't stay an Admin for other requests!
         frappe.set_user(original_user)
         frappe.flags.ignore_permissions = False
+
+
+
+@frappe.whitelist()
+def download_eod_report(eod_name):
+    """Generates and downloads a complete Audit PDF Report for the EOD."""
+    if not eod_name:
+        return
+        
+    eod = frappe.get_doc("Bank EOD", eod_name)
+    sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    
+    chat_messages = frappe.get_all("EOD Chat Message", 
+        filters={"parent": eod_name}, 
+        fields=["sender", "text", "time", "is_system", "attachment"],
+        order_by="time asc"
+    )
+
+    # Build a clean HTML template for the PDF
+    html = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #1a1d21; }}
+            h1 {{ text-align: center; color: #1a1d21; margin-bottom: 20px; }}
+            h2 {{ color: #00b09b; border-bottom: 1px solid #eef1f4; padding-bottom: 5px; margin-top: 30px; }}
+            table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+            th, td {{ border: 1px solid #d1d5db; padding: 10px; text-align: left; }}
+            th {{ background-color: #f8f9fb; font-weight: bold; font-size: 11px; text-transform: uppercase; }}
+            .status-Completed {{ color: #16a34a; font-weight: bold; }}
+            .status-Pending {{ color: #ea580c; font-weight: bold; }}
+            .chat-msg {{ margin-bottom: 10px; padding: 12px; background: #f8f9fb; border-radius: 8px; border: 1px solid #eef1f4; }}
+            .chat-meta {{ font-size: 11px; color: #707991; margin-bottom: 4px; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <h1>End of Day (EOD) Audit Report</h1>
+        <table>
+            <tr>
+                <th>EOD Reference</th><td>{eod.name}</td>
+                <th>Date</th><td>{format_date(eod.date)}</td>
+            </tr>
+            <tr>
+                <th>Final Status</th><td>{eod.status}</td>
+                <th>Project/Branch</th><td>{getattr(eod, 'subtitle', 'N/A')}</td>
+            </tr>
+        </table>
+
+        <h2>1. Checklist Execution Log</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Seq</th>
+                    <th>Team</th>
+                    <th>Task Description</th>
+                    <th>Status</th>
+                    <th>Completed By</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    
+    # Inject Checklist Rows
+    for t in sorted_tasks:
+        c_by = get_user_fullname(t.completed_by) if t.completed_by else ""
+        c_time = format_time(t.completed_on, "HH:mm:ss") if t.completed_on else ""
+        html += f"""
+                <tr>
+                    <td>{t.sequence or ''}</td>
+                    <td>{t.team or ''}</td>
+                    <td>{t.task or ''}</td>
+                    <td class="status-{t.status}">{t.status}</td>
+                    <td>{c_by}</td>
+                    <td>{c_time}</td>
+                </tr>
+        """
+        
+    html += """
+            </tbody>
+        </table>
+        
+        <h2>2. System & Group Chat Transcript</h2>
+    """
+    
+    # Inject Chat Messages
+    if not chat_messages:
+        html += "<p>No chat messages or system logs recorded.</p>"
+    else:
+        for msg in chat_messages:
+            sender_name = "EOD System" if msg.is_system else get_user_fullname(msg.sender)
+            msg_time = format_time(msg.time, "HH:mm:ss") if msg.time else ""
+            text = msg.text or (f"[Attachment: {msg.attachment}]" if msg.attachment else "")
+            
+            html += f"""
+            <div class="chat-msg">
+                <div class="chat-meta">{sender_name} &bull; {msg_time}</div>
+                <div>{text}</div>
+            </div>
+            """
+            
+    html += """
+    </body>
+    </html>
+    """
+    
+    # Tell Frappe to return a downloadable PDF file
+    frappe.local.response.filename = f"EOD_Audit_{eod_name}.pdf"
+    frappe.local.response.filecontent = get_pdf(html)
+    frappe.local.response.type = "pdf"
