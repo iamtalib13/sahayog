@@ -2,26 +2,26 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Unauthorized Absence", {
-  employee_id: function (frm) {
-    if (frm.doc.employee_id) {
-      frappe.db.get_doc("Employee", frm.doc.employee_id).then((emp) => {
-        let html_content = `
-                        <div style="padding:10px; border:1px solid #d1d8dd; border-radius:8px;">
-                            <p><b>Employee Name:</b> ${emp.employee_name || ""}</p>
-                            <p><b>Designation:</b> ${emp.designation || ""}</p>
-                            <p><b>Branch Name:</b> ${emp.branch || ""}</p>
-                            <p><b>Branch ID:</b> ${emp.sol_id || ""}</p>
-                            <p><b>Zone Name:</b> ${emp.custom_zone || ""}</p>
-                            <p><b>Region:</b> ${emp.custom_region || ""}</p>
-                        </div>
-                    `;
+  // employee_id: function (frm) {
+  //   if (frm.doc.employee_id) {
+  //     frappe.db.get_doc("Employee", frm.doc.employee_id).then((emp) => {
+  //       let html_content = `
+  //                       <div style="padding:10px; border:1px solid #d1d8dd; border-radius:8px;">
+  //                           <p><b>Employee Name:</b> ${emp.employee_name || ""}</p>
+  //                           <p><b>Designation:</b> ${emp.designation || ""}</p>
+  //                           <p><b>Branch Name:</b> ${emp.branch || ""}</p>
+  //                           <p><b>Branch ID:</b> ${emp.sol_id || ""}</p>
+  //                           <p><b>Zone Name:</b> ${emp.custom_zone || ""}</p>
+  //                           <p><b>Region:</b> ${emp.custom_region || ""}</p>
+  //                       </div>
+  //                   `;
 
-        frm.fields_dict.employee_details.$wrapper.html(html_content);
-      });
-    } else {
-      frm.fields_dict.employee_details.$wrapper.html("");
-    }
-  },
+  //       frm.fields_dict.employee_details.$wrapper.html(html_content);
+  //     });
+  //   } else {
+  //     frm.fields_dict.employee_details.$wrapper.html("");
+  //   }
+  // },
   refresh(frm) {
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
