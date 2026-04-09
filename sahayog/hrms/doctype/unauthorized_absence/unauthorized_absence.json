@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "unauthorized_absence_details_section",
+  "date_details_section",
   "date_of_1st_letter",
   "column_break_fdtt",
   "level",
@@ -27,12 +28,14 @@
   "column_break_mqjo",
   "amended_from",
   "issue_in_details",
-  "document_upload",
-  "remarks"
+  "response_tab",
+  "response_of_ua",
+  "status_of_response",
+  "remarks",
+  "document_upload"
  ],
  "fields": [
   {
-   "fetch_from": "case_id.employee_id",
    "fieldname": "employee_id",
    "fieldtype": "Link",
    "label": "Employee ID",
@@ -42,8 +45,9 @@
   {
    "fieldname": "case_id",
    "fieldtype": "Data",
-   "hidden": 1,
    "label": "Case ID",
+   "read_only": 1,
+   "search_index": 1,
    "set_only_once": 1
   },
   {
@@ -56,14 +60,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Date",
    "label": "Date of issue Reported to hr",
    "reqd": 1
   },
   {
-   "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Date",
    "label": "Issue Occurrence Date",
@@ -71,7 +73,7 @@
   },
   {
    "fieldname": "unauthorized_absence_details_section",
-   "fieldtype": "Section Break",
+   "fieldtype": "Tab Break",
    "label": "Unauthorized Absence Details"
   },
   {
@@ -82,7 +84,6 @@
    "reqd": 1
   },
   {
-   "fetch_from": "case_id.level",
    "fieldname": "level",
    "fieldtype": "Select",
    "label": "level",
@@ -94,7 +95,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "case_id.hr_employee_id",
    "fieldname": "hr_employee_id",
    "fieldtype": "Data",
    "label": "HR Employee ID",
@@ -111,7 +111,6 @@
    "label": "Remarks"
   },
   {
-   "fetch_from": "case_id.description",
    "fieldname": "issue_in_details",
    "fieldtype": "Small Text",
    "label": "Issue in Details",
@@ -123,7 +122,6 @@
    "label": "Fraud amount"
   },
   {
-   "fetch_from": "case_id.status",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Case Status",
@@ -184,6 +182,28 @@
   {
    "fieldname": "column_break_soxc",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "response_tab",
+   "fieldtype": "Tab Break",
+   "label": "Response"
+  },
+  {
+   "fieldname": "date_details_section",
+   "fieldtype": "Section Break",
+   "label": "Date Details"
+  },
+  {
+   "fieldname": "status_of_response",
+   "fieldtype": "Select",
+   "label": "Status of Response",
+   "options": "\nSatisfactory\nNot Satisfactory"
+  },
+  {
+   "fieldname": "response_of_ua",
+   "fieldtype": "Select",
+   "label": "Response of Unauthorized Absence",
+   "options": "\nYes\nNo"
   }
  ],
  "grid_page_length": 50,
@@ -193,7 +213,7 @@
   {
    "group": "Reminder Unauthorized",
    "link_doctype": "Reminder Of Unauthorized Absence",
-   "link_fieldname": "previous_record"
+   "link_fieldname": "case_id"
   },
   {
    "group": "Case Closed",
@@ -201,8 +221,8 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-04-09 11:34:03.548997",
- "modified_by": "9517@sahayog.com",
+ "modified": "2026-04-09 12:45:00.000000",
+ "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",
  "owner": "Administrator",
