@@ -8,6 +8,19 @@ frappe.ui.form.on("Bank EOD", {
                 frm.trigger('fetch_tasks');
             });
         }
+
+        // Only show the download button if the EOD is Completed or Closed
+        if (frm.doc.status === 'Completed' || frm.doc.status === 'Closed') {
+            
+            frm.add_custom_button(__('Download EOD Report'), function() {
+                
+                // Triggers the exact same Python PDF generator you built for the Vue app!
+                const pdfUrl = `/api/method/sahayog.sahayog.api.eod.download_eod_report?eod_name=${encodeURIComponent(frm.doc.name)}`;
+                window.open(pdfUrl, '_blank');
+                
+            }); // Puts the button neatly under an "Actions" dropdown
+            
+        }
 	},
     date(frm) {
         if (frm.doc.date && frm.is_new()) {
