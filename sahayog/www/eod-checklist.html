@@ -1239,6 +1239,33 @@
             font-weight: 600;
             color: var(--text-secondary);
         }
+
+        .task-item {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            /* Reduced the right padding from 16px to 12px to push it more to the corner */
+            padding: 16px 12px 16px 16px;
+            font-size: 14px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .task-meta {
+            display: flex;
+            flex-direction: column;
+            /* Changed from center to flex-end to push avatar exactly to the right edge */
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
     </style>
 </head>
 
@@ -1347,12 +1374,11 @@
                                     <span class="task-completed-time" v-text="task.completedAt"></span>
                                 </div> -->
                                 <div v-if="task.done" class="task-meta">
-                                    <!-- Using completed_by to match the backend! -->
                                     <div class="task-completed-avatar" :title="task.completed_by">
                                         <img :src="getInitialsAvatar(task.completed_by)" alt="User">
                                     </div>
-                                    <!-- Using completed_on to match the backend! -->
-                                    <span class="task-completed-time" v-text="task.completed_on"></span>
+                                    <!-- Calls the new formatter -->
+                                    <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                 </div>
                             </div>
                         </div>
@@ -1836,6 +1862,16 @@
 
                         return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
                     },
+                    // Formats full dates from backend into clean hh:mm:ss
+                    formatTime(timeStr) {
+                        if (!timeStr) return '';
+                        // If the backend sends "2026-04-09 14:30:45.123456"
+                        if (timeStr.includes(' ')) {
+                            const timePart = timeStr.split(' ')[1]; // grabs "14:30:45.123456"
+                            return timePart.split('.')[0]; // removes milliseconds, leaves "14:30:45"
+                        }
+                        return timeStr; // Returns as-is if already formatted
+                    },
                     csrfToken: '',
                     showModal: false,
                     confirmModal: {
@@ -2277,7 +2313,9 @@
                                     const now = new Date();
                                     // FIXED: Instantly applies their Full Name from Frappe instead of their User ID!
                                     task.completed_by = window.frappe.session.user_fullname || window.frappe.session.user || 'Unknown';
-                                    task.completed_on = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    // task.completed_on = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    // Generates exact 24-hour hh:mm:ss
+                                    task.completed_on = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                                 } else {
                                     task.completed_by = null;
                                     task.completed_on = null;
