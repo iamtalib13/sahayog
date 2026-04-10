@@ -1473,10 +1473,10 @@
           emptyIcon: "fa-clipboard-list",
           emptyTitle: "No requests found",
           emptyMessage: "Try another filter or create a new request.",
-          searchableFields: ["name", "owner", "status", "target_warehouse"],
+          searchableFields: ["name", "owner", "status", "target_warehouse", "employee_name"],
           columns: [
             { label: "Request", key: "name", width: 2, type: "avatar" },
-            { label: "Owner", key: "owner", width: 1.5 },
+            { label: "Owner", key: "employee_name", width: 1.5 },
             { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
@@ -1766,34 +1766,59 @@
         }
         try {
           const start = append ? this.loadedRows : 0;
-          const res = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: doctype,
-              fields: ["*"],
-              order_by: "creation desc",
-              limit: this.pageSize,
-              start: start,
-            },
-          });
-          if (res.message) {
-            if (append) {
-              this.rows = this.rows.concat(res.message);
-            } else {
-              this.rows = res.message;
+          let res;
+          
+          if (doctype === "Employee Material Request") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_emr_list",
+              args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText
+              }
+            });
+            
+            if (res.message) {
+                const data = res.message.data || [];
+                if (append) {
+                    this.rows = this.rows.concat(data);
+                } else {
+                    this.rows = data;
+                }
+                this.loadedRows += data.length;
+                this.totalRows = res.message.total || 0;
+                this.hasMore = this.loadedRows < this.totalRows;
             }
-            this.loadedRows += res.message.length;
-            // Get total count by fetching once with limit 1
-            if (!append && this.totalRows === 0) {
-              const countRes = await frappe.call({
-                method: "frappe.client.get_count",
+          } else {
+            res = await frappe.call({
+                method: "frappe.client.get_list",
                 args: {
-                  doctype: doctype,
+                    doctype: doctype,
+                    fields: ["*"],
+                    order_by: "creation desc",
+                    limit: this.pageSize,
+                    start: start,
                 },
-              });
-              this.totalRows = countRes.message || 0;
+            });
+            if (res.message) {
+                if (append) {
+                    this.rows = this.rows.concat(res.message);
+                } else {
+                    this.rows = res.message;
+                }
+                this.loadedRows += res.message.length;
+                // Get total count by fetching once with limit 1
+                if (!append && this.totalRows === 0) {
+                    const countRes = await frappe.call({
+                        method: "frappe.client.get_count",
+                        args: {
+                            doctype: doctype,
+                        },
+                    });
+                    this.totalRows = countRes.message || 0;
+                }
+                this.hasMore = this.loadedRows < this.totalRows;
             }
-            this.hasMore = this.loadedRows < this.totalRows;
           }
         } catch (e) {
           console.error(e);
@@ -1937,6 +1962,11 @@
       getFieldValue(row, key) {
         if (!row || !key) return "";
         let value = row[key];
+
+        // 🔥 Special handling for employee_name (Owner column in Requests)
+        if (key === "employee_name") {
+            return value || row.owner || "-";
+        }
 
         if (value === null || value === undefined || value === "") return "-";
 

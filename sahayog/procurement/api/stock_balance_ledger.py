@@ -325,3 +325,42 @@ def create_asset_movement_from_emmr(emmr, assets):
                 "to_employee": to_emp,
             })
     return am.name
+
+@frappe.whitelist()
+def get_emr_list(limit=20, start=0, search_text=None):
+    """
+    Fetch Employee Material Requests joined with Employee Name
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        conditions.append("(emr.name LIKE %(search)s OR emr.owner LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
+        values["search"] = f"%{search_text}%"
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    
+    # Get total count
+    total_count = frappe.db.sql(f"""
+        SELECT COUNT(*) 
+        FROM `tabEmployee Material Request` emr
+        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
+        {where_clause}
+    """, values)[0][0]
+
+    # Get data
+    data = frappe.db.sql(f"""
+        SELECT 
+            emr.*, 
+            emp.employee_name
+        FROM `tabEmployee Material Request` emr
+        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
+        {where_clause}
+        ORDER BY emr.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }
