@@ -284,10 +284,16 @@
             color: var(--text-secondary);
         }
 
-        .task-list {
+        /* .task-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
+        } */
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .task-item {
@@ -1276,12 +1282,11 @@
             color: var(--text-secondary);
         }
 
-        .task-item {
+        /* .task-item {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            /* Reduced the right padding from 16px to 12px to push it more to the corner */
             padding: 16px 12px 16px 16px;
             font-size: 14px;
             background-color: var(--card-bg);
@@ -1291,6 +1296,27 @@
             transition: all 0.2s;
             gap: 12px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        } */
+
+        .task-item {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            /* Reduced from 16px to shrink height */
+            font-size: 13px;
+            /* Slightly smaller text */
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            /* Reduced border radius to match smaller height */
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            min-height: 44px;
+            /* Sets a strict small height */
         }
 
         .task-meta {
