@@ -419,29 +419,36 @@ def get_movement_list(limit=20, start=0, search_text=None):
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
     
     # Get total count (using distinct parent because of join)
-    total_count = frappe.db.sql(f"""
-        SELECT COUNT(DISTINCT am.name) 
+    total_count = frappe.db.sql("""
+        SELECT COUNT(DISTINCT am.name)
         FROM `tabAsset Movement` am
         LEFT JOIN `tabAsset Movement Item` ami ON ami.parent = am.name
         {where_clause}
-    """, values)[0][0]
+    """.format(where_clause=where_clause), values)[0][0]
 
     # Get data - using a subquery to get only the first child row per parent
-    data = frappe.db.sql(f"""
-        SELECT 
-            am.*, 
+    data = frappe.db.sql("""
+        SELECT
+            am.name,
+            am.purpose,
+            am.transaction_date,
+            am.docstatus,
+            am.company,
+            am.creation,
             ami.source_location,
-            ami.to_employee
+            ami.to_employee,
+            emp.employee_name as custodian_name
         FROM `tabAsset Movement` am
         LEFT JOIN (
             SELECT parent, source_location, to_employee,
                    ROW_NUMBER() OVER (PARTITION BY parent ORDER BY name ASC) as rn
             FROM `tabAsset Movement Item`
         ) ami ON ami.parent = am.name AND ami.rn = 1
+        LEFT JOIN `tabEmployee` emp ON emp.name = ami.to_employee
         {where_clause}
         ORDER BY am.creation DESC
         LIMIT %(limit)s OFFSET %(offset)s
-    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+    """.format(where_clause=where_clause), {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
 
     return {
         "data": data,
