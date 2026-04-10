@@ -1473,10 +1473,11 @@
           emptyIcon: "fa-clipboard-list",
           emptyTitle: "No requests found",
           emptyMessage: "Try another filter or create a new request.",
-          searchableFields: ["name", "owner", "status"],
+          searchableFields: ["name", "owner", "status", "target_warehouse"],
           columns: [
             { label: "Request", key: "name", width: 2, type: "avatar" },
             { label: "Owner", key: "owner", width: 1.5 },
+            { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
           ],
