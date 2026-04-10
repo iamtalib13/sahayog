@@ -1669,11 +1669,7 @@
           emptyMessage:
             "Try adjusting your search or create a new item to get started.",
           searchableFields: [
-            "name",
-            "item_name",
             "item_code",
-            "item_group",
-            "stock_uom",
           ],
           columns: [
             { label: "ID", key: "name", width: 2, type: "avatar" },
@@ -2059,19 +2055,39 @@
       },
 
       get filteredRows() {
-        if (!this.searchText) return this.rows;
+        if (!this.searchText) {
+          let rows = this.rows.slice();
+          // Sort by item_code for Items section
+          if (this.activeItem === "Items") {
+            rows.sort((a, b) => {
+              const codeA = String(a.item_code || "").toLowerCase();
+              const codeB = String(b.item_code || "").toLowerCase();
+              return codeA.localeCompare(codeB);
+            });
+          }
+          return rows;
+        }
         const q = this.searchText.toLowerCase();
         const fields = this.currentView.searchableFields || [
           "name",
           "item_name",
           "item_code",
         ];
-        return this.rows.filter((r) =>
+        let filtered = this.rows.filter((r) =>
           fields.some((field) => {
             const value = this.getFieldValue(r, field);
             return value && String(value).toLowerCase().includes(q);
           }),
         );
+        // Sort by item_code for Items section
+        if (this.activeItem === "Items") {
+          filtered.sort((a, b) => {
+            const codeA = String(a.item_code || "").toLowerCase();
+            const codeB = String(b.item_code || "").toLowerCase();
+            return codeA.localeCompare(codeB);
+          });
+        }
+        return filtered;
       },
 
       get isAllSelected() {
