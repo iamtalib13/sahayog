@@ -1506,10 +1506,11 @@
           emptyIcon: "fa-arrow-right-arrow-left",
           emptyTitle: "No outward records found",
           emptyMessage: "No stock entries match the current search.",
-          searchableFields: ["name", "purpose", "status"],
+          searchableFields: ["name", "purpose", "status", "to_warehouse"],
           columns: [
             { label: "Entry", key: "name", width: 2, type: "avatar" },
             { label: "Purpose", key: "purpose", width: 1.8 },
+            { label: "Target Warehouse", key: "to_warehouse", width: 1.8 },
             { label: "Date", key: "posting_date", width: 1 },
             {
               label: "Status",
