@@ -1358,6 +1358,18 @@
             gap: 12px;
             overflow: hidden;
         }
+
+        .collapse-icon {
+            color: var(--text-secondary);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collapse-icon.rotated {
+            transform: rotate(-180deg);
+        }
     </style>
 </head>
 
@@ -1554,7 +1566,7 @@
                             <div class="message-content">
                                 <!-- Display Name and Time (System displays as 'EOD System') -->
                                 <div class="message-info">
-                                    <span v-text="msg.sender === 'System' ? 'EOD System' : msg.sender"
+                                    <span v-text="msg.sender === 'System' ? 'EOD Admin' : msg.sender"
                                         style="font-weight: 600;"></span>
                                     <span v-text="msg.time"></span>
                                 </div>
