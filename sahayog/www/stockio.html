@@ -209,6 +209,14 @@
           />
         </div>
         <button
+          class="btn-view-toggle"
+          v-if="activeItem === 'Items'"
+          @click="toggleItemView()"
+          :title="itemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
+        >
+          <i :class="itemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"></i>
+        </button>
+        <button
           class="btn-create"
           v-if="currentView.createDoctype"
           @click="handleCreate()"
@@ -366,7 +374,7 @@
         </div>
 
         <!-- List Header (Columns) -->
-        <div v-else class="list-view-header">
+        <div v-else-if="!(itemView === 'card' && activeItem === 'Items')" class="list-view-header">
           <div class="col-checkbox" v-if="currentView.selectable !== false">
             <input
               type="checkbox"
@@ -413,7 +421,34 @@
             </button>
           </div>
 
-          <!-- Rows -->
+          <!-- Card View for Items -->
+          <div v-else-if="itemView === 'card' && activeItem === 'Items'" class="card-grid">
+            <div
+              v-for="row in filteredRows"
+              :key="row.name"
+              class="item-card"
+              @click="openRecord(row)"
+            >
+              <div class="item-card-inner">
+                <div class="item-card-image" :style="row.image ? { backgroundImage: 'url(' + row.image + ')' } : {}">
+                  <i v-if="!row.image" class="fas fa-box"></i>
+                </div>
+                <div class="item-card-content">
+                  <div class="item-card-header">
+                    <div class="item-card-header-info">
+                      <span class="item-card-code">[[ row.item_code || row.name ]]</span>
+                      <h3 class="item-card-title">[[ row.item_name || '-' ]]</h3>
+                    </div>
+                    <span class="status-badge" :class="row.disabled ? 'disabled' : 'active'">
+                      [[ row.disabled ? 'Disabled' : 'Enabled' ]]
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List View Rows -->
           <div v-else class="rows-list">
             <div
               v-for="row in filteredRows"
@@ -897,6 +932,25 @@
     background: var(--blue-700);
     transform: translateY(-1px);
   }
+  .btn-view-toggle {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--border-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-view-toggle:hover {
+    background: var(--blue-600);
+    color: #ffffff;
+    border-color: var(--blue-600);
+  }
 
   /* LIST VIEW */
   .list-view-container {
@@ -1249,6 +1303,89 @@
     font-size: 48px;
     color: var(--gray-300);
     margin-bottom: 20px;
+  }
+
+  /* ITEM CARD GRID */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .item-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--blue-600);
+  }
+  .item-card-inner {
+    display: flex;
+    min-height: 90px;
+  }
+  .item-card-image {
+    width: 25%;
+    flex-shrink: 0;
+    background: var(--gray-100);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--gray-400);
+  }
+  [data-theme="dark"] .item-card-image {
+    background-color: var(--gray-800);
+    color: var(--gray-500);
+  }
+  .item-card-content {
+    flex: 1;
+    padding: 12px 16px;
+    min-width: 0;
+  }
+  .item-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .item-card-header-info {
+    min-width: 0;
+  }
+  .item-card .status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .item-card-code {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--blue-600);
+    font-family: monospace;
+  }
+  .item-card-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
   }
 
   .truncate {
@@ -1657,6 +1794,7 @@
       totalRows: 0,
       loadedRows: 0,
       hasMore: false,
+      itemView: "list",
       requestStats: {
         draft: 0,
         pendingReporting: 0,
@@ -1705,11 +1843,15 @@
           if (this.activeItem === "Analytics") {
             this.fetchRequestStats();
           }
+          if (this.activeItem !== "Items") {
+            this.itemView = "list";
+          }
         },
       },
 
       async mounted() {
         this.applyTheme();
+        this.itemView = localStorage.getItem("stockio_item_view") || "list";
         // Fetch user's full name from User doctype
         try {
           const res = await frappe.call({
@@ -2103,6 +2245,10 @@
         } catch (e) {
           console.error("Failed to fetch profile:", e);
         }
+      },
+      toggleItemView() {
+        this.itemView = this.itemView === "list" ? "card" : "list";
+        localStorage.setItem("stockio_item_view", this.itemView);
       },
       toggleTheme() {
         this.currentTheme = this.currentTheme === "dark" ? "light" : "dark";
