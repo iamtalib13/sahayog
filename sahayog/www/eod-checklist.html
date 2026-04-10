@@ -1299,6 +1299,65 @@
             width: 15px;
             height: 15px;
         }
+
+        /* Collapsible Section Colors & Styling */
+        .section-item {
+            margin-bottom: 24px;
+            border-radius: 16px;
+            padding: 2px 14px 16px 14px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .section-header {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 12px 6px;
+            user-select: none;
+            border-radius: 10px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+        }
+
+        .collapse-icon {
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: transform 0.3s ease;
+        }
+
+        .collapse-icon.rotated {
+            transform: rotate(-180deg);
+        }
+
+        /* The sliding container */
+        .task-list-wrapper {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+            opacity: 1;
+        }
+
+        .task-list-wrapper.collapsed {
+            grid-template-rows: 0fr;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+        }
     </style>
 </head>
 
@@ -1403,30 +1462,34 @@
                 </div>
 
                 <div v-if="eodStatus !== 'idle'" class="checklist">
-                    <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item">
-                        <div class="section-header">
-                            <span class="section-title" v-text="section.title"></span>
+                    <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item"
+                        :style="{ backgroundColor: getTeamColor(sIndex).bg, borderColor: getTeamColor(sIndex).border }">
+
+                        <!-- Clickable Header to Collapse -->
+                        <div class="section-header" @click="section.isExpanded = !section.isExpanded">
+                            <span class="section-title" :style="{ color: getTeamColor(sIndex).text }"
+                                v-text="section.title"></span>
+                            <span class="collapse-icon" :class="{ rotated: !section.isExpanded }">▼</span>
                         </div>
 
-                        <div class="task-list">
-                            <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
-                                @click="toggleTask(task)">
-                                <div class="task-left">
-                                    <div class="checkbox" :class="{ checked: task.done }"></div>
-                                    <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
-                                </div>
-                                <!-- <div v-if="task.done" class="task-meta">
-                                    <div class="task-completed-avatar" :title="task.completedBy">
-                                        <img :src="'https://i.pravatar.cc/100?u=' + task.completedBy" alt="User">
+                        <!-- Collapsible Task List -->
+                        <div class="task-list-wrapper" :class="{ collapsed: !section.isExpanded }">
+                            <div class="task-list">
+                                <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
+                                    @click="toggleTask(task)">
+                                    <div class="task-left">
+                                        <!-- Use dynamic team color for checkboxes! -->
+                                        <div class="checkbox" :class="{ checked: task.done }"
+                                            :style="task.done ? { backgroundColor: getTeamColor(sIndex).text, borderColor: getTeamColor(sIndex).text } : {}">
+                                        </div>
+                                        <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
                                     </div>
-                                    <span class="task-completed-time" v-text="task.completedAt"></span>
-                                </div> -->
-                                <div v-if="task.done" class="task-meta">
-                                    <div class="task-completed-avatar" :title="task.completed_by">
-                                        <img :src="getInitialsAvatar(task.completed_by)" alt="User">
+                                    <div v-if="task.done" class="task-meta">
+                                        <div class="task-completed-avatar" :title="task.completed_by">
+                                            <img :src="getInitialsAvatar(task.completed_by)" alt="User">
+                                        </div>
+                                        <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                     </div>
-                                    <!-- Calls the new formatter -->
-                                    <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                 </div>
                             </div>
                         </div>
@@ -1928,6 +1991,23 @@
 
                         return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
                     },
+
+                    // Returns beautiful soft pastel palettes for different teams
+                    getTeamColor(index) {
+                        const palettes = [
+                            { bg: '#eff6ff', border: '#dbeafe', text: '#2563eb' }, // Blue
+                            { bg: '#f0fdf4', border: '#dcfce7', text: '#16a34a' }, // Green
+                            { bg: '#fff7ed', border: '#ffedd5', text: '#ea580c' }, // Orange
+                            { bg: '#fdf4ff', border: '#fae8ff', text: '#c026d3' }, // Fuchsia
+                            { bg: '#fef2f2', border: '#fee2e2', text: '#dc2626' }, // Red
+                            { bg: '#f5f3ff', border: '#f3e8ff', text: '#9333ea' }, // Purple
+                            { bg: '#f0fdfa', border: '#ccfbf1', text: '#0d9488' }, // Teal
+                            { bg: '#fffbeb', border: '#fef3c7', text: '#d97706' }  // Amber
+                        ];
+                        return palettes[index % palettes.length];
+                    },
+
+
                     // Formats full dates from backend into clean hh:mm:ss
                     formatTime(timeStr) {
                         if (!timeStr) return '';
@@ -2114,6 +2194,27 @@
                             const data = await response.json();
                             if (data.message) {
                                 // Group tasks by team while maintaining order
+                                // const sections = [];
+                                // const teamsMap = {};
+
+                                // data.message.forEach(t => {
+                                //     if (!teamsMap[t.team]) {
+                                //         teamsMap[t.team] = {
+                                //             title: t.team,
+                                //             tasks: []
+                                //         };
+                                //         sections.push(teamsMap[t.team]);
+                                //     }
+                                //     teamsMap[t.team].tasks.push(t);
+                                // });
+
+                                // this.project.sections = sections;
+                                // Keep track of which teams are currently collapsed by the user
+                                const oldState = {};
+                                this.project.sections.forEach(s => {
+                                    oldState[s.title] = s.isExpanded;
+                                });
+
                                 const sections = [];
                                 const teamsMap = {};
 
@@ -2121,6 +2222,8 @@
                                     if (!teamsMap[t.team]) {
                                         teamsMap[t.team] = {
                                             title: t.team,
+                                            // Maintain previous collapse state, or default to fully open!
+                                            isExpanded: oldState[t.team] !== undefined ? oldState[t.team] : true,
                                             tasks: []
                                         };
                                         sections.push(teamsMap[t.team]);
