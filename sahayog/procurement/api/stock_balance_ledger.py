@@ -325,3 +325,132 @@ def create_asset_movement_from_emmr(emmr, assets):
                 "to_employee": to_emp,
             })
     return am.name
+
+@frappe.whitelist()
+def get_emr_list(limit=20, start=0, search_text=None):
+    """
+    Fetch Employee Material Requests joined with Employee Name
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        conditions.append("(emr.name LIKE %(search)s OR emr.owner LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
+        values["search"] = f"%{search_text}%"
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    
+    # Get total count
+    total_count = frappe.db.sql(f"""
+        SELECT COUNT(*) 
+        FROM `tabEmployee Material Request` emr
+        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
+        {where_clause}
+    """, values)[0][0]
+
+    # Get data
+    data = frappe.db.sql(f"""
+        SELECT 
+            emr.*, 
+            emp.employee_name
+        FROM `tabEmployee Material Request` emr
+        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
+        {where_clause}
+        ORDER BY emr.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }
+
+@frappe.whitelist()
+def get_asset_list(limit=20, start=0, search_text=None):
+    """
+    Fetch Assets joined with Employee Name for Custodian
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        conditions.append("(ast.name LIKE %(search)s OR ast.asset_name LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
+        values["search"] = f"%{search_text}%"
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    
+    # Get total count
+    total_count = frappe.db.sql(f"""
+        SELECT COUNT(*) 
+        FROM `tabAsset` ast
+        LEFT JOIN `tabEmployee` emp ON emp.name = ast.custodian
+        {where_clause}
+    """, values)[0][0]
+
+    # Get data
+    data = frappe.db.sql(f"""
+        SELECT 
+            ast.*, 
+            emp.employee_name as custodian_name
+        FROM `tabAsset` ast
+        LEFT JOIN `tabEmployee` emp ON emp.name = ast.custodian
+        {where_clause}
+        ORDER BY ast.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }
+
+@frappe.whitelist()
+def get_movement_list(limit=20, start=0, search_text=None):
+    """
+    Fetch Asset Movements joined with first child item fields
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        conditions.append("(am.name LIKE %(search)s OR am.purpose LIKE %(search)s OR ami.source_location LIKE %(search)s OR ami.to_employee LIKE %(search)s)")
+        values["search"] = f"%{search_text}%"
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    
+    # Get total count (using distinct parent because of join)
+    total_count = frappe.db.sql("""
+        SELECT COUNT(DISTINCT am.name)
+        FROM `tabAsset Movement` am
+        LEFT JOIN `tabAsset Movement Item` ami ON ami.parent = am.name
+        {where_clause}
+    """.format(where_clause=where_clause), values)[0][0]
+
+    # Get data - using a subquery to get only the first child row per parent
+    data = frappe.db.sql("""
+        SELECT
+            am.name,
+            am.purpose,
+            am.transaction_date,
+            am.docstatus,
+            am.company,
+            am.creation,
+            ami.source_location,
+            ami.to_employee,
+            emp.employee_name as custodian_name
+        FROM `tabAsset Movement` am
+        LEFT JOIN (
+            SELECT parent, source_location, to_employee,
+                   ROW_NUMBER() OVER (PARTITION BY parent ORDER BY name ASC) as rn
+            FROM `tabAsset Movement Item`
+        ) ami ON ami.parent = am.name AND ami.rn = 1
+        LEFT JOIN `tabEmployee` emp ON emp.name = ami.to_employee
+        {where_clause}
+        ORDER BY am.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """.format(where_clause=where_clause), {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }

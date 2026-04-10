@@ -927,6 +927,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0 12px;
+    text-align: center;
   }
   .col-checkbox {
     width: 40px;
@@ -1473,10 +1474,11 @@
           emptyIcon: "fa-clipboard-list",
           emptyTitle: "No requests found",
           emptyMessage: "Try another filter or create a new request.",
-          searchableFields: ["name", "owner", "status"],
+          searchableFields: ["name", "owner", "status", "target_warehouse", "employee_name"],
           columns: [
             { label: "Request", key: "name", width: 2, type: "avatar" },
-            { label: "Owner", key: "owner", width: 1.5 },
+            { label: "Owner", key: "employee_name", width: 1.5 },
+            { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
           ],
@@ -1505,10 +1507,11 @@
           emptyIcon: "fa-arrow-right-arrow-left",
           emptyTitle: "No outward records found",
           emptyMessage: "No stock entries match the current search.",
-          searchableFields: ["name", "purpose", "status"],
+          searchableFields: ["name", "purpose", "status", "to_warehouse"],
           columns: [
             { label: "Entry", key: "name", width: 2, type: "avatar" },
             { label: "Purpose", key: "purpose", width: 1.8 },
+            { label: "Target Warehouse", key: "to_warehouse", width: 1.8 },
             { label: "Date", key: "posting_date", width: 1 },
             {
               label: "Status",
@@ -1552,11 +1555,11 @@
           emptyIcon: "fa-cubes",
           emptyTitle: "No assets found",
           emptyMessage: "No asset master records match the current search.",
-          searchableFields: ["name", "asset_name", "custodian", "status"],
+          searchableFields: ["name", "asset_name", "custodian", "status", "custodian_name"],
           columns: [
             { label: "Asset", key: "asset_name", width: 2, type: "avatar" },
             { label: "Code", key: "name", width: 1.5 },
-            { label: "Custodian", key: "custodian", width: 1.5 },
+            { label: "Custodian", key: "custodian_name", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
           ],
         },
@@ -1568,10 +1571,12 @@
           emptyIcon: "fa-person-walking-arrow-right",
           emptyTitle: "No movements found",
           emptyMessage: "No asset movement records match the current search.",
-          searchableFields: ["name", "purpose", "status", "transaction_date"],
+          searchableFields: ["name", "purpose", "status", "transaction_date", "source_location", "to_employee", "custodian_name"],
           columns: [
             { label: "Movement", key: "name", width: 2, type: "avatar" },
             { label: "Purpose", key: "purpose", width: 1.5 },
+            { label: "Source", key: "source_location", width: 1.5 },
+            { label: "Custodian", key: "custodian_name", width: 1.5 },
             { label: "Date", key: "transaction_date", width: 1 },
             { label: "Status", key: "docstatus", width: 1, type: "badge" },
           ],
@@ -1764,34 +1769,101 @@
         }
         try {
           const start = append ? this.loadedRows : 0;
-          const res = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: doctype,
-              fields: ["*"],
-              order_by: "creation desc",
-              limit: this.pageSize,
-              start: start,
-            },
-          });
-          if (res.message) {
-            if (append) {
-              this.rows = this.rows.concat(res.message);
-            } else {
-              this.rows = res.message;
+          let res;
+          
+          if (doctype === "Employee Material Request") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_emr_list",
+              args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText
+              }
+            });
+            
+            if (res.message) {
+                const data = res.message.data || [];
+                if (append) {
+                    this.rows = this.rows.concat(data);
+                } else {
+                    this.rows = data;
+                }
+                this.loadedRows += data.length;
+                this.totalRows = res.message.total || 0;
+                this.hasMore = this.loadedRows < this.totalRows;
             }
-            this.loadedRows += res.message.length;
-            // Get total count by fetching once with limit 1
-            if (!append && this.totalRows === 0) {
-              const countRes = await frappe.call({
-                method: "frappe.client.get_count",
+          } else if (doctype === "Asset") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText
+              }
+            });
+            
+            if (res.message) {
+                const data = res.message.data || [];
+                if (append) {
+                    this.rows = this.rows.concat(data);
+                } else {
+                    this.rows = data;
+                }
+                this.loadedRows += data.length;
+                this.totalRows = res.message.total || 0;
+                this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else if (doctype === "Asset Movement") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_movement_list",
+              args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText
+              }
+            });
+            
+            if (res.message) {
+                const data = res.message.data || [];
+                if (append) {
+                    this.rows = this.rows.concat(data);
+                } else {
+                    this.rows = data;
+                }
+                this.loadedRows += data.length;
+                this.totalRows = res.message.total || 0;
+                this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else {
+            res = await frappe.call({
+                method: "frappe.client.get_list",
                 args: {
-                  doctype: doctype,
+                    doctype: doctype,
+                    fields: ["*"],
+                    order_by: "creation desc",
+                    limit: this.pageSize,
+                    start: start,
                 },
-              });
-              this.totalRows = countRes.message || 0;
+            });
+            if (res.message) {
+                if (append) {
+                    this.rows = this.rows.concat(res.message);
+                } else {
+                    this.rows = res.message;
+                }
+                this.loadedRows += res.message.length;
+                // Get total count by fetching once with limit 1
+                if (!append && this.totalRows === 0) {
+                    const countRes = await frappe.call({
+                        method: "frappe.client.get_count",
+                        args: {
+                            doctype: doctype,
+                        },
+                    });
+                    this.totalRows = countRes.message || 0;
+                }
+                this.hasMore = this.loadedRows < this.totalRows;
             }
-            this.hasMore = this.loadedRows < this.totalRows;
           }
         } catch (e) {
           console.error(e);
@@ -1935,6 +2007,14 @@
       getFieldValue(row, key) {
         if (!row || !key) return "";
         let value = row[key];
+
+        // 🔥 Special handling for employee names
+        if (key === "employee_name") {
+            return value || row.owner || "-";
+        }
+        if (key === "custodian_name") {
+            return value || row.custodian || "-";
+        }
 
         if (value === null || value === undefined || value === "") return "-";
 
