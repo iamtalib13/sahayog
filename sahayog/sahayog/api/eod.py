@@ -1,11 +1,12 @@
 import frappe
 import os
 from frappe import _
-from frappe.utils import nowdate, now_datetime, format_time, format_datetime, get_files_path
+from frappe.utils import nowdate, now_datetime, format_time, format_datetime, get_files_path, nowdate
 from frappe.utils.file_manager import save_file
 import json
 from frappe.utils.pdf import get_pdf
 from frappe.utils import format_time, format_date
+from frappe.utils import cint
 
 def get_user_fullname(user):
     """Helper to get user's full name."""
@@ -23,17 +24,83 @@ def add_chat_message(eod_doc, text, sender="System", is_system=True, attachment=
         "is_system": is_system
     })
 
+# @frappe.whitelist()
+# def get_eod_status():
+#     """Returns the current EOD record and its status for today."""
+#     today = nowdate()
+#     eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
+#     if eod:
+#         return eod
+#     return {"status": "idle"}
+
+
+# # new working method
+# @frappe.whitelist()
+# def get_eod_status():
+#     """Returns the current EOD record and its status for today."""
+#     today = nowdate()
+    
+#     # ADDED "modified" to the list of fields to fetch from the database!
+#     eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status", "modified"], as_dict=True)
+    
+#     if eod:
+#         # If the status is Closed, send the modified time back to the frontend as 'closed_on'
+#         if eod.status == "Closed":
+#             eod["closed_on"] = str(eod.modified)
+            
+#         return eod
+        
+#     return {"status": "idle"}
+
+
+from frappe.utils import nowdate
+
 @frappe.whitelist()
 def get_eod_status():
-    """Returns the current EOD record and its status for today."""
+    """Returns the active EOD record. Enforces completion of the previous day's EOD."""
     today = nowdate()
-    eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
-    if eod:
-        return eod
+    
+    # 1. Fetch the absolute latest EOD document created in the system (ignoring the date)
+    latest_eod = frappe.db.get_all(
+        "Bank EOD", 
+        fields=["name", "status", "modified", "date"], 
+        order_by="date desc, creation desc", 
+        limit=1
+    )
+    
+    if latest_eod:
+        eod = latest_eod[0]
+        
+        # 2. If the latest EOD is NOT closed (Pending/Completed), we MUST return it!
+        # This traps the user in yesterday's EOD until they finish and close it.
+        if eod.status != "Closed":
+            return eod
+            
+        # 3. If the latest EOD IS Closed, and its date is today, return it (shows closed screen)
+        if str(eod.date) == str(today):
+            eod["closed_on"] = str(eod.modified)
+            return eod
+            
+        # 4. If the latest EOD IS Closed, but it's from yesterday (or earlier), return idle!
+        # This tells the frontend to show the "Start" button for a brand new day.
+        return {"status": "idle"}
+        
+    # If no EODs exist at all in the database, return idle
     return {"status": "idle"}
+
+
 
 @frappe.whitelist()
 def start_eod():
+    # --- ADD THIS SECURITY CHECK ---
+    # Check if ANY previous EOD is still open (Not Closed)
+    open_eods = frappe.db.get_all("Bank EOD", filters={"status": ("!=", "Closed")}, limit=1)
+    
+    if open_eods:
+        # Block the creation of a new EOD and force a page refresh!
+        frappe.throw("You cannot start a new EOD. Please complete and close the previous day's EOD first.")
+    # --------------------------------
+
     """Creates a new Bank EOD record for today if it doesn't exist."""
     today = nowdate()
     
@@ -62,6 +129,38 @@ def start_eod():
     frappe.db.commit()
 
     return {"name": eod.name, "status": eod.status}
+
+
+# @frappe.whitelist()
+# def start_eod():
+#     """Creates a new Bank EOD record for today if it doesn't exist."""
+#     today = nowdate()
+    
+#     # Check if any EOD exists for today
+#     existing_eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
+#     if existing_eod:
+#         return existing_eod
+    
+#     eod = frappe.new_doc("Bank EOD")
+#     eod.date = today
+#     eod.status = "Pending"
+#     # load_tasks is called in before_insert in bank_eod.py
+#     eod.insert(ignore_permissions=True)
+    
+#     # 1. Send "EOD started" message
+#     current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
+#     add_chat_message(eod, f"EOD started for date {today} at {current_dt}")
+
+#     # 2. Send first task initiation message
+#     if eod.eod_tasks:
+#         sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+#         first_task = sorted_tasks[0]
+#         add_chat_message(eod, f"Task '{first_task.task}' (Team: {first_task.team}) initiated.")
+    
+#     eod.save(ignore_permissions=True)
+#     frappe.db.commit()
+
+#     return {"name": eod.name, "status": eod.status}
 
 
 
@@ -408,21 +507,132 @@ def save_manager_data():
 
 
 
+# @frappe.whitelist()
+# def download_eod_report(eod_name):
+#     """Generates and downloads a complete Audit PDF Report for the EOD."""
+#     if not eod_name:
+#         return
+        
+#     eod = frappe.get_doc("Bank EOD", eod_name)
+#     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    
+#     chat_messages = frappe.get_all("EOD Chat Message", 
+#         filters={"parent": eod_name}, 
+#         fields=["sender", "text", "time", "is_system", "attachment"],
+#         order_by="time asc"
+#     )
+
+#     # Build a clean HTML template for the PDF
+#     html = f"""
+#     <html>
+#     <head>
+#         <style>
+#             body {{ font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #1a1d21; }}
+#             h1 {{ text-align: center; color: #1a1d21; margin-bottom: 20px; }}
+#             h2 {{ color: #00b09b; border-bottom: 1px solid #eef1f4; padding-bottom: 5px; margin-top: 30px; }}
+#             table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+#             th, td {{ border: 1px solid #d1d5db; padding: 10px; text-align: left; }}
+#             th {{ background-color: #f8f9fb; font-weight: bold; font-size: 11px; text-transform: uppercase; }}
+#             .status-Completed {{ color: #16a34a; font-weight: bold; }}
+#             .status-Pending {{ color: #ea580c; font-weight: bold; }}
+#             .chat-msg {{ margin-bottom: 10px; padding: 12px; background: #f8f9fb; border-radius: 8px; border: 1px solid #eef1f4; }}
+#             .chat-meta {{ font-size: 11px; color: #707991; margin-bottom: 4px; font-weight: bold; }}
+#         </style>
+#     </head>
+#     <body>
+#         <h1>End of Day (EOD) Audit Report</h1>
+#         <table>
+#             <tr>
+#                 <th>EOD Reference</th><td>{eod.name}</td>
+#                 <th>Date</th><td>{format_date(eod.date)}</td>
+#             </tr>
+#             <tr>
+#                 <th>Final Status</th><td>{eod.status}</td>
+#                 <th>Project/Branch</th><td>{getattr(eod, 'subtitle', 'N/A')}</td>
+#             </tr>
+#         </table>
+
+#         <h2>1. Checklist Execution Log</h2>
+#         <table>
+#             <thead>
+#                 <tr>
+#                     <th>Seq</th>
+#                     <th>Team</th>
+#                     <th>Task Description</th>
+#                     <th>Status</th>
+#                     <th>Completed By</th>
+#                     <th>Time</th>
+#                 </tr>
+#             </thead>
+#             <tbody>
+#     """
+    
+#     # Inject Checklist Rows
+#     for t in sorted_tasks:
+#         c_by = get_user_fullname(t.completed_by) if t.completed_by else ""
+#         c_time = format_time(t.completed_on, "HH:mm:ss") if t.completed_on else ""
+#         html += f"""
+#                 <tr>
+#                     <td>{t.sequence or ''}</td>
+#                     <td>{t.team or ''}</td>
+#                     <td>{t.task or ''}</td>
+#                     <td class="status-{t.status}">{t.status}</td>
+#                     <td>{c_by}</td>
+#                     <td>{c_time}</td>
+#                 </tr>
+#         """
+        
+#     html += """
+#             </tbody>
+#         </table>
+        
+#         <h2>2. System & Group Chat Transcript</h2>
+#     """
+    
+#     # Inject Chat Messages
+#     if not chat_messages:
+#         html += "<p>No chat messages or system logs recorded.</p>"
+#     else:
+#         for msg in chat_messages:
+#             sender_name = "EOD System" if msg.is_system else get_user_fullname(msg.sender)
+#             msg_time = format_time(msg.time, "HH:mm:ss") if msg.time else ""
+#             text = msg.text or (f"[Attachment: {msg.attachment}]" if msg.attachment else "")
+            
+#             html += f"""
+#             <div class="chat-msg">
+#                 <div class="chat-meta">{sender_name} &bull; {msg_time}</div>
+#                 <div>{text}</div>
+#             </div>
+#             """
+            
+#     html += """
+#     </body>
+#     </html>
+#     """
+    
+#     # Tell Frappe to return a downloadable PDF file
+#     frappe.local.response.filename = f"EOD_Audit_{eod_name}.pdf"
+#     frappe.local.response.filecontent = get_pdf(html)
+#     frappe.local.response.type = "pdf"
+
+
+
+
+import frappe
+from frappe.utils import cint
+
 @frappe.whitelist()
-def download_eod_report(eod_name):
+def download_eod_report(eod_name, include_chat=1):
     """Generates and downloads a complete Audit PDF Report for the EOD."""
     if not eod_name:
         return
         
+    # Safely convert '0' or '1' from the Javascript URL into an integer
+    include_chat = cint(include_chat)
+        
     eod = frappe.get_doc("Bank EOD", eod_name)
     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
     
-    chat_messages = frappe.get_all("EOD Chat Message", 
-        filters={"parent": eod_name}, 
-        fields=["sender", "text", "time", "is_system", "attachment"],
-        order_by="time asc"
-    )
-
     # Build a clean HTML template for the PDF
     html = f"""
     <html>
@@ -486,26 +696,40 @@ def download_eod_report(eod_name):
     html += """
             </tbody>
         </table>
-        
-        <h2>2. System & Group Chat Transcript</h2>
     """
     
-    # Inject Chat Messages
-    if not chat_messages:
-        html += "<p>No chat messages or system logs recorded.</p>"
-    else:
-        for msg in chat_messages:
-            sender_name = "EOD System" if msg.is_system else get_user_fullname(msg.sender)
-            msg_time = format_time(msg.time, "HH:mm:ss") if msg.time else ""
-            text = msg.text or (f"[Attachment: {msg.attachment}]" if msg.attachment else "")
-            
-            html += f"""
-            <div class="chat-msg">
-                <div class="chat-meta">{sender_name} &bull; {msg_time}</div>
-                <div>{text}</div>
-            </div>
-            """
-            
+    # =========================================================================
+    # THE MAGIC FIX: Only fetch chat messages and add them to HTML if include_chat == 1
+    # =========================================================================
+    if include_chat == 1:
+        
+        chat_messages = frappe.get_all("EOD Chat Message", 
+            filters={"parent": eod_name}, 
+            fields=["sender", "text", "time", "is_system", "attachment"],
+            order_by="time asc"
+        )
+        
+        html += """
+        <h2>2. System & Group Chat Transcript</h2>
+        """
+        
+        # Inject Chat Messages
+        if not chat_messages:
+            html += "<p>No chat messages or system logs recorded.</p>"
+        else:
+            for msg in chat_messages:
+                sender_name = "EOD System" if msg.is_system else get_user_fullname(msg.sender)
+                msg_time = format_time(msg.time, "HH:mm:ss") if msg.time else ""
+                text = msg.text or (f"[Attachment: {msg.attachment}]" if msg.attachment else "")
+                
+                html += f"""
+                <div class="chat-msg">
+                    <div class="chat-meta">{sender_name} &bull; {msg_time}</div>
+                    <div>{text}</div>
+                </div>
+                """
+                
+    # Close the HTML document regardless of whether chat was included
     html += """
     </body>
     </html>
