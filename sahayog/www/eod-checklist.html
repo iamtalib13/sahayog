@@ -81,13 +81,37 @@
             border-right: 1px solid var(--card-border);
             display: flex;
             flex-direction: column;
-            padding: 32px;
+            padding: 0px 32px 32px 32px;
             overflow-y: auto;
         }
 
         /* Sidebar Header */
-        .header {
+        /* .header {
             margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        } */
+        /* Sidebar Header */
+        .header {
+            /* Makes it stick to the top */
+            position: sticky;
+            top: 0;
+            z-index: 10;
+
+            /* Give it a solid background so scrolling text hides behind it */
+            background-color: var(--sidebar-bg);
+
+            /* Pull the header out to the edges to ignore the sidebar's padding */
+            margin: -32px -32px 24px -32px;
+
+            /* Put the padding back INSIDE the header so everything aligns perfectly */
+            padding: 32px 32px 20px 32px;
+
+            /* Optional: Adds a very subtle line under the header to separate it from scrolling content */
+            border-bottom: 1px solid var(--card-border);
+
+            /* Original flexbox layout */
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
