@@ -443,6 +443,11 @@
                       [[ row.disabled ? 'Disabled' : 'Enabled' ]]
                     </span>
                   </div>
+                  <div class="item-card-qty-bottom">
+                    <span class="qty-value" :class="{ 'is-admin': isAdmin }">
+                      <i class="fas fa-cubes"></i> [[ getDisplayQty(row) ]]
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1368,6 +1373,25 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
+  .item-card-qty-bottom {
+    margin-top: 8px;
+    text-align: right;
+  }
+  .qty-value {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray-500);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .qty-value i {
+    font-size: 10px;
+    color: var(--gray-400);
+  }
+  .qty-value.is-admin {
+    color: var(--blue-600);
+  }
   .item-card-code {
     margin: 0 0 6px;
     font-size: 13px;
@@ -1791,6 +1815,9 @@
       loadedRows: 0,
       hasMore: false,
       itemView: "list",
+      userWarehouse: null,
+      itemQuantities: {},
+      isAdmin: false,
       requestStats: {
         draft: 0,
         pendingReporting: 0,
@@ -1848,6 +1875,8 @@
       async mounted() {
         this.applyTheme();
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
+        // Check if user is admin
+        this.isAdmin = frappe.session.user === "Administrator";
         // Fetch user's full name from User doctype
         try {
           const res = await frappe.call({
@@ -1865,6 +1894,8 @@
         } catch (e) {
           this.sidebar.header.subtitle = frappe.session.user || "Admin";
         }
+        // Fetch user's warehouse (non-blocking)
+        try { await this.fetchUserWarehouse(); } catch (e) { console.warn("Warehouse fetch failed:", e); }
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
           this.findSidebarItem("Items");
@@ -1896,6 +1927,43 @@
         } else {
           this.rows = [];
         }
+      },
+
+      async fetchUserWarehouse() {
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse"
+          });
+          if (res.message) {
+            this.userWarehouse = res.message.warehouse;
+          }
+        } catch (e) {
+          console.error("Error fetching user warehouse:", e);
+        }
+      },
+
+      async fetchItemQuantities() {
+        if (!this.userWarehouse || this.rows.length === 0) return;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_item_quantities_for_warehouse",
+            args: { warehouse: this.userWarehouse }
+          });
+          if (res.message) {
+            this.itemQuantities = res.message;
+            this.rows = this.rows.map(row => ({
+              ...row,
+              branch_qty: this.itemQuantities[row.item_code] || 0
+            }));
+          }
+        } catch (e) {
+          console.error("Error fetching item quantities:", e);
+        }
+      },
+
+      getDisplayQty(row) {
+        if (this.isAdmin) return "##";
+        return row.branch_qty || 0;
       },
 
       async fetchData(doctype = "Item", append = false) {
@@ -2007,6 +2075,10 @@
           console.error(e);
         } finally {
           this.loading = false;
+          // Fetch item quantities if Items section
+          if (doctype === "Item" && !append && this.userWarehouse) {
+            await this.fetchItemQuantities();
+          }
         }
       },
 

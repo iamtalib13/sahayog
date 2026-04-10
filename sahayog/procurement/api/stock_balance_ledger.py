@@ -454,3 +454,43 @@ def get_movement_list(limit=20, start=0, search_text=None):
         "data": data,
         "total": total_count
     }
+
+
+@frappe.whitelist()
+def get_user_branch_warehouse():
+    """
+    Get the warehouse linked to the current user's branch
+    Uses sol_id from Employee (same as Branch Stock report)
+    """
+    user = frappe.session.user
+    
+    # Get user's sol_id from Employee (matches Branch Stock report logic)
+    sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+    
+    if not sol_id:
+        return {"warehouse": None, "branch": None}
+    
+    return {
+        "warehouse": sol_id,
+        "branch": sol_id
+    }
+
+
+@frappe.whitelist()
+def get_item_quantities_for_warehouse(warehouse=None):
+    """
+    Get actual quantity for all items in a specific warehouse (like Branch Stock report)
+    Returns dict: {item_code: qty}
+    """
+    if not warehouse:
+        return {}
+    
+    # Get quantities from Bin - same logic as Branch Stock report
+    bins = frappe.db.sql("""
+        SELECT item_code, SUM(actual_qty) as qty
+        FROM `tabBin`
+        WHERE warehouse = %s
+        GROUP BY item_code
+    """, (warehouse,), as_dict=True)
+    
+    return {bin.item_code: bin.qty for bin in bins}
