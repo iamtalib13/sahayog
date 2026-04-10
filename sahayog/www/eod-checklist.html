@@ -1942,6 +1942,7 @@
                     },
                     currentDateTime: '',
                     eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
+                    eodClosedTime: '',
                     eodName: '',
                     // 8 professional colors for the avatar backgrounds
                     avatarColors: [
@@ -2168,7 +2169,10 @@
                                 else if (status === 'Closed') {
                                     this.eodStatus = 'closed_today';
                                     this.eodName = data.message.name;
-                                    this.eodClosedTime = data.message.closed_on ? this.formatTime(data.message.closed_on) : '';
+                                    if (data.message.closed_on) {
+                                        this.eodClosedTime = this.formatTime(data.message.closed_on);
+                                    }
+                                    // this.eodClosedTime = data.message.closed_on ? this.formatTime(data.message.closed_on) : '';
                                 }
                                 else {
                                     this.eodStatus = 'idle';
@@ -2338,6 +2342,9 @@
                                 const data = await res.json();
                                 if (data.message && data.message.status === 'success') {
                                     this.eodStatus = 'closed_today';
+                                    //  else if (status === 'Closed') { the current time instantly
+                                    const now = new Date();
+                                    this.eodClosedTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                                     this.showModal = true;
                                     await this.fetchChatMessages();
                                 }

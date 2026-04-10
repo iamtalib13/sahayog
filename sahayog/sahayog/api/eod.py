@@ -1,7 +1,7 @@
 import frappe
 import os
 from frappe import _
-from frappe.utils import nowdate, now_datetime, format_time, format_datetime, get_files_path
+from frappe.utils import nowdate, now_datetime, format_time, format_datetime, get_files_path, nowdate
 from frappe.utils.file_manager import save_file
 import json
 from frappe.utils.pdf import get_pdf
@@ -31,6 +31,23 @@ def get_eod_status():
     eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
     if eod:
         return eod
+    return {"status": "idle"}
+
+@frappe.whitelist()
+def get_eod_status():
+    """Returns the current EOD record and its status for today."""
+    today = nowdate()
+    
+    # ADDED "modified" to the list of fields to fetch from the database!
+    eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status", "modified"], as_dict=True)
+    
+    if eod:
+        # If the status is Closed, send the modified time back to the frontend as 'closed_on'
+        if eod.status == "Closed":
+            eod["closed_on"] = str(eod.modified)
+            
+        return eod
+        
     return {"status": "idle"}
 
 @frappe.whitelist()
