@@ -1570,10 +1570,12 @@
           emptyIcon: "fa-person-walking-arrow-right",
           emptyTitle: "No movements found",
           emptyMessage: "No asset movement records match the current search.",
-          searchableFields: ["name", "purpose", "status", "transaction_date"],
+          searchableFields: ["name", "purpose", "status", "transaction_date", "source_location", "to_employee"],
           columns: [
             { label: "Movement", key: "name", width: 2, type: "avatar" },
             { label: "Purpose", key: "purpose", width: 1.5 },
+            { label: "Source", key: "source_location", width: 1.5 },
+            { label: "Current Location", key: "to_employee", width: 1.5 },
             { label: "Date", key: "transaction_date", width: 1 },
             { label: "Status", key: "docstatus", width: 1, type: "badge" },
           ],
@@ -1792,6 +1794,27 @@
           } else if (doctype === "Asset") {
             res = await frappe.call({
               method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText
+              }
+            });
+            
+            if (res.message) {
+                const data = res.message.data || [];
+                if (append) {
+                    this.rows = this.rows.concat(data);
+                } else {
+                    this.rows = data;
+                }
+                this.loadedRows += data.length;
+                this.totalRows = res.message.total || 0;
+                this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else if (doctype === "Asset Movement") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_movement_list",
               args: {
                 limit: this.pageSize,
                 start: start,

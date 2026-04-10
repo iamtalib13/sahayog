@@ -403,3 +403,47 @@ def get_asset_list(limit=20, start=0, search_text=None):
         "data": data,
         "total": total_count
     }
+
+@frappe.whitelist()
+def get_movement_list(limit=20, start=0, search_text=None):
+    """
+    Fetch Asset Movements joined with first child item fields
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        conditions.append("(am.name LIKE %(search)s OR am.purpose LIKE %(search)s OR ami.source_location LIKE %(search)s OR ami.to_employee LIKE %(search)s)")
+        values["search"] = f"%{search_text}%"
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    
+    # Get total count (using distinct parent because of join)
+    total_count = frappe.db.sql(f"""
+        SELECT COUNT(DISTINCT am.name) 
+        FROM `tabAsset Movement` am
+        LEFT JOIN `tabAsset Movement Item` ami ON ami.parent = am.name
+        {where_clause}
+    """, values)[0][0]
+
+    # Get data - using a subquery to get only the first child row per parent
+    data = frappe.db.sql(f"""
+        SELECT 
+            am.*, 
+            ami.source_location,
+            ami.to_employee
+        FROM `tabAsset Movement` am
+        LEFT JOIN (
+            SELECT parent, source_location, to_employee,
+                   ROW_NUMBER() OVER (PARTITION BY parent ORDER BY name ASC) as rn
+            FROM `tabAsset Movement Item`
+        ) ami ON ami.parent = am.name AND ami.rn = 1
+        {where_clause}
+        ORDER BY am.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }
