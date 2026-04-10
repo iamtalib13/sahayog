@@ -194,6 +194,7 @@
    "label": "Date Details"
   },
   {
+   "depends_on": "eval:doc.response_of_ua == 'Yes'",
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
