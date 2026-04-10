@@ -364,3 +364,42 @@ def get_emr_list(limit=20, start=0, search_text=None):
         "data": data,
         "total": total_count
     }
+
+@frappe.whitelist()
+def get_asset_list(limit=20, start=0, search_text=None):
+    """
+    Fetch Assets joined with Employee Name for Custodian
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        conditions.append("(ast.name LIKE %(search)s OR ast.asset_name LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
+        values["search"] = f"%{search_text}%"
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    
+    # Get total count
+    total_count = frappe.db.sql(f"""
+        SELECT COUNT(*) 
+        FROM `tabAsset` ast
+        LEFT JOIN `tabEmployee` emp ON emp.name = ast.custodian
+        {where_clause}
+    """, values)[0][0]
+
+    # Get data
+    data = frappe.db.sql(f"""
+        SELECT 
+            ast.*, 
+            emp.employee_name as custodian_name
+        FROM `tabAsset` ast
+        LEFT JOIN `tabEmployee` emp ON emp.name = ast.custodian
+        {where_clause}
+        ORDER BY ast.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }

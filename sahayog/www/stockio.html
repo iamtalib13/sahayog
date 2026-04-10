@@ -1554,11 +1554,11 @@
           emptyIcon: "fa-cubes",
           emptyTitle: "No assets found",
           emptyMessage: "No asset master records match the current search.",
-          searchableFields: ["name", "asset_name", "custodian", "status"],
+          searchableFields: ["name", "asset_name", "custodian", "status", "custodian_name"],
           columns: [
             { label: "Asset", key: "asset_name", width: 2, type: "avatar" },
             { label: "Code", key: "name", width: 1.5 },
-            { label: "Custodian", key: "custodian", width: 1.5 },
+            { label: "Custodian", key: "custodian_name", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
           ],
         },
@@ -1789,6 +1789,27 @@
                 this.totalRows = res.message.total || 0;
                 this.hasMore = this.loadedRows < this.totalRows;
             }
+          } else if (doctype === "Asset") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText
+              }
+            });
+            
+            if (res.message) {
+                const data = res.message.data || [];
+                if (append) {
+                    this.rows = this.rows.concat(data);
+                } else {
+                    this.rows = data;
+                }
+                this.loadedRows += data.length;
+                this.totalRows = res.message.total || 0;
+                this.hasMore = this.loadedRows < this.totalRows;
+            }
           } else {
             res = await frappe.call({
                 method: "frappe.client.get_list",
@@ -1963,9 +1984,12 @@
         if (!row || !key) return "";
         let value = row[key];
 
-        // 🔥 Special handling for employee_name (Owner column in Requests)
+        // 🔥 Special handling for employee names
         if (key === "employee_name") {
             return value || row.owner || "-";
+        }
+        if (key === "custodian_name") {
+            return value || row.custodian || "-";
         }
 
         if (value === null || value === undefined || value === "") return "-";
