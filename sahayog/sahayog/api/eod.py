@@ -24,34 +24,83 @@ def add_chat_message(eod_doc, text, sender="System", is_system=True, attachment=
         "is_system": is_system
     })
 
-@frappe.whitelist()
-def get_eod_status():
-    """Returns the current EOD record and its status for today."""
-    today = nowdate()
-    eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
-    if eod:
-        return eod
-    return {"status": "idle"}
+# @frappe.whitelist()
+# def get_eod_status():
+#     """Returns the current EOD record and its status for today."""
+#     today = nowdate()
+#     eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
+#     if eod:
+#         return eod
+#     return {"status": "idle"}
+
+
+# # new working method
+# @frappe.whitelist()
+# def get_eod_status():
+#     """Returns the current EOD record and its status for today."""
+#     today = nowdate()
+    
+#     # ADDED "modified" to the list of fields to fetch from the database!
+#     eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status", "modified"], as_dict=True)
+    
+#     if eod:
+#         # If the status is Closed, send the modified time back to the frontend as 'closed_on'
+#         if eod.status == "Closed":
+#             eod["closed_on"] = str(eod.modified)
+            
+#         return eod
+        
+#     return {"status": "idle"}
+
+
+from frappe.utils import nowdate
 
 @frappe.whitelist()
 def get_eod_status():
-    """Returns the current EOD record and its status for today."""
+    """Returns the active EOD record. Enforces completion of the previous day's EOD."""
     today = nowdate()
     
-    # ADDED "modified" to the list of fields to fetch from the database!
-    eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status", "modified"], as_dict=True)
+    # 1. Fetch the absolute latest EOD document created in the system (ignoring the date)
+    latest_eod = frappe.db.get_all(
+        "Bank EOD", 
+        fields=["name", "status", "modified", "date"], 
+        order_by="date desc, creation desc", 
+        limit=1
+    )
     
-    if eod:
-        # If the status is Closed, send the modified time back to the frontend as 'closed_on'
-        if eod.status == "Closed":
-            eod["closed_on"] = str(eod.modified)
-            
-        return eod
+    if latest_eod:
+        eod = latest_eod[0]
         
+        # 2. If the latest EOD is NOT closed (Pending/Completed), we MUST return it!
+        # This traps the user in yesterday's EOD until they finish and close it.
+        if eod.status != "Closed":
+            return eod
+            
+        # 3. If the latest EOD IS Closed, and its date is today, return it (shows closed screen)
+        if str(eod.date) == str(today):
+            eod["closed_on"] = str(eod.modified)
+            return eod
+            
+        # 4. If the latest EOD IS Closed, but it's from yesterday (or earlier), return idle!
+        # This tells the frontend to show the "Start" button for a brand new day.
+        return {"status": "idle"}
+        
+    # If no EODs exist at all in the database, return idle
     return {"status": "idle"}
+
+
 
 @frappe.whitelist()
 def start_eod():
+    # --- ADD THIS SECURITY CHECK ---
+    # Check if ANY previous EOD is still open (Not Closed)
+    open_eods = frappe.db.get_all("Bank EOD", filters={"status": ("!=", "Closed")}, limit=1)
+    
+    if open_eods:
+        # Block the creation of a new EOD and force a page refresh!
+        frappe.throw("You cannot start a new EOD. Please complete and close the previous day's EOD first.")
+    # --------------------------------
+
     """Creates a new Bank EOD record for today if it doesn't exist."""
     today = nowdate()
     
@@ -80,6 +129,38 @@ def start_eod():
     frappe.db.commit()
 
     return {"name": eod.name, "status": eod.status}
+
+
+# @frappe.whitelist()
+# def start_eod():
+#     """Creates a new Bank EOD record for today if it doesn't exist."""
+#     today = nowdate()
+    
+#     # Check if any EOD exists for today
+#     existing_eod = frappe.db.get_value("Bank EOD", {"date": today}, ["name", "status"], as_dict=True)
+#     if existing_eod:
+#         return existing_eod
+    
+#     eod = frappe.new_doc("Bank EOD")
+#     eod.date = today
+#     eod.status = "Pending"
+#     # load_tasks is called in before_insert in bank_eod.py
+#     eod.insert(ignore_permissions=True)
+    
+#     # 1. Send "EOD started" message
+#     current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
+#     add_chat_message(eod, f"EOD started for date {today} at {current_dt}")
+
+#     # 2. Send first task initiation message
+#     if eod.eod_tasks:
+#         sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+#         first_task = sorted_tasks[0]
+#         add_chat_message(eod, f"Task '{first_task.task}' (Team: {first_task.team}) initiated.")
+    
+#     eod.save(ignore_permissions=True)
+#     frappe.db.commit()
+
+#     return {"name": eod.name, "status": eod.status}
 
 
 
