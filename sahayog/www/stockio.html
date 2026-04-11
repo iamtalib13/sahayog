@@ -248,6 +248,40 @@
             </span>
             <span class="detail-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
           </div>
+
+          <!-- Child Table for Employee Material Request -->
+          <div v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length" class="detail-items-section mt-4">
+            <h4 class="section-subtitle">Requested Items</h4>
+            <div class="items-table-wrapper">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th class="text-right">Qty</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in detailRecord.items" :key="item.name">
+                    <td>
+                      <div class="item-name-cell">
+                        <span class="item-code-text">[[ item.item_code ]]</span>
+                        <span class="item-name-text text-muted">[[ item.item_name ]]</span>
+                      </div>
+                    </td>
+                    <td>[[ item.item_category ]]</td>
+                    <td class="text-right font-medium">[[ item.quantity ]] [[ item.uom ]]</td>
+                    <td>
+                      <span class="status-badge" :class="getBadgeClass(item, 'status')">
+                        [[ item.status ]]
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1508,6 +1542,72 @@
     max-width: 60%;
   }
 
+  /* Child Table Styles */
+  .detail-items-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid var(--border-color);
+  }
+  .section-subtitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  .items-table-wrapper {
+    background: var(--gray-50);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  [data-theme="dark"] .items-table-wrapper {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .items-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  [data-theme="dark"] .items-table th {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--gray-400);
+  }
+  .items-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+  }
+  .items-table tr:last-child td {
+    border-bottom: none;
+  }
+  .item-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .item-code-text {
+    font-weight: 600;
+    color: var(--blue-600);
+    font-family: monospace;
+  }
+  .item-name-text {
+    font-size: 12px;
+  }
+  .text-right {
+    text-align: right;
+  }
+
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1747,7 +1847,7 @@
             { label: "Purpose", key: "purpose" },
             { label: "Created", key: "creation" },
             { label: "Modified", key: "modified" },
-            { label: "Remarks", key: "remarks" },
+            { label: "Remarks", key: "remark" },
           ],
         },
         Inward: {
@@ -2300,16 +2400,34 @@
         window.location.href = `/app/${slug}/new`;
       },
 
-      openRecord(row) {
+      async openRecord(row) {
         if (!row || !row.name || !this.currentView.doctype) return;
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
-          this.detailRecord = row;
+          this.loading = true;
+          try {
+            const res = await frappe.call({
+              method: "frappe.client.get",
+              args: {
+                doctype: this.currentView.doctype,
+                name: row.name,
+              },
+            });
+            if (res.message) {
+              this.detailRecord = res.message;
+            } else {
+              this.detailRecord = row;
+            }
+          } catch (e) {
+            console.error("Failed to fetch full record:", e);
+            this.detailRecord = row;
+          } finally {
+            this.loading = false;
+          }
           this.detailFields = this.currentView.detailFields;
           return;
-        }
-        // Fallback: redirect to Frappe desk for other doctypes
+        }        // Fallback: redirect to Frappe desk for other doctypes
         const slug = String(this.currentView.doctype)
           .toLowerCase()
           .trim()
@@ -2361,6 +2479,11 @@
       getFieldValue(row, key) {
         if (!row || !key) return "";
         let value = row[key];
+
+        // 🔥 Special handling for purpose (fetch from child if not in parent)
+        if (key === "purpose" && (!value || value === "-") && row.items && row.items.length) {
+            return row.items[0].purpose || "-";
+        }
 
         // 🔥 Special handling for employee names
         if (key === "employee_name") {
