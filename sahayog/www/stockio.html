@@ -228,8 +228,31 @@
     </header>
 
     <section class="page-content">
+      <!-- Detail View -->
+      <div v-if="showDetailView" class="detail-view-container">
+        <header class="detail-view-header">
+          <button class="btn-back" @click="closeDetailView()">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back</span>
+          </button>
+          <h2 class="detail-title">[[ detailRecord ? detailRecord.name : 'Detail' ]]</h2>
+        </header>
+
+        <div class="detail-card" v-if="detailRecord">
+          <div v-for="field in detailFields" :key="field.key" class="detail-row">
+            <span class="detail-label">[[ field.label ]]</span>
+            <span class="detail-value" v-if="field.type === 'badge'">
+               <span class="status-badge" :class="getBadgeClass(detailRecord, field.key)">
+                  [[ getBadgeText(detailRecord, field.key) ]]
+               </span>
+            </span>
+            <span class="detail-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+          </div>
+        </div>
+      </div>
+
       <div
-        v-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
+        v-else-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
         class="list-view-container"
       >
         <!-- Analytics Dashboard -->
@@ -460,7 +483,7 @@
               :key="row.name"
               class="list-row"
               :class="{ selected: selectedRows.includes(row.name) }"
-              @click="toggleRowSelection(row.name)"
+              @click="currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name)"
             >
               <div class="col-checkbox" v-if="currentView.selectable !== false">
                 <input
@@ -1412,6 +1435,79 @@
     line-height: 1.3;
   }
 
+  /* DETAIL VIEW */
+  .detail-view-container {
+    padding: 24px 32px;
+    height: calc(100vh - var(--header-height));
+    overflow-y: auto;
+    background: var(--bg-page);
+  }
+  .detail-view-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .btn-back {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-back:hover {
+    background: var(--blue-600);
+    color: #ffffff;
+    border-color: var(--blue-600);
+  }
+  .detail-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .detail-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+  .detail-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 160px;
+    flex-shrink: 0;
+  }
+  .detail-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    text-align: right;
+    word-break: break-word;
+    max-width: 60%;
+  }
+
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1643,6 +1739,16 @@
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
           ],
+          detailFields: [
+            { label: "Request ID", key: "name" },
+            { label: "Employee", key: "employee_name" },
+            { label: "Status", key: "status", type: "badge" },
+            { label: "Target Warehouse", key: "target_warehouse" },
+            { label: "Purpose", key: "purpose" },
+            { label: "Created", key: "creation" },
+            { label: "Modified", key: "modified" },
+            { label: "Remarks", key: "remarks" },
+          ],
         },
         Inward: {
           doctype: "Purchase Receipt",
@@ -1818,6 +1924,9 @@
       userWarehouse: null,
       itemQuantities: {},
       isAdmin: false,
+      showDetailView: false,
+      detailRecord: null,
+      detailFields: [],
       requestStats: {
         draft: 0,
         pendingReporting: 0,
@@ -1917,6 +2026,7 @@
         this.loadedRows = 0;
         this.hasMore = false;
         this.loading = false;
+        this.showDetailView = false;
 
         if (item.label === "Analytics") {
           await this.fetchRequestStats();
@@ -2192,12 +2302,26 @@
 
       openRecord(row) {
         if (!row || !row.name || !this.currentView.doctype) return;
+        // Show detail view inline for Requests
+        if (this.currentView.detailFields) {
+          this.showDetailView = true;
+          this.detailRecord = row;
+          this.detailFields = this.currentView.detailFields;
+          return;
+        }
+        // Fallback: redirect to Frappe desk for other doctypes
         const slug = String(this.currentView.doctype)
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
         window.location.href = `/app/${slug}/${encodeURIComponent(row.name)}`;
+      },
+
+      closeDetailView() {
+        this.showDetailView = false;
+        this.detailRecord = null;
+        this.detailFields = [];
       },
 
       openReport(route) {
