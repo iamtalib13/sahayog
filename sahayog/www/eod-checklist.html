@@ -111,10 +111,10 @@
             /* Optional: Adds a very subtle line under the header to separate it from scrolling content */
             border-bottom: 1px solid var(--card-border);
 
-            /* Original flexbox layout */
+            /* Changed to column to support progress bar below title */
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: stretch;
         }
 
         .capsule-btn {
@@ -219,6 +219,13 @@
             font-size: 16px;
         }
 
+        .title {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         .title h1 {
             font-size: 22px;
             margin: 0;
@@ -230,10 +237,10 @@
             font-size: 13px;
             color: var(--accent-green);
             font-weight: 600;
-            margin: 4px 0;
         }
 
         .title p {
+            width: 100%;
             font-size: 14px;
             color: var(--text-secondary);
             margin: 0;
@@ -1352,61 +1359,100 @@
 
         /* Collapsible Section Colors & Styling */
         .section-item {
-            margin-bottom: 24px;
-            border-radius: 16px;
-            padding: 2px 14px 16px 14px;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            padding: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--card-border);
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+
+        .section-item.expanded {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-item.section-completed {
+            border-left-color: #10b981 !important;
+            background-color: #f0fdf4;
+        }
+
+        .section-item.section-completed .section-title {
+            color: #047857;
         }
 
         .section-header {
-            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            padding: 12px 6px;
+            padding: 14px 16px;
             user-select: none;
-            border-radius: 10px;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover {
+            background-color: #fcfcfc;
+        }
+
+        .section-item.expanded .section-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
         }
 
         .section-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             color: var(--text-primary);
-        }
-
-        .collapse-icon {
-            font-size: 14px;
-            color: var(--text-secondary);
-            transition: transform 0.3s ease;
-        }
-
-        .collapse-icon.rotated {
-            transform: rotate(-180deg);
         }
 
         /* The sliding container */
         .task-list-wrapper {
             display: grid;
-            grid-template-rows: 1fr;
-            transition: grid-template-rows 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
-            opacity: 1;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+            opacity: 0;
         }
 
-        .task-list-wrapper.collapsed {
-            grid-template-rows: 0fr;
-            opacity: 0;
-            margin-top: 0;
+        .task-list-wrapper.expanded {
+            grid-template-rows: 1fr;
+            opacity: 1;
         }
 
         .task-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 2px; /* Tight gap for internal list */
             overflow: hidden;
+            padding: 8px;
+            background-color: #fafafa;
+        }
+
+        .task-item {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            font-size: 13px;
+            background-color: #ffffff;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 12px;
+        }
+
+        .task-item:hover {
+            border-color: var(--card-border);
+            background-color: #fff;
+            transform: translateX(4px);
+        }
+
+        .task-item.done-item {
+            background-color: rgba(0, 0, 0, 0.01);
+            opacity: 0.8;
         }
 
         .collapse-icon {
@@ -1534,75 +1580,83 @@
             <!-- <aside class="sidebar" :style="{ flex: (eodStatus === 'closed_today' && isManager) ? 1.5 : 1 }"> -->
             <aside class="sidebar" :style="">
                 <div class="header">
-                    <div class="title-group">
-                        <!-- NEW SETTINGS DROPDOWN -->
+                    <div class="header-top" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="title-group">
+                            <div class="app-icon">S</div>
+                            <div class="title">
+                                <h1>EOD Checklist</h1>
+                                <div class="current-timestamp" v-text="currentDateTime"></div>
+                                <!-- Dynamic Subtitle! Shows closed time if completed, otherwise standard text -->
+                                <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
+                                    EOD Closed Time: <span v-text="eodClosedTime"></span>
+                                </p>
+                            </div>
+                        </div>
 
-                        <!-- END OF NEW SETTINGS DROPDOWN -->
+                        <div class="header-actions">
+                            <!-- Status Capsule -->
+                            <div v-if="eodStatus !== 'idle'" class="status-capsule"
+                                :class="(isAllTasksDone() || eodStatus === 'completed' || eodStatus === 'closed_today') ? 'status-completed' : 'status-pending'">
+                                <div class="status-dot"></div>
+                                <span v-if="eodStatus === 'closed_today'">Closed</span>
+                                <span v-else-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
+                                <span v-else>Pending</span>
+                            </div>
 
-                        <div class="app-icon">S</div>
-                        <div class="title">
-                            <h1>EOD Checklist</h1>
-                            <div class="current-timestamp" v-text="currentDateTime"></div>
-                            <!-- Dynamic Subtitle! Shows closed time if completed, otherwise standard text -->
-                            <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
-                                EOD Closed Time: <span v-text="eodClosedTime"></span>
-                            </p>
-                            <p v-text="project.subtitle"></p>
+                            <!-- Start Button -->
+                            <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
+                                Start
+                            </button>
+
+                            <!-- End Button -->
+                            <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
+                                class="capsule-btn btn-end" @click="handleEodAction">
+                                End
+                            </button>
+
+                            <!-- THE SETTINGS DROPDOWN ON THE FAR RIGHT -->
+                            <div class="settings-wrapper" v-if="isManager || eodStatus === 'closed_today'">
+                                <!-- Invisible overlay to close menu -->
+                                <div v-if="showSettingsDropdown" class="settings-overlay"
+                                    @click="showSettingsDropdown = false"></div>
+
+                                <!-- Gear Icon Button -->
+                                <button class="settings-btn" @click="showSettingsDropdown = !showSettingsDropdown">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path
+                                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                        </path>
+                                    </svg>
+                                </button>
+
+                                <!-- Dropdown Menu Items -->
+                                <div v-if="showSettingsDropdown" class="settings-dropdown">
+                                    <button v-if="isManager" @click="openManageModal(); showSettingsDropdown = false;">
+                                        👥 Manage Team
+                                    </button>
+                                    <button v-if="eodStatus === 'closed_today'"
+                                        @click="openDownloadPrompt(); showSettingsDropdown = false;">
+                                        📥 Download Report
+                                    </button>
+                                    <button v-if="eodStatus === 'closed_today'"
+                                        @click="resetForNextDay(); showSettingsDropdown = false;">
+                                        🔄 Next Day EOD
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="header-actions">
-                        <!-- Status Capsule -->
-                        <div v-if="eodStatus !== 'idle'" class="status-capsule"
-                            :class="(isAllTasksDone() || eodStatus === 'completed' || eodStatus === 'closed_today') ? 'status-completed' : 'status-pending'">
-                            <div class="status-dot"></div>
-                            <span v-if="eodStatus === 'closed_today'">Closed</span>
-                            <span v-else-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
-                            <span v-else>Pending</span>
+                    <!-- Overall Progress Section -->
+                    <div v-if="eodStatus !== 'idle'" class="progress-section" style="margin-top: 16px; margin-bottom: 0;">
+                        <div class="progress-labels">
+                            <span>Overall Progress</span>
+                            <span><span v-text="calculateProgress()"></span>%</span>
                         </div>
-
-                        <!-- Start Button -->
-                        <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
-                            Start
-                        </button>
-
-                        <!-- End Button -->
-                        <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
-                            class="capsule-btn btn-end" @click="handleEodAction">
-                            End
-                        </button>
-
-                        <!-- THE SETTINGS DROPDOWN ON THE FAR RIGHT -->
-                        <div class="settings-wrapper" v-if="isManager || eodStatus === 'closed_today'">
-                            <!-- Invisible overlay to close menu -->
-                            <div v-if="showSettingsDropdown" class="settings-overlay"
-                                @click="showSettingsDropdown = false"></div>
-
-                            <!-- Gear Icon Button -->
-                            <button class="settings-btn" @click="showSettingsDropdown = !showSettingsDropdown">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path
-                                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                                    </path>
-                                </svg>
-                            </button>
-
-                            <!-- Dropdown Menu Items -->
-                            <div v-if="showSettingsDropdown" class="settings-dropdown">
-                                <button v-if="isManager" @click="openManageModal(); showSettingsDropdown = false;">
-                                    👥 Manage Team
-                                </button>
-                                <button v-if="eodStatus === 'closed_today'"
-                                    @click="openDownloadPrompt(); showSettingsDropdown = false;">
-                                    📥 Download Report
-                                </button>
-                                <button v-if="eodStatus === 'closed_today'"
-                                    @click="resetForNextDay(); showSettingsDropdown = false;">
-                                    🔄 Next Day EOD
-                                </button>
-                            </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
                         </div>
                     </div>
                 </div>
@@ -1612,67 +1666,46 @@
                     <div class="empty-state-text">EOD still not started</div>
                 </div>
 
-                <!-- <div v-if="eodStatus !== 'idle'" class="progress-section">
-                    <div class="progress-labels">
-                        <span>Task Progress</span>
-                        <span><span v-text="calculateProgress()"></span>%</span>
-                    </div>
-                    <div class="progress-labels" style="margin-top: -8px; margin-bottom: 12px;">
-                        <span style="font-weight: 500; color: var(--text-secondary);">Daily Operations Routine</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
-                    </div>
-                </div> -->
-
-                <!-- Overall Progress Section -->
-                <div v-if="eodStatus !== 'idle'" class="progress-section">
-                    <div class="progress-labels">
-                        <span>Overall Progress</span>
-                        <span><span v-text="calculateProgress()"></span>%</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
-                    </div>
-                </div>
-
                 <div v-if="eodStatus !== 'idle'" class="checklist">
                     <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item"
-                        :style="{ backgroundColor: getTeamColor(sIndex).bg, borderColor: getTeamColor(sIndex).border }">
+                        :class="{ expanded: section.isExpanded, 'section-completed': isSectionDone(section) }"
+                        :style="!isSectionDone(section) ? { borderLeft: '4px solid ' + getTeamColor(sIndex).text } : {}">
 
                         <!-- Clickable Header to Collapse -->
-                        <div class="section-header" @click="section.isExpanded = !section.isExpanded"
-                            style="display: flex; align-items: center; gap: 16px;">
+                        <div class="section-header" @click="section.isExpanded = !section.isExpanded">
 
-                            <!-- 1. Team Name -->
-                            <span class="section-title"
-                                :style="{ color: getTeamColor(sIndex).text, whiteSpace: 'nowrap' }"
-                                v-text="section.title"></span>
+                            <!-- 1. Team Name + Completed Checkmark -->
+                            <div style="display: flex; align-items: center; gap: 8px; min-width: 120px;">
+                                <span class="section-title" v-text="section.title"></span>
+                                <svg v-if="isSectionDone(section)" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981"
+                                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
 
                             <!-- 2. Dynamic Team Progress Bar (Inline) -->
-                            <div style="flex: 1; display: flex; align-items: center; gap: 12px; margin-top: 2px;">
+                            <div style="flex: 1; display: flex; align-items: center; gap: 12px; margin: 0 20px;">
                                 <!-- The Background Track -->
                                 <div class="progress-bar-bg"
-                                    style="flex: 1; height: 6px; background-color: rgba(0,0,0,0.08); margin: 0; border-radius: 3px;">
+                                    style="flex: 1; height: 4px; background-color: #f1f1f1; margin: 0; border-radius: 2px;">
                                     <!-- The Colored Fill -->
                                     <div class="progress-bar-fill" :style="{ 
                                             width: getSectionProgress(section) + '%', 
                                             backgroundColor: getTeamColor(sIndex).text,
-                                            borderRadius: '3px'
+                                            borderRadius: '2px'
                                          }">
                                     </div>
                                 </div>
                                 <!-- The Text (e.g. "2 / 5") -->
-                                <span style="font-size: 11px; font-weight: 700; white-space: nowrap;"
-                                    :style="{ color: getTeamColor(sIndex).text }"
+                                <span style="font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--text-secondary);"
                                     v-text="getCompletedTasksCount(section) + ' / ' + (section.tasks ? section.tasks.length : 0)">
                                 </span>
                             </div>
 
                             <!-- 3. Modern SVG Chevron Icon -->
-                            <span class="collapse-icon" :class="{ rotated: !section.isExpanded }"
+                            <span class="collapse-icon" :class="{ rotated: section.isExpanded }"
                                 style="flex-shrink: 0;">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
@@ -1680,9 +1713,10 @@
                         </div>
 
                         <!-- Collapsible Task List -->
-                        <div class="task-list-wrapper" :class="{ collapsed: !section.isExpanded }">
+                        <div class="task-list-wrapper" :class="{ expanded: section.isExpanded }">
                             <div class="task-list">
                                 <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
+                                    :class="{ 'done-item': task.done }"
                                     @click="toggleTask(task)">
                                     <div class="task-left">
                                         <!-- Use dynamic team color for checkboxes! -->
@@ -2231,10 +2265,9 @@
                     },
                     currentDateFormatted: '',
                     project: {
-                        subtitle: 'Branch Operations - Daily Routine',
-                        sections: [] // Will be populated from API
-                    },
-                    // --- NEW STATE FOR ADMIN SELECT ---
+                       subtitle: '',
+                       sections: [] // Will be populated from API
+                    },                    // --- NEW STATE FOR ADMIN SELECT ---
                     adminSelectModal: {
                         show: false,
                         teams: [],
@@ -2426,8 +2459,8 @@
                                     if (!teamsMap[t.team]) {
                                         teamsMap[t.team] = {
                                             title: t.team,
-                                            // Maintain previous collapse state, or default to fully open!
-                                            isExpanded: oldState[t.team] !== undefined ? oldState[t.team] : true,
+                                            // Maintain previous collapse state, or default to collapsed!
+                                            isExpanded: oldState[t.team] !== undefined ? oldState[t.team] : false,
                                             tasks: []
                                         };
                                         sections.push(teamsMap[t.team]);
@@ -2447,6 +2480,11 @@
                         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
                         this.currentDateTime = now.toLocaleDateString('en-US', options);
                         this.currentDateFormatted = now.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+                    },
+
+                    isSectionDone(section) {
+                        if (!section || !section.tasks || section.tasks.length === 0) return false;
+                        return section.tasks.every(t => t.done);
                     },
 
                     isAllTasksDone() {
