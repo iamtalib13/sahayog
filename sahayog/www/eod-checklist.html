@@ -1413,6 +1413,7 @@
             grid-template-rows: 0fr;
             transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
             opacity: 0;
+            overflow: hidden; /* CRITICAL: Prevents the tree line from showing when collapsed */
         }
 
         .task-list-wrapper.expanded {
@@ -1423,11 +1424,24 @@
         .task-list {
             display: flex;
             flex-direction: column;
-            gap: 2px;
-            /* Tight gap for internal list */
+            gap: 12px;
             overflow: hidden;
-            padding: 8px;
+            padding: 16px 16px 16px 44px; /* Children start at 44px */
             background-color: #fafafa;
+            position: relative;
+        }
+
+        /* Continuous Vertical Tree Line */
+        .task-list::before {
+            content: '';
+            position: absolute;
+            left: 24px; /* Fixed at 24px from the left edge */
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--team-color, var(--card-border));
+            opacity: 0.35;
+            z-index: 1;
         }
 
         .task-item {
@@ -1435,25 +1449,68 @@
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 12px;
+            padding: 10px 14px;
             font-size: 13px;
             background-color: #ffffff;
-            border: 1px solid transparent;
-            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             gap: 12px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            z-index: 2;
+        }
+
+        /* Horizontal Connector - Precisely Aligned */
+        .task-item::before {
+            content: '';
+            position: absolute;
+            left: -20px; /* 44px (item start) - 20px = 24px (vertical line position) */
+            top: 50%;
+            width: 20px;
+            height: 2px;
+            background-color: var(--team-color, var(--card-border));
+            opacity: 0.35;
+            z-index: 1;
+            transition: all 0.2s ease;
+        }
+
+        /* Adjust connector when task item moves on hover */
+        .task-item:hover::before {
+            left: -24px; /* 48px (item hovered) - 24px = 24px (vertical line position) */
+            width: 24px;
+        }
+
+        /* Masking: Hides vertical line below the last task item */
+        .task-item:last-child::after {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            width: 4px; 
+            height: 1000px; 
+            background-color: #fafafa; 
+            z-index: -1; 
+            margin-left: -1px; /* Center over the 2px line */
+            transition: all 0.2s ease;
+        }
+
+        /* Adjust mask when last task item moves */
+        .task-item:last-child:hover::after {
+            left: -24px;
         }
 
         .task-item:hover {
-            border-color: var(--card-border);
+            border-color: var(--team-color, var(--accent-green));
             background-color: #fff;
             transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .task-item.done-item {
-            background-color: rgba(0, 0, 0, 0.01);
-            opacity: 0.8;
+            background-color: rgba(255, 255, 255, 0.8);
+            opacity: 0.9;
         }
 
         .collapse-icon {
@@ -1671,11 +1728,11 @@
 
                 <div v-if="eodStatus !== 'idle'" class="checklist">
                     <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item"
-                        :class="{ expanded: section.isExpanded, 'section-completed': isSectionDone(section) }"
-                        :style="!isSectionDone(section) ? { borderLeft: '4px solid ' + getTeamColor(sIndex).text } : {}">
+                        :class="{ expanded: section.isExpanded, 'section-completed': isSectionDone(section) }">
 
                         <!-- Clickable Header to Collapse -->
-                        <div class="section-header" @click="section.isExpanded = !section.isExpanded">
+                        <div class="section-header" @click="section.isExpanded = !section.isExpanded"
+                            :style="!isSectionDone(section) ? { borderLeft: '4px solid ' + getTeamColor(sIndex).text } : { borderLeft: '4px solid #10b981' }">
 
                             <!-- 1. Team Name + Completed Checkmark -->
                             <div style="display: flex; align-items: center; gap: 8px; min-width: 120px;">
@@ -1719,7 +1776,7 @@
 
                         <!-- Collapsible Task List -->
                         <div class="task-list-wrapper" :class="{ expanded: section.isExpanded }">
-                            <div class="task-list">
+                            <div class="task-list" :style="{ '--team-color': getTeamColor(sIndex).text }">
                                 <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
                                     :class="{ 'done-item': task.done }" @click="toggleTask(task)">
                                     <div class="task-left">
