@@ -228,8 +228,65 @@
     </header>
 
     <section class="page-content">
+      <!-- Detail View -->
+      <div v-if="showDetailView" class="detail-view-container">
+        <header class="detail-view-header">
+          <button class="btn-back" @click="closeDetailView()">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back</span>
+          </button>
+          <h2 class="detail-title">[[ detailRecord ? detailRecord.name : 'Detail' ]]</h2>
+        </header>
+
+        <div class="detail-card" v-if="detailRecord">
+          <div v-for="field in detailFields" :key="field.key" class="detail-row">
+            <span class="detail-label">[[ field.label ]]</span>
+            <span class="detail-value" v-if="field.type === 'badge'">
+               <span class="status-badge" :class="getBadgeClass(detailRecord, field.key)">
+                  [[ getBadgeText(detailRecord, field.key) ]]
+               </span>
+            </span>
+            <span class="detail-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+          </div>
+
+          <!-- Child Table for Employee Material Request -->
+          <div v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length" class="detail-items-section mt-4">
+            <h4 class="section-subtitle">Requested Items</h4>
+            <div class="items-table-wrapper">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th class="text-right">Qty</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in detailRecord.items" :key="item.name">
+                    <td>
+                      <div class="item-name-cell">
+                        <span class="item-code-text">[[ item.item_code ]]</span>
+                        <span class="item-name-text text-muted">[[ item.item_name ]]</span>
+                      </div>
+                    </td>
+                    <td>[[ item.item_category ]]</td>
+                    <td class="text-right font-medium">[[ item.quantity ]] [[ item.uom ]]</td>
+                    <td>
+                      <span class="status-badge" :class="getBadgeClass(item, 'status')">
+                        [[ item.status ]]
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div
-        v-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
+        v-else-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
         class="list-view-container"
       >
         <!-- Analytics Dashboard -->
@@ -443,6 +500,11 @@
                       [[ row.disabled ? 'Disabled' : 'Enabled' ]]
                     </span>
                   </div>
+                  <div class="item-card-qty-bottom">
+                    <span class="qty-value" :class="{ 'is-admin': isAdmin }">
+                      <i class="fas fa-cubes"></i> [[ getDisplayQty(row) ]]
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -455,7 +517,7 @@
               :key="row.name"
               class="list-row"
               :class="{ selected: selectedRows.includes(row.name) }"
-              @click="toggleRowSelection(row.name)"
+              @click="currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name)"
             >
               <div class="col-checkbox" v-if="currentView.selectable !== false">
                 <input
@@ -1368,6 +1430,25 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
+  .item-card-qty-bottom {
+    margin-top: 8px;
+    text-align: right;
+  }
+  .qty-value {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray-500);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .qty-value i {
+    font-size: 10px;
+    color: var(--gray-400);
+  }
+  .qty-value.is-admin {
+    color: var(--blue-600);
+  }
   .item-card-code {
     margin: 0 0 6px;
     font-size: 13px;
@@ -1386,6 +1467,145 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     line-height: 1.3;
+  }
+
+  /* DETAIL VIEW */
+  .detail-view-container {
+    padding: 24px 32px;
+    height: calc(100vh - var(--header-height));
+    overflow-y: auto;
+    background: var(--bg-page);
+  }
+  .detail-view-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .btn-back {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-back:hover {
+    background: var(--blue-600);
+    color: #ffffff;
+    border-color: var(--blue-600);
+  }
+  .detail-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .detail-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+  .detail-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 160px;
+    flex-shrink: 0;
+  }
+  .detail-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    text-align: right;
+    word-break: break-word;
+    max-width: 60%;
+  }
+
+  /* Child Table Styles */
+  .detail-items-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid var(--border-color);
+  }
+  .section-subtitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  .items-table-wrapper {
+    background: var(--gray-50);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  [data-theme="dark"] .items-table-wrapper {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .items-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  [data-theme="dark"] .items-table th {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--gray-400);
+  }
+  .items-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+  }
+  .items-table tr:last-child td {
+    border-bottom: none;
+  }
+  .item-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .item-code-text {
+    font-weight: 600;
+    color: var(--blue-600);
+    font-family: monospace;
+  }
+  .item-name-text {
+    font-size: 12px;
+  }
+  .text-right {
+    text-align: right;
   }
 
   .truncate {
@@ -1619,6 +1839,16 @@
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
           ],
+          detailFields: [
+            { label: "Request ID", key: "name" },
+            { label: "Employee", key: "employee_name" },
+            { label: "Status", key: "status", type: "badge" },
+            { label: "Target Warehouse", key: "target_warehouse" },
+            { label: "Purpose", key: "purpose" },
+            { label: "Created", key: "creation" },
+            { label: "Modified", key: "modified" },
+            { label: "Remarks", key: "remark" },
+          ],
         },
         Inward: {
           doctype: "Purchase Receipt",
@@ -1669,11 +1899,7 @@
           emptyMessage:
             "Try adjusting your search or create a new item to get started.",
           searchableFields: [
-            "name",
-            "item_name",
             "item_code",
-            "item_group",
-            "stock_uom",
           ],
           columns: [
             { label: "ID", key: "name", width: 2, type: "avatar" },
@@ -1795,6 +2021,12 @@
       loadedRows: 0,
       hasMore: false,
       itemView: "list",
+      userWarehouse: null,
+      itemQuantities: {},
+      isAdmin: false,
+      showDetailView: false,
+      detailRecord: null,
+      detailFields: [],
       requestStats: {
         draft: 0,
         pendingReporting: 0,
@@ -1852,6 +2084,8 @@
       async mounted() {
         this.applyTheme();
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
+        // Check if user is admin
+        this.isAdmin = frappe.session.user === "Administrator";
         // Fetch user's full name from User doctype
         try {
           const res = await frappe.call({
@@ -1869,6 +2103,8 @@
         } catch (e) {
           this.sidebar.header.subtitle = frappe.session.user || "Admin";
         }
+        // Fetch user's warehouse (non-blocking)
+        try { await this.fetchUserWarehouse(); } catch (e) { console.warn("Warehouse fetch failed:", e); }
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
           this.findSidebarItem("Items");
@@ -1890,6 +2126,7 @@
         this.loadedRows = 0;
         this.hasMore = false;
         this.loading = false;
+        this.showDetailView = false;
 
         if (item.label === "Analytics") {
           await this.fetchRequestStats();
@@ -1900,6 +2137,43 @@
         } else {
           this.rows = [];
         }
+      },
+
+      async fetchUserWarehouse() {
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse"
+          });
+          if (res.message) {
+            this.userWarehouse = res.message.warehouse;
+          }
+        } catch (e) {
+          console.error("Error fetching user warehouse:", e);
+        }
+      },
+
+      async fetchItemQuantities() {
+        if (!this.userWarehouse || this.rows.length === 0) return;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_item_quantities_for_warehouse",
+            args: { warehouse: this.userWarehouse }
+          });
+          if (res.message) {
+            this.itemQuantities = res.message;
+            this.rows = this.rows.map(row => ({
+              ...row,
+              branch_qty: this.itemQuantities[row.item_code] || 0
+            }));
+          }
+        } catch (e) {
+          console.error("Error fetching item quantities:", e);
+        }
+      },
+
+      getDisplayQty(row) {
+        if (this.isAdmin) return "##";
+        return row.branch_qty || 0;
       },
 
       async fetchData(doctype = "Item", append = false) {
@@ -2011,6 +2285,10 @@
           console.error(e);
         } finally {
           this.loading = false;
+          // Fetch item quantities if Items section
+          if (doctype === "Item" && !append && this.userWarehouse) {
+            await this.fetchItemQuantities();
+          }
         }
       },
 
@@ -2059,19 +2337,39 @@
       },
 
       get filteredRows() {
-        if (!this.searchText) return this.rows;
+        if (!this.searchText) {
+          let rows = this.rows.slice();
+          // Sort by item_code for Items section
+          if (this.activeItem === "Items") {
+            rows.sort((a, b) => {
+              const codeA = String(a.item_code || "").toLowerCase();
+              const codeB = String(b.item_code || "").toLowerCase();
+              return codeA.localeCompare(codeB);
+            });
+          }
+          return rows;
+        }
         const q = this.searchText.toLowerCase();
         const fields = this.currentView.searchableFields || [
           "name",
           "item_name",
           "item_code",
         ];
-        return this.rows.filter((r) =>
+        let filtered = this.rows.filter((r) =>
           fields.some((field) => {
             const value = this.getFieldValue(r, field);
             return value && String(value).toLowerCase().includes(q);
           }),
         );
+        // Sort by item_code for Items section
+        if (this.activeItem === "Items") {
+          filtered.sort((a, b) => {
+            const codeA = String(a.item_code || "").toLowerCase();
+            const codeB = String(b.item_code || "").toLowerCase();
+            return codeA.localeCompare(codeB);
+          });
+        }
+        return filtered;
       },
 
       get isAllSelected() {
@@ -2102,14 +2400,46 @@
         window.location.href = `/app/${slug}/new`;
       },
 
-      openRecord(row) {
+      async openRecord(row) {
         if (!row || !row.name || !this.currentView.doctype) return;
+        // Show detail view inline for Requests
+        if (this.currentView.detailFields) {
+          this.showDetailView = true;
+          this.loading = true;
+          try {
+            const res = await frappe.call({
+              method: "frappe.client.get",
+              args: {
+                doctype: this.currentView.doctype,
+                name: row.name,
+              },
+            });
+            if (res.message) {
+              this.detailRecord = res.message;
+            } else {
+              this.detailRecord = row;
+            }
+          } catch (e) {
+            console.error("Failed to fetch full record:", e);
+            this.detailRecord = row;
+          } finally {
+            this.loading = false;
+          }
+          this.detailFields = this.currentView.detailFields;
+          return;
+        }        // Fallback: redirect to Frappe desk for other doctypes
         const slug = String(this.currentView.doctype)
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
         window.location.href = `/app/${slug}/${encodeURIComponent(row.name)}`;
+      },
+
+      closeDetailView() {
+        this.showDetailView = false;
+        this.detailRecord = null;
+        this.detailFields = [];
       },
 
       openReport(route) {
@@ -2149,6 +2479,11 @@
       getFieldValue(row, key) {
         if (!row || !key) return "";
         let value = row[key];
+
+        // 🔥 Special handling for purpose (fetch from child if not in parent)
+        if (key === "purpose" && (!value || value === "-") && row.items && row.items.length) {
+            return row.items[0].purpose || "-";
+        }
 
         // 🔥 Special handling for employee names
         if (key === "employee_name") {
