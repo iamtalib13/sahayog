@@ -282,7 +282,13 @@ def close_eod(eod_name):
     
     eod.save(ignore_permissions=True)
     frappe.db.commit()
-    return {"status": "success", "eod_status": eod.status}
+    # return {"status": "success", "eod_status": eod.status}
+    return {
+    "status": "success",
+    "eod_status": "Closed",
+    "eod_date": str(eod.date),
+    "closed_on": str(eod.modified)
+}
 
 
 @frappe.whitelist(methods=["GET", "POST"])

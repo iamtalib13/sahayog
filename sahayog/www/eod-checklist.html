@@ -1423,7 +1423,8 @@
         .task-list {
             display: flex;
             flex-direction: column;
-            gap: 2px; /* Tight gap for internal list */
+            gap: 2px;
+            /* Tight gap for internal list */
             overflow: hidden;
             padding: 8px;
             background-color: #fafafa;
@@ -1580,7 +1581,8 @@
             <!-- <aside class="sidebar" :style="{ flex: (eodStatus === 'closed_today' && isManager) ? 1.5 : 1 }"> -->
             <aside class="sidebar" :style="">
                 <div class="header">
-                    <div class="header-top" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div class="header-top"
+                        style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div class="title-group">
                             <div class="app-icon">S</div>
                             <div class="title">
@@ -1650,7 +1652,8 @@
                     </div>
 
                     <!-- Overall Progress Section -->
-                    <div v-if="eodStatus !== 'idle'" class="progress-section" style="margin-top: 16px; margin-bottom: 0;">
+                    <div v-if="eodStatus !== 'idle'" class="progress-section"
+                        style="margin-top: 16px; margin-bottom: 0;">
                         <div class="progress-labels">
                             <span>Overall Progress</span>
                             <span><span v-text="calculateProgress()"></span>%</span>
@@ -1677,8 +1680,9 @@
                             <!-- 1. Team Name + Completed Checkmark -->
                             <div style="display: flex; align-items: center; gap: 8px; min-width: 120px;">
                                 <span class="section-title" v-text="section.title"></span>
-                                <svg v-if="isSectionDone(section)" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981"
-                                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <svg v-if="isSectionDone(section)" viewBox="0 0 24 24" width="16" height="16"
+                                    fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"
+                                    stroke-linejoin="round">
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </div>
@@ -1697,7 +1701,8 @@
                                     </div>
                                 </div>
                                 <!-- The Text (e.g. "2 / 5") -->
-                                <span style="font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--text-secondary);"
+                                <span
+                                    style="font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--text-secondary);"
                                     v-text="getCompletedTasksCount(section) + ' / ' + (section.tasks ? section.tasks.length : 0)">
                                 </span>
                             </div>
@@ -1716,8 +1721,7 @@
                         <div class="task-list-wrapper" :class="{ expanded: section.isExpanded }">
                             <div class="task-list">
                                 <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
-                                    :class="{ 'done-item': task.done }"
-                                    @click="toggleTask(task)">
+                                    :class="{ 'done-item': task.done }" @click="toggleTask(task)">
                                     <div class="task-left">
                                         <!-- Use dynamic team color for checkboxes! -->
                                         <div class="checkbox" :class="{ checked: task.done }"
@@ -1844,8 +1848,12 @@
                             </button>
                         </div>
                     </div>
-                    <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
+                    <!-- <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
                         Chat is closed as EOD for <span v-text="currentDateFormatted"></span> has been completed.
+                    </div> -->
+                    <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
+                        Chat is closed as EOD for <span v-text="lockedClosedEodDate || currentDateFormatted"></span> has
+                        been completed.
                     </div>
                 </div>
                 <div v-else class="chat-not-started">
@@ -1861,9 +1869,14 @@
         <div class="modal-content">
             <div class="success-icon">✓</div>
             <div class="modal-title">EOD Complete!</div>
-            <div class="modal-body">
+            <!-- <div class="modal-body">
                 Great job! End of Day process for <br>
                 <strong v-text="currentDateFormatted"></strong> has been successfully completed and logged.
+            </div> -->
+            <div class="modal-body">
+                Great job! End of Day process for <br>
+                <strong v-text="lockedClosedEodDate || currentDateFormatted"></strong> has been successfully completed
+                and logged.
             </div>
 
             <div class="modal-footer">
@@ -2109,6 +2122,9 @@
                 }
 
                 const app = PetiteVue.createApp({
+                    lockClosedWorkspace: false,
+                    lockedClosedEodName: '',
+                    lockedClosedEodDate: '',
                     showSettingsDropdown: false,
                     showModal: false,
                     showPdfModal: false,
@@ -2265,8 +2281,8 @@
                     },
                     currentDateFormatted: '',
                     project: {
-                       subtitle: '',
-                       sections: [] // Will be populated from API
+                        subtitle: '',
+                        sections: [] // Will be populated from API
                     },                    // --- NEW STATE FOR ADMIN SELECT ---
                     adminSelectModal: {
                         show: false,
@@ -2360,6 +2376,10 @@
                             const data = await response.json();
                             if (data.message) {
                                 const status = data.message.status;
+                                // if user has just closed a previous-day EOD, don't replace the closed screen with idle yet
+                                if (this.lockClosedWorkspace && status === 'idle') {
+                                    return;
+                                }
                                 if (status === 'Pending') {
                                     this.eodStatus = 'started';
                                     this.eodName = data.message.name;
@@ -2378,7 +2398,13 @@
                                     }
                                     // this.eodClosedTime = data.message.closed_on ? this.formatTime(data.message.closed_on) : '';
                                 }
+                                // else {
+                                //     this.eodStatus = 'idle';
+                                //     this.eodName = '';
+                                // }
                                 else {
+                                    if (this.lockClosedWorkspace) return;
+
                                     this.eodStatus = 'idle';
                                     this.eodName = '';
                                 }
@@ -2546,18 +2572,49 @@
                                     await this.fetchTasks();
                                     await this.fetchChatMessages();
                                 }
-                            } else if (type === 'end') {
+                            }
+                            // else if (type === 'end') {
+                            //     const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
+                            //     const data = await res.json();
+                            //     if (data.message && data.message.status === 'success') {
+                            //         this.eodStatus = 'closed_today';
+                            //         //  else if (status === 'Closed') { the current time instantly
+                            //         const now = new Date();
+                            //         this.eodClosedTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            //         this.showModal = true;
+                            //         await this.fetchChatMessages();
+                            //     }
+                            // }
+                            else if (type === 'end') {
                                 const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
                                 const data = await res.json();
+
                                 if (data.message && data.message.status === 'success') {
                                     this.eodStatus = 'closed_today';
-                                    //  else if (status === 'Closed') { the current time instantly
-                                    const now = new Date();
-                                    this.eodClosedTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                                    // lock the just-closed workspace so fetchStatus does not replace it with idle
+                                    this.lockClosedWorkspace = true;
+                                    this.lockedClosedEodName = this.eodName;
+                                    this.lockedClosedEodDate = data.message.eod_date || this.lockedClosedEodDate || this.currentDateFormatted;
+
+                                    // keep the correct closed time
+                                    if (data.message.closed_on) {
+                                        this.eodClosedTime = this.formatTime(data.message.closed_on);
+                                    } else {
+                                        const now = new Date();
+                                        this.eodClosedTime = now.toLocaleTimeString('en-US', {
+                                            hour12: false,
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit'
+                                        });
+                                    }
+
                                     this.showModal = true;
                                     await this.fetchChatMessages();
                                 }
                             }
+
                         } catch (err) {
                             console.error("Action error", err);
                         }
@@ -2644,13 +2701,36 @@
                     //     location.reload();
                     // },
 
-                    resetForNextDay() {
-                        this.showModal = false; // Hide the success modal if it was open
+                    // resetForNextDay() {
+                    //     this.showModal = false; // Hide the success modal if it was open
 
-                        this.confirmModal.title = 'EOD Completed';
-                        this.confirmModal.message = 'Current day EOD is complete. Please come back tomorrow to start a new checklist!';
-                        this.confirmModal.type = 'info';
-                        this.confirmModal.show = true;
+                    //     this.confirmModal.title = 'EOD Completed';
+                    //     this.confirmModal.message = 'Current day EOD is complete. Please come back tomorrow to start a new checklist!';
+                    //     this.confirmModal.type = 'info';
+                    //     this.confirmModal.show = true;
+                    // },
+
+                    // resetForNextDay() {
+                    //     this.lockClosedWorkspace = false;
+                    //     this.lockedClosedEodName = '';
+                    //     this.lockedClosedEodDate = '';
+                    //     location.reload();
+                    // },
+
+                    resetForNextDay() {
+                        // 1. Hide any open modals
+                        this.showModal = false;
+                        this.showSettingsDropdown = false;
+
+                        // 2. Clear the locks keeping us on yesterday's EOD
+                        this.lockClosedWorkspace = false;
+                        this.lockedClosedEodName = '';
+                        this.lockedClosedEodDate = '';
+
+                        // 3. Instantly refresh the screen
+                        // Because yesterday's EOD is closed, the backend will now safely give us 
+                        // the clean 'Start' screen for today!
+                        location.reload();
                     },
 
                     async handleFileUpload(e) {
