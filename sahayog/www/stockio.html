@@ -239,14 +239,16 @@
         </header>
 
         <div class="detail-card" v-if="detailRecord">
-          <div v-for="field in detailFields" :key="field.key" class="detail-row">
-            <span class="detail-label">[[ field.label ]]</span>
-            <span class="detail-value" v-if="field.type === 'badge'">
-               <span class="status-badge" :class="getBadgeClass(detailRecord, field.key)">
-                  [[ getBadgeText(detailRecord, field.key) ]]
-               </span>
-            </span>
-            <span class="detail-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+          <div class="detail-grid">
+            <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
+              <span class="detail-grid-label">[[ field.label ]]</span>
+              <span class="detail-grid-value" v-if="field.type === 'badge'">
+                 <span class="status-badge" :class="getBadgeClass(detailRecord, field.key)">
+                    [[ getBadgeText(detailRecord, field.key) ]]
+                 </span>
+              </span>
+              <span class="detail-grid-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+            </div>
           </div>
 
           <!-- Child Table for Employee Material Request -->
@@ -1516,30 +1518,42 @@
     padding: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
-  .detail-row {
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .detail-grid-item {
+    background: var(--gray-50);
+    border-radius: 10px;
+    padding: 14px 18px;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border-color);
+    flex-direction: column;
+    gap: 6px;
+    transition: var(--transition);
   }
-  .detail-row:last-child {
-    border-bottom: none;
+  [data-theme="dark"] .detail-grid-item {
+    background: rgba(255, 255, 255, 0.03);
   }
-  .detail-label {
-    font-size: 13px;
+  .detail-grid-item:hover {
+    background: var(--gray-100);
+  }
+  [data-theme="dark"] .detail-grid-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .detail-grid-label {
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
-    min-width: 160px;
-    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
-  .detail-value {
+  .detail-grid-value {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-main);
-    text-align: right;
     word-break: break-word;
-    max-width: 60%;
+    min-height: 20px;
   }
 
   /* Child Table Styles */
@@ -1846,6 +1860,7 @@
             { label: "Target Warehouse", key: "target_warehouse" },
             { label: "Purpose", key: "purpose" },
             { label: "Created", key: "creation" },
+            { label: "Required By Date", key: "required_by_date" },
             { label: "Modified", key: "modified" },
             { label: "Remarks", key: "remark" },
           ],
