@@ -280,7 +280,7 @@
         }
 
         .section-header {
-            margin-bottom: 14px;
+            margin-bottom: 0px;
         }
 
         .section-title {
@@ -1413,7 +1413,8 @@
             grid-template-rows: 0fr;
             transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
             opacity: 0;
-            overflow: hidden; /* CRITICAL: Prevents the tree line from showing when collapsed */
+            overflow: hidden;
+            /* CRITICAL: Prevents the tree line from showing when collapsed */
         }
 
         .task-list-wrapper.expanded {
@@ -1426,7 +1427,8 @@
             flex-direction: column;
             gap: 12px;
             overflow: hidden;
-            padding: 16px 16px 16px 44px; /* Children start at 44px */
+            padding: 16px 16px 16px 44px;
+            /* Children start at 44px */
             background-color: #fafafa;
             position: relative;
         }
@@ -1435,7 +1437,8 @@
         .task-list::before {
             content: '';
             position: absolute;
-            left: 24px; /* Fixed at 24px from the left edge */
+            left: 24px;
+            /* Fixed at 24px from the left edge */
             top: 0;
             bottom: 0;
             width: 2px;
@@ -1466,7 +1469,8 @@
         .task-item::before {
             content: '';
             position: absolute;
-            left: -20px; /* 44px (item start) - 20px = 24px (vertical line position) */
+            left: -20px;
+            /* 44px (item start) - 20px = 24px (vertical line position) */
             top: 50%;
             width: 20px;
             height: 2px;
@@ -1478,7 +1482,8 @@
 
         /* Adjust connector when task item moves on hover */
         .task-item:hover::before {
-            left: -24px; /* 48px (item hovered) - 24px = 24px (vertical line position) */
+            left: -24px;
+            /* 48px (item hovered) - 24px = 24px (vertical line position) */
             width: 24px;
         }
 
@@ -1488,11 +1493,12 @@
             position: absolute;
             left: -20px;
             top: 50%;
-            width: 4px; 
-            height: 1000px; 
-            background-color: #fafafa; 
-            z-index: -1; 
-            margin-left: -1px; /* Center over the 2px line */
+            width: 4px;
+            height: 1000px;
+            background-color: #fafafa;
+            z-index: -1;
+            margin-left: -1px;
+            /* Center over the 2px line */
             transition: all 0.2s ease;
         }
 
@@ -1776,7 +1782,7 @@
 
                         <!-- Collapsible Task List -->
                         <div class="task-list-wrapper" :class="{ expanded: section.isExpanded }">
-                            <div class="task-list" :style="{ '--team-color': getTeamColor(sIndex).text }">
+                            <div class="task-list" v-if="section.isExpanded" :style="{ '--team-color': getTeamColor(sIndex).text }">
                                 <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
                                     :class="{ 'done-item': task.done }" @click="toggleTask(task)">
                                     <div class="task-left">
