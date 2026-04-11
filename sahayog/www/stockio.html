@@ -253,7 +253,7 @@
           </div>
 
           <!-- Child Table for Employee Material Request -->
-          <div v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length" class="detail-items-section mt-4">
+          <div v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length" class="detail-items-section">
             <h4 class="section-subtitle">Requested Items</h4>
             <div class="items-table-wrapper">
               <table class="items-table">
@@ -1564,15 +1564,14 @@
 
   /* Child Table Styles */
   .detail-items-section {
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 2px solid var(--border-color);
+    margin-top: 0;
+    padding-top: 12px;
   }
   .section-subtitle {
     font-size: 15px;
     font-weight: 700;
     color: var(--text-main);
-    margin-bottom: 16px;
+    margin: 0 0 16px;
     letter-spacing: -0.01em;
   }
   .items-table-wrapper {
