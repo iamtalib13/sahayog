@@ -196,7 +196,16 @@
   <main class="main-area">
     <header class="top-header">
       <div class="header-left">
-        <h1 class="page-title">[[ activeItem ]]</h1>
+        <template v-if="showDetailView">
+          <button class="btn-back-inline" @click="closeDetailView()">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+        </template>
+        <h1 class="page-title" v-if="!showDetailView">[[ activeItem ]]</h1>
+        <h1 class="page-title" v-else>
+          [[ activeItem ]]
+          <span class="detail-id-badge">[[ detailRecord ? detailRecord.name : '' ]]</span>
+        </h1>
       </div>
       <div class="header-right">
         <div class="search-container">
@@ -230,14 +239,6 @@
     <section class="page-content">
       <!-- Detail View -->
       <div v-if="showDetailView" class="detail-view-container">
-        <header class="detail-view-header">
-          <button class="btn-back" @click="closeDetailView()">
-            <i class="fas fa-arrow-left"></i>
-            <span>Back</span>
-          </button>
-          <h2 class="detail-title">[[ detailRecord ? detailRecord.name : 'Detail' ]]</h2>
-        </header>
-
         <div class="detail-card" v-if="detailRecord">
           <div class="detail-grid">
             <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
@@ -943,6 +944,38 @@
     font-weight: 700;
     color: var(--text-main);
     letter-spacing: -0.015em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .btn-back-inline {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--border-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+  .btn-back-inline:hover {
+    background: var(--blue-600);
+    color: #ffffff;
+    border-color: var(--blue-600);
+  }
+  .detail-id-badge {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue-600);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: monospace;
   }
   .header-right {
     display: flex;
@@ -1478,39 +1511,6 @@
     overflow-y: auto;
     background: var(--bg-page);
   }
-  .detail-view-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-color);
-  }
-  .btn-back {
-    background: var(--gray-100);
-    color: var(--gray-600);
-    border: 1px solid var(--border-color);
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .btn-back:hover {
-    background: var(--blue-600);
-    color: #ffffff;
-    border-color: var(--blue-600);
-  }
-  .detail-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-main);
-  }
   .detail-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -1854,7 +1854,6 @@
             { label: "Created", key: "creation", width: 1 },
           ],
           detailFields: [
-            { label: "Request ID", key: "name" },
             { label: "Employee", key: "employee_name" },
             { label: "Status", key: "status", type: "badge" },
             { label: "Target Warehouse", key: "target_warehouse" },
