@@ -116,19 +116,37 @@ def start_eod():
     eod.insert(ignore_permissions=True)
     
     # 1. Send "EOD started" message
-    current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
-    add_chat_message(eod, f"EOD started for date {today} at {current_dt}")
+    # current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
+    # add_chat_message(eod, f"EOD started for date {today} at {current_dt}")
 
-    # 2. Send first task initiation message
-    if eod.eod_tasks:
-        sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
-        first_task = sorted_tasks[0]
-        add_chat_message(eod, f"Task '{first_task.task}' (Team: {first_task.team}) initiated.")
+    # # 2. Send first task initiation message
+    # if eod.eod_tasks:
+    #     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    #     first_task = sorted_tasks[0]
+    #     add_chat_message(eod, f"Task '{first_task.task}' (Team: {first_task.team}) initiated.")
+    
+    # eod.save(ignore_permissions=True)
+    # frappe.db.commit()
+
+    # return {"name": eod.name, "status": eod.status}
+
+        # 1. Send "EOD started" message by the user who clicked Start
+    current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
+    user_fullname = get_user_fullname(frappe.session.user)
+    
+    add_chat_message(
+        eod, 
+        f"EOD started for date {today} at {current_dt} by {user_fullname}", 
+        sender=user_fullname, 
+        is_system=False
+    )
+    
+    # (Removed the "initiated" message logic completely)
     
     eod.save(ignore_permissions=True)
     frappe.db.commit()
 
-    return {"name": eod.name, "status": eod.status}
+    return {"name": eod.name, "status": eod.status} 
 
 
 # @frappe.whitelist()
@@ -303,9 +321,20 @@ def close_eod(eod_name):
     if not all_done:
         frappe.throw(_("Cannot close EOD. Some tasks are still pending."))
         
-    # Manual transition to Closed
+    # # Manual transition to Closed
+    # eod.status = "Closed"
+    # add_chat_message(eod, "EOD process closed for today.")
+
+        # Manual transition to Closed
     eod.status = "Closed"
-    add_chat_message(eod, "EOD process closed for today.")
+    user_fullname = get_user_fullname(frappe.session.user)
+    
+    add_chat_message(
+        eod, 
+        f"EOD process successfully closed and locked.", 
+        sender=user_fullname, 
+        is_system=False
+    )
     
     eod.save(ignore_permissions=True)
     frappe.db.commit()
@@ -372,20 +401,48 @@ def update_task_status(eod_name, task_row_name, done):
             # ------------------------------------------------
             row.status = "Completed" if done else "Pending"
             
+            # if done and prev_status != "Completed":
+            #     row.completed_by = frappe.session.user
+            #     row.completed_on = now_datetime()
+            #     user_fullname = get_user_fullname(frappe.session.user)
+            #     add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
+                
+            #     if i + 1 < len(sorted_tasks):
+            #         next_task = sorted_tasks[i+1]
+            #         add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
+            
+            # elif not done and prev_status == "Completed":
+            #     row.completed_by = None
+            #     row.completed_on = None
+            #     add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
+
             if done and prev_status != "Completed":
                 row.completed_by = frappe.session.user
                 row.completed_on = now_datetime()
                 user_fullname = get_user_fullname(frappe.session.user)
-                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
                 
-                if i + 1 < len(sorted_tasks):
-                    next_task = sorted_tasks[i+1]
-                    add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
+                # Send completed message as the user
+                add_chat_message(
+                    eod, 
+                    f"Task '{row.task}' (Team: {row.team}) completed.", 
+                    sender=user_fullname, 
+                    is_system=False
+                )
+                
+                # (Removed the next task "initiated" logic)
             
             elif not done and prev_status == "Completed":
                 row.completed_by = None
                 row.completed_on = None
-                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
+                user_fullname = get_user_fullname(frappe.session.user)
+                
+                # Send unchecked message as the user
+                add_chat_message(
+                    eod, 
+                    f"Task '{row.task}' (Team: {row.team}) set back to Pending.", 
+                    sender=user_fullname, 
+                    is_system=False
+                )
                 
             updated = True
             break
