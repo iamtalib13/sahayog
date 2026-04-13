@@ -237,27 +237,69 @@ def get_eod_tasks(eod_name):
     return tasks
 
 
+# @frappe.whitelist()
+# def get_chat_messages(eod_name):
+#     """Returns all chat messages for a given EOD session."""
+#     if not eod_name:
+#         return []
+    
+#     messages = frappe.get_all("EOD Chat Message", 
+#         filters={"parent": eod_name}, 
+#         fields=["name", "sender", "text", "attachment", "time", "is_system"],
+#         order_by="time asc"
+#     )
+    
+#     for msg in messages:
+#         msg["is_me"] = (msg["sender"] == frappe.session.user and not msg["is_system"])
+#         msg["sender_name"] = "System" if msg["is_system"] else get_user_fullname(msg["sender"])
+#         msg["time_display"] = format_time(msg["time"], "HH:mm") if msg["time"] else ""
+        
+#         if msg["attachment"]:
+#             msg["is_image"] = any(msg["attachment"].lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"])
+#             msg["file_name"] = msg["attachment"].split("/")[-1]
+    
+#     return messages
+
+
 @frappe.whitelist()
 def get_chat_messages(eod_name):
-    """Returns all chat messages for a given EOD session."""
-    if not eod_name:
-        return []
-    
-    messages = frappe.get_all("EOD Chat Message", 
-        filters={"parent": eod_name}, 
-        fields=["name", "sender", "text", "attachment", "time", "is_system"],
-        order_by="time asc"
-    )
-    
-    for msg in messages:
-        msg["is_me"] = (msg["sender"] == frappe.session.user and not msg["is_system"])
-        msg["sender_name"] = "System" if msg["is_system"] else get_user_fullname(msg["sender"])
-        msg["time_display"] = format_time(msg["time"], "HH:mm") if msg["time"] else ""
-        
-        if msg["attachment"]:
-            msg["is_image"] = any(msg["attachment"].lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"])
-            msg["file_name"] = msg["attachment"].split("/")[-1]
-    
+    eod = frappe.get_doc("Bank EOD", eod_name)
+    messages = []
+
+    for msg in eod.get("chat_messages", []):
+        sender_value = msg.sender or "System"
+
+        if msg.is_system or sender_value == "System":
+            sender_name = "System"
+            user_image = None
+        else:
+            sender_name = get_user_fullname(sender_value)
+            user_image = frappe.db.get_value("User", sender_value, "user_image")
+
+        is_me = sender_value == frappe.session.user
+
+        is_image = False
+        file_name = None
+        if msg.attachment:
+            file_name = msg.attachment.split("/")[-1]
+            ext = file_name.split(".")[-1].lower() if "." in file_name else ""
+            if ext in ["jpg", "jpeg", "png", "gif", "webp", "svg"]:
+                is_image = True
+
+        messages.append({
+            "name": msg.name,
+            "sender": sender_value,          # actual user id/email if needed internally
+            "sender_name": sender_name,      # full name for UI
+            "text": msg.text,
+            "attachment": msg.attachment,
+            "is_image": is_image,
+            "file_name": file_name,
+            "time_display": format_time(msg.time, "hh:mm a"),
+            "is_me": is_me,
+            "is_system": msg.is_system,
+            "user_image": user_image
+        })
+
     return messages
 
 @frappe.whitelist(methods=["GET", "POST"])

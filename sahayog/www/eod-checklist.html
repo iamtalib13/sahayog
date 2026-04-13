@@ -1901,7 +1901,13 @@
                                     </div>
                                     <div v-if="task.done" class="task-meta">
                                         <div class="task-completed-avatar" :title="task.completed_by">
-                                            <img :src="getInitialsAvatar(task.completed_by)" alt="User">
+                                            <!-- <img :src="getInitialsAvatar(task.completed_by)" alt="User"> -->
+                                            <!-- User Avatar logic: If they uploaded a profile pic in Frappe, use it. Otherwise, generate the SVG! -->
+                                            <img class="avatar"
+                                                :src="msg.user_image || getInitialsAvatar(msg.sender_name)"
+                                                alt="Avatar">
+
+                                            <!-- <span class="sender-name" v-text="msg.sender_name"></span> -->
                                         </div>
                                         <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                     </div>
@@ -1956,8 +1962,12 @@
                             :key="msg.id">
 
                             <!-- Show Initials Avatar (or 'ES' for System) -->
-                            <img v-if="!msg.isMe" :src="msg.avatar || getInitialsAvatar(msg.sender)" class="avatar">
+                            <!-- <img v-if="!msg.isMe" :src="msg.avatar || getInitialsAvatar(msg.sender)" class="avatar"> -->
+                            <!-- Renders the actual uploaded Profile Picture if available, otherwise your SVG generator takes over! -->
+                            <img class="avatar" :src="msg.user_image || getInitialsAvatar(msg.sender_name)"
+                                alt="Avatar">
 
+                            <!-- <span class="sender-name" v-text="msg.sender_name"></span> -->
                             <div class="message-content">
                                 <!-- Display Name and Time (System displays as 'EOD System') -->
                                 <div class="message-info">
@@ -2607,6 +2617,37 @@
                         }
                     },
 
+                    // async fetchChatMessages() {
+                    //     if (!this.eodName) return;
+                    //     try {
+                    //         const response = await fetch(`/api/method/sahayog.sahayog.api.eod.get_chat_messages?eod_name=${this.eodName}`);
+                    //         const data = await response.json();
+                    //         if (data.message) {
+                    //             const oldLen = this.chat.messages.length;
+                    //             this.chat.messages = data.message.map(m => ({
+                    //                 id: m.name,
+                    //                 sender: m.sender_name,
+                    //                 text: m.text,
+                    //                 attachment: m.attachment,
+                    //                 is_image: m.is_image,
+                    //                 file_name: m.file_name,
+                    //                 time: m.time_display,
+                    //                 isMe: m.is_me,
+                    //                 isSystem: m.is_system
+                    //             }));
+
+                    //             if (this.chat.messages.length > oldLen) {
+                    //                 setTimeout(() => {
+                    //                     const el = document.getElementById('messages');
+                    //                     if (el) el.scrollTop = el.scrollHeight;
+                    //                 }, 100);
+                    //             }
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Error fetching messages", err);
+                    //     }
+                    // },
+
                     async fetchChatMessages() {
                         if (!this.eodName) return;
                         try {
@@ -2617,13 +2658,15 @@
                                 this.chat.messages = data.message.map(m => ({
                                     id: m.name,
                                     sender: m.sender_name,
+                                    sender_name: m.sender_name,
                                     text: m.text,
                                     attachment: m.attachment,
                                     is_image: m.is_image,
                                     file_name: m.file_name,
                                     time: m.time_display,
                                     isMe: m.is_me,
-                                    isSystem: m.is_system
+                                    isSystem: m.is_system,
+                                    user_image: m.user_image // <--- ADD THIS LINE
                                 }));
 
                                 if (this.chat.messages.length > oldLen) {
