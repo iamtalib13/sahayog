@@ -1719,11 +1719,29 @@
                 <div class="header">
                     <div class="header-top"
                         style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <!-- <div class="title-group">
+                            <div class="app-icon">S</div>
+                            <div class="title">
+                                <h1>EOD Checklist</h1>
+                                <div class="current-timestamp" v-text="currentDateTime"></div>
+                                Dynamic Subtitle! Shows closed time if completed, otherwise standard text 
+                                <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
+                                    EOD Closed Time: <span v-text="eodClosedTime"></span>
+                                </p>
+                            </div>
+                        </div> -->
                         <div class="title-group">
                             <div class="app-icon">S</div>
                             <div class="title">
                                 <h1>EOD Checklist</h1>
                                 <div class="current-timestamp" v-text="currentDateTime"></div>
+
+                                <!-- NEW: Dynamic Total Duration Display -->
+                                <p v-if="eodStatus !== 'idle' && getEodDuration()"
+                                    style="color: var(--accent-green); font-weight: 700; margin-top: 4px;">
+                                    Total EOD Time: <span v-text="getEodDuration()"></span>
+                                </p>
+
                                 <!-- Dynamic Subtitle! Shows closed time if completed, otherwise standard text -->
                                 <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
                                     EOD Closed Time: <span v-text="eodClosedTime"></span>
@@ -2783,6 +2801,50 @@
                             }
                         });
                         return totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                    },
+
+                    // Calculate precise duration from the first checked task to the last checked task
+                    // Calculate precise duration from the first checked task to the last checked task
+                    getEodDuration() {
+                        if (!this.project || !this.project.sections) return '';
+
+                        let earliest = null;
+                        let latest = null;
+
+                        this.project.sections.forEach(section => {
+                            if (section.tasks) {
+                                section.tasks.forEach(task => {
+                                    if (task.done && task.completed_on) {
+                                        const taskTime = new Date(task.completed_on.replace(' ', 'T'));
+
+                                        if (!earliest || taskTime < earliest) earliest = taskTime;
+                                        if (!latest || taskTime > latest) latest = taskTime;
+                                    }
+                                });
+                            }
+                        });
+
+                        if (!earliest || !latest) return '';
+                        if (earliest.getTime() === latest.getTime()) return 'Started...';
+
+                        const diffMs = latest - earliest;
+
+                        // NEW FIX: Calculate exact Hours, Minutes, AND Seconds
+                        const diffHrs = Math.floor(diffMs / 3600000);
+                        const diffMins = Math.floor((diffMs % 3600000) / 60000);
+                        const diffSecs = Math.floor((diffMs % 60000) / 1000);
+
+                        // Format the output dynamically based on how much time has passed
+                        if (diffHrs > 0) {
+                            return `${diffHrs}h ${diffMins}m ${diffSecs}s`;
+                        } else if (diffMins > 0) {
+                            return `${diffMins}m ${diffSecs}s`;
+                        } else {
+                            // If it took less than 1 minute total
+                            // return `${diffSecs}s`;
+                            // Always output exactly "Xh Ym Zsec"
+                            return `${diffHrs}h ${diffMins}m ${diffSecs}sec`;
+                        }
                     },
 
                     getCompletedTasksCount(section) {
