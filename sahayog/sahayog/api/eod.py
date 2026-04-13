@@ -164,6 +164,34 @@ def start_eod():
 
 
 
+# @frappe.whitelist()
+# def get_eod_tasks(eod_name):
+#     """Returns tasks for a given Bank EOD record, sorted by sequence."""
+#     if not eod_name:
+#         return []
+
+#     eod = frappe.get_doc("Bank EOD", eod_name)
+#     tasks = []
+
+#     # Sort child table rows by sequence
+#     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+
+#     for row in sorted_tasks:
+#         tasks.append({
+#             "name": row.name,
+#             "team": row.team,
+#             "sequence": row.sequence,
+#             "task": row.task,
+#             "status": row.status,
+#             # FIXED: Now it sends the Full Name instead of the raw User ID (like "42")
+#             "completed_by": get_user_fullname(row.completed_by) if row.completed_by else None,
+#             "completed_on": row.completed_on,
+#             "done": True if row.status == "Completed" else False
+#         })
+
+#     return tasks
+
+
 @frappe.whitelist()
 def get_eod_tasks(eod_name):
     """Returns tasks for a given Bank EOD record, sorted by sequence."""
@@ -183,7 +211,6 @@ def get_eod_tasks(eod_name):
             "sequence": row.sequence,
             "task": row.task,
             "status": row.status,
-            # FIXED: Now it sends the Full Name instead of the raw User ID (like "42")
             "completed_by": get_user_fullname(row.completed_by) if row.completed_by else None,
             "completed_on": row.completed_on,
             "done": True if row.status == "Completed" else False
