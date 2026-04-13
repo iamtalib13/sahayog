@@ -1901,13 +1901,10 @@
                                     </div>
                                     <div v-if="task.done" class="task-meta">
                                         <div class="task-completed-avatar" :title="task.completed_by">
-                                            <!-- <img :src="getInitialsAvatar(task.completed_by)" alt="User"> -->
-                                            <!-- User Avatar logic: If they uploaded a profile pic in Frappe, use it. Otherwise, generate the SVG! -->
+                                            <!-- Uses task.completed_by_image if available, else generates SVG using task.completed_by name -->
                                             <img class="avatar"
-                                                :src="msg.user_image || getInitialsAvatar(msg.sender_name)"
+                                                :src="task.completed_by_image ? task.completed_by_image : getInitialsAvatar(task.completed_by)"
                                                 alt="Avatar">
-
-                                            <!-- <span class="sender-name" v-text="msg.sender_name"></span> -->
                                         </div>
                                         <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                     </div>

@@ -131,13 +131,14 @@ def start_eod():
     # return {"name": eod.name, "status": eod.status}
 
         # 1. Send "EOD started" message by the user who clicked Start
+        # 1. Send "EOD started" message by the user who clicked Start
     current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
     user_fullname = get_user_fullname(frappe.session.user)
     
     add_chat_message(
         eod, 
         f"EOD started for date {today} at {current_dt} by {user_fullname}", 
-        sender=user_fullname, 
+        sender=frappe.session.user, # <--- CRITICAL FIX: Pass the real user ID/Email here!
         is_system=False
     )
     
@@ -223,6 +224,11 @@ def get_eod_tasks(eod_name):
     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
 
     for row in sorted_tasks:
+        # Pre-fetch user image if completed
+        user_image_url = None
+        if row.completed_by:
+            user_image_url = frappe.db.get_value("User", row.completed_by, "user_image")
+
         tasks.append({
             "name": row.name,
             "team": row.team,
@@ -230,6 +236,7 @@ def get_eod_tasks(eod_name):
             "task": row.task,
             "status": row.status,
             "completed_by": get_user_fullname(row.completed_by) if row.completed_by else None,
+            "completed_by_image": user_image_url, # <--- CRITICAL FIX: Send the image URL to Vue!
             "completed_on": row.completed_on,
             "done": True if row.status == "Completed" else False
         })
@@ -269,12 +276,19 @@ def get_chat_messages(eod_name):
     for msg in eod.get("chat_messages", []):
         sender_value = msg.sender or "System"
 
+        # if msg.is_system or sender_value == "System":
+        #     sender_name = "System"
+        #     user_image = None
+        # else:
+        #     sender_name = get_user_fullname(sender_value)
+        #     user_image = frappe.db.get_value("User", sender_value, "user_image")
+
         if msg.is_system or sender_value == "System":
             sender_name = "System"
             user_image = None
         else:
             sender_name = get_user_fullname(sender_value)
-            user_image = frappe.db.get_value("User", sender_value, "user_image")
+            user_image = frappe.db.get_value("User", sender_value, "user_image") # <--- Works if sender is an ID!
 
         is_me = sender_value == frappe.session.user
 
@@ -368,13 +382,27 @@ def close_eod(eod_name):
     # add_chat_message(eod, "EOD process closed for today.")
 
         # Manual transition to Closed
+    # eod.status = "Closed"
+    # user_fullname = get_user_fullname(frappe.session.user)
+    
+    # add_chat_message(
+    #     eod, 
+    #     f"EOD process successfully closed and locked.", 
+    #     sender=user_fullname, 
+    #     is_system=False
+    # )
+    
+    # eod.save(ignore_permissions=True)
+    # frappe.db.commit()
+
+        # Manual transition to Closed
     eod.status = "Closed"
     user_fullname = get_user_fullname(frappe.session.user)
     
     add_chat_message(
         eod, 
-        f"EOD process successfully closed and locked.", 
-        sender=user_fullname, 
+        f"EOD process successfully closed and locked by {user_fullname}.", 
+        sender=frappe.session.user,  # <--- CRITICAL FIX: Pass the ID, not fullname
         is_system=False
     )
     
@@ -458,6 +486,36 @@ def update_task_status(eod_name, task_row_name, done):
             #     row.completed_on = None
             #     add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
 
+            # if done and prev_status != "Completed":
+            #     row.completed_by = frappe.session.user
+            #     row.completed_on = now_datetime()
+            #     user_fullname = get_user_fullname(frappe.session.user)
+                
+            #     # Send completed message as the user
+            #     add_chat_message(
+            #         eod, 
+            #         f"Task '{row.task}' (Team: {row.team}) completed.", 
+            #         sender=user_fullname, 
+            #         is_system=False
+            #     )
+                
+            #     # (Removed the next task "initiated" logic)
+            
+            # elif not done and prev_status == "Completed":
+            #     row.completed_by = None
+            #     row.completed_on = None
+            #     user_fullname = get_user_fullname(frappe.session.user)
+                
+            #     # Send unchecked message as the user
+            #     user_fullname = get_user_fullname(frappe.session.user)
+            #     # CRITICAL FIX: sender=frappe.session.user, not user_fullname!
+            #     add_chat_message(
+            #         eod, 
+            #         f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.",
+            #         sender=frappe.session.user, 
+            #         is_system=False
+            #     )
+
             if done and prev_status != "Completed":
                 row.completed_by = frappe.session.user
                 row.completed_on = now_datetime()
@@ -467,12 +525,10 @@ def update_task_status(eod_name, task_row_name, done):
                 add_chat_message(
                     eod, 
                     f"Task '{row.task}' (Team: {row.team}) completed.", 
-                    sender=user_fullname, 
+                    sender=frappe.session.user, # <--- CRITICAL FIX: Pass the ID, not fullname
                     is_system=False
                 )
                 
-                # (Removed the next task "initiated" logic)
-            
             elif not done and prev_status == "Completed":
                 row.completed_by = None
                 row.completed_on = None
@@ -481,8 +537,8 @@ def update_task_status(eod_name, task_row_name, done):
                 # Send unchecked message as the user
                 add_chat_message(
                     eod, 
-                    f"Task '{row.task}' (Team: {row.team}) set back to Pending.", 
-                    sender=user_fullname, 
+                    f"Task '{row.task}' (Team: {row.team}) unchecked by {user_fullname}.",
+                    sender=frappe.session.user, # <--- Already correct here
                     is_system=False
                 )
                 
