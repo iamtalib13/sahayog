@@ -349,6 +349,14 @@
             border-color: var(--accent-green);
         }
 
+        /* NEW: Disabled state for Viewer Role */
+        .checkbox.viewer-disabled {
+            background-color: #f1f5f9;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
         .checkbox.checked::after {
             content: '✓';
             color: white;
@@ -1612,6 +1620,79 @@
         .settings-dropdown button:last-child {
             border-bottom: none;
         }
+
+        /* Modern Toggle Switch */
+        .toggle-switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .toggle-label.active-text {
+            color: var(--accent-green);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            margin: 0;
+            position: absolute;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            /* Subtle gray when off */
+            transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-radius: 24px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-input:checked+.toggle-slider {
+            background-color: var(--accent-green);
+            box-shadow: inset 0 2px 4px rgba(0, 176, 155, 0.2);
+        }
+
+        .toggle-input:focus+.toggle-slider {
+            box-shadow: 0 0 1px var(--accent-green);
+        }
+
+        .toggle-input:checked+.toggle-slider:before {
+            transform: translateX(20px);
+        }
     </style>
 </head>
 
@@ -1646,11 +1727,29 @@
                 <div class="header">
                     <div class="header-top"
                         style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <!-- <div class="title-group">
+                            <div class="app-icon">S</div>
+                            <div class="title">
+                                <h1>EOD Checklist</h1>
+                                <div class="current-timestamp" v-text="currentDateTime"></div>
+                                Dynamic Subtitle! Shows closed time if completed, otherwise standard text 
+                                <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
+                                    EOD Closed Time: <span v-text="eodClosedTime"></span>
+                                </p>
+                            </div>
+                        </div> -->
                         <div class="title-group">
                             <div class="app-icon">S</div>
                             <div class="title">
                                 <h1>EOD Checklist</h1>
                                 <div class="current-timestamp" v-text="currentDateTime"></div>
+
+                                <!-- NEW: Dynamic Total Duration Display -->
+                                <p v-if="eodStatus !== 'idle' && getEodDuration()"
+                                    style="color: var(--accent-green); font-weight: 700; margin-top: 4px;">
+                                    Total EOD Time: <span v-text="getEodDuration()"></span>
+                                </p>
+
                                 <!-- Dynamic Subtitle! Shows closed time if completed, otherwise standard text -->
                                 <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
                                     EOD Closed Time: <span v-text="eodClosedTime"></span>
@@ -1669,18 +1768,23 @@
                             </div>
 
                             <!-- Start Button -->
-                            <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
+                            <!-- <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction"> -->
+                            <button v-if="eodStatus === 'idle' && !isViewer" class="capsule-btn btn-start"
+                                @click="handleEodAction">
                                 Start
                             </button>
 
                             <!-- End Button -->
-                            <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
+                            <button
+                                v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone() && !isViewer"
                                 class="capsule-btn btn-end" @click="handleEodAction">
                                 End
                             </button>
 
                             <!-- THE SETTINGS DROPDOWN ON THE FAR RIGHT -->
-                            <div class="settings-wrapper" v-if="isManager || eodStatus === 'closed_today'">
+                            <!-- <div class="settings-wrapper" v-if="isManager || eodStatus === 'closed_today'"> -->
+                            <div class="settings-wrapper"
+                                v-if="(isManager || eodStatus === 'closed_today') && !isViewer">
                                 <!-- Invisible overlay to close menu -->
                                 <div v-if="showSettingsDropdown" class="settings-overlay"
                                     @click="showSettingsDropdown = false"></div>
@@ -1782,19 +1886,28 @@
 
                         <!-- Collapsible Task List -->
                         <div class="task-list-wrapper" :class="{ expanded: section.isExpanded }">
-                            <div class="task-list" v-if="section.isExpanded" :style="{ '--team-color': getTeamColor(sIndex).text }">
+                            <div class="task-list" v-if="section.isExpanded"
+                                :style="{ '--team-color': getTeamColor(sIndex).text }">
                                 <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
                                     :class="{ 'done-item': task.done }" @click="toggleTask(task)">
                                     <div class="task-left">
                                         <!-- Use dynamic team color for checkboxes! -->
-                                        <div class="checkbox" :class="{ checked: task.done }"
+                                        <div class="checkbox" :class="{ checked: task.done }" <div class="checkbox"
+                                            :class="{ checked: task.done, 'viewer-disabled': isViewer }"
+                                            @click="!isViewer && toggleTask(task)"
                                             :style="task.done ? { backgroundColor: getTeamColor(sIndex).text, borderColor: getTeamColor(sIndex).text } : {}">
                                         </div>
                                         <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
                                     </div>
                                     <div v-if="task.done" class="task-meta">
                                         <div class="task-completed-avatar" :title="task.completed_by">
-                                            <img :src="getInitialsAvatar(task.completed_by)" alt="User">
+                                            <!-- <img :src="getInitialsAvatar(task.completed_by)" alt="User"> -->
+                                            <!-- User Avatar logic: If they uploaded a profile pic in Frappe, use it. Otherwise, generate the SVG! -->
+                                            <img class="avatar"
+                                                :src="msg.user_image || getInitialsAvatar(msg.sender_name)"
+                                                alt="Avatar">
+
+                                            <!-- <span class="sender-name" v-text="msg.sender_name"></span> -->
                                         </div>
                                         <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                     </div>
@@ -1849,8 +1962,12 @@
                             :key="msg.id">
 
                             <!-- Show Initials Avatar (or 'ES' for System) -->
-                            <img v-if="!msg.isMe" :src="msg.avatar || getInitialsAvatar(msg.sender)" class="avatar">
+                            <!-- <img v-if="!msg.isMe" :src="msg.avatar || getInitialsAvatar(msg.sender)" class="avatar"> -->
+                            <!-- Renders the actual uploaded Profile Picture if available, otherwise your SVG generator takes over! -->
+                            <img class="avatar" :src="msg.user_image || getInitialsAvatar(msg.sender_name)"
+                                alt="Avatar">
 
+                            <!-- <span class="sender-name" v-text="msg.sender_name"></span> -->
                             <div class="message-content">
                                 <!-- Display Name and Time (System displays as 'EOD System') -->
                                 <div class="message-info">
@@ -2058,7 +2175,22 @@
     <!-- Manage Team & Tasks Modal -->
     <div v-if="manageModal.show" class="modal-overlay" @click.self="manageModal.show = false">
         <div class="modal-content modal-large">
-            <div class="modal-title" style="margin-bottom: 24px;">Manage: <span v-text="manageModal.teamName"></span>
+            <div class="modal-title"
+                style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                <div>Manage: <span v-text="manageModal.teamName"></span></div>
+
+                <!-- Modern iOS-style Toggle Switch for Team Active -->
+                <label class="toggle-switch-wrapper">
+                    <!-- SAFE VUE TEXT RENDERING -->
+                    <span class="toggle-label" :class="{ 'active-text': manageModal.isActive }"
+                        v-text="manageModal.isActive ? 'Team Active' : 'Team Inactive'">
+                    </span>
+
+                    <div class="toggle-switch">
+                        <input type="checkbox" v-model="manageModal.isActive" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </label>
             </div>
 
             <!-- Team Members Section -->
@@ -2197,11 +2329,13 @@
 
                     hasAccess: null,
                     isManager: false,
+                    isViewer: false,
                     eodClosedTime: '',
                     manageModal: {
                         show: false,
                         teamName: '',
                         checklistName: '',
+                        isActive: true,
                         members: [],
                         tasks: [],
                         systemUsers: [],
@@ -2398,6 +2532,7 @@
                             // Update this to use the new object structure from backend
                             this.hasAccess = accessData.message.has_access === true;
                             this.isManager = accessData.message.is_manager === true;
+                            this.isViewer = accessData.message.is_viewer === true;
                         } catch (e) {
                             this.hasAccess = false;
                         }
@@ -2482,6 +2617,37 @@
                         }
                     },
 
+                    // async fetchChatMessages() {
+                    //     if (!this.eodName) return;
+                    //     try {
+                    //         const response = await fetch(`/api/method/sahayog.sahayog.api.eod.get_chat_messages?eod_name=${this.eodName}`);
+                    //         const data = await response.json();
+                    //         if (data.message) {
+                    //             const oldLen = this.chat.messages.length;
+                    //             this.chat.messages = data.message.map(m => ({
+                    //                 id: m.name,
+                    //                 sender: m.sender_name,
+                    //                 text: m.text,
+                    //                 attachment: m.attachment,
+                    //                 is_image: m.is_image,
+                    //                 file_name: m.file_name,
+                    //                 time: m.time_display,
+                    //                 isMe: m.is_me,
+                    //                 isSystem: m.is_system
+                    //             }));
+
+                    //             if (this.chat.messages.length > oldLen) {
+                    //                 setTimeout(() => {
+                    //                     const el = document.getElementById('messages');
+                    //                     if (el) el.scrollTop = el.scrollHeight;
+                    //                 }, 100);
+                    //             }
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Error fetching messages", err);
+                    //     }
+                    // },
+
                     async fetchChatMessages() {
                         if (!this.eodName) return;
                         try {
@@ -2492,13 +2658,15 @@
                                 this.chat.messages = data.message.map(m => ({
                                     id: m.name,
                                     sender: m.sender_name,
+                                    sender_name: m.sender_name,
                                     text: m.text,
                                     attachment: m.attachment,
                                     is_image: m.is_image,
                                     file_name: m.file_name,
                                     time: m.time_display,
                                     isMe: m.is_me,
-                                    isSystem: m.is_system
+                                    isSystem: m.is_system,
+                                    user_image: m.user_image // <--- ADD THIS LINE
                                 }));
 
                                 if (this.chat.messages.length > oldLen) {
@@ -2695,6 +2863,50 @@
                         return totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
                     },
 
+                    // Calculate precise duration from the first checked task to the last checked task
+                    // Calculate precise duration from the first checked task to the last checked task
+                    getEodDuration() {
+                        if (!this.project || !this.project.sections) return '';
+
+                        let earliest = null;
+                        let latest = null;
+
+                        this.project.sections.forEach(section => {
+                            if (section.tasks) {
+                                section.tasks.forEach(task => {
+                                    if (task.done && task.completed_on) {
+                                        const taskTime = new Date(task.completed_on.replace(' ', 'T'));
+
+                                        if (!earliest || taskTime < earliest) earliest = taskTime;
+                                        if (!latest || taskTime > latest) latest = taskTime;
+                                    }
+                                });
+                            }
+                        });
+
+                        if (!earliest || !latest) return '';
+                        if (earliest.getTime() === latest.getTime()) return 'Started...';
+
+                        const diffMs = latest - earliest;
+
+                        // NEW FIX: Calculate exact Hours, Minutes, AND Seconds
+                        const diffHrs = Math.floor(diffMs / 3600000);
+                        const diffMins = Math.floor((diffMs % 3600000) / 60000);
+                        const diffSecs = Math.floor((diffMs % 60000) / 1000);
+
+                        // Format the output dynamically based on how much time has passed
+                        if (diffHrs > 0) {
+                            return `${diffHrs}h ${diffMins}m ${diffSecs}s`;
+                        } else if (diffMins > 0) {
+                            return `${diffMins}m ${diffSecs}s`;
+                        } else {
+                            // If it took less than 1 minute total
+                            // return `${diffSecs}s`;
+                            // Always output exactly "Xh Ym Zsec"
+                            return `${diffHrs}h ${diffMins}m ${diffSecs}sec`;
+                        }
+                    },
+
                     getCompletedTasksCount(section) {
                         if (!section || !section.tasks) return 0;
                         let count = 0;
@@ -2889,6 +3101,7 @@
                             if (data.message.status === 'success') {
                                 this.manageModal.teamName = data.message.team_name;
                                 this.manageModal.checklistName = data.message.checklist_name || '';
+                                this.manageModal.isActive = data.message.is_active !== undefined ? (data.message.is_active === 1 || data.message.is_active === true) : true;
                                 this.manageModal.members = data.message.members || [];
                                 this.manageModal.systemUsers = data.message.system_users || [];
                                 this.manageModal.tasks = data.message.tasks || [];
@@ -3042,6 +3255,7 @@
                         const formData = new FormData();
                         formData.append('team_name', this.manageModal.teamName);
                         formData.append('checklist_name', this.manageModal.checklistName || '');
+                        formData.append('is_active', this.manageModal.isActive ? 1 : 0,);
                         formData.append('members', JSON.stringify(this.manageModal.members));
                         formData.append('tasks', JSON.stringify(this.manageModal.tasks));
 

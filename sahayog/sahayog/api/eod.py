@@ -116,19 +116,37 @@ def start_eod():
     eod.insert(ignore_permissions=True)
     
     # 1. Send "EOD started" message
-    current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
-    add_chat_message(eod, f"EOD started for date {today} at {current_dt}")
+    # current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
+    # add_chat_message(eod, f"EOD started for date {today} at {current_dt}")
 
-    # 2. Send first task initiation message
-    if eod.eod_tasks:
-        sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
-        first_task = sorted_tasks[0]
-        add_chat_message(eod, f"Task '{first_task.task}' (Team: {first_task.team}) initiated.")
+    # # 2. Send first task initiation message
+    # if eod.eod_tasks:
+    #     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    #     first_task = sorted_tasks[0]
+    #     add_chat_message(eod, f"Task '{first_task.task}' (Team: {first_task.team}) initiated.")
+    
+    # eod.save(ignore_permissions=True)
+    # frappe.db.commit()
+
+    # return {"name": eod.name, "status": eod.status}
+
+        # 1. Send "EOD started" message by the user who clicked Start
+    current_dt = format_datetime(now_datetime(), "dd MMMM yyyy, hh:mm a")
+    user_fullname = get_user_fullname(frappe.session.user)
+    
+    add_chat_message(
+        eod, 
+        f"EOD started for date {today} at {current_dt} by {user_fullname}", 
+        sender=user_fullname, 
+        is_system=False
+    )
+    
+    # (Removed the "initiated" message logic completely)
     
     eod.save(ignore_permissions=True)
     frappe.db.commit()
 
-    return {"name": eod.name, "status": eod.status}
+    return {"name": eod.name, "status": eod.status} 
 
 
 # @frappe.whitelist()
@@ -164,6 +182,34 @@ def start_eod():
 
 
 
+# @frappe.whitelist()
+# def get_eod_tasks(eod_name):
+#     """Returns tasks for a given Bank EOD record, sorted by sequence."""
+#     if not eod_name:
+#         return []
+
+#     eod = frappe.get_doc("Bank EOD", eod_name)
+#     tasks = []
+
+#     # Sort child table rows by sequence
+#     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+
+#     for row in sorted_tasks:
+#         tasks.append({
+#             "name": row.name,
+#             "team": row.team,
+#             "sequence": row.sequence,
+#             "task": row.task,
+#             "status": row.status,
+#             # FIXED: Now it sends the Full Name instead of the raw User ID (like "42")
+#             "completed_by": get_user_fullname(row.completed_by) if row.completed_by else None,
+#             "completed_on": row.completed_on,
+#             "done": True if row.status == "Completed" else False
+#         })
+
+#     return tasks
+
+
 @frappe.whitelist()
 def get_eod_tasks(eod_name):
     """Returns tasks for a given Bank EOD record, sorted by sequence."""
@@ -183,7 +229,6 @@ def get_eod_tasks(eod_name):
             "sequence": row.sequence,
             "task": row.task,
             "status": row.status,
-            # FIXED: Now it sends the Full Name instead of the raw User ID (like "42")
             "completed_by": get_user_fullname(row.completed_by) if row.completed_by else None,
             "completed_on": row.completed_on,
             "done": True if row.status == "Completed" else False
@@ -192,27 +237,69 @@ def get_eod_tasks(eod_name):
     return tasks
 
 
+# @frappe.whitelist()
+# def get_chat_messages(eod_name):
+#     """Returns all chat messages for a given EOD session."""
+#     if not eod_name:
+#         return []
+    
+#     messages = frappe.get_all("EOD Chat Message", 
+#         filters={"parent": eod_name}, 
+#         fields=["name", "sender", "text", "attachment", "time", "is_system"],
+#         order_by="time asc"
+#     )
+    
+#     for msg in messages:
+#         msg["is_me"] = (msg["sender"] == frappe.session.user and not msg["is_system"])
+#         msg["sender_name"] = "System" if msg["is_system"] else get_user_fullname(msg["sender"])
+#         msg["time_display"] = format_time(msg["time"], "HH:mm") if msg["time"] else ""
+        
+#         if msg["attachment"]:
+#             msg["is_image"] = any(msg["attachment"].lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"])
+#             msg["file_name"] = msg["attachment"].split("/")[-1]
+    
+#     return messages
+
+
 @frappe.whitelist()
 def get_chat_messages(eod_name):
-    """Returns all chat messages for a given EOD session."""
-    if not eod_name:
-        return []
-    
-    messages = frappe.get_all("EOD Chat Message", 
-        filters={"parent": eod_name}, 
-        fields=["name", "sender", "text", "attachment", "time", "is_system"],
-        order_by="time asc"
-    )
-    
-    for msg in messages:
-        msg["is_me"] = (msg["sender"] == frappe.session.user and not msg["is_system"])
-        msg["sender_name"] = "System" if msg["is_system"] else get_user_fullname(msg["sender"])
-        msg["time_display"] = format_time(msg["time"], "HH:mm") if msg["time"] else ""
-        
-        if msg["attachment"]:
-            msg["is_image"] = any(msg["attachment"].lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"])
-            msg["file_name"] = msg["attachment"].split("/")[-1]
-    
+    eod = frappe.get_doc("Bank EOD", eod_name)
+    messages = []
+
+    for msg in eod.get("chat_messages", []):
+        sender_value = msg.sender or "System"
+
+        if msg.is_system or sender_value == "System":
+            sender_name = "System"
+            user_image = None
+        else:
+            sender_name = get_user_fullname(sender_value)
+            user_image = frappe.db.get_value("User", sender_value, "user_image")
+
+        is_me = sender_value == frappe.session.user
+
+        is_image = False
+        file_name = None
+        if msg.attachment:
+            file_name = msg.attachment.split("/")[-1]
+            ext = file_name.split(".")[-1].lower() if "." in file_name else ""
+            if ext in ["jpg", "jpeg", "png", "gif", "webp", "svg"]:
+                is_image = True
+
+        messages.append({
+            "name": msg.name,
+            "sender": sender_value,          # actual user id/email if needed internally
+            "sender_name": sender_name,      # full name for UI
+            "text": msg.text,
+            "attachment": msg.attachment,
+            "is_image": is_image,
+            "file_name": file_name,
+            "time_display": format_time(msg.time, "hh:mm a"),
+            "is_me": is_me,
+            "is_system": msg.is_system,
+            "user_image": user_image
+        })
+
     return messages
 
 @frappe.whitelist(methods=["GET", "POST"])
@@ -276,9 +363,20 @@ def close_eod(eod_name):
     if not all_done:
         frappe.throw(_("Cannot close EOD. Some tasks are still pending."))
         
-    # Manual transition to Closed
+    # # Manual transition to Closed
+    # eod.status = "Closed"
+    # add_chat_message(eod, "EOD process closed for today.")
+
+        # Manual transition to Closed
     eod.status = "Closed"
-    add_chat_message(eod, "EOD process closed for today.")
+    user_fullname = get_user_fullname(frappe.session.user)
+    
+    add_chat_message(
+        eod, 
+        f"EOD process successfully closed and locked.", 
+        sender=user_fullname, 
+        is_system=False
+    )
     
     eod.save(ignore_permissions=True)
     frappe.db.commit()
@@ -345,20 +443,48 @@ def update_task_status(eod_name, task_row_name, done):
             # ------------------------------------------------
             row.status = "Completed" if done else "Pending"
             
+            # if done and prev_status != "Completed":
+            #     row.completed_by = frappe.session.user
+            #     row.completed_on = now_datetime()
+            #     user_fullname = get_user_fullname(frappe.session.user)
+            #     add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
+                
+            #     if i + 1 < len(sorted_tasks):
+            #         next_task = sorted_tasks[i+1]
+            #         add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
+            
+            # elif not done and prev_status == "Completed":
+            #     row.completed_by = None
+            #     row.completed_on = None
+            #     add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
+
             if done and prev_status != "Completed":
                 row.completed_by = frappe.session.user
                 row.completed_on = now_datetime()
                 user_fullname = get_user_fullname(frappe.session.user)
-                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) completed by {user_fullname}.")
                 
-                if i + 1 < len(sorted_tasks):
-                    next_task = sorted_tasks[i+1]
-                    add_chat_message(eod, f"Task '{next_task.task}' (Team: {next_task.team}) initiated.")
+                # Send completed message as the user
+                add_chat_message(
+                    eod, 
+                    f"Task '{row.task}' (Team: {row.team}) completed.", 
+                    sender=user_fullname, 
+                    is_system=False
+                )
+                
+                # (Removed the next task "initiated" logic)
             
             elif not done and prev_status == "Completed":
                 row.completed_by = None
                 row.completed_on = None
-                add_chat_message(eod, f"Task '{row.task}' (Team: {row.team}) set back to Pending.")
+                user_fullname = get_user_fullname(frappe.session.user)
+                
+                # Send unchecked message as the user
+                add_chat_message(
+                    eod, 
+                    f"Task '{row.task}' (Team: {row.team}) set back to Pending.", 
+                    sender=user_fullname, 
+                    is_system=False
+                )
                 
             updated = True
             break
@@ -375,6 +501,21 @@ def update_task_status(eod_name, task_row_name, done):
 
 
 
+# @frappe.whitelist()
+# def check_eod_access():
+#     """Checks roles and returns access flags."""
+#     user = frappe.session.user
+#     roles = frappe.get_roles(user)
+    
+#     # Absolute override for Admin / System Manager
+#     if user == "Administrator" or "System Manager" in roles:
+#         return {"has_access": True, "is_manager": True}
+        
+#     return {
+#         "has_access": "EOD Checklist Manager" in roles or "EOD Checklist Member" in roles,
+#         "is_manager": "EOD Checklist Manager" in roles
+#     }
+
 @frappe.whitelist()
 def check_eod_access():
     """Checks roles and returns access flags."""
@@ -383,12 +524,142 @@ def check_eod_access():
     
     # Absolute override for Admin / System Manager
     if user == "Administrator" or "System Manager" in roles:
-        return {"has_access": True, "is_manager": True}
+        return {"has_access": True, "is_manager": True, "is_viewer": False}
         
+    has_member_access = "EOD Checklist Manager" in roles or "EOD Checklist Member" in roles
+    is_viewer = "EOD Checklist Viewer" in roles
+    
+    # If they are ONLY a viewer (no manager or member roles), mark them as strict viewer
+    strict_viewer = is_viewer and not has_member_access
+
     return {
-        "has_access": "EOD Checklist Manager" in roles or "EOD Checklist Member" in roles,
-        "is_manager": "EOD Checklist Manager" in roles
+        # They have access if they have ANY of the three roles
+        "has_access": has_member_access or is_viewer,
+        "is_manager": "EOD Checklist Manager" in roles,
+        "is_viewer": strict_viewer
     }
+
+
+
+# @frappe.whitelist()
+# def get_manager_data():
+#     """Gets the team and active checklist. Safely handles Admin access."""
+#     user = frappe.session.user
+#     roles = frappe.get_roles(user)
+#     is_admin = (user == "Administrator" or "System Manager" in roles)
+    
+#     team_name = frappe.form_dict.get("team_name")
+#     if team_name in ["null", "undefined", "", "[object MouseEvent]", "None"]:
+#         team_name = None
+        
+#     if not team_name:
+#         team_name = frappe.db.get_value("EOD Team", {"team_lead": user}, "name")
+        
+#     if not team_name:
+#         if is_admin:
+#             all_teams = frappe.get_all("EOD Team", fields=["name"])
+#             return {"status": "admin_select", "teams": all_teams}
+#         else:
+#             return {"status": "error", "message": "You are not assigned as a team lead."}
+            
+#     if not frappe.db.exists("EOD Team", team_name):
+#         return {"status": "error", "message": f"Team '{team_name}' does not exist."}
+        
+#     team_doc = frappe.get_doc("EOD Team", team_name)
+#     members = [{"user": m.user} for m in team_doc.get("team_members", []) if m.user]
+    
+#     checklist_name = frappe.db.get_value("EOD Checklist", {"team": team_name, "is_active": 1}, "name")
+#     tasks = []
+    
+#     if checklist_name:
+#         chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
+#         tasks = [{"task": t.task, "sequence": t.sequence or t.idx} for t in chk_doc.get("checklist_items", [])]
+
+#     # --- FETCH ALL ACTIVE USERS ---
+#     system_users = frappe.get_all(
+#         "User", 
+#         filters={"enabled": 1, "user_type": "System User"}, 
+#         fields=["name", "full_name"]
+#     )
+        
+#     return {
+#         "status": "success",
+#         "team_name": team_name,
+#         "checklist_name": checklist_name,
+#         "members": members,
+#         "tasks": sorted(tasks, key=lambda x: int(x.get("sequence") or 0)),
+#         "system_users": system_users
+#     }
+
+
+
+# @frappe.whitelist(methods=["POST"])
+# def save_manager_data():
+#     """Saves the updated team members and checklist tasks without triggering 403s."""
+#     # Capture the actual logged-in user
+#     original_user = frappe.session.user
+    
+#     try:
+#         team_name = frappe.form_dict.get("team_name")
+#         checklist_name = frappe.form_dict.get("checklist_name")
+#         members = json.loads(frappe.form_dict.get("members", "[]"))
+#         tasks = json.loads(frappe.form_dict.get("tasks", "[]"))
+        
+#         # 1. SECURITY VALIDATION: Check if caller is Admin or Team Lead
+#         roles = frappe.get_roles(original_user)
+#         is_admin = (original_user == "Administrator" or "System Manager" in roles)
+        
+#         # Use ignore_permissions just to read the Team Lead field safely
+#         frappe.flags.ignore_permissions = True
+#         team_lead = frappe.db.get_value("EOD Team", team_name, "team_lead")
+        
+#         if not is_admin:
+#             if not team_lead or str(team_lead).lower() != str(original_user).lower():
+#                 return {"status": "error", "message": "Permission Denied: You are not the Team Lead for this team."}
+
+#         # =====================================================================
+#         # 2. THE FIX: Temporarily become 'Administrator' to completely bypass 
+#         # Frappe's strict 403 doc and child-table save restrictions.
+#         # =====================================================================
+#         frappe.set_user("Administrator")
+        
+#         # 3. Update Team Members
+#         team_doc = frappe.get_doc("EOD Team", team_name)
+#         team_doc.set("team_members", [])
+#         for m in members:
+#             if m.get("user"):
+#                 team_doc.append("team_members", {"user": m.get("user")})
+#         team_doc.save(ignore_permissions=True)
+        
+#         # 4. Update Checklist Tasks
+#         if checklist_name:
+#             chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
+#             chk_doc.set("checklist_items", [])
+#             for t in tasks:
+#                 if t.get("task"):
+#                     chk_doc.append("checklist_items", {
+#                         "task": t.get("task"),
+#                         "sequence": t.get("sequence")
+#                     })
+#             chk_doc.save(ignore_permissions=True)
+            
+#         frappe.db.commit()
+#         return {"status": "success"}
+        
+#     except frappe.exceptions.ValidationError as e:
+#         frappe.db.rollback()
+#         return {"status": "error", "message": f"Validation Error: {str(e)}"}
+#     except Exception as e:
+#         frappe.db.rollback()
+#         frappe.log_error(frappe.get_traceback(), "EOD Save Manager Data Error")
+#         return {"status": "error", "message": f"System Error: {str(e)}"}
+        
+#     finally:
+#         # 5. VERY IMPORTANT: Always revert the session back to the original user
+#         # so the Manager doesn't stay an Admin for other requests!
+#         frappe.set_user(original_user)
+#         frappe.flags.ignore_permissions = False
+
 
 
 
@@ -419,7 +690,9 @@ def get_manager_data():
     team_doc = frappe.get_doc("EOD Team", team_name)
     members = [{"user": m.user} for m in team_doc.get("team_members", []) if m.user]
     
-    checklist_name = frappe.db.get_value("EOD Checklist", {"team": team_name, "is_active": 1}, "name")
+    # NEW FIX: Remove 'is_active: 1' from the filter here so managers can still open 
+    # the modal and see the checklist even if it is currently inactive!
+    checklist_name = frappe.db.get_value("EOD Checklist", {"team": team_name}, "name")
     tasks = []
     
     if checklist_name:
@@ -437,22 +710,27 @@ def get_manager_data():
         "status": "success",
         "team_name": team_name,
         "checklist_name": checklist_name,
+        # NEW FIX: Send the team's is_active status back to the frontend checkbox
+        "is_active": getattr(team_doc, "is_active", 1), 
         "members": members,
         "tasks": sorted(tasks, key=lambda x: int(x.get("sequence") or 0)),
         "system_users": system_users
     }
 
 
-
 @frappe.whitelist(methods=["POST"])
 def save_manager_data():
-    """Saves the updated team members and checklist tasks without triggering 403s."""
+    """Saves the updated team members, checklist tasks, and active status without triggering 403s."""
     # Capture the actual logged-in user
     original_user = frappe.session.user
     
     try:
         team_name = frappe.form_dict.get("team_name")
         checklist_name = frappe.form_dict.get("checklist_name")
+        
+        # NEW FIX: Safely capture the is_active checkbox value from the frontend
+        is_active = int(frappe.form_dict.get("is_active", 1))
+        
         members = json.loads(frappe.form_dict.get("members", "[]"))
         tasks = json.loads(frappe.form_dict.get("tasks", "[]"))
         
@@ -474,17 +752,27 @@ def save_manager_data():
         # =====================================================================
         frappe.set_user("Administrator")
         
-        # 3. Update Team Members
+        # 3. Update Team Members & Active Status
         team_doc = frappe.get_doc("EOD Team", team_name)
+        
+        # NEW FIX: Apply the is_active checkbox value to the EOD Team document
+        if hasattr(team_doc, "is_active"):
+            team_doc.is_active = is_active
+            
         team_doc.set("team_members", [])
         for m in members:
             if m.get("user"):
                 team_doc.append("team_members", {"user": m.get("user")})
         team_doc.save(ignore_permissions=True)
         
-        # 4. Update Checklist Tasks
+        # 4. Update Checklist Tasks & Active Status
         if checklist_name:
             chk_doc = frappe.get_doc("EOD Checklist", checklist_name)
+            
+            # NEW FIX: Apply the same is_active checkbox value to the Checklist document
+            if hasattr(chk_doc, "is_active"):
+                chk_doc.is_active = is_active
+                
             chk_doc.set("checklist_items", [])
             for t in tasks:
                 if t.get("task"):
