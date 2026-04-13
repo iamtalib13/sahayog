@@ -1782,7 +1782,8 @@
 
                         <!-- Collapsible Task List -->
                         <div class="task-list-wrapper" :class="{ expanded: section.isExpanded }">
-                            <div class="task-list" v-if="section.isExpanded" :style="{ '--team-color': getTeamColor(sIndex).text }">
+                            <div class="task-list" v-if="section.isExpanded"
+                                :style="{ '--team-color': getTeamColor(sIndex).text }">
                                 <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
                                     :class="{ 'done-item': task.done }" @click="toggleTask(task)">
                                     <div class="task-left">
@@ -2058,7 +2059,17 @@
     <!-- Manage Team & Tasks Modal -->
     <div v-if="manageModal.show" class="modal-overlay" @click.self="manageModal.show = false">
         <div class="modal-content modal-large">
-            <div class="modal-title" style="margin-bottom: 24px;">Manage: <span v-text="manageModal.teamName"></span>
+            <div class="modal-title"
+                style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                <div>Manage: <span v-text="manageModal.teamName"></span></div>
+
+                <!-- NEW: Active Team Toggle -->
+                <label
+                    style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">
+                    <input type="checkbox" v-model="manageModal.isActive"
+                        style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-green);">
+                    Team Active
+                </label>
             </div>
 
             <!-- Team Members Section -->
@@ -2202,6 +2213,7 @@
                         show: false,
                         teamName: '',
                         checklistName: '',
+                        isActive: true,
                         members: [],
                         tasks: [],
                         systemUsers: [],
@@ -2889,6 +2901,7 @@
                             if (data.message.status === 'success') {
                                 this.manageModal.teamName = data.message.team_name;
                                 this.manageModal.checklistName = data.message.checklist_name || '';
+                                this.manageModal.isActive = data.message.is_active !== undefined ? (data.message.is_active === 1 || data.message.is_active === true) : true;
                                 this.manageModal.members = data.message.members || [];
                                 this.manageModal.systemUsers = data.message.system_users || [];
                                 this.manageModal.tasks = data.message.tasks || [];
@@ -3042,6 +3055,7 @@
                         const formData = new FormData();
                         formData.append('team_name', this.manageModal.teamName);
                         formData.append('checklist_name', this.manageModal.checklistName || '');
+                        formData.append('is_active', this.manageModal.isActive ? 1 : 0,);
                         formData.append('members', JSON.stringify(this.manageModal.members));
                         formData.append('tasks', JSON.stringify(this.manageModal.tasks));
 
