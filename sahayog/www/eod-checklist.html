@@ -349,6 +349,14 @@
             border-color: var(--accent-green);
         }
 
+        /* NEW: Disabled state for Viewer Role */
+        .checkbox.viewer-disabled {
+            background-color: #f1f5f9;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
         .checkbox.checked::after {
             content: '✓';
             color: white;
@@ -1760,18 +1768,23 @@
                             </div>
 
                             <!-- Start Button -->
-                            <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
+                            <!-- <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction"> -->
+                            <button v-if="eodStatus === 'idle' && !isViewer" class="capsule-btn btn-start"
+                                @click="handleEodAction">
                                 Start
                             </button>
 
                             <!-- End Button -->
-                            <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
+                            <button
+                                v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone() && !isViewer"
                                 class="capsule-btn btn-end" @click="handleEodAction">
                                 End
                             </button>
 
                             <!-- THE SETTINGS DROPDOWN ON THE FAR RIGHT -->
-                            <div class="settings-wrapper" v-if="isManager || eodStatus === 'closed_today'">
+                            <!-- <div class="settings-wrapper" v-if="isManager || eodStatus === 'closed_today'"> -->
+                            <div class="settings-wrapper"
+                                v-if="(isManager || eodStatus === 'closed_today') && !isViewer">
                                 <!-- Invisible overlay to close menu -->
                                 <div v-if="showSettingsDropdown" class="settings-overlay"
                                     @click="showSettingsDropdown = false"></div>
@@ -1879,7 +1892,9 @@
                                     :class="{ 'done-item': task.done }" @click="toggleTask(task)">
                                     <div class="task-left">
                                         <!-- Use dynamic team color for checkboxes! -->
-                                        <div class="checkbox" :class="{ checked: task.done }"
+                                        <div class="checkbox" :class="{ checked: task.done }" <div class="checkbox"
+                                            :class="{ checked: task.done, 'viewer-disabled': isViewer }"
+                                            @click="!isViewer && toggleTask(task)"
                                             :style="task.done ? { backgroundColor: getTeamColor(sIndex).text, borderColor: getTeamColor(sIndex).text } : {}">
                                         </div>
                                         <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
@@ -2304,6 +2319,7 @@
 
                     hasAccess: null,
                     isManager: false,
+                    isViewer: false,
                     eodClosedTime: '',
                     manageModal: {
                         show: false,
@@ -2506,6 +2522,7 @@
                             // Update this to use the new object structure from backend
                             this.hasAccess = accessData.message.has_access === true;
                             this.isManager = accessData.message.is_manager === true;
+                            this.isViewer = accessData.message.is_viewer === true;
                         } catch (e) {
                             this.hasAccess = false;
                         }

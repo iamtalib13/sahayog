@@ -459,6 +459,21 @@ def update_task_status(eod_name, task_row_name, done):
 
 
 
+# @frappe.whitelist()
+# def check_eod_access():
+#     """Checks roles and returns access flags."""
+#     user = frappe.session.user
+#     roles = frappe.get_roles(user)
+    
+#     # Absolute override for Admin / System Manager
+#     if user == "Administrator" or "System Manager" in roles:
+#         return {"has_access": True, "is_manager": True}
+        
+#     return {
+#         "has_access": "EOD Checklist Manager" in roles or "EOD Checklist Member" in roles,
+#         "is_manager": "EOD Checklist Manager" in roles
+#     }
+
 @frappe.whitelist()
 def check_eod_access():
     """Checks roles and returns access flags."""
@@ -467,11 +482,19 @@ def check_eod_access():
     
     # Absolute override for Admin / System Manager
     if user == "Administrator" or "System Manager" in roles:
-        return {"has_access": True, "is_manager": True}
+        return {"has_access": True, "is_manager": True, "is_viewer": False}
         
+    has_member_access = "EOD Checklist Manager" in roles or "EOD Checklist Member" in roles
+    is_viewer = "EOD Checklist Viewer" in roles
+    
+    # If they are ONLY a viewer (no manager or member roles), mark them as strict viewer
+    strict_viewer = is_viewer and not has_member_access
+
     return {
-        "has_access": "EOD Checklist Manager" in roles or "EOD Checklist Member" in roles,
-        "is_manager": "EOD Checklist Manager" in roles
+        # They have access if they have ANY of the three roles
+        "has_access": has_member_access or is_viewer,
+        "is_manager": "EOD Checklist Manager" in roles,
+        "is_viewer": strict_viewer
     }
 
 
