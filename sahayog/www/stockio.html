@@ -3605,15 +3605,42 @@
           },
         });
       },
-      submitDispatch() {
-        const rowName = this.dispatchForm.name;
-        const entryType = this.dispatchForm.stock_entry_type;
-        const slug = "employee-material-request";
-        window.location.href = `/app/${slug}/${encodeURIComponent(rowName)}?stock_entry_type=${encodeURIComponent(entryType)}`;
-        this.showDispatchModal = false;
-        this.dispatchForm.items = [];
-      },
+      async submitDispatch() {
+        // Quick validation
+        if (
+          !this.dispatchForm.source_warehouse ||
+          !this.dispatchForm.target_warehouse
+        ) {
+          frappe.msgprint("Warehouses required");
+          return;
+        }
 
+        const stockEntry = {
+          doctype: "Stock Entry",
+          stock_entry_type: this.dispatchForm.stock_entry_type,
+          from_warehouse: this.dispatchForm.source_warehouse,
+          to_warehouse: this.dispatchForm.target_warehouse,
+          items: this.dispatchForm.items
+            .filter((item) => (item.dispatch_qty || 0) > 0)
+            .map((item) => ({
+              item_code: item.item_code,
+              qty: item.dispatch_qty,
+            })),
+        };
+
+        // Create Stock Entry
+        const res = await frappe.call({
+          method: "frappe.client.insert",
+          args: { doc: stockEntry },
+        });
+
+        if (res.message) {
+          frappe.msgprint(
+            `Stock Entry <a href="/app/stock-entry/${res.message.name}">${res.message.name}</a> created!`,
+          );
+          this.showDispatchModal = false;
+        }
+      },
       async openRecord(row) {
         if (!row || !row.name || !this.currentView.doctype) return;
         // Show detail view inline for Requests
