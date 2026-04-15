@@ -131,6 +131,49 @@
       </div>
     </div>
 
+    <!-- Dispatch Modal -->
+    <div
+      class="profile-modal-overlay"
+      v-if="showDispatchModal"
+      @click.self="showDispatchModal = false"
+    >
+      <div class="profile-modal">
+        <div class="profile-modal-header">
+          <h3>Dispatch Request</h3>
+          <div class="profile-modal-header-right">
+            <button class="btn-create-inline" @click="submitDispatch()">
+              <span>Proceed</span>
+            </button>
+            <button class="profile-close" @click="showDispatchModal = false">
+              &times;
+            </button>
+          </div>
+        </div>
+        <div class="profile-modal-body">
+          <div style="padding: 12px; background: var(--gray-50); border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--blue-600);">
+            <div style="font-size: 13px; margin-bottom: 8px;"><strong>Request:</strong> [[ dispatchForm.name ]]</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; background: white; border-radius: 6px; border: 1px solid var(--border-color);">
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Source</div>
+                <div style="font-size: 13px; font-weight: 600; color: #dc3545;">[[ dispatchForm.source_warehouse || 'Not Set' ]]</div>
+              </div>
+              <div style="color: var(--gray-400); font-size: 18px;">➜</div>
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Target</div>
+                <div style="font-size: 13px; font-weight: 600; color: #198754;">[[ dispatchForm.target_warehouse || 'Not Set' ]]</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stock Entry Type <span class="form-required">*</span></label>
+            <select class="form-input" v-model="dispatchForm.stock_entry_type">
+              <option v-for="type in stockEntryTypes" :key="type" :value="type">[[ type ]]</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Create Item Modal -->
     <div
       class="profile-modal-overlay"
@@ -2546,6 +2589,13 @@
       showProfileModal: false,
       profileData: null,
       showCreateItemModal: false,
+      showDispatchModal: false,
+      dispatchForm: {
+        name: "",
+        source_warehouse: "",
+        target_warehouse: "",
+        stock_entry_type: "Material Issue",
+      },
       creatingItem: false,
       focusedField: null,
       createItemForm: {
@@ -3191,11 +3241,19 @@
 
       handleDispatch(row) {
         if (!row || !row.name) return;
-        frappe.confirm(`Proceed to dispatch for ${row.name}?`, () => {
-          // Redirect to desk to use standard dispatching functionality
-          const slug = "employee-material-request";
-          window.location.href = `/app/${slug}/${encodeURIComponent(row.name)}`;
-        });
+        this.dispatchForm.name = row.name;
+        this.dispatchForm.source_warehouse = row.source_warehouse;
+        this.dispatchForm.target_warehouse = row.target_warehouse;
+        this.dispatchForm.stock_entry_type = "Material Issue";
+        this.showDispatchModal = true;
+      },
+
+      submitDispatch() {
+        const rowName = this.dispatchForm.name;
+        const entryType = this.dispatchForm.stock_entry_type;
+        const slug = "employee-material-request";
+        window.location.href = `/app/${slug}/${encodeURIComponent(rowName)}?stock_entry_type=${encodeURIComponent(entryType)}`;
+        this.showDispatchModal = false;
       },
 
       async openRecord(row) {
