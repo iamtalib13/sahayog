@@ -776,6 +776,7 @@
                     <th>Category</th>
                     <th class="text-right">Qty</th>
                     <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -799,6 +800,15 @@
                       >
                         [[ item.status ]]
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        class="btn-action"
+                        @click="handleDispatch(detailRecord)"
+                        title="Dispatch"
+                      >
+                        Dispatch
+                      </button>
                     </td>
                   </tr>
                 </tbody>
@@ -2704,12 +2714,10 @@
           ],
           detailFields: [
             { label: "Employee", key: "employee_name" },
-            { label: "Status", key: "status", type: "badge" },
             { label: "Target Warehouse", key: "target_warehouse" },
             { label: "Purpose", key: "purpose" },
             { label: "Created", key: "creation" },
             { label: "Required By Date", key: "required_by_date" },
-            { label: "Modified", key: "modified" },
             { label: "Remarks", key: "remark" },
           ],
         },
