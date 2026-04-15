@@ -149,54 +149,214 @@
             </button>
           </div>
         </div>
+
         <div class="profile-modal-body">
-          <div style="padding: 12px; background: var(--gray-50); border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--blue-600);">
-            <div style="font-size: 13px; margin-bottom: 8px;"><strong>Request:</strong> [[ dispatchForm.name ]]</div>
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; background: white; border-radius: 6px; border: 1px solid var(--border-color);">
-              <div style="text-align: center; flex: 1;">
-                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Source</div>
-                <div style="font-size: 13px; font-weight: 600; color: #dc3545;">[[ dispatchForm.source_warehouse || 'Not Set' ]]</div>
+          <div
+            style="
+              padding: 12px;
+              background: var(--gray-50);
+              border-radius: 8px;
+              margin-bottom: 20px;
+              border-left: 4px solid var(--blue-600);
+            "
+          >
+            <div style="font-size: 13px; margin-bottom: 8px">
+              <strong>Request:</strong> [[ dispatchForm.name ]]
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 10px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+              "
+            >
+              <div style="text-align: center; flex: 1">
+                <div
+                  style="
+                    font-size: 10px;
+                    color: var(--text-muted);
+                    text-transform: uppercase;
+                    font-weight: 700;
+                  "
+                >
+                  Source
+                </div>
+                <div style="font-size: 13px; font-weight: 600; color: #dc3545">
+                  [[ dispatchForm.source_warehouse || 'Not Set' ]]
+                </div>
               </div>
-              <div style="color: var(--gray-400); font-size: 18px;">➜</div>
-              <div style="text-align: center; flex: 1;">
-                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Target</div>
-                <div style="font-size: 13px; font-weight: 600; color: #198754;">[[ dispatchForm.target_warehouse || 'Not Set' ]]</div>
+              <div style="color: var(--gray-400); font-size: 18px">➜</div>
+              <div style="text-align: center; flex: 1">
+                <div
+                  style="
+                    font-size: 10px;
+                    color: var(--text-muted);
+                    text-transform: uppercase;
+                    font-weight: 700;
+                  "
+                >
+                  Target
+                </div>
+                <div style="font-size: 13px; font-weight: 600; color: #198754">
+                  [[ dispatchForm.target_warehouse || 'Not Set' ]]
+                </div>
               </div>
             </div>
           </div>
+
           <!-- Items Table -->
-          <div v-if="dispatchForm.loading" style="text-align: center; padding: 20px; color: var(--text-muted);">
+          <div
+            v-if="dispatchForm.loading"
+            style="text-align: center; padding: 20px; color: var(--text-muted)"
+          >
             <i class="fas fa-spinner fa-spin"></i> Loading requested items...
           </div>
-          <div v-else-if="dispatchForm.items.length > 0" style="margin-bottom: 20px;">
-            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Requested Items</div>
-            <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: white;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead style="position: sticky; top: 0; background: var(--gray-50); z-index: 1; border-bottom: 1px solid var(--border-color);">
+          <div class="form-group">
+            <label class="form-label"
+              >Stock Entry Type <span class="form-required">*</span></label
+            >
+            <select class="form-input" v-model="dispatchForm.stock_entry_type">
+              <option v-for="type in stockEntryTypes" :key="type" :value="type">
+                [[ type ]]
+              </option>
+            </select>
+          </div>
+          <div
+            v-else-if="dispatchForm.items.length > 0"
+            style="margin-bottom: 20px"
+          >
+            <div
+              style="
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+              "
+            >
+              Requested Items
+            </div>
+            <div
+              style="
+                max-height: 200px;
+                overflow-y: auto;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                background: white;
+              "
+            >
+              <table style="width: 100%; border-collapse: collapse">
+                <!-- Current thead (add Dispatch Qty th) -->
+                <thead
+                  style="
+                    position: sticky;
+                    top: 0;
+                    background: var(--gray-50);
+                    z-index: 1;
+                    border-bottom: 1px solid var(--border-color);
+                  "
+                >
                   <tr>
-                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: left; color: var(--text-muted);">Item</th>
-                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: right; color: var(--text-muted);">Qty</th>
-                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: left; color: var(--text-muted);">UOM</th>
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: left;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Item
+                    </th>
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: right;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Qty
+                    </th>
+                    <!-- ADD THIS NEW TH -->
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: right;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Dispatch Qty
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in dispatchForm.items" :key="item.name" style="border-bottom: 1px solid var(--border-color);">
-                    <td style="font-size: 12px; padding: 8px 12px;">
-                      <div style="font-weight: 600; color: var(--text-main);">[[ item.item_code ]]</div>
-                      <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">[[ item.item_name || '-' ]]</div>
+                  <tr
+                    v-for="item in dispatchForm.items"
+                    :key="item.name"
+                    style="border-bottom: 1px solid var(--border-color)"
+                  >
+                    <td style="font-size: 12px; padding: 8px 12px">
+                      <div style="font-weight: 600; color: var(--text-main)">
+                        [[ item.item_code ]]
+                      </div>
+                      <div
+                        style="
+                          font-size: 10px;
+                          color: var(--text-muted);
+                          white-space: nowrap;
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          max-width: 200px;
+                        "
+                      >
+                        [[ item.item_name || '-' ]]
+                      </div>
                     </td>
-                    <td style="font-size: 12px; padding: 8px 12px; text-align: right; font-weight: 700;">[[ item.quantity ]]</td>
-                    <td style="font-size: 11px; padding: 8px 12px; color: var(--text-muted);">[[ item.uom ]]</td>
+                    <td
+                      style="
+                        font-size: 12px;
+                        padding: 8px 12px;
+                        text-align: right;
+                        font-weight: 700;
+                      "
+                    >
+                      [[ item.quantity ]]
+                    </td>
+                    <td
+                      style="
+                        font-size: 12px;
+                        padding: 8px 12px;
+                        text-align: right;
+                      "
+                    >
+                      <input
+                        type="number"
+                        v-model.number="item.dispatch_qty"
+                        :min="0"
+                        :max="item.quantity"
+                        style="
+                          width: 60px;
+                          text-align: right;
+                          border: 1px solid var(--border-color);
+                          border-radius: 4px;
+                          padding: 4px 6px;
+                          font-size: 12px;
+                        "
+                      />
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Stock Entry Type <span class="form-required">*</span></label>
-            <select class="form-input" v-model="dispatchForm.stock_entry_type">
-              <option v-for="type in stockEntryTypes" :key="type" :value="type">[[ type ]]</option>
-            </select>
           </div>
         </div>
       </div>
@@ -212,7 +372,11 @@
         <div class="profile-modal-header">
           <h3>Create New Item</h3>
           <div class="profile-modal-header-right">
-            <button class="btn-create-inline" @click="submitNewItem()" :disabled="creatingItem">
+            <button
+              class="btn-create-inline"
+              @click="submitNewItem()"
+              :disabled="creatingItem"
+            >
               <i class="fas fa-plus"></i>
               <span>Create</span>
             </button>
@@ -223,7 +387,9 @@
         </div>
         <div class="profile-modal-body">
           <div class="form-group">
-            <label class="form-label">Item Name <span class="form-required">*</span></label>
+            <label class="form-label"
+              >Item Name <span class="form-required">*</span></label
+            >
             <input
               type="text"
               class="form-input"
@@ -232,7 +398,9 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">Item Department <span class="form-required">*</span></label>
+            <label class="form-label"
+              >Item Department <span class="form-required">*</span></label
+            >
             <div class="searchable-select-wrapper">
               <input
                 type="text"
@@ -246,7 +414,10 @@
                 autocomplete="off"
               />
               <i class="fas fa-chevron-down searchable-select-arrow"></i>
-              <div class="searchable-select-dropdown" v-if="focusedField === 'item_department'">
+              <div
+                class="searchable-select-dropdown"
+                v-if="focusedField === 'item_department'"
+              >
                 <div
                   v-for="dept in filteredItemDepartments"
                   :key="dept"
@@ -256,14 +427,19 @@
                 >
                   [[ dept ]]
                 </div>
-                <div v-if="filteredItemDepartments.length === 0" class="searchable-select-no-results">
+                <div
+                  v-if="filteredItemDepartments.length === 0"
+                  class="searchable-select-no-results"
+                >
                   No departments found
                 </div>
               </div>
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Item Group <span class="form-required">*</span></label>
+            <label class="form-label"
+              >Item Group <span class="form-required">*</span></label
+            >
             <div class="searchable-select-wrapper">
               <input
                 type="text"
@@ -277,7 +453,10 @@
                 autocomplete="off"
               />
               <i class="fas fa-chevron-down searchable-select-arrow"></i>
-              <div class="searchable-select-dropdown" v-if="focusedField === 'item_group'">
+              <div
+                class="searchable-select-dropdown"
+                v-if="focusedField === 'item_group'"
+              >
                 <div
                   v-for="group in filteredItemGroups"
                   :key="group"
@@ -287,7 +466,10 @@
                 >
                   [[ group ]]
                 </div>
-                <div v-if="filteredItemGroups.length === 0" class="searchable-select-no-results">
+                <div
+                  v-if="filteredItemGroups.length === 0"
+                  class="searchable-select-no-results"
+                >
                   No item groups found
                 </div>
               </div>
@@ -308,7 +490,10 @@
                 autocomplete="off"
               />
               <i class="fas fa-chevron-down searchable-select-arrow"></i>
-              <div class="searchable-select-dropdown" v-if="focusedField === 'gst_hsn_code'">
+              <div
+                class="searchable-select-dropdown"
+                v-if="focusedField === 'gst_hsn_code'"
+              >
                 <div
                   v-for="hsn in filteredHSNCodes"
                   :key="hsn.name"
@@ -316,9 +501,15 @@
                   :class="{ selected: createItemForm.gst_hsn_code === hsn.name }"
                   @mousedown="selectOption('gst_hsn_code', hsn.name)"
                 >
-                  [[ hsn.name ]] <span class="hsn-description" v-if="hsn.description">- [[ hsn.description ]]</span>
+                  [[ hsn.name ]]
+                  <span class="hsn-description" v-if="hsn.description"
+                    >- [[ hsn.description ]]</span
+                  >
                 </div>
-                <div v-if="filteredHSNCodes.length === 0" class="searchable-select-no-results">
+                <div
+                  v-if="filteredHSNCodes.length === 0"
+                  class="searchable-select-no-results"
+                >
                   No HSN/SAC codes found
                 </div>
               </div>
@@ -342,8 +533,13 @@
               <span class="checkbox-text">Is Fixed Asset</span>
             </label>
           </div>
-          <div v-if="createItemForm.is_stock_item" class="form-group conditional-field">
-            <label class="form-label">Stock UOM <span class="form-required">*</span></label>
+          <div
+            v-if="createItemForm.is_stock_item"
+            class="form-group conditional-field"
+          >
+            <label class="form-label"
+              >Stock UOM <span class="form-required">*</span></label
+            >
             <div class="searchable-select-wrapper">
               <input
                 type="text"
@@ -357,7 +553,10 @@
                 autocomplete="off"
               />
               <i class="fas fa-chevron-down searchable-select-arrow"></i>
-              <div class="searchable-select-dropdown" v-if="focusedField === 'stock_uom'">
+              <div
+                class="searchable-select-dropdown"
+                v-if="focusedField === 'stock_uom'"
+              >
                 <div
                   v-for="uom in filteredStockUOMs"
                   :key="uom"
@@ -367,14 +566,22 @@
                 >
                   [[ uom ]]
                 </div>
-                <div v-if="filteredStockUOMs.length === 0" class="searchable-select-no-results">
+                <div
+                  v-if="filteredStockUOMs.length === 0"
+                  class="searchable-select-no-results"
+                >
                   No UOMs found
                 </div>
               </div>
             </div>
           </div>
-          <div v-if="createItemForm.is_fixed_asset" class="form-group conditional-field">
-            <label class="form-label">Asset Category <span class="form-required">*</span></label>
+          <div
+            v-if="createItemForm.is_fixed_asset"
+            class="form-group conditional-field"
+          >
+            <label class="form-label"
+              >Asset Category <span class="form-required">*</span></label
+            >
             <div class="searchable-select-wrapper">
               <input
                 type="text"
@@ -388,7 +595,10 @@
                 autocomplete="off"
               />
               <i class="fas fa-chevron-down searchable-select-arrow"></i>
-              <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category'">
+              <div
+                class="searchable-select-dropdown"
+                v-if="focusedField === 'asset_category'"
+              >
                 <div
                   v-for="cat in filteredAssetCategories"
                   :key="cat"
@@ -398,7 +608,10 @@
                 >
                   [[ cat ]]
                 </div>
-                <div v-if="filteredAssetCategories.length === 0" class="searchable-select-no-results">
+                <div
+                  v-if="filteredAssetCategories.length === 0"
+                  class="searchable-select-no-results"
+                >
                   No asset categories found
                 </div>
               </div>
@@ -481,8 +694,14 @@
         <h1 class="page-title" v-if="!showDetailView">[[ activeItem ]]</h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
-          <span class="detail-id-badge">[[ detailRecord ? detailRecord.name : '' ]]</span>
-          <span class="detail-status-badge" v-if="detailRecord" :class="getBadgeClass(detailRecord, 'status')">
+          <span class="detail-id-badge"
+            >[[ detailRecord ? detailRecord.name : '' ]]</span
+          >
+          <span
+            class="detail-status-badge"
+            v-if="detailRecord"
+            :class="getBadgeClass(detailRecord, 'status')"
+          >
             [[ getBadgeText(detailRecord, 'status') ]]
           </span>
         </h1>
@@ -503,7 +722,9 @@
           @click="toggleItemView()"
           :title="itemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
         >
-          <i :class="itemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"></i>
+          <i
+            :class="itemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"
+          ></i>
         </button>
         <button
           class="btn-create"
@@ -521,19 +742,31 @@
       <div v-if="showDetailView" class="detail-view-container">
         <div class="detail-card" v-if="detailRecord">
           <div class="detail-grid">
-            <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
+            <div
+              v-for="field in detailFields"
+              :key="field.key"
+              class="detail-grid-item"
+            >
               <span class="detail-grid-label">[[ field.label ]]</span>
               <span class="detail-grid-value" v-if="field.type === 'badge'">
-                 <span class="status-badge" :class="getBadgeClass(detailRecord, field.key)">
-                    [[ getBadgeText(detailRecord, field.key) ]]
-                 </span>
+                <span
+                  class="status-badge"
+                  :class="getBadgeClass(detailRecord, field.key)"
+                >
+                  [[ getBadgeText(detailRecord, field.key) ]]
+                </span>
               </span>
-              <span class="detail-grid-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+              <span class="detail-grid-value" v-else
+                >[[ getFieldValue(detailRecord, field.key) ]]</span
+              >
             </div>
           </div>
 
           <!-- Child Table for Employee Material Request -->
-          <div v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length" class="detail-items-section">
+          <div
+            v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length"
+            class="detail-items-section"
+          >
             <h4 class="section-subtitle">Requested Items</h4>
             <div class="items-table-wrapper">
               <table class="items-table">
@@ -550,13 +783,20 @@
                     <td>
                       <div class="item-name-cell">
                         <span class="item-code-text">[[ item.item_code ]]</span>
-                        <span class="item-name-text text-muted">[[ item.item_name ]]</span>
+                        <span class="item-name-text text-muted"
+                          >[[ item.item_name ]]</span
+                        >
                       </div>
                     </td>
                     <td>[[ item.item_category ]]</td>
-                    <td class="text-right font-medium">[[ item.quantity ]] [[ item.uom ]]</td>
+                    <td class="text-right font-medium">
+                      [[ item.quantity ]] [[ item.uom ]]
+                    </td>
                     <td>
-                      <span class="status-badge" :class="getBadgeClass(item, 'status')">
+                      <span
+                        class="status-badge"
+                        :class="getBadgeClass(item, 'status')"
+                      >
                         [[ item.status ]]
                       </span>
                     </td>
@@ -714,7 +954,10 @@
         </div>
 
         <!-- List Header (Columns) -->
-        <div v-else-if="!(itemView === 'card' && activeItem === 'Items')" class="list-view-header">
+        <div
+          v-else-if="!(itemView === 'card' && activeItem === 'Items')"
+          class="list-view-header"
+        >
           <div class="col-checkbox" v-if="currentView.selectable !== false">
             <input
               type="checkbox"
@@ -762,7 +1005,10 @@
           </div>
 
           <!-- Card View for Items -->
-          <div v-else-if="itemView === 'card' && activeItem === 'Items'" class="card-grid">
+          <div
+            v-else-if="itemView === 'card' && activeItem === 'Items'"
+            class="card-grid"
+          >
             <div
               v-for="row in filteredRows"
               :key="row.name"
@@ -770,16 +1016,26 @@
               @click="openRecord(row)"
             >
               <div class="item-card-inner">
-                <div class="item-card-image" :style="row.image ? { backgroundImage: 'url(' + row.image + ')' } : {}">
+                <div
+                  class="item-card-image"
+                  :style="row.image ? { backgroundImage: 'url(' + row.image + ')' } : {}"
+                >
                   <i v-if="!row.image" class="fas fa-box"></i>
                 </div>
                 <div class="item-card-content">
                   <div class="item-card-header">
                     <div class="item-card-header-info">
-                      <span class="item-card-code">[[ row.item_code || row.name ]]</span>
-                      <h3 class="item-card-title">[[ row.item_name || '-' ]]</h3>
+                      <span class="item-card-code"
+                        >[[ row.item_code || row.name ]]</span
+                      >
+                      <h3 class="item-card-title">
+                        [[ row.item_name || '-' ]]
+                      </h3>
                     </div>
-                    <span class="status-badge" :class="row.disabled ? 'disabled' : 'active'">
+                    <span
+                      class="status-badge"
+                      :class="row.disabled ? 'disabled' : 'active'"
+                    >
                       [[ row.disabled ? 'Disabled' : 'Enabled' ]]
                     </span>
                   </div>
@@ -835,11 +1091,8 @@
                 >
                   [[ getBadgeText(row, col.key) ]]
                 </span>
-                <span
-                  v-else-if="col.type === 'button'"
-                  class="row-action"
-                >
-                  <button 
+                <span v-else-if="col.type === 'button'" class="row-action">
+                  <button
                     class="btn-list-action"
                     @click.stop="handleDispatch(row)"
                     v-if="activeItem === 'Requests' && row.status === 'Approved'"
@@ -2434,7 +2687,13 @@
           emptyIcon: "fa-clipboard-list",
           emptyTitle: "No requests found",
           emptyMessage: "Try another filter or create a new request.",
-          searchableFields: ["name", "owner", "status", "target_warehouse", "employee_name"],
+          searchableFields: [
+            "name",
+            "owner",
+            "status",
+            "target_warehouse",
+            "employee_name",
+          ],
           columns: [
             { label: "Request", key: "name", width: 2, type: "avatar" },
             { label: "Owner", key: "employee_name", width: 1.5 },
@@ -2502,9 +2761,7 @@
           emptyTitle: "No items found",
           emptyMessage:
             "Try adjusting your search or create a new item to get started.",
-          searchableFields: [
-            "item_code",
-          ],
+          searchableFields: ["item_code"],
           columns: [
             { label: "ID", key: "name", width: 2, type: "avatar" },
             { label: "Name", key: "item_name", width: 2 },
@@ -2522,7 +2779,13 @@
           emptyIcon: "fa-cubes",
           emptyTitle: "No assets found",
           emptyMessage: "No asset master records match the current search.",
-          searchableFields: ["name", "asset_name", "custodian", "status", "custodian_name"],
+          searchableFields: [
+            "name",
+            "asset_name",
+            "custodian",
+            "status",
+            "custodian_name",
+          ],
           columns: [
             { label: "Asset", key: "asset_name", width: 2, type: "avatar" },
             { label: "Code", key: "name", width: 1.5 },
@@ -2538,7 +2801,15 @@
           emptyIcon: "fa-person-walking-arrow-right",
           emptyTitle: "No movements found",
           emptyMessage: "No asset movement records match the current search.",
-          searchableFields: ["name", "purpose", "status", "transaction_date", "source_location", "to_employee", "custodian_name"],
+          searchableFields: [
+            "name",
+            "purpose",
+            "status",
+            "transaction_date",
+            "source_location",
+            "to_employee",
+            "custodian_name",
+          ],
           columns: [
             { label: "Movement", key: "name", width: 2, type: "avatar" },
             { label: "Purpose", key: "purpose", width: 1.5 },
@@ -2626,6 +2897,7 @@
         items: [],
         loading: false,
       },
+      stockEntryTypes: ["Material Transfer", "Material Issue"],
       creatingItem: false,
       focusedField: null,
       createItemForm: {
@@ -2703,31 +2975,46 @@
 
       // Searchable select filtered options
       get filteredItemDepartments() {
-        const search = (this.createItemForm.item_department_display || "").toLowerCase();
+        const search = (
+          this.createItemForm.item_department_display || ""
+        ).toLowerCase();
         if (!search) return this.itemDepartments;
-        return this.itemDepartments.filter(d => d.toLowerCase().includes(search));
+        return this.itemDepartments.filter((d) =>
+          d.toLowerCase().includes(search),
+        );
       },
       get filteredItemGroups() {
-        const search = (this.createItemForm.item_group_display || "").toLowerCase();
+        const search = (
+          this.createItemForm.item_group_display || ""
+        ).toLowerCase();
         if (!search) return this.itemGroups;
-        return this.itemGroups.filter(g => g.toLowerCase().includes(search));
+        return this.itemGroups.filter((g) => g.toLowerCase().includes(search));
       },
       get filteredStockUOMs() {
-        const search = (this.createItemForm.stock_uom_display || "").toLowerCase();
+        const search = (
+          this.createItemForm.stock_uom_display || ""
+        ).toLowerCase();
         if (!search) return this.stockUOMs;
-        return this.stockUOMs.filter(u => u.toLowerCase().includes(search));
+        return this.stockUOMs.filter((u) => u.toLowerCase().includes(search));
       },
       get filteredAssetCategories() {
-        const search = (this.createItemForm.asset_category_display || "").toLowerCase();
+        const search = (
+          this.createItemForm.asset_category_display || ""
+        ).toLowerCase();
         if (!search) return this.assetCategories;
-        return this.assetCategories.filter(c => c.toLowerCase().includes(search));
+        return this.assetCategories.filter((c) =>
+          c.toLowerCase().includes(search),
+        );
       },
       get filteredHSNCodes() {
-        const search = (this.createItemForm.gst_hsn_code_display || "").toLowerCase();
+        const search = (
+          this.createItemForm.gst_hsn_code_display || ""
+        ).toLowerCase();
         if (!search) return this.hsnCodes;
-        return this.hsnCodes.filter(h =>
-          h.name.toLowerCase().includes(search) ||
-          (h.description && h.description.toLowerCase().includes(search))
+        return this.hsnCodes.filter(
+          (h) =>
+            h.name.toLowerCase().includes(search) ||
+            (h.description && h.description.toLowerCase().includes(search)),
         );
       },
 
@@ -2770,7 +3057,11 @@
           this.sidebar.header.subtitle = frappe.session.user || "Admin";
         }
         // Fetch user's warehouse (non-blocking)
-        try { await this.fetchUserWarehouse(); } catch (e) { console.warn("Warehouse fetch failed:", e); }
+        try {
+          await this.fetchUserWarehouse();
+        } catch (e) {
+          console.warn("Warehouse fetch failed:", e);
+        }
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
         const defaultItem =
@@ -2810,7 +3101,8 @@
       async fetchUserWarehouse() {
         try {
           const res = await frappe.call({
-            method: "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse"
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse",
           });
           if (res.message) {
             this.userWarehouse = res.message.warehouse;
@@ -2824,14 +3116,15 @@
         if (!this.userWarehouse || this.rows.length === 0) return;
         try {
           const res = await frappe.call({
-            method: "sahayog.procurement.api.stock_balance_ledger.get_item_quantities_for_warehouse",
-            args: { warehouse: this.userWarehouse }
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_item_quantities_for_warehouse",
+            args: { warehouse: this.userWarehouse },
           });
           if (res.message) {
             this.itemQuantities = res.message;
-            this.rows = this.rows.map(row => ({
+            this.rows = this.rows.map((row) => ({
               ...row,
-              branch_qty: this.itemQuantities[row.item_code] || 0
+              branch_qty: this.itemQuantities[row.item_code] || 0,
             }));
           }
         } catch (e) {
@@ -2854,99 +3147,102 @@
         try {
           const start = append ? this.loadedRows : 0;
           let res;
-          
+
           if (doctype === "Employee Material Request") {
             res = await frappe.call({
-              method: "sahayog.procurement.api.stock_balance_ledger.get_emr_list",
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.get_emr_list",
               args: {
                 limit: this.pageSize,
                 start: start,
-                search_text: this.searchText
-              }
+                search_text: this.searchText,
+              },
             });
-            
+
             if (res.message) {
-                const data = res.message.data || [];
-                if (append) {
-                    this.rows = this.rows.concat(data);
-                } else {
-                    this.rows = data;
-                }
-                this.loadedRows += data.length;
-                this.totalRows = res.message.total || 0;
-                this.hasMore = this.loadedRows < this.totalRows;
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows += data.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
             }
           } else if (doctype === "Asset") {
             res = await frappe.call({
-              method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
               args: {
                 limit: this.pageSize,
                 start: start,
-                search_text: this.searchText
-              }
+                search_text: this.searchText,
+              },
             });
-            
+
             if (res.message) {
-                const data = res.message.data || [];
-                if (append) {
-                    this.rows = this.rows.concat(data);
-                } else {
-                    this.rows = data;
-                }
-                this.loadedRows += data.length;
-                this.totalRows = res.message.total || 0;
-                this.hasMore = this.loadedRows < this.totalRows;
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows += data.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
             }
           } else if (doctype === "Asset Movement") {
             res = await frappe.call({
-              method: "sahayog.procurement.api.stock_balance_ledger.get_movement_list",
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.get_movement_list",
               args: {
                 limit: this.pageSize,
                 start: start,
-                search_text: this.searchText
-              }
+                search_text: this.searchText,
+              },
             });
-            
+
             if (res.message) {
-                const data = res.message.data || [];
-                if (append) {
-                    this.rows = this.rows.concat(data);
-                } else {
-                    this.rows = data;
-                }
-                this.loadedRows += data.length;
-                this.totalRows = res.message.total || 0;
-                this.hasMore = this.loadedRows < this.totalRows;
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows += data.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
             }
           } else {
             res = await frappe.call({
-                method: "frappe.client.get_list",
-                args: {
-                    doctype: doctype,
-                    fields: ["*"],
-                    order_by: "creation desc",
-                    limit: this.pageSize,
-                    start: start,
-                },
+              method: "frappe.client.get_list",
+              args: {
+                doctype: doctype,
+                fields: ["*"],
+                order_by: "creation desc",
+                limit: this.pageSize,
+                start: start,
+              },
             });
             if (res.message) {
-                if (append) {
-                    this.rows = this.rows.concat(res.message);
-                } else {
-                    this.rows = res.message;
-                }
-                this.loadedRows += res.message.length;
-                // Get total count by fetching once with limit 1
-                if (!append && this.totalRows === 0) {
-                    const countRes = await frappe.call({
-                        method: "frappe.client.get_count",
-                        args: {
-                            doctype: doctype,
-                        },
-                    });
-                    this.totalRows = countRes.message || 0;
-                }
-                this.hasMore = this.loadedRows < this.totalRows;
+              if (append) {
+                this.rows = this.rows.concat(res.message);
+              } else {
+                this.rows = res.message;
+              }
+              this.loadedRows += res.message.length;
+              // Get total count by fetching once with limit 1
+              if (!append && this.totalRows === 0) {
+                const countRes = await frappe.call({
+                  method: "frappe.client.get_count",
+                  args: {
+                    doctype: doctype,
+                  },
+                });
+                this.totalRows = countRes.message || 0;
+              }
+              this.hasMore = this.loadedRows < this.totalRows;
             }
           }
         } catch (e) {
@@ -3060,7 +3356,7 @@
       handleCreate() {
         if (!this.currentView.createDoctype) return;
         const doctype = this.currentView.createDoctype;
-        
+
         // Show popup for Item creation
         if (doctype === "Item") {
           this.showCreateItemModal = true;
@@ -3082,7 +3378,7 @@
           };
           return;
         }
-        
+
         // Redirect to Frappe desk for other doctypes
         const slug = String(doctype)
           .toLowerCase()
@@ -3104,7 +3400,7 @@
             },
           });
           if (groupsRes.message) {
-            this.itemGroups = groupsRes.message.map(g => g.name);
+            this.itemGroups = groupsRes.message.map((g) => g.name);
           }
         } catch (e) {
           console.error("Error fetching item groups:", e);
@@ -3121,7 +3417,7 @@
             },
           });
           if (deptRes.message) {
-            this.itemDepartments = deptRes.message.map(d => d.name);
+            this.itemDepartments = deptRes.message.map((d) => d.name);
           }
         } catch (e) {
           console.error("Error fetching item departments:", e);
@@ -3139,7 +3435,7 @@
             },
           });
           if (uomRes.message) {
-            this.stockUOMs = uomRes.message.map(u => u.name);
+            this.stockUOMs = uomRes.message.map((u) => u.name);
           }
         } catch (e) {
           console.error("Error fetching UOMs:", e);
@@ -3157,7 +3453,7 @@
             },
           });
           if (catRes.message) {
-            this.assetCategories = catRes.message.map(c => c.name);
+            this.assetCategories = catRes.message.map((c) => c.name);
           }
         } catch (e) {
           console.error("Error fetching asset categories:", e);
@@ -3175,7 +3471,7 @@
             },
           });
           if (hsnRes.message) {
-            this.hsnCodes = hsnRes.message.map(h => ({
+            this.hsnCodes = hsnRes.message.map((h) => ({
               name: h.name,
               description: h.description,
             }));
@@ -3200,12 +3496,22 @@
           frappe.msgprint("Item Department is required");
           return;
         }
-        if (this.createItemForm.is_stock_item && !this.createItemForm.stock_uom) {
-          frappe.msgprint("Stock UOM is required when Maintain Stock is checked");
+        if (
+          this.createItemForm.is_stock_item &&
+          !this.createItemForm.stock_uom
+        ) {
+          frappe.msgprint(
+            "Stock UOM is required when Maintain Stock is checked",
+          );
           return;
         }
-        if (this.createItemForm.is_fixed_asset && !this.createItemForm.asset_category) {
-          frappe.msgprint("Asset Category is required when Is Fixed Asset is checked");
+        if (
+          this.createItemForm.is_fixed_asset &&
+          !this.createItemForm.asset_category
+        ) {
+          frappe.msgprint(
+            "Asset Category is required when Is Fixed Asset is checked",
+          );
           return;
         }
 
@@ -3241,7 +3547,8 @@
           }
         } catch (e) {
           console.error("Error creating item:", e);
-          const errorMsg = e.message || e.exc || "Failed to create item. Please try again.";
+          const errorMsg =
+            e.message || e.exc || "Failed to create item. Please try again.";
           frappe.msgprint(errorMsg);
         } finally {
           this.creatingItem = false;
@@ -3268,7 +3575,6 @@
         this.createItemForm[field + "_display"] = value;
         this.focusedField = null;
       },
-
       handleDispatch(row) {
         if (!row || !row.name) return;
         this.dispatchForm.name = row.name;
@@ -3287,13 +3593,18 @@
           },
           callback: (res) => {
             if (res.message && res.message.items) {
-              this.dispatchForm.items = res.message.items.filter(i => i.item_category === "Stock Item");
+              // Pre-fill dispatch_qty with exact quantity from request, filter Stock Items
+              this.dispatchForm.items = res.message.items
+                .filter((i) => i.item_category === "Stock Item")
+                .map((item) => ({
+                  ...item,
+                  dispatch_qty: item.quantity, // Same as Qty, now editable in table input
+                }));
             }
             this.dispatchForm.loading = false;
           },
         });
       },
-
       submitDispatch() {
         const rowName = this.dispatchForm.name;
         const entryType = this.dispatchForm.stock_entry_type;
@@ -3330,7 +3641,7 @@
           }
           this.detailFields = this.currentView.detailFields;
           return;
-        }        // Fallback: redirect to Frappe desk for other doctypes
+        } // Fallback: redirect to Frappe desk for other doctypes
         const slug = String(this.currentView.doctype)
           .toLowerCase()
           .trim()
@@ -3384,16 +3695,21 @@
         let value = row[key];
 
         // 🔥 Special handling for purpose (fetch from child if not in parent)
-        if (key === "purpose" && (!value || value === "-") && row.items && row.items.length) {
-            return row.items[0].purpose || "-";
+        if (
+          key === "purpose" &&
+          (!value || value === "-") &&
+          row.items &&
+          row.items.length
+        ) {
+          return row.items[0].purpose || "-";
         }
 
         // 🔥 Special handling for employee names
         if (key === "employee_name") {
-            return value || row.owner || "-";
+          return value || row.owner || "-";
         }
         if (key === "custodian_name") {
-            return value || row.custodian || "-";
+          return value || row.custodian || "-";
         }
 
         if (value === null || value === undefined || value === "") return "-";
