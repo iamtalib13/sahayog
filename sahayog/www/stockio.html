@@ -765,6 +765,18 @@
                   [[ getBadgeText(row, col.key) ]]
                 </span>
                 <span
+                  v-else-if="col.type === 'button'"
+                  class="row-action"
+                >
+                  <button 
+                    class="btn-list-action"
+                    @click.stop="handleDispatch(row)"
+                    v-if="activeItem === 'Requests' && row.status === 'Approved'"
+                  >
+                    [[ col.label ]]
+                  </button>
+                </span>
+                <span
                   v-else
                   :class="{ 'record-link is-clickable': isRecordLinkColumn(col) }"
                   @click.stop="isRecordLinkColumn(col) && openRecord(row)"
@@ -1411,6 +1423,22 @@
   [data-theme="dark"] .status-badge.pending {
     background: rgba(245, 158, 11, 0.2);
     color: #fbbf24;
+  }
+
+  .btn-list-action {
+    background: var(--blue-600);
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-list-action:hover {
+    background: var(--blue-700);
+    transform: translateY(-1px);
   }
 
   .list-view-footer {
@@ -2342,6 +2370,7 @@
             { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
+            { label: "Dispatch", key: "dispatch", width: 1, type: "button" },
           ],
           detailFields: [
             { label: "Employee", key: "employee_name" },
@@ -3158,6 +3187,15 @@
         this.createItemForm[field] = value;
         this.createItemForm[field + "_display"] = value;
         this.focusedField = null;
+      },
+
+      handleDispatch(row) {
+        if (!row || !row.name) return;
+        frappe.confirm(`Proceed to dispatch for ${row.name}?`, () => {
+          // Redirect to desk to use standard dispatching functionality
+          const slug = "employee-material-request";
+          window.location.href = `/app/${slug}/${encodeURIComponent(row.name)}`;
+        });
       },
 
       async openRecord(row) {
