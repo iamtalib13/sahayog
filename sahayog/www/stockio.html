@@ -164,6 +164,34 @@
               </div>
             </div>
           </div>
+          <!-- Items Table -->
+          <div v-if="dispatchForm.loading" style="text-align: center; padding: 20px; color: var(--text-muted);">
+            <i class="fas fa-spinner fa-spin"></i> Loading requested items...
+          </div>
+          <div v-else-if="dispatchForm.items.length > 0" style="margin-bottom: 20px;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Requested Items</div>
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: white;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead style="position: sticky; top: 0; background: var(--gray-50); z-index: 1; border-bottom: 1px solid var(--border-color);">
+                  <tr>
+                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: left; color: var(--text-muted);">Item</th>
+                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: right; color: var(--text-muted);">Qty</th>
+                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: left; color: var(--text-muted);">UOM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in dispatchForm.items" :key="item.name" style="border-bottom: 1px solid var(--border-color);">
+                    <td style="font-size: 12px; padding: 8px 12px;">
+                      <div style="font-weight: 600; color: var(--text-main);">[[ item.item_code ]]</div>
+                      <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">[[ item.item_name || '-' ]]</div>
+                    </td>
+                    <td style="font-size: 12px; padding: 8px 12px; text-align: right; font-weight: 700;">[[ item.quantity ]]</td>
+                    <td style="font-size: 11px; padding: 8px 12px; color: var(--text-muted);">[[ item.uom ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
           <div class="form-group">
             <label class="form-label">Stock Entry Type <span class="form-required">*</span></label>
             <select class="form-input" v-model="dispatchForm.stock_entry_type">
@@ -2595,6 +2623,8 @@
         source_warehouse: "",
         target_warehouse: "",
         stock_entry_type: "Material Issue",
+        items: [],
+        loading: false,
       },
       creatingItem: false,
       focusedField: null,
@@ -3245,7 +3275,23 @@
         this.dispatchForm.source_warehouse = row.source_warehouse;
         this.dispatchForm.target_warehouse = row.target_warehouse;
         this.dispatchForm.stock_entry_type = "Material Issue";
+        this.dispatchForm.items = [];
+        this.dispatchForm.loading = true;
         this.showDispatchModal = true;
+
+        frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Employee Material Request",
+            name: row.name,
+          },
+          callback: (res) => {
+            if (res.message && res.message.items) {
+              this.dispatchForm.items = res.message.items.filter(i => i.item_category === "Stock Item");
+            }
+            this.dispatchForm.loading = false;
+          },
+        });
       },
 
       submitDispatch() {
@@ -3254,6 +3300,7 @@
         const slug = "employee-material-request";
         window.location.href = `/app/${slug}/${encodeURIComponent(rowName)}?stock_entry_type=${encodeURIComponent(entryType)}`;
         this.showDispatchModal = false;
+        this.dispatchForm.items = [];
       },
 
       async openRecord(row) {
