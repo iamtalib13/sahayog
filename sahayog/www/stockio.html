@@ -131,6 +131,283 @@
       </div>
     </div>
 
+    <!-- Dispatch Modal -->
+    <div
+      class="profile-modal-overlay"
+      v-if="showDispatchModal"
+      @click.self="showDispatchModal = false"
+    >
+      <div class="profile-modal">
+        <div class="profile-modal-header">
+          <h3>Dispatch Request</h3>
+          <div class="profile-modal-header-right">
+            <button class="btn-create-inline" @click="submitDispatch()">
+              <span>Proceed</span>
+            </button>
+            <button class="profile-close" @click="showDispatchModal = false">
+              &times;
+            </button>
+          </div>
+        </div>
+        <div class="profile-modal-body">
+          <div style="padding: 12px; background: var(--gray-50); border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--blue-600);">
+            <div style="font-size: 13px; margin-bottom: 8px;"><strong>Request:</strong> [[ dispatchForm.name ]]</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; background: white; border-radius: 6px; border: 1px solid var(--border-color);">
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Source</div>
+                <div style="font-size: 13px; font-weight: 600; color: #dc3545;">[[ dispatchForm.source_warehouse || 'Not Set' ]]</div>
+              </div>
+              <div style="color: var(--gray-400); font-size: 18px;">➜</div>
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Target</div>
+                <div style="font-size: 13px; font-weight: 600; color: #198754;">[[ dispatchForm.target_warehouse || 'Not Set' ]]</div>
+              </div>
+            </div>
+          </div>
+          <!-- Items Table -->
+          <div v-if="dispatchForm.loading" style="text-align: center; padding: 20px; color: var(--text-muted);">
+            <i class="fas fa-spinner fa-spin"></i> Loading requested items...
+          </div>
+          <div v-else-if="dispatchForm.items.length > 0" style="margin-bottom: 20px;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Requested Items</div>
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: white;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead style="position: sticky; top: 0; background: var(--gray-50); z-index: 1; border-bottom: 1px solid var(--border-color);">
+                  <tr>
+                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: left; color: var(--text-muted);">Item</th>
+                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: right; color: var(--text-muted);">Qty</th>
+                    <th style="font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: left; color: var(--text-muted);">UOM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in dispatchForm.items" :key="item.name" style="border-bottom: 1px solid var(--border-color);">
+                    <td style="font-size: 12px; padding: 8px 12px;">
+                      <div style="font-weight: 600; color: var(--text-main);">[[ item.item_code ]]</div>
+                      <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">[[ item.item_name || '-' ]]</div>
+                    </td>
+                    <td style="font-size: 12px; padding: 8px 12px; text-align: right; font-weight: 700;">[[ item.quantity ]]</td>
+                    <td style="font-size: 11px; padding: 8px 12px; color: var(--text-muted);">[[ item.uom ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stock Entry Type <span class="form-required">*</span></label>
+            <select class="form-input" v-model="dispatchForm.stock_entry_type">
+              <option v-for="type in stockEntryTypes" :key="type" :value="type">[[ type ]]</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Item Modal -->
+    <div
+      class="profile-modal-overlay"
+      v-if="showCreateItemModal"
+      @click.self="showCreateItemModal = false"
+    >
+      <div class="profile-modal">
+        <div class="profile-modal-header">
+          <h3>Create New Item</h3>
+          <div class="profile-modal-header-right">
+            <button class="btn-create-inline" @click="submitNewItem()" :disabled="creatingItem">
+              <i class="fas fa-plus"></i>
+              <span>Create</span>
+            </button>
+            <button class="profile-close" @click="showCreateItemModal = false">
+              &times;
+            </button>
+          </div>
+        </div>
+        <div class="profile-modal-body">
+          <div class="form-group">
+            <label class="form-label">Item Name <span class="form-required">*</span></label>
+            <input
+              type="text"
+              class="form-input"
+              v-model="createItemForm.item_name"
+              placeholder="Enter item name"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Item Department <span class="form-required">*</span></label>
+            <div class="searchable-select-wrapper">
+              <input
+                type="text"
+                class="form-input searchable-select-input"
+                :class="{ focused: focusedField === 'item_department' }"
+                v-model="createItemForm.item_department_display"
+                @focus="onFocusSearchable('item_department')"
+                @blur="onBlurSearchable('item_department')"
+                @input="filterOptions('item_department')"
+                placeholder="Search department..."
+                autocomplete="off"
+              />
+              <i class="fas fa-chevron-down searchable-select-arrow"></i>
+              <div class="searchable-select-dropdown" v-if="focusedField === 'item_department'">
+                <div
+                  v-for="dept in filteredItemDepartments"
+                  :key="dept"
+                  class="searchable-select-option"
+                  :class="{ selected: createItemForm.item_department === dept }"
+                  @mousedown="selectOption('item_department', dept)"
+                >
+                  [[ dept ]]
+                </div>
+                <div v-if="filteredItemDepartments.length === 0" class="searchable-select-no-results">
+                  No departments found
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Item Group <span class="form-required">*</span></label>
+            <div class="searchable-select-wrapper">
+              <input
+                type="text"
+                class="form-input searchable-select-input"
+                :class="{ focused: focusedField === 'item_group' }"
+                v-model="createItemForm.item_group_display"
+                @focus="onFocusSearchable('item_group')"
+                @blur="onBlurSearchable('item_group')"
+                @input="filterOptions('item_group')"
+                placeholder="Search item group..."
+                autocomplete="off"
+              />
+              <i class="fas fa-chevron-down searchable-select-arrow"></i>
+              <div class="searchable-select-dropdown" v-if="focusedField === 'item_group'">
+                <div
+                  v-for="group in filteredItemGroups"
+                  :key="group"
+                  class="searchable-select-option"
+                  :class="{ selected: createItemForm.item_group === group }"
+                  @mousedown="selectOption('item_group', group)"
+                >
+                  [[ group ]]
+                </div>
+                <div v-if="filteredItemGroups.length === 0" class="searchable-select-no-results">
+                  No item groups found
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">HSN/SAC</label>
+            <div class="searchable-select-wrapper">
+              <input
+                type="text"
+                class="form-input searchable-select-input"
+                :class="{ focused: focusedField === 'gst_hsn_code' }"
+                v-model="createItemForm.gst_hsn_code_display"
+                @focus="onFocusSearchable('gst_hsn_code')"
+                @blur="onBlurSearchable('gst_hsn_code')"
+                @input="filterOptions('gst_hsn_code')"
+                placeholder="Search HSN/SAC code..."
+                autocomplete="off"
+              />
+              <i class="fas fa-chevron-down searchable-select-arrow"></i>
+              <div class="searchable-select-dropdown" v-if="focusedField === 'gst_hsn_code'">
+                <div
+                  v-for="hsn in filteredHSNCodes"
+                  :key="hsn.name"
+                  class="searchable-select-option"
+                  :class="{ selected: createItemForm.gst_hsn_code === hsn.name }"
+                  @mousedown="selectOption('gst_hsn_code', hsn.name)"
+                >
+                  [[ hsn.name ]] <span class="hsn-description" v-if="hsn.description">- [[ hsn.description ]]</span>
+                </div>
+                <div v-if="filteredHSNCodes.length === 0" class="searchable-select-no-results">
+                  No HSN/SAC codes found
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-checkbox-group">
+            <label class="form-checkbox-label">
+              <input
+                type="checkbox"
+                class="form-checkbox"
+                v-model="createItemForm.is_stock_item"
+              />
+              <span class="checkbox-text">Maintain Stock</span>
+            </label>
+            <label class="form-checkbox-label">
+              <input
+                type="checkbox"
+                class="form-checkbox"
+                v-model="createItemForm.is_fixed_asset"
+              />
+              <span class="checkbox-text">Is Fixed Asset</span>
+            </label>
+          </div>
+          <div v-if="createItemForm.is_stock_item" class="form-group conditional-field">
+            <label class="form-label">Stock UOM <span class="form-required">*</span></label>
+            <div class="searchable-select-wrapper">
+              <input
+                type="text"
+                class="form-input searchable-select-input"
+                :class="{ focused: focusedField === 'stock_uom' }"
+                v-model="createItemForm.stock_uom_display"
+                @focus="onFocusSearchable('stock_uom')"
+                @blur="onBlurSearchable('stock_uom')"
+                @input="filterOptions('stock_uom')"
+                placeholder="Search UOM..."
+                autocomplete="off"
+              />
+              <i class="fas fa-chevron-down searchable-select-arrow"></i>
+              <div class="searchable-select-dropdown" v-if="focusedField === 'stock_uom'">
+                <div
+                  v-for="uom in filteredStockUOMs"
+                  :key="uom"
+                  class="searchable-select-option"
+                  :class="{ selected: createItemForm.stock_uom === uom }"
+                  @mousedown="selectOption('stock_uom', uom)"
+                >
+                  [[ uom ]]
+                </div>
+                <div v-if="filteredStockUOMs.length === 0" class="searchable-select-no-results">
+                  No UOMs found
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="createItemForm.is_fixed_asset" class="form-group conditional-field">
+            <label class="form-label">Asset Category <span class="form-required">*</span></label>
+            <div class="searchable-select-wrapper">
+              <input
+                type="text"
+                class="form-input searchable-select-input"
+                :class="{ focused: focusedField === 'asset_category' }"
+                v-model="createItemForm.asset_category_display"
+                @focus="onFocusSearchable('asset_category')"
+                @blur="onBlurSearchable('asset_category')"
+                @input="filterOptions('asset_category')"
+                placeholder="Search asset category..."
+                autocomplete="off"
+              />
+              <i class="fas fa-chevron-down searchable-select-arrow"></i>
+              <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category'">
+                <div
+                  v-for="cat in filteredAssetCategories"
+                  :key="cat"
+                  class="searchable-select-option"
+                  :class="{ selected: createItemForm.asset_category === cat }"
+                  @mousedown="selectOption('asset_category', cat)"
+                >
+                  [[ cat ]]
+                </div>
+                <div v-if="filteredAssetCategories.length === 0" class="searchable-select-no-results">
+                  No asset categories found
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <div
@@ -557,6 +834,18 @@
                   :class="getBadgeClass(row, col.key)"
                 >
                   [[ getBadgeText(row, col.key) ]]
+                </span>
+                <span
+                  v-else-if="col.type === 'button'"
+                  class="row-action"
+                >
+                  <button 
+                    class="btn-list-action"
+                    @click.stop="handleDispatch(row)"
+                    v-if="activeItem === 'Requests' && row.status === 'Approved'"
+                  >
+                    [[ col.label ]]
+                  </button>
                 </span>
                 <span
                   v-else
@@ -1207,6 +1496,22 @@
     color: #fbbf24;
   }
 
+  .btn-list-action {
+    background: var(--blue-600);
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-list-action:hover {
+    background: var(--blue-700);
+    transform: translateY(-1px);
+  }
+
   .list-view-footer {
     padding: 12px 24px;
     border-top: 1px solid var(--border-color);
@@ -1731,23 +2036,59 @@
   .profile-modal {
     background: var(--bg-card);
     border-radius: var(--radius-lg);
-    width: 480px;
-    max-width: 90%;
+    width: 520px;
+    max-width: 92%;
+    max-height: 90vh;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .profile-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
+    padding: 20px 28px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    background: var(--bg-card);
+  }
+  .profile-modal-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .btn-create-inline {
+    background: var(--blue-600);
+    color: #ffffff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-create-inline:hover:not(:disabled) {
+    background: var(--blue-700);
+    transform: translateY(-1px);
+  }
+  .btn-create-inline:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-create-inline i {
+    font-size: 11px;
   }
   .profile-modal-header h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--text-main);
+    letter-spacing: -0.01em;
   }
   .profile-close {
     background: none;
@@ -1762,7 +2103,10 @@
     color: var(--text-main);
   }
   .profile-modal-body {
-    padding: 24px;
+    padding: 24px 28px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
   }
   .profile-details {
     display: flex;
@@ -1798,6 +2142,220 @@
     color: var(--text-muted);
     padding: 20px;
     font-size: 14px;
+  }
+
+  /* CREATE ITEM FORM */
+  .form-group {
+    margin-bottom: 18px;
+  }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 8px;
+  }
+  .form-required {
+    color: #dc2626;
+    margin-left: 2px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--gray-50);
+    color: var(--text-main);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: var(--transition);
+  }
+  .form-input:focus {
+    border-color: var(--blue-600);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  .form-input::placeholder {
+    color: var(--gray-400);
+  }
+  select.form-input {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  /* SEARCHABLE SELECT */
+  .searchable-select-wrapper {
+    position: relative;
+  }
+  .searchable-select-input {
+    padding-right: 36px !important;
+    cursor: pointer;
+  }
+  .searchable-select-input.focused {
+    border-color: var(--blue-600);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  .searchable-select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    font-size: 12px;
+    pointer-events: none;
+    transition: var(--transition);
+  }
+  .searchable-select-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10000;
+    animation: dropdownSlideIn 0.15s ease-out;
+  }
+  @keyframes dropdownSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .searchable-select-option {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .searchable-select-option:hover {
+    background: var(--gray-100);
+  }
+  .searchable-select-option.selected {
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--blue-600);
+    font-weight: 600;
+  }
+  .searchable-select-no-results {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .hsn-description {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  /* CHECKBOX STYLES */
+  .form-checkbox-group {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--gray-50);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+  }
+  .form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    user-select: none;
+  }
+  .form-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--gray-300);
+    cursor: pointer;
+    accent-color: var(--blue-600);
+    flex-shrink: 0;
+  }
+  .checkbox-text {
+    transition: var(--transition);
+  }
+  .form-checkbox-label:hover .checkbox-text {
+    color: var(--blue-600);
+  }
+
+  /* CONDITIONAL FIELDS */
+  .conditional-field {
+    animation: slideDown 0.25s ease-out;
+  }
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+  }
+  .btn-cancel {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-cancel:hover {
+    background: var(--gray-200);
+  }
+  .btn-submit {
+    background: var(--blue-600);
+    color: #ffffff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-submit:hover:not(:disabled) {
+    background: var(--blue-700);
+    transform: translateY(-1px);
+  }
+  .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>
 
@@ -1883,6 +2441,7 @@
             { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
+            { label: "Dispatch", key: "dispatch", width: 1, type: "button" },
           ],
           detailFields: [
             { label: "Employee", key: "employee_name" },
@@ -2057,6 +2616,38 @@
       showUserMenu: false,
       showProfileModal: false,
       profileData: null,
+      showCreateItemModal: false,
+      showDispatchModal: false,
+      dispatchForm: {
+        name: "",
+        source_warehouse: "",
+        target_warehouse: "",
+        stock_entry_type: "Material Issue",
+        items: [],
+        loading: false,
+      },
+      creatingItem: false,
+      focusedField: null,
+      createItemForm: {
+        item_name: "",
+        item_department: "",
+        item_department_display: "",
+        item_group: "",
+        item_group_display: "",
+        gst_hsn_code: "",
+        gst_hsn_code_display: "",
+        is_stock_item: true,
+        is_fixed_asset: false,
+        stock_uom: "",
+        stock_uom_display: "",
+        asset_category: "",
+        asset_category_display: "",
+      },
+      itemDepartments: [],
+      itemGroups: [],
+      stockUOMs: [],
+      assetCategories: [],
+      hsnCodes: [],
       currentTheme: localStorage.getItem("stockio_theme") || "light",
       searchText: "",
       loading: false,
@@ -2110,6 +2701,36 @@
         }));
       },
 
+      // Searchable select filtered options
+      get filteredItemDepartments() {
+        const search = (this.createItemForm.item_department_display || "").toLowerCase();
+        if (!search) return this.itemDepartments;
+        return this.itemDepartments.filter(d => d.toLowerCase().includes(search));
+      },
+      get filteredItemGroups() {
+        const search = (this.createItemForm.item_group_display || "").toLowerCase();
+        if (!search) return this.itemGroups;
+        return this.itemGroups.filter(g => g.toLowerCase().includes(search));
+      },
+      get filteredStockUOMs() {
+        const search = (this.createItemForm.stock_uom_display || "").toLowerCase();
+        if (!search) return this.stockUOMs;
+        return this.stockUOMs.filter(u => u.toLowerCase().includes(search));
+      },
+      get filteredAssetCategories() {
+        const search = (this.createItemForm.asset_category_display || "").toLowerCase();
+        if (!search) return this.assetCategories;
+        return this.assetCategories.filter(c => c.toLowerCase().includes(search));
+      },
+      get filteredHSNCodes() {
+        const search = (this.createItemForm.gst_hsn_code_display || "").toLowerCase();
+        if (!search) return this.hsnCodes;
+        return this.hsnCodes.filter(h =>
+          h.name.toLowerCase().includes(search) ||
+          (h.description && h.description.toLowerCase().includes(search))
+        );
+      },
+
       $watch: {
         searchText() {
           this.page = 1;
@@ -2150,6 +2771,8 @@
         }
         // Fetch user's warehouse (non-blocking)
         try { await this.fetchUserWarehouse(); } catch (e) { console.warn("Warehouse fetch failed:", e); }
+        // Fetch item groups and departments (non-blocking)
+        this.fetchItemGroupsAndDepartments();
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
           this.findSidebarItem("Items");
@@ -2437,12 +3060,247 @@
       handleCreate() {
         if (!this.currentView.createDoctype) return;
         const doctype = this.currentView.createDoctype;
+        
+        // Show popup for Item creation
+        if (doctype === "Item") {
+          this.showCreateItemModal = true;
+          this.focusedField = null;
+          this.createItemForm = {
+            item_name: "",
+            item_department: "",
+            item_department_display: "",
+            item_group: "",
+            item_group_display: "",
+            gst_hsn_code: "",
+            gst_hsn_code_display: "",
+            is_stock_item: true,
+            is_fixed_asset: false,
+            stock_uom: "",
+            stock_uom_display: "",
+            asset_category: "",
+            asset_category_display: "",
+          };
+          return;
+        }
+        
+        // Redirect to Frappe desk for other doctypes
         const slug = String(doctype)
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
         window.location.href = `/app/${slug}/new`;
+      },
+
+      async fetchItemGroupsAndDepartments() {
+        try {
+          // Fetch Item Groups
+          const groupsRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Item Group",
+              fields: ["name"],
+              limit_page_length: 500,
+            },
+          });
+          if (groupsRes.message) {
+            this.itemGroups = groupsRes.message.map(g => g.name);
+          }
+        } catch (e) {
+          console.error("Error fetching item groups:", e);
+        }
+
+        try {
+          // Fetch Item Departments
+          const deptRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Item Department",
+              fields: ["name"],
+              limit_page_length: 500,
+            },
+          });
+          if (deptRes.message) {
+            this.itemDepartments = deptRes.message.map(d => d.name);
+          }
+        } catch (e) {
+          console.error("Error fetching item departments:", e);
+          this.itemDepartments = [];
+        }
+
+        try {
+          // Fetch UOMs
+          const uomRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "UOM",
+              fields: ["name"],
+              limit_page_length: 200,
+            },
+          });
+          if (uomRes.message) {
+            this.stockUOMs = uomRes.message.map(u => u.name);
+          }
+        } catch (e) {
+          console.error("Error fetching UOMs:", e);
+          this.stockUOMs = ["Nos", "Box", "Piece", "Kg", "Liter", "Meter"];
+        }
+
+        try {
+          // Fetch Asset Categories
+          const catRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Asset Category",
+              fields: ["name"],
+              limit_page_length: 200,
+            },
+          });
+          if (catRes.message) {
+            this.assetCategories = catRes.message.map(c => c.name);
+          }
+        } catch (e) {
+          console.error("Error fetching asset categories:", e);
+          this.assetCategories = [];
+        }
+
+        try {
+          // Fetch HSN/SAC Codes
+          const hsnRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "GST HSN Code",
+              fields: ["name", "description"],
+              limit_page_length: 5000,
+            },
+          });
+          if (hsnRes.message) {
+            this.hsnCodes = hsnRes.message.map(h => ({
+              name: h.name,
+              description: h.description,
+            }));
+          }
+        } catch (e) {
+          console.error("Error fetching HSN codes:", e);
+          this.hsnCodes = [];
+        }
+      },
+
+      async submitNewItem() {
+        // Validation
+        if (!this.createItemForm.item_name.trim()) {
+          frappe.msgprint("Item Name is required");
+          return;
+        }
+        if (!this.createItemForm.item_group) {
+          frappe.msgprint("Item Group is required");
+          return;
+        }
+        if (!this.createItemForm.item_department) {
+          frappe.msgprint("Item Department is required");
+          return;
+        }
+        if (this.createItemForm.is_stock_item && !this.createItemForm.stock_uom) {
+          frappe.msgprint("Stock UOM is required when Maintain Stock is checked");
+          return;
+        }
+        if (this.createItemForm.is_fixed_asset && !this.createItemForm.asset_category) {
+          frappe.msgprint("Asset Category is required when Is Fixed Asset is checked");
+          return;
+        }
+
+        this.creatingItem = true;
+        try {
+          const doc = {
+            doctype: "Item",
+            item_name: this.createItemForm.item_name,
+            item_group: this.createItemForm.item_group,
+            custom_item_department: this.createItemForm.item_department,
+            gst_hsn_code: this.createItemForm.gst_hsn_code,
+            is_stock_item: this.createItemForm.is_stock_item ? 1 : 0,
+            is_fixed_asset: this.createItemForm.is_fixed_asset ? 1 : 0,
+          };
+
+          // Add conditional fields
+          if (this.createItemForm.is_stock_item) {
+            doc.stock_uom = this.createItemForm.stock_uom;
+          }
+          if (this.createItemForm.is_fixed_asset) {
+            doc.asset_category = this.createItemForm.asset_category;
+          }
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message && res.message.name) {
+            frappe.msgprint(`Item "${res.message.name}" created successfully`);
+            this.showCreateItemModal = false;
+            await this.fetchData("Item");
+          }
+        } catch (e) {
+          console.error("Error creating item:", e);
+          const errorMsg = e.message || e.exc || "Failed to create item. Please try again.";
+          frappe.msgprint(errorMsg);
+        } finally {
+          this.creatingItem = false;
+        }
+      },
+
+      // Searchable select methods
+      onFocusSearchable(field) {
+        this.focusedField = field;
+      },
+      onBlurSearchable(field) {
+        // Delay closing to allow option click
+        setTimeout(() => {
+          if (this.focusedField === field) {
+            this.focusedField = null;
+          }
+        }, 150);
+      },
+      filterOptions(field) {
+        // Filtering is handled by computed properties
+      },
+      selectOption(field, value) {
+        this.createItemForm[field] = value;
+        this.createItemForm[field + "_display"] = value;
+        this.focusedField = null;
+      },
+
+      handleDispatch(row) {
+        if (!row || !row.name) return;
+        this.dispatchForm.name = row.name;
+        this.dispatchForm.source_warehouse = row.source_warehouse;
+        this.dispatchForm.target_warehouse = row.target_warehouse;
+        this.dispatchForm.stock_entry_type = "Material Issue";
+        this.dispatchForm.items = [];
+        this.dispatchForm.loading = true;
+        this.showDispatchModal = true;
+
+        frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Employee Material Request",
+            name: row.name,
+          },
+          callback: (res) => {
+            if (res.message && res.message.items) {
+              this.dispatchForm.items = res.message.items.filter(i => i.item_category === "Stock Item");
+            }
+            this.dispatchForm.loading = false;
+          },
+        });
+      },
+
+      submitDispatch() {
+        const rowName = this.dispatchForm.name;
+        const entryType = this.dispatchForm.stock_entry_type;
+        const slug = "employee-material-request";
+        window.location.href = `/app/${slug}/${encodeURIComponent(rowName)}?stock_entry_type=${encodeURIComponent(entryType)}`;
+        this.showDispatchModal = false;
+        this.dispatchForm.items = [];
       },
 
       async openRecord(row) {
