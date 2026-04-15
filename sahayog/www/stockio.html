@@ -196,7 +196,19 @@
   <main class="main-area">
     <header class="top-header">
       <div class="header-left">
-        <h1 class="page-title">[[ activeItem ]]</h1>
+        <template v-if="showDetailView">
+          <button class="btn-back-inline" @click="closeDetailView()">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+        </template>
+        <h1 class="page-title" v-if="!showDetailView">[[ activeItem ]]</h1>
+        <h1 class="page-title" v-else>
+          [[ activeItem ]]
+          <span class="detail-id-badge">[[ detailRecord ? detailRecord.name : '' ]]</span>
+          <span class="detail-status-badge" v-if="detailRecord" :class="getBadgeClass(detailRecord, 'status')">
+            [[ getBadgeText(detailRecord, 'status') ]]
+          </span>
+        </h1>
       </div>
       <div class="header-right">
         <div class="search-container">
@@ -230,27 +242,21 @@
     <section class="page-content">
       <!-- Detail View -->
       <div v-if="showDetailView" class="detail-view-container">
-        <header class="detail-view-header">
-          <button class="btn-back" @click="closeDetailView()">
-            <i class="fas fa-arrow-left"></i>
-            <span>Back</span>
-          </button>
-          <h2 class="detail-title">[[ detailRecord ? detailRecord.name : 'Detail' ]]</h2>
-        </header>
-
         <div class="detail-card" v-if="detailRecord">
-          <div v-for="field in detailFields" :key="field.key" class="detail-row">
-            <span class="detail-label">[[ field.label ]]</span>
-            <span class="detail-value" v-if="field.type === 'badge'">
-               <span class="status-badge" :class="getBadgeClass(detailRecord, field.key)">
-                  [[ getBadgeText(detailRecord, field.key) ]]
-               </span>
-            </span>
-            <span class="detail-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+          <div class="detail-grid">
+            <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
+              <span class="detail-grid-label">[[ field.label ]]</span>
+              <span class="detail-grid-value" v-if="field.type === 'badge'">
+                 <span class="status-badge" :class="getBadgeClass(detailRecord, field.key)">
+                    [[ getBadgeText(detailRecord, field.key) ]]
+                 </span>
+              </span>
+              <span class="detail-grid-value" v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+            </div>
           </div>
 
           <!-- Child Table for Employee Material Request -->
-          <div v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length" class="detail-items-section mt-4">
+          <div v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length" class="detail-items-section">
             <h4 class="section-subtitle">Requested Items</h4>
             <div class="items-table-wrapper">
               <table class="items-table">
@@ -935,12 +941,73 @@
     padding: 0 32px;
     flex-shrink: 0;
   }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
   .page-title {
     margin: 0;
     font-size: 18px;
     font-weight: 700;
     color: var(--text-main);
     letter-spacing: -0.015em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .btn-back-inline {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--border-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+  .btn-back-inline:hover {
+    background: var(--blue-600);
+    color: #ffffff;
+    border-color: var(--blue-600);
+  }
+  .detail-id-badge {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue-600);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: monospace;
+  }
+  .detail-status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .detail-status-badge.active {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .detail-status-badge.disabled {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .detail-status-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  [data-theme="dark"] .detail-status-badge.pending {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
   }
   .header-right {
     display: flex;
@@ -1476,39 +1543,6 @@
     overflow-y: auto;
     background: var(--bg-page);
   }
-  .detail-view-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-color);
-  }
-  .btn-back {
-    background: var(--gray-100);
-    color: var(--gray-600);
-    border: 1px solid var(--border-color);
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .btn-back:hover {
-    background: var(--blue-600);
-    color: #ffffff;
-    border-color: var(--blue-600);
-  }
-  .detail-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-main);
-  }
   .detail-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -1516,43 +1550,54 @@
     padding: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
-  .detail-row {
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .detail-grid-item {
+    background: var(--gray-50);
+    border-radius: 10px;
+    padding: 14px 18px;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border-color);
+    flex-direction: column;
+    gap: 6px;
+    transition: var(--transition);
   }
-  .detail-row:last-child {
-    border-bottom: none;
+  [data-theme="dark"] .detail-grid-item {
+    background: rgba(255, 255, 255, 0.03);
   }
-  .detail-label {
-    font-size: 13px;
+  .detail-grid-item:hover {
+    background: var(--gray-100);
+  }
+  [data-theme="dark"] .detail-grid-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .detail-grid-label {
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
-    min-width: 160px;
-    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
-  .detail-value {
+  .detail-grid-value {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-main);
-    text-align: right;
     word-break: break-word;
-    max-width: 60%;
+    min-height: 20px;
   }
 
   /* Child Table Styles */
   .detail-items-section {
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 2px solid var(--border-color);
+    margin-top: 0;
+    padding-top: 12px;
   }
   .section-subtitle {
     font-size: 15px;
     font-weight: 700;
     color: var(--text-main);
-    margin-bottom: 16px;
+    margin: 0 0 16px;
     letter-spacing: -0.01em;
   }
   .items-table-wrapper {
@@ -1840,12 +1885,12 @@
             { label: "Created", key: "creation", width: 1 },
           ],
           detailFields: [
-            { label: "Request ID", key: "name" },
             { label: "Employee", key: "employee_name" },
             { label: "Status", key: "status", type: "badge" },
             { label: "Target Warehouse", key: "target_warehouse" },
             { label: "Purpose", key: "purpose" },
             { label: "Created", key: "creation" },
+            { label: "Required By Date", key: "required_by_date" },
             { label: "Modified", key: "modified" },
             { label: "Remarks", key: "remark" },
           ],
