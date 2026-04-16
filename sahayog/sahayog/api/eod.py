@@ -1089,3 +1089,150 @@ def download_eod_report(eod_name, include_chat=1):
     frappe.local.response.filename = f"EOD_Audit_{eod_name}.pdf"
     frappe.local.response.filecontent = get_pdf(html)
     frappe.local.response.type = "pdf"
+
+
+from frappe.utils import nowdate
+
+# @frappe.whitelist()
+# def check_and_notify_inactive_teams():
+#     """Runs at a scheduled time to alert specific team managers if their team hasn't started tasks."""
+#     today = nowdate()
+    
+#     # 1. Find today's EOD record that is Started (Pending)
+#     eod_records = frappe.get_all("Bank EOD", filters={"date": today, "status": "Pending"}, limit=1)
+#     if not eod_records:
+#         return "No active EOD found for today."
+        
+#     eod = frappe.get_doc("Bank EOD", eod_records[0].name)
+    
+#     # 2. Analyze task completion per team
+#     team_status = {}
+#     for row in eod.eod_tasks:
+#         if row.team not in team_status:
+#             team_status[row.team] = {"total": 0, "completed": 0}
+        
+#         team_status[row.team]["total"] += 1
+#         if row.status == "Completed":
+#             team_status[row.team]["completed"] += 1
+            
+#     notified_teams = []
+
+#     # 3. Check each team and send targeted emails to their managers
+#     for team_name, stats in team_status.items():
+#         if stats["total"] > 0 and stats["completed"] == 0:
+            
+#             # Fetch the manager emails specifically for THIS team
+#             manager_emails_raw = frappe.db.get_value("EOD Team", team_name, "manager_emails")
+            
+#             if manager_emails_raw:
+#                 # Split by comma to support single or multiple emails safely
+#                 email_list = [e.strip() for e in manager_emails_raw.split(",") if e.strip()]
+                
+#                 if email_list:
+#                     subject = f"⚠️ Action Required: No EOD Tasks Completed for Team {team_name}"
+#                     message = f"""
+#                     <div style="font-family: Arial, sans-serif; color: #333;">
+#                         <h2 style="color: #ef4444;">EOD Checklist Alert</h2>
+#                         <p>The EOD process for <b>{today}</b> is currently running, but your team (<b>{team_name}</b>) has not completed a single task yet.</p>
+#                         <p>Please follow up with your team members to ensure the EOD tasks are completed on time before the cutoff.</p>
+#                         <br>
+#                         <p><i>This is an automated message from the Sahayog EOD System.</i></p>
+#                     </div>
+#                     """
+                    
+#                     # Send the targeted email (REMOVED now=True so it goes to Email Queue)
+#                     frappe.sendmail(
+#                         recipients=email_list,
+#                         subject=subject,
+#                         message=message
+#                     )
+#                     notified_teams.append(team_name)
+
+#     # 4. Optional: Log a single message in the EOD Chat summarizing who was alerted
+#     if notified_teams:
+#         teams_str = ", ".join(notified_teams)
+        
+#         add_chat_message(
+#             eod, 
+#             f"System Alert: Managers for the following inactive teams have been notified via email: {teams_str}.", 
+#             sender="System", 
+#             is_system=True
+#         )
+#         eod.save(ignore_permissions=True)
+#         frappe.db.commit()
+        
+#         return f"Success! Emails queued for managers of: {teams_str}"
+        
+#     return "All teams are active, or no manager emails were found."
+
+from frappe.utils import nowdate
+
+@frappe.whitelist()
+def check_and_notify_inactive_teams():
+    """Runs at a scheduled time to alert specific team managers if their team hasn't started tasks."""
+    today = nowdate()
+    
+    # 1. Find today's EOD record that is Started (Pending)
+    eod_records = frappe.get_all("Bank EOD", filters={"date": today, "status": "Pending"}, limit=1)
+    if not eod_records:
+        return  # No EOD started today, or it's already Completed/Closed
+        
+    eod = frappe.get_doc("Bank EOD", eod_records[0].name)
+    
+    # 2. Analyze task completion per team
+    team_status = {}
+    for row in eod.eod_tasks:
+        if row.team not in team_status:
+            team_status[row.team] = {"total": 0, "completed": 0}
+        
+        team_status[row.team]["total"] += 1
+        if row.status == "Completed":
+            team_status[row.team]["completed"] += 1
+            
+    notified_teams = []
+
+    # 3. Check each team and send targeted emails to their managers
+    for team_name, stats in team_status.items():
+        if stats["total"] > 0 and stats["completed"] == 0:
+            
+            # Fetch the manager emails specifically for THIS team
+            manager_emails_raw = frappe.db.get_value("EOD Team", team_name, "manager_emails")
+            
+            if manager_emails_raw:
+                # Split by comma to support single or multiple emails safely
+                email_list = [e.strip() for e in manager_emails_raw.split(",") if e.strip()]
+                
+                if email_list:
+                    subject = f"⚠️ Action Required: No EOD Tasks Completed for Team {team_name}"
+                    message = f"""
+                    <div style="font-family: Arial, sans-serif; color: #333;">
+                        <h2 style="color: #ef4444;">EOD Checklist Alert</h2>
+                        <p>The EOD process for <b>{today}</b> is currently running, but your team (<b>{team_name}</b>) has not completed a single task yet.</p>
+                        <p>Please follow up with your team members to ensure the EOD tasks are completed on time before the cutoff.</p>
+                        <br>
+                        <p><i>This is an automated message from the Sahayog EOD System.</i></p>
+                    </div>
+                    """
+                    
+                    # Send the targeted email
+                    frappe.sendmail(
+                        recipients=email_list,
+                        subject=subject,
+                        message=message,
+                        now=True  # Sends immediately
+                    )
+                    notified_teams.append(team_name)
+
+    # 4. Optional: Log a single message in the EOD Chat summarizing who was alerted
+    if notified_teams:
+        teams_str = ", ".join(notified_teams)
+        
+        # Make sure you import add_chat_message at the top if it isn't already
+        add_chat_message(
+            eod, 
+            f"System Alert: Managers for the following inactive teams have been notified via email: {teams_str}.", 
+            sender="System", 
+            is_system=True
+        )
+        eod.save(ignore_permissions=True)
+        frappe.db.commit()
