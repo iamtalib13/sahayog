@@ -13,6 +13,629 @@
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
 />
 
+<!-- Premium UI Styles for StockIO -->
+<style>
+  :root {
+    --primary-color: #45e7e7;
+    --primary-hover: #008080;
+    --accent-color: #ec4899;
+    --bg-main: #f1f5f9;
+    --bg-surface: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --sidebar-bg: rgba(255, 255, 255, 0.85);
+    --sidebar-text: #334155;
+    --sidebar-hover: rgba(241, 245, 249, 0.8);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --border-radius-sm: 0.375rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 0.75rem;
+    --border-radius-xl: 1.25rem;
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [data-theme="dark"], body[data-theme="dark"] {
+    --primary-color: #818cf8;
+    --primary-hover: #6366f1;
+    --bg-main: #020617;
+    --bg-surface: #0f172a;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --sidebar-bg: rgba(15, 23, 42, 0.85);
+    --sidebar-text: #cbd5e1;
+    --sidebar-hover: rgba(30, 41, 59, 0.8);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  .stockio-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--bg-main) 0%, var(--bg-surface) 100%);
+  }
+
+  /* Glassmorphism Sidebar */
+  .sidebar {
+    width: 280px;
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--border-color) !important;
+    display: flex;
+    flex-direction: column;
+    transition: width var(--transition-normal);
+    box-shadow: var(--shadow-xl);
+    z-index: 20;
+    position: relative;
+  }
+  .sidebar.collapsed {
+    width: 88px;
+  }
+
+  .sidebar-header {
+    padding: 30px 24px;
+    background: transparent !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+
+  /* Profile Card */
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: var(--border-radius-lg);
+    background: var(--bg-surface) !important;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+  .user-profile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color) !important;
+  }
+
+  .avatar img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--bg-surface);
+    box-shadow: 0 0 0 2px var(--primary-color), var(--shadow-sm);
+    padding: 2px;
+    background: var(--bg-surface);
+  }
+
+  .user-info .title {
+    font-weight: 800;
+    color: var(--text-main) !important;
+    font-size: 1.15rem;
+    margin-bottom: 2px;
+  }
+  .user-info .subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted) !important;
+    font-weight: 500;
+  }
+
+  /* Navigation */
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 0;
+  }
+
+  .nav-section {
+    margin-bottom: 32px;
+  }
+
+  .section-label {
+    padding: 0 24px;
+    margin-bottom: 12px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--text-muted) !important;
+    opacity: 0.8;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 24px;
+    cursor: pointer;
+    color: var(--sidebar-text) !important;
+    transition: all var(--transition-fast) !important;
+    margin: 4px 16px;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    font-size: 0.95rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .nav-item:hover {
+    background-color: var(--sidebar-hover) !important;
+    transform: translateX(4px);
+  }
+  .nav-item.active {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+  }
+  .nav-item.active .nav-label {
+    color: #ffffff !important;
+  }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 24px;
+    background: #ffffff;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* Main Area Headers */
+  .main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    position: relative;
+    background: transparent !important;
+  }
+
+  .top-header {
+    height: 88px;
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
+    border-bottom: 1px solid var(--border-color) !important;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .page-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-main) !important;
+    margin: 0;
+    letter-spacing: -0.03em;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* Search & Inputs */
+  .search-container {
+    position: relative;
+  }
+  .search-icon {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    z-index: 2;
+  }
+  .search-input {
+    width: 320px;
+    padding: 14px 20px 14px 52px;
+    border-radius: 40px;
+    border: 1px solid var(--border-color) !important;
+    background: var(--sidebar-hover) !important;
+    color: var(--text-main) !important;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all var(--transition-fast) !important;
+    position: relative;
+  }
+  .search-input:focus {
+    outline: none;
+    background: var(--bg-surface) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
+    width: 380px;
+  }
+
+  /* Buttons */
+  .btn-create, .btn-create-inline {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+    color: #ffffff !important;
+    border: none;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all var(--transition-normal) !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+  }
+  .btn-create:hover, .btn-create-inline:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.45) !important;
+  }
+
+  /* Content Containers */
+  .page-content {
+    padding: 0px;
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .profile-modal, .detail-card, .grid-card {
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--border-radius-xl) !important;
+    box-shadow: var(--shadow-lg) !important;
+    border: 1px solid var(--border-color) !important;
+    overflow: hidden;
+  }
+
+  .profile-modal-header {
+    background: transparent !important;
+    padding: 32px 40px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .profile-modal-header h3 {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+    color: var(--text-main) !important;
+    margin: 0;
+  }
+
+  /* Forms */
+  .form-group {
+    margin-bottom: 28px !important;
+  }
+  .form-label {
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+    font-size: 0.95rem !important;
+    margin-bottom: 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.9;
+    display: block;
+  }
+  .form-input {
+    padding: 16px 20px !important;
+    border-radius: var(--border-radius-md) !important;
+    border: 2px solid var(--border-color) !important;
+    background: var(--sidebar-hover) !important;
+    font-weight: 500;
+    color: var(--text-main) !important;
+    transition: all var(--transition-fast) !important;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .form-input:focus {
+    border-color: var(--primary-color) !important;
+    background: var(--bg-surface) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+    transform: translateY(-2px);
+    outline: none;
+  }
+
+  /* Enhanced Tables */
+  .table-responsive {
+    border-radius: var(--border-radius-xl);
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    background: var(--bg-surface);
+  }
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+  }
+  th {
+    background: var(--sidebar-hover) !important;
+    padding: 20px 24px !important;
+    font-size: 0.85rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    color: var(--text-muted) !important;
+    letter-spacing: 0.08em !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    text-align: left;
+  }
+  td {
+    padding: 20px 24px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    font-weight: 500;
+    color: var(--text-main);
+    transition: all var(--transition-fast);
+  }
+  tr {
+    transition: all var(--transition-fast);
+  }
+  tr:hover td {
+    background: rgba(99, 102, 241, 0.03) !important;
+  }
+
+  /* Badges */
+  .badge {
+    padding: 8px 16px !important;
+    border-radius: 30px !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow-sm);
+    display: inline-block;
+  }
+  .badge.active { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)) !important; color: #059669 !important; border: 1px solid rgba(16, 185, 129, 0.2); }
+  .badge.pending { background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1)) !important; color: #d97706 !important; border: 1px solid rgba(245, 158, 11, 0.2); }
+  .badge.disabled { background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1)) !important; color: #dc2626 !important; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+  .detail-status-badge {
+    margin-left: 16px;
+    vertical-align: middle;
+  }
+
+  [data-theme="dark"] .badge.active { color: #34d399 !important; }
+  [data-theme="dark"] .badge.pending { color: #fbbf24 !important; }
+  [data-theme="dark"] .badge.disabled { color: #f87171 !important; }
+
+  /* Grid Layout for Items */
+  .items-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    gap: 32px !important;
+  }
+  .grid-card {
+    padding: 32px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .grid-card:hover {
+    transform: translateY(-8px) scale(1.02) !important;
+    box-shadow: var(--shadow-xl) !important;
+  }
+
+  /* Preloader Enhancement */
+  .stockio-loading-overlay {
+    background: var(--bg-surface) !important;
+    z-index: 99999;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stockio-loading-shell {
+    animation: scale-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .stockio-loading-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--primary-color);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  @keyframes scale-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.4)); }
+    50% { transform: scale(0.95); opacity: 0.7; filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.1)); }
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { 
+    background: rgba(100, 116, 139, 0.3); 
+    border-radius: 20px; 
+    border: 3px solid var(--bg-main);
+  }
+  ::-webkit-scrollbar-thumb:hover { 
+    background: var(--primary-color); 
+  }
+  
+  /* Additional polish */
+  .searchable-select-dropdown {
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-surface);
+    position: absolute;
+    width: 100%;
+    z-index: 50;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 8px;
+  }
+  .searchable-select-option {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .searchable-select-option:last-child {
+    border-bottom: none;
+  }
+  .searchable-select-option:hover {
+    background: var(--sidebar-hover);
+    color: var(--primary-color);
+    padding-left: 20px;
+    transition: all var(--transition-fast);
+  }
+  .icon-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    width: 24px;
+    height: 24px;
+    color: rgba(100, 116, 139, 0.8);
+  }
+  .nav-item.active .icon-area {
+    color: #ffffff;
+  }
+  .btn-back-inline {
+    background: var(--sidebar-hover);
+    border: 1px solid var(--border-color);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .btn-back-inline:hover {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+    transform: translateX(-4px);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+  .btn-view-toggle {
+    background: var(--sidebar-hover);
+    border: 1px solid var(--border-color);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .btn-view-toggle:hover {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: var(--shadow-md);
+  }
+
+  .profile-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    padding: 0;
+    line-height: 1;
+  }
+  .profile-close:hover {
+    color: var(--accent-color);
+  }
+
+  .profile-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  .searchable-select-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .searchable-select-arrow {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  
+  .form-checkbox-group {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  .form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+  .form-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--border-color);
+    accent-color: var(--primary-color);
+    cursor: pointer;
+  }
+</style>
+
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
   <div class="stockio-loading-shell" aria-label="Loading">
     <div class="stockio-loading-favicon">
@@ -64,6 +687,1072 @@
       </div>
     </div>
 
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <div
+        v-for="(section, sIdx) in sidebar.sections"
+        :key="sIdx"
+        class="nav-section"
+      >
+        <div v-if="section.label && !sidebarCollapsed" class="section-label">
+          <span>[[ section.label ]]</span>
+        </div>
+
+        <div class="section-items">
+          <div
+            v-for="item in section.items"
+            class="nav-item"
+            :class="{ active: activeItem === item.label }"
+            @click="setPage(item)"
+            :title="item.label"
+          >
+            <div class="icon-area">
+              <div
+                class="nav-dot"
+                :style="{ backgroundColor: item.color }"
+              ></div>
+            </div>
+            <div class="label-area" v-if="!sidebarCollapsed">
+              <span class="nav-label">[[ item.label ]]</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <div class="nav-item theme-toggle" @click="toggleTheme()">
+        <div class="icon-area">
+          <i
+            :class="currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun'"
+          ></i>
+        </div>
+        <div class="label-area" v-if="!sidebarCollapsed">
+          <span class="nav-label"
+            >[[ currentTheme === 'light' ? 'Dark Mode' : 'Light Mode' ]]</span
+          >
+        </div>
+      </div>
+      <div
+        class="nav-item collapse-toggle"
+        @click="sidebarCollapsed = !sidebarCollapsed"
+      >
+        <div class="icon-area">
+          <i :class="sidebarCollapsed ? 'fas fa-indent' : 'fas fa-outdent'"></i>
+        </div>
+        <div class="label-area" v-if="!sidebarCollapsed">
+          <span class="nav-label">Collapse</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-area">
+    <header class="top-header">
+      <div class="header-left">
+        <template v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView">
+          <button class="btn-back-inline" @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false;">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+        </template>
+        <h1 class="page-title" v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView">[[ activeItem ]]</h1>
+        <h1 class="page-title" v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView">
+          Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]
+        </h1>
+        <h1 class="page-title" v-else>
+          [[ activeItem ]]
+          <span class="detail-id-badge"
+            >[[ detailRecord ? detailRecord.name : '' ]]</span
+          >
+          <span
+            class="detail-status-badge"
+            v-if="detailRecord"
+            :class="getBadgeClass(detailRecord, 'status')"
+          >
+            [[ getBadgeText(detailRecord, 'status') ]]
+          </span>
+        </h1>
+      </div>
+      <div class="header-right">
+        <div class="search-container" v-if="!showDetailView && !showEMRCreateView">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            class="search-input"
+            v-model="searchText"
+            placeholder="Search records..."
+          />
+        </div>
+        <button
+          class="btn-view-toggle"
+          v-if="activeItem === 'Items' && !showDetailView && !showEMRCreateView"
+          @click="toggleItemView()"
+          :title="itemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
+        >
+          <i
+            :class="itemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"
+          ></i>
+        </button>
+        <button
+          class="btn-create"
+          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView"
+          @click="handleCreate()"
+        >
+          <i class="fas fa-plus"></i>
+          <span>Create</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="page-content">
+      <!-- EMR Inline Creation View -->
+      <div v-if="showEMRCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 0">
+            <div class="form-row">
+              <!-- Employee Field -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Employee <span class="form-required">*</span></label
+                >
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'employee' }"
+                    v-model="emrForm.employee_display"
+                    @focus="onFocusSearchable('employee')"
+                    @blur="onBlurSearchable('employee')"
+                    placeholder="Search Employee"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'employee'"
+                  >
+                    <div
+                      v-for="emp in filteredEmployees"
+                      :key="emp.name"
+                      class="searchable-select-option"
+                      :class="{ selected: emrForm.employee === emp.name }"
+                      @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
+                    >
+                      [[ emp.name ]] - [[ emp.employee_name ]]
+                    </div>
+                    <div
+                      v-if="filteredEmployees.length === 0"
+                      class="searchable-select-no-results"
+                    >
+                      No employees found
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Source Warehouse Field -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Source Warehouse <span class="form-required">*</span></label
+                >
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'source_warehouse' }"
+                    v-model="emrForm.source_warehouse_display"
+                    @focus="onFocusSearchable('source_warehouse')"
+                    @blur="onBlurSearchable('source_warehouse')"
+                    placeholder="Source Warehouse"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'source_warehouse'"
+                  >
+                    <div
+                      v-for="wh in filteredWarehouses"
+                      :key="wh"
+                      class="searchable-select-option"
+                      :class="{ selected: emrForm.source_warehouse === wh }"
+                      @mousedown="selectEMROption('source_warehouse', wh)"
+                    >
+                      [[ wh ]]
+                    </div>
+                    <div
+                      v-if="filteredWarehouses.length === 0"
+                      class="searchable-select-no-results"
+                    >
+                      No warehouses found
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Target Warehouse Field -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Target Warehouse <span class="form-required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="emrForm.target_warehouse"
+                  placeholder="Target Warehouse"
+                />
+              </div>
+            </div>
+
+            <!-- More Details Toggle -->
+            <div style="margin-bottom: 16px;">
+              <button 
+                type="button" 
+                class="btn-view-toggle" 
+                style="background: transparent; padding: 0; color: var(--primary); font-size: 13px; height: auto; border: none; box-shadow: none;"
+                @click="showEMRMoreDetails = !showEMRMoreDetails"
+              >
+                <i class="fas" :class="showEMRMoreDetails ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                <span style="margin-left: 4px;">[[ showEMRMoreDetails ? 'Hide details' : 'Show more details' ]]</span>
+              </button>
+            </div>
+
+            <div class="form-row" v-if="showEMRMoreDetails">
+              <div class="form-group">
+                <label class="form-label"
+                  >Target Location <span class="form-required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="emrForm.target_location"
+                  placeholder="Target Location"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label"
+                  >Reporting Person <span class="form-required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="emrForm.reporting_person"
+                  placeholder="Reporting Person"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label"
+                >Remark <span class="form-required">*</span></label
+              >
+              <textarea
+                class="form-input"
+                v-model="emrForm.remark"
+                placeholder="Enter remark"
+              ></textarea>
+            </div>
+
+            <!-- Items Table (Min 1 Row) -->
+            <div style="margin-top: 20px">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 8px;
+                "
+              >
+                <label class="form-label" style="margin: 0"
+                  >Items <span class="form-required">*</span></label
+                >
+                <button class="btn-create-inline" @click="addEMRItem">
+                  <i class="fas fa-plus"></i> Add Row
+                </button>
+              </div>
+              <div class="items-table-wrapper table-responsive" style="max-height: 250px; overflow-y: auto; overflow-x: visible; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px;">
+                <table
+                  class="items-table"
+                  style="width: 100%; border-collapse: collapse; min-width: 500px;"
+                >
+                  <thead style="position: sticky; top: 0; background: var(--sidebar-hover); z-index: 1;">
+                    <tr>
+                      <th style="padding: 12px 16px;">Item Code <span class="form-required">*</span></th>
+                      <th style="padding: 12px 16px;">UOM <span class="form-required">*</span></th>
+                      <th style="padding: 12px 16px;">Qty <span class="form-required">*</span></th>
+                      <th style="padding: 12px 16px;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, index) in emrItems" :key="index">
+                      <td style="padding: 12px;">
+                        <div class="searchable-select-wrapper" style="width: 100%; min-width: 250px;">
+                          <input
+                            type="text"
+                            class="form-input searchable-select-input"
+                            :class="{ focused: focusedField === 'item_code_' + index }"
+                            v-model="item.item_code_display"
+                            @focus="onFocusSearchable('item_code_' + index)"
+                            @blur="onBlurSearchable('item_code_' + index)"
+                            placeholder="Item Code"
+                          />
+                          <div
+                            class="searchable-select-dropdown"
+                            v-if="focusedField === 'item_code_' + index"
+                            style="width: 100%; max-width: 300px; z-index: 50;"
+                          >
+                            <div
+                              v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                              :key="opt.name"
+                              class="searchable-select-option"
+                              :class="{ selected: item.item_code === opt.name }"
+                              @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                            >
+                              <div style="font-weight: 500">[[ opt.name ]]</div>
+                              <div style="font-size: 11px; opacity: 0.8">
+                                [[ opt.item_name ]]
+                              </div>
+                            </div>
+                            <div
+                              v-if="!itemsList.some(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                              class="searchable-select-no-results"
+                            >
+                              No items found
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+  
+                      <td style="padding: 12px; width: 120px;">
+                        <input
+                          type="text"
+                          class="form-input"
+                          style="width: 100%"
+                          v-model="item.uom"
+                          placeholder="UOM"
+                        />
+                      </td>
+                      <td style="padding: 12px; width: 120px;">
+                        <input
+                          type="number"
+                          class="form-input"
+                          style="width: 100%"
+                          v-model.number="item.quantity"
+                          placeholder="Qty"
+                        />
+                      </td>
+                      <td style="padding: 12px; width: 60px; text-align: center;">
+                        <button
+                          class="btn-action"
+                          @click="removeEMRItem(index)"
+                          title="Remove"
+                        >
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div
+              class="form-actions"
+              style="margin-top: 24px; display: flex; gap: 12px"
+            >
+              <button
+                class="btn-create"
+                @click="submitEMR"
+                :disabled="creatingEMR"
+              >
+                <i class="fas fa-check" v-if="!creatingEMR"></i>
+                <i class="fas fa-spinner fa-spin" v-else></i>
+                <span>[[ creatingEMR ? 'Submitting...' : 'Submit Request' ]]</span>
+              </button>
+              <button
+                class="btn-view-toggle"
+                style="background: var(--bg-card); color: var(--text-main)"
+                @click="showEMRCreateView = false"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inward Inline Creation View -->
+      <div v-if="showInwardCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 0">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Supplier <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'supplier' }"
+                    v-model="inwardForm.supplier_display"
+                    @focus="onFocusSearchable('supplier')"
+                    @blur="onBlurSearchable('supplier')"
+                    placeholder="Search Supplier"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'supplier'">
+                    <div
+                      v-for="sup in filteredSuppliers"
+                      :key="sup.name"
+                      class="searchable-select-option"
+                      @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.name; focusedField = null;"
+                    >
+                      [[ sup.name ]] - [[ sup.supplier_name ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Posting Date</label>
+                <input type="date" class="form-input" v-model="inwardForm.posting_date" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Set Warehouse</label>
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'inward_warehouse' }"
+                    v-model="inwardForm.set_warehouse_display"
+                    @focus="onFocusSearchable('inward_warehouse')"
+                    @blur="onBlurSearchable('inward_warehouse')"
+                    placeholder="Set Warehouse"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'inward_warehouse'">
+                    <div
+                      v-for="wh in warehouses.filter(w => !inwardForm.set_warehouse_display || w.toLowerCase().includes(inwardForm.set_warehouse_display.toLowerCase()))"
+                      :key="wh"
+                      class="searchable-select-option"
+                      @mousedown="inwardForm.set_warehouse = wh; inwardForm.set_warehouse_display = wh; focusedField = null;"
+                    >
+                      [[ wh ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">PO/WO Number</label>
+                <input type="text" class="form-input" v-model="inwardForm.custom_po_wo" placeholder="PO/WO Number" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Request For</label>
+              <input type="text" class="form-input" v-model="inwardForm.custom_request_for" placeholder="Request For" />
+            </div>
+            <div style="margin-top: 20px">
+              <label class="form-label">Items</label>
+              <table class="items-table">
+                <thead><tr><th>Item Code</th><th>Qty</th><th>Warehouse</th></tr></thead>
+                <tbody>
+                  <tr v-for="(item, index) in inwardItems" :key="index">
+                    <td>
+                      <div class="searchable-select-wrapper" style="width: 200px">
+                        <input
+                          type="text"
+                          class="form-input searchable-select-input"
+                          :class="{ focused: focusedField === 'outward_item_' + index }"
+                          v-model="item.item_code_display"
+                          @focus="onFocusSearchable('outward_item_' + index)"
+                          @blur="onBlurSearchable('outward_item_' + index)"
+                          placeholder="Item Code"
+                        />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'outward_item_' + index" style="width: 250px">
+                          <div
+                            v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                            :key="opt.name"
+                            class="searchable-select-option"
+                            @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                          >
+                            <div style="font-weight: 500">[[ opt.name ]]</div>
+                            <div style="font-size: 11px; opacity: 0.8">
+                              [[ opt.item_name ]]
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
+                    <td><input type="text" class="form-input" v-model="item.warehouse" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="form-actions">
+              <button class="btn-create" @click="submitInward">Submit Receipt</button>
+              <button class="btn-view-toggle" @click="showInwardCreateView = false">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outward Inline Creation View -->
+      <div v-if="showOutwardCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 0">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Type</label>
+                <select class="form-input" v-model="outwardForm.stock_entry_type">
+                  <option value="Material Transfer">Material Transfer</option>
+                  <option value="Material Issue">Material Issue</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Posting Date</label>
+                <input type="date" class="form-input" v-model="outwardForm.posting_date" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">From Warehouse</label>
+                <input type="text" class="form-input" v-model="outwardForm.from_warehouse" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">To Warehouse</label>
+                <input type="text" class="form-input" v-model="outwardForm.to_warehouse" />
+              </div>
+            </div>
+            <div style="margin-top: 20px">
+              <label class="form-label">Items</label>
+              <table class="items-table">
+                <thead><tr><th>Item Code</th><th>Qty</th></tr></thead>
+                <tbody>
+                  <tr v-for="(item, index) in outwardItems" :key="index">
+                    <td>
+                      <div class="searchable-select-wrapper" style="width: 200px">
+                        <input
+                          type="text"
+                          class="form-input searchable-select-input"
+                          :class="{ focused: focusedField === 'outward_item_' + index }"
+                          v-model="item.item_code_display"
+                          @focus="onFocusSearchable('outward_item_' + index)"
+                          @blur="onBlurSearchable('outward_item_' + index)"
+                          placeholder="Item Code"
+                        />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'outward_item_' + index" style="width: 250px">
+                          <div
+                            v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                            :key="opt.name"
+                            class="searchable-select-option"
+                            @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                          >
+                            <div style="font-weight: 500">[[ opt.name ]]</div>
+                            <div style="font-size: 11px; opacity: 0.8">
+                              [[ opt.item_name ]]
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="form-actions">
+              <button class="btn-create" @click="submitOutward">Submit Entry</button>
+              <button class="btn-view-toggle" @click="showOutwardCreateView = false">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Inline Creation View -->
+      <div v-if="showItemCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 20px">
+            <div class="form-group">
+              <label class="form-label">Item Name <span class="form-required">*</span></label>
+              <input type="text" class="form-input" v-model="createItemForm.item_name" placeholder="Enter item name" />
+            </div>
+            <div class="form-group">
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="createItemForm.is_stock_item"> Maintain Stock
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="btn-create" @click="submitNewItem">Create Item</button>
+              <button class="btn-view-toggle" @click="showItemCreateView = false">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-if="showDetailView" class="detail-view-container">
+        <div class="detail-card" v-if="detailRecord" :style="activeItem === 'Requests' ? 'padding: 24px;' : ''">
+          
+          <!-- 3-Column Layout specifically for Requests -->
+          <div v-if="activeItem === 'Requests'" style="display: grid; grid-template-columns: 260px minmax(450px, 1fr) 260px; gap: 24px; overflow-x: auto;">
+            
+            <!-- Column 1: Request Detail -->
+            <div class="detail-col-1">
+              <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Request Detail</h4>
+              <div class="detail-grid" style="display: flex; flex-direction: column; gap: 20px;">
+                <div
+                  v-for="field in detailFields"
+                  :key="field.key"
+                  class="detail-grid-item"
+                  style="display: flex; flex-direction: column; gap: 6px;"
+                >
+                  <span class="detail-grid-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em;">[[ field.label ]]</span>
+                  <span class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);" v-if="field.type === 'badge'">
+                    <span
+                      class="badge"
+                      :class="getBadgeClass(detailRecord, field.key)"
+                    >
+                      [[ getBadgeText(detailRecord, field.key) ]]
+                    </span>
+                  </span>
+                  <span class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);" v-else>
+                    [[ getFieldValue(detailRecord, field.key) ]]
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 2: Requested Items -->
+            <div class="detail-col-2" style="border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 0 24px; min-width: 0;">
+              <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Requested Items</h4>
+              <div
+                v-if="detailRecord.items && detailRecord.items.length"
+                class="detail-items-section"
+              >
+                <div class="items-table-wrapper table-responsive" style="box-shadow: none; border-radius: var(--border-radius-md); overflow-x: auto;">
+                  <table class="items-table" style="width: 100%; white-space: nowrap;">
+                    <thead>
+                      <tr>
+                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Item</th>
+                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Category</th>
+                        <th class="text-right" style="text-align: right; padding: 10px 12px !important; font-size: 0.75rem !important;">Qty</th>
+                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Status</th>
+                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in detailRecord.items" :key="item.name">
+                        <td style="padding: 10px 12px !important;">
+                          <div class="item-name-cell" style="display: flex; flex-direction: column; gap: 4px;">
+                            <span class="item-code-text" style="font-weight: 800; color: var(--primary-color);">[[ item.item_code ]]</span>
+                            <span class="item-name-text text-muted" style="font-size: 0.8rem; font-weight: 500; white-space: normal; min-width: 120px;"
+                              >[[ item.item_name ]]</span
+                            >
+                          </div>
+                        </td>
+                        <td style="font-size: 0.85rem; font-weight: 600; padding: 10px 12px !important;">[[ item.item_category ]]</td>
+                        <td class="text-right font-medium" style="text-align: right; font-weight: 800; padding: 10px 12px !important;">
+                          [[ item.quantity ]] <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">[[ item.uom ]]</span>
+                        </td>
+                        <td style="padding: 10px 12px !important;">
+                          <span
+                            class="badge"
+                            :class="getBadgeClass(item, 'status')"
+                            style="padding: 6px 12px !important; font-size: 0.7rem !important;"
+                          >
+                            [[ item.status ]]
+                          </span>
+                        </td>
+                        <td style="padding: 10px 12px !important;">
+                          <button
+                            class="btn-create-inline"
+                            style="padding: 6px 12px !important; font-size: 0.75rem !important; font-weight: 700; border-radius: 20px; box-shadow: none;"
+                            @click="handleDispatch(detailRecord)"
+                            title="Dispatch"
+                          >
+                            Dispatch
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div v-else style="background: var(--sidebar-hover); border-radius: var(--border-radius-md); border: 2px dashed var(--border-color); text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600; padding: 40px 20px;">
+                No items requested.
+              </div>
+            </div>
+
+            <!-- Column 3: Comments Section -->
+            <div class="detail-col-3">
+              <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Comments</h4>
+              <div style="background: var(--sidebar-hover); border: 2px dashed var(--border-color); border-radius: var(--border-radius-md); padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600;">
+                <i class="fas fa-comments" style="display: block; font-size: 2rem; margin-bottom: 12px; color: var(--border-color); opacity: 0.8;"></i>
+                Comments will appear here
+              </div>
+            </div>
+            
+          </div>
+
+          <!-- Minimal Layout for other lists like Items -->
+          <div v-else class="detail-grid">
+            <h4 class="section-subtitle" style="grid-column: 1 / -1; margin-top: 0; margin-bottom: 16px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Item Details</h4>
+            <div
+              v-for="field in detailFields"
+              :key="field.key"
+              class="detail-grid-item"
+            >
+              <span class="detail-grid-label">[[ field.label ]]</span>
+              <span class="detail-grid-value" v-if="field.type === 'badge'">
+                <span
+                  class="badge"
+                  :class="getBadgeClass(detailRecord, field.key)"
+                >
+                  [[ getBadgeText(detailRecord, field.key) ]]
+                </span>
+              </span>
+              <span class="detail-grid-value" v-else>
+                [[ getFieldValue(detailRecord, field.key) ]]
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div
+        v-else-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
+        class="list-view-container"
+      >
+        <!-- Analytics Dashboard -->
+        <div v-if="activeItem === 'Analytics'" class="analytics-dashboard">
+          <div class="analytics-cards">
+            <div
+              class="analytics-card card-draft"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-file"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.draft ]]</div>
+                <div class="card-label">Draft</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-pending-reporting"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">
+                  [[ requestStats.pendingReporting ]]
+                </div>
+                <div class="card-label">Pending Reporting</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-pending-ho"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-hourglass-half"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.pendingHO ]]</div>
+                <div class="card-label">Pending HO Approval</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-approved"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.approved ]]</div>
+                <div class="card-label">Approved</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-completed"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-check-double"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.completed ]]</div>
+                <div class="card-label">Completed</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-rejected"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-times-circle"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.rejected ]]</div>
+                <div class="card-label">Rejected</div>
+              </div>
+            </div>
+
+            <div
+              class="analytics-card card-cancelled"
+              @click="navigateTo('Requests')"
+            >
+              <div class="card-icon">
+                <i class="fas fa-ban"></i>
+              </div>
+              <div class="card-content">
+                <div class="card-value">[[ requestStats.cancelled ]]</div>
+                <div class="card-label">Cancelled</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Chart Section -->
+          <div class="analytics-chart-container mt-4">
+            <div class="chart-header">
+              <h3>Request Distribution by Status</h3>
+            </div>
+
+            <div class="custom-bar-chart">
+              <div
+                v-for="bar in getChartBars"
+                :key="bar.label"
+                class="bar-group"
+              >
+                <div class="bar-info">
+                  <span class="bar-label">[[ bar.label ]]</span>
+                  <span class="bar-count">[[ bar.value ]]</span>
+                </div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    :style="{ width: bar.percentage + '%', backgroundColor: bar.color }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reports Dashboard -->
+        <div v-else-if="currentView.isReportSection" class="reports-dashboard">
+          <div class="reports-grid">
+            <div
+              v-for="card in currentView.reportCards"
+              :key="card.label"
+              class="report-card"
+              @click="openReport(card.route)"
+            >
+              <div class="report-card-icon">
+                <i :class="card.icon"></i>
+              </div>
+              <div class="report-card-label">[[ card.label ]]</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- List Header (Columns) -->
+        <div
+          v-else-if="!(itemView === 'card' && activeItem === 'Items')"
+          class="list-view-header"
+        >
+          <div class="col-checkbox" v-if="currentView.selectable !== false">
+            <input
+              type="checkbox"
+              @change="toggleSelectAll"
+              :checked="isAllSelected"
+            />
+          </div>
+          <div v-else class="col-checkbox"></div>
+          <div
+            v-for="col in visibleColumns"
+            :key="col.key"
+            class="list-col"
+            :style="{ flex: col.width || 1 }"
+          >
+            [[ col.label ]]
+          </div>
+        </div>
+
+        <!-- List Content -->
+        <div class="list-view-body">
+          <!-- Skeleton Loading -->
+          <div v-if="loading" class="skeleton-list">
+            <div v-for="i in 8" class="skeleton-row"></div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="filteredRows.length === 0" class="empty-list-state">
+            <div class="empty-visual">
+              <i
+                class="fas"
+                :class="currentView.emptyIcon || 'fa-box-open'"
+              ></i>
+            </div>
+            <h3>
+              [[ currentView.emptyTitle || ('No ' + activeItem + ' found') ]]
+            </h3>
+            <p>[[ currentView.emptyMessage || 'No records available.' ]]</p>
+            <button
+              v-if="currentView.createDoctype"
+              class="btn-create mt-4"
+              @click="handleCreate()"
+            >
+              New [[ currentView.createLabel || activeItem ]]
+            </button>
+          </div>
+
+          <!-- Card View for Items -->
+          <div
+            v-else-if="itemView === 'card' && activeItem === 'Items'"
+            class="card-grid"
+          >
+            <div
+              v-for="row in filteredRows"
+              :key="row.name"
+              class="item-card"
+              @click="openRecord(row)"
+            >
+              <div class="item-card-inner">
+                <div
+                  class="item-card-image"
+                  :style="row.image ? { backgroundImage: 'url(' + row.image + ')' } : {}"
+                >
+                  <i v-if="!row.image" class="fas fa-box"></i>
+                </div>
+                <div class="item-card-content">
+                  <div class="item-card-header">
+                    <div class="item-card-header-info">
+                      <span class="item-card-code"
+                        >[[ row.item_code || row.name ]]</span
+                      >
+                      <h3 class="item-card-title">
+                        [[ row.item_name || '-' ]]
+                      </h3>
+                    </div>
+                    <span
+                      class="status-badge"
+                      :class="row.disabled ? 'disabled' : 'active'"
+                    >
+                      [[ row.disabled ? 'Disabled' : 'Enabled' ]]
+                    </span>
+                  </div>
+                  <div class="item-card-qty-bottom">
+                    <span class="qty-value" :class="{ 'is-admin': isAdmin }">
+                      <i class="fas fa-cubes"></i> [[ getDisplayQty(row) ]]
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List View Rows -->
+          <div v-else class="rows-list">
+            <div
+              v-for="row in filteredRows"
+              :key="row.name"
+              class="list-row"
+              :class="{ selected: selectedRows.includes(row.name) }"
+              @click="currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name)"
+            >
+              <div class="col-checkbox" v-if="currentView.selectable !== false">
+                <input
+                  type="checkbox"
+                  :checked="selectedRows.includes(row.name)"
+                  @click.stop
+                />
+              </div>
+              <div v-else class="col-checkbox"></div>
+
+              <div
+                v-for="col in visibleColumns"
+                :key="col.key"
+                class="list-col"
+                :style="{ flex: col.width || 1 }"
+              >
+                <div v-if="col.type === 'avatar'" class="row-primary">
+                  <div class="item-avatar">
+                    [[ getAvatarText(row, col.key) ]]
+                  </div>
+                  <span
+                    class="truncate record-link"
+                    :class="{ 'is-clickable': isRecordLinkColumn(col) }"
+                    @click.stop="isRecordLinkColumn(col) && openRecord(row)"
+                    >[[ getFieldValue(row, col.key) ]]</span
+                  >
+                </div>
+                <span
+                  v-else-if="col.type === 'badge'"
+                  class="status-badge"
+                  :class="getBadgeClass(row, col.key)"
+                >
+                  [[ getBadgeText(row, col.key) ]]
+                </span>
+                <span v-else-if="col.type === 'button'" class="row-action">
+                  <button
+                    class="btn-list-action"
+                    @click.stop="handleDispatch(row)"
+                    v-if="activeItem === 'Requests' && row.status === 'Approved'"
+                  >
+                    [[ col.label ]]
+                  </button>
+                </span>
+                <span
+                  v-else
+                  :class="{ 'record-link is-clickable': isRecordLinkColumn(col) }"
+                  @click.stop="isRecordLinkColumn(col) && openRecord(row)"
+                >
+                  [[ getFieldValue(row, col.key) ]]
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- List Footer / Pagination -->
+        <div class="list-view-footer" v-if="!loading && rows.length > 0">
+          <div class="footer-content">
+            <span class="text-muted"
+              >Showing [[ loadedRows ]] of [[ totalRows ]] [[
+              currentView.labelPlural || activeItem.toLowerCase() ]]</span
+            >
+            <button
+              v-if="hasMore"
+              class="btn-load-more"
+              @click="loadMore()"
+              :disabled="loading"
+            >
+              <i class="fas fa-spinner fa-spin" v-if="loading"></i>
+              <i class="fas fa-plus" v-else></i>
+              <span>Load More</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="content-container">
+        <div class="empty-state-card">
+          <div class="empty-visual">
+            <div class="grid-pattern"></div>
+          </div>
+          <h3>[[ activeItem ]] section</h3>
+          <p>
+            [[ currentView.emptyMessage || 'This section is managed inside
+            StockIO.' ]]
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
     <!-- Profile Modal -->
     <div
       class="profile-modal-overlay"
@@ -621,814 +2310,6 @@
       </div>
     </div>
     <!---end of dispatch modal--->
-    <!-- Navigation -->
-    <nav class="sidebar-nav">
-      <div
-        v-for="(section, sIdx) in sidebar.sections"
-        :key="sIdx"
-        class="nav-section"
-      >
-        <div v-if="section.label && !sidebarCollapsed" class="section-label">
-          <span>[[ section.label ]]</span>
-        </div>
-
-        <div class="section-items">
-          <div
-            v-for="item in section.items"
-            class="nav-item"
-            :class="{ active: activeItem === item.label }"
-            @click="setPage(item)"
-            :title="item.label"
-          >
-            <div class="icon-area">
-              <div
-                class="nav-dot"
-                :style="{ backgroundColor: item.color }"
-              ></div>
-            </div>
-            <div class="label-area" v-if="!sidebarCollapsed">
-              <span class="nav-label">[[ item.label ]]</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Footer -->
-    <div class="sidebar-footer">
-      <div class="nav-item theme-toggle" @click="toggleTheme()">
-        <div class="icon-area">
-          <i
-            :class="currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun'"
-          ></i>
-        </div>
-        <div class="label-area" v-if="!sidebarCollapsed">
-          <span class="nav-label"
-            >[[ currentTheme === 'light' ? 'Dark Mode' : 'Light Mode' ]]</span
-          >
-        </div>
-      </div>
-      <div
-        class="nav-item collapse-toggle"
-        @click="sidebarCollapsed = !sidebarCollapsed"
-      >
-        <div class="icon-area">
-          <i :class="sidebarCollapsed ? 'fas fa-indent' : 'fas fa-outdent'"></i>
-        </div>
-        <div class="label-area" v-if="!sidebarCollapsed">
-          <span class="nav-label">Collapse</span>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main Content Area -->
-  <main class="main-area">
-    <header class="top-header">
-      <div class="header-left">
-        <template v-if="showDetailView || showEMRCreateView">
-          <button class="btn-back-inline" @click="closeDetailView(); showEMRCreateView = false;">
-            <i class="fas fa-arrow-left"></i>
-          </button>
-        </template>
-        <h1 class="page-title" v-if="!showDetailView && !showEMRCreateView">[[ activeItem ]]</h1>
-        <h1 class="page-title" v-else-if="showEMRCreateView">
-          Create [[ activeItem.slice(0, -1) ]]
-        </h1>
-        <h1 class="page-title" v-else>
-          [[ activeItem ]]
-          <span class="detail-id-badge"
-            >[[ detailRecord ? detailRecord.name : '' ]]</span
-          >
-          <span
-            class="detail-status-badge"
-            v-if="detailRecord"
-            :class="getBadgeClass(detailRecord, 'status')"
-          >
-            [[ getBadgeText(detailRecord, 'status') ]]
-          </span>
-        </h1>
-      </div>
-      <div class="header-right">
-        <div class="search-container" v-if="!showDetailView && !showEMRCreateView">
-          <i class="fas fa-search search-icon"></i>
-          <input
-            type="text"
-            class="search-input"
-            v-model="searchText"
-            placeholder="Search records..."
-          />
-        </div>
-        <button
-          class="btn-view-toggle"
-          v-if="activeItem === 'Items' && !showDetailView && !showEMRCreateView"
-          @click="toggleItemView()"
-          :title="itemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
-        >
-          <i
-            :class="itemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"
-          ></i>
-        </button>
-        <button
-          class="btn-create"
-          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView"
-          @click="handleCreate()"
-        >
-          <i class="fas fa-plus"></i>
-          <span>Create</span>
-        </button>
-      </div>
-    </header>
-
-    <section class="page-content">
-      <!-- EMR Inline Creation View -->
-      <div v-if="showEMRCreateView" class="detail-view-container">
-        <div class="detail-card">
-          <div class="profile-modal-body" style="padding: 0">
-            <div class="form-row">
-              <!-- Employee Field -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Employee <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'employee' }"
-                    v-model="emrForm.employee_display"
-                    @focus="onFocusSearchable('employee')"
-                    @blur="onBlurSearchable('employee')"
-                    placeholder="Search Employee"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'employee'"
-                  >
-                    <div
-                      v-for="emp in filteredEmployees"
-                      :key="emp.name"
-                      class="searchable-select-option"
-                      :class="{ selected: emrForm.employee === emp.name }"
-                      @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
-                    >
-                      [[ emp.name ]] - [[ emp.employee_name ]]
-                    </div>
-                    <div
-                      v-if="filteredEmployees.length === 0"
-                      class="searchable-select-no-results"
-                    >
-                      No employees found
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Source Warehouse Field -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Source Warehouse <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'source_warehouse' }"
-                    v-model="emrForm.source_warehouse_display"
-                    @focus="onFocusSearchable('source_warehouse')"
-                    @blur="onBlurSearchable('source_warehouse')"
-                    placeholder="Source Warehouse"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'source_warehouse'"
-                  >
-                    <div
-                      v-for="wh in filteredWarehouses"
-                      :key="wh"
-                      class="searchable-select-option"
-                      :class="{ selected: emrForm.source_warehouse === wh }"
-                      @mousedown="selectEMROption('source_warehouse', wh)"
-                    >
-                      [[ wh ]]
-                    </div>
-                    <div
-                      v-if="filteredWarehouses.length === 0"
-                      class="searchable-select-no-results"
-                    >
-                      No warehouses found
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Target Warehouse Field -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Target Warehouse <span class="form-required">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="emrForm.target_warehouse"
-                  placeholder="Target Warehouse"
-                />
-              </div>
-            </div>
-
-            <!-- More Details Toggle -->
-            <div style="margin-bottom: 16px;">
-              <button 
-                type="button" 
-                class="btn-view-toggle" 
-                style="background: transparent; padding: 0; color: var(--primary); font-size: 13px; height: auto;"
-                @click="showEMRMoreDetails = !showEMRMoreDetails"
-              >
-                <i class="fas" :class="showEMRMoreDetails ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                <span style="margin-left: 4px;">[[ showEMRMoreDetails ? 'Hide details' : 'Show more details' ]]</span>
-              </button>
-            </div>
-
-            <div class="form-row" v-if="showEMRMoreDetails">
-              <div class="form-group">
-                <label class="form-label"
-                  >Target Location <span class="form-required">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="emrForm.target_location"
-                  placeholder="Target Location"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label"
-                  >Reporting Person <span class="form-required">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="emrForm.reporting_person"
-                  placeholder="Reporting Person"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label"
-                >Remark <span class="form-required">*</span></label
-              >
-              <textarea
-                class="form-input"
-                v-model="emrForm.remark"
-                placeholder="Enter remark"
-              ></textarea>
-            </div>
-
-            <!-- Items Table (Min 1 Row) -->
-            <div style="margin-top: 20px">
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  margin-bottom: 8px;
-                "
-              >
-                <label class="form-label" style="margin: 0"
-                  >Items <span class="form-required">*</span></label
-                >
-                <button class="btn-create-inline" @click="addEMRItem">
-                  <i class="fas fa-plus"></i> Add Row
-                </button>
-              </div>
-              <table
-                class="items-table"
-                style="max-height: 200px; overflow-y: auto"
-              >
-                <thead>
-                  <tr>
-                    <th>Item Code <span class="form-required">*</span></th>
-                    <th>UOM <span class="form-required">*</span></th>
-                    <th>Qty <span class="form-required">*</span></th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(item, index) in emrItems" :key="index">
-                    <td>
-                      <div class="searchable-select-wrapper" style="width: 200px">
-                        <input
-                          type="text"
-                          class="form-input searchable-select-input"
-                          :class="{ focused: focusedField === 'item_code_' + index }"
-                          v-model="item.item_code_display"
-                          @focus="onFocusSearchable('item_code_' + index)"
-                          @blur="onBlurSearchable('item_code_' + index)"
-                          placeholder="Item Code"
-                        />
-                        <div
-                          class="searchable-select-dropdown"
-                          v-if="focusedField === 'item_code_' + index"
-                          style="width: 250px"
-                        >
-                          <div
-                            v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
-                            :key="opt.name"
-                            class="searchable-select-option"
-                            :class="{ selected: item.item_code === opt.name }"
-                            @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                          >
-                            <div style="font-weight: 500">[[ opt.name ]]</div>
-                            <div style="font-size: 11px; opacity: 0.8">
-                              [[ opt.item_name ]]
-                            </div>
-                          </div>
-                          <div
-                            v-if="!itemsList.some(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
-                            class="searchable-select-no-results"
-                          >
-                            No items found
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td>
-                      <input
-                        type="text"
-                        class="form-input"
-                        style="width: 80px"
-                        v-model="item.uom"
-                        placeholder="UOM"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        class="form-input"
-                        style="width: 80px"
-                        v-model.number="item.quantity"
-                        placeholder="Qty"
-                      />
-                    </td>
-                    <td>
-                      <button
-                        class="btn-action"
-                        @click="removeEMRItem(index)"
-                        title="Remove"
-                      >
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div
-              class="form-actions"
-              style="margin-top: 24px; display: flex; gap: 12px"
-            >
-              <button
-                class="btn-create"
-                @click="submitEMR"
-                :disabled="creatingEMR"
-              >
-                <i class="fas fa-check" v-if="!creatingEMR"></i>
-                <i class="fas fa-spinner fa-spin" v-else></i>
-                <span>[[ creatingEMR ? 'Submitting...' : 'Submit Request' ]]</span>
-              </button>
-              <button
-                class="btn-view-toggle"
-                style="background: var(--bg-card); color: var(--text-main)"
-                @click="showEMRCreateView = false"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Detail View -->
-      <div v-if="showDetailView" class="detail-view-container">
-        <div class="detail-card" v-if="detailRecord">
-          <div class="detail-grid">
-            <div
-              v-for="field in detailFields"
-              :key="field.key"
-              class="detail-grid-item"
-            >
-              <span class="detail-grid-label">[[ field.label ]]</span>
-              <span class="detail-grid-value" v-if="field.type === 'badge'">
-                <span
-                  class="status-badge"
-                  :class="getBadgeClass(detailRecord, field.key)"
-                >
-                  [[ getBadgeText(detailRecord, field.key) ]]
-                </span>
-              </span>
-              <span class="detail-grid-value" v-else
-                >[[ getFieldValue(detailRecord, field.key) ]]</span
-              >
-            </div>
-          </div>
-
-          <!-- Child Table for Employee Material Request -->
-          <div
-            v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length"
-            class="detail-items-section"
-          >
-            <h4 class="section-subtitle">Requested Items</h4>
-            <div class="items-table-wrapper">
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Category</th>
-                    <th class="text-right">Qty</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in detailRecord.items" :key="item.name">
-                    <td>
-                      <div class="item-name-cell">
-                        <span class="item-code-text">[[ item.item_code ]]</span>
-                        <span class="item-name-text text-muted"
-                          >[[ item.item_name ]]</span
-                        >
-                      </div>
-                    </td>
-                    <td>[[ item.item_category ]]</td>
-                    <td class="text-right font-medium">
-                      [[ item.quantity ]] [[ item.uom ]]
-                    </td>
-                    <td>
-                      <span
-                        class="status-badge"
-                        :class="getBadgeClass(item, 'status')"
-                      >
-                        [[ item.status ]]
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        class="btn-action"
-                        @click="handleDispatch(detailRecord)"
-                        title="Dispatch"
-                      >
-                        Dispatch
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        v-else-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
-        class="list-view-container"
-      >
-        <!-- Analytics Dashboard -->
-        <div v-if="activeItem === 'Analytics'" class="analytics-dashboard">
-          <div class="analytics-cards">
-            <div
-              class="analytics-card card-draft"
-              @click="navigateTo('Requests')"
-            >
-              <div class="card-icon">
-                <i class="fas fa-file"></i>
-              </div>
-              <div class="card-content">
-                <div class="card-value">[[ requestStats.draft ]]</div>
-                <div class="card-label">Draft</div>
-              </div>
-            </div>
-
-            <div
-              class="analytics-card card-pending-reporting"
-              @click="navigateTo('Requests')"
-            >
-              <div class="card-icon">
-                <i class="fas fa-clock"></i>
-              </div>
-              <div class="card-content">
-                <div class="card-value">
-                  [[ requestStats.pendingReporting ]]
-                </div>
-                <div class="card-label">Pending Reporting</div>
-              </div>
-            </div>
-
-            <div
-              class="analytics-card card-pending-ho"
-              @click="navigateTo('Requests')"
-            >
-              <div class="card-icon">
-                <i class="fas fa-hourglass-half"></i>
-              </div>
-              <div class="card-content">
-                <div class="card-value">[[ requestStats.pendingHO ]]</div>
-                <div class="card-label">Pending HO Approval</div>
-              </div>
-            </div>
-
-            <div
-              class="analytics-card card-approved"
-              @click="navigateTo('Requests')"
-            >
-              <div class="card-icon">
-                <i class="fas fa-check-circle"></i>
-              </div>
-              <div class="card-content">
-                <div class="card-value">[[ requestStats.approved ]]</div>
-                <div class="card-label">Approved</div>
-              </div>
-            </div>
-
-            <div
-              class="analytics-card card-completed"
-              @click="navigateTo('Requests')"
-            >
-              <div class="card-icon">
-                <i class="fas fa-check-double"></i>
-              </div>
-              <div class="card-content">
-                <div class="card-value">[[ requestStats.completed ]]</div>
-                <div class="card-label">Completed</div>
-              </div>
-            </div>
-
-            <div
-              class="analytics-card card-rejected"
-              @click="navigateTo('Requests')"
-            >
-              <div class="card-icon">
-                <i class="fas fa-times-circle"></i>
-              </div>
-              <div class="card-content">
-                <div class="card-value">[[ requestStats.rejected ]]</div>
-                <div class="card-label">Rejected</div>
-              </div>
-            </div>
-
-            <div
-              class="analytics-card card-cancelled"
-              @click="navigateTo('Requests')"
-            >
-              <div class="card-icon">
-                <i class="fas fa-ban"></i>
-              </div>
-              <div class="card-content">
-                <div class="card-value">[[ requestStats.cancelled ]]</div>
-                <div class="card-label">Cancelled</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Custom Chart Section -->
-          <div class="analytics-chart-container mt-4">
-            <div class="chart-header">
-              <h3>Request Distribution by Status</h3>
-            </div>
-
-            <div class="custom-bar-chart">
-              <div
-                v-for="bar in getChartBars"
-                :key="bar.label"
-                class="bar-group"
-              >
-                <div class="bar-info">
-                  <span class="bar-label">[[ bar.label ]]</span>
-                  <span class="bar-count">[[ bar.value ]]</span>
-                </div>
-                <div class="bar-track">
-                  <div
-                    class="bar-fill"
-                    :style="{ width: bar.percentage + '%', backgroundColor: bar.color }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Reports Dashboard -->
-        <div v-else-if="currentView.isReportSection" class="reports-dashboard">
-          <div class="reports-grid">
-            <div
-              v-for="card in currentView.reportCards"
-              :key="card.label"
-              class="report-card"
-              @click="openReport(card.route)"
-            >
-              <div class="report-card-icon">
-                <i :class="card.icon"></i>
-              </div>
-              <div class="report-card-label">[[ card.label ]]</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- List Header (Columns) -->
-        <div
-          v-else-if="!(itemView === 'card' && activeItem === 'Items')"
-          class="list-view-header"
-        >
-          <div class="col-checkbox" v-if="currentView.selectable !== false">
-            <input
-              type="checkbox"
-              @change="toggleSelectAll"
-              :checked="isAllSelected"
-            />
-          </div>
-          <div v-else class="col-checkbox"></div>
-          <div
-            v-for="col in visibleColumns"
-            :key="col.key"
-            class="list-col"
-            :style="{ flex: col.width || 1 }"
-          >
-            [[ col.label ]]
-          </div>
-        </div>
-
-        <!-- List Content -->
-        <div class="list-view-body">
-          <!-- Skeleton Loading -->
-          <div v-if="loading" class="skeleton-list">
-            <div v-for="i in 8" class="skeleton-row"></div>
-          </div>
-
-          <!-- Empty State -->
-          <div v-else-if="filteredRows.length === 0" class="empty-list-state">
-            <div class="empty-visual">
-              <i
-                class="fas"
-                :class="currentView.emptyIcon || 'fa-box-open'"
-              ></i>
-            </div>
-            <h3>
-              [[ currentView.emptyTitle || ('No ' + activeItem + ' found') ]]
-            </h3>
-            <p>[[ currentView.emptyMessage || 'No records available.' ]]</p>
-            <button
-              v-if="currentView.createDoctype"
-              class="btn-create mt-4"
-              @click="handleCreate()"
-            >
-              New [[ currentView.createLabel || activeItem ]]
-            </button>
-          </div>
-
-          <!-- Card View for Items -->
-          <div
-            v-else-if="itemView === 'card' && activeItem === 'Items'"
-            class="card-grid"
-          >
-            <div
-              v-for="row in filteredRows"
-              :key="row.name"
-              class="item-card"
-              @click="openRecord(row)"
-            >
-              <div class="item-card-inner">
-                <div
-                  class="item-card-image"
-                  :style="row.image ? { backgroundImage: 'url(' + row.image + ')' } : {}"
-                >
-                  <i v-if="!row.image" class="fas fa-box"></i>
-                </div>
-                <div class="item-card-content">
-                  <div class="item-card-header">
-                    <div class="item-card-header-info">
-                      <span class="item-card-code"
-                        >[[ row.item_code || row.name ]]</span
-                      >
-                      <h3 class="item-card-title">
-                        [[ row.item_name || '-' ]]
-                      </h3>
-                    </div>
-                    <span
-                      class="status-badge"
-                      :class="row.disabled ? 'disabled' : 'active'"
-                    >
-                      [[ row.disabled ? 'Disabled' : 'Enabled' ]]
-                    </span>
-                  </div>
-                  <div class="item-card-qty-bottom">
-                    <span class="qty-value" :class="{ 'is-admin': isAdmin }">
-                      <i class="fas fa-cubes"></i> [[ getDisplayQty(row) ]]
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- List View Rows -->
-          <div v-else class="rows-list">
-            <div
-              v-for="row in filteredRows"
-              :key="row.name"
-              class="list-row"
-              :class="{ selected: selectedRows.includes(row.name) }"
-              @click="currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name)"
-            >
-              <div class="col-checkbox" v-if="currentView.selectable !== false">
-                <input
-                  type="checkbox"
-                  :checked="selectedRows.includes(row.name)"
-                  @click.stop
-                />
-              </div>
-              <div v-else class="col-checkbox"></div>
-
-              <div
-                v-for="col in visibleColumns"
-                :key="col.key"
-                class="list-col"
-                :style="{ flex: col.width || 1 }"
-              >
-                <div v-if="col.type === 'avatar'" class="row-primary">
-                  <div class="item-avatar">
-                    [[ getAvatarText(row, col.key) ]]
-                  </div>
-                  <span
-                    class="truncate record-link"
-                    :class="{ 'is-clickable': isRecordLinkColumn(col) }"
-                    @click.stop="isRecordLinkColumn(col) && openRecord(row)"
-                    >[[ getFieldValue(row, col.key) ]]</span
-                  >
-                </div>
-                <span
-                  v-else-if="col.type === 'badge'"
-                  class="status-badge"
-                  :class="getBadgeClass(row, col.key)"
-                >
-                  [[ getBadgeText(row, col.key) ]]
-                </span>
-                <span v-else-if="col.type === 'button'" class="row-action">
-                  <button
-                    class="btn-list-action"
-                    @click.stop="handleDispatch(row)"
-                    v-if="activeItem === 'Requests' && row.status === 'Approved'"
-                  >
-                    [[ col.label ]]
-                  </button>
-                </span>
-                <span
-                  v-else
-                  :class="{ 'record-link is-clickable': isRecordLinkColumn(col) }"
-                  @click.stop="isRecordLinkColumn(col) && openRecord(row)"
-                >
-                  [[ getFieldValue(row, col.key) ]]
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- List Footer / Pagination -->
-        <div class="list-view-footer" v-if="!loading && rows.length > 0">
-          <div class="footer-content">
-            <span class="text-muted"
-              >Showing [[ loadedRows ]] of [[ totalRows ]] [[
-              currentView.labelPlural || activeItem.toLowerCase() ]]</span
-            >
-            <button
-              v-if="hasMore"
-              class="btn-load-more"
-              @click="loadMore()"
-              :disabled="loading"
-            >
-              <i class="fas fa-spinner fa-spin" v-if="loading"></i>
-              <i class="fas fa-plus" v-else></i>
-              <span>Load More</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div v-else class="content-container">
-        <div class="empty-state-card">
-          <div class="empty-visual">
-            <div class="grid-pattern"></div>
-          </div>
-          <h3>[[ activeItem ]] section</h3>
-          <p>
-            [[ currentView.emptyMessage || 'This section is managed inside
-            StockIO.' ]]
-          </p>
-        </div>
-      </div>
-    </section>
-  </main>
 </div>
 
 <style>
@@ -3050,6 +3931,14 @@
             { label: "UOM", key: "stock_uom", width: 0.8 },
             { label: "Status", key: "disabled", width: 0.8, type: "badge" },
           ],
+          detailFields: [
+            { label: "Item ID", key: "name" },
+            { label: "Item Name", key: "item_name" },
+            { label: "Item Code", key: "item_code" },
+            { label: "Item Group", key: "item_group" },
+
+            { label: "Description", key: "description" },
+          ],
         },
         "Asset Master": {
           doctype: "Asset",
@@ -3678,8 +4567,8 @@
       },
 
       handleCreate() {
-        if (this.currentView.createDoctype === "Employee Material Request") {
-          // Show inline creation instead of modal
+        const doctype = this.currentView.createDoctype;
+        if (doctype === "Employee Material Request") {
           this.showEMRCreateView = true;
           this.showEMRMoreDetails = false;
           this.showDetailView = false;
@@ -3696,10 +4585,64 @@
           this.emrItems = [{ item_code: "", item_code_display: "", uom: "", quantity: 1 }];
           return;
         }
-        // Other doctypes redirect as before
-        const slug = this.currentView.createDoctype
-          .toLowerCase()
-          .replace(/\s+/g, "-");
+
+        if (doctype === "Purchase Receipt") {
+          this.showInwardCreateView = true;
+          this.showDetailView = false;
+          this.inwardForm = {
+            supplier: "",
+            supplier_display: "",
+            posting_date: frappe.datetime.now_date(),
+            set_warehouse: "",
+            set_warehouse_display: "",
+            custom_po_wo: "",
+            custom_request_for: "",
+            remarks: "",
+          };
+          this.inwardItems = [
+            { item_code: "", item_code_display: "", uom: "", qty: 1, rate: 0, warehouse: "" },
+          ];
+          return;
+        }
+
+        if (doctype === "Stock Entry") {
+          this.showOutwardCreateView = true;
+          this.showDetailView = false;
+          this.outwardForm = {
+            stock_entry_type: "Material Transfer",
+            from_warehouse: "",
+            to_warehouse: "",
+            posting_date: frappe.datetime.now_date(),
+            remarks: "",
+          };
+          this.outwardItems = [
+            { item_code: "", item_code_display: "", uom: "", qty: 1, s_warehouse: "", t_warehouse: "" },
+          ];
+          return;
+        }
+
+        if (doctype === "Item") {
+          this.showItemCreateView = true;
+          this.showDetailView = false;
+          this.createItemForm = {
+            item_name: "",
+            item_department: "",
+            item_department_display: "",
+            item_group: "",
+            item_group_display: "",
+            gst_hsn_code: "",
+            gst_hsn_code_display: "",
+            is_stock_item: true,
+            is_fixed_asset: false,
+            stock_uom: "",
+            stock_uom_display: "",
+            asset_category: "",
+            asset_category_display: "",
+          };
+          return;
+        }
+
+        const slug = doctype.toLowerCase().replace(/\s+/g, "-");
         window.location.href = `/app/${slug}/new`;
       },
 
