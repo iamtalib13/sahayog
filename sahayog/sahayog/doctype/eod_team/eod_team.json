@@ -9,6 +9,7 @@
   "team_name",
   "sequence",
   "team_lead",
+  "manager_emails",
   "is_active",
   "team_members"
  ],
@@ -41,12 +42,18 @@
    "fieldtype": "Table",
    "label": "Team Members",
    "options": "Team Members"
+  },
+  {
+   "description": " Enter email IDs separated by commas (e.g., lead_l1@bank.com, manager@bank.com)",
+   "fieldname": "manager_emails",
+   "fieldtype": "Data",
+   "label": "Manager Emails"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-06 16:21:38.126689",
+ "modified": "2026-04-16 11:12:42.380346",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "EOD Team",
