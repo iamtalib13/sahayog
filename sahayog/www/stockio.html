@@ -1044,9 +1044,39 @@
                 <input type="date" class="form-input" v-model="inwardForm.posting_date" />
               </div>
             </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Set Warehouse</label>
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'inward_warehouse' }"
+                    v-model="inwardForm.set_warehouse_display"
+                    @focus="onFocusSearchable('inward_warehouse')"
+                    @blur="onBlurSearchable('inward_warehouse')"
+                    placeholder="Set Warehouse"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'inward_warehouse'">
+                    <div
+                      v-for="wh in warehouses.filter(w => !inwardForm.set_warehouse_display || w.toLowerCase().includes(inwardForm.set_warehouse_display.toLowerCase()))"
+                      :key="wh"
+                      class="searchable-select-option"
+                      @mousedown="inwardForm.set_warehouse = wh; inwardForm.set_warehouse_display = wh; focusedField = null;"
+                    >
+                      [[ wh ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">PO/WO Number</label>
+                <input type="text" class="form-input" v-model="inwardForm.custom_po_wo" placeholder="PO/WO Number" />
+              </div>
+            </div>
             <div class="form-group">
-              <label class="form-label">Set Warehouse</label>
-              <input type="text" class="form-input" v-model="inwardForm.set_warehouse" placeholder="Set Warehouse" />
+              <label class="form-label">Request For</label>
+              <input type="text" class="form-input" v-model="inwardForm.custom_request_for" placeholder="Request For" />
             </div>
             <div style="margin-top: 20px">
               <label class="form-label">Items</label>
@@ -3880,6 +3910,9 @@
             supplier_display: "",
             posting_date: frappe.datetime.now_date(),
             set_warehouse: "",
+            set_warehouse_display: "",
+            custom_po_wo: "",
+            custom_request_for: "",
             remarks: "",
           };
           this.inwardItems = [
