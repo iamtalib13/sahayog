@@ -968,8 +968,130 @@ def save_manager_data():
 
 
 
-import frappe
-from frappe.utils import cint
+# import frappe
+# from frappe.utils import cint
+
+# # my main working download report method
+# @frappe.whitelist()
+# def download_eod_report(eod_name, include_chat=1):
+#     """Generates and downloads a complete Audit PDF Report for the EOD."""
+#     if not eod_name:
+#         return
+        
+#     # Safely convert '0' or '1' from the Javascript URL into an integer
+#     include_chat = cint(include_chat)
+        
+#     eod = frappe.get_doc("Bank EOD", eod_name)
+#     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    
+#     # Build a clean HTML template for the PDF
+#     html = f"""
+#     <html>
+#     <head>
+#         <style>
+#             body {{ font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #1a1d21; }}
+#             h1 {{ text-align: center; color: #1a1d21; margin-bottom: 20px; }}
+#             h2 {{ color: #00b09b; border-bottom: 1px solid #eef1f4; padding-bottom: 5px; margin-top: 30px; }}
+#             table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+#             th, td {{ border: 1px solid #d1d5db; padding: 10px; text-align: left; }}
+#             th {{ background-color: #f8f9fb; font-weight: bold; font-size: 11px; text-transform: uppercase; }}
+#             .status-Completed {{ color: #16a34a; font-weight: bold; }}
+#             .status-Pending {{ color: #ea580c; font-weight: bold; }}
+#             .chat-msg {{ margin-bottom: 10px; padding: 12px; background: #f8f9fb; border-radius: 8px; border: 1px solid #eef1f4; }}
+#             .chat-meta {{ font-size: 11px; color: #707991; margin-bottom: 4px; font-weight: bold; }}
+#         </style>
+#     </head>
+#     <body>
+#         <h1>End of Day (EOD) Audit Report</h1>
+#         <table>
+#             <tr>
+#                 <th>EOD Reference</th><td>{eod.name}</td>
+#                 <th>Date</th><td>{format_date(eod.date)}</td>
+#             </tr>
+#             <tr>
+#                 <th>Final Status</th><td>{eod.status}</td>
+#                 <th>Project/Branch</th><td>{getattr(eod, 'subtitle', 'N/A')}</td>
+#             </tr>
+#         </table>
+
+#         <h2>1. Checklist Execution Log</h2>
+#         <table>
+#             <thead>
+#                 <tr>
+#                     <th>Seq</th>
+#                     <th>Team</th>
+#                     <th>Task Description</th>
+#                     <th>Status</th>
+#                     <th>Completed By</th>
+#                     <th>Time</th>
+#                 </tr>
+#             </thead>
+#             <tbody>
+#     """
+    
+#     # Inject Checklist Rows
+#     for t in sorted_tasks:
+#         c_by = get_user_fullname(t.completed_by) if t.completed_by else ""
+#         c_time = format_time(t.completed_on, "HH:mm:ss") if t.completed_on else ""
+#         html += f"""
+#                 <tr>
+#                     <td>{t.sequence or ''}</td>
+#                     <td>{t.team or ''}</td>
+#                     <td>{t.task or ''}</td>
+#                     <td class="status-{t.status}">{t.status}</td>
+#                     <td>{c_by}</td>
+#                     <td>{c_time}</td>
+#                 </tr>
+#         """
+        
+#     html += """
+#             </tbody>
+#         </table>
+#     """
+    
+#     # =========================================================================
+#     # THE MAGIC FIX: Only fetch chat messages and add them to HTML if include_chat == 1
+#     # =========================================================================
+#     if include_chat == 1:
+        
+#         chat_messages = frappe.get_all("EOD Chat Message", 
+#             filters={"parent": eod_name}, 
+#             fields=["sender", "text", "time", "is_system", "attachment"],
+#             order_by="time asc"
+#         )
+        
+#         html += """
+#         <h2>2. System & Group Chat Transcript</h2>
+#         """
+        
+#         # Inject Chat Messages
+#         if not chat_messages:
+#             html += "<p>No chat messages or system logs recorded.</p>"
+#         else:
+#             for msg in chat_messages:
+#                 sender_name = "EOD System" if msg.is_system else get_user_fullname(msg.sender)
+#                 msg_time = format_time(msg.time, "HH:mm:ss") if msg.time else ""
+#                 text = msg.text or (f"[Attachment: {msg.attachment}]" if msg.attachment else "")
+                
+#                 html += f"""
+#                 <div class="chat-msg">
+#                     <div class="chat-meta">{sender_name} &bull; {msg_time}</div>
+#                     <div>{text}</div>
+#                 </div>
+#                 """
+                
+#     # Close the HTML document regardless of whether chat was included
+#     html += """
+#     </body>
+#     </html>
+#     """
+    
+#     # Tell Frappe to return a downloadable PDF file
+#     frappe.local.response.filename = f"EOD_Audit_{eod_name}.pdf"
+#     frappe.local.response.filecontent = get_pdf(html)
+#     frappe.local.response.type = "pdf"
+
+
 
 @frappe.whitelist()
 def download_eod_report(eod_name, include_chat=1):
@@ -982,6 +1104,37 @@ def download_eod_report(eod_name, include_chat=1):
         
     eod = frappe.get_doc("Bank EOD", eod_name)
     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    
+    # ==========================================
+    # CALCULATE TOTAL EOD TIME (Python Version)
+    # ==========================================
+    total_duration_str = "N/A"
+    
+    # Filter out tasks that haven't been completed or don't have a timestamp
+    completed_times = [t.completed_on for t in eod.eod_tasks if t.status == "Completed" and t.completed_on]
+    
+    if completed_times:
+        earliest_time = min(completed_times)
+        latest_time = max(completed_times)
+        
+        # Calculate the difference in seconds
+        diff_seconds = (latest_time - earliest_time).total_seconds()
+        
+        if diff_seconds > 0:
+            diff_hrs = int(diff_seconds // 3600)
+            diff_mins = int((diff_seconds % 3600) // 60)
+            diff_secs = int(diff_seconds % 60)
+            
+            if diff_hrs > 0:
+                total_duration_str = f"{diff_hrs}h {diff_mins}m {diff_secs}sec"
+            elif diff_mins > 0:
+                total_duration_str = f"{diff_mins}m {diff_secs}sec"
+            else:
+                total_duration_str = f"{diff_secs}sec"
+        else:
+            total_duration_str = "Started..."
+            
+    # ==========================================
     
     # Build a clean HTML template for the PDF
     html = f"""
@@ -1009,9 +1162,10 @@ def download_eod_report(eod_name, include_chat=1):
             </tr>
             <tr>
                 <th>Final Status</th><td>{eod.status}</td>
-                <th>Project/Branch</th><td>{getattr(eod, 'subtitle', 'N/A')}</td>
+                <th>Total EOD Time</th><td>{total_duration_str}</td>
             </tr>
         </table>
+
 
         <h2>1. Checklist Execution Log</h2>
         <table>
