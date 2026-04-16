@@ -1285,8 +1285,10 @@
         </div>
       </div>
       <div v-if="showDetailView" class="detail-view-container">
-        <div class="detail-card" v-if="detailRecord" style="padding: 24px;">
-          <div style="display: grid; grid-template-columns: 260px minmax(450px, 1fr) 260px; gap: 24px; overflow-x: auto;">
+        <div class="detail-card" v-if="detailRecord" :style="activeItem === 'Requests' ? 'padding: 24px;' : ''">
+          
+          <!-- 3-Column Layout specifically for Requests -->
+          <div v-if="activeItem === 'Requests'" style="display: grid; grid-template-columns: 260px minmax(450px, 1fr) 260px; gap: 24px; overflow-x: auto;">
             
             <!-- Column 1: Request Detail -->
             <div class="detail-col-1">
@@ -1318,7 +1320,7 @@
             <div class="detail-col-2" style="border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 0 24px; min-width: 0;">
               <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Requested Items</h4>
               <div
-                v-if="activeItem === 'Requests' && detailRecord.items && detailRecord.items.length"
+                v-if="detailRecord.items && detailRecord.items.length"
                 class="detail-items-section"
               >
                 <div class="items-table-wrapper table-responsive" style="box-shadow: none; border-radius: var(--border-radius-md); overflow-x: auto;">
@@ -1385,6 +1387,30 @@
             </div>
             
           </div>
+
+          <!-- Minimal Layout for other lists like Items -->
+          <div v-else class="detail-grid">
+            <h4 class="section-subtitle" style="grid-column: 1 / -1; margin-top: 0; margin-bottom: 16px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Item Details</h4>
+            <div
+              v-for="field in detailFields"
+              :key="field.key"
+              class="detail-grid-item"
+            >
+              <span class="detail-grid-label">[[ field.label ]]</span>
+              <span class="detail-grid-value" v-if="field.type === 'badge'">
+                <span
+                  class="badge"
+                  :class="getBadgeClass(detailRecord, field.key)"
+                >
+                  [[ getBadgeText(detailRecord, field.key) ]]
+                </span>
+              </span>
+              <span class="detail-grid-value" v-else>
+                [[ getFieldValue(detailRecord, field.key) ]]
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -3904,6 +3930,14 @@
             { label: "Group", key: "item_group", width: 1 },
             { label: "UOM", key: "stock_uom", width: 0.8 },
             { label: "Status", key: "disabled", width: 0.8, type: "badge" },
+          ],
+          detailFields: [
+            { label: "Item ID", key: "name" },
+            { label: "Item Name", key: "item_name" },
+            { label: "Item Code", key: "item_code" },
+            { label: "Item Group", key: "item_group" },
+
+            { label: "Description", key: "description" },
           ],
         },
         "Asset Master": {
