@@ -857,21 +857,23 @@ def save_manager_data():
 
 
 
+
+# import frappe
+# from frappe.utils import cint
+
+# # my main working download report method
 # @frappe.whitelist()
-# def download_eod_report(eod_name):
+# def download_eod_report(eod_name, include_chat=1):
 #     """Generates and downloads a complete Audit PDF Report for the EOD."""
 #     if not eod_name:
 #         return
         
+#     # Safely convert '0' or '1' from the Javascript URL into an integer
+#     include_chat = cint(include_chat)
+        
 #     eod = frappe.get_doc("Bank EOD", eod_name)
 #     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
     
-#     chat_messages = frappe.get_all("EOD Chat Message", 
-#         filters={"parent": eod_name}, 
-#         fields=["sender", "text", "time", "is_system", "attachment"],
-#         order_by="time asc"
-#     )
-
 #     # Build a clean HTML template for the PDF
 #     html = f"""
 #     <html>
@@ -935,26 +937,40 @@ def save_manager_data():
 #     html += """
 #             </tbody>
 #         </table>
-        
-#         <h2>2. System & Group Chat Transcript</h2>
 #     """
     
-#     # Inject Chat Messages
-#     if not chat_messages:
-#         html += "<p>No chat messages or system logs recorded.</p>"
-#     else:
-#         for msg in chat_messages:
-#             sender_name = "EOD System" if msg.is_system else get_user_fullname(msg.sender)
-#             msg_time = format_time(msg.time, "HH:mm:ss") if msg.time else ""
-#             text = msg.text or (f"[Attachment: {msg.attachment}]" if msg.attachment else "")
-            
-#             html += f"""
-#             <div class="chat-msg">
-#                 <div class="chat-meta">{sender_name} &bull; {msg_time}</div>
-#                 <div>{text}</div>
-#             </div>
-#             """
-            
+#     # =========================================================================
+#     # THE MAGIC FIX: Only fetch chat messages and add them to HTML if include_chat == 1
+#     # =========================================================================
+#     if include_chat == 1:
+        
+#         chat_messages = frappe.get_all("EOD Chat Message", 
+#             filters={"parent": eod_name}, 
+#             fields=["sender", "text", "time", "is_system", "attachment"],
+#             order_by="time asc"
+#         )
+        
+#         html += """
+#         <h2>2. System & Group Chat Transcript</h2>
+#         """
+        
+#         # Inject Chat Messages
+#         if not chat_messages:
+#             html += "<p>No chat messages or system logs recorded.</p>"
+#         else:
+#             for msg in chat_messages:
+#                 sender_name = "EOD System" if msg.is_system else get_user_fullname(msg.sender)
+#                 msg_time = format_time(msg.time, "HH:mm:ss") if msg.time else ""
+#                 text = msg.text or (f"[Attachment: {msg.attachment}]" if msg.attachment else "")
+                
+#                 html += f"""
+#                 <div class="chat-msg">
+#                     <div class="chat-meta">{sender_name} &bull; {msg_time}</div>
+#                     <div>{text}</div>
+#                 </div>
+#                 """
+                
+#     # Close the HTML document regardless of whether chat was included
 #     html += """
 #     </body>
 #     </html>
@@ -967,10 +983,6 @@ def save_manager_data():
 
 
 
-
-import frappe
-from frappe.utils import cint
-
 @frappe.whitelist()
 def download_eod_report(eod_name, include_chat=1):
     """Generates and downloads a complete Audit PDF Report for the EOD."""
@@ -982,6 +994,37 @@ def download_eod_report(eod_name, include_chat=1):
         
     eod = frappe.get_doc("Bank EOD", eod_name)
     sorted_tasks = sorted(eod.eod_tasks, key=lambda x: (x.sequence or 0, x.idx))
+    
+    # ==========================================
+    # CALCULATE TOTAL EOD TIME (Python Version)
+    # ==========================================
+    total_duration_str = "N/A"
+    
+    # Filter out tasks that haven't been completed or don't have a timestamp
+    completed_times = [t.completed_on for t in eod.eod_tasks if t.status == "Completed" and t.completed_on]
+    
+    if completed_times:
+        earliest_time = min(completed_times)
+        latest_time = max(completed_times)
+        
+        # Calculate the difference in seconds
+        diff_seconds = (latest_time - earliest_time).total_seconds()
+        
+        if diff_seconds > 0:
+            diff_hrs = int(diff_seconds // 3600)
+            diff_mins = int((diff_seconds % 3600) // 60)
+            diff_secs = int(diff_seconds % 60)
+            
+            if diff_hrs > 0:
+                total_duration_str = f"{diff_hrs}h {diff_mins}m {diff_secs}sec"
+            elif diff_mins > 0:
+                total_duration_str = f"{diff_mins}m {diff_secs}sec"
+            else:
+                total_duration_str = f"{diff_secs}sec"
+        else:
+            total_duration_str = "Started..."
+            
+    # ==========================================
     
     # Build a clean HTML template for the PDF
     html = f"""
@@ -1009,9 +1052,10 @@ def download_eod_report(eod_name, include_chat=1):
             </tr>
             <tr>
                 <th>Final Status</th><td>{eod.status}</td>
-                <th>Project/Branch</th><td>{getattr(eod, 'subtitle', 'N/A')}</td>
+                <th>Total EOD Time</th><td>{total_duration_str}</td>
             </tr>
         </table>
+
 
         <h2>1. Checklist Execution Log</h2>
         <table>
@@ -1089,3 +1133,123 @@ def download_eod_report(eod_name, include_chat=1):
     frappe.local.response.filename = f"EOD_Audit_{eod_name}.pdf"
     frappe.local.response.filecontent = get_pdf(html)
     frappe.local.response.type = "pdf"
+
+
+from frappe.utils import nowdate
+
+@frappe.whitelist()
+def check_and_notify_inactive_teams():
+    """Runs at a scheduled time to alert specific team managers if their team hasn't started tasks."""
+    today = nowdate()
+    
+    # 1. Find today's EOD record that is Started (Pending)
+    eod_records = frappe.get_all("Bank EOD", filters={"date": today, "status": "Pending"}, limit=1)
+    if not eod_records:
+        return "No active EOD found for today."
+        
+    eod = frappe.get_doc("Bank EOD", eod_records[0].name)
+    
+    # 2. Analyze task completion per team
+    team_status = {}
+    for row in eod.eod_tasks:
+        if row.team not in team_status:
+            team_status[row.team] = {"total": 0, "completed": 0}
+        
+        team_status[row.team]["total"] += 1
+        if row.status == "Completed":
+            team_status[row.team]["completed"] += 1
+            
+    notified_teams = []
+
+
+    # 3. Check each team and send targeted emails to their managers
+    for team_name, stats in team_status.items():
+        if stats["total"] > 0 and stats["completed"] == 0:
+            
+            # Fetch the manager emails specifically for THIS team
+            manager_emails_raw = frappe.db.get_value("EOD Team", team_name, "manager_emails")
+            
+            if manager_emails_raw:
+                # Split by comma to support single or multiple emails safely
+                email_list = [e.strip() for e in manager_emails_raw.split(",") if e.strip()]
+                
+                if email_list:
+                    subject = f"⚠️ Action Required: EOD Tasks Pending for Team {team_name}"
+                    
+                    # COMPACT, modern HTML email template
+                    message = f"""
+                    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        
+                        <!-- Header (Reduced padding & font size) -->
+                        <div style="background-color: #ef4444; padding: 12px; text-align: center;">
+                            <h2 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px;">
+                                Action Required: EOD Alert
+                            </h2>
+                        </div>
+                        
+                        <!-- Body Content (Reduced padding & margins) -->
+                        <div style="padding: 20px; color: #374151; line-height: 1.5;">
+                            <p style="font-size: 15px; margin-top: 0; margin-bottom: 10px;">Hello,</p>
+                            <p style="font-size: 15px; margin: 0 0 10px 0;">The End of Day (EOD) process for <strong>{today}</strong> is currently active. However, our system indicates that your team has not started their assigned tasks.</p>
+                            
+                            <!-- Highlight Box (Compact margins & padding) -->
+                            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 15px; margin: 15px 0; border-radius: 0 4px 4px 0;">
+                                <h3 style="margin: 0 0 8px 0; color: #991b1b; font-size: 16px; border-bottom: 1px solid #fecaca; padding-bottom: 6px;">
+                                    Team: {team_name}
+                                </h3>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="padding: 4px 0; color: #4b5563; font-size: 14px;">Total Tasks Assigned:</td>
+                                        <td style="padding: 4px 0; font-weight: bold; color: #111827; text-align: right; font-size: 14px;">{stats['total']}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 4px 0; color: #4b5563; font-size: 14px;">Tasks Completed:</td>
+                                        <td style="padding: 4px 0; font-weight: bold; color: #ef4444; text-align: right; font-size: 14px;">0</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <p style="font-size: 15px; margin: 0;">To ensure the EOD process completes smoothly and on time, please follow up with your team members to execute their checklist items.</p>
+                            
+                            <!-- Action Button (Reduced margin) -->
+                            <div style="text-align: center; margin: 20px 0 5px 0;">
+                                <a href="https://mysahayog.com/eod-checklist" style="background-color: #1f2937; color: #ffffff; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">
+                                    Go to EOD Checklist
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer (Compressed) -->
+                        <div style="background-color: #f9fafb; padding: 12px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0; color: #6b7280; font-size: 11px;">This is an automated notification from the Sahayog EOD System.</p>
+                        </div>
+                        
+                    </div>
+                    """
+                    
+                    # Send the targeted email (without now=True so it hits the queue if testing offline)
+                    frappe.sendmail(
+                        recipients=email_list,
+                        subject=subject,
+                        message=message
+                    )
+                    notified_teams.append(team_name)
+
+
+    # 4. Optional: Log a single message in the EOD Chat summarizing who was alerted
+    if notified_teams:
+        teams_str = ", ".join(notified_teams)
+        
+        # Make sure you import add_chat_message at the top if it isn't already
+        add_chat_message(
+            eod, 
+            f"System Alert: Managers for the following inactive teams have been notified via email: {teams_str}.", 
+            sender="System", 
+            is_system=True
+        )
+        eod.save(ignore_permissions=True)
+        frappe.db.commit()
+        
+        return f"Success! Emails queued for managers of: {teams_str}"
+        
+    return "All teams are active, or no manager emails were found."

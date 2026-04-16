@@ -365,6 +365,11 @@ scheduler_events = {
             "sahayog.tasks.sync_district_state"
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
+
+        # "0 23 * * *" means: Run at minute 0 past hour 23 (11:00 PM) every day
+        "0 23 * * *": [
+            "sahayog.sahayog.api.eod.check_and_notify_inactive_teams"
+        ]
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
