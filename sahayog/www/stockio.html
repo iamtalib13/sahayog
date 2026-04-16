@@ -686,14 +686,14 @@
   <main class="main-area">
     <header class="top-header">
       <div class="header-left">
-        <template v-if="showDetailView || showEMRCreateView">
-          <button class="btn-back-inline" @click="closeDetailView(); showEMRCreateView = false;">
+        <template v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView">
+          <button class="btn-back-inline" @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false;">
             <i class="fas fa-arrow-left"></i>
           </button>
         </template>
-        <h1 class="page-title" v-if="!showDetailView && !showEMRCreateView">[[ activeItem ]]</h1>
-        <h1 class="page-title" v-else-if="showEMRCreateView">
-          Create [[ activeItem.slice(0, -1) ]]
+        <h1 class="page-title" v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView">[[ activeItem ]]</h1>
+        <h1 class="page-title" v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView">
+          Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]
         </h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
