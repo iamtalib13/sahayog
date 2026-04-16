@@ -1010,7 +1010,132 @@
         </div>
       </div>
 
-      <!-- Detail View -->
+      <!-- Inward Inline Creation View -->
+      <div v-if="showInwardCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 0">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Supplier <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'supplier' }"
+                    v-model="inwardForm.supplier_display"
+                    @focus="onFocusSearchable('supplier')"
+                    @blur="onBlurSearchable('supplier')"
+                    placeholder="Search Supplier"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'supplier'">
+                    <div
+                      v-for="sup in filteredSuppliers"
+                      :key="sup.name"
+                      class="searchable-select-option"
+                      @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.name; focusedField = null;"
+                    >
+                      [[ sup.name ]] - [[ sup.supplier_name ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Posting Date</label>
+                <input type="date" class="form-input" v-model="inwardForm.posting_date" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Set Warehouse</label>
+              <input type="text" class="form-input" v-model="inwardForm.set_warehouse" placeholder="Set Warehouse" />
+            </div>
+            <div style="margin-top: 20px">
+              <label class="form-label">Items</label>
+              <table class="items-table">
+                <thead><tr><th>Item Code</th><th>Qty</th><th>Warehouse</th></tr></thead>
+                <tbody>
+                  <tr v-for="(item, index) in inwardItems" :key="index">
+                    <td><input type="text" class="form-input" v-model="item.item_code" /></td>
+                    <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
+                    <td><input type="text" class="form-input" v-model="item.warehouse" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="form-actions">
+              <button class="btn-create" @click="submitInward">Submit Receipt</button>
+              <button class="btn-view-toggle" @click="showInwardCreateView = false">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outward Inline Creation View -->
+      <div v-if="showOutwardCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 0">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Type</label>
+                <select class="form-input" v-model="outwardForm.stock_entry_type">
+                  <option value="Material Transfer">Material Transfer</option>
+                  <option value="Material Issue">Material Issue</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Posting Date</label>
+                <input type="date" class="form-input" v-model="outwardForm.posting_date" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">From Warehouse</label>
+                <input type="text" class="form-input" v-model="outwardForm.from_warehouse" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">To Warehouse</label>
+                <input type="text" class="form-input" v-model="outwardForm.to_warehouse" />
+              </div>
+            </div>
+            <div style="margin-top: 20px">
+              <label class="form-label">Items</label>
+              <table class="items-table">
+                <thead><tr><th>Item Code</th><th>Qty</th></tr></thead>
+                <tbody>
+                  <tr v-for="(item, index) in outwardItems" :key="index">
+                    <td><input type="text" class="form-input" v-model="item.item_code" /></td>
+                    <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="form-actions">
+              <button class="btn-create" @click="submitOutward">Submit Entry</button>
+              <button class="btn-view-toggle" @click="showOutwardCreateView = false">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Inline Creation View -->
+      <div v-if="showItemCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 20px">
+            <div class="form-group">
+              <label class="form-label">Item Name <span class="form-required">*</span></label>
+              <input type="text" class="form-input" v-model="createItemForm.item_name" placeholder="Enter item name" />
+            </div>
+            <div class="form-group">
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="createItemForm.is_stock_item"> Maintain Stock
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="btn-create" @click="submitNewItem">Create Item</button>
+              <button class="btn-view-toggle" @click="showItemCreateView = false">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div v-if="showDetailView" class="detail-view-container">
         <div class="detail-card" v-if="detailRecord">
           <div class="detail-grid">
@@ -3678,8 +3803,8 @@
       },
 
       handleCreate() {
-        if (this.currentView.createDoctype === "Employee Material Request") {
-          // Show inline creation instead of modal
+        const doctype = this.currentView.createDoctype;
+        if (doctype === "Employee Material Request") {
           this.showEMRCreateView = true;
           this.showEMRMoreDetails = false;
           this.showDetailView = false;
@@ -3696,10 +3821,61 @@
           this.emrItems = [{ item_code: "", item_code_display: "", uom: "", quantity: 1 }];
           return;
         }
-        // Other doctypes redirect as before
-        const slug = this.currentView.createDoctype
-          .toLowerCase()
-          .replace(/\s+/g, "-");
+
+        if (doctype === "Purchase Receipt") {
+          this.showInwardCreateView = true;
+          this.showDetailView = false;
+          this.inwardForm = {
+            supplier: "",
+            supplier_display: "",
+            posting_date: frappe.datetime.now_date(),
+            set_warehouse: "",
+            remarks: "",
+          };
+          this.inwardItems = [
+            { item_code: "", item_code_display: "", uom: "", qty: 1, rate: 0, warehouse: "" },
+          ];
+          return;
+        }
+
+        if (doctype === "Stock Entry") {
+          this.showOutwardCreateView = true;
+          this.showDetailView = false;
+          this.outwardForm = {
+            stock_entry_type: "Material Transfer",
+            from_warehouse: "",
+            to_warehouse: "",
+            posting_date: frappe.datetime.now_date(),
+            remarks: "",
+          };
+          this.outwardItems = [
+            { item_code: "", item_code_display: "", uom: "", qty: 1, s_warehouse: "", t_warehouse: "" },
+          ];
+          return;
+        }
+
+        if (doctype === "Item") {
+          this.showItemCreateView = true;
+          this.showDetailView = false;
+          this.createItemForm = {
+            item_name: "",
+            item_department: "",
+            item_department_display: "",
+            item_group: "",
+            item_group_display: "",
+            gst_hsn_code: "",
+            gst_hsn_code_display: "",
+            is_stock_item: true,
+            is_fixed_asset: false,
+            stock_uom: "",
+            stock_uom_display: "",
+            asset_category: "",
+            asset_category_display: "",
+          };
+          return;
+        }
+
+        const slug = doctype.toLowerCase().replace(/\s+/g, "-");
         window.location.href = `/app/${slug}/new`;
       },
 
