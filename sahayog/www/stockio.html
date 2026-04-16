@@ -1054,7 +1054,32 @@
                 <thead><tr><th>Item Code</th><th>Qty</th><th>Warehouse</th></tr></thead>
                 <tbody>
                   <tr v-for="(item, index) in inwardItems" :key="index">
-                    <td><input type="text" class="form-input" v-model="item.item_code" /></td>
+                    <td>
+                      <div class="searchable-select-wrapper" style="width: 200px">
+                        <input
+                          type="text"
+                          class="form-input searchable-select-input"
+                          :class="{ focused: focusedField === 'outward_item_' + index }"
+                          v-model="item.item_code_display"
+                          @focus="onFocusSearchable('outward_item_' + index)"
+                          @blur="onBlurSearchable('outward_item_' + index)"
+                          placeholder="Item Code"
+                        />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'outward_item_' + index" style="width: 250px">
+                          <div
+                            v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                            :key="opt.name"
+                            class="searchable-select-option"
+                            @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                          >
+                            <div style="font-weight: 500">[[ opt.name ]]</div>
+                            <div style="font-size: 11px; opacity: 0.8">
+                              [[ opt.item_name ]]
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
                     <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
                     <td><input type="text" class="form-input" v-model="item.warehouse" /></td>
                   </tr>
@@ -1102,7 +1127,32 @@
                 <thead><tr><th>Item Code</th><th>Qty</th></tr></thead>
                 <tbody>
                   <tr v-for="(item, index) in outwardItems" :key="index">
-                    <td><input type="text" class="form-input" v-model="item.item_code" /></td>
+                    <td>
+                      <div class="searchable-select-wrapper" style="width: 200px">
+                        <input
+                          type="text"
+                          class="form-input searchable-select-input"
+                          :class="{ focused: focusedField === 'outward_item_' + index }"
+                          v-model="item.item_code_display"
+                          @focus="onFocusSearchable('outward_item_' + index)"
+                          @blur="onBlurSearchable('outward_item_' + index)"
+                          placeholder="Item Code"
+                        />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'outward_item_' + index" style="width: 250px">
+                          <div
+                            v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                            :key="opt.name"
+                            class="searchable-select-option"
+                            @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                          >
+                            <div style="font-weight: 500">[[ opt.name ]]</div>
+                            <div style="font-size: 11px; opacity: 0.8">
+                              [[ opt.item_name ]]
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
                     <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
                   </tr>
                 </tbody>
