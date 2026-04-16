@@ -1165,6 +1165,127 @@ from frappe.utils import nowdate
         
 #     return "All teams are active, or no manager emails were found."
 
+from frappe.utils import nowdate, get_url
+
+# from frappe.utils import nowdate
+
+# @frappe.whitelist()
+# def check_and_notify_inactive_teams():
+#     """Runs at a scheduled time to alert specific team managers if their team hasn't started tasks."""
+#     today = nowdate()
+    
+#     # 1. Find today's EOD record that is Started (Pending)
+#     eod_records = frappe.get_all("Bank EOD", filters={"date": today, "status": "Pending"}, limit=1)
+#     if not eod_records:
+#         return "No active EOD found for today."
+        
+#     eod = frappe.get_doc("Bank EOD", eod_records[0].name)
+    
+#     # 2. Analyze task completion per team
+#     team_status = {}
+#     for row in eod.eod_tasks:
+#         if row.team not in team_status:
+#             team_status[row.team] = {"total": 0, "completed": 0}
+        
+#         team_status[row.team]["total"] += 1
+#         if row.status == "Completed":
+#             team_status[row.team]["completed"] += 1
+            
+#     notified_teams = []
+
+#     # 3. Check each team and send targeted emails to their managers
+#     for team_name, stats in team_status.items():
+#         if stats["total"] > 0 and stats["completed"] == 0:
+            
+#             # Fetch the manager emails specifically for THIS team
+#             manager_emails_raw = frappe.db.get_value("EOD Team", team_name, "manager_emails")
+            
+#             if manager_emails_raw:
+#                 # Split by comma to support single or multiple emails safely
+#                 email_list = [e.strip() for e in manager_emails_raw.split(",") if e.strip()]
+                
+#                 if email_list:
+#                     subject = f"⚠️ Action Required: EOD Tasks Pending for Team {team_name}"
+                    
+#                     # Enhanced, modern HTML email template
+#                     message = f"""
+#                     <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        
+#                         <!-- Header -->
+#                         <div style="background-color: #ef4444; padding: 20px; text-align: center;">
+#                             <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600; letter-spacing: 0.5px;">
+#                                 Action Required: EOD Alert
+#                             </h2>
+#                         </div>
+                        
+#                         <!-- Body Content -->
+#                         <div style="padding: 30px; color: #374151; line-height: 1.6;">
+#                             <p style="font-size: 16px; margin-top: 0;">Hello,</p>
+#                             <p style="font-size: 16px;">The End of Day (EOD) process for <strong>{today}</strong> is currently active. However, our system indicates that your team has not started their assigned tasks.</p>
+                            
+#                             <!-- Highlight Box -->
+#                             <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 18px; margin: 25px 0; border-radius: 0 6px 6px 0;">
+#                                 <h3 style="margin: 0 0 12px 0; color: #991b1b; font-size: 18px; border-bottom: 1px solid #fecaca; padding-bottom: 8px;">
+#                                     Team: {team_name}
+#                                 </h3>
+#                                 <table style="width: 100%; border-collapse: collapse;">
+#                                     <tr>
+#                                         <td style="padding: 6px 0; color: #4b5563; font-size: 15px;">Total Tasks Assigned:</td>
+#                                         <td style="padding: 6px 0; font-weight: bold; color: #111827; text-align: right; font-size: 15px;">{stats['total']}</td>
+#                                     </tr>
+#                                     <tr>
+#                                         <td style="padding: 6px 0; color: #4b5563; font-size: 15px;">Tasks Completed:</td>
+#                                         <td style="padding: 6px 0; font-weight: bold; color: #ef4444; text-align: right; font-size: 15px;">0</td>
+#                                     </tr>
+#                                 </table>
+#                             </div>
+                            
+#                             <p style="font-size: 16px;">To ensure the EOD process completes smoothly and on time, please follow up with your team members to execute their checklist items.</p>
+                            
+#                             <!-- Action Button -->
+#                             <div style="text-align: center; margin: 35px 0 10px 0;">
+#                                 <a href="https://mysahayog.com/eod-checklist" style="background-color: #1f2937; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; display: inline-block;">
+#                                     Go to EOD Checklist
+#                                 </a>
+#                             </div>
+#                         </div>
+                        
+#                         <!-- Footer -->
+#                         <div style="background-color: #f9fafb; padding: 16px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+#                             <p style="margin: 0; color: #6b7280; font-size: 12px;">This is an automated notification from the Sahayog EOD System.</p>
+#                             <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 12px;">Please do not reply to this email.</p>
+#                         </div>
+                        
+#                     </div>
+#                     """
+                    
+#                     # Send the targeted email (without now=True so it hits the queue if testing offline)
+#                     frappe.sendmail(
+#                         recipients=email_list,
+#                         subject=subject,
+#                         message=message
+#                     )
+#                     notified_teams.append(team_name)
+
+#     # 4. Optional: Log a single message in the EOD Chat summarizing who was alerted
+#     if notified_teams:
+#         teams_str = ", ".join(notified_teams)
+        
+#         # Make sure you import add_chat_message at the top if it isn't already
+#         add_chat_message(
+#             eod, 
+#             f"System Alert: Managers for the following inactive teams have been notified via email: {teams_str}.", 
+#             sender="System", 
+#             is_system=True
+#         )
+#         eod.save(ignore_permissions=True)
+#         frappe.db.commit()
+        
+#         return f"Success! Emails queued for managers of: {teams_str}"
+        
+#     return "All teams are active, or no manager emails were found."
+
+
 from frappe.utils import nowdate
 
 @frappe.whitelist()
@@ -1175,7 +1296,7 @@ def check_and_notify_inactive_teams():
     # 1. Find today's EOD record that is Started (Pending)
     eod_records = frappe.get_all("Bank EOD", filters={"date": today, "status": "Pending"}, limit=1)
     if not eod_records:
-        return  # No EOD started today, or it's already Completed/Closed
+        return "No active EOD found for today."
         
     eod = frappe.get_doc("Bank EOD", eod_records[0].name)
     
@@ -1191,6 +1312,7 @@ def check_and_notify_inactive_teams():
             
     notified_teams = []
 
+
     # 3. Check each team and send targeted emails to their managers
     for team_name, stats in team_status.items():
         if stats["total"] > 0 and stats["completed"] == 0:
@@ -1203,25 +1325,67 @@ def check_and_notify_inactive_teams():
                 email_list = [e.strip() for e in manager_emails_raw.split(",") if e.strip()]
                 
                 if email_list:
-                    subject = f"⚠️ Action Required: No EOD Tasks Completed for Team {team_name}"
+                    subject = f"⚠️ Action Required: EOD Tasks Pending for Team {team_name}"
+                    
+                    # COMPACT, modern HTML email template
                     message = f"""
-                    <div style="font-family: Arial, sans-serif; color: #333;">
-                        <h2 style="color: #ef4444;">EOD Checklist Alert</h2>
-                        <p>The EOD process for <b>{today}</b> is currently running, but your team (<b>{team_name}</b>) has not completed a single task yet.</p>
-                        <p>Please follow up with your team members to ensure the EOD tasks are completed on time before the cutoff.</p>
-                        <br>
-                        <p><i>This is an automated message from the Sahayog EOD System.</i></p>
+                    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        
+                        <!-- Header (Reduced padding & font size) -->
+                        <div style="background-color: #ef4444; padding: 12px; text-align: center;">
+                            <h2 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.5px;">
+                                Action Required: EOD Alert
+                            </h2>
+                        </div>
+                        
+                        <!-- Body Content (Reduced padding & margins) -->
+                        <div style="padding: 20px; color: #374151; line-height: 1.5;">
+                            <p style="font-size: 15px; margin-top: 0; margin-bottom: 10px;">Hello,</p>
+                            <p style="font-size: 15px; margin: 0 0 10px 0;">The End of Day (EOD) process for <strong>{today}</strong> is currently active. However, our system indicates that your team has not started their assigned tasks.</p>
+                            
+                            <!-- Highlight Box (Compact margins & padding) -->
+                            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 15px; margin: 15px 0; border-radius: 0 4px 4px 0;">
+                                <h3 style="margin: 0 0 8px 0; color: #991b1b; font-size: 16px; border-bottom: 1px solid #fecaca; padding-bottom: 6px;">
+                                    Team: {team_name}
+                                </h3>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="padding: 4px 0; color: #4b5563; font-size: 14px;">Total Tasks Assigned:</td>
+                                        <td style="padding: 4px 0; font-weight: bold; color: #111827; text-align: right; font-size: 14px;">{stats['total']}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 4px 0; color: #4b5563; font-size: 14px;">Tasks Completed:</td>
+                                        <td style="padding: 4px 0; font-weight: bold; color: #ef4444; text-align: right; font-size: 14px;">0</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <p style="font-size: 15px; margin: 0;">To ensure the EOD process completes smoothly and on time, please follow up with your team members to execute their checklist items.</p>
+                            
+                            <!-- Action Button (Reduced margin) -->
+                            <div style="text-align: center; margin: 20px 0 5px 0;">
+                                <a href="https://mysahayog.com/eod-checklist" style="background-color: #1f2937; color: #ffffff; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">
+                                    Go to EOD Checklist
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer (Compressed) -->
+                        <div style="background-color: #f9fafb; padding: 12px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0; color: #6b7280; font-size: 11px;">This is an automated notification from the Sahayog EOD System.</p>
+                        </div>
+                        
                     </div>
                     """
                     
-                    # Send the targeted email
+                    # Send the targeted email (without now=True so it hits the queue if testing offline)
                     frappe.sendmail(
                         recipients=email_list,
                         subject=subject,
-                        message=message,
-                        now=True  # Sends immediately
+                        message=message
                     )
                     notified_teams.append(team_name)
+
 
     # 4. Optional: Log a single message in the EOD Chat summarizing who was alerted
     if notified_teams:
@@ -1236,3 +1400,7 @@ def check_and_notify_inactive_teams():
         )
         eod.save(ignore_permissions=True)
         frappe.db.commit()
+        
+        return f"Success! Emails queued for managers of: {teams_str}"
+        
+    return "All teams are active, or no manager emails were found."
