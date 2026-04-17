@@ -854,15 +854,13 @@
         </h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
-          <span class="detail-id-badge"
-            >[[ detailRecord ? detailRecord.name : '' ]]</span
-          >
+          <span class="detail-id-badge">[[ detailRecord ? detailRecord.name : '' ]]</span>
           <span
             class="detail-status-badge"
             v-if="detailRecord"
-            :class="getBadgeClass(detailRecord, 'status')"
+            :class="getBadgeClass(detailRecord, detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status')"
           >
-            [[ getBadgeText(detailRecord, 'status') ]]
+            [[ getBadgeText(detailRecord, detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status') ]]
           </span>
         </h1>
       </div>
