@@ -2935,8 +2935,21 @@ class StockIOPage {
       openRequest(name) {
         frappe.set_route("Form", "Employee Material Request", name);
       },
-      openPurchaseReceipt(name) {
-        frappe.set_route("Form", "Purchase Receipt", name);
+      async openPurchaseReceipt(name) {
+        // Fetch the record details internally
+        const res = await frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Purchase Receipt",
+            name: name
+          }
+        });
+        
+        if (res.message) {
+          this.detailRecord = res.message;
+          this.showDetailView = true;
+          this.activeItem = "Inward"; // Ensure the detail view knows we are viewing an inward record
+        }
       },
       openStockEntry(name) {
         frappe.set_route("Form", "Stock Entry", name);

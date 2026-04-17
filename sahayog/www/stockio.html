@@ -1661,7 +1661,28 @@
                       <!-- Default -->
                       <input v-else type="text" class="form-input" v-model="detailRecord[field.key]" />
                     </div>
-                    <span v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+                    <div v-else-if="field.type === 'table'" class="detail-grid-table">
+                    <table class="items-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                      <thead>
+                        <tr style="background: var(--sidebar-hover); text-align: left;">
+                          <th style="padding: 8px;">Item</th>
+                          <th style="padding: 8px; text-align: right;">Qty</th>
+                          <th style="padding: 8px;">Warehouse</th>
+                          <th style="padding: 8px; text-align: right;">Rate</th>
+                          <th style="padding: 8px; text-align: right;">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in detailRecord.items" :key="row.name" style="border-top: 1px solid var(--border-color);">
+                          <td style="padding: 8px;">[[ row.item_code ]]</td>
+                          <td style="padding: 8px; text-align: right;">[[ row.qty ]]</td>
+                          <td style="padding: 8px;">[[ row.warehouse ]]</td>
+                          <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.rate) ]]</td>
+                          <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.amount) ]]</td>
+                        </tr>
+                      </tbody>
+                    </table>                  </div>
+                  <span v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
                   </span>
                 </div>
               </div>
@@ -2108,10 +2129,11 @@
                 letter-spacing: 0.05em;
               "
             >
-              Item Details
+              [[ activeItem ]] Details
             </h4>
+            <!-- Regular Fields -->
             <div
-              v-for="field in detailFields"
+              v-for="field in detailFields.filter(f => f.type !== 'table')"
               :key="field.key"
               class="detail-grid-item"
             >
@@ -2128,8 +2150,30 @@
                 [[ getFieldValue(detailRecord, field.key) ]]
               </span>
             </div>
-          </div>
-        </div>
+            <!-- Table Field -->
+            <div v-for="field in detailFields.filter(f => f.type === 'table')" :key="field.key" style="grid-column: 1 / -1;">
+               <span class="detail-grid-label">[[ field.label ]]</span>
+               <table class="items-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                 <thead>
+                   <tr style="background: var(--sidebar-hover); text-align: left;">
+                     <th style="padding: 8px;">Item</th>
+                     <th style="padding: 8px; text-align: right;">Qty</th>
+                     <th style="padding: 8px;">Warehouse</th>
+                     <th style="padding: 8px; text-align: right;">Rate</th>
+                     <th style="padding: 8px; text-align: right;">Amount</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   <tr v-for="row in detailRecord.items" :key="row.name" style="border-top: 1px solid var(--border-color);">
+                     <td style="padding: 8px;">[[ row.item_code ]]</td>
+                     <td style="padding: 8px; text-align: right;">[[ row.qty ]]</td>
+                     <td style="padding: 8px;">[[ row.warehouse ]]</td>
+                     <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.rate) ]]</td>
+                     <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.amount) ]]</td>
+                   </tr>
+                 </tbody>
+               </table>            </div>
+          </div>        </div>
       </div>
 
       <div
@@ -4650,8 +4694,18 @@
             { label: "Date", key: "posting_date", width: 1 },
             { label: "Status", key: "status", width: 1, type: "badge" },
           ],
-        },
-        Outward: {
+          detailFields: [
+            { label: "Supplier", key: "supplier" },
+            { label: "Date", key: "posting_date" },
+            { label: "Status", key: "status" },
+            { label: "Warehouse", key: "set_warehouse" },
+            { label: "PO/WO Number", key: "custom_po_wo" },
+            { label: "Request For", key: "custom_request_for" },
+            { label: "Items", key: "items", type: "table" },
+            { label: "Total Qty", key: "total_qty" },
+            { label: "Total", key: "grand_total" },
+          ],
+          },        Outward: {
           doctype: "Stock Entry",
           createDoctype: "Stock Entry",
           createLabel: "Entry",
@@ -5700,6 +5754,14 @@
         } finally {
           this.loading = false;
         }
+      },
+      formatCurrency(value) {
+        const amount = Number(value || 0);
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+        }).format(amount);
       },
       handleDispatch(row) {
         if (!row || !row.name) return;
