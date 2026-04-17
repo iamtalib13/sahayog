@@ -891,6 +891,14 @@
         </button>
         <button
           class="btn-create"
+          v-if="showDetailView && detailRecord && detailRecord.status === 'Draft' && activeItem === 'Requests'"
+          @click="isEditing ? saveRequest() : toggleEditMode()"
+        >
+          <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
+          <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
+        </button>
+        <button
+          class="btn-create"
           v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView"
           @click="handleCreate()"
         >
@@ -1614,7 +1622,46 @@
                     "
                     v-else
                   >
-                    [[ getFieldValue(detailRecord, field.key) ]]
+                    <div v-if="isEditing" class="searchable-select-wrapper">
+                      <!-- Employee Dropdown -->
+                      <div v-if="field.key === 'employee_name'">
+                        <input type="text" class="form-input" v-model="detailRecord.employee_name" @focus="focusedField = 'employee'" @blur="setTimeout(() => focusedField = null, 200)" />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
+                          <div v-for="emp in employees.filter(e => !detailRecord.employee_name || e.employee_name.toLowerCase().includes(detailRecord.employee_name.toLowerCase()))" :key="emp.name" class="searchable-select-option" @mousedown="detailRecord.employee_name = emp.employee_name">
+                            [[ emp.employee_name ]]
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Warehouse Dropdown -->
+                      <div v-else-if="field.key === 'target_warehouse'">
+                        <input type="text" class="form-input" v-model="detailRecord.target_warehouse" @focus="focusedField = 'wh'" @blur="setTimeout(() => focusedField = null, 200)" />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'wh'">
+                          <div v-for="wh in warehouses.filter(w => !detailRecord.target_warehouse || w.toLowerCase().includes(detailRecord.target_warehouse.toLowerCase()))" :key="wh" class="searchable-select-option" @mousedown="detailRecord.target_warehouse = wh">
+                            [[ wh ]]
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Required By Date -->
+                      <div v-else-if="field.key === 'required_by_date'" style="display: flex; align-items: center; border: 2px solid var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-surface); padding: 0 12px; height: 40px; width: 100%;">
+                        <i class="fas fa-calendar-alt" style="color: var(--text-muted); margin-right: 10px;"></i>
+                        <input
+                          type="date"
+                          class="form-input"
+                          style="padding: 0 !important; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; flex: 1;"
+                          v-model="detailRecord.required_by_date"
+                        />
+                      </div>
+                      <!-- Remarks -->
+                      <textarea
+                        v-else-if="field.key === 'remark'"
+                        class="form-input"
+                        style="padding: 4px 8px !important; height: 60px;"
+                        v-model="detailRecord.remark"
+                      ></textarea>
+                      <!-- Default -->
+                      <input v-else type="text" class="form-input" v-model="detailRecord[field.key]" />
+                    </div>
+                    <span v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
                   </span>
                 </div>
               </div>
@@ -1697,6 +1744,7 @@
                           Status
                         </th>
                         <th
+                          v-if="detailRecord.status === 'Approved'"
                           style="
                             padding: 10px 12px !important;
                             font-size: 0.75rem !important;
@@ -1706,7 +1754,42 @@
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody v-if="isEditing">
+                      <tr v-for="(item, index) in detailRecord.items" :key="item.name || index">
+                        <td style="padding: 10px 12px !important">
+                          <div class="searchable-select-wrapper">
+                            <input type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.item_code" @focus="focusedField = 'item_' + index" @blur="setTimeout(() => focusedField = null, 200)" />
+                            <div class="searchable-select-dropdown" v-if="focusedField === 'item_' + index">
+                              <div v-for="opt in itemsList" :key="opt.name" class="searchable-select-option" @mousedown="item.item_code = opt.name; item.item_category = opt.item_category || 'Stock Item'; item.status = 'Pending'">
+                                [[ opt.name ]] - [[ opt.item_name ]]
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <input type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.item_category" />
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <input type="number" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.quantity" />
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <span class="badge" :class="getBadgeClass(item, 'status')">[[ item.status ]]</span>
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <button class="btn-create-inline" style="padding: 4px 8px !important; font-size: 0.75rem !important;" @click="detailRecord.items.splice(index, 1)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="5" style="padding: 10px 12px !important;">
+                          <button class="btn-create-inline" style="padding: 6px 12px !important; font-size: 0.75rem !important;" @click="detailRecord.items.push({item_code: '', item_category: '', quantity: 0, status: 'Draft'})">
+                            <i class="fas fa-plus"></i> Add Row
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tbody v-else>
                       <tr v-for="item in detailRecord.items" :key="item.name">
                         <td style="padding: 10px 12px !important">
                           <div
@@ -1776,7 +1859,7 @@
                             [[ item.status ]]
                           </span>
                         </td>
-                        <td style="padding: 10px 12px !important">
+                        <td v-if="detailRecord.status === 'Approved'" style="padding: 10px 12px !important">
                           <button
                             class="btn-create-inline"
                             style="
@@ -4451,6 +4534,10 @@
   function StockIO() {
     return {
       $delimiters: ["[[", "]]"],
+      isEditing: false,
+      showInwardCreateView: false,
+      showOutwardCreateView: false,
+      showItemCreateView: false,
       sidebar: {
         header: {
           title: "StockIO",
@@ -4526,21 +4613,24 @@
             "owner",
             "status",
             "target_warehouse",
-            "employee_name",
+            "source_warehouse",
+            "purpose",
+            "employee",
           ],
           columns: [
             { label: "Request", key: "name", width: 2, type: "avatar" },
-            { label: "Owner", key: "employee_name", width: 1.5 },
+            { label: "Owner", key: "employee", width: 1.5 },
+            { label: "Source Warehouse", key: "source_warehouse", width: 1.5 },
             { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Created", key: "creation", width: 1 },
             { label: "Dispatch", key: "dispatch", width: 1, type: "button" },
           ],
           detailFields: [
-            { label: "Employee", key: "employee_name" },
+            { label: "Employee", key: "employee" },
+            { label: "Source Warehouse", key: "source_warehouse" },
             { label: "Target Warehouse", key: "target_warehouse" },
             { label: "Purpose", key: "purpose" },
-            { label: "Created", key: "creation" },
             { label: "Required By Date", key: "required_by_date" },
             { label: "Remarks", key: "remark" },
           ],
@@ -5584,6 +5674,31 @@
         this.focusedField = null;
         if (field === "employee") {
           this.onEmployeeChange();
+        }
+      },
+      toggleEditMode() {
+        this.isEditing = !this.isEditing;
+      },
+      async saveRequest() {
+        if (!this.detailRecord) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.save",
+            args: {
+              doc: this.detailRecord,
+            },
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isEditing = false;
+            frappe.show_alert({ message: "Request updated successfully", indicator: "green" });
+          }
+        } catch (e) {
+          console.error("Save error:", e);
+          frappe.show_alert({ message: "Error updating request", indicator: "red" });
+        } finally {
+          this.loading = false;
         }
       },
       handleDispatch(row) {
