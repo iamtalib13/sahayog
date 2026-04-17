@@ -28,9 +28,12 @@
     --sidebar-text: #334155;
     --sidebar-hover: rgba(241, 245, 249, 0.8);
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-md:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg:
+      0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-xl:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     --border-radius-sm: 0.375rem;
     --border-radius-md: 0.5rem;
     --border-radius-lg: 0.75rem;
@@ -39,7 +42,8 @@
     --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  [data-theme="dark"], body[data-theme="dark"] {
+  [data-theme="dark"],
+  body[data-theme="dark"] {
     --primary-color: #818cf8;
     --primary-hover: #6366f1;
     --bg-main: #020617;
@@ -57,7 +61,13 @@
   }
 
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
     background-color: var(--bg-main) !important;
     color: var(--text-main) !important;
     margin: 0;
@@ -70,7 +80,11 @@
     display: flex;
     height: 100vh;
     overflow: hidden;
-    background: linear-gradient(135deg, var(--bg-main) 0%, var(--bg-surface) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--bg-main) 0%,
+      var(--bg-surface) 100%
+    );
   }
 
   /* Glassmorphism Sidebar */
@@ -122,7 +136,9 @@
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--bg-surface);
-    box-shadow: 0 0 0 2px var(--primary-color), var(--shadow-sm);
+    box-shadow:
+      0 0 0 2px var(--primary-color),
+      var(--shadow-sm);
     padding: 2px;
     background: var(--bg-surface);
   }
@@ -147,7 +163,7 @@
   }
 
   .nav-section {
-    margin-bottom: 32px;
+    margin-bottom: 0px;
   }
 
   .section-label {
@@ -180,7 +196,11 @@
     transform: translateX(4px);
   }
   .nav-item.active {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+    background: linear-gradient(
+      135deg,
+      var(--primary-color),
+      var(--primary-hover)
+    ) !important;
     color: #ffffff !important;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
   }
@@ -188,7 +208,7 @@
     color: #ffffff !important;
   }
   .nav-item.active::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 50%;
@@ -278,9 +298,14 @@
   }
 
   /* Buttons */
-  .btn-create, .btn-create-inline {
+  .btn-create,
+  .btn-create-inline {
     padding: 14px 28px;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+    background: linear-gradient(
+      135deg,
+      var(--primary-color),
+      var(--primary-hover)
+    ) !important;
     color: #ffffff !important;
     border: none;
     border-radius: 40px;
@@ -293,7 +318,8 @@
     transition: all var(--transition-normal) !important;
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
   }
-  .btn-create:hover, .btn-create-inline:hover {
+  .btn-create:hover,
+  .btn-create-inline:hover {
     transform: translateY(-3px) scale(1.02);
     box-shadow: 0 8px 25px rgba(99, 102, 241, 0.45) !important;
   }
@@ -302,11 +328,13 @@
   .page-content {
     padding: 0px;
     max-width: 1600px;
-    margin: 0 auto;
+    /* margin: 0 auto; */
     width: 100%;
   }
 
-  .profile-modal, .detail-card, .grid-card {
+  .profile-modal,
+  .detail-card,
+  .grid-card {
     background: var(--sidebar-bg) !important;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -417,18 +445,48 @@
     box-shadow: var(--shadow-sm);
     display: inline-block;
   }
-  .badge.active { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)) !important; color: #059669 !important; border: 1px solid rgba(16, 185, 129, 0.2); }
-  .badge.pending { background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1)) !important; color: #d97706 !important; border: 1px solid rgba(245, 158, 11, 0.2); }
-  .badge.disabled { background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1)) !important; color: #dc2626 !important; border: 1px solid rgba(239, 68, 68, 0.2); }
+  .badge.active {
+    background: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.1),
+      rgba(5, 150, 105, 0.1)
+    ) !important;
+    color: #059669 !important;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .badge.pending {
+    background: linear-gradient(
+      135deg,
+      rgba(245, 158, 11, 0.1),
+      rgba(217, 119, 6, 0.1)
+    ) !important;
+    color: #d97706 !important;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+  .badge.disabled {
+    background: linear-gradient(
+      135deg,
+      rgba(239, 68, 68, 0.1),
+      rgba(220, 38, 38, 0.1)
+    ) !important;
+    color: #dc2626 !important;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
 
   .detail-status-badge {
     margin-left: 16px;
     vertical-align: middle;
   }
 
-  [data-theme="dark"] .badge.active { color: #34d399 !important; }
-  [data-theme="dark"] .badge.pending { color: #fbbf24 !important; }
-  [data-theme="dark"] .badge.disabled { color: #f87171 !important; }
+  [data-theme="dark"] .badge.active {
+    color: #34d399 !important;
+  }
+  [data-theme="dark"] .badge.pending {
+    color: #fbbf24 !important;
+  }
+  [data-theme="dark"] .badge.disabled {
+    color: #f87171 !important;
+  }
 
   /* Grid Layout for Items */
   .items-grid {
@@ -450,7 +508,10 @@
     background: var(--bg-surface) !important;
     z-index: 99999;
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -463,7 +524,7 @@
     gap: 24px;
   }
   .stockio-loading-text {
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
     font-size: 1.5rem;
     font-weight: 900;
     color: var(--primary-color);
@@ -472,22 +533,36 @@
   }
 
   @keyframes scale-pulse {
-    0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.4)); }
-    50% { transform: scale(0.95); opacity: 0.7; filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.1)); }
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+      filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.4));
+    }
+    50% {
+      transform: scale(0.95);
+      opacity: 0.7;
+      filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.1));
+    }
   }
 
   /* Custom Scrollbar */
-  ::-webkit-scrollbar { width: 12px; height: 12px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { 
-    background: rgba(100, 116, 139, 0.3); 
-    border-radius: 20px; 
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 20px;
     border: 3px solid var(--bg-main);
   }
-  ::-webkit-scrollbar-thumb:hover { 
-    background: var(--primary-color); 
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
   }
-  
+
   /* Additional polish */
   .searchable-select-dropdown {
     border: 1px solid var(--border-color);
@@ -583,7 +658,10 @@
 
   .profile-modal-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(8px);
     z-index: 100;
@@ -612,7 +690,7 @@
     color: var(--text-muted);
     pointer-events: none;
   }
-  
+
   .form-checkbox-group {
     display: flex;
     gap: 24px;
@@ -752,13 +830,26 @@
   <main class="main-area">
     <header class="top-header">
       <div class="header-left">
-        <template v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView">
-          <button class="btn-back-inline" @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false;">
+        <template
+          v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView"
+        >
+          <button
+            class="btn-back-inline"
+            @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false;"
+          >
             <i class="fas fa-arrow-left"></i>
           </button>
         </template>
-        <h1 class="page-title" v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView">[[ activeItem ]]</h1>
-        <h1 class="page-title" v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView">
+        <h1
+          class="page-title"
+          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView"
+        >
+          [[ activeItem ]]
+        </h1>
+        <h1
+          class="page-title"
+          v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView"
+        >
           Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]
         </h1>
         <h1 class="page-title" v-else>
@@ -776,7 +867,10 @@
         </h1>
       </div>
       <div class="header-right">
-        <div class="search-container" v-if="!showDetailView && !showEMRCreateView">
+        <div
+          class="search-container"
+          v-if="!showDetailView && !showEMRCreateView"
+        >
           <i class="fas fa-search search-icon"></i>
           <input
             type="text"
@@ -813,7 +907,7 @@
           <div class="profile-modal-body" style="padding: 0">
             <div class="form-row">
               <!-- Employee Field -->
-              <div class="form-group" style="margin-left: 5px;">
+              <div class="form-group" style="margin-left: 5px">
                 <label class="form-label"
                   >Employee <span class="form-required">*</span></label
                 >
@@ -903,15 +997,29 @@
             </div>
 
             <!-- More Details Toggle -->
-            <div style="margin-bottom: 16px;">
-              <button 
-                type="button" 
-                class="btn-view-toggle" 
-                style="background: transparent; padding: 0; color: var(--primary); font-size: 13px; height: auto; border: none; box-shadow: none;"
+            <div style="margin-bottom: 16px">
+              <button
+                type="button"
+                class="btn-view-toggle"
+                style="
+                  background: transparent;
+                  padding: 0;
+                  color: var(--primary);
+                  font-size: 13px;
+                  height: auto;
+                  border: none;
+                  box-shadow: none;
+                "
                 @click="showEMRMoreDetails = !showEMRMoreDetails"
               >
-                <i class="fas" :class="showEMRMoreDetails ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                <span style="margin-left: 4px;">[[ showEMRMoreDetails ? 'Hide details' : 'Show more details' ]]</span>
+                <i
+                  class="fas"
+                  :class="showEMRMoreDetails ? 'fa-chevron-up' : 'fa-chevron-down'"
+                ></i>
+                <span style="margin-left: 4px"
+                  >[[ showEMRMoreDetails ? 'Hide details' : 'Show more details'
+                  ]]</span
+                >
               </button>
             </div>
 
@@ -967,23 +1075,53 @@
                   <i class="fas fa-plus"></i> Add Row
                 </button>
               </div>
-              <div class="items-table-wrapper table-responsive" style="max-height: 250px; overflow-y: auto; overflow-x: visible; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px;">
+              <div
+                class="items-table-wrapper table-responsive"
+                style="
+                  max-height: 250px;
+                  overflow-y: auto;
+                  overflow-x: visible;
+                  border: 1px solid var(--border-color);
+                  border-radius: 8px;
+                  margin-bottom: 16px;
+                "
+              >
                 <table
                   class="items-table"
-                  style="width: 100%; border-collapse: collapse; min-width: 500px;"
+                  style="
+                    width: 100%;
+                    border-collapse: collapse;
+                    min-width: 500px;
+                  "
                 >
-                  <thead style="position: sticky; top: 0; background: var(--sidebar-hover); z-index: 1;">
+                  <thead
+                    style="
+                      position: sticky;
+                      top: 0;
+                      background: var(--sidebar-hover);
+                      z-index: 1;
+                    "
+                  >
                     <tr>
-                      <th style="padding: 12px 16px;">Item Code <span class="form-required">*</span></th>
-                      <th style="padding: 12px 16px;">UOM <span class="form-required">*</span></th>
-                      <th style="padding: 12px 16px;">Qty <span class="form-required">*</span></th>
-                      <th style="padding: 12px 16px;">Action</th>
+                      <th style="padding: 12px 16px">
+                        Item Code <span class="form-required">*</span>
+                      </th>
+                      <th style="padding: 12px 16px">
+                        UOM <span class="form-required">*</span>
+                      </th>
+                      <th style="padding: 12px 16px">
+                        Qty <span class="form-required">*</span>
+                      </th>
+                      <th style="padding: 12px 16px">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(item, index) in emrItems" :key="index">
-                      <td style="padding: 12px;">
-                        <div class="searchable-select-wrapper" style="width: 100%; min-width: 250px;">
+                      <td style="padding: 12px">
+                        <div
+                          class="searchable-select-wrapper"
+                          style="width: 100%; min-width: 250px"
+                        >
                           <input
                             type="text"
                             class="form-input searchable-select-input"
@@ -996,7 +1134,7 @@
                           <div
                             class="searchable-select-dropdown"
                             v-if="focusedField === 'item_code_' + index"
-                            style="width: 100%; max-width: 300px; z-index: 50;"
+                            style="width: 100%; max-width: 300px; z-index: 50"
                           >
                             <div
                               v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
@@ -1019,8 +1157,8 @@
                           </div>
                         </div>
                       </td>
-  
-                      <td style="padding: 12px; width: 120px;">
+
+                      <td style="padding: 12px; width: 120px">
                         <input
                           type="text"
                           class="form-input"
@@ -1029,7 +1167,7 @@
                           placeholder="UOM"
                         />
                       </td>
-                      <td style="padding: 12px; width: 120px;">
+                      <td style="padding: 12px; width: 120px">
                         <input
                           type="number"
                           class="form-input"
@@ -1038,7 +1176,9 @@
                           placeholder="Qty"
                         />
                       </td>
-                      <td style="padding: 12px; width: 60px; text-align: center;">
+                      <td
+                        style="padding: 12px; width: 60px; text-align: center"
+                      >
                         <button
                           class="btn-action"
                           @click="removeEMRItem(index)"
@@ -1064,7 +1204,9 @@
               >
                 <i class="fas fa-check" v-if="!creatingEMR"></i>
                 <i class="fas fa-spinner fa-spin" v-else></i>
-                <span>[[ creatingEMR ? 'Submitting...' : 'Submit Request' ]]</span>
+                <span
+                  >[[ creatingEMR ? 'Submitting...' : 'Submit Request' ]]</span
+                >
               </button>
               <button
                 class="btn-view-toggle"
@@ -1084,7 +1226,9 @@
           <div class="profile-modal-body" style="padding: 0">
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label">Supplier <span class="form-required">*</span></label>
+                <label class="form-label"
+                  >Supplier <span class="form-required">*</span></label
+                >
                 <div class="searchable-select-wrapper">
                   <input
                     type="text"
@@ -1095,7 +1239,10 @@
                     @blur="onBlurSearchable('supplier')"
                     placeholder="Search Supplier"
                   />
-                  <div class="searchable-select-dropdown" v-if="focusedField === 'supplier'">
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'supplier'"
+                  >
                     <div
                       v-for="sup in filteredSuppliers"
                       :key="sup.name"
@@ -1109,7 +1256,11 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Posting Date</label>
-                <input type="date" class="form-input" v-model="inwardForm.posting_date" />
+                <input
+                  type="date"
+                  class="form-input"
+                  v-model="inwardForm.posting_date"
+                />
               </div>
             </div>
             <div class="form-row">
@@ -1125,7 +1276,10 @@
                     @blur="onBlurSearchable('inward_warehouse')"
                     placeholder="Set Warehouse"
                   />
-                  <div class="searchable-select-dropdown" v-if="focusedField === 'inward_warehouse'">
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'inward_warehouse'"
+                  >
                     <div
                       v-for="wh in warehouses.filter(w => !inwardForm.set_warehouse_display || w.toLowerCase().includes(inwardForm.set_warehouse_display.toLowerCase()))"
                       :key="wh"
@@ -1139,21 +1293,40 @@
               </div>
               <div class="form-group">
                 <label class="form-label">PO/WO Number</label>
-                <input type="text" class="form-input" v-model="inwardForm.custom_po_wo" placeholder="PO/WO Number" />
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="inwardForm.custom_po_wo"
+                  placeholder="PO/WO Number"
+                />
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Request For</label>
-              <input type="text" class="form-input" v-model="inwardForm.custom_request_for" placeholder="Request For" />
+              <input
+                type="text"
+                class="form-input"
+                v-model="inwardForm.custom_request_for"
+                placeholder="Request For"
+              />
             </div>
             <div style="margin-top: 20px">
               <label class="form-label">Items</label>
               <table class="items-table">
-                <thead><tr><th>Item Code</th><th>Qty</th><th>Warehouse</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Item Code</th>
+                    <th>Qty</th>
+                    <th>Warehouse</th>
+                  </tr>
+                </thead>
                 <tbody>
                   <tr v-for="(item, index) in inwardItems" :key="index">
                     <td>
-                      <div class="searchable-select-wrapper" style="width: 200px">
+                      <div
+                        class="searchable-select-wrapper"
+                        style="width: 200px"
+                      >
                         <input
                           type="text"
                           class="form-input searchable-select-input"
@@ -1163,7 +1336,11 @@
                           @blur="onBlurSearchable('outward_item_' + index)"
                           placeholder="Item Code"
                         />
-                        <div class="searchable-select-dropdown" v-if="focusedField === 'outward_item_' + index" style="width: 250px">
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'outward_item_' + index"
+                          style="width: 250px"
+                        >
                           <div
                             v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
                             :key="opt.name"
@@ -1178,15 +1355,34 @@
                         </div>
                       </div>
                     </td>
-                    <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
-                    <td><input type="text" class="form-input" v-model="item.warehouse" /></td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-input"
+                        v-model.number="item.qty"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        class="form-input"
+                        v-model="item.warehouse"
+                      />
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div class="form-actions">
-              <button class="btn-create" @click="submitInward">Submit Receipt</button>
-              <button class="btn-view-toggle" @click="showInwardCreateView = false">Cancel</button>
+              <button class="btn-create" @click="submitInward">
+                Submit Receipt
+              </button>
+              <button
+                class="btn-view-toggle"
+                @click="showInwardCreateView = false"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -1199,34 +1395,57 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Type</label>
-                <select class="form-input" v-model="outwardForm.stock_entry_type">
+                <select
+                  class="form-input"
+                  v-model="outwardForm.stock_entry_type"
+                >
                   <option value="Material Transfer">Material Transfer</option>
                   <option value="Material Issue">Material Issue</option>
                 </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Posting Date</label>
-                <input type="date" class="form-input" v-model="outwardForm.posting_date" />
+                <input
+                  type="date"
+                  class="form-input"
+                  v-model="outwardForm.posting_date"
+                />
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">From Warehouse</label>
-                <input type="text" class="form-input" v-model="outwardForm.from_warehouse" />
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="outwardForm.from_warehouse"
+                />
               </div>
               <div class="form-group">
                 <label class="form-label">To Warehouse</label>
-                <input type="text" class="form-input" v-model="outwardForm.to_warehouse" />
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="outwardForm.to_warehouse"
+                />
               </div>
             </div>
             <div style="margin-top: 20px">
               <label class="form-label">Items</label>
               <table class="items-table">
-                <thead><tr><th>Item Code</th><th>Qty</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Item Code</th>
+                    <th>Qty</th>
+                  </tr>
+                </thead>
                 <tbody>
                   <tr v-for="(item, index) in outwardItems" :key="index">
                     <td>
-                      <div class="searchable-select-wrapper" style="width: 200px">
+                      <div
+                        class="searchable-select-wrapper"
+                        style="width: 200px"
+                      >
                         <input
                           type="text"
                           class="form-input searchable-select-input"
@@ -1236,7 +1455,11 @@
                           @blur="onBlurSearchable('outward_item_' + index)"
                           placeholder="Item Code"
                         />
-                        <div class="searchable-select-dropdown" v-if="focusedField === 'outward_item_' + index" style="width: 250px">
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'outward_item_' + index"
+                          style="width: 250px"
+                        >
                           <div
                             v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
                             :key="opt.name"
@@ -1251,14 +1474,27 @@
                         </div>
                       </div>
                     </td>
-                    <td><input type="number" class="form-input" v-model.number="item.qty" /></td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-input"
+                        v-model.number="item.qty"
+                      />
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div class="form-actions">
-              <button class="btn-create" @click="submitOutward">Submit Entry</button>
-              <button class="btn-view-toggle" @click="showOutwardCreateView = false">Cancel</button>
+              <button class="btn-create" @click="submitOutward">
+                Submit Entry
+              </button>
+              <button
+                class="btn-view-toggle"
+                @click="showOutwardCreateView = false"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -1269,39 +1505,99 @@
         <div class="detail-card">
           <div class="profile-modal-body" style="padding: 20px">
             <div class="form-group">
-              <label class="form-label">Item Name <span class="form-required">*</span></label>
-              <input type="text" class="form-input" v-model="createItemForm.item_name" placeholder="Enter item name" />
+              <label class="form-label"
+                >Item Name <span class="form-required">*</span></label
+              >
+              <input
+                type="text"
+                class="form-input"
+                v-model="createItemForm.item_name"
+                placeholder="Enter item name"
+              />
             </div>
             <div class="form-group">
               <label class="checkbox-container">
-                <input type="checkbox" v-model="createItemForm.is_stock_item"> Maintain Stock
+                <input type="checkbox" v-model="createItemForm.is_stock_item" />
+                Maintain Stock
               </label>
             </div>
             <div class="form-actions">
-              <button class="btn-create" @click="submitNewItem">Create Item</button>
-              <button class="btn-view-toggle" @click="showItemCreateView = false">Cancel</button>
+              <button class="btn-create" @click="submitNewItem">
+                Create Item
+              </button>
+              <button
+                class="btn-view-toggle"
+                @click="showItemCreateView = false"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       </div>
       <div v-if="showDetailView" class="detail-view-container">
-        <div class="detail-card" v-if="detailRecord" :style="activeItem === 'Requests' ? 'padding: 24px;' : ''">
-          
+        <div
+          class="detail-card"
+          v-if="detailRecord"
+          :style="activeItem === 'Requests' ? 'padding: 24px;' : ''"
+        >
           <!-- 3-Column Layout specifically for Requests -->
-          <div v-if="activeItem === 'Requests'" style="display: grid; grid-template-columns: 260px minmax(450px, 1fr) 260px; gap: 24px; overflow-x: auto;">
-            
+          <div
+            v-if="activeItem === 'Requests'"
+            style="
+              display: grid;
+              grid-template-columns: 260px minmax(450px, 1fr) 360px;
+              gap: 24px;
+              overflow-x: auto;
+              height: 663px;
+            "
+          >
             <!-- Column 1: Request Detail -->
             <div class="detail-col-1">
-              <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Request Detail</h4>
-              <div class="detail-grid" style="display: flex; flex-direction: column; gap: 20px;">
+              <h4
+                class="section-subtitle"
+                style="
+                  margin-top: 0;
+                  margin-bottom: 24px;
+                  font-size: 1.1rem;
+                  font-weight: 800;
+                  color: var(--text-main);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Request Detail
+              </h4>
+              <div
+                class="detail-grid"
+                style="display: flex; flex-direction: column; gap: 20px"
+              >
                 <div
                   v-for="field in detailFields"
                   :key="field.key"
                   class="detail-grid-item"
-                  style="display: flex; flex-direction: column; gap: 6px;"
+                  style="display: flex; flex-direction: column; gap: 6px"
                 >
-                  <span class="detail-grid-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em;">[[ field.label ]]</span>
-                  <span class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);" v-if="field.type === 'badge'">
+                  <span
+                    class="detail-grid-label"
+                    style="
+                      font-size: 0.75rem;
+                      text-transform: uppercase;
+                      font-weight: 700;
+                      color: var(--text-muted);
+                      letter-spacing: 0.05em;
+                    "
+                    >[[ field.label ]]</span
+                  >
+                  <span
+                    class="detail-grid-value"
+                    style="
+                      font-weight: 600;
+                      font-size: 0.95rem;
+                      color: var(--text-main);
+                    "
+                    v-if="field.type === 'badge'"
+                  >
                     <span
                       class="badge"
                       :class="getBadgeClass(detailRecord, field.key)"
@@ -1309,7 +1605,15 @@
                       [[ getBadgeText(detailRecord, field.key) ]]
                     </span>
                   </span>
-                  <span class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);" v-else>
+                  <span
+                    class="detail-grid-value"
+                    style="
+                      font-weight: 600;
+                      font-size: 0.95rem;
+                      color: var(--text-main);
+                    "
+                    v-else
+                  >
                     [[ getFieldValue(detailRecord, field.key) ]]
                   </span>
                 </div>
@@ -1317,50 +1621,171 @@
             </div>
 
             <!-- Column 2: Requested Items -->
-            <div class="detail-col-2" style="border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 0 24px; min-width: 0;">
-              <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Requested Items</h4>
+            <div
+              class="detail-col-2"
+              style="
+                border-left: 1px solid var(--border-color);
+                border-right: 1px solid var(--border-color);
+                padding: 0 24px;
+                min-width: 0;
+              "
+            >
+              <h4
+                class="section-subtitle"
+                style="
+                  margin-top: 0;
+                  margin-bottom: 24px;
+                  font-size: 1.1rem;
+                  font-weight: 800;
+                  color: var(--text-main);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Requested Items
+              </h4>
               <div
                 v-if="detailRecord.items && detailRecord.items.length"
                 class="detail-items-section"
               >
-                <div class="items-table-wrapper table-responsive" style="box-shadow: none; border-radius: var(--border-radius-md); overflow-x: auto;">
-                  <table class="items-table" style="width: 100%; white-space: nowrap;">
+                <div
+                  class="items-table-wrapper table-responsive"
+                  style="
+                    box-shadow: none;
+                    border-radius: var(--border-radius-md);
+                    overflow-x: auto;
+                  "
+                >
+                  <table
+                    class="items-table"
+                    style="width: 100%; white-space: nowrap"
+                  >
                     <thead>
                       <tr>
-                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Item</th>
-                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Category</th>
-                        <th class="text-right" style="text-align: right; padding: 10px 12px !important; font-size: 0.75rem !important;">Qty</th>
-                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Status</th>
-                        <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Actions</th>
+                        <th
+                          style="
+                            padding: 10px 12px !important;
+                            font-size: 0.75rem !important;
+                          "
+                        >
+                          Item
+                        </th>
+                        <th
+                          style="
+                            padding: 10px 12px !important;
+                            font-size: 0.75rem !important;
+                          "
+                        >
+                          Category
+                        </th>
+                        <th
+                          class="text-right"
+                          style="
+                            text-align: right;
+                            padding: 10px 12px !important;
+                            font-size: 0.75rem !important;
+                          "
+                        >
+                          Qty
+                        </th>
+                        <th
+                          style="
+                            padding: 10px 12px !important;
+                            font-size: 0.75rem !important;
+                          "
+                        >
+                          Status
+                        </th>
+                        <th
+                          style="
+                            padding: 10px 12px !important;
+                            font-size: 0.75rem !important;
+                          "
+                        >
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="item in detailRecord.items" :key="item.name">
-                        <td style="padding: 10px 12px !important;">
-                          <div class="item-name-cell" style="display: flex; flex-direction: column; gap: 4px;">
-                            <span class="item-code-text" style="font-weight: 800; color: var(--primary-color);">[[ item.item_code ]]</span>
-                            <span class="item-name-text text-muted" style="font-size: 0.8rem; font-weight: 500; white-space: normal; min-width: 120px;"
+                        <td style="padding: 10px 12px !important">
+                          <div
+                            class="item-name-cell"
+                            style="
+                              display: flex;
+                              flex-direction: column;
+                              gap: 4px;
+                            "
+                          >
+                            <span
+                              class="item-code-text"
+                              style="
+                                font-weight: 800;
+                                color: var(--primary-color);
+                              "
+                              >[[ item.item_code ]]</span
+                            >
+                            <span
+                              class="item-name-text text-muted"
+                              style="
+                                font-size: 0.8rem;
+                                font-weight: 500;
+                                white-space: normal;
+                                min-width: 120px;
+                              "
                               >[[ item.item_name ]]</span
                             >
                           </div>
                         </td>
-                        <td style="font-size: 0.85rem; font-weight: 600; padding: 10px 12px !important;">[[ item.item_category ]]</td>
-                        <td class="text-right font-medium" style="text-align: right; font-weight: 800; padding: 10px 12px !important;">
-                          [[ item.quantity ]] <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">[[ item.uom ]]</span>
+                        <td
+                          style="
+                            font-size: 0.85rem;
+                            font-weight: 600;
+                            padding: 10px 12px !important;
+                          "
+                        >
+                          [[ item.item_category ]]
                         </td>
-                        <td style="padding: 10px 12px !important;">
+                        <td
+                          class="text-right font-medium"
+                          style="
+                            text-align: right;
+                            font-weight: 800;
+                            padding: 10px 12px !important;
+                          "
+                        >
+                          [[ item.quantity ]]
+                          <span
+                            style="
+                              font-size: 0.75rem;
+                              font-weight: 600;
+                              color: var(--text-muted);
+                            "
+                            >[[ item.uom ]]</span
+                          >
+                        </td>
+                        <td style="padding: 10px 12px !important">
                           <span
                             class="badge"
                             :class="getBadgeClass(item, 'status')"
-                            style="padding: 6px 12px !important; font-size: 0.7rem !important;"
+                            style="
+                              padding: 6px 12px !important;
+                              font-size: 0.7rem !important;
+                            "
                           >
                             [[ item.status ]]
                           </span>
                         </td>
-                        <td style="padding: 10px 12px !important;">
+                        <td style="padding: 10px 12px !important">
                           <button
                             class="btn-create-inline"
-                            style="padding: 6px 12px !important; font-size: 0.75rem !important; font-weight: 700; border-radius: 20px; box-shadow: none;"
+                            style="
+                              padding: 6px 12px !important;
+                              font-size: 0.75rem !important;
+                              font-weight: 700;
+                              border-radius: 20px;
+                              box-shadow: none;
+                            "
                             @click="handleDispatch(detailRecord)"
                             title="Dispatch"
                           >
@@ -1372,55 +1797,236 @@
                   </table>
                 </div>
               </div>
-              <div v-else style="background: var(--sidebar-hover); border-radius: var(--border-radius-md); border: 2px dashed var(--border-color); text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600; padding: 40px 20px;">
+              <div
+                v-else
+                style="
+                  background: var(--sidebar-hover);
+                  border-radius: var(--border-radius-md);
+                  border: 2px dashed var(--border-color);
+                  text-align: center;
+                  color: var(--text-muted);
+                  font-size: 0.95rem;
+                  font-weight: 600;
+                  padding: 40px 20px;
+                "
+              >
                 No items requested.
               </div>
             </div>
 
             <!-- Column 3: Comments Section -->
-            <div class="detail-col-3" style="display: flex; flex-direction: column; height: 100%;">
-              <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Comments</h4>
-              
+            <div
+              class="detail-col-3"
+              style="display: flex; flex-direction: column; height: 100%"
+            >
+              <h4
+                class="section-subtitle"
+                style="
+                  margin-top: 0;
+                  margin-bottom: 24px;
+                  font-size: 1.1rem;
+                  font-weight: 800;
+                  color: var(--text-main);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Comments
+              </h4>
+
               <!-- Comments List -->
-              <div class="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 20px; padding-right: 8px; max-height: 400px;">
+              <div
+                class="comments-list"
+                style="
+                  flex: 1;
+                  overflow-y: auto;
+                  margin-bottom: 20px;
+                  padding-right: 8px;
+                  max-height: 400px;
+                "
+              >
                 <div v-if="comments && comments.length">
-                  <div v-for="c in comments" :key="c.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--sidebar-hover); border-radius: 8px; border: 1px solid var(--border-color);">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                      <span style="font-weight: 700; font-size: 0.85rem; color: var(--blue-600);">[[ c.comment_by || c.owner ]]</span>
-                      <span style="font-size: 0.75rem; color: var(--text-muted);">[[ String(c.creation).split('.')[0] ]]</span>
+                  <div
+                    v-for="c in comments"
+                    :key="c.name"
+                    class="comment-item"
+                    style="
+                      margin-bottom: 16px;
+                      padding: 12px;
+                      background: var(--sidebar-hover);
+                      border-radius: 8px;
+                      border: 1px solid var(--border-color);
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 8px;
+                      "
+                    >
+                      <span
+                        style="
+                          font-weight: 700;
+                          font-size: 0.85rem;
+                          color: var(--blue-600);
+                        "
+                        >[[ c.comment_by || c.owner ]]</span
+                      >
+                      <span style="font-size: 0.75rem; color: var(--text-muted)"
+                        >[[ String(c.creation).split('.')[0] ]]</span
+                      >
                     </div>
-                    <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5; overflow-x: auto;" v-html="c.content"></div>
+                    <div
+                      class="comment-content"
+                      style="
+                        font-size: 0.9rem;
+                        color: var(--text-main);
+                        line-height: 1.5;
+                        overflow-x: auto;
+                      "
+                      v-html="c.content"
+                    ></div>
                   </div>
                 </div>
-                <div v-else style="background: var(--sidebar-hover); border: 2px dashed var(--border-color); border-radius: var(--border-radius-md); padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600;">
-                  <i class="fas fa-comments" style="display: block; font-size: 2rem; margin-bottom: 12px; color: var(--border-color); opacity: 0.8;"></i>
+                <div
+                  v-else
+                  style="
+                    background: var(--sidebar-hover);
+                    border: 2px dashed var(--border-color);
+                    border-radius: var(--border-radius-md);
+                    padding: 40px 20px;
+                    text-align: center;
+                    color: var(--text-muted);
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                  "
+                >
+                  <i
+                    class="fas fa-comments"
+                    style="
+                      display: block;
+                      font-size: 2rem;
+                      margin-bottom: 12px;
+                      color: var(--border-color);
+                      opacity: 0.8;
+                    "
+                  ></i>
                   No comments yet
                 </div>
               </div>
 
               <!-- Modern Input Box -->
-              <div class="comment-input-container" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <div class="comment-toolbar" style="padding: 6px 10px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--gray-50);">
-                  <button type="button" class="toolbar-btn" @click="execCommand('bold')" title="Bold"><i class="fas fa-bold"></i></button>
-                  <button type="button" class="toolbar-btn" @click="execCommand('italic')" title="Italic"><i class="fas fa-italic"></i></button>
-                  <button type="button" class="toolbar-btn" @click="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
-                  <button type="button" class="toolbar-btn" @click="triggerImageUpload" title="Insert Image"><i class="fas fa-image"></i></button>
-                  <input type="file" id="comment-image-upload" style="display: none;" accept="image/*" @change="handleImageUpload">
+              <div
+                class="comment-input-container"
+                style="
+                  background: var(--bg-card);
+                  border: 1px solid var(--border-color);
+                  border-radius: 12px;
+                  overflow: hidden;
+                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                "
+              >
+                <div
+                  class="comment-toolbar"
+                  style="
+                    padding: 6px 10px;
+                    border-bottom: 1px solid var(--border-color);
+                    display: flex;
+                    gap: 4px;
+                    background: var(--gray-50);
+                  "
+                >
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    @click="execCommand('bold')"
+                    title="Bold"
+                  >
+                    <i class="fas fa-bold"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    @click="execCommand('italic')"
+                    title="Italic"
+                  >
+                    <i class="fas fa-italic"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    @click="insertTable"
+                    title="Insert Table"
+                  >
+                    <i class="fas fa-table"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    @click="triggerImageUpload"
+                    title="Insert Image"
+                  >
+                    <i class="fas fa-image"></i>
+                  </button>
+                  <input
+                    type="file"
+                    id="comment-image-upload"
+                    style="display: none"
+                    accept="image/*"
+                    @change="handleImageUpload"
+                  />
                 </div>
-                <div id="comment-editor" contenteditable="true" style="min-height: 80px; max-height: 200px; padding: 12px; overflow-y: auto; outline: none; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
-                <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
+                <div
+                  id="comment-editor"
+                  contenteditable="true"
+                  style="
+                    min-height: 80px;
+                    max-height: 200px;
+                    padding: 12px;
+                    overflow-y: auto;
+                    outline: none;
+                    font-size: 0.95rem;
+                    background: var(--bg-card);
+                    color: var(--text-main);
+                  "
+                  placeholder="Write a comment..."
+                ></div>
+                <div
+                  style="
+                    padding: 8px 12px;
+                    display: flex;
+                    justify-content: flex-end;
+                    border-top: 1px solid var(--border-color);
+                    background: var(--gray-50);
+                  "
+                >
                   <button class="btn-create-inline" @click="addComment">
-                    <i class="fas fa-paper-plane"></i> <span style="margin-left: 6px;">Post Comment</span>
+                    <i class="fas fa-paper-plane"></i>
+                    <span style="margin-left: 6px">Post Comment</span>
                   </button>
                 </div>
               </div>
             </div>
-            
           </div>
 
           <!-- Minimal Layout for other lists like Items -->
           <div v-else class="detail-grid">
-            <h4 class="section-subtitle" style="grid-column: 1 / -1; margin-top: 0; margin-bottom: 16px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Item Details</h4>
+            <h4
+              class="section-subtitle"
+              style="
+                grid-column: 1 / -1;
+                margin-top: 0;
+                margin-bottom: 16px;
+                font-size: 1.1rem;
+                font-weight: 800;
+                color: var(--text-main);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              "
+            >
+              Item Details
+            </h4>
             <div
               v-for="field in detailFields"
               :key="field.key"
@@ -1440,7 +2046,6 @@
               </span>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -1783,563 +2388,563 @@
       </div>
     </section>
   </main>
-    <!-- Profile Modal -->
-    <div
-      class="profile-modal-overlay"
-      v-if="showProfileModal"
-      @click.self="showProfileModal = false"
-    >
-      <div class="profile-modal">
-        <div class="profile-modal-header">
-          <h3>My Profile</h3>
-          <button class="profile-close" @click="showProfileModal = false">
+  <!-- Profile Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showProfileModal"
+    @click.self="showProfileModal = false"
+  >
+    <div class="profile-modal">
+      <div class="profile-modal-header">
+        <h3>My Profile</h3>
+        <button class="profile-close" @click="showProfileModal = false">
+          &times;
+        </button>
+      </div>
+      <div class="profile-modal-body">
+        <div v-if="profileData" class="profile-details">
+          <div class="profile-row">
+            <span class="profile-label">First Name</span>
+            <span class="profile-value"
+              >[[ profileData.first_name || '-' ]]</span
+            >
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Date of Joining</span>
+            <span class="profile-value"
+              >[[ profileData.date_of_joining || '-' ]]</span
+            >
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Branch</span>
+            <span class="profile-value">[[ profileData.branch || '-' ]]</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Region</span>
+            <span class="profile-value"
+              >[[ profileData.custom_region || '-' ]]</span
+            >
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Zone</span>
+            <span class="profile-value"
+              >[[ profileData.custom_zone || '-' ]]</span
+            >
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Designation</span>
+            <span class="profile-value"
+              >[[ profileData.designation || '-' ]]</span
+            >
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Department</span>
+            <span class="profile-value"
+              >[[ profileData.department || '-' ]]</span
+            >
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Reports To</span>
+            <span class="profile-value"
+              >[[ profileData.reports_to || '-' ]]</span
+            >
+          </div>
+        </div>
+        <div v-else class="profile-loading">Loading profile...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dispatch Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showDispatchModal"
+    @click.self="showDispatchModal = false"
+  >
+    <div class="profile-modal">
+      <div class="profile-modal-header">
+        <h3>Dispatch Request</h3>
+        <div class="profile-modal-header-right">
+          <button class="btn-create-inline" @click="submitDispatch()">
+            <span>Proceed</span>
+          </button>
+          <button class="profile-close" @click="showDispatchModal = false">
             &times;
           </button>
         </div>
-        <div class="profile-modal-body">
-          <div v-if="profileData" class="profile-details">
-            <div class="profile-row">
-              <span class="profile-label">First Name</span>
-              <span class="profile-value"
-                >[[ profileData.first_name || '-' ]]</span
-              >
-            </div>
-            <div class="profile-row">
-              <span class="profile-label">Date of Joining</span>
-              <span class="profile-value"
-                >[[ profileData.date_of_joining || '-' ]]</span
-              >
-            </div>
-            <div class="profile-row">
-              <span class="profile-label">Branch</span>
-              <span class="profile-value">[[ profileData.branch || '-' ]]</span>
-            </div>
-            <div class="profile-row">
-              <span class="profile-label">Region</span>
-              <span class="profile-value"
-                >[[ profileData.custom_region || '-' ]]</span
-              >
-            </div>
-            <div class="profile-row">
-              <span class="profile-label">Zone</span>
-              <span class="profile-value"
-                >[[ profileData.custom_zone || '-' ]]</span
-              >
-            </div>
-            <div class="profile-row">
-              <span class="profile-label">Designation</span>
-              <span class="profile-value"
-                >[[ profileData.designation || '-' ]]</span
-              >
-            </div>
-            <div class="profile-row">
-              <span class="profile-label">Department</span>
-              <span class="profile-value"
-                >[[ profileData.department || '-' ]]</span
-              >
-            </div>
-            <div class="profile-row">
-              <span class="profile-label">Reports To</span>
-              <span class="profile-value"
-                >[[ profileData.reports_to || '-' ]]</span
-              >
-            </div>
-          </div>
-          <div v-else class="profile-loading">Loading profile...</div>
-        </div>
       </div>
-    </div>
 
-    <!-- Dispatch Modal -->
-    <div
-      class="profile-modal-overlay"
-      v-if="showDispatchModal"
-      @click.self="showDispatchModal = false"
-    >
-      <div class="profile-modal">
-        <div class="profile-modal-header">
-          <h3>Dispatch Request</h3>
-          <div class="profile-modal-header-right">
-            <button class="btn-create-inline" @click="submitDispatch()">
-              <span>Proceed</span>
-            </button>
-            <button class="profile-close" @click="showDispatchModal = false">
-              &times;
-            </button>
+      <div class="profile-modal-body">
+        <div
+          style="
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--blue-600);
+          "
+        >
+          <div style="font-size: 13px; margin-bottom: 8px">
+            <strong>Request:</strong> [[ dispatchForm.name ]]
           </div>
-        </div>
-
-        <div class="profile-modal-body">
           <div
             style="
-              padding: 12px;
-              background: var(--gray-50);
-              border-radius: 8px;
-              margin-bottom: 20px;
-              border-left: 4px solid var(--blue-600);
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 12px;
+              padding: 10px;
+              background: white;
+              border-radius: 6px;
+              border: 1px solid var(--border-color);
             "
           >
-            <div style="font-size: 13px; margin-bottom: 8px">
-              <strong>Request:</strong> [[ dispatchForm.name ]]
-            </div>
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                padding: 10px;
-                background: white;
-                border-radius: 6px;
-                border: 1px solid var(--border-color);
-              "
-            >
-              <div style="text-align: center; flex: 1">
-                <div
-                  style="
-                    font-size: 10px;
-                    color: var(--text-muted);
-                    text-transform: uppercase;
-                    font-weight: 700;
-                  "
-                >
-                  Source
-                </div>
-                <div style="font-size: 13px; font-weight: 600; color: #dc3545">
-                  [[ dispatchForm.source_warehouse || 'Not Set' ]]
-                </div>
+            <div style="text-align: center; flex: 1">
+              <div
+                style="
+                  font-size: 10px;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  font-weight: 700;
+                "
+              >
+                Source
               </div>
-              <div style="color: var(--gray-400); font-size: 18px">➜</div>
-              <div style="text-align: center; flex: 1">
-                <div
-                  style="
-                    font-size: 10px;
-                    color: var(--text-muted);
-                    text-transform: uppercase;
-                    font-weight: 700;
-                  "
-                >
-                  Target
-                </div>
-                <div style="font-size: 13px; font-weight: 600; color: #198754">
-                  [[ dispatchForm.target_warehouse || 'Not Set' ]]
-                </div>
+              <div style="font-size: 13px; font-weight: 600; color: #dc3545">
+                [[ dispatchForm.source_warehouse || 'Not Set' ]]
+              </div>
+            </div>
+            <div style="color: var(--gray-400); font-size: 18px">➜</div>
+            <div style="text-align: center; flex: 1">
+              <div
+                style="
+                  font-size: 10px;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  font-weight: 700;
+                "
+              >
+                Target
+              </div>
+              <div style="font-size: 13px; font-weight: 600; color: #198754">
+                [[ dispatchForm.target_warehouse || 'Not Set' ]]
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Items Table -->
-          <div
-            v-if="dispatchForm.loading"
-            style="text-align: center; padding: 20px; color: var(--text-muted)"
+        <!-- Items Table -->
+        <div
+          v-if="dispatchForm.loading"
+          style="text-align: center; padding: 20px; color: var(--text-muted)"
+        >
+          <i class="fas fa-spinner fa-spin"></i> Loading requested items...
+        </div>
+        <div class="form-group">
+          <label class="form-label"
+            >Stock Entry Type <span class="form-required">*</span></label
           >
-            <i class="fas fa-spinner fa-spin"></i> Loading requested items...
-          </div>
-          <div class="form-group">
-            <label class="form-label"
-              >Stock Entry Type <span class="form-required">*</span></label
-            >
-            <select class="form-input" v-model="dispatchForm.stock_entry_type">
-              <option v-for="type in stockEntryTypes" :key="type" :value="type">
-                [[ type ]]
-              </option>
-            </select>
+          <select class="form-input" v-model="dispatchForm.stock_entry_type">
+            <option v-for="type in stockEntryTypes" :key="type" :value="type">
+              [[ type ]]
+            </option>
+          </select>
+        </div>
+        <div
+          v-else-if="dispatchForm.items.length > 0"
+          style="margin-bottom: 20px"
+        >
+          <div
+            style="
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              color: var(--text-muted);
+              margin-bottom: 8px;
+            "
+          >
+            Requested Items
           </div>
           <div
-            v-else-if="dispatchForm.items.length > 0"
-            style="margin-bottom: 20px"
+            style="
+              max-height: 200px;
+              overflow-y: auto;
+              border: 1px solid var(--border-color);
+              border-radius: 8px;
+              background: white;
+            "
           >
-            <div
-              style="
-                font-size: 11px;
-                font-weight: 700;
-                text-transform: uppercase;
-                color: var(--text-muted);
-                margin-bottom: 8px;
-              "
-            >
-              Requested Items
-            </div>
-            <div
-              style="
-                max-height: 200px;
-                overflow-y: auto;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                background: white;
-              "
-            >
-              <table style="width: 100%; border-collapse: collapse">
-                <!-- Current thead (add Dispatch Qty th) -->
-                <thead
-                  style="
-                    position: sticky;
-                    top: 0;
-                    background: var(--gray-50);
-                    z-index: 1;
-                    border-bottom: 1px solid var(--border-color);
-                  "
-                >
-                  <tr>
-                    <th
-                      style="
-                        font-size: 10px;
-                        text-transform: uppercase;
-                        padding: 8px 12px;
-                        text-align: left;
-                        color: var(--text-muted);
-                      "
-                    >
-                      Item
-                    </th>
-                    <th
-                      style="
-                        font-size: 10px;
-                        text-transform: uppercase;
-                        padding: 8px 12px;
-                        text-align: right;
-                        color: var(--text-muted);
-                      "
-                    >
-                      Qty
-                    </th>
-                    <!-- ADD THIS NEW TH -->
-                    <th
-                      style="
-                        font-size: 10px;
-                        text-transform: uppercase;
-                        padding: 8px 12px;
-                        text-align: right;
-                        color: var(--text-muted);
-                      "
-                    >
-                      Dispatch Qty
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="item in dispatchForm.items"
-                    :key="item.name"
-                    style="border-bottom: 1px solid var(--border-color)"
+            <table style="width: 100%; border-collapse: collapse">
+              <!-- Current thead (add Dispatch Qty th) -->
+              <thead
+                style="
+                  position: sticky;
+                  top: 0;
+                  background: var(--gray-50);
+                  z-index: 1;
+                  border-bottom: 1px solid var(--border-color);
+                "
+              >
+                <tr>
+                  <th
+                    style="
+                      font-size: 10px;
+                      text-transform: uppercase;
+                      padding: 8px 12px;
+                      text-align: left;
+                      color: var(--text-muted);
+                    "
                   >
-                    <td style="font-size: 12px; padding: 8px 12px">
-                      <div style="font-weight: 600; color: var(--text-main)">
-                        [[ item.item_code ]]
-                      </div>
-                      <div
-                        style="
-                          font-size: 10px;
-                          color: var(--text-muted);
-                          white-space: nowrap;
-                          overflow: hidden;
-                          text-overflow: ellipsis;
-                          max-width: 200px;
-                        "
-                      >
-                        [[ item.item_name || '-' ]]
-                      </div>
-                    </td>
-                    <td
+                    Item
+                  </th>
+                  <th
+                    style="
+                      font-size: 10px;
+                      text-transform: uppercase;
+                      padding: 8px 12px;
+                      text-align: right;
+                      color: var(--text-muted);
+                    "
+                  >
+                    Qty
+                  </th>
+                  <!-- ADD THIS NEW TH -->
+                  <th
+                    style="
+                      font-size: 10px;
+                      text-transform: uppercase;
+                      padding: 8px 12px;
+                      text-align: right;
+                      color: var(--text-muted);
+                    "
+                  >
+                    Dispatch Qty
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in dispatchForm.items"
+                  :key="item.name"
+                  style="border-bottom: 1px solid var(--border-color)"
+                >
+                  <td style="font-size: 12px; padding: 8px 12px">
+                    <div style="font-weight: 600; color: var(--text-main)">
+                      [[ item.item_code ]]
+                    </div>
+                    <div
                       style="
-                        font-size: 12px;
-                        padding: 8px 12px;
-                        text-align: right;
-                        font-weight: 700;
+                        font-size: 10px;
+                        color: var(--text-muted);
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        max-width: 200px;
                       "
                     >
-                      [[ item.quantity ]]
-                    </td>
-                    <td
+                      [[ item.item_name || '-' ]]
+                    </div>
+                  </td>
+                  <td
+                    style="
+                      font-size: 12px;
+                      padding: 8px 12px;
+                      text-align: right;
+                      font-weight: 700;
+                    "
+                  >
+                    [[ item.quantity ]]
+                  </td>
+                  <td
+                    style="
+                      font-size: 12px;
+                      padding: 8px 12px;
+                      text-align: right;
+                    "
+                  >
+                    <input
+                      type="number"
+                      v-model.number="item.dispatch_qty"
+                      :min="0"
+                      :max="item.quantity"
                       style="
-                        font-size: 12px;
-                        padding: 8px 12px;
+                        width: 60px;
                         text-align: right;
+                        border: 1px solid var(--border-color);
+                        border-radius: 4px;
+                        padding: 4px 6px;
+                        font-size: 12px;
                       "
-                    >
-                      <input
-                        type="number"
-                        v-model.number="item.dispatch_qty"
-                        :min="0"
-                        :max="item.quantity"
-                        style="
-                          width: 60px;
-                          text-align: right;
-                          border: 1px solid var(--border-color);
-                          border-radius: 4px;
-                          padding: 4px 6px;
-                          font-size: 12px;
-                        "
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Create Item Modal -->
-    <div
-      class="profile-modal-overlay"
-      v-if="showCreateItemModal"
-      @click.self="showCreateItemModal = false"
-    >
-      <div class="profile-modal">
-        <div class="profile-modal-header">
-          <h3>Create New Item</h3>
-          <div class="profile-modal-header-right">
-            <button
-              class="btn-create-inline"
-              @click="submitNewItem()"
-              :disabled="creatingItem"
-            >
-              <i class="fas fa-plus"></i>
-              <span>Create</span>
-            </button>
-            <button class="profile-close" @click="showCreateItemModal = false">
-              &times;
-            </button>
-          </div>
+  <!-- Create Item Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showCreateItemModal"
+    @click.self="showCreateItemModal = false"
+  >
+    <div class="profile-modal">
+      <div class="profile-modal-header">
+        <h3>Create New Item</h3>
+        <div class="profile-modal-header-right">
+          <button
+            class="btn-create-inline"
+            @click="submitNewItem()"
+            :disabled="creatingItem"
+          >
+            <i class="fas fa-plus"></i>
+            <span>Create</span>
+          </button>
+          <button class="profile-close" @click="showCreateItemModal = false">
+            &times;
+          </button>
         </div>
-        <div class="profile-modal-body">
-          <div class="form-group">
-            <label class="form-label"
-              >Item Name <span class="form-required">*</span></label
-            >
+      </div>
+      <div class="profile-modal-body">
+        <div class="form-group">
+          <label class="form-label"
+            >Item Name <span class="form-required">*</span></label
+          >
+          <input
+            type="text"
+            class="form-input"
+            v-model="createItemForm.item_name"
+            placeholder="Enter item name"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label"
+            >Item Department <span class="form-required">*</span></label
+          >
+          <div class="searchable-select-wrapper">
             <input
               type="text"
-              class="form-input"
-              v-model="createItemForm.item_name"
-              placeholder="Enter item name"
+              class="form-input searchable-select-input"
+              :class="{ focused: focusedField === 'item_department' }"
+              v-model="createItemForm.item_department_display"
+              @focus="onFocusSearchable('item_department')"
+              @blur="onBlurSearchable('item_department')"
+              @input="filterOptions('item_department')"
+              placeholder="Search department..."
+              autocomplete="off"
             />
-          </div>
-          <div class="form-group">
-            <label class="form-label"
-              >Item Department <span class="form-required">*</span></label
+            <i class="fas fa-chevron-down searchable-select-arrow"></i>
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'item_department'"
             >
-            <div class="searchable-select-wrapper">
-              <input
-                type="text"
-                class="form-input searchable-select-input"
-                :class="{ focused: focusedField === 'item_department' }"
-                v-model="createItemForm.item_department_display"
-                @focus="onFocusSearchable('item_department')"
-                @blur="onBlurSearchable('item_department')"
-                @input="filterOptions('item_department')"
-                placeholder="Search department..."
-                autocomplete="off"
-              />
-              <i class="fas fa-chevron-down searchable-select-arrow"></i>
               <div
-                class="searchable-select-dropdown"
-                v-if="focusedField === 'item_department'"
+                v-for="dept in filteredItemDepartments"
+                :key="dept"
+                class="searchable-select-option"
+                :class="{ selected: createItemForm.item_department === dept }"
+                @mousedown="selectOption('item_department', dept)"
               >
-                <div
-                  v-for="dept in filteredItemDepartments"
-                  :key="dept"
-                  class="searchable-select-option"
-                  :class="{ selected: createItemForm.item_department === dept }"
-                  @mousedown="selectOption('item_department', dept)"
-                >
-                  [[ dept ]]
-                </div>
-                <div
-                  v-if="filteredItemDepartments.length === 0"
-                  class="searchable-select-no-results"
-                >
-                  No departments found
-                </div>
+                [[ dept ]]
+              </div>
+              <div
+                v-if="filteredItemDepartments.length === 0"
+                class="searchable-select-no-results"
+              >
+                No departments found
               </div>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label"
-              >Item Group <span class="form-required">*</span></label
-            >
-            <div class="searchable-select-wrapper">
-              <input
-                type="text"
-                class="form-input searchable-select-input"
-                :class="{ focused: focusedField === 'item_group' }"
-                v-model="createItemForm.item_group_display"
-                @focus="onFocusSearchable('item_group')"
-                @blur="onBlurSearchable('item_group')"
-                @input="filterOptions('item_group')"
-                placeholder="Search item group..."
-                autocomplete="off"
-              />
-              <i class="fas fa-chevron-down searchable-select-arrow"></i>
-              <div
-                class="searchable-select-dropdown"
-                v-if="focusedField === 'item_group'"
-              >
-                <div
-                  v-for="group in filteredItemGroups"
-                  :key="group"
-                  class="searchable-select-option"
-                  :class="{ selected: createItemForm.item_group === group }"
-                  @mousedown="selectOption('item_group', group)"
-                >
-                  [[ group ]]
-                </div>
-                <div
-                  v-if="filteredItemGroups.length === 0"
-                  class="searchable-select-no-results"
-                >
-                  No item groups found
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">HSN/SAC</label>
-            <div class="searchable-select-wrapper">
-              <input
-                type="text"
-                class="form-input searchable-select-input"
-                :class="{ focused: focusedField === 'gst_hsn_code' }"
-                v-model="createItemForm.gst_hsn_code_display"
-                @focus="onFocusSearchable('gst_hsn_code')"
-                @blur="onBlurSearchable('gst_hsn_code')"
-                @input="filterOptions('gst_hsn_code')"
-                placeholder="Search HSN/SAC code..."
-                autocomplete="off"
-              />
-              <i class="fas fa-chevron-down searchable-select-arrow"></i>
-              <div
-                class="searchable-select-dropdown"
-                v-if="focusedField === 'gst_hsn_code'"
-              >
-                <div
-                  v-for="hsn in filteredHSNCodes"
-                  :key="hsn.name"
-                  class="searchable-select-option"
-                  :class="{ selected: createItemForm.gst_hsn_code === hsn.name }"
-                  @mousedown="selectOption('gst_hsn_code', hsn.name)"
-                >
-                  [[ hsn.name ]]
-                  <span class="hsn-description" v-if="hsn.description"
-                    >- [[ hsn.description ]]</span
-                  >
-                </div>
-                <div
-                  v-if="filteredHSNCodes.length === 0"
-                  class="searchable-select-no-results"
-                >
-                  No HSN/SAC codes found
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="form-checkbox-group">
-            <label class="form-checkbox-label">
-              <input
-                type="checkbox"
-                class="form-checkbox"
-                v-model="createItemForm.is_stock_item"
-              />
-              <span class="checkbox-text">Maintain Stock</span>
-            </label>
-            <label class="form-checkbox-label">
-              <input
-                type="checkbox"
-                class="form-checkbox"
-                v-model="createItemForm.is_fixed_asset"
-              />
-              <span class="checkbox-text">Is Fixed Asset</span>
-            </label>
-          </div>
-          <div
-            v-if="createItemForm.is_stock_item"
-            class="form-group conditional-field"
+        </div>
+        <div class="form-group">
+          <label class="form-label"
+            >Item Group <span class="form-required">*</span></label
           >
-            <label class="form-label"
-              >Stock UOM <span class="form-required">*</span></label
+          <div class="searchable-select-wrapper">
+            <input
+              type="text"
+              class="form-input searchable-select-input"
+              :class="{ focused: focusedField === 'item_group' }"
+              v-model="createItemForm.item_group_display"
+              @focus="onFocusSearchable('item_group')"
+              @blur="onBlurSearchable('item_group')"
+              @input="filterOptions('item_group')"
+              placeholder="Search item group..."
+              autocomplete="off"
+            />
+            <i class="fas fa-chevron-down searchable-select-arrow"></i>
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'item_group'"
             >
-            <div class="searchable-select-wrapper">
-              <input
-                type="text"
-                class="form-input searchable-select-input"
-                :class="{ focused: focusedField === 'stock_uom' }"
-                v-model="createItemForm.stock_uom_display"
-                @focus="onFocusSearchable('stock_uom')"
-                @blur="onBlurSearchable('stock_uom')"
-                @input="filterOptions('stock_uom')"
-                placeholder="Search UOM..."
-                autocomplete="off"
-              />
-              <i class="fas fa-chevron-down searchable-select-arrow"></i>
               <div
-                class="searchable-select-dropdown"
-                v-if="focusedField === 'stock_uom'"
+                v-for="group in filteredItemGroups"
+                :key="group"
+                class="searchable-select-option"
+                :class="{ selected: createItemForm.item_group === group }"
+                @mousedown="selectOption('item_group', group)"
               >
-                <div
-                  v-for="uom in filteredStockUOMs"
-                  :key="uom"
-                  class="searchable-select-option"
-                  :class="{ selected: createItemForm.stock_uom === uom }"
-                  @mousedown="selectOption('stock_uom', uom)"
-                >
-                  [[ uom ]]
-                </div>
-                <div
-                  v-if="filteredStockUOMs.length === 0"
-                  class="searchable-select-no-results"
-                >
-                  No UOMs found
-                </div>
+                [[ group ]]
+              </div>
+              <div
+                v-if="filteredItemGroups.length === 0"
+                class="searchable-select-no-results"
+              >
+                No item groups found
               </div>
             </div>
           </div>
-          <div
-            v-if="createItemForm.is_fixed_asset"
-            class="form-group conditional-field"
-          >
-            <label class="form-label"
-              >Asset Category <span class="form-required">*</span></label
+        </div>
+        <div class="form-group">
+          <label class="form-label">HSN/SAC</label>
+          <div class="searchable-select-wrapper">
+            <input
+              type="text"
+              class="form-input searchable-select-input"
+              :class="{ focused: focusedField === 'gst_hsn_code' }"
+              v-model="createItemForm.gst_hsn_code_display"
+              @focus="onFocusSearchable('gst_hsn_code')"
+              @blur="onBlurSearchable('gst_hsn_code')"
+              @input="filterOptions('gst_hsn_code')"
+              placeholder="Search HSN/SAC code..."
+              autocomplete="off"
+            />
+            <i class="fas fa-chevron-down searchable-select-arrow"></i>
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'gst_hsn_code'"
             >
-            <div class="searchable-select-wrapper">
-              <input
-                type="text"
-                class="form-input searchable-select-input"
-                :class="{ focused: focusedField === 'asset_category' }"
-                v-model="createItemForm.asset_category_display"
-                @focus="onFocusSearchable('asset_category')"
-                @blur="onBlurSearchable('asset_category')"
-                @input="filterOptions('asset_category')"
-                placeholder="Search asset category..."
-                autocomplete="off"
-              />
-              <i class="fas fa-chevron-down searchable-select-arrow"></i>
               <div
-                class="searchable-select-dropdown"
-                v-if="focusedField === 'asset_category'"
+                v-for="hsn in filteredHSNCodes"
+                :key="hsn.name"
+                class="searchable-select-option"
+                :class="{ selected: createItemForm.gst_hsn_code === hsn.name }"
+                @mousedown="selectOption('gst_hsn_code', hsn.name)"
               >
-                <div
-                  v-for="cat in filteredAssetCategories"
-                  :key="cat"
-                  class="searchable-select-option"
-                  :class="{ selected: createItemForm.asset_category === cat }"
-                  @mousedown="selectOption('asset_category', cat)"
+                [[ hsn.name ]]
+                <span class="hsn-description" v-if="hsn.description"
+                  >- [[ hsn.description ]]</span
                 >
-                  [[ cat ]]
-                </div>
-                <div
-                  v-if="filteredAssetCategories.length === 0"
-                  class="searchable-select-no-results"
-                >
-                  No asset categories found
-                </div>
+              </div>
+              <div
+                v-if="filteredHSNCodes.length === 0"
+                class="searchable-select-no-results"
+              >
+                No HSN/SAC codes found
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-checkbox-group">
+          <label class="form-checkbox-label">
+            <input
+              type="checkbox"
+              class="form-checkbox"
+              v-model="createItemForm.is_stock_item"
+            />
+            <span class="checkbox-text">Maintain Stock</span>
+          </label>
+          <label class="form-checkbox-label">
+            <input
+              type="checkbox"
+              class="form-checkbox"
+              v-model="createItemForm.is_fixed_asset"
+            />
+            <span class="checkbox-text">Is Fixed Asset</span>
+          </label>
+        </div>
+        <div
+          v-if="createItemForm.is_stock_item"
+          class="form-group conditional-field"
+        >
+          <label class="form-label"
+            >Stock UOM <span class="form-required">*</span></label
+          >
+          <div class="searchable-select-wrapper">
+            <input
+              type="text"
+              class="form-input searchable-select-input"
+              :class="{ focused: focusedField === 'stock_uom' }"
+              v-model="createItemForm.stock_uom_display"
+              @focus="onFocusSearchable('stock_uom')"
+              @blur="onBlurSearchable('stock_uom')"
+              @input="filterOptions('stock_uom')"
+              placeholder="Search UOM..."
+              autocomplete="off"
+            />
+            <i class="fas fa-chevron-down searchable-select-arrow"></i>
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'stock_uom'"
+            >
+              <div
+                v-for="uom in filteredStockUOMs"
+                :key="uom"
+                class="searchable-select-option"
+                :class="{ selected: createItemForm.stock_uom === uom }"
+                @mousedown="selectOption('stock_uom', uom)"
+              >
+                [[ uom ]]
+              </div>
+              <div
+                v-if="filteredStockUOMs.length === 0"
+                class="searchable-select-no-results"
+              >
+                No UOMs found
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          v-if="createItemForm.is_fixed_asset"
+          class="form-group conditional-field"
+        >
+          <label class="form-label"
+            >Asset Category <span class="form-required">*</span></label
+          >
+          <div class="searchable-select-wrapper">
+            <input
+              type="text"
+              class="form-input searchable-select-input"
+              :class="{ focused: focusedField === 'asset_category' }"
+              v-model="createItemForm.asset_category_display"
+              @focus="onFocusSearchable('asset_category')"
+              @blur="onBlurSearchable('asset_category')"
+              @input="filterOptions('asset_category')"
+              placeholder="Search asset category..."
+              autocomplete="off"
+            />
+            <i class="fas fa-chevron-down searchable-select-arrow"></i>
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'asset_category'"
+            >
+              <div
+                v-for="cat in filteredAssetCategories"
+                :key="cat"
+                class="searchable-select-option"
+                :class="{ selected: createItemForm.asset_category === cat }"
+                @mousedown="selectOption('asset_category', cat)"
+              >
+                [[ cat ]]
+              </div>
+              <div
+                v-if="filteredAssetCategories.length === 0"
+                class="searchable-select-no-results"
+              >
+                No asset categories found
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!---end of dispatch modal--->
+  </div>
+  <!---end of dispatch modal--->
 </div>
 
 <style>
@@ -2358,8 +2963,8 @@
     --gray-700: #374151;
     --gray-800: #1f2937;
     --gray-900: #111827;
-    --blue-600: #2563eb;
-    --blue-700: #1d4ed8;
+    --blue-600: #008080;
+    --blue-700: #45e7e7;
 
     --bg-page: var(--gray-50);
     --bg-sidebar: #ffffff;
@@ -2572,15 +3177,16 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 14px;
   }
   .section-label {
-    padding: 0 8px 8px;
+    padding: 0 8px 0px;
     font-size: 11px;
     font-weight: 700;
     color: var(--gray-500);
     text-transform: uppercase;
     letter-spacing: 0.06em;
+    margin-bottom: 0px;
   }
   .nav-item {
     display: flex;
@@ -3300,6 +3906,7 @@
     border-radius: var(--radius-lg);
     padding: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    height: 713.66666px;
   }
   .detail-grid {
     display: grid;
@@ -4647,7 +5254,9 @@
             remark: "",
             reporting_person: "",
           };
-          this.emrItems = [{ item_code: "", item_code_display: "", uom: "", quantity: 1 }];
+          this.emrItems = [
+            { item_code: "", item_code_display: "", uom: "", quantity: 1 },
+          ];
           return;
         }
 
@@ -4665,7 +5274,14 @@
             remarks: "",
           };
           this.inwardItems = [
-            { item_code: "", item_code_display: "", uom: "", qty: 1, rate: 0, warehouse: "" },
+            {
+              item_code: "",
+              item_code_display: "",
+              uom: "",
+              qty: 1,
+              rate: 0,
+              warehouse: "",
+            },
           ];
           return;
         }
@@ -4681,7 +5297,14 @@
             remarks: "",
           };
           this.outwardItems = [
-            { item_code: "", item_code_display: "", uom: "", qty: 1, s_warehouse: "", t_warehouse: "" },
+            {
+              item_code: "",
+              item_code_display: "",
+              uom: "",
+              qty: 1,
+              s_warehouse: "",
+              t_warehouse: "",
+            },
           ];
           return;
         }
@@ -5233,19 +5856,18 @@
               filters: {
                 reference_doctype: "Employee Material Request",
                 reference_name: name,
-                comment_type: "Comment"
+                comment_type: "Comment",
               },
               fields: ["name", "content", "owner", "creation", "comment_by"],
-              order_by: "creation asc"
-            }
+              order_by: "creation asc",
+            },
           });
           if (res.message) {
             this.comments = res.message;
-           
 
             // Scroll to bottom after Vue updates the DOM
             setTimeout(() => {
-              const list = document.querySelector('.comments-list');
+              const list = document.querySelector(".comments-list");
               if (list) list.scrollTop = list.scrollHeight;
             }, 100);
           }
@@ -5255,9 +5877,9 @@
       },
 
       async addComment() {
-        const editor = document.getElementById('comment-editor');
+        const editor = document.getElementById("comment-editor");
         const content = editor.innerHTML;
-        if (!content || content.trim() === '<br>' || content.trim() === '') {
+        if (!content || content.trim() === "<br>" || content.trim() === "") {
           frappe.msgprint("Comment cannot be empty");
           return;
         }
@@ -5270,10 +5892,10 @@
               reference_name: this.detailRecord.name,
               content: content,
               comment_email: frappe.session.user,
-              comment_by: this.sidebar.header.subtitle
-            }
+              comment_by: this.sidebar.header.subtitle,
+            },
           });
-          editor.innerHTML = '';
+          editor.innerHTML = "";
           await this.fetchComments(this.detailRecord.name);
         } catch (e) {
           console.error("Error adding comment:", e);
@@ -5283,17 +5905,18 @@
 
       execCommand(command) {
         document.execCommand(command, false, null);
-        document.getElementById('comment-editor').focus();
+        document.getElementById("comment-editor").focus();
       },
 
       insertTable() {
-        const tableHtml = '<table border="1" style="width: 100%; border-collapse: collapse; margin-top: 8px;"><tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table><p><br></p>';
-        document.execCommand('insertHTML', false, tableHtml);
-        document.getElementById('comment-editor').focus();
+        const tableHtml =
+          '<table border="1" style="width: 100%; border-collapse: collapse; margin-top: 8px;"><tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table><p><br></p>';
+        document.execCommand("insertHTML", false, tableHtml);
+        document.getElementById("comment-editor").focus();
       },
 
       triggerImageUpload() {
-        document.getElementById('comment-image-upload').click();
+        document.getElementById("comment-image-upload").click();
       },
 
       handleImageUpload(e) {
@@ -5302,8 +5925,8 @@
         const reader = new FileReader();
         reader.onload = (event) => {
           const imgHtml = `<img src="${event.target.result}" style="max-width: 100%; height: auto; margin-top: 8px;"><p><br></p>`;
-          document.execCommand('insertHTML', false, imgHtml);
-          document.getElementById('comment-editor').focus();
+          document.execCommand("insertHTML", false, imgHtml);
+          document.getElementById("comment-editor").focus();
         };
         reader.readAsDataURL(file);
       },
