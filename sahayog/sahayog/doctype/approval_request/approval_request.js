@@ -75,3 +75,25 @@ function prompt_remark(frm, action) {
         });
     }, `Confirm ${action}`, 'Submit');
 }
+
+// Trigger for the Child Table
+frappe.ui.form.on('Approval Approver', {
+    approver: function(frm, cdt, cdn) {
+        // Get the specific row that the user is editing
+        let row = frappe.get_doc(cdt, cdn);
+        
+        if (row.approver) {
+            // Fetch the 'full_name' from the User DocType based on the selected email/ID
+            frappe.db.get_value('User', row.approver, 'full_name')
+            .then(r => {
+                if (r.message && r.message.full_name) {
+                    // Set the fetched name into the approver_name field of that specific row
+                    frappe.model.set_value(cdt, cdn, 'approver_name', r.message.full_name);
+                }
+            });
+        } else {
+            // If the user clears the approver field, clear the name field too
+            frappe.model.set_value(cdt, cdn, 'approver_name', '');
+        }
+    }
+});
