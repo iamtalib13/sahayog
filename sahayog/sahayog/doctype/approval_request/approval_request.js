@@ -1,3 +1,10 @@
+// Override Frappe's default Employee link formatter 
+// so it only shows the ID, instead of "ID: Name"
+frappe.form.link_formatters['Employee'] = function(value, doc) {
+    return value;
+};
+
+
 frappe.ui.form.on('Approval Request', {
     setup: function(frm) {
         // Run this only when creating a brand new document
@@ -5,6 +12,7 @@ frappe.ui.form.on('Approval Request', {
             frappe.db.get_value('Employee', { 'user_id': frappe.session.user }, 
                 ['name', 'employee_name', 'designation'])
             .then(r => {
+                console.log("Database returned:", r.message);
                 if (r.message) {
                     frm.set_value('employee', r.message.name);
                     frm.set_value('employee_name', r.message.employee_name);
