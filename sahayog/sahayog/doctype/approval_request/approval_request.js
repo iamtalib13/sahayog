@@ -1,22 +1,28 @@
 frappe.ui.form.on('Approval Request', {
     setup: function(frm) {
+        // Run this only when creating a brand new document
         if (frm.is_new()) {
-            frappe.db.get_value('Employee', {'user_id': frappe.session.user}, 
+            // Fetch the Employee record where user_id matches the currently logged-in user
+            frappe.db.get_value('Employee', { 'user_id': frappe.session.user }, 
                 ['name', 'employee_name', 'designation'])
             .then(r => {
+                // If a matching Employee is found
                 if (r.message) {
+                    // Set the fetched values to the corresponding fields in the form
                     frm.set_value('employee', r.message.name);
+                    frm.set_value('employee_name', r.message.employee_name);
+                    frm.set_value('designation', r.message.designation);
                 } else {
-                    frappe.msgprint('No Employee record found linked to your user account.');
+                    // If no Employee record is linked to this user, show a warning
+                    frappe.msgprint(__('No Employee record found linked to your user account ({0}). Please contact HR.', [frappe.session.user]));
                 }
             });
         }
     },
     
+    // ... [Keep your existing refresh code for the Approve/Reject buttons here] ...
     refresh: function(frm) {
-        // Show Approve/Reject buttons only if Submitted and Pending
         if (frm.doc.docstatus === 1 && frm.doc.status === 'Pending Approval') {
-            
             let is_approver = frm.doc.approvers.some(a => a.approver === frappe.session.user);
             
             if (is_approver) {
@@ -31,6 +37,7 @@ frappe.ui.form.on('Approval Request', {
 });
 
 function prompt_remark(frm, action) {
+    // ... [Keep your existing prompt_remark function here] ...
     frappe.prompt([
         {
             label: 'Remark',
