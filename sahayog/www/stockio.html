@@ -891,6 +891,14 @@
         </button>
         <button
           class="btn-create"
+          v-if="showDetailView && detailRecord && detailRecord.status === 'Draft' && activeItem === 'Requests'"
+          @click="toggleEditMode()"
+        >
+          <i class="fas fa-pencil-alt"></i>
+          <span>Edit</span>
+        </button>
+        <button
+          class="btn-create"
           v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView"
           @click="handleCreate()"
         >
