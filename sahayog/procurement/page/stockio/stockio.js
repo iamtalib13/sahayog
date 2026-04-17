@@ -2951,8 +2951,21 @@ class StockIOPage {
           this.activeItem = "Inward"; // Ensure the detail view knows we are viewing an inward record
         }
       },
-      openStockEntry(name) {
-        frappe.set_route("Form", "Stock Entry", name);
+      async openStockEntry(name) {
+        // Fetch the record details internally
+        const res = await frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Stock Entry",
+            name: name
+          }
+        });
+        
+        if (res.message) {
+          this.detailRecord = res.message;
+          this.showDetailView = true;
+          this.activeItem = "Outward"; 
+        }
       },
       openAsset(name) {
         frappe.set_route("Form", "Asset", name);

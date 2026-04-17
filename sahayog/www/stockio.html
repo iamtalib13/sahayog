@@ -1625,29 +1625,80 @@
                     <div v-if="isEditing" class="searchable-select-wrapper">
                       <!-- Employee Dropdown -->
                       <div v-if="field.key === 'employee_name'">
-                        <input type="text" class="form-input" v-model="detailRecord.employee_name" @focus="focusedField = 'employee'" @blur="setTimeout(() => focusedField = null, 200)" />
-                        <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
-                          <div v-for="emp in employees.filter(e => !detailRecord.employee_name || e.employee_name.toLowerCase().includes(detailRecord.employee_name.toLowerCase()))" :key="emp.name" class="searchable-select-option" @mousedown="detailRecord.employee_name = emp.employee_name">
+                        <input
+                          type="text"
+                          class="form-input"
+                          v-model="detailRecord.employee_name"
+                          @focus="focusedField = 'employee'"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'employee'"
+                        >
+                          <div
+                            v-for="emp in employees.filter(e => !detailRecord.employee_name || e.employee_name.toLowerCase().includes(detailRecord.employee_name.toLowerCase()))"
+                            :key="emp.name"
+                            class="searchable-select-option"
+                            @mousedown="detailRecord.employee_name = emp.employee_name"
+                          >
                             [[ emp.employee_name ]]
                           </div>
                         </div>
                       </div>
                       <!-- Warehouse Dropdown -->
                       <div v-else-if="field.key === 'target_warehouse'">
-                        <input type="text" class="form-input" v-model="detailRecord.target_warehouse" @focus="focusedField = 'wh'" @blur="setTimeout(() => focusedField = null, 200)" />
-                        <div class="searchable-select-dropdown" v-if="focusedField === 'wh'">
-                          <div v-for="wh in warehouses.filter(w => !detailRecord.target_warehouse || w.toLowerCase().includes(detailRecord.target_warehouse.toLowerCase()))" :key="wh" class="searchable-select-option" @mousedown="detailRecord.target_warehouse = wh">
+                        <input
+                          type="text"
+                          class="form-input"
+                          v-model="detailRecord.target_warehouse"
+                          @focus="focusedField = 'wh'"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'wh'"
+                        >
+                          <div
+                            v-for="wh in warehouses.filter(w => !detailRecord.target_warehouse || w.toLowerCase().includes(detailRecord.target_warehouse.toLowerCase()))"
+                            :key="wh"
+                            class="searchable-select-option"
+                            @mousedown="detailRecord.target_warehouse = wh"
+                          >
                             [[ wh ]]
                           </div>
                         </div>
                       </div>
                       <!-- Required By Date -->
-                      <div v-else-if="field.key === 'required_by_date'" style="display: flex; align-items: center; border: 2px solid var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-surface); padding: 0 12px; height: 40px; width: 100%;">
-                        <i class="fas fa-calendar-alt" style="color: var(--text-muted); margin-right: 10px;"></i>
+                      <div
+                        v-else-if="field.key === 'required_by_date'"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          border: 2px solid var(--border-color);
+                          border-radius: var(--border-radius-md);
+                          background: var(--bg-surface);
+                          padding: 0 12px;
+                          height: 40px;
+                          width: 100%;
+                        "
+                      >
+                        <i
+                          class="fas fa-calendar-alt"
+                          style="color: var(--text-muted); margin-right: 10px"
+                        ></i>
                         <input
                           type="date"
                           class="form-input"
-                          style="padding: 0 !important; height: 100%; border: none !important; background: transparent !important; box-shadow: none !important; outline: none !important; flex: 1;"
+                          style="
+                            padding: 0 !important;
+                            height: 100%;
+                            border: none !important;
+                            background: transparent !important;
+                            box-shadow: none !important;
+                            outline: none !important;
+                            flex: 1;
+                          "
                           v-model="detailRecord.required_by_date"
                         />
                       </div>
@@ -1655,34 +1706,57 @@
                       <textarea
                         v-else-if="field.key === 'remark'"
                         class="form-input"
-                        style="padding: 4px 8px !important; height: 60px;"
+                        style="padding: 4px 8px !important; height: 60px"
                         v-model="detailRecord.remark"
                       ></textarea>
                       <!-- Default -->
-                      <input v-else type="text" class="form-input" v-model="detailRecord[field.key]" />
+                      <input
+                        v-else
+                        type="text"
+                        class="form-input"
+                        v-model="detailRecord[field.key]"
+                      />
                     </div>
-                    <div v-else-if="field.type === 'table'" class="detail-grid-table">
-                    <table class="items-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                      <thead>
-                        <tr style="background: var(--sidebar-hover); text-align: left;">
-                          <th style="padding: 8px;">Item</th>
-                          <th style="padding: 8px; text-align: right;">Qty</th>
-                          <th style="padding: 8px;">Warehouse</th>
-                          <th style="padding: 8px; text-align: right;">Rate</th>
-                          <th style="padding: 8px; text-align: right;">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="row in detailRecord.items" :key="row.name" style="border-top: 1px solid var(--border-color);">
-                          <td style="padding: 8px;">[[ row.item_code ]]</td>
-                          <td style="padding: 8px; text-align: right;">[[ row.qty ]]</td>
-                          <td style="padding: 8px;">[[ row.warehouse ]]</td>
-                          <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.rate) ]]</td>
-                          <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.amount) ]]</td>
-                        </tr>
-                      </tbody>
-                    </table>                  </div>
-                  <span v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
+                    <div
+                      v-else-if="field.type === 'table'"
+                      class="detail-grid-table"
+                    >
+                      <table
+                        class="items-table"
+                        style="
+                          width: 100%;
+                          border-collapse: collapse;
+                          margin-top: 10px;
+                        "
+                      >
+                        <thead>
+                          <tr
+                            style="
+                              background: var(--sidebar-hover);
+                              text-align: left;
+                            "
+                          >
+                            <th style="padding: 8px">Item</th>
+                            <th style="padding: 8px; text-align: right">Qty</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="row in detailRecord.items"
+                            :key="row.name"
+                            style="border-top: 1px solid var(--border-color)"
+                          >
+                            <td style="padding: 8px">[[ row.item_code ]]</td>
+                            <td style="padding: 8px; text-align: right">
+                              [[ row.qty ]]
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <span v-else
+                      >[[ getFieldValue(detailRecord, field.key) ]]</span
+                    >
                   </span>
                 </div>
               </div>
@@ -1776,35 +1850,81 @@
                       </tr>
                     </thead>
                     <tbody v-if="isEditing">
-                      <tr v-for="(item, index) in detailRecord.items" :key="item.name || index">
+                      <tr
+                        v-for="(item, index) in detailRecord.items"
+                        :key="item.name || index"
+                      >
                         <td style="padding: 10px 12px !important">
                           <div class="searchable-select-wrapper">
-                            <input type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.item_code" @focus="focusedField = 'item_' + index" @blur="setTimeout(() => focusedField = null, 200)" />
-                            <div class="searchable-select-dropdown" v-if="focusedField === 'item_' + index">
-                              <div v-for="opt in itemsList" :key="opt.name" class="searchable-select-option" @mousedown="item.item_code = opt.name; item.item_category = opt.item_category || 'Stock Item'; item.status = 'Pending'">
+                            <input
+                              type="text"
+                              class="form-input"
+                              style="padding: 4px 8px !important; height: 30px"
+                              v-model="item.item_code"
+                              @focus="focusedField = 'item_' + index"
+                              @blur="setTimeout(() => focusedField = null, 200)"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'item_' + index"
+                            >
+                              <div
+                                v-for="opt in itemsList"
+                                :key="opt.name"
+                                class="searchable-select-option"
+                                @mousedown="item.item_code = opt.name; item.item_category = opt.item_category || 'Stock Item'; item.status = 'Pending'"
+                              >
                                 [[ opt.name ]] - [[ opt.item_name ]]
                               </div>
                             </div>
                           </div>
                         </td>
                         <td style="padding: 10px 12px !important">
-                          <input type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.item_category" />
+                          <input
+                            type="text"
+                            class="form-input"
+                            style="padding: 4px 8px !important; height: 30px"
+                            v-model="item.item_category"
+                          />
                         </td>
                         <td style="padding: 10px 12px !important">
-                          <input type="number" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.quantity" />
+                          <input
+                            type="number"
+                            class="form-input"
+                            style="padding: 4px 8px !important; height: 30px"
+                            v-model="item.quantity"
+                          />
                         </td>
                         <td style="padding: 10px 12px !important">
-                          <span class="badge" :class="getBadgeClass(item, 'status')">[[ item.status ]]</span>
+                          <span
+                            class="badge"
+                            :class="getBadgeClass(item, 'status')"
+                            >[[ item.status ]]</span
+                          >
                         </td>
                         <td style="padding: 10px 12px !important">
-                          <button class="btn-create-inline" style="padding: 4px 8px !important; font-size: 0.75rem !important;" @click="detailRecord.items.splice(index, 1)">
+                          <button
+                            class="btn-create-inline"
+                            style="
+                              padding: 4px 8px !important;
+                              font-size: 0.75rem !important;
+                            "
+                            @click="detailRecord.items.splice(index, 1)"
+                          >
                             <i class="fas fa-trash"></i>
                           </button>
                         </td>
                       </tr>
                       <tr>
-                        <td colspan="5" style="padding: 10px 12px !important;">
-                          <button class="btn-create-inline" style="padding: 6px 12px !important; font-size: 0.75rem !important;" @click="detailRecord.items.push({item_code: '', item_category: '', quantity: 0, status: 'Draft'})">
+                        <td colspan="5" style="padding: 10px 12px !important">
+                          <button
+                            class="btn-create-inline"
+                            style="
+                              padding: 6px 12px !important;
+                              font-size: 0.75rem !important;
+                            "
+                            @click="detailRecord.items.push({item_code: '', item_category: '', quantity: 0, status: 'Draft'})"
+                          >
                             <i class="fas fa-plus"></i> Add Row
                           </button>
                         </td>
@@ -1880,7 +2000,10 @@
                             [[ item.status ]]
                           </span>
                         </td>
-                        <td v-if="detailRecord.status === 'Approved'" style="padding: 10px 12px !important">
+                        <td
+                          v-if="detailRecord.status === 'Approved'"
+                          style="padding: 10px 12px !important"
+                        >
                           <button
                             class="btn-create-inline"
                             style="
@@ -2151,29 +2274,40 @@
               </span>
             </div>
             <!-- Table Field -->
-            <div v-for="field in detailFields.filter(f => f.type === 'table')" :key="field.key" style="grid-column: 1 / -1;">
-               <span class="detail-grid-label">[[ field.label ]]</span>
-               <table class="items-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                 <thead>
-                   <tr style="background: var(--sidebar-hover); text-align: left;">
-                     <th style="padding: 8px;">Item</th>
-                     <th style="padding: 8px; text-align: right;">Qty</th>
-                     <th style="padding: 8px;">Warehouse</th>
-                     <th style="padding: 8px; text-align: right;">Rate</th>
-                     <th style="padding: 8px; text-align: right;">Amount</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   <tr v-for="row in detailRecord.items" :key="row.name" style="border-top: 1px solid var(--border-color);">
-                     <td style="padding: 8px;">[[ row.item_code ]]</td>
-                     <td style="padding: 8px; text-align: right;">[[ row.qty ]]</td>
-                     <td style="padding: 8px;">[[ row.warehouse ]]</td>
-                     <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.rate) ]]</td>
-                     <td style="padding: 8px; text-align: right;">[[ formatCurrency(row.amount) ]]</td>
-                   </tr>
-                 </tbody>
-               </table>            </div>
-          </div>        </div>
+            <div
+              v-for="field in detailFields.filter(f => f.type === 'table')"
+              :key="field.key"
+              style="grid-column: 1 / -1"
+            >
+              <span class="detail-grid-label">[[ field.label ]]</span>
+              <table
+                class="items-table"
+                style="width: 100%; border-collapse: collapse; margin-top: 10px"
+              >
+                <thead>
+                  <tr
+                    style="background: var(--sidebar-hover); text-align: left"
+                  >
+                    <th style="padding: 8px">Item</th>
+                    <th style="padding: 8px; text-align: right">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="row in detailRecord.items"
+                    :key="row.name"
+                    style="border-top: 1px solid var(--border-color)"
+                  >
+                    <td style="padding: 8px">[[ row.item_code ]]</td>
+                    <td style="padding: 8px; text-align: right">
+                      [[ row.qty ]]
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div
@@ -4674,7 +4808,6 @@
             { label: "Employee", key: "employee" },
             { label: "Source Warehouse", key: "source_warehouse" },
             { label: "Target Warehouse", key: "target_warehouse" },
-            { label: "Purpose", key: "purpose" },
             { label: "Required By Date", key: "required_by_date" },
             { label: "Remarks", key: "remark" },
           ],
@@ -4705,7 +4838,8 @@
             { label: "Total Qty", key: "total_qty" },
             { label: "Total", key: "grand_total" },
           ],
-          },        Outward: {
+        },
+        Outward: {
           doctype: "Stock Entry",
           createDoctype: "Stock Entry",
           createLabel: "Entry",
@@ -4725,6 +4859,15 @@
               width: 1,
               type: "badge",
             },
+          ],
+          detailFields: [
+            { label: "Stock Entry Type", key: "stock_entry_type" },
+            { label: "Source Warehouse", key: "from_warehouse" },
+            { label: "Target Warehouse", key: "to_warehouse" },
+
+            { label: "Date", key: "posting_date" },
+
+            { label: "Items", key: "items", type: "table" },
           ],
         },
         Items: {
@@ -5746,11 +5889,17 @@
           if (res.message) {
             this.detailRecord = res.message;
             this.isEditing = false;
-            frappe.show_alert({ message: "Request updated successfully", indicator: "green" });
+            frappe.show_alert({
+              message: "Request updated successfully",
+              indicator: "green",
+            });
           }
         } catch (e) {
           console.error("Save error:", e);
-          frappe.show_alert({ message: "Error updating request", indicator: "red" });
+          frappe.show_alert({
+            message: "Error updating request",
+            indicator: "red",
+          });
         } finally {
           this.loading = false;
         }
@@ -5758,9 +5907,9 @@
       formatCurrency(value) {
         const amount = Number(value || 0);
         return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            maximumFractionDigits: 0
+          style: "currency",
+          currency: "INR",
+          maximumFractionDigits: 0,
         }).format(amount);
       },
       handleDispatch(row) {
