@@ -813,7 +813,7 @@
           <div class="profile-modal-body" style="padding: 0">
             <div class="form-row">
               <!-- Employee Field -->
-              <div class="form-group">
+              <div class="form-group" style="margin-left: 5px;">
                 <label class="form-label"
                   >Employee <span class="form-required">*</span></label
                 >
@@ -1378,11 +1378,41 @@
             </div>
 
             <!-- Column 3: Comments Section -->
-            <div class="detail-col-3">
+            <div class="detail-col-3" style="display: flex; flex-direction: column; height: 100%;">
               <h4 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;">Comments</h4>
-              <div style="background: var(--sidebar-hover); border: 2px dashed var(--border-color); border-radius: var(--border-radius-md); padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600;">
-                <i class="fas fa-comments" style="display: block; font-size: 2rem; margin-bottom: 12px; color: var(--border-color); opacity: 0.8;"></i>
-                Comments will appear here
+              
+              <!-- Comments List -->
+              <div class="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 20px; padding-right: 8px; max-height: 400px;">
+                <div v-if="comments && comments.length">
+                  <div v-for="c in comments" :key="c.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--sidebar-hover); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                      <span style="font-weight: 700; font-size: 0.85rem; color: var(--blue-600);">[[ c.comment_by || c.owner ]]</span>
+                      <span style="font-size: 0.75rem; color: var(--text-muted);">[[ String(c.creation).split('.')[0] ]]</span>
+                    </div>
+                    <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5; overflow-x: auto;" v-html="c.content"></div>
+                  </div>
+                </div>
+                <div v-else style="background: var(--sidebar-hover); border: 2px dashed var(--border-color); border-radius: var(--border-radius-md); padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600;">
+                  <i class="fas fa-comments" style="display: block; font-size: 2rem; margin-bottom: 12px; color: var(--border-color); opacity: 0.8;"></i>
+                  No comments yet
+                </div>
+              </div>
+
+              <!-- Modern Input Box -->
+              <div class="comment-input-container" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div class="comment-toolbar" style="padding: 6px 10px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--gray-50);">
+                  <button type="button" class="toolbar-btn" @click="execCommand('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+                  <button type="button" class="toolbar-btn" @click="execCommand('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+                  <button type="button" class="toolbar-btn" @click="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
+                  <button type="button" class="toolbar-btn" @click="triggerImageUpload" title="Insert Image"><i class="fas fa-image"></i></button>
+                  <input type="file" id="comment-image-upload" style="display: none;" accept="image/*" @change="handleImageUpload">
+                </div>
+                <div id="comment-editor" contenteditable="true" style="min-height: 80px; max-height: 200px; padding: 12px; overflow-y: auto; outline: none; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
+                <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
+                  <button class="btn-create-inline" @click="addComment">
+                    <i class="fas fa-paper-plane"></i> <span style="margin-left: 6px;">Post Comment</span>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -3773,6 +3803,40 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
+
+  .toolbar-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .toolbar-btn:hover {
+    background: var(--gray-200);
+    color: var(--blue-600);
+    border-color: var(--border-color);
+  }
+  [id="comment-editor"]:empty:before {
+    content: attr(placeholder);
+    color: var(--text-muted);
+    pointer-events: none;
+    display: block; /* For cell-style placeholder */
+  }
+  .comment-content table {
+    width: 100% !important;
+    border-collapse: collapse;
+    margin: 8px 0;
+  }
+  .comment-content table td {
+    border: 1px solid var(--border-color) !important;
+    padding: 8px !important;
+  }
 </style>
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
@@ -4130,6 +4194,7 @@
       detailRecord: null,
       detailFields: [],
       creatingEMR: false,
+      comments: [],
       requestStats: {
         draft: 0,
         pendingReporting: 0,
@@ -5128,6 +5193,9 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
+              if (this.activeItem === "Requests") {
+                this.fetchComments(row.name);
+              }
             } else {
               this.detailRecord = row;
             }
@@ -5152,6 +5220,92 @@
         this.showDetailView = false;
         this.detailRecord = null;
         this.detailFields = [];
+        this.comments = [];
+      },
+
+      async fetchComments(name) {
+        this.comments = [];
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Comment",
+              filters: {
+                reference_doctype: "Employee Material Request",
+                reference_name: name,
+                comment_type: "Comment"
+              },
+              fields: ["name", "content", "owner", "creation", "comment_by"],
+              order_by: "creation asc"
+            }
+          });
+          if (res.message) {
+            this.comments = res.message;
+           
+
+            // Scroll to bottom after Vue updates the DOM
+            setTimeout(() => {
+              const list = document.querySelector('.comments-list');
+              if (list) list.scrollTop = list.scrollHeight;
+            }, 100);
+          }
+        } catch (e) {
+          console.error("Error fetching comments:", e);
+        }
+      },
+
+      async addComment() {
+        const editor = document.getElementById('comment-editor');
+        const content = editor.innerHTML;
+        if (!content || content.trim() === '<br>' || content.trim() === '') {
+          frappe.msgprint("Comment cannot be empty");
+          return;
+        }
+
+        try {
+          await frappe.call({
+            method: "frappe.desk.form.utils.add_comment",
+            args: {
+              reference_doctype: "Employee Material Request",
+              reference_name: this.detailRecord.name,
+              content: content,
+              comment_email: frappe.session.user,
+              comment_by: this.sidebar.header.subtitle
+            }
+          });
+          editor.innerHTML = '';
+          await this.fetchComments(this.detailRecord.name);
+        } catch (e) {
+          console.error("Error adding comment:", e);
+          frappe.msgprint("Failed to post comment. Check console for details.");
+        }
+      },
+
+      execCommand(command) {
+        document.execCommand(command, false, null);
+        document.getElementById('comment-editor').focus();
+      },
+
+      insertTable() {
+        const tableHtml = '<table border="1" style="width: 100%; border-collapse: collapse; margin-top: 8px;"><tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table><p><br></p>';
+        document.execCommand('insertHTML', false, tableHtml);
+        document.getElementById('comment-editor').focus();
+      },
+
+      triggerImageUpload() {
+        document.getElementById('comment-image-upload').click();
+      },
+
+      handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const imgHtml = `<img src="${event.target.result}" style="max-width: 100%; height: auto; margin-top: 8px;"><p><br></p>`;
+          document.execCommand('insertHTML', false, imgHtml);
+          document.getElementById('comment-editor').focus();
+        };
+        reader.readAsDataURL(file);
       },
 
       openReport(route) {
