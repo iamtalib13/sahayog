@@ -889,7 +889,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.status === 'Draft' && (activeItem === 'Requests' || activeItem === 'Inward')"
+          v-if="showDetailView && detailRecord && (detailRecord.status === 'Draft' || detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward')"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
@@ -5255,6 +5255,9 @@
         this.loading = false;
         this.showDetailView = false;
         this.showEMRCreateView = false;
+        this.showInwardCreateView = false;
+        this.showOutwardCreateView = false;
+        this.showItemCreateView = false;
         this.showEMRMoreDetails = false;
 
         if (item.label === "Analytics") {
