@@ -1727,6 +1727,7 @@
                           Status
                         </th>
                         <th
+                          v-if="detailRecord.status === 'Approved'"
                           style="
                             padding: 10px 12px !important;
                             font-size: 0.75rem !important;
@@ -1841,7 +1842,7 @@
                             [[ item.status ]]
                           </span>
                         </td>
-                        <td style="padding: 10px 12px !important">
+                        <td v-if="detailRecord.status === 'Approved'" style="padding: 10px 12px !important">
                           <button
                             class="btn-create-inline"
                             style="
