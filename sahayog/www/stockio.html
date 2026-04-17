@@ -892,10 +892,10 @@
         <button
           class="btn-create"
           v-if="showDetailView && detailRecord && detailRecord.status === 'Draft' && activeItem === 'Requests'"
-          @click="toggleEditMode()"
+          @click="isEditing = !isEditing"
         >
-          <i class="fas fa-pencil-alt"></i>
-          <span>Edit</span>
+          <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
+          <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
         </button>
         <button
           class="btn-create"
@@ -4459,6 +4459,10 @@
   function StockIO() {
     return {
       $delimiters: ["[[", "]]"],
+      isEditing: false,
+      showInwardCreateView: false,
+      showOutwardCreateView: false,
+      showItemCreateView: false,
       sidebar: {
         header: {
           title: "StockIO",
