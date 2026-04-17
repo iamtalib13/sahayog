@@ -892,7 +892,7 @@
         <button
           class="btn-create"
           v-if="showDetailView && detailRecord && detailRecord.status === 'Draft' && activeItem === 'Requests'"
-          @click="isEditing = !isEditing"
+          @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
           <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
@@ -1622,7 +1622,29 @@
                     "
                     v-else
                   >
-                    [[ getFieldValue(detailRecord, field.key) ]]
+                    <div v-if="isEditing" class="searchable-select-wrapper">
+                      <!-- Employee Dropdown -->
+                      <div v-if="field.key === 'employee_name'">
+                        <input type="text" class="form-input" v-model="detailRecord.employee_name" @focus="focusedField = 'employee'" @blur="setTimeout(() => focusedField = null, 200)" />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
+                          <div v-for="emp in employees" :key="emp.name" class="searchable-select-option" @mousedown="detailRecord.employee_name = emp.employee_name">
+                            [[ emp.employee_name ]]
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Warehouse Dropdown -->
+                      <div v-else-if="field.key === 'target_warehouse'">
+                        <input type="text" class="form-input" v-model="detailRecord.target_warehouse" @focus="focusedField = 'wh'" @blur="setTimeout(() => focusedField = null, 200)" />
+                        <div class="searchable-select-dropdown" v-if="focusedField === 'wh'">
+                          <div v-for="wh in warehouses" :key="wh" class="searchable-select-option" @mousedown="detailRecord.target_warehouse = wh">
+                            [[ wh ]]
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Default -->
+                      <input v-else type="text" class="form-input" v-model="detailRecord[field.key]" />
+                    </div>
+                    <span v-else>[[ getFieldValue(detailRecord, field.key) ]]</span>
                   </span>
                 </div>
               </div>
@@ -1714,7 +1736,42 @@
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody v-if="isEditing">
+                      <tr v-for="(item, index) in detailRecord.items" :key="item.name || index">
+                        <td style="padding: 10px 12px !important">
+                          <div class="searchable-select-wrapper">
+                            <input type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.item_code" @focus="focusedField = 'item_' + index" @blur="setTimeout(() => focusedField = null, 200)" />
+                            <div class="searchable-select-dropdown" v-if="focusedField === 'item_' + index">
+                              <div v-for="opt in itemsList" :key="opt.name" class="searchable-select-option" @mousedown="item.item_code = opt.name">
+                                [[ opt.name ]] - [[ opt.item_name ]]
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <input type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.item_category" />
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <input type="number" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.quantity" />
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <span class="badge" :class="getBadgeClass(item, 'status')">[[ item.status ]]</span>
+                        </td>
+                        <td style="padding: 10px 12px !important">
+                          <button class="btn-create-inline" style="padding: 4px 8px !important; font-size: 0.75rem !important;" @click="detailRecord.items.splice(index, 1)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="5" style="padding: 10px 12px !important;">
+                          <button class="btn-create-inline" style="padding: 6px 12px !important; font-size: 0.75rem !important;" @click="detailRecord.items.push({item_code: '', item_category: '', quantity: 0, status: 'Draft'})">
+                            <i class="fas fa-plus"></i> Add Row
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tbody v-else>
                       <tr v-for="item in detailRecord.items" :key="item.name">
                         <td style="padding: 10px 12px !important">
                           <div
@@ -5599,6 +5656,31 @@
         this.focusedField = null;
         if (field === "employee") {
           this.onEmployeeChange();
+        }
+      },
+      toggleEditMode() {
+        this.isEditing = !this.isEditing;
+      },
+      async saveRequest() {
+        if (!this.detailRecord) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.save",
+            args: {
+              doc: this.detailRecord,
+            },
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isEditing = false;
+            frappe.show_alert({ message: "Request updated successfully", indicator: "green" });
+          }
+        } catch (e) {
+          console.error("Save error:", e);
+          frappe.show_alert({ message: "Error updating request", indicator: "red" });
+        } finally {
+          this.loading = false;
         }
       },
       handleDispatch(row) {
