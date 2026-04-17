@@ -13,15 +13,16 @@
   "status",
   "acted_by",
   "request_details_section",
-  "title",
   "category",
+  "title",
   "description",
   "approvers_section",
   "approvers",
   "attachments_section",
   "attachments",
   "approver_action_section",
-  "approver_remark"
+  "approver_remark",
+  "amended_from"
  ],
  "fields": [
   {
@@ -62,7 +63,7 @@
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
-   "label": "status",
+   "label": "Status",
    "options": "Draft\nPending Approval\nApproved\nRejected",
    "read_only": 1
   },
@@ -134,13 +135,23 @@
    "fieldname": "approver_remark",
    "fieldtype": "Small Text",
    "label": "Approver Remark"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Approval Request",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-17 11:55:06.618679",
+ "modified": "2026-04-17 12:12:22.809021",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Request",
