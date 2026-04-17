@@ -891,7 +891,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.status === 'Draft' && activeItem === 'Requests'"
+          v-if="showDetailView && detailRecord && detailRecord.status === 'Draft' && (activeItem === 'Requests' || activeItem === 'Inward')"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
