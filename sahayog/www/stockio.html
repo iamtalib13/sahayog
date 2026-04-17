@@ -1627,7 +1627,7 @@
                       <div v-if="field.key === 'employee_name'">
                         <input type="text" class="form-input" v-model="detailRecord.employee_name" @focus="focusedField = 'employee'" @blur="setTimeout(() => focusedField = null, 200)" />
                         <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
-                          <div v-for="emp in employees" :key="emp.name" class="searchable-select-option" @mousedown="detailRecord.employee_name = emp.employee_name">
+                          <div v-for="emp in employees.filter(e => !detailRecord.employee_name || e.employee_name.toLowerCase().includes(detailRecord.employee_name.toLowerCase()))" :key="emp.name" class="searchable-select-option" @mousedown="detailRecord.employee_name = emp.employee_name">
                             [[ emp.employee_name ]]
                           </div>
                         </div>
@@ -1636,7 +1636,7 @@
                       <div v-else-if="field.key === 'target_warehouse'">
                         <input type="text" class="form-input" v-model="detailRecord.target_warehouse" @focus="focusedField = 'wh'" @blur="setTimeout(() => focusedField = null, 200)" />
                         <div class="searchable-select-dropdown" v-if="focusedField === 'wh'">
-                          <div v-for="wh in warehouses" :key="wh" class="searchable-select-option" @mousedown="detailRecord.target_warehouse = wh">
+                          <div v-for="wh in warehouses.filter(w => !detailRecord.target_warehouse || w.toLowerCase().includes(detailRecord.target_warehouse.toLowerCase()))" :key="wh" class="searchable-select-option" @mousedown="detailRecord.target_warehouse = wh">
                             [[ wh ]]
                           </div>
                         </div>
@@ -1742,7 +1742,7 @@
                           <div class="searchable-select-wrapper">
                             <input type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="item.item_code" @focus="focusedField = 'item_' + index" @blur="setTimeout(() => focusedField = null, 200)" />
                             <div class="searchable-select-dropdown" v-if="focusedField === 'item_' + index">
-                              <div v-for="opt in itemsList" :key="opt.name" class="searchable-select-option" @mousedown="item.item_code = opt.name">
+                              <div v-for="opt in itemsList" :key="opt.name" class="searchable-select-option" @mousedown="item.item_code = opt.name; item.item_category = opt.item_category || 'Stock Item'; item.status = 'Pending'">
                                 [[ opt.name ]] - [[ opt.item_name ]]
                               </div>
                             </div>
