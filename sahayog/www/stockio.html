@@ -889,11 +889,20 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.status === 'Draft' || detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward')"
+          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward')"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
           <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward')"
+          style="background: var(--primary-color)"
+          @click="submitDetailRecord()"
+        >
+          <i class="fas fa-check-double"></i>
+          <span>Submit</span>
         </button>
         <button
           class="btn-create"
@@ -6160,6 +6169,38 @@
         } finally {
           this.loading = false;
         }
+      },
+      async submitDetailRecord() {
+        if (!this.detailRecord) return;
+        
+        frappe.confirm(
+          `Are you sure you want to permanently submit this ${this.activeItem} record?`,
+          async () => {
+            this.loading = true;
+            try {
+              const res = await frappe.call({
+                method: "frappe.client.submit",
+                args: {
+                  doc: this.detailRecord,
+                },
+              });
+              if (res.message) {
+                this.detailRecord = res.message;
+                frappe.show_alert({
+                  message: `${this.activeItem} submitted successfully`,
+                  indicator: "green",
+                });
+                await this.fetchData(this.currentView.doctype); // Refresh list view
+              }
+            } catch (e) {
+              console.error("Submission error:", e);
+              const errorMsg = e.message || e.exc || `Error submitting ${this.activeItem}`;
+              frappe.msgprint(`Error: ${errorMsg}`);
+            } finally {
+              this.loading = false;
+            }
+          }
+        );
       },
       formatCurrency(value) {
         const amount = Number(value || 0);
