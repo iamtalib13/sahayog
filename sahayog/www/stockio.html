@@ -5952,8 +5952,7 @@
             args: {
               doctype: "Employee",
               fields: ["name", "employee_name"],
-              filters: { status: "Active" },
-              limit_page_length: 1000,
+              limit_page_length: 5000,
             },
           });
           if (empRes.message) {
@@ -5972,7 +5971,7 @@
               doctype: "Warehouse",
               fields: ["name"],
               filters: { disabled: 0 },
-              limit_page_length: 500,
+              limit_page_length: 1000,
             },
           });
           if (whRes.message) {
@@ -5991,7 +5990,7 @@
               doctype: "Supplier",
               fields: ["name", "supplier_name"],
               filters: { disabled: 0 },
-              limit_page_length: 1000,
+              limit_page_length: 2000,
             },
           });
           if (supRes.message) {
@@ -6010,7 +6009,7 @@
               doctype: "Item",
               fields: ["name", "item_name", "stock_uom"],
               filters: { disabled: 0 },
-              limit_page_length: 2000,
+              limit_page_length: 5000,
             },
           });
           if (itemRes.message) {
@@ -6028,7 +6027,7 @@
             args: {
               doctype: "Item Group",
               fields: ["name"],
-              limit_page_length: 500,
+              limit_page_length: 1000,
             },
           });
           if (groupsRes.message) {
@@ -6045,7 +6044,7 @@
             args: {
               doctype: "Item Department",
               fields: ["name"],
-              limit_page_length: 500,
+              limit_page_length: 1000,
             },
           });
           if (deptRes.message) {
