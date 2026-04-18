@@ -1396,8 +1396,14 @@
               </button>
             </div>
             <div class="form-actions">
-              <button class="btn-create" @click="submitInward">
-                Submit Receipt
+              <button
+                class="btn-create"
+                @click="submitInward"
+                :disabled="creatingInward"
+              >
+                <i class="fas fa-check" v-if="!creatingInward"></i>
+                <i class="fas fa-spinner fa-spin" v-else></i>
+                <span>[[ creatingInward ? 'Submitting...' : 'Submit Receipt' ]]</span>
               </button>
               <button
                 class="btn-view-toggle"
@@ -1525,8 +1531,14 @@
               </button>
             </div>
             <div class="form-actions">
-              <button class="btn-create" @click="submitOutward">
-                Submit Entry
+              <button
+                class="btn-create"
+                @click="submitOutward"
+                :disabled="creatingOutward"
+              >
+                <i class="fas fa-check" v-if="!creatingOutward"></i>
+                <i class="fas fa-spinner fa-spin" v-else></i>
+                <span>[[ creatingOutward ? 'Submitting...' : 'Submit Entry' ]]</span>
               </button>
               <button
                 class="btn-view-toggle"
@@ -5120,6 +5132,8 @@
       detailRecord: null,
       detailFields: [],
       creatingEMR: false,
+      creatingInward: false,
+      creatingOutward: false,
       comments: [],
       requestStats: {
         draft: 0,
@@ -6220,6 +6234,151 @@
           frappe.msgprint(`Error: ${errorMsg}`);
         } finally {
           this.creatingEMR = false;
+        }
+      },
+      async submitInward() {
+        // Validation
+        if (!this.inwardForm.supplier) {
+          frappe.msgprint("Supplier is required");
+          return;
+        }
+        if (
+          !this.inwardItems ||
+          this.inwardItems.length === 0 ||
+          this.inwardItems.every((i) => !i.item_code)
+        ) {
+          frappe.msgprint("At least one item is required");
+          return;
+        }
+
+        this.creatingInward = true;
+        try {
+          // Ensure all items have necessary details (UOM, category)
+          for (let item of this.inwardItems) {
+            if (!item.item_code) continue;
+            if (!item.uom) {
+              const res = await frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "Item",
+                  filters: { name: item.item_code },
+                  fieldname: "stock_uom",
+                },
+              });
+              if (res.message) {
+                item.uom = res.message.stock_uom;
+              }
+            }
+          }
+
+          const doc = {
+            doctype: "Purchase Receipt",
+            supplier: this.inwardForm.supplier,
+            posting_date: this.inwardForm.posting_date,
+            set_warehouse: this.inwardForm.set_warehouse,
+            custom_po_wo: this.inwardForm.custom_po_wo,
+            custom_request_for: this.inwardForm.custom_request_for,
+            remarks: this.inwardForm.remarks,
+            items: this.inwardItems
+              .filter((i) => i.item_code)
+              .map((i) => ({
+                item_code: i.item_code,
+                qty: i.qty || 1,
+                uom: i.uom,
+                warehouse: i.warehouse || this.inwardForm.set_warehouse,
+                rate: i.rate || 0,
+              })),
+          };
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message) {
+            frappe.msgprint(`Purchase Receipt ${res.message.name} created!`);
+            this.showInwardCreateView = false;
+            await this.fetchData("Purchase Receipt");
+          }
+        } catch (e) {
+          console.error("Purchase Receipt creation error:", e);
+          const errorMsg =
+            e.message || e.exc || "Failed to create Purchase Receipt";
+          frappe.msgprint(`Error: ${errorMsg}`);
+        } finally {
+          this.creatingInward = false;
+        }
+      },
+
+      async submitOutward() {
+        if (!this.outwardForm.stock_entry_type) {
+          frappe.msgprint("Stock Entry Type is required");
+          return;
+        }
+        if (
+          !this.outwardItems ||
+          this.outwardItems.length === 0 ||
+          this.outwardItems.every((i) => !i.item_code)
+        ) {
+          frappe.msgprint("At least one item is required");
+          return;
+        }
+
+        this.creatingOutward = true;
+        try {
+          // Ensure items have UOM
+          for (let item of this.outwardItems) {
+            if (!item.item_code) continue;
+            if (!item.uom) {
+              const res = await frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "Item",
+                  filters: { name: item.item_code },
+                  fieldname: "stock_uom",
+                },
+              });
+              if (res.message) {
+                item.uom = res.message.stock_uom;
+              }
+            }
+          }
+
+          const doc = {
+            doctype: "Stock Entry",
+            stock_entry_type: this.outwardForm.stock_entry_type,
+            posting_date: this.outwardForm.posting_date,
+            from_warehouse: this.outwardForm.from_warehouse,
+            to_warehouse: this.outwardForm.to_warehouse,
+            remarks: this.outwardForm.remarks,
+            items: this.outwardItems
+              .filter((i) => i.item_code)
+              .map((i) => ({
+                item_code: i.item_code,
+                qty: i.qty || 1,
+                uom: i.uom,
+                s_warehouse: i.s_warehouse || this.outwardForm.from_warehouse,
+                t_warehouse: i.t_warehouse || this.outwardForm.to_warehouse,
+              })),
+          };
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message) {
+            frappe.msgprint(`Stock Entry ${res.message.name} created!`);
+            this.showOutwardCreateView = false;
+            await this.fetchData("Stock Entry");
+          }
+        } catch (e) {
+          console.error("Stock Entry creation error:", e);
+          const errorMsg =
+            e.message || e.exc || "Failed to create Stock Entry";
+          frappe.msgprint(`Error: ${errorMsg}`);
+        } finally {
+          this.creatingOutward = false;
         }
       },
       async openRecord(row) {
