@@ -1443,19 +1443,57 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">From Warehouse</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="outwardForm.from_warehouse"
-                />
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'outward_from_warehouse' }"
+                    v-model="outwardForm.from_warehouse_display"
+                    @focus="onFocusSearchable('outward_from_warehouse')"
+                    @blur="onBlurSearchable('outward_from_warehouse')"
+                    placeholder="From Warehouse"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'outward_from_warehouse'"
+                  >
+                    <div
+                      v-for="wh in warehouses.filter(w => !outwardForm.from_warehouse_display || w.toLowerCase().includes(outwardForm.from_warehouse_display.toLowerCase()))"
+                      :key="wh"
+                      class="searchable-select-option"
+                      @mousedown="outwardForm.from_warehouse = wh; outwardForm.from_warehouse_display = wh; focusedField = null;"
+                    >
+                      [[ wh ]]
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label class="form-label">To Warehouse</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="outwardForm.to_warehouse"
-                />
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'outward_to_warehouse' }"
+                    v-model="outwardForm.to_warehouse_display"
+                    @focus="onFocusSearchable('outward_to_warehouse')"
+                    @blur="onBlurSearchable('outward_to_warehouse')"
+                    placeholder="To Warehouse"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'outward_to_warehouse'"
+                  >
+                    <div
+                      v-for="wh in warehouses.filter(w => !outwardForm.to_warehouse_display || w.toLowerCase().includes(outwardForm.to_warehouse_display.toLowerCase()))"
+                      :key="wh"
+                      class="searchable-select-option"
+                      @mousedown="outwardForm.to_warehouse = wh; outwardForm.to_warehouse_display = wh; focusedField = null;"
+                    >
+                      [[ wh ]]
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div style="margin-top: 20px">
@@ -5777,7 +5815,9 @@
           this.outwardForm = {
             stock_entry_type: "Material Transfer",
             from_warehouse: "",
+            from_warehouse_display: "",
             to_warehouse: "",
+            to_warehouse_display: "",
             posting_date: frappe.datetime.now_date(),
             remarks: "",
           };
