@@ -44,7 +44,6 @@
    "read_only": 1
   },
   {
-   "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
@@ -133,7 +132,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-18 10:34:13.014162",
+ "modified": "2026-04-18 11:03:54.803350",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Request",
