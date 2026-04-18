@@ -83,6 +83,17 @@ frappe.ui.form.on('Approval Request', {
     refresh: function(frm) {
         frm.meta.is_submittable = 0;
 
+        // --- OVERRIDE DOCUMENT STATUS BADGE ---
+        if (frm.doc.status === 'Draft') {
+            frm.page.set_indicator(__('Draft'), 'grey');
+        } else if (frm.doc.status === 'Pending Approval') {
+            frm.page.set_indicator(__('Pending Approval'), 'orange');
+        } else if (frm.doc.status === 'Approved') {
+            frm.page.set_indicator(__('Approved'), 'green');
+        } else if (frm.doc.status === 'Rejected') {
+            frm.page.set_indicator(__('Rejected'), 'red');
+        }
+
         if (frm.form_wrapper.find('#approval-journey-container').length === 0) {
             frm.form_wrapper.find('.form-layout .form-page').prepend('<div id="approval-journey-container"></div>');
         }
