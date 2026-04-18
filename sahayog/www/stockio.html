@@ -897,7 +897,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward')"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests')"
           style="background: var(--primary-color)"
           @click="submitDetailRecord()"
         >
@@ -1601,34 +1601,101 @@
       <!-- Item Inline Creation View -->
       <div v-if="showItemCreateView" class="detail-view-container">
         <div class="detail-card">
-          <div class="profile-modal-body" style="padding: 20px">
-            <div class="form-group">
-              <label class="form-label"
-                >Item Name <span class="form-required">*</span></label
-              >
-              <input
-                type="text"
-                class="form-input"
-                v-model="createItemForm.item_name"
-                placeholder="Enter item name"
-              />
+          <div class="profile-modal-body" style="padding: 24px">
+            <h3 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-weight: 800; color: var(--text-main); text-transform: uppercase;">Create New Item</h3>
+            
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <!-- Item Name -->
+              <div class="form-group">
+                <label class="form-label">Item Name <span class="form-required">*</span></label>
+                <input type="text" class="form-input" v-model="createItemForm.item_name" placeholder="Enter item name" />
+              </div>
+
+              <!-- Item Department -->
+              <div class="form-group">
+                <label class="form-label">Item Department <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'item_department' }" v-model="createItemForm.item_department_display" @focus="onFocusSearchable('item_department')" @blur="onBlurSearchable('item_department')" placeholder="Search Department" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'item_department'">
+                    <div v-for="dept in filteredItemDepartments" :key="dept" class="searchable-select-option" @mousedown="createItemForm.item_department = dept; createItemForm.item_department_display = dept; focusedField = null;">[[ dept ]]</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Item Group -->
+              <div class="form-group">
+                <label class="form-label">Item Group <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'item_group' }" v-model="createItemForm.item_group_display" @focus="onFocusSearchable('item_group')" @blur="onBlurSearchable('item_group')" placeholder="Search Item Group" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'item_group'">
+                    <div v-for="group in filteredItemGroups" :key="group" class="searchable-select-option" @mousedown="createItemForm.item_group = group; createItemForm.item_group_display = group; focusedField = null;">[[ group ]]</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- HSN/SAC -->
+              <div class="form-group">
+                <label class="form-label">HSN/SAC</label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'hsn_sac' }" v-model="createItemForm.gst_hsn_code_display" @focus="onFocusSearchable('hsn_sac')" @blur="onBlurSearchable('hsn_sac')" placeholder="Search HSN/SAC" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'hsn_sac'">
+                    <div v-for="hsn in filteredHSNCodes" :key="hsn" class="searchable-select-option" @mousedown="createItemForm.gst_hsn_code = hsn; createItemForm.gst_hsn_code_display = hsn; focusedField = null;">[[ hsn ]]</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Valuation Rate -->
+              <div class="form-group">
+                <label class="form-label">Valuation Rate</label>
+                <input type="number" class="form-input" v-model.number="createItemForm.valuation_rate" placeholder="0.00" />
+              </div>
+
+              <!-- UOM -->
+              <div class="form-group" v-if="createItemForm.is_stock_item">
+                <label class="form-label">Stock UOM <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'stock_uom' }" v-model="createItemForm.stock_uom_display" @focus="onFocusSearchable('stock_uom')" @blur="onBlurSearchable('stock_uom')" placeholder="Search UOM" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'stock_uom'">
+                    <div v-for="uom in filteredStockUOMs" :key="uom" class="searchable-select-option" @mousedown="createItemForm.stock_uom = uom; createItemForm.stock_uom_display = uom; focusedField = null;">[[ uom ]]</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="checkbox-container">
-                <input type="checkbox" v-model="createItemForm.is_stock_item" />
-                Maintain Stock
+
+            <div class="form-row" style="display: flex; gap: 40px; margin-top: 10px; margin-bottom: 20px;">
+              <label class="form-checkbox-label">
+                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_stock_item" />
+                <span class="checkbox-text">Maintain Stock</span>
+              </label>
+              <label class="form-checkbox-label">
+                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_fixed_asset" />
+                <span class="checkbox-text">Is Fixed Asset</span>
               </label>
             </div>
+
+            <!-- Asset Category (Conditional) -->
+            <div class="form-group" v-if="createItemForm.is_fixed_asset" style="margin-bottom: 20px;">
+              <label class="form-label">Asset Category <span class="form-required">*</span></label>
+              <div class="searchable-select-wrapper">
+                <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'asset_category' }" v-model="createItemForm.asset_category_display" @focus="onFocusSearchable('asset_category')" @blur="onBlurSearchable('asset_category')" placeholder="Search Asset Category" />
+                <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category'">
+                  <div v-for="cat in filteredAssetCategories" :key="cat" class="searchable-select-option" @mousedown="createItemForm.asset_category = cat; createItemForm.asset_category_display = cat; focusedField = null;">[[ cat ]]</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group" style="margin-bottom: 24px;">
+              <label class="form-label">Description</label>
+              <textarea class="form-input" style="height: 80px; padding: 10px !important;" v-model="createItemForm.description" placeholder="Enter item description"></textarea>
+            </div>
+
             <div class="form-actions">
-              <button class="btn-create" @click="submitNewItem">
-                Create Item
+              <button class="btn-create" @click="submitNewItem" :disabled="creatingItem">
+                <i class="fas" :class="creatingItem ? 'fa-spinner fa-spin' : 'fa-plus'"></i>
+                <span>[[ creatingItem ? 'Creating...' : 'Create Item' ]]</span>
               </button>
-              <button
-                class="btn-view-toggle"
-                @click="showItemCreateView = false"
-              >
-                Cancel
-              </button>
+              <button class="btn-view-toggle" @click="showItemCreateView = false" :disabled="creatingItem">Cancel</button>
             </div>
           </div>
         </div>
@@ -5299,6 +5366,8 @@
         stock_uom_display: "",
         asset_category: "",
         asset_category_display: "",
+        valuation_rate: 0,
+        description: "",
       },
       itemDepartments: [],
       itemGroups: [],
@@ -5860,6 +5929,8 @@
             stock_uom_display: "",
             asset_category: "",
             asset_category_display: "",
+            valuation_rate: 0,
+            description: "",
           };
           return;
         }
@@ -6081,6 +6152,8 @@
             gst_hsn_code: this.createItemForm.gst_hsn_code,
             is_stock_item: this.createItemForm.is_stock_item ? 1 : 0,
             is_fixed_asset: this.createItemForm.is_fixed_asset ? 1 : 0,
+            valuation_rate: this.createItemForm.valuation_rate || 0,
+            description: this.createItemForm.description,
           };
 
           // Add conditional fields
