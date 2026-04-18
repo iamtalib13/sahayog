@@ -1299,22 +1299,21 @@
               </div>
               <div class="form-group">
                 <label class="form-label">PO/WO Number</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="inwardForm.custom_po_wo"
-                  placeholder="PO/WO Number"
-                />
+                <select class="form-input" v-model="inwardForm.custom_po_wo">
+                  <option value="" disabled>Select Type</option>
+                  <option value="Purchase Order">Purchase Order</option>
+                  <option value="Work Order">Work Order</option>
+                </select>
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Request For</label>
-              <input
-                type="text"
-                class="form-input"
-                v-model="inwardForm.custom_request_for"
-                placeholder="Request For"
-              />
+              <select class="form-input" v-model="inwardForm.custom_request_for">
+                <option value="" disabled>Select Request For</option>
+                <option value="Branch">Branch</option>
+                <option value="Project">Project</option>
+                <option value="Store">Store</option>
+              </select>
             </div>
             <div style="margin-top: 20px">
               <label class="form-label">Items</label>
@@ -1324,6 +1323,7 @@
                     <th>Item Code</th>
                     <th>Qty</th>
                     <th>Warehouse</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1336,22 +1336,22 @@
                         <input
                           type="text"
                           class="form-input searchable-select-input"
-                          :class="{ focused: focusedField === 'outward_item_' + index }"
+                          :class="{ focused: focusedField === 'inward_item_' + index }"
                           v-model="item.item_code_display"
-                          @focus="onFocusSearchable('outward_item_' + index)"
-                          @blur="onBlurSearchable('outward_item_' + index)"
+                          @focus="onFocusSearchable('inward_item_' + index)"
+                          @blur="onBlurSearchable('inward_item_' + index)"
                           placeholder="Item Code"
                         />
                         <div
                           class="searchable-select-dropdown"
-                          v-if="focusedField === 'outward_item_' + index"
+                          v-if="focusedField === 'inward_item_' + index"
                           style="width: 250px"
                         >
                           <div
                             v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
                             :key="opt.name"
                             class="searchable-select-option"
-                            @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                            @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                           >
                             <div style="font-weight: 500">[[ opt.name ]]</div>
                             <div style="font-size: 11px; opacity: 0.8">
@@ -1375,9 +1375,25 @@
                         v-model="item.warehouse"
                       />
                     </td>
+                    <td style="padding: 12px; width: 60px; text-align: center">
+                      <button
+                        class="btn-action"
+                        @click="removeInwardItem(index)"
+                        title="Remove"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
+              <button
+                class="btn-create-inline"
+                style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; width: auto; height: auto;"
+                @click="addInwardItem"
+              >
+                <i class="fas fa-plus"></i> Add Row
+              </button>
             </div>
             <div class="form-actions">
               <button class="btn-create" @click="submitInward">
@@ -1443,6 +1459,7 @@
                   <tr>
                     <th>Item Code</th>
                     <th>Qty</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1487,9 +1504,25 @@
                         v-model.number="item.qty"
                       />
                     </td>
+                    <td style="padding: 12px; width: 60px; text-align: center">
+                      <button
+                        class="btn-action"
+                        @click="removeOutwardItem(index)"
+                        title="Remove"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
+              <button
+                class="btn-create-inline"
+                style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; width: auto; height: auto;"
+                @click="addOutwardItem"
+              >
+                <i class="fas fa-plus"></i> Add Row
+              </button>
             </div>
             <div class="form-actions">
               <button class="btn-create" @click="submitOutward">
@@ -5035,6 +5068,7 @@
       },
       employees: [],
       warehouses: [],
+      suppliers: [],
       itemsList: [],
       emrItems: [
         {
@@ -5139,6 +5173,11 @@
         if (!this.emrForm.source_warehouse_display) return this.warehouses;
         const q = this.emrForm.source_warehouse_display.toLowerCase();
         return this.warehouses.filter((w) => w.toLowerCase().includes(q));
+      },
+      get filteredSuppliers() {
+        if (!this.inwardForm || !this.inwardForm.supplier_display) return this.suppliers;
+        const q = this.inwardForm.supplier_display.toLowerCase();
+        return this.suppliers.filter((s) => s.name.toLowerCase().includes(q) || (s.supplier_name && s.supplier_name.toLowerCase().includes(q)));
       },
 
       get filteredEmployees() {
@@ -5662,6 +5701,25 @@
         }
 
         try {
+          // Fetch Suppliers
+          const supRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Supplier",
+              fields: ["name", "supplier_name"],
+              filters: { disabled: 0 },
+              limit_page_length: 1000,
+            },
+          });
+          if (supRes.message) {
+            this.suppliers = supRes.message;
+          }
+        } catch (e) {
+          console.error("Error fetching suppliers:", e);
+          this.suppliers = [];
+        }
+
+        try {
           // Fetch Items for dropdown
           const itemRes = await frappe.call({
             method: "frappe.client.get_list",
@@ -6031,6 +6089,45 @@
         if (this.emrItems.length > 1) {
           this.emrItems.splice(index, 1);
         }
+      },
+      addInwardItem() {
+        this.inwardItems.push({
+          item_code: "",
+          item_code_display: "",
+          uom: "",
+          qty: 1,
+          rate: 0,
+          warehouse: "",
+        });
+      },
+      removeInwardItem(index) {
+        if (this.inwardItems.length > 1) {
+          this.inwardItems.splice(index, 1);
+        }
+      },
+      selectInwardItemOption(index, itemCode, itemName, uom) {
+        const item = this.inwardItems[index];
+        item.item_code = itemCode;
+        item.item_code_display = itemCode;
+        this.focusedField = null;
+      },
+      addOutwardItem() {
+        this.outwardItems.push({
+          item_code: "",
+          item_code_display: "",
+          qty: 1,
+        });
+      },
+      removeOutwardItem(index) {
+        if (this.outwardItems.length > 1) {
+          this.outwardItems.splice(index, 1);
+        }
+      },
+      selectOutwardItemOption(index, itemCode, itemName, uom) {
+        const item = this.outwardItems[index];
+        item.item_code = itemCode;
+        item.item_code_display = itemCode;
+        this.focusedField = null;
       },
       async submitEMR() {
         // Validation
