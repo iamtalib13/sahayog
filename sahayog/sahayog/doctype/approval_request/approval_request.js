@@ -69,7 +69,94 @@ frappe.ui.form.on('Approval Request', {
         if (frm.is_new()) fill_branch_user_details(frm);
     },
     
+    // refresh: function(frm) {
+    //     frm.meta.is_submittable = 0;
+
+    //     if (frm.form_wrapper.find('#approval-journey-container').length === 0) {
+    //         frm.form_wrapper.find('.form-layout .form-page').prepend('<div id="approval-journey-container"></div>');
+    //     }
+
+    //     if (frm.is_new()) {
+    //         fill_branch_user_details(frm);
+    //         frm.form_wrapper.find('#approval-journey-container').empty();
+    //         return;
+    //     }
+
+    //     // --- CUSTOM LOCK LOGIC ---
+    //     const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.status);
+    //     const is_editable = ['Draft', 'Rejected'].includes(frm.doc.status);
+
+    //     if (is_locked) {
+    //         frm.disable_save();
+    //         ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+    //             frm.set_df_property(field, 'read_only', 1);
+    //         });
+    //     } else {
+    //         frm.enable_save();
+    //         ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+    //             frm.set_df_property(field, 'read_only', 0);
+    //         });
+    //     }
+
+    //     // --- CLEAR ALL OLD CUSTOM BUTTONS ---
+    //     frm.clear_custom_buttons();
+
+    //     // --- ADD "SUBMIT REQUEST" BUTTON ---
+    //     if (is_editable && !frm.is_new()) {
+    //         let submit_btn = frm.add_custom_button(__('Submit Request'), function() {
+    //             if (frm.is_dirty()) {
+    //                 frappe.msgprint(__('Please Save the document before submitting.'));
+    //                 return;
+    //             }
+    //             frappe.confirm(__('Are you sure you want to submit this request?'), function() {
+    //                 frappe.call({
+    //                     method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
+    //                     args: { docname: frm.doc.name },
+    //                     freeze: true,
+    //                     freeze_message: 'Submitting...',
+    //                     callback: function(r) {
+    //                         if (!r.exc) {
+    //                             frappe.show_alert({message: 'Request Submitted Successfully', indicator: 'green'});
+    //                             frm.reload_doc();
+    //                         }
+    //                     }
+    //                 });
+    //             });
+    //         });
+    //         // Style it Blue so it looks like a primary action!
+    //         submit_btn.removeClass('btn-default').addClass('btn-primary').css({'color': 'white', 'font-weight': 'bold'});
+    //     }
+
+    //     // --- ADD APPROVER BUTTONS ---
+    //     if (frm.doc.status === 'Pending Approval') {
+    //         let is_approver = (frm.doc.approvers || []).some(a => a.approver === frappe.session.user);
+    //         if (is_approver) {
+    //             frm.add_custom_button(__('Approve'), () => prompt_remark(frm, 'Approved'))
+    //                .removeClass('btn-default').addClass('btn-success')
+    //                .css({'color': 'white', 'font-weight': 'bold'});
+                   
+    //             frm.add_custom_button(__('Reject'), () => prompt_remark(frm, 'Rejected'))
+    //                .removeClass('btn-default').addClass('btn-danger')
+    //                .css({'color': 'white', 'font-weight': 'bold'});
+    //         }
+    //     }
+
+    //     // --- CLEAN UP NATIVE DROPDOWN ---
+    //     setTimeout(() => {
+    //         frm.page.wrapper.find('[data-label="Submit"]').closest('li').remove();
+    //         let $actionBtnGroup = frm.page.wrapper.find('.actions-btn-group');
+    //         let visibleActions = $actionBtnGroup.find('li:visible').filter(function() {
+    //             return $(this).text().trim() !== 'Help' && !$(this).hasClass('dropdown-divider');
+    //         });
+    //         if(visibleActions.length === 0) $actionBtnGroup.hide();
+    //     }, 50);
+
+    //     setTimeout(() => frm.trigger('render_approval_progress_intro'), 100);
+    // },
+
+
     refresh: function(frm) {
+        frm.page.actions_btn_group.hide();
         frm.meta.is_submittable = 0;
 
         if (frm.form_wrapper.find('#approval-journey-container').length === 0) {
@@ -79,7 +166,7 @@ frappe.ui.form.on('Approval Request', {
         if (frm.is_new()) {
             fill_branch_user_details(frm);
             frm.form_wrapper.find('#approval-journey-container').empty();
-            return;
+            return; 
         }
 
         // --- CUSTOM LOCK LOGIC ---
@@ -98,58 +185,104 @@ frappe.ui.form.on('Approval Request', {
             });
         }
 
-        // --- CLEAR ALL OLD CUSTOM BUTTONS ---
+        // --- CLEAR ALL OLD BUTTONS ---
         frm.clear_custom_buttons();
+        frm.page.clear_inner_toolbar(); // Crucial: Clears old inner buttons
 
-        // --- ADD "SUBMIT REQUEST" BUTTON ---
-        if (is_editable && !frm.is_new()) {
-            let submit_btn = frm.add_custom_button(__('Submit Request'), function() {
-                if (frm.is_dirty()) {
-                    frappe.msgprint(__('Please Save the document before submitting.'));
-                    return;
-                }
-                frappe.confirm(__('Are you sure you want to submit this request?'), function() {
-                    frappe.call({
-                        method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
-                        args: { docname: frm.doc.name },
-                        freeze: true,
-                        freeze_message: 'Submitting...',
-                        callback: function(r) {
-                            if (!r.exc) {
-                                frappe.show_alert({message: 'Request Submitted Successfully', indicator: 'green'});
-                                frm.reload_doc();
+        // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
+        // if (is_editable) {
+        //     if (!frm.is_dirty()) {
+        //         // Notice we use add_inner_button now!
+        //         let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
+        //             frappe.confirm(__('Are you sure you want to submit this request?'), function() {
+        //                 frappe.call({
+        //                     method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
+        //                     args: { docname: frm.doc.name },
+        //                     freeze: true,
+        //                     freeze_message: 'Submitting...',
+        //                     callback: function(r) {
+        //                         if (!r.exc) {
+        //                             frappe.show_alert({message: 'Request Submitted Successfully', indicator: 'green'});
+        //                             frm.reload_doc();
+        //                         }
+        //                     }
+        //                 });
+        //             });
+        //         });
+        //         submit_btn.removeClass('btn-default').addClass('btn-primary').css({'color': 'white', 'font-weight': 'bold'});
+        //     }
+
+        //     // Real-time listener for dirty form
+        //     // frm.wrapper.off('change input').on('change input', function() {
+        //     //     setTimeout(() => {
+        //     //         if (frm.is_dirty()) {
+        //     //             frm.page.remove_inner_button(__('Submit Request'));
+        //     //         }
+        //     //     }, 100);
+        //     // });
+        //                 // Use Frappe's native event listener to hide the button the instant the form becomes unsaved
+        //     frappe.ui.form.on("Approval Request", "on_dirty", function(frm) {
+        //         frm.page.remove_inner_button(__('Submit Request'));
+        //     });
+        // }
+
+                // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
+        if (is_editable) {
+            if (!frm.is_dirty()) {
+                let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
+                    frappe.confirm(__('Are you sure you want to submit this request?'), function() {
+                        frappe.call({
+                            method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
+                            args: { docname: frm.doc.name },
+                            freeze: true,
+                            freeze_message: 'Submitting...',
+                            callback: function(r) {
+                                if (!r.exc) {
+                                    frappe.show_alert({message: 'Request Submitted Successfully', indicator: 'green'});
+                                    frm.reload_doc();
+                                }
                             }
-                        }
+                        });
                     });
                 });
-            });
-            // Style it Blue so it looks like a primary action!
-            submit_btn.removeClass('btn-default').addClass('btn-primary').css({'color': 'white', 'font-weight': 'bold'});
+                submit_btn.removeClass('btn-default').addClass('btn-primary').css({'color': 'white', 'font-weight': 'bold'});
+            }
+
+            // BULLETPROOF DIRTY WATCHER
+            // Check every 500ms if the form has become dirty. If it has, hide the button!
+            if (frm._dirty_watcher) clearInterval(frm._dirty_watcher); // Clear old interval if it exists
+            
+            frm._dirty_watcher = setInterval(() => {
+                if (frm.is_dirty()) {
+                    frm.page.remove_inner_button(__('Submit Request'));
+                    clearInterval(frm._dirty_watcher); // Stop checking once it's hidden
+                }
+            }, 500);
         }
 
-        // --- ADD APPROVER BUTTONS ---
+        // --- ADD APPROVE / REJECT AS STANDALONE INNER BUTTONS ---
         if (frm.doc.status === 'Pending Approval') {
             let is_approver = (frm.doc.approvers || []).some(a => a.approver === frappe.session.user);
             if (is_approver) {
-                frm.add_custom_button(__('Approve'), () => prompt_remark(frm, 'Approved'))
-                   .removeClass('btn-default').addClass('btn-success')
-                   .css({'color': 'white', 'font-weight': 'bold'});
+                // Notice we use add_inner_button now!
+                let approve_btn = frm.page.add_inner_button(__('Approve'), () => prompt_remark(frm, 'Approved'));
+                approve_btn.removeClass('btn-default').addClass('btn-success').css({'color': 'white', 'font-weight': 'bold'});
                    
-                frm.add_custom_button(__('Reject'), () => prompt_remark(frm, 'Rejected'))
-                   .removeClass('btn-default').addClass('btn-danger')
-                   .css({'color': 'white', 'font-weight': 'bold'});
+                let reject_btn = frm.page.add_inner_button(__('Reject'), () => prompt_remark(frm, 'Rejected'));
+                reject_btn.removeClass('btn-default').addClass('btn-danger').css({'color': 'white', 'font-weight': 'bold'});
             }
         }
 
-        // --- CLEAN UP NATIVE DROPDOWN ---
-        setTimeout(() => {
-            frm.page.wrapper.find('[data-label="Submit"]').closest('li').remove();
+        // --- OBLITERATE THE ACTIONS DROPDOWN ---
+        // Because all our custom buttons are now safely outside in the inner toolbar,
+        // we can aggressively force-hide the Actions menu natively without destroying our own UI!
+        let action_cleanup_interval = setInterval(() => {
             let $actionBtnGroup = frm.page.wrapper.find('.actions-btn-group');
-            let visibleActions = $actionBtnGroup.find('li:visible').filter(function() {
-                return $(this).text().trim() !== 'Help' && !$(this).hasClass('dropdown-divider');
-            });
-            if(visibleActions.length === 0) $actionBtnGroup.hide();
+            if ($actionBtnGroup.length) {
+                $actionBtnGroup.attr('style', 'display: none !important');
+            }
         }, 50);
+        setTimeout(() => clearInterval(action_cleanup_interval), 2000);
 
         setTimeout(() => frm.trigger('render_approval_progress_intro'), 100);
     },
@@ -281,6 +414,7 @@ frappe.ui.form.on('Approval Request', {
 
         const full_html = `
             <style>
+            
                 .custom-approval-journey {
                     background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
                     border: 1px solid #dbe7f3;
