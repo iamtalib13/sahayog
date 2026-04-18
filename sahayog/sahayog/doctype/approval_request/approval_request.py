@@ -27,7 +27,6 @@ class ApprovalRequest(Document):
 
         old_status = frappe.db.get_value(
             "Approval Request", self.name, "status")
-        # Lock validation bypass if called from our backend action
         if old_status in LOCKED_STATUSES and not getattr(frappe.flags, "in_approval_action", False):
             frappe.throw(
                 f"Document is locked in status '{old_status}' and cannot be edited.")
@@ -50,6 +49,31 @@ def ensure_docshare(doc, user):
         share.insert(ignore_permissions=True)
 
 
+def get_all_valid_approvers(doc):
+    """Returns a list of user_ids for direct approvers AND their reporting managers"""
+    users = []
+    for d in doc.approvers:
+        if d.approver:
+            users.append(d.approver)
+            # Find the approver's Employee record and check reports_to
+            emp = frappe.db.get_value(
+                "Employee", {"user_id": d.approver}, "reports_to")
+            if emp:
+                manager_user = frappe.db.get_value("Employee", emp, "user_id")
+                if manager_user:
+                    users.append(manager_user)
+
+    return list(set(users))  # Remove duplicates
+
+
+@frappe.whitelist()
+def is_valid_approver(docname):
+    """Called by JS to see if current user is an approver or manager"""
+    doc = frappe.get_doc("Approval Request", docname)
+    valid_approvers = get_all_valid_approvers(doc)
+    return frappe.session.user in valid_approvers
+
+
 @frappe.whitelist()
 def submit_for_approval(docname):
     doc = frappe.get_doc("Approval Request", docname)
@@ -66,11 +90,14 @@ def submit_for_approval(docname):
         doc.approver_remark = None
         doc.save(ignore_permissions=True)
 
-        for row in doc.approvers:
-            ensure_docshare(doc, row.approver)
+        # Notify and share with BOTH direct approvers and their managers
+        approvers_to_notify = get_all_valid_approvers(doc)
+
+        for user in approvers_to_notify:
+            ensure_docshare(doc, user)
             frappe.new_doc("Notification Log").update({
                 "subject": f"Pending Approval: {doc.title}",
-                "for_user": row.approver,
+                "for_user": user,
                 "document_type": doc.doctype,
                 "document_name": doc.name
             }).insert(ignore_permissions=True)
@@ -90,7 +117,8 @@ def process_approval(docname, action, remark):
 
     doc = frappe.get_doc("Approval Request", docname)
     user = frappe.session.user
-    valid_approvers = [d.approver for d in doc.approvers if d.approver]
+
+    valid_approvers = get_all_valid_approvers(doc)
 
     if doc.status != "Pending Approval":
         frappe.throw(f"This request is already {doc.status}.")
