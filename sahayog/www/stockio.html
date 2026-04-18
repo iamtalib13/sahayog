@@ -1639,7 +1639,10 @@
                 <div class="searchable-select-wrapper">
                   <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'hsn_sac' }" v-model="createItemForm.gst_hsn_code_display" @focus="onFocusSearchable('hsn_sac')" @blur="onBlurSearchable('hsn_sac')" placeholder="Search HSN/SAC" />
                   <div class="searchable-select-dropdown" v-if="focusedField === 'hsn_sac'">
-                    <div v-for="hsn in filteredHSNCodes" :key="hsn" class="searchable-select-option" @mousedown="createItemForm.gst_hsn_code = hsn; createItemForm.gst_hsn_code_display = hsn; focusedField = null;">[[ hsn ]]</div>
+                    <div v-for="hsn in filteredHSNCodes" :key="hsn.name" class="searchable-select-option" @mousedown="createItemForm.gst_hsn_code = hsn.name; createItemForm.gst_hsn_code_display = hsn.name; focusedField = null;">
+                      <div style="font-weight: 500">[[ hsn.name ]]</div>
+                      <div style="font-size: 11px; opacity: 0.8" v-if="hsn.description">[[ hsn.description ]]</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1650,7 +1653,7 @@
                 <input type="number" class="form-input" v-model.number="createItemForm.valuation_rate" placeholder="0.00" />
               </div>
 
-              <!-- UOM -->
+              <!-- UOM (Conditional for Stock Items) -->
               <div class="form-group" v-if="createItemForm.is_stock_item">
                 <label class="form-label">Stock UOM <span class="form-required">*</span></label>
                 <div class="searchable-select-wrapper">
@@ -1660,34 +1663,36 @@
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="form-row" style="display: flex; gap: 40px; margin-top: 10px; margin-bottom: 20px;">
-              <label class="form-checkbox-label">
-                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_stock_item" />
-                <span class="checkbox-text">Maintain Stock</span>
-              </label>
-              <label class="form-checkbox-label">
-                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_fixed_asset" />
-                <span class="checkbox-text">Is Fixed Asset</span>
-              </label>
-            </div>
-
-            <!-- Asset Category (Conditional) -->
-            <div class="form-group" v-if="createItemForm.is_fixed_asset" style="margin-bottom: 20px;">
-              <label class="form-label">Asset Category <span class="form-required">*</span></label>
-              <div class="searchable-select-wrapper">
-                <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'asset_category' }" v-model="createItemForm.asset_category_display" @focus="onFocusSearchable('asset_category')" @blur="onBlurSearchable('asset_category')" placeholder="Search Asset Category" />
-                <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category'">
-                  <div v-for="cat in filteredAssetCategories" :key="cat" class="searchable-select-option" @mousedown="createItemForm.asset_category = cat; createItemForm.asset_category_display = cat; focusedField = null;">[[ cat ]]</div>
+              <!-- Asset Category (Conditional for Fixed Assets) -->
+              <div class="form-group" v-if="createItemForm.is_fixed_asset">
+                <label class="form-label">Asset Category <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'asset_category' }" v-model="createItemForm.asset_category_display" @focus="onFocusSearchable('asset_category')" @blur="onBlurSearchable('asset_category')" placeholder="Search Asset Category" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category'">
+                    <div v-for="cat in filteredAssetCategories" :key="cat" class="searchable-select-option" @mousedown="createItemForm.asset_category = cat; createItemForm.asset_category_display = cat; focusedField = null;">[[ cat ]]</div>
+                  </div>
                 </div>
               </div>
             </div>
 
+            <div class="form-row" style="display: flex; gap: 40px; margin-top: 10px; margin-bottom: 20px;">
+              <label class="form-checkbox-label">
+                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_stock_item" @change="if(createItemForm.is_stock_item) createItemForm.is_fixed_asset = false" />
+                <span class="checkbox-text">Maintain Stock</span>
+              </label>
+              <label class="form-checkbox-label">
+                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_fixed_asset" @change="if(createItemForm.is_fixed_asset) createItemForm.is_stock_item = false" />
+                <span class="checkbox-text">Is Fixed Asset</span>
+              </label>
+            </div>
+
+
+
             <!-- Description -->
             <div class="form-group" style="margin-bottom: 24px;">
               <label class="form-label">Description</label>
-              <textarea class="form-input" style="height: 80px; padding: 10px !important;" v-model="createItemForm.description" placeholder="Enter item description"></textarea>
+              <textarea class="form-input" style="height: 80px; padding: 10px !important;" v-model="createItemForm.description" placeholder="Enter item description" spellcheck="false" data-gramm="false"></textarea>
             </div>
 
             <div class="form-actions">
@@ -5488,9 +5493,9 @@
         );
       },
       get filteredHSNCodes() {
-        const search = (
-          this.createItemForm.gst_hsn_code_display || ""
-        ).toLowerCase();
+        if (!this.createItemForm) return [];
+        const display = this.createItemForm.gst_hsn_code_display;
+        const search = (typeof display === 'string' ? display : "").toLowerCase();
         if (!search) return this.hsnCodes;
         return this.hsnCodes.filter(
           (h) =>
@@ -6171,7 +6176,7 @@
 
           if (res.message && res.message.name) {
             frappe.msgprint(`Item "${res.message.name}" created successfully`);
-            this.showCreateItemModal = false;
+            this.showItemCreateView = false;
             await this.fetchData("Item");
           }
         } catch (e) {
