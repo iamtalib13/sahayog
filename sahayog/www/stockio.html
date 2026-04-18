@@ -889,11 +889,20 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.status === 'Draft' || detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward')"
+          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward')"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
           <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests')"
+          style="background: var(--primary-color)"
+          @click="submitDetailRecord()"
+        >
+          <i class="fas fa-check-double"></i>
+          <span>Submit</span>
         </button>
         <button
           class="btn-create"
@@ -1299,22 +1308,21 @@
               </div>
               <div class="form-group">
                 <label class="form-label">PO/WO Number</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="inwardForm.custom_po_wo"
-                  placeholder="PO/WO Number"
-                />
+                <select class="form-input" v-model="inwardForm.custom_po_wo">
+                  <option value="" disabled>Select Type</option>
+                  <option value="Purchase Order">Purchase Order</option>
+                  <option value="Work Order">Work Order</option>
+                </select>
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Request For</label>
-              <input
-                type="text"
-                class="form-input"
-                v-model="inwardForm.custom_request_for"
-                placeholder="Request For"
-              />
+              <select class="form-input" v-model="inwardForm.custom_request_for">
+                <option value="" disabled>Select Request For</option>
+                <option value="Branch">Branch</option>
+                <option value="Project">Project</option>
+                <option value="Store">Store</option>
+              </select>
             </div>
             <div style="margin-top: 20px">
               <label class="form-label">Items</label>
@@ -1324,6 +1332,7 @@
                     <th>Item Code</th>
                     <th>Qty</th>
                     <th>Warehouse</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1336,22 +1345,22 @@
                         <input
                           type="text"
                           class="form-input searchable-select-input"
-                          :class="{ focused: focusedField === 'outward_item_' + index }"
+                          :class="{ focused: focusedField === 'inward_item_' + index }"
                           v-model="item.item_code_display"
-                          @focus="onFocusSearchable('outward_item_' + index)"
-                          @blur="onBlurSearchable('outward_item_' + index)"
+                          @focus="onFocusSearchable('inward_item_' + index)"
+                          @blur="onBlurSearchable('inward_item_' + index)"
                           placeholder="Item Code"
                         />
                         <div
                           class="searchable-select-dropdown"
-                          v-if="focusedField === 'outward_item_' + index"
+                          v-if="focusedField === 'inward_item_' + index"
                           style="width: 250px"
                         >
                           <div
                             v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
                             :key="opt.name"
                             class="searchable-select-option"
-                            @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                            @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                           >
                             <div style="font-weight: 500">[[ opt.name ]]</div>
                             <div style="font-size: 11px; opacity: 0.8">
@@ -1375,13 +1384,35 @@
                         v-model="item.warehouse"
                       />
                     </td>
+                    <td style="padding: 12px; width: 60px; text-align: center">
+                      <button
+                        class="btn-action"
+                        @click="removeInwardItem(index)"
+                        title="Remove"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
+              <button
+                class="btn-create-inline"
+                style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; width: auto; height: auto;"
+                @click="addInwardItem"
+              >
+                <i class="fas fa-plus"></i> Add Row
+              </button>
             </div>
             <div class="form-actions">
-              <button class="btn-create" @click="submitInward">
-                Submit Receipt
+              <button
+                class="btn-create"
+                @click="submitInward"
+                :disabled="creatingInward"
+              >
+                <i class="fas fa-check" v-if="!creatingInward"></i>
+                <i class="fas fa-spinner fa-spin" v-else></i>
+                <span>[[ creatingInward ? 'Submitting...' : 'Submit Receipt' ]]</span>
               </button>
               <button
                 class="btn-view-toggle"
@@ -1421,19 +1452,57 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">From Warehouse</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="outwardForm.from_warehouse"
-                />
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'outward_from_warehouse' }"
+                    v-model="outwardForm.from_warehouse_display"
+                    @focus="onFocusSearchable('outward_from_warehouse')"
+                    @blur="onBlurSearchable('outward_from_warehouse')"
+                    placeholder="From Warehouse"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'outward_from_warehouse'"
+                  >
+                    <div
+                      v-for="wh in warehouses.filter(w => !outwardForm.from_warehouse_display || w.toLowerCase().includes(outwardForm.from_warehouse_display.toLowerCase()))"
+                      :key="wh"
+                      class="searchable-select-option"
+                      @mousedown="outwardForm.from_warehouse = wh; outwardForm.from_warehouse_display = wh; focusedField = null;"
+                    >
+                      [[ wh ]]
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label class="form-label">To Warehouse</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="outwardForm.to_warehouse"
-                />
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'outward_to_warehouse' }"
+                    v-model="outwardForm.to_warehouse_display"
+                    @focus="onFocusSearchable('outward_to_warehouse')"
+                    @blur="onBlurSearchable('outward_to_warehouse')"
+                    placeholder="To Warehouse"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'outward_to_warehouse'"
+                  >
+                    <div
+                      v-for="wh in warehouses.filter(w => !outwardForm.to_warehouse_display || w.toLowerCase().includes(outwardForm.to_warehouse_display.toLowerCase()))"
+                      :key="wh"
+                      class="searchable-select-option"
+                      @mousedown="outwardForm.to_warehouse = wh; outwardForm.to_warehouse_display = wh; focusedField = null;"
+                    >
+                      [[ wh ]]
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div style="margin-top: 20px">
@@ -1443,6 +1512,7 @@
                   <tr>
                     <th>Item Code</th>
                     <th>Qty</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1487,13 +1557,35 @@
                         v-model.number="item.qty"
                       />
                     </td>
+                    <td style="padding: 12px; width: 60px; text-align: center">
+                      <button
+                        class="btn-action"
+                        @click="removeOutwardItem(index)"
+                        title="Remove"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
+              <button
+                class="btn-create-inline"
+                style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; width: auto; height: auto;"
+                @click="addOutwardItem"
+              >
+                <i class="fas fa-plus"></i> Add Row
+              </button>
             </div>
             <div class="form-actions">
-              <button class="btn-create" @click="submitOutward">
-                Submit Entry
+              <button
+                class="btn-create"
+                @click="submitOutward"
+                :disabled="creatingOutward"
+              >
+                <i class="fas fa-check" v-if="!creatingOutward"></i>
+                <i class="fas fa-spinner fa-spin" v-else></i>
+                <span>[[ creatingOutward ? 'Submitting...' : 'Submit Entry' ]]</span>
               </button>
               <button
                 class="btn-view-toggle"
@@ -1509,34 +1601,106 @@
       <!-- Item Inline Creation View -->
       <div v-if="showItemCreateView" class="detail-view-container">
         <div class="detail-card">
-          <div class="profile-modal-body" style="padding: 20px">
-            <div class="form-group">
-              <label class="form-label"
-                >Item Name <span class="form-required">*</span></label
-              >
-              <input
-                type="text"
-                class="form-input"
-                v-model="createItemForm.item_name"
-                placeholder="Enter item name"
-              />
+          <div class="profile-modal-body" style="padding: 24px">
+            <h3 class="section-subtitle" style="margin-top: 0; margin-bottom: 24px; font-weight: 800; color: var(--text-main); text-transform: uppercase;">Create New Item</h3>
+            
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <!-- Item Name -->
+              <div class="form-group">
+                <label class="form-label">Item Name <span class="form-required">*</span></label>
+                <input type="text" class="form-input" v-model="createItemForm.item_name" placeholder="Enter item name" />
+              </div>
+
+              <!-- Item Department -->
+              <div class="form-group">
+                <label class="form-label">Item Department <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'item_department' }" v-model="createItemForm.item_department_display" @focus="onFocusSearchable('item_department')" @blur="onBlurSearchable('item_department')" placeholder="Search Department" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'item_department'">
+                    <div v-for="dept in filteredItemDepartments" :key="dept" class="searchable-select-option" @mousedown="createItemForm.item_department = dept; createItemForm.item_department_display = dept; focusedField = null;">[[ dept ]]</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Item Group -->
+              <div class="form-group">
+                <label class="form-label">Item Group <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'item_group' }" v-model="createItemForm.item_group_display" @focus="onFocusSearchable('item_group')" @blur="onBlurSearchable('item_group')" placeholder="Search Item Group" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'item_group'">
+                    <div v-for="group in filteredItemGroups" :key="group" class="searchable-select-option" @mousedown="createItemForm.item_group = group; createItemForm.item_group_display = group; focusedField = null;">[[ group ]]</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- HSN/SAC -->
+              <div class="form-group">
+                <label class="form-label">HSN/SAC</label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'hsn_sac' }" v-model="createItemForm.gst_hsn_code_display" @focus="onFocusSearchable('hsn_sac')" @blur="onBlurSearchable('hsn_sac')" placeholder="Search HSN/SAC" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'hsn_sac'">
+                    <div v-for="hsn in filteredHSNCodes" :key="hsn.name" class="searchable-select-option" @mousedown="createItemForm.gst_hsn_code = hsn.name; createItemForm.gst_hsn_code_display = hsn.name; focusedField = null;">
+                      <div style="font-weight: 500">[[ hsn.name ]]</div>
+                      <div style="font-size: 11px; opacity: 0.8" v-if="hsn.description">[[ hsn.description ]]</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Valuation Rate -->
+              <div class="form-group">
+                <label class="form-label">Valuation Rate</label>
+                <input type="number" class="form-input" v-model.number="createItemForm.valuation_rate" placeholder="0.00" />
+              </div>
+
+              <!-- UOM (Conditional for Stock Items) -->
+              <div class="form-group" v-if="createItemForm.is_stock_item">
+                <label class="form-label">Stock UOM <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'stock_uom' }" v-model="createItemForm.stock_uom_display" @focus="onFocusSearchable('stock_uom')" @blur="onBlurSearchable('stock_uom')" placeholder="Search UOM" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'stock_uom'">
+                    <div v-for="uom in filteredStockUOMs" :key="uom" class="searchable-select-option" @mousedown="createItemForm.stock_uom = uom; createItemForm.stock_uom_display = uom; focusedField = null;">[[ uom ]]</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Asset Category (Conditional for Fixed Assets) -->
+              <div class="form-group" v-if="createItemForm.is_fixed_asset">
+                <label class="form-label">Asset Category <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input" :class="{ focused: focusedField === 'asset_category' }" v-model="createItemForm.asset_category_display" @focus="onFocusSearchable('asset_category')" @blur="onBlurSearchable('asset_category')" placeholder="Search Asset Category" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category'">
+                    <div v-for="cat in filteredAssetCategories" :key="cat" class="searchable-select-option" @mousedown="createItemForm.asset_category = cat; createItemForm.asset_category_display = cat; focusedField = null;">[[ cat ]]</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="checkbox-container">
-                <input type="checkbox" v-model="createItemForm.is_stock_item" />
-                Maintain Stock
+
+            <div class="form-row" style="display: flex; gap: 40px; margin-top: 10px; margin-bottom: 20px;">
+              <label class="form-checkbox-label">
+                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_stock_item" @change="if(createItemForm.is_stock_item) createItemForm.is_fixed_asset = false" />
+                <span class="checkbox-text">Maintain Stock</span>
+              </label>
+              <label class="form-checkbox-label">
+                <input type="checkbox" class="form-checkbox" v-model="createItemForm.is_fixed_asset" @change="if(createItemForm.is_fixed_asset) createItemForm.is_stock_item = false" />
+                <span class="checkbox-text">Is Fixed Asset</span>
               </label>
             </div>
+
+
+
+            <!-- Description -->
+            <div class="form-group" style="margin-bottom: 24px;">
+              <label class="form-label">Description</label>
+              <textarea class="form-input" style="height: 80px; padding: 10px !important;" v-model="createItemForm.description" placeholder="Enter item description" spellcheck="false" data-gramm="false"></textarea>
+            </div>
+
             <div class="form-actions">
-              <button class="btn-create" @click="submitNewItem">
-                Create Item
+              <button class="btn-create" @click="submitNewItem" :disabled="creatingItem">
+                <i class="fas" :class="creatingItem ? 'fa-spinner fa-spin' : 'fa-plus'"></i>
+                <span>[[ creatingItem ? 'Creating...' : 'Create Item' ]]</span>
               </button>
-              <button
-                class="btn-view-toggle"
-                @click="showItemCreateView = false"
-              >
-                Cancel
-              </button>
+              <button class="btn-view-toggle" @click="showItemCreateView = false" :disabled="creatingItem">Cancel</button>
             </div>
           </div>
         </div>
@@ -2268,7 +2432,100 @@
                 </span>
               </span>
               <span class="detail-grid-value" v-else>
-                [[ getFieldValue(detailRecord, field.key) ]]
+                <div v-if="isEditing">
+                  <!-- Searchable Select for Supplier -->
+                  <div
+                    v-if="field.key === 'supplier'"
+                    class="searchable-select-wrapper"
+                  >
+                    <input
+                      type="text"
+                      class="form-input"
+                      v-model="detailRecord.supplier"
+                      @focus="focusedField = 'detail_supplier'"
+                      @blur="setTimeout(() => focusedField = null, 200)"
+                    />
+                    <div
+                      class="searchable-select-dropdown"
+                      v-if="focusedField === 'detail_supplier'"
+                    >
+                      <div
+                        v-for="sup in suppliers.filter(s => !detailRecord.supplier || s.name.toLowerCase().includes(detailRecord.supplier.toLowerCase()) || (s.supplier_name && s.supplier_name.toLowerCase().includes(detailRecord.supplier.toLowerCase())))"
+                        :key="sup.name"
+                        class="searchable-select-option"
+                        @mousedown="detailRecord.supplier = sup.name"
+                      >
+                        [[ sup.name ]] - [[ sup.supplier_name ]]
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Searchable Select for Warehouse -->
+                  <div
+                    v-else-if="['set_warehouse', 'from_warehouse', 'to_warehouse'].includes(field.key)"
+                    class="searchable-select-wrapper"
+                  >
+                    <input
+                      type="text"
+                      class="form-input"
+                      v-model="detailRecord[field.key]"
+                      @focus="focusedField = 'detail_' + field.key"
+                      @blur="setTimeout(() => focusedField = null, 200)"
+                    />
+                    <div
+                      class="searchable-select-dropdown"
+                      v-if="focusedField === 'detail_' + field.key"
+                    >
+                      <div
+                        v-for="wh in warehouses.filter(w => !detailRecord[field.key] || w.toLowerCase().includes(detailRecord[field.key].toLowerCase()))"
+                        :key="wh"
+                        class="searchable-select-option"
+                        @mousedown="detailRecord[field.key] = wh"
+                      >
+                        [[ wh ]]
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Date Field -->
+                  <input
+                    v-else-if="field.key === 'posting_date' || field.key === 'transaction_date'"
+                    type="date"
+                    class="form-input"
+                    v-model="detailRecord[field.key]"
+                  />
+                  <!-- PO/WO Dropdown -->
+                  <select
+                    v-else-if="field.key === 'custom_po_wo'"
+                    class="form-input"
+                    v-model="detailRecord.custom_po_wo"
+                  >
+                    <option value="Purchase Order">Purchase Order</option>
+                    <option value="Work Order">Work Order</option>
+                  </select>
+                  <!-- Request For Dropdown -->
+                  <select
+                    v-else-if="field.key === 'custom_request_for'"
+                    class="form-input"
+                    v-model="detailRecord.custom_request_for"
+                  >
+                    <option value="Branch">Branch</option>
+                    <option value="Project">Project</option>
+                    <option value="Store">Store</option>
+                  </select>
+                  <!-- Non-editable labels -->
+                  <span v-else-if="['status', 'total_qty', 'grand_total'].includes(field.key)">
+                    [[ getFieldValue(detailRecord, field.key) ]]
+                  </span>
+                  <!-- Default -->
+                  <input
+                    v-else
+                    type="text"
+                    class="form-input"
+                    v-model="detailRecord[field.key]"
+                  />
+                </div>
+                <span v-else>
+                  [[ getFieldValue(detailRecord, field.key) ]]
+                </span>
               </span>
             </div>
             <!-- Table Field -->
@@ -2278,31 +2535,82 @@
               style="grid-column: 1 / -1"
             >
               <span class="detail-grid-label">[[ field.label ]]</span>
-              <table
-                class="items-table"
-                style="width: 100%; border-collapse: collapse; margin-top: 10px"
+              <div class="table-responsive" style="margin-top: 10px">
+                <table
+                  class="items-table"
+                  style="width: 100%; border-collapse: collapse"
+                >
+                  <thead>
+                    <tr
+                      style="background: var(--sidebar-hover); text-align: left"
+                    >
+                      <th style="padding: 8px">Item</th>
+                      <th style="padding: 8px; text-align: right">Qty</th>
+                      <th v-if="isEditing" style="padding: 8px; text-align: center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(row, index) in detailRecord.items"
+                      :key="row.name || index"
+                      style="border-top: 1px solid var(--border-color)"
+                    >
+                      <td style="padding: 8px">
+                        <div v-if="isEditing" class="searchable-select-wrapper">
+                          <input
+                            type="text"
+                            class="form-input"
+                            v-model="row.item_code"
+                            @focus="focusedField = 'detail_item_' + index"
+                            @blur="setTimeout(() => focusedField = null, 200)"
+                          />
+                          <div
+                            class="searchable-select-dropdown"
+                            v-if="focusedField === 'detail_item_' + index"
+                          >
+                            <div
+                              v-for="opt in itemsList.filter(i => !row.item_code || i.name.toLowerCase().includes(row.item_code.toLowerCase()))"
+                              :key="opt.name"
+                              class="searchable-select-option"
+                              @mousedown="row.item_code = opt.name; row.stock_uom = opt.stock_uom;"
+                            >
+                              [[ opt.name ]] - [[ opt.item_name ]]
+                            </div>
+                          </div>
+                        </div>
+                        <span v-else>[[ row.item_code ]]</span>
+                      </td>
+                      <td style="padding: 8px; text-align: right">
+                        <input
+                          v-if="isEditing"
+                          type="number"
+                          class="form-input"
+                          style="text-align: right"
+                          v-model.number="row.qty"
+                        />
+                        <span v-else>[[ row.qty ]]</span>
+                      </td>
+                      <td v-if="isEditing" style="padding: 8px; text-align: center">
+                        <button
+                          class="btn-action"
+                          @click="detailRecord.items.splice(index, 1)"
+                          title="Remove"
+                        >
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <button
+                v-if="isEditing"
+                class="btn-create-inline"
+                style="margin-top: 12px; font-size: 0.85rem; padding: 6px 12px; height: auto; width: auto; border-radius: 20px;"
+                @click="detailRecord.items.push({item_code: '', qty: 1})"
               >
-                <thead>
-                  <tr
-                    style="background: var(--sidebar-hover); text-align: left"
-                  >
-                    <th style="padding: 8px">Item</th>
-                    <th style="padding: 8px; text-align: right">Qty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="row in detailRecord.items"
-                    :key="row.name"
-                    style="border-top: 1px solid var(--border-color)"
-                  >
-                    <td style="padding: 8px">[[ row.item_code ]]</td>
-                    <td style="padding: 8px; text-align: right">
-                      [[ row.qty ]]
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                <i class="fas fa-plus"></i> Add Row
+              </button>
             </div>
           </div>
         </div>
@@ -5035,6 +5343,7 @@
       },
       employees: [],
       warehouses: [],
+      suppliers: [],
       itemsList: [],
       emrItems: [
         {
@@ -5062,6 +5371,8 @@
         stock_uom_display: "",
         asset_category: "",
         asset_category_display: "",
+        valuation_rate: 0,
+        description: "",
       },
       itemDepartments: [],
       itemGroups: [],
@@ -5086,6 +5397,8 @@
       detailRecord: null,
       detailFields: [],
       creatingEMR: false,
+      creatingInward: false,
+      creatingOutward: false,
       comments: [],
       requestStats: {
         draft: 0,
@@ -5140,6 +5453,11 @@
         const q = this.emrForm.source_warehouse_display.toLowerCase();
         return this.warehouses.filter((w) => w.toLowerCase().includes(q));
       },
+      get filteredSuppliers() {
+        if (!this.inwardForm || !this.inwardForm.supplier_display) return this.suppliers;
+        const q = this.inwardForm.supplier_display.toLowerCase();
+        return this.suppliers.filter((s) => s.name.toLowerCase().includes(q) || (s.supplier_name && s.supplier_name.toLowerCase().includes(q)));
+      },
 
       get filteredEmployees() {
         if (!this.emrForm.employee_display) return this.employees;
@@ -5175,9 +5493,9 @@
         );
       },
       get filteredHSNCodes() {
-        const search = (
-          this.createItemForm.gst_hsn_code_display || ""
-        ).toLowerCase();
+        if (!this.createItemForm) return [];
+        const display = this.createItemForm.gst_hsn_code_display;
+        const search = (typeof display === 'string' ? display : "").toLowerCase();
         if (!search) return this.hsnCodes;
         return this.hsnCodes.filter(
           (h) =>
@@ -5580,7 +5898,9 @@
           this.outwardForm = {
             stock_entry_type: "Material Transfer",
             from_warehouse: "",
+            from_warehouse_display: "",
             to_warehouse: "",
+            to_warehouse_display: "",
             posting_date: frappe.datetime.now_date(),
             remarks: "",
           };
@@ -5614,6 +5934,8 @@
             stock_uom_display: "",
             asset_category: "",
             asset_category_display: "",
+            valuation_rate: 0,
+            description: "",
           };
           return;
         }
@@ -5659,6 +5981,25 @@
         } catch (e) {
           console.error("Error fetching warehouses:", e);
           this.warehouses = [];
+        }
+
+        try {
+          // Fetch Suppliers
+          const supRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Supplier",
+              fields: ["name", "supplier_name"],
+              filters: { disabled: 0 },
+              limit_page_length: 1000,
+            },
+          });
+          if (supRes.message) {
+            this.suppliers = supRes.message;
+          }
+        } catch (e) {
+          console.error("Error fetching suppliers:", e);
+          this.suppliers = [];
         }
 
         try {
@@ -5816,6 +6157,8 @@
             gst_hsn_code: this.createItemForm.gst_hsn_code,
             is_stock_item: this.createItemForm.is_stock_item ? 1 : 0,
             is_fixed_asset: this.createItemForm.is_fixed_asset ? 1 : 0,
+            valuation_rate: this.createItemForm.valuation_rate || 0,
+            description: this.createItemForm.description,
           };
 
           // Add conditional fields
@@ -5833,7 +6176,7 @@
 
           if (res.message && res.message.name) {
             frappe.msgprint(`Item "${res.message.name}" created successfully`);
-            this.showCreateItemModal = false;
+            this.showItemCreateView = false;
             await this.fetchData("Item");
           }
         } catch (e) {
@@ -5891,7 +6234,7 @@
             this.detailRecord = res.message;
             this.isEditing = false;
             frappe.show_alert({
-              message: "Request updated successfully",
+              message: `${this.activeItem} updated successfully`,
               indicator: "green",
             });
           }
@@ -5904,6 +6247,38 @@
         } finally {
           this.loading = false;
         }
+      },
+      async submitDetailRecord() {
+        if (!this.detailRecord) return;
+        
+        frappe.confirm(
+          `Are you sure you want to permanently submit this ${this.activeItem} record?`,
+          async () => {
+            this.loading = true;
+            try {
+              const res = await frappe.call({
+                method: "frappe.client.submit",
+                args: {
+                  doc: this.detailRecord,
+                },
+              });
+              if (res.message) {
+                this.detailRecord = res.message;
+                frappe.show_alert({
+                  message: `${this.activeItem} submitted successfully`,
+                  indicator: "green",
+                });
+                await this.fetchData(this.currentView.doctype); // Refresh list view
+              }
+            } catch (e) {
+              console.error("Submission error:", e);
+              const errorMsg = e.message || e.exc || `Error submitting ${this.activeItem}`;
+              frappe.msgprint(`Error: ${errorMsg}`);
+            } finally {
+              this.loading = false;
+            }
+          }
+        );
       },
       formatCurrency(value) {
         const amount = Number(value || 0);
@@ -6032,6 +6407,45 @@
           this.emrItems.splice(index, 1);
         }
       },
+      addInwardItem() {
+        this.inwardItems.push({
+          item_code: "",
+          item_code_display: "",
+          uom: "",
+          qty: 1,
+          rate: 0,
+          warehouse: "",
+        });
+      },
+      removeInwardItem(index) {
+        if (this.inwardItems.length > 1) {
+          this.inwardItems.splice(index, 1);
+        }
+      },
+      selectInwardItemOption(index, itemCode, itemName, uom) {
+        const item = this.inwardItems[index];
+        item.item_code = itemCode;
+        item.item_code_display = itemCode;
+        this.focusedField = null;
+      },
+      addOutwardItem() {
+        this.outwardItems.push({
+          item_code: "",
+          item_code_display: "",
+          qty: 1,
+        });
+      },
+      removeOutwardItem(index) {
+        if (this.outwardItems.length > 1) {
+          this.outwardItems.splice(index, 1);
+        }
+      },
+      selectOutwardItemOption(index, itemCode, itemName, uom) {
+        const item = this.outwardItems[index];
+        item.item_code = itemCode;
+        item.item_code_display = itemCode;
+        this.focusedField = null;
+      },
       async submitEMR() {
         // Validation
         const labels = {
@@ -6123,6 +6537,151 @@
           frappe.msgprint(`Error: ${errorMsg}`);
         } finally {
           this.creatingEMR = false;
+        }
+      },
+      async submitInward() {
+        // Validation
+        if (!this.inwardForm.supplier) {
+          frappe.msgprint("Supplier is required");
+          return;
+        }
+        if (
+          !this.inwardItems ||
+          this.inwardItems.length === 0 ||
+          this.inwardItems.every((i) => !i.item_code)
+        ) {
+          frappe.msgprint("At least one item is required");
+          return;
+        }
+
+        this.creatingInward = true;
+        try {
+          // Ensure all items have necessary details (UOM, category)
+          for (let item of this.inwardItems) {
+            if (!item.item_code) continue;
+            if (!item.uom) {
+              const res = await frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "Item",
+                  filters: { name: item.item_code },
+                  fieldname: "stock_uom",
+                },
+              });
+              if (res.message) {
+                item.uom = res.message.stock_uom;
+              }
+            }
+          }
+
+          const doc = {
+            doctype: "Purchase Receipt",
+            supplier: this.inwardForm.supplier,
+            posting_date: this.inwardForm.posting_date,
+            set_warehouse: this.inwardForm.set_warehouse,
+            custom_po_wo: this.inwardForm.custom_po_wo,
+            custom_request_for: this.inwardForm.custom_request_for,
+            remarks: this.inwardForm.remarks,
+            items: this.inwardItems
+              .filter((i) => i.item_code)
+              .map((i) => ({
+                item_code: i.item_code,
+                qty: i.qty || 1,
+                uom: i.uom,
+                warehouse: i.warehouse || this.inwardForm.set_warehouse,
+                rate: i.rate || 0,
+              })),
+          };
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message) {
+            frappe.msgprint(`Purchase Receipt ${res.message.name} created!`);
+            this.showInwardCreateView = false;
+            await this.fetchData("Purchase Receipt");
+          }
+        } catch (e) {
+          console.error("Purchase Receipt creation error:", e);
+          const errorMsg =
+            e.message || e.exc || "Failed to create Purchase Receipt";
+          frappe.msgprint(`Error: ${errorMsg}`);
+        } finally {
+          this.creatingInward = false;
+        }
+      },
+
+      async submitOutward() {
+        if (!this.outwardForm.stock_entry_type) {
+          frappe.msgprint("Stock Entry Type is required");
+          return;
+        }
+        if (
+          !this.outwardItems ||
+          this.outwardItems.length === 0 ||
+          this.outwardItems.every((i) => !i.item_code)
+        ) {
+          frappe.msgprint("At least one item is required");
+          return;
+        }
+
+        this.creatingOutward = true;
+        try {
+          // Ensure items have UOM
+          for (let item of this.outwardItems) {
+            if (!item.item_code) continue;
+            if (!item.uom) {
+              const res = await frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "Item",
+                  filters: { name: item.item_code },
+                  fieldname: "stock_uom",
+                },
+              });
+              if (res.message) {
+                item.uom = res.message.stock_uom;
+              }
+            }
+          }
+
+          const doc = {
+            doctype: "Stock Entry",
+            stock_entry_type: this.outwardForm.stock_entry_type,
+            posting_date: this.outwardForm.posting_date,
+            from_warehouse: this.outwardForm.from_warehouse,
+            to_warehouse: this.outwardForm.to_warehouse,
+            remarks: this.outwardForm.remarks,
+            items: this.outwardItems
+              .filter((i) => i.item_code)
+              .map((i) => ({
+                item_code: i.item_code,
+                qty: i.qty || 1,
+                uom: i.uom,
+                s_warehouse: i.s_warehouse || this.outwardForm.from_warehouse,
+                t_warehouse: i.t_warehouse || this.outwardForm.to_warehouse,
+              })),
+          };
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message) {
+            frappe.msgprint(`Stock Entry ${res.message.name} created!`);
+            this.showOutwardCreateView = false;
+            await this.fetchData("Stock Entry");
+          }
+        } catch (e) {
+          console.error("Stock Entry creation error:", e);
+          const errorMsg =
+            e.message || e.exc || "Failed to create Stock Entry";
+          frappe.msgprint(`Error: ${errorMsg}`);
+        } finally {
+          this.creatingOutward = false;
         }
       },
       async openRecord(row) {
