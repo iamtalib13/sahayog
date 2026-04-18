@@ -569,3 +569,26 @@ frappe.ui.form.on('Approval Request', {
     }
 });
 
+
+
+frappe.ui.form.on('Approval Approver', {
+    approver: function(frm, cdt, cdn) {
+        set_approver_name(cdt, cdn);
+    },
+    form_render: function(frm, cdt, cdn) {
+        set_approver_name(cdt, cdn);
+    }
+});
+
+function set_approver_name(cdt, cdn) {
+    let row = locals[cdt][cdn];
+
+    if (!row.approver) {
+        frappe.model.set_value(cdt, cdn, 'approver_name', '');
+        return;
+    }
+
+    frappe.db.get_value('User', row.approver, 'full_name').then(r => {
+        frappe.model.set_value(cdt, cdn, 'approver_name', r.message?.full_name || '');
+    });
+}
