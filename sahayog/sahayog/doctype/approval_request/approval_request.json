@@ -1,15 +1,15 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-04-17 11:25:33.626385",
+ "creation": "2026-04-18 10:01:45.207681",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_u6xc",
+  "branch_user_details_section",
   "employee",
   "employee_name",
   "designation",
-  "column_break_llgx",
+  "column_break_rdft",
   "status",
   "acted_by",
   "request_details_section",
@@ -21,24 +21,15 @@
   "attachments_section",
   "attachments",
   "approver_action_section",
-  "approver_remark",
-  "amended_from"
+  "approver_remark"
  ],
  "fields": [
-  {
-   "fieldname": "section_break_u6xc",
-   "fieldtype": "Section Break",
-   "label": "Branch User Details"
-  },
   {
    "fieldname": "employee",
    "fieldtype": "Link",
    "label": "Employee",
-   "no_copy": 1,
    "options": "Employee",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
    "fieldname": "employee_name",
@@ -50,19 +41,12 @@
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
-   "no_copy": 1,
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
-   "fieldname": "column_break_llgx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "Draft\nPending Approval\nApproved\nRejected",
    "read_only": 1
@@ -71,11 +55,8 @@
    "fieldname": "acted_by",
    "fieldtype": "Link",
    "label": "Acted By",
-   "no_copy": 1,
    "options": "User",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
    "fieldname": "request_details_section",
@@ -92,6 +73,7 @@
   {
    "fieldname": "category",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Category",
    "options": "Approval Category",
    "reqd": 1
@@ -99,6 +81,7 @@
   {
    "fieldname": "description",
    "fieldtype": "Text Editor",
+   "in_list_view": 1,
    "label": "Description",
    "reqd": 1
   },
@@ -134,24 +117,23 @@
   {
    "fieldname": "approver_remark",
    "fieldtype": "Small Text",
-   "label": "Approver Remark"
+   "label": "Approver Remark",
+   "read_only": 1
   },
   {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Approval Request",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "fieldname": "branch_user_details_section",
+   "fieldtype": "Section Break",
+   "label": "Branch User Details"
+  },
+  {
+   "fieldname": "column_break_rdft",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "is_submittable": 1,
  "links": [],
- "modified": "2026-04-17 15:14:36.553907",
+ "modified": "2026-04-18 15:18:55.351764",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Request",
@@ -167,7 +149,6 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
-   "submit": 1,
    "write": 1
   }
  ],
