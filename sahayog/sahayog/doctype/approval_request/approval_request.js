@@ -237,6 +237,31 @@ frappe.ui.form.on('Approval Request', {
         let status_label = 'Draft';
         let status_class = 'status-draft';
 
+        // if (frm.doc.status === 'Pending Approval') {
+        //     active_index = 1;
+        //     status_label = 'Pending Approval';
+        //     status_class = 'status-pending';
+        // } else if (frm.doc.status === 'Approved') {
+        //     const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
+        //     active_index = acted_index >= 0 ? acted_index : checkpoints.length - 1;
+        //     status_label = `Approved by ${frm.doc.acted_by || ''}`;
+        //     status_class = 'status-approved';
+        // } else if (frm.doc.status === 'Rejected') {
+        //     const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
+        //     active_index = acted_index >= 0 ? acted_index : 1;
+        //     status_label = `Rejected by ${frm.doc.acted_by || ''}`;
+        //     status_class = 'status-rejected';
+        // }
+
+                // FETCH THE FULL NAME OF THE USER WHO ACTED
+        let acted_by_name = frm.doc.acted_by || '';
+        if (frm.doc.acted_by) {
+            let acted_user_req = await frappe.db.get_value('User', frm.doc.acted_by, 'full_name');
+            if (acted_user_req && acted_user_req.message) {
+                acted_by_name = acted_user_req.message.full_name;
+            }
+        }
+
         if (frm.doc.status === 'Pending Approval') {
             active_index = 1;
             status_label = 'Pending Approval';
@@ -244,12 +269,12 @@ frappe.ui.form.on('Approval Request', {
         } else if (frm.doc.status === 'Approved') {
             const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
             active_index = acted_index >= 0 ? acted_index : checkpoints.length - 1;
-            status_label = `Approved by ${frm.doc.acted_by || ''}`;
+            status_label = `Approved by ${acted_by_name}`;
             status_class = 'status-approved';
         } else if (frm.doc.status === 'Rejected') {
             const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
             active_index = acted_index >= 0 ? acted_index : 1;
-            status_label = `Rejected by ${frm.doc.acted_by || ''}`;
+            status_label = `Rejected by ${acted_by_name}`;
             status_class = 'status-rejected';
         }
 
