@@ -536,6 +536,18 @@ def get_portal_master_data():
     Unified API to fetch all master data for the portal in one request.
     This bypasses standard permissions for portal users while remaining secure.
     """
+    # Handle potential missing DocType for HSN codes
+    hsn_codes = []
+    try:
+        hsn_codes = frappe.get_all("GST HSN Code", fields=["name", "description"])
+    except frappe.db.TableMissingError:
+        try:
+            hsn_codes = frappe.get_all("HSN Code", fields=["name", "description"])
+        except Exception:
+            pass
+    except Exception:
+        pass
+
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
@@ -545,5 +557,5 @@ def get_portal_master_data():
         "item_departments": [d.name for d in frappe.get_all("Item Department")],
         "uoms": [u.name for u in frappe.get_all("UOM")],
         "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
-        "hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
+        "hsn_codes": hsn_codes,
     }

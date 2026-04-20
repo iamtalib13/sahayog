@@ -1302,9 +1302,9 @@
                       v-for="sup in filteredSuppliers"
                       :key="sup.name"
                       class="searchable-select-option"
-                      @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.name; focusedField = null;"
+                      @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.supplier_name ? sup.name + ' - ' + sup.supplier_name : sup.name; focusedField = null;"
                     >
-                      [[ sup.name ]] - [[ sup.supplier_name ]]
+                      [[ sup.name ]] [[ sup.supplier_name ? '- ' + sup.supplier_name : '' ]]
                     </div>
                   </div>
                 </div>
@@ -5619,6 +5619,29 @@
       creatingEMR: false,
       creatingInward: false,
       creatingOutward: false,
+
+      inwardForm: {
+        supplier: "",
+        supplier_display: "",
+        posting_date: "",
+        set_warehouse: "",
+        set_warehouse_display: "",
+        custom_po_wo: "",
+        custom_request_for: "",
+        remarks: "",
+      },
+      inwardItems: [],
+
+      outwardForm: {
+        stock_entry_type: "Material Transfer",
+        from_warehouse: "",
+        from_warehouse_display: "",
+        to_warehouse: "",
+        to_warehouse_display: "",
+        remarks: "",
+      },
+      outwardItems: [],
+
       comments: [],
       requestStats: {
         draft: 0,
