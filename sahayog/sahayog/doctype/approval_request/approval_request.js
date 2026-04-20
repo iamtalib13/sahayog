@@ -156,7 +156,149 @@ frappe.ui.form.on('Approval Request', {
         if (frm.is_new()) fill_branch_user_details(frm);
     },
     
-    refresh: function(frm) {
+    // refresh: function(frm) {
+    //     frm.meta.is_submittable = 0;
+
+    //     // --- OVERRIDE DOCUMENT STATUS BADGE ---
+    //     if (frm.doc.approval_status === 'Draft') {
+    //         frm.page.set_indicator(__('Draft'), 'grey');
+    //     } else if (frm.doc.approval_status === 'Pending Approval') {
+    //         frm.page.set_indicator(__('Pending Approval'), 'orange');
+    //     } else if (frm.doc.approval_status === 'Approved') {
+    //         frm.page.set_indicator(__('Approved'), 'green');
+    //     } else if (frm.doc.approval_status === 'Rejected') {
+    //         frm.page.set_indicator(__('Rejected'), 'red');
+    //     } else {
+    //         frm.page.set_indicator(__('Draft'), 'grey');
+    //     }
+
+    //     if (frm.form_wrapper.find('#approval-journey-container').length === 0) {
+    //         frm.form_wrapper.find('.form-layout .form-page').prepend('<div id="approval-journey-container"></div>');
+    //     }
+
+    //     if (frm.is_new()) {
+    //         fill_branch_user_details(frm);
+    //         frm.form_wrapper.find('#approval-journey-container').empty();
+    //         return; 
+    //     }
+
+    //     // --- CUSTOM LOCK LOGIC ---
+    //     // const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
+    //     // const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
+
+    //     // if (is_locked) {
+    //     //     frm.disable_save();
+    //     //     ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+    //     //         frm.set_df_property(field, 'read_only', 1);
+    //     //     });
+    //     // } else {
+    //     //     frm.enable_save();
+    //     //     ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+    //     //         frm.set_df_property(field, 'read_only', 0);
+    //     //     });
+    //     // }
+
+
+    //             // --- CUSTOM LOCK LOGIC ---
+    //     const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
+    //     const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
+
+    //     if (is_locked) {
+    //         frm.disable_save();
+    //         ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+    //             frm.set_df_property(field, 'read_only', 1);
+    //         });
+    //     } else {
+    //         // Un-lock the fields so the user CAN edit them
+    //         ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+    //             frm.set_df_property(field, 'read_only', 0);
+    //         });
+            
+    //         // BUT explicitly hide the Save button until they actually type something!
+    //         if (!frm.is_new()) {
+    //             setTimeout(() => {
+    //                 frm.disable_save(); // Force hide Save button initially
+                    
+    //                 // The moment the user types or changes a field, bring the Save button back
+    //                 frm.wrapper.off('change input').on('change input', function() {
+    //                     frm.enable_save();
+    //                     frm.page.remove_inner_button(__('Submit Request'));
+    //                 });
+    //             }, 200); // 200ms delay lets any rogue background scripts finish running first
+    //         } else {
+    //             frm.enable_save(); // Brand new unsaved docs MUST have the save button
+    //         }
+    //     }
+
+    //     // ////////////////////////////////////////////
+
+    //     // --- CLEAR ALL OLD BUTTONS ---
+    //     frm.clear_custom_buttons();
+    //     frm.page.clear_inner_toolbar();
+
+    //     // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
+    //     if (is_editable) {
+    //         if (!frm.is_dirty()) {
+    //             let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
+    //                 frappe.confirm(__('Are you sure you want to submit this request?'), function() {
+    //                     frappe.call({
+    //                         method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
+    //                         args: { docname: frm.doc.name },
+    //                         freeze: true,
+    //                         freeze_message: 'Submitting...',
+    //                         callback: function(r) {
+    //                             if (!r.exc) {
+    //                                 frappe.show_alert({message: 'Request Submitted Successfully', indicator: 'green'});
+    //                                 frm.reload_doc();
+    //                             }
+    //                         }
+    //                     });
+    //                 });
+    //             });
+    //             submit_btn.removeClass('btn-default').addClass('btn-primary').css({'color': 'white', 'font-weight': 'bold'});
+    //         }
+
+    //         // BULLETPROOF DIRTY WATCHER
+    //         if (frm._dirty_watcher) clearInterval(frm._dirty_watcher);
+    //         frm._dirty_watcher = setInterval(() => {
+    //             if (frm.is_dirty()) {
+    //                 frm.page.remove_inner_button(__('Submit Request'));
+    //                 clearInterval(frm._dirty_watcher); 
+    //             }
+    //         }, 500);
+    //     }
+
+    //     // --- ADD APPROVE / REJECT AS STANDALONE INNER BUTTONS ---
+    //     if (frm.doc.approval_status === 'Pending Approval') {
+    //         frappe.call({
+    //             method: 'sahayog.sahayog.doctype.approval_request.approval_request.is_valid_approver',
+    //             args: { docname: frm.doc.name },
+    //             callback: function(r) {
+    //                 if (r.message) {
+    //                     let approve_btn = frm.page.add_inner_button(__('Approve'), () => prompt_remark(frm, 'Approved'));
+    //                     approve_btn.removeClass('btn-default').addClass('btn-success').css({'color': 'white', 'font-weight': 'bold'});
+                           
+    //                     let reject_btn = frm.page.add_inner_button(__('Reject'), () => prompt_remark(frm, 'Rejected'));
+    //                     reject_btn.removeClass('btn-default').addClass('btn-danger').css({'color': 'white', 'font-weight': 'bold'});
+    //                 }
+    //             }
+    //         });
+    //     }
+
+    //     // --- OBLITERATE THE ACTIONS DROPDOWN ---
+    //     let action_cleanup_interval = setInterval(() => {
+    //         let $actionBtnGroup = frm.page.wrapper.find('.actions-btn-group');
+    //         if ($actionBtnGroup.length) {
+    //             $actionBtnGroup.attr('style', 'display: none !important');
+    //         }
+    //     }, 50);
+    //     setTimeout(() => clearInterval(action_cleanup_interval), 2000);
+
+    //     setTimeout(() => frm.trigger('render_approval_progress_intro'), 100);
+    // },
+
+
+        refresh: function(frm) {
         frm.meta.is_submittable = 0;
 
         // --- OVERRIDE DOCUMENT STATUS BADGE ---
@@ -183,54 +325,22 @@ frappe.ui.form.on('Approval Request', {
         }
 
         // --- CUSTOM LOCK LOGIC ---
-        // const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
-        // const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
-
-        // if (is_locked) {
-        //     frm.disable_save();
-        //     ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
-        //         frm.set_df_property(field, 'read_only', 1);
-        //     });
-        // } else {
-        //     frm.enable_save();
-        //     ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
-        //         frm.set_df_property(field, 'read_only', 0);
-        //     });
-        // }
-
-
-                // --- CUSTOM LOCK LOGIC ---
         const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
         const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
 
         if (is_locked) {
+            // Document is locked: Disable native Save and make fields read-only
             frm.disable_save();
             ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
                 frm.set_df_property(field, 'read_only', 1);
             });
         } else {
-            // Un-lock the fields so the user CAN edit them
+            // Document is editable: ENABLE native Save and unlock fields
+            frm.enable_save();
             ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
                 frm.set_df_property(field, 'read_only', 0);
             });
-            
-            // BUT explicitly hide the Save button until they actually type something!
-            if (!frm.is_new()) {
-                setTimeout(() => {
-                    frm.disable_save(); // Force hide Save button initially
-                    
-                    // The moment the user types or changes a field, bring the Save button back
-                    frm.wrapper.off('change input').on('change input', function() {
-                        frm.enable_save();
-                        frm.page.remove_inner_button(__('Submit Request'));
-                    });
-                }, 200); // 200ms delay lets any rogue background scripts finish running first
-            } else {
-                frm.enable_save(); // Brand new unsaved docs MUST have the save button
-            }
         }
-
-        // ////////////////////////////////////////////
 
         // --- CLEAR ALL OLD BUTTONS ---
         frm.clear_custom_buttons();
@@ -238,6 +348,12 @@ frappe.ui.form.on('Approval Request', {
 
         // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
         if (is_editable) {
+            // Forcefully clear the dirty flag on fresh load so the button shows up
+            if (frm.doc.__unsaved === 1 && !frm.is_new() && !frm.__employee_fetching) {
+                frm.doc.__unsaved = 0;
+            }
+
+            // Only add the Submit button if the form has NO unsaved changes
             if (!frm.is_dirty()) {
                 let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
                     frappe.confirm(__('Are you sure you want to submit this request?'), function() {
@@ -259,13 +375,16 @@ frappe.ui.form.on('Approval Request', {
             }
 
             // BULLETPROOF DIRTY WATCHER
+            // Instead of hiding the Save button, we just watch for edits and delete the Submit button!
             if (frm._dirty_watcher) clearInterval(frm._dirty_watcher);
             frm._dirty_watcher = setInterval(() => {
-                if (frm.is_dirty()) {
+                // If Frappe's native engine decides the form is dirty (meaning the Save button naturally appeared)
+                if (frm.is_dirty() && !frm.__employee_fetching) {
+                    // Instantly delete the Submit button so they don't submit unsaved work!
                     frm.page.remove_inner_button(__('Submit Request'));
                     clearInterval(frm._dirty_watcher); 
                 }
-            }, 500);
+            }, 300);
         }
 
         // --- ADD APPROVE / REJECT AS STANDALONE INNER BUTTONS ---
@@ -296,7 +415,6 @@ frappe.ui.form.on('Approval Request', {
 
         setTimeout(() => frm.trigger('render_approval_progress_intro'), 100);
     },
-
     category: function(frm) {
         if (frm.doc.category) {
             frappe.db.get_value('Approval Category', frm.doc.category, 'category').then(r => {
