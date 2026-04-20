@@ -5210,6 +5210,12 @@
               },
               { label: "Outward", color: "#ef4444", doctype: "Stock Entry" },
               { label: "Items", color: "#8b5cf6", doctype: "Item" },
+              { 
+                label: "Branch Stock", 
+                color: "#3b82f6", 
+                isReport: true, 
+                reportName: "Branch Stock" 
+              },
             ],
           },
           {
@@ -5703,7 +5709,7 @@
         this.applyTheme();
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
         // Check if user is admin
-        this.isAdmin = frappe.session.user === "Administrator";
+        this.isAdmin = frappe.session.user === "Administrator" || (frappe.user_roles && frappe.user_roles.includes("Administrator"));
         // Fetch user's full name from User doctype
         try {
           const res = await frappe.call({
@@ -5774,8 +5780,14 @@
         this.showItemCreateView = false;
         this.showEMRMoreDetails = false;
 
-        if (item.label === "Analytics") {
+        if (item.label === "Dashboard") {
           await this.fetchRequestStats();
+        }
+
+        if (item.isReport) {
+          const route = item.route || `/app/query-report/${encodeURIComponent(item.reportName || item.label)}`;
+          this.openReport(route);
+          return;
         }
 
         if (item.doctype) {
