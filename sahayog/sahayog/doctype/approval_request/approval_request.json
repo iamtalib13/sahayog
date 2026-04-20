@@ -10,7 +10,7 @@
   "employee_name",
   "designation",
   "column_break_rdft",
-  "status",
+  "approval_status",
   "acted_by",
   "request_details_section",
   "category",
@@ -41,14 +41,6 @@
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
-   "read_only": 1
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "Draft\nPending Approval\nApproved\nRejected",
    "read_only": 1
   },
   {
@@ -109,7 +101,7 @@
    "options": "Approval Attachment"
   },
   {
-   "depends_on": "eval:doc.status==\"Approved\" || doc.status==\"Rejected\"",
+   "depends_on": "eval:doc.approval_status==\"Approved\" || doc.approval_status==\"Rejected\"",
    "fieldname": "approver_action_section",
    "fieldtype": "Section Break",
    "label": "Approver Action"
@@ -128,12 +120,20 @@
   {
    "fieldname": "column_break_rdft",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approval_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nRejected",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-18 15:18:55.351764",
+ "modified": "2026-04-20 11:04:54.164971",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Request",

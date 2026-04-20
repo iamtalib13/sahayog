@@ -84,14 +84,16 @@ frappe.ui.form.on('Approval Request', {
         frm.meta.is_submittable = 0;
 
         // --- OVERRIDE DOCUMENT STATUS BADGE ---
-        if (frm.doc.status === 'Draft') {
+        if (frm.doc.approval_status === 'Draft') {
             frm.page.set_indicator(__('Draft'), 'grey');
-        } else if (frm.doc.status === 'Pending Approval') {
+        } else if (frm.doc.approval_status === 'Pending Approval') {
             frm.page.set_indicator(__('Pending Approval'), 'orange');
-        } else if (frm.doc.status === 'Approved') {
+        } else if (frm.doc.approval_status === 'Approved') {
             frm.page.set_indicator(__('Approved'), 'green');
-        } else if (frm.doc.status === 'Rejected') {
+        } else if (frm.doc.approval_status === 'Rejected') {
             frm.page.set_indicator(__('Rejected'), 'red');
+        } else {
+            frm.page.set_indicator(__('Draft'), 'grey');
         }
 
         if (frm.form_wrapper.find('#approval-journey-container').length === 0) {
@@ -105,8 +107,8 @@ frappe.ui.form.on('Approval Request', {
         }
 
         // --- CUSTOM LOCK LOGIC ---
-        const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.status);
-        const is_editable = ['Draft', 'Rejected'].includes(frm.doc.status);
+        const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
+        const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
 
         if (is_locked) {
             frm.disable_save();
@@ -157,8 +159,7 @@ frappe.ui.form.on('Approval Request', {
         }
 
         // --- ADD APPROVE / REJECT AS STANDALONE INNER BUTTONS ---
-        // We now ask the backend if the current user is an approver OR a manager
-        if (frm.doc.status === 'Pending Approval') {
+        if (frm.doc.approval_status === 'Pending Approval') {
             frappe.call({
                 method: 'sahayog.sahayog.doctype.approval_request.approval_request.is_valid_approver',
                 args: { docname: frm.doc.name },
@@ -248,23 +249,7 @@ frappe.ui.form.on('Approval Request', {
         let status_label = 'Draft';
         let status_class = 'status-draft';
 
-        // if (frm.doc.status === 'Pending Approval') {
-        //     active_index = 1;
-        //     status_label = 'Pending Approval';
-        //     status_class = 'status-pending';
-        // } else if (frm.doc.status === 'Approved') {
-        //     const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
-        //     active_index = acted_index >= 0 ? acted_index : checkpoints.length - 1;
-        //     status_label = `Approved by ${frm.doc.acted_by || ''}`;
-        //     status_class = 'status-approved';
-        // } else if (frm.doc.status === 'Rejected') {
-        //     const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
-        //     active_index = acted_index >= 0 ? acted_index : 1;
-        //     status_label = `Rejected by ${frm.doc.acted_by || ''}`;
-        //     status_class = 'status-rejected';
-        // }
-
-                // FETCH THE FULL NAME OF THE USER WHO ACTED
+        // FETCH THE FULL NAME OF THE USER WHO ACTED
         let acted_by_name = frm.doc.acted_by || '';
         if (frm.doc.acted_by) {
             let acted_user_req = await frappe.db.get_value('User', frm.doc.acted_by, 'full_name');
@@ -273,16 +258,16 @@ frappe.ui.form.on('Approval Request', {
             }
         }
 
-        if (frm.doc.status === 'Pending Approval') {
+        if (frm.doc.approval_status === 'Pending Approval') {
             active_index = 1;
             status_label = 'Pending Approval';
             status_class = 'status-pending';
-        } else if (frm.doc.status === 'Approved') {
+        } else if (frm.doc.approval_status === 'Approved') {
             const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
             active_index = acted_index >= 0 ? acted_index : checkpoints.length - 1;
             status_label = `Approved by ${acted_by_name}`;
             status_class = 'status-approved';
-        } else if (frm.doc.status === 'Rejected') {
+        } else if (frm.doc.approval_status === 'Rejected') {
             const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
             active_index = acted_index >= 0 ? acted_index : 1;
             status_label = `Rejected by ${acted_by_name}`;
@@ -302,13 +287,13 @@ frappe.ui.form.on('Approval Request', {
                 dot_content = '✓';
             } else if (is_current) {
                 node_class =
-                    frm.doc.status === 'Rejected' ? 'node-rejected'
-                    : frm.doc.status === 'Approved' ? 'node-done'
+                    frm.doc.approval_status === 'Rejected' ? 'node-rejected'
+                    : frm.doc.approval_status === 'Approved' ? 'node-done'
                     : 'node-active';
 
                 dot_content =
-                    frm.doc.status === 'Approved' ? '✓'
-                    : frm.doc.status === 'Rejected' ? '✕'
+                    frm.doc.approval_status === 'Approved' ? '✓'
+                    : frm.doc.approval_status === 'Rejected' ? '✕'
                     : index + 1;
             }
 
@@ -327,7 +312,7 @@ frappe.ui.form.on('Approval Request', {
         }).join('');
 
         const remark_html = frm.doc.approver_remark ? `
-            <div class="remark-block ${frm.doc.status === 'Rejected' ? 'remark-rejected' : 'remark-approved'}">
+            <div class="remark-block ${frm.doc.approval_status === 'Rejected' ? 'remark-rejected' : 'remark-approved'}">
                 <span class="remark-label">Remark:</span>
                 ${frappe.utils.escape_html(frm.doc.approver_remark)}
             </div>
