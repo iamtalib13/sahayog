@@ -2687,11 +2687,11 @@
       </div>
 
       <div
-        v-else-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
+        v-else-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
         class="list-view-container"
       >
         <!-- Analytics Dashboard -->
-        <div v-if="activeItem === 'Analytics'" class="analytics-dashboard">
+        <div v-if="activeItem === 'Dashboard'" class="analytics-dashboard">
           <div class="analytics-cards">
             <div
               class="analytics-card card-draft"
@@ -5193,7 +5193,7 @@
         sections: [
           {
             label: "General",
-            items: [{ label: "Analytics", color: "#6366f1" }],
+            items: [{ label: "Dashboard", color: "#6366f1" }],
           },
           {
             label: "Inventory",
@@ -5233,11 +5233,11 @@
       },
 
       sectionViews: {
-        Analytics: {
+        Dashboard: {
           doctype: null,
           createDoctype: null,
           emptyIcon: "fa-chart-line",
-          emptyTitle: "Analytics",
+          emptyTitle: "Dashboard",
           emptyMessage:
             "This panel is reserved for charts and summary widgets.",
         },
@@ -5690,7 +5690,7 @@
           this.hasMore = this.loadedRows < this.totalRows;
         },
         activeItem() {
-          if (this.activeItem === "Analytics") {
+          if (this.activeItem === "Dashboard") {
             this.fetchRequestStats();
           }
           if (this.activeItem !== "Items") {
@@ -5752,7 +5752,7 @@
         if (defaultItem) {
           await this.setPage(defaultItem);
         }
-        if (this.activeItem === "Analytics") {
+        if (this.activeItem === "Dashboard") {
           await this.fetchRequestStats();
         }
         markStockioAppReady();
