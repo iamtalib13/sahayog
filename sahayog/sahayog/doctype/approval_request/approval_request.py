@@ -26,7 +26,7 @@ class ApprovalRequest(Document):
             return
 
         old_status = frappe.db.get_value(
-            "Approval Request", self.name, "status")
+            "Approval Request", self.name, "approval_status")
         if old_status in LOCKED_STATUSES and not getattr(frappe.flags, "in_approval_action", False):
             frappe.throw(
                 f"Document is locked in status '{old_status}' and cannot be edited.")
@@ -78,19 +78,18 @@ def is_valid_approver(docname):
 def submit_for_approval(docname):
     doc = frappe.get_doc("Approval Request", docname)
 
-    if doc.status not in ["Draft", "Rejected"]:
+    if doc.approval_status not in ["Draft", "Rejected"]:
         frappe.throw("Only Draft or Rejected requests can be submitted.")
     if not doc.approvers:
         frappe.throw("Please add at least one approver.")
 
     frappe.flags.in_approval_action = True
     try:
-        doc.status = "Pending Approval"
+        doc.approval_status = "Pending Approval"
         doc.acted_by = None
         doc.approver_remark = None
         doc.save(ignore_permissions=True)
 
-        # Notify and share with BOTH direct approvers and their managers
         approvers_to_notify = get_all_valid_approvers(doc)
 
         for user in approvers_to_notify:
@@ -120,15 +119,15 @@ def process_approval(docname, action, remark):
 
     valid_approvers = get_all_valid_approvers(doc)
 
-    if doc.status != "Pending Approval":
-        frappe.throw(f"This request is already {doc.status}.")
+    if doc.approval_status != "Pending Approval":
+        frappe.throw(f"This request is already {doc.approval_status}.")
     if user not in valid_approvers:
         frappe.throw(
             "You do not have permission to approve or reject this request.")
 
     frappe.flags.in_approval_action = True
     try:
-        doc.status = action
+        doc.approval_status = action
         doc.acted_by = user
         doc.approver_remark = remark
         doc.save(ignore_permissions=True)
@@ -146,3 +145,69 @@ def process_approval(docname, action, remark):
         frappe.flags.in_approval_action = False
 
     return "Success"
+
+
+# --- PERMISSION HOOKS ---
+
+def get_permission_query_conditions(user):
+    """
+    Filters the List View so users only see allowed documents.
+    """
+    if not user:
+        user = frappe.session.user
+
+    # System Managers see everything
+    if "System Manager" in frappe.get_roles(user):
+        return ""
+
+    emp_name = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    subordinates = []
+    if emp_name:
+        subs = frappe.get_all("Employee", filters={
+                              "reports_to": emp_name}, fields=["user_id"])
+        subordinates = [s.user_id for s in subs if s.user_id]
+
+    allowed_users = [user] + subordinates
+    escaped_users = ", ".join([frappe.db.escape(u) for u in allowed_users])
+    escaped_user = frappe.db.escape(user)
+
+    # Creator sees their own docs. Approvers/Managers see docs ONLY if not Draft.
+    return f"""(
+        `tabApproval Request`.owner = {escaped_user}
+        OR (
+            `tabApproval Request`.approval_status != 'Draft'
+            AND `tabApproval Request`.name IN (
+                SELECT parent FROM `tabApproval Approver` 
+                WHERE parenttype='Approval Request' 
+                AND approver IN ({escaped_users})
+            )
+        )
+    )"""
+
+
+def has_permission(doc, ptype="read", user=None):
+    """
+    Runs when a user tries to open a specific document.
+    """
+    if not user:
+        user = frappe.session.user
+
+    if "System Manager" in frappe.get_roles(user):
+        return True
+
+    # Creator can view/edit their own document
+    if doc.owner == user:
+        return True
+
+    # If it's a Draft, ONLY the creator can see it (enforced because it skips the next block)
+    if doc.approval_status != "Draft" and doc.get("approvers"):
+        valid_approvers = get_all_valid_approvers(doc)
+        if user in valid_approvers:
+            # Approvers can read, but they should not be able to 'write' (save) the core document
+            if ptype == "read":
+                return True
+            if ptype == "write":
+                # Only let them write if it is Pending Approval (so they can approve/reject)
+                return doc.approval_status == "Pending Approval"
+
+    return False
