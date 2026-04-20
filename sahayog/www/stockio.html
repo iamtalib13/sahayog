@@ -2229,7 +2229,7 @@
                               font-size: 0.7rem !important;
                             "
                           >
-                            [[ item.status ]]
+                            [[ item.status === 'Dispatch' ? 'Dispatch' : detailRecord.status ]]
                           </span>
                         </td>
                         <td
@@ -2983,9 +2983,8 @@
                   class="status-badge"
                   :class="getBadgeClass(row, col.key)"
                 >
-                  [[ getBadgeText(row, col.key) ]]
-                </span>
-                <span v-else-if="col.type === 'button'" class="row-action">
+                  [[ col.isCustomStatus ? ( (row.items && row.items.filter(i => i.status === 'Dispatch').length === row.items.length) ? 'Dispatch' : (row.items && row.items.some(i => i.status === 'Dispatch') ? 'Partially Dispatched' : getBadgeText(row, col.key)) ) : getBadgeText(row, col.key) ]]
+                </span>                <span v-else-if="col.type === 'button'" class="row-action">
                   <button
                     class="btn-list-action"
                     @click.stop="handleDispatch(row)"
@@ -5304,7 +5303,13 @@
             { label: "Owner", key: "employee", width: 1.5 },
             { label: "Source Warehouse", key: "source_warehouse", width: 1.5 },
             { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
-            { label: "Status", key: "status", width: 1, type: "badge" },
+            { 
+              label: "Status", 
+              key: "status", 
+              width: 1, 
+              type: "badge",
+              isCustomStatus: true
+            },
             { label: "Created", key: "creation", width: 1 },
             { label: "Dispatch", key: "dispatch", width: 1, type: "button" },
           ],
