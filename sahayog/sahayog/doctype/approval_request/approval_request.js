@@ -298,7 +298,7 @@ frappe.ui.form.on('Approval Request', {
     // },
 
 
-        refresh: function(frm) {
+    refresh: function(frm) {
         frm.meta.is_submittable = 0;
 
         // --- OVERRIDE DOCUMENT STATUS BADGE ---
@@ -442,7 +442,7 @@ frappe.ui.form.on('Approval Request', {
         for (const row of approvers) {
             checkpoints.push({
                 label: row.approver_name || row.approver,
-                sublabel: `Level ${level_counter} Approver`,
+                // sublabel: `Level ${level_counter} Approver`,
                 user: row.approver
             });
             level_counter++;
@@ -463,7 +463,7 @@ frappe.ui.form.on('Approval Request', {
                 if (manager_emp && manager_emp.message) {
                     checkpoints.push({
                         label: manager_emp.message.employee_name || manager_emp.message.name,
-                        sublabel: `Level ${level_counter} Reports To`,
+                        // sublabel: `Level ${level_counter} Reports To`,
                         user: manager_emp.message.user_id || manager_emp.message.name
                     });
                     level_counter++;
