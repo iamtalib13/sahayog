@@ -1751,12 +1751,12 @@
           v-if="detailRecord"
           :style="activeItem === 'Requests' ? 'padding: 24px;' : ''"
         >
-          <!-- 3-Column Layout specifically for Requests -->
+          <!-- Standard Multi-Column Layout -->
           <div
-            v-if="activeItem === 'Requests'"
+            v-if="detailFields && detailFields.length"
             style="
               display: grid;
-              grid-template-columns: 260px minmax(450px, 1fr) 360px;
+              grid-template-columns: 280px minmax(300px, 1fr) 360px;
               gap: 24px;
               overflow-x: auto;
               height: 663px;
@@ -1776,7 +1776,7 @@
                   letter-spacing: 0.05em;
                 "
               >
-                Request Detail
+                [[ activeItem ]] Detail
               </h4>
               <div
                 class="detail-grid"
@@ -1986,7 +1986,7 @@
                   letter-spacing: 0.05em;
                 "
               >
-                Requested Items
+                [[ activeItem ]] Items
               </h4>
               <div
                 v-if="detailRecord.items && detailRecord.items.length"
@@ -2269,7 +2269,7 @@
                   padding: 40px 20px;
                 "
               >
-                No items requested.
+                No items found.
               </div>
             </div>
 
@@ -2460,7 +2460,7 @@
                     background: var(--gray-50);
                   "
                 >
-                  <button class="btn-create-inline" @click="addComment">
+                  <button class="btn-create-inline" @click="addComment()">
                     <i class="fas fa-paper-plane"></i>
                     <span style="margin-left: 6px">Post Comment</span>
                   </button>
@@ -6640,6 +6640,9 @@
             this.detailRecord.items.forEach(i => {
               if (itemMap[i.name] !== undefined) {
                 i.approved_quantity = itemMap[i.name];
+                if (action === "Approve") {
+                  i.status = "Approved";
+                }
               }
             });
             
@@ -6663,6 +6666,11 @@
             message: `Request ${action}d successfully`,
             indicator: "green",
           });
+          
+          // Post remark as comment if available
+          if (remarks && remarks.trim()) {
+            await this.addComment(remarks);
+          }
           
           // Re-fetch record
           const freshRes = await frappe.call({
@@ -7105,9 +7113,7 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
-              if (this.activeItem === "Requests") {
-                this.fetchComments(row.name);
-              }
+              this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
             }
@@ -7151,7 +7157,7 @@
             args: {
               doctype: "Comment",
               filters: {
-                reference_doctype: "Employee Material Request",
+                reference_doctype: this.currentView.doctype,
                 reference_name: name,
                 comment_type: "Comment",
               },
@@ -7173,11 +7179,14 @@
         }
       },
 
-      async addComment() {
+      async addComment(explicitContent) {
+        if (explicitContent && typeof explicitContent !== "string") {
+          explicitContent = null;
+        }
         const editor = document.getElementById("comment-editor");
-        const content = editor.innerHTML;
+        const content = explicitContent || (editor ? editor.innerHTML : "");
         if (!content || content.trim() === "<br>" || content.trim() === "") {
-          frappe.msgprint("Comment cannot be empty");
+          if (!explicitContent) frappe.msgprint("Comment cannot be empty");
           return;
         }
 
@@ -7185,14 +7194,14 @@
           await frappe.call({
             method: "frappe.desk.form.utils.add_comment",
             args: {
-              reference_doctype: "Employee Material Request",
+              reference_doctype: this.currentView.doctype,
               reference_name: this.detailRecord.name,
               content: content,
               comment_email: frappe.session.user,
               comment_by: this.sidebar.header.subtitle,
             },
           });
-          editor.innerHTML = "";
+          if (!explicitContent && editor) editor.innerHTML = "";
           await this.fetchComments(this.detailRecord.name);
         } catch (e) {
           console.error("Error adding comment:", e);

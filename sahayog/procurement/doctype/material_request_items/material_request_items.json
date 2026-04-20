@@ -254,7 +254,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nApproved\nIssued\nReceived\nRejected",
+   "options": "Pending\nApproved\nDispatch\nReceived\nRejected",
    "read_only": 1
   },
   {
@@ -267,7 +267,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-20 10:17:32.673106",
+ "modified": "2026-04-20 14:52:55.855844",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Material Request Items",
