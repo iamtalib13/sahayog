@@ -183,6 +183,23 @@ frappe.ui.form.on('Approval Request', {
         }
 
         // --- CUSTOM LOCK LOGIC ---
+        // const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
+        // const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
+
+        // if (is_locked) {
+        //     frm.disable_save();
+        //     ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+        //         frm.set_df_property(field, 'read_only', 1);
+        //     });
+        // } else {
+        //     frm.enable_save();
+        //     ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
+        //         frm.set_df_property(field, 'read_only', 0);
+        //     });
+        // }
+
+
+                // --- CUSTOM LOCK LOGIC ---
         const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
         const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
 
@@ -192,11 +209,28 @@ frappe.ui.form.on('Approval Request', {
                 frm.set_df_property(field, 'read_only', 1);
             });
         } else {
-            frm.enable_save();
+            // Un-lock the fields so the user CAN edit them
             ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
                 frm.set_df_property(field, 'read_only', 0);
             });
+            
+            // BUT explicitly hide the Save button until they actually type something!
+            if (!frm.is_new()) {
+                setTimeout(() => {
+                    frm.disable_save(); // Force hide Save button initially
+                    
+                    // The moment the user types or changes a field, bring the Save button back
+                    frm.wrapper.off('change input').on('change input', function() {
+                        frm.enable_save();
+                        frm.page.remove_inner_button(__('Submit Request'));
+                    });
+                }, 200); // 200ms delay lets any rogue background scripts finish running first
+            } else {
+                frm.enable_save(); // Brand new unsaved docs MUST have the save button
+            }
         }
+
+        // ////////////////////////////////////////////
 
         // --- CLEAR ALL OLD BUTTONS ---
         frm.clear_custom_buttons();
