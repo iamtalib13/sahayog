@@ -5310,6 +5310,7 @@
               type: "badge",
               isCustomStatus: true,
               getValue: (row) => {
+                // We only apply this custom logic for requests that are already approved in the workflow
                 const postApprovalStates = ['Approved', 'Partially Dispatched', 'Dispatch', 'Received', 'Partially Received'];
                 if (!postApprovalStates.includes(row.status)) return row.status;
                 
@@ -5317,17 +5318,18 @@
                 
                 const itemStatuses = row.items.map(i => i.status);
                 
-                // If all items have exactly the same status 'Dispatch' or 'Received'
+                // 1. Check for absolute full state
                 if (itemStatuses.every(s => s === 'Received')) return 'Received';
                 if (itemStatuses.every(s => s === 'Dispatch')) return 'Dispatch';
                 
-                // If there's a mix or some are still just 'Approved'
+                // 2. Check for partials (Received has priority for visibility)
                 const hasReceived = itemStatuses.some(s => s === 'Received');
-                const hasDispatched = itemStatuses.some(s => s === 'Dispatch');
-                
                 if (hasReceived) return 'Partially Received';
+                
+                const hasDispatched = itemStatuses.some(s => s === 'Dispatch');
                 if (hasDispatched) return 'Partially Dispatched';
                 
+                // Fallback to original status if no items are dispatched/received yet
                 return row.status;
               }
             },

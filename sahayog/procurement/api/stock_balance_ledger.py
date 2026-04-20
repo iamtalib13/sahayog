@@ -360,6 +360,14 @@ def get_emr_list(limit=20, start=0, search_text=None):
         LIMIT %(limit)s OFFSET %(offset)s
     """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
 
+    # Fetch child items for status calculation
+    for row in data:
+        row["items"] = frappe.get_all(
+            "Material Request Items",
+            filters={"parent": row.name},
+            fields=["status", "item_code", "quantity"]
+        )
+
     return {
         "data": data,
         "total": total_count
