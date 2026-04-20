@@ -874,6 +874,7 @@
             type="text"
             class="search-input"
             v-model="searchText"
+            @input="handleSearch"
             placeholder="Search records..."
           />
         </div>
@@ -5706,7 +5707,9 @@
       hsnCodes: [],
       currentTheme: localStorage.getItem("stockio_theme") || "light",
       searchText: "",
+      searchTimeout: null,
       loading: false,
+
       page: 1,
       pageSize: 20,
       totalRows: 0,
@@ -6027,14 +6030,17 @@
       },
 
       async fetchData(doctype = "Item", append = false) {
+        if (this.loading && append) return; // Prevent concurrent appends
+        
         this.loading = true;
         if (!append) {
           this.selectedRows = [];
           this.page = 1;
           this.loadedRows = 0;
+          this.rows = []; // Clear current rows on fresh fetch
         }
         try {
-          const start = append ? this.loadedRows : 0;
+          const start = append ? this.rows.length : 0;
           let res;
 
           if (doctype === "Employee Material Request") {
@@ -6055,7 +6061,7 @@
               } else {
                 this.rows = data;
               }
-              this.loadedRows += data.length;
+              this.loadedRows = this.rows.length;
               this.totalRows = res.message.total || 0;
               this.hasMore = this.loadedRows < this.totalRows;
             }
@@ -6077,7 +6083,7 @@
               } else {
                 this.rows = data;
               }
-              this.loadedRows += data.length;
+              this.loadedRows = this.rows.length;
               this.totalRows = res.message.total || 0;
               this.hasMore = this.loadedRows < this.totalRows;
             }
@@ -6099,7 +6105,7 @@
               } else {
                 this.rows = data;
               }
-              this.loadedRows += data.length;
+              this.loadedRows = this.rows.length;
               this.totalRows = res.message.total || 0;
               this.hasMore = this.loadedRows < this.totalRows;
             }
@@ -6121,16 +6127,29 @@
               } else {
                 this.rows = data;
               }
-              this.loadedRows += data.length;
+              this.loadedRows = this.rows.length;
               this.totalRows = res.message.total || 0;
               this.hasMore = this.loadedRows < this.totalRows;
             }
           } else {
+            let filters = [];
+            if (this.searchText) {
+              const searchFields = this.currentView.searchableFields || ["name", "item_name", "item_code"];
+              searchFields.forEach((field, index) => {
+                if (index === 0) {
+                  filters.push([field, "like", `%${this.searchText}%`]);
+                } else {
+                  filters.push(["or", field, "like", `%${this.searchText}%`]);
+                }
+              });
+            }
+
             res = await frappe.call({
               method: "frappe.client.get_list",
               args: {
                 doctype: doctype,
                 fields: ["*"],
+                filters: filters,
                 order_by: "creation desc",
                 limit: this.pageSize,
                 start: start,
@@ -6142,13 +6161,14 @@
               } else {
                 this.rows = res.message;
               }
-              this.loadedRows += res.message.length;
-              // Get total count by fetching once with limit 1
-              if (!append && this.totalRows === 0) {
+              this.loadedRows = this.rows.length;
+              // Get total count
+              if (!append) {
                 const countRes = await frappe.call({
                   method: "frappe.client.get_count",
                   args: {
                     doctype: doctype,
+                    filters: filters
                   },
                 });
                 this.totalRows = countRes.message || 0;
@@ -6211,41 +6231,25 @@
         }
       },
 
-      get filteredRows() {
-        if (!this.searchText) {
-          let rows = this.rows.slice();
-          // Sort by item_code for Items section
-          if (this.activeItem === "Items") {
-            rows.sort((a, b) => {
-              const codeA = String(a.item_code || "").toLowerCase();
-              const codeB = String(b.item_code || "").toLowerCase();
-              return codeA.localeCompare(codeB);
-            });
-          }
-          return rows;
-        }
-        const q = this.searchText.toLowerCase();
-        const fields = this.currentView.searchableFields || [
-          "name",
-          "item_name",
-          "item_code",
-        ];
-        let filtered = this.rows.filter((r) =>
-          fields.some((field) => {
-            const value = this.getFieldValue(r, field);
-            return value && String(value).toLowerCase().includes(q);
-          }),
-        );
-        // Sort by item_code for Items section
-        if (this.activeItem === "Items") {
-          filtered.sort((a, b) => {
-            const codeA = String(a.item_code || "").toLowerCase();
-            const codeB = String(b.item_code || "").toLowerCase();
-            return codeA.localeCompare(codeB);
-          });
-        }
-        return filtered;
+      handleSearch() {
+        if (this.searchTimeout) clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => {
+          this.fetchData(this.currentView.doctype);
+        }, 500);
       },
+
+       get filteredRows() {
+         let rows = this.rows.slice();
+         // Sort by item_code for Items section
+         if (this.activeItem === "Items") {
+           rows.sort((a, b) => {
+             const codeA = String(a.item_code || "").toLowerCase();
+             const codeB = String(b.item_code || "").toLowerCase();
+             return codeA.localeCompare(codeB);
+           });
+         }
+         return rows;
+       },
 
       get isAllSelected() {
         return (
