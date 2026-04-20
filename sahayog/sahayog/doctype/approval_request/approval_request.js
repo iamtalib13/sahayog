@@ -335,17 +335,21 @@ frappe.ui.form.on('Approval Request', {
         }
 
         // --- CUSTOM LOCK LOGIC ---
+                // --- CUSTOM LOCK LOGIC ---
         const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
         const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
+        
+        // Check if the current logged-in user is the person who created the document
+        const is_owner = frm.is_new() || frm.doc.owner === frappe.session.user;
 
-        if (is_locked) {
-            // Document is locked: Disable native Save and make fields read-only
+        // Lock the document if it's in a locked status OR if the user is NOT the owner
+        if (is_locked || !is_owner) {
             frm.disable_save();
             ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
                 frm.set_df_property(field, 'read_only', 1);
             });
         } else {
-            // Document is editable: ENABLE native Save and unlock fields
+            // Document is editable AND user is the owner: Unlock fields
             frm.enable_save();
             ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
                 frm.set_df_property(field, 'read_only', 0);
@@ -357,7 +361,8 @@ frappe.ui.form.on('Approval Request', {
         frm.page.clear_inner_toolbar();
 
         // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
-        if (is_editable) {
+        // ONLY show the Submit button if it is editable AND the user is the original owner
+        if (is_editable && is_owner) {
             // Forcefully clear the dirty flag on fresh load so the button shows up
             if (frm.doc.__unsaved === 1 && !frm.is_new() && !frm.__employee_fetching) {
                 frm.doc.__unsaved = 0;
@@ -385,12 +390,9 @@ frappe.ui.form.on('Approval Request', {
             }
 
             // BULLETPROOF DIRTY WATCHER
-            // Instead of hiding the Save button, we just watch for edits and delete the Submit button!
             if (frm._dirty_watcher) clearInterval(frm._dirty_watcher);
             frm._dirty_watcher = setInterval(() => {
-                // If Frappe's native engine decides the form is dirty (meaning the Save button naturally appeared)
                 if (frm.is_dirty() && !frm.__employee_fetching) {
-                    // Instantly delete the Submit button so they don't submit unsaved work!
                     frm.page.remove_inner_button(__('Submit Request'));
                     clearInterval(frm._dirty_watcher); 
                 }
