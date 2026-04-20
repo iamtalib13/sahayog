@@ -1961,6 +1961,100 @@
                     >
                   </span>
                 </div>
+
+                <!-- More Info Toggle for Requests -->
+                <div
+                  v-if="activeItem === 'Requests'"
+                  style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-color)"
+                >
+                  <button
+                    @click="showEMRMoreDetails = !showEMRMoreDetails"
+                    style="
+                      background: var(--sidebar-hover);
+                      border: 1px solid var(--border-color);
+                      color: var(--primary-color);
+                      font-size: 0.75rem;
+                      font-weight: 700;
+                      cursor: pointer;
+                      padding: 6px 12px;
+                      border-radius: 12px;
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 6px;
+                      transition: all 0.2s;
+                    "
+                    class="hover-lift"
+                  >
+                    <i
+                      class="fas"
+                      :class="showEMRMoreDetails ? 'fa-minus-circle' : 'fa-plus-circle'"
+                    ></i>
+                    [[ showEMRMoreDetails ? 'Show Less' : 'More Info' ]]
+                  </button>
+
+                  <div
+                    v-if="showEMRMoreDetails"
+                    style="
+                      margin-top: 15px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 15px;
+                      padding: 12px;
+                      background: var(--bg-surface);
+                      border-radius: var(--border-radius-md);
+                      border: 1px solid var(--border-color);
+                    "
+                  >
+                    <div
+                      class="detail-grid-item"
+                      style="display: flex; flex-direction: column; gap: 4px"
+                    >
+                      <span
+                        class="detail-grid-label"
+                        style="
+                          font-size: 0.65rem;
+                          text-transform: uppercase;
+                          font-weight: 700;
+                          color: var(--text-muted);
+                        "
+                        >Reporting Person</span
+                      >
+                      <span
+                        class="detail-grid-value"
+                        style="
+                          font-weight: 600;
+                          font-size: 0.85rem;
+                          color: var(--text-main);
+                        "
+                        >[[ detailRecord.reporting_person || '-' ]]</span
+                      >
+                    </div>
+                    <div
+                      class="detail-grid-item"
+                      style="display: flex; flex-direction: column; gap: 4px"
+                    >
+                      <span
+                        class="detail-grid-label"
+                        style="
+                          font-size: 0.65rem;
+                          text-transform: uppercase;
+                          font-weight: 700;
+                          color: var(--text-muted);
+                        "
+                        >HO Officer</span
+                      >
+                      <span
+                        class="detail-grid-value"
+                        style="
+                          font-weight: 600;
+                          font-size: 0.85rem;
+                          color: var(--text-main);
+                        "
+                        >[[ detailRecord.head_office_officer || '-' ]]</span
+                      >
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
