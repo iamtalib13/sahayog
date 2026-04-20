@@ -457,6 +457,41 @@ def get_movement_list(limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
+    """
+    API to fetch Branch Stock data (reusing report logic)
+    """
+    from sahayog.procurement.report.branch_stock.branch_stock import execute
+    
+    filters = {}
+    if warehouse:
+        filters["warehouse"] = warehouse
+    
+    _, data = execute(filters)
+    
+    if search_text:
+        search_text = search_text.lower()
+        data = [
+            row for row in data 
+            if search_text in str(row.get("item_code", "")).lower() or 
+               search_text in str(row.get("item_name", "")).lower() or 
+               search_text in str(row.get("warehouse", "")).lower()
+        ]
+        
+    total_count = len(data)
+    
+    # Apply manual pagination since execute returns all
+    start = int(start)
+    limit = int(limit)
+    paginated_data = data[start:start+limit]
+    
+    return {
+        "data": paginated_data,
+        "total": total_count
+    }
+
+
+@frappe.whitelist()
 def get_user_branch_warehouse():
     """
     Get the warehouse linked to the current user's branch

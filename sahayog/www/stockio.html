@@ -5179,7 +5179,6 @@
       isEditing: false,
       showInwardCreateView: false,
       showOutwardCreateView: false,
-      showItemCreateView: false,
       sidebar: {
         header: {
           title: "StockIO",
@@ -5213,8 +5212,7 @@
               { 
                 label: "Branch Stock", 
                 color: "#3b82f6", 
-                isReport: true, 
-                reportName: "Branch Stock" 
+                doctype: "Branch Stock" 
               },
             ],
           },
@@ -5246,6 +5244,20 @@
           emptyTitle: "Dashboard",
           emptyMessage:
             "This panel is reserved for charts and summary widgets.",
+        },
+        "Branch Stock": {
+          doctype: "Branch Stock",
+          emptyIcon: "fa-boxes-stacked",
+          emptyTitle: "No stock found",
+          
+          emptyMessage: "Your branch has no items in stock.",
+          searchableFields: ["item_code", "item_name", "warehouse"],
+          columns: [
+            { label: "Item", key: "item_code", width: 2, type: "avatar" },
+            { label: "Item Name", key: "item_name", width: 2.5 },
+            { label: "Warehouse", key: "warehouse", width: 1.5 },
+            { label: "Stock Balance", key: "stock_balance", width: 1 },
+          ],
         },
         Requests: {
           doctype: "Employee Material Request",
@@ -5485,7 +5497,9 @@
       showProfileModal: false,
       profileData: null,
       showCreateItemModal: false,
+      showItemCreateView: false,
       showDispatchModal: false,
+      showWorkflowModal: false,
       dispatchForm: {
         name: "",
         source_warehouse: "",
@@ -5752,6 +5766,13 @@
         }
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
+
+        // Reset create views
+        this.showEMRCreateView = false;
+        this.showInwardCreateView = false;
+        this.showOutwardCreateView = false;
+        this.showItemCreateView = false;
+        
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
           this.findSidebarItem("Items");
@@ -5782,12 +5803,6 @@
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
-        }
-
-        if (item.isReport) {
-          const route = item.route || `/app/query-report/${encodeURIComponent(item.reportName || item.label)}`;
-          this.openReport(route);
-          return;
         }
 
         if (item.doctype) {
@@ -5896,6 +5911,28 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_movement_list",
               args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText,
+              },
+            });
+
+            if (res.message) {
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows += data.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else if (doctype === "Branch Stock") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
+              args: {
+                warehouse: this.userWarehouse,
                 limit: this.pageSize,
                 start: start,
                 search_text: this.searchText,
@@ -7051,7 +7088,7 @@
         }
       },
       async openRecord(row) {
-        if (!row || !row.name || !this.currentView.doctype) return;
+        if (!row || !this.currentView.doctype) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         // Show detail view inline for Requests
@@ -7083,12 +7120,20 @@
           this.detailFields = this.currentView.detailFields;
           return;
         } // Fallback: redirect to Frappe desk for other doctypes
-        const slug = String(this.currentView.doctype)
+        let doctype = this.currentView.doctype;
+        let docname = row.name;
+
+        if (this.activeItem === "Branch Stock") {
+          doctype = "Item";
+          docname = row.item_code;
+        }
+
+        const slug = String(doctype)
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
-        window.location.href = `/app/${slug}/${encodeURIComponent(row.name)}`;
+        window.location.href = `/app/${slug}/${encodeURIComponent(docname)}`;
       },
 
       closeDetailView() {
