@@ -6737,22 +6737,24 @@
             name: row.name,
           },
           callback: (res) => {
-            if (res.message && res.message.items) {
+            if (res.message) {
+              // Override target warehouse from the full document
+              this.dispatchForm.target_warehouse = res.message.target_warehouse || row.target_warehouse;
+
               // Pre-fill with selected items only
               const selectedNames = this.detailRecord.items
                 .filter((item) => item.selected)
                 .map((item) => item.name);
-              
+
               this.dispatchForm.items = res.message.items
                 .filter((i) => i.item_category === "Stock Item" && selectedNames.includes(i.name))
                 .map((item) => ({
                   ...item,
-                  dispatch_qty: item.quantity, 
+                  dispatch_qty: item.quantity,
                 }));
             }
             this.dispatchForm.loading = false;
-          },
-        });
+          },        });
       },
       async submitDispatch() {
         // Quick validation
