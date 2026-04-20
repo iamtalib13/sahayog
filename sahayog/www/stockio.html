@@ -6658,17 +6658,18 @@
               args: { doc: res.message },
             });
 
-            // Update item statuses to 'Dispatched' in EMR
+            // Update item statuses to 'Dispatch' in EMR
+            const itemMap = this.dispatchForm.items.reduce((acc, d) => {
+              const originalItem = this.detailRecord.items.find(i => i.item_code === d.item_code);
+              if (originalItem) acc[originalItem.name] = 'Dispatch';
+              return acc;
+            }, {});
+
             await frappe.call({
-              method: "frappe.client.save",
+              method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
               args: {
-                doc: {
-                  ...this.detailRecord,
-                  items: this.detailRecord.items.map(item => {
-                    const dispatched = this.dispatchForm.items.find(d => d.name === item.name);
-                    return dispatched ? { ...item, status: 'Dispatch' } : item;
-                  })
-                }
+                docname: this.detailRecord.name,
+                item_status_map: itemMap
               }
             });
 
