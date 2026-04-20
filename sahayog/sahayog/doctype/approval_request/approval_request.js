@@ -55,6 +55,16 @@ frappe.form.link_formatters['Employee'] = function(value, doc) {
     return value;
 };
 
+// Show User Full Name instead of Email/ID in User link fields
+frappe.form.link_formatters['User'] = function(value, doc, df) {
+    if (value) {
+        // Look up the user's full name in the browser's local memory
+        let full_name = frappe.user_info(value).fullname;
+        return full_name ? full_name : value;
+    }
+    return value;
+};
+
 // --- Child Table Auto-Fetch Approver Name ---
 frappe.ui.form.on('Approval Approver', {
     approver: function(frm, cdt, cdn) {
