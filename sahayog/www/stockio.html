@@ -6041,6 +6041,16 @@
         }
         try {
           const start = append ? this.rows.length : 0;
+          let limit = this.pageSize;
+          
+          // Validation: If appending, don't ask for more than what's actually remaining
+          if (append && this.totalRows > 0) {
+            const remaining = this.totalRows - start;
+            if (remaining > 0 && remaining < limit) {
+              limit = remaining;
+            }
+          }
+
           let res;
 
           if (doctype === "Employee Material Request") {
@@ -6048,7 +6058,7 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_emr_list",
               args: {
-                limit: this.pageSize,
+                limit: limit,
                 start: start,
                 search_text: this.searchText,
               },
@@ -6070,7 +6080,7 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
               args: {
-                limit: this.pageSize,
+                limit: limit,
                 start: start,
                 search_text: this.searchText,
               },
@@ -6092,7 +6102,7 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_movement_list",
               args: {
-                limit: this.pageSize,
+                limit: limit,
                 start: start,
                 search_text: this.searchText,
               },
@@ -6114,7 +6124,7 @@
               method: "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
               args: {
                 warehouse: this.userWarehouse,
-                limit: this.pageSize,
+                limit: limit,
                 start: start,
                 search_text: this.searchText,
               },
@@ -6151,7 +6161,7 @@
                 fields: ["*"],
                 filters: filters,
                 order_by: "creation desc",
-                limit: this.pageSize,
+                limit: limit,
                 start: start,
               },
             });
