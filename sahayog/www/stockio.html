@@ -6651,10 +6651,40 @@
         });
 
         if (res.message) {
-          frappe.msgprint(
-            `Stock Entry <a href="/app/stock-entry/${res.message.name}">${res.message.name}</a> created!`,
-          );
+          // Submit the Stock Entry
+          try {
+            await frappe.call({
+              method: "frappe.client.submit",
+              args: { doc: res.message },
+            });
+
+            // Update item statuses to 'Dispatched' in EMR
+            await frappe.call({
+              method: "frappe.client.save",
+              args: {
+                doc: {
+                  ...this.detailRecord,
+                  items: this.detailRecord.items.map(item => {
+                    const dispatched = this.dispatchForm.items.find(d => d.name === item.name);
+                    return dispatched ? { ...item, status: 'Dispatched' } : item;
+                  })
+                }
+              }
+            });
+
+            frappe.show_alert({
+              message: `Stock Entry ${res.message.name} created, submitted, and EMR items updated!`,
+              indicator: "green",
+            });
+          } catch (e) {
+            frappe.show_alert({
+              message: `Stock Entry ${res.message.name} created, but submission or status update failed.`,
+              indicator: "orange",
+            });
+          }
           this.showDispatchModal = false;
+          // Refresh data to show updated statuses
+          await this.fetchData(this.currentView.doctype);
         }
       },
       async onEmployeeChange() {
