@@ -5788,6 +5788,11 @@
         this.showInwardCreateView = false;
         this.showOutwardCreateView = false;
         this.showItemCreateView = false;
+        this.showCreateItemModal = false;
+        this.showDispatchModal = false;
+        this.showWorkflowModal = false;
+        this.showProfileModal = false;
+        this.showUserMenu = false;
         
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
@@ -6760,6 +6765,7 @@
         }
 
         const stockEntry = {
+        console.log("Creating Stock Entry with:", stockEntry);
           doctype: "Stock Entry",
           stock_entry_type: this.dispatchForm.stock_entry_type,
           from_warehouse: this.dispatchForm.source_warehouse,
