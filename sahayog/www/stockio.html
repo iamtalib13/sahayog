@@ -2236,18 +2236,34 @@
                           v-if="detailRecord.status === 'Approved'"
                           style="padding: 10px 12px !important"
                         >
+                          <div style="display: flex; justify-content: center; align-items: center;" v-if="item.status === 'Approved'">
+                            <input
+                              type="checkbox"
+                              v-model="item.selected"
+                              style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-color);"
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                      <!-- Bulk Dispatch Button Row -->
+                      <tr v-if="detailRecord.items && detailRecord.items.some(i => i.selected)">
+                        <td :colspan="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved' ? 4 : 3"></td>
+                        <td style="padding: 10px 12px !important">
                           <button
                             class="btn-create-inline"
                             style="
-                              padding: 6px 12px !important;
-                              font-size: 0.75rem !important;
+                              padding: 8px 16px !important;
+                              font-size: 0.8rem !important;
                               font-weight: 700;
                               border-radius: 20px;
-                              box-shadow: none;
+                              background: var(--primary-color);
+                              color: white;
+                              box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
                             "
                             @click="handleDispatch(detailRecord)"
-                            title="Dispatch"
+                            title="Dispatch Selected Items"
                           >
+                            <i class="fas fa-truck-fast" style="margin-right: 6px"></i>
                             Dispatch
                           </button>
                         </td>
@@ -6717,12 +6733,16 @@
           },
           callback: (res) => {
             if (res.message && res.message.items) {
-              // Pre-fill dispatch_qty with exact quantity from request, filter Stock Items
+              // Pre-fill with selected items only
+              const selectedNames = this.detailRecord.items
+                .filter((item) => item.selected)
+                .map((item) => item.name);
+              
               this.dispatchForm.items = res.message.items
-                .filter((i) => i.item_category === "Stock Item")
+                .filter((i) => i.item_category === "Stock Item" && selectedNames.includes(i.name))
                 .map((item) => ({
                   ...item,
-                  dispatch_qty: item.quantity, // Same as Qty, now editable in table input
+                  dispatch_qty: item.quantity, 
                 }));
             }
             this.dispatchForm.loading = false;
