@@ -185,9 +185,11 @@ class EmployeeMaterialRequest(Document):
 def update_emr_item_status(docname, item_status_map):
     """
     Updates status for specific items in the EMR without saving the submitted parent.
-    item_status_map format: {"item_child_row_name": "Dispatch"}
+    item_status_map format: '{"item_child_row_name": "Dispatch"}' (passed as JSON string)
     """
-    # Permission check (optional: add custom role check if needed)
+    if isinstance(item_status_map, str):
+        item_status_map = frappe.parse_json(item_status_map)
+        
     for row_name, status in item_status_map.items():
         frappe.db.set_value("Material Request Items", row_name, "status", status)
             
