@@ -55,6 +55,16 @@ frappe.form.link_formatters['Employee'] = function(value, doc) {
     return value;
 };
 
+// Show User Full Name instead of Email/ID in User link fields
+frappe.form.link_formatters['User'] = function(value, doc, df) {
+    if (value) {
+        // Look up the user's full name in the browser's local memory
+        let full_name = frappe.user_info(value).fullname;
+        return full_name ? full_name : value;
+    }
+    return value;
+};
+
 // --- Child Table Auto-Fetch Approver Name ---
 frappe.ui.form.on('Approval Approver', {
     approver: function(frm, cdt, cdn) {
@@ -298,7 +308,7 @@ frappe.ui.form.on('Approval Request', {
     // },
 
 
-        refresh: function(frm) {
+    refresh: function(frm) {
         frm.meta.is_submittable = 0;
 
         // --- OVERRIDE DOCUMENT STATUS BADGE ---
@@ -325,17 +335,21 @@ frappe.ui.form.on('Approval Request', {
         }
 
         // --- CUSTOM LOCK LOGIC ---
+                // --- CUSTOM LOCK LOGIC ---
         const is_locked = ['Pending Approval', 'Approved'].includes(frm.doc.approval_status);
         const is_editable = ['Draft', 'Rejected'].includes(frm.doc.approval_status);
+        
+        // Check if the current logged-in user is the person who created the document
+        const is_owner = frm.is_new() || frm.doc.owner === frappe.session.user;
 
-        if (is_locked) {
-            // Document is locked: Disable native Save and make fields read-only
+        // Lock the document if it's in a locked status OR if the user is NOT the owner
+        if (is_locked || !is_owner) {
             frm.disable_save();
             ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
                 frm.set_df_property(field, 'read_only', 1);
             });
         } else {
-            // Document is editable: ENABLE native Save and unlock fields
+            // Document is editable AND user is the owner: Unlock fields
             frm.enable_save();
             ['title', 'category', 'description', 'approvers', 'attachments'].forEach(field => {
                 frm.set_df_property(field, 'read_only', 0);
@@ -346,8 +360,48 @@ frappe.ui.form.on('Approval Request', {
         frm.clear_custom_buttons();
         frm.page.clear_inner_toolbar();
 
-        // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
-        if (is_editable) {
+        // // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
+        // // ONLY show the Submit button if it is editable AND the user is the original owner
+        // if (is_editable && is_owner) {
+        //     // Forcefully clear the dirty flag on fresh load so the button shows up
+        //     if (frm.doc.__unsaved === 1 && !frm.is_new() && !frm.__employee_fetching) {
+        //         frm.doc.__unsaved = 0;
+        //     }
+
+        //     // Only add the Submit button if the form has NO unsaved changes
+        //     if (!frm.is_dirty()) {
+        //         let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
+        //             frappe.confirm(__('Are you sure you want to submit this request?'), function() {
+        //                 frappe.call({
+        //                     method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
+        //                     args: { docname: frm.doc.name },
+        //                     freeze: true,
+        //                     freeze_message: 'Submitting...',
+        //                     callback: function(r) {
+        //                         if (!r.exc) {
+        //                             frappe.show_alert({message: 'Request Submitted Successfully', indicator: 'green'});
+        //                             frm.reload_doc();
+        //                         }
+        //                     }
+        //                 });
+        //             });
+        //         });
+        //         submit_btn.removeClass('btn-default').addClass('btn-primary').css({'color': 'white', 'font-weight': 'bold'});
+        //     }
+
+        //     // BULLETPROOF DIRTY WATCHER
+        //     if (frm._dirty_watcher) clearInterval(frm._dirty_watcher);
+        //     frm._dirty_watcher = setInterval(() => {
+        //         if (frm.is_dirty() && !frm.__employee_fetching) {
+        //             frm.page.remove_inner_button(__('Submit Request'));
+        //             clearInterval(frm._dirty_watcher); 
+        //         }
+        //     }, 300);
+        // }
+
+                // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
+        // ONLY show the Submit button if it is editable AND the user is the original owner
+        if (is_editable && is_owner) {
             // Forcefully clear the dirty flag on fresh load so the button shows up
             if (frm.doc.__unsaved === 1 && !frm.is_new() && !frm.__employee_fetching) {
                 frm.doc.__unsaved = 0;
@@ -356,6 +410,23 @@ frappe.ui.form.on('Approval Request', {
             // Only add the Submit button if the form has NO unsaved changes
             if (!frm.is_dirty()) {
                 let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
+                    
+                    // =========================================================================
+                    // VALIDATION: Enforce at least 1 valid approver before submitting
+                    // =========================================================================
+                    const valid_approvers = (frm.doc.approvers || []).filter(row => row.approver);
+                    
+                    if (valid_approvers.length === 0) {
+                        frappe.msgprint({
+                            title: __('Missing Approver'),
+                            indicator: 'red',
+                            message: __('You must add at least one Approver in the table before submitting this request.')
+                        });
+                        // Stop execution right here so the confirm dialog never appears
+                        return; 
+                    }
+                    // =========================================================================
+
                     frappe.confirm(__('Are you sure you want to submit this request?'), function() {
                         frappe.call({
                             method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
@@ -375,12 +446,9 @@ frappe.ui.form.on('Approval Request', {
             }
 
             // BULLETPROOF DIRTY WATCHER
-            // Instead of hiding the Save button, we just watch for edits and delete the Submit button!
             if (frm._dirty_watcher) clearInterval(frm._dirty_watcher);
             frm._dirty_watcher = setInterval(() => {
-                // If Frappe's native engine decides the form is dirty (meaning the Save button naturally appeared)
                 if (frm.is_dirty() && !frm.__employee_fetching) {
-                    // Instantly delete the Submit button so they don't submit unsaved work!
                     frm.page.remove_inner_button(__('Submit Request'));
                     clearInterval(frm._dirty_watcher); 
                 }
@@ -442,7 +510,7 @@ frappe.ui.form.on('Approval Request', {
         for (const row of approvers) {
             checkpoints.push({
                 label: row.approver_name || row.approver,
-                sublabel: `Level ${level_counter} Approver`,
+                // sublabel: `Level ${level_counter} Approver`,
                 user: row.approver
             });
             level_counter++;
@@ -463,7 +531,7 @@ frappe.ui.form.on('Approval Request', {
                 if (manager_emp && manager_emp.message) {
                     checkpoints.push({
                         label: manager_emp.message.employee_name || manager_emp.message.name,
-                        sublabel: `Level ${level_counter} Reports To`,
+                        // sublabel: `Level ${level_counter} Reports To`,
                         user: manager_emp.message.user_id || manager_emp.message.name
                     });
                     level_counter++;
