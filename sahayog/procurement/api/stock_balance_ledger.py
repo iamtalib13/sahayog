@@ -531,6 +531,15 @@ def get_item_quantities_for_warehouse(warehouse=None):
     return {bin.item_code: bin.qty for bin in bins}
 
 @frappe.whitelist()
+def get_warehouse_company(warehouse):
+    """
+    Returns the company linked to a specific warehouse.
+    """
+    if not warehouse:
+        return None
+    return frappe.db.get_value("Warehouse", warehouse, "company")
+
+@frappe.whitelist()
 def get_portal_master_data():
     """
     Unified API to fetch all master data for the portal in one request.

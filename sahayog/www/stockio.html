@@ -2229,7 +2229,7 @@
                               font-size: 0.7rem !important;
                             "
                           >
-                            [[ item.status === 'Dispatch' ? 'Dispatch' : detailRecord.status ]]
+                            [[ item.status ]]
                           </span>
                         </td>
                         <td
@@ -6661,9 +6661,22 @@
           return;
         }
 
+        // Fetch company from warehouse
+        let company = "";
+        try {
+          const compRes = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_warehouse_company",
+            args: { warehouse: this.dispatchForm.source_warehouse },
+          });
+          company = compRes.message;
+        } catch (e) {
+          console.warn("Failed to fetch warehouse company", e);
+        }
+
         const stockEntry = {
           doctype: "Stock Entry",
           stock_entry_type: this.dispatchForm.stock_entry_type,
+          company: company,
           from_warehouse: this.dispatchForm.source_warehouse,
           to_warehouse: this.dispatchForm.target_warehouse,
           custom_material_request_doctype: "Employee Material Request",
@@ -6925,6 +6938,16 @@
 
         this.creatingInward = true;
         try {
+          // Fetch company from warehouse
+          let company = "";
+          if (this.inwardForm.set_warehouse) {
+            const compRes = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_warehouse_company",
+              args: { warehouse: this.inwardForm.set_warehouse },
+            });
+            company = compRes.message;
+          }
+
           // Ensure all items have necessary details (UOM, category)
           for (let item of this.inwardItems) {
             if (!item.item_code) continue;
@@ -6945,6 +6968,7 @@
 
           const doc = {
             doctype: "Purchase Receipt",
+            company: company,
             supplier: this.inwardForm.supplier,
             posting_date: this.inwardForm.posting_date,
             set_warehouse: this.inwardForm.set_warehouse,
@@ -6998,6 +7022,16 @@
 
         this.creatingOutward = true;
         try {
+          // Fetch company from warehouse
+          let company = "";
+          if (this.outwardForm.from_warehouse) {
+            const compRes = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_warehouse_company",
+              args: { warehouse: this.outwardForm.from_warehouse },
+            });
+            company = compRes.message;
+          }
+
           // Ensure items have UOM
           for (let item of this.outwardItems) {
             if (!item.item_code) continue;
@@ -7018,6 +7052,7 @@
 
           const doc = {
             doctype: "Stock Entry",
+            company: company,
             stock_entry_type: this.outwardForm.stock_entry_type,
             posting_date: this.outwardForm.posting_date,
             from_warehouse: this.outwardForm.from_warehouse,
